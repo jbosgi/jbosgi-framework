@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ====================================================================== -->
+<!-- -->
+<!-- JBoss, the OpenSource J2EE webOS -->
+<!-- -->
+<!-- Distributable under LGPL license. -->
+<!-- See terms of license at http://www.gnu.org. -->
+<!-- -->
+<!-- ====================================================================== -->
+
+<!-- $Id$ -->
+
+<!-- Set these VM properties in your IDE debugger -Dlog4j.output.dir=${workspace_loc:jboss-osgi-framework/target} -Dlog4j.configuration=log4j-console.xml -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <name>JBossOSGi Framework</name>
+  <groupId>org.jboss.osgi.msc</groupId>
+  <artifactId>jbosgi-msc-framework</artifactId>
+  <packaging>jar</packaging>
+
+  <version>0.1-SNAPSHOT</version>
+
+  <parent>
+    <groupId>org.jboss.osgi</groupId>
+    <artifactId>jboss-osgi-parent</artifactId>
+    <version>1.0.6</version>
+  </parent>
+
+  <!-- Subversion -->
+  <scm>
+    <connection>scm:git:git://github.com/jbosgi/jbosgi-msc-framework.git</connection>
+    <developerConnection>scm:git:git@github.com:jbosgi/jbosgi-msc-framework.git</developerConnection>
+    <url>http://github.com/jbosgi/jbosgi-msc-framework</url>
+  </scm>
+
+  <!-- Properties -->
+  <properties>
+    <version.jboss.msc>1.0.0.CR1-SNAPSHOT</version.jboss.msc>
+    <version.jboss.osgi.framework>1.0.0.Alpha5</version.jboss.osgi.framework>
+    <version.jboss.osgi.spi>1.0.8</version.jboss.osgi.spi>
+    <version.jboss.osgi.vfs>1.0.0</version.jboss.osgi.vfs>
+    <version.jboss.vfs>3.0.0.CR5</version.jboss.vfs>
+    <version.mockito>1.8.4</version.mockito>
+    <version.osgi>4.2.0</version.osgi>
+  </properties>
+
+  <!-- Dependencies -->
+  <dependencies>
+    <dependency>
+      <groupId>org.jboss.msc</groupId>
+      <artifactId>jboss-msc</artifactId>
+      <version>${version.jboss.msc}</version>
+    </dependency>
+
+    <!-- JBoss OSGi Dependencies -->
+    <dependency>
+      <groupId>org.jboss.osgi.framework</groupId>
+      <artifactId>jboss-osgi-framework-metadata</artifactId>
+      <version>${version.jboss.osgi.framework}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.osgi</groupId>
+      <artifactId>jboss-osgi-spi</artifactId>
+      <version>${version.jboss.osgi.spi}</version>
+    </dependency>
+
+    <!-- OSGi Dependencies -->
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.core</artifactId>
+      <version>${version.osgi}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.compendium</artifactId>
+      <version>${version.osgi}</version>
+    </dependency>
+
+
+    <!-- Test Dependencies -->
+    <dependency>
+      <groupId>org.jboss.osgi.vfs</groupId>
+      <artifactId>jboss-osgi-vfs30</artifactId>
+      <version>${version.jboss.osgi.vfs}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <version>${version.mockito}</version>
+    </dependency>
+  </dependencies>
+
+</project>
