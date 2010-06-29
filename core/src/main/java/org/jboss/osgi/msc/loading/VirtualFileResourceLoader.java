@@ -21,6 +21,9 @@
 */
 package org.jboss.osgi.msc.loading;
 
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -32,10 +35,11 @@ import org.jboss.modules.ClassSpec;
 import org.jboss.modules.PackageSpec;
 import org.jboss.modules.Resource;
 import org.jboss.osgi.spi.NotImplementedException;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 
 /**
- * A host bundle.
+ * An {@link ResourceLoader} that is backed by a {@link VirtualFile} pointing to an archive.
  * 
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
@@ -54,7 +58,24 @@ public class VirtualFileResourceLoader extends AbstractResourceLoader
    @Override
    public ClassSpec getClassSpec(String name) throws IOException
    {
-      throw new NotImplementedException();
+      String fileName = name.replace('.', File.separatorChar) + ".class";
+      VirtualFile child = virtualFile.getChild(fileName);
+      if (child == null)
+         return null;
+      
+      ClassSpec spec = new ClassSpec();
+      InputStream is = child.openStream();
+      try
+      {
+         ByteArrayOutputStream os = new ByteArrayOutputStream(1024);
+         VFSUtils.copyStream(is, os);
+         spec.setBytes(os.toByteArray());
+         return spec;
+      }
+      finally
+      {
+         safeClose(is);
+      }
    }
 
    @Override
@@ -87,6 +108,19 @@ public class VirtualFileResourceLoader extends AbstractResourceLoader
    public Collection<String> getPaths()
    {
       return Collections.singleton("/");
+   }
+
+   private static void safeClose(final Closeable closeable)
+   {
+      if (closeable != null)
+         try
+         {
+            closeable.close();
+         }
+         catch (IOException e)
+         {
+            // ignore
+         }
    }
 
    static class VirtualResource implements Resource

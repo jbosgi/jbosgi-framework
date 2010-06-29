@@ -25,12 +25,14 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleContentLoader;
 import org.jboss.modules.ModuleContentLoader.Builder;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
+import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.msc.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.msc.metadata.OSGiMetaData;
@@ -41,13 +43,18 @@ import org.jboss.osgi.msc.metadata.OSGiMetaData;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-class ModuleManager extends ModuleLoader
+class ModuleManager extends ModuleLoader implements ModuleLoaderSelector
 {
-   /** The registered manager plugins */
+   // Provide logging
+   private static final Logger log = Logger.getLogger(ModuleManager.class);
+   
+   // The registered modules
    private Map<ModuleIdentifier, Module> modules = Collections.synchronizedMap(new LinkedHashMap<ModuleIdentifier, Module>());
    
    ModuleManager(BundleManager bundleManager)
    {
+      // Make sure this ModuleLoader is used
+      Module.setModuleLoaderSelector(this);
    }
 
    static ModuleSpec createModuleSpec(HostBundle bundleState)
@@ -65,17 +72,22 @@ class ModuleManager extends ModuleLoader
    }
    
    @Override
+   public ModuleLoader getCurrentLoader()
+   {
+      return this;
+   }
+   
+   @Override
    protected Module findModule(ModuleIdentifier moduleIdentifier) throws ModuleLoadException
    {
       return modules.get(moduleIdentifier);
    }
 
-   Module createModule(HostBundle bundleState) throws ModuleLoadException
+   Module createModule(ModuleSpec moduleSpec) throws ModuleLoadException
    {
-      ModuleSpec moduleSpec = bundleState.getModuleSpec();
       Module module = defineModule(moduleSpec);
       modules.put(module.getIdentifier(), module);
-      return bundleState.setModule(module);
+      return module;
    }
    
    Module destroyModule(HostBundle bundleState) throws ModuleLoadException

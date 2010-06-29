@@ -66,7 +66,7 @@ public class BundleManager
    /** The registered manager plugins */
    private Map<Class<?>, Plugin> plugins = Collections.synchronizedMap(new LinkedHashMap<Class<?>, Plugin>());
    // The module loader
-   private ModuleManager moduleLoader;
+   private ModuleManager moduleManager;
    // The Framework state
    private FrameworkState frameworkState;
 
@@ -76,7 +76,7 @@ public class BundleManager
       addBundleState(frameworkState.getSystemBundle());
 
       // Create the ModuleLoader
-      moduleLoader = new ModuleManager(this);
+      moduleManager = new ModuleManager(this);
       
       // Register the framework plugins
       // [TODO] Externalize plugin registration
@@ -282,16 +282,17 @@ public class BundleManager
       }
       
       List<HostBundle> resolvedBundles = new ArrayList<HostBundle>();
-      for (HostBundle aux : unresolvedBundles)
+      for (HostBundle bundleState : unresolvedBundles)
       {
          try
          {
-            moduleLoader.createModule(aux);
-            resolvedBundles.add(aux);
+            Module module = moduleManager.createModule(bundleState.getModuleSpec());
+            bundleState.setModule(module);
+            resolvedBundles.add(bundleState);
          }
          catch (ModuleLoadException ex)
          {
-            throw new BundleException("Cannot load module: " + aux, ex);
+            throw new BundleException("Cannot load module: " + bundleState, ex);
          }
       }
       return Collections.unmodifiableList(resolvedBundles);

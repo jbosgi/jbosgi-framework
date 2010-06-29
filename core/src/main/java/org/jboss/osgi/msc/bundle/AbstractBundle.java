@@ -295,4 +295,28 @@ public abstract class AbstractBundle implements Bundle
    {
       throw new NotImplementedException();
    }
+
+   @Override
+   public int hashCode()
+   {
+      return (symbolicName + ":" + version).hashCode();
+   }
+
+   @Override
+   public boolean equals(Object obj)
+   {
+      if (obj instanceof AbstractBundle == false)
+         return false;
+      if (obj == this)
+         return true;
+      
+      AbstractBundle other = (AbstractBundle)obj;
+      return getBundleId() == other.getBundleId();
+   }
+
+   @Override
+   public String toString()
+   {
+      return symbolicName + ":" + version;
+   }
 }
