@@ -37,7 +37,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
+import org.osgi.framework.Version;
 
 /**
  * A test that deployes a bundle and verifies its state
@@ -45,10 +45,10 @@ import org.osgi.framework.ServiceReference;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public class SimpleTestCase extends OSGiFrameworkTest 
+public class SimpleBundleTestCase extends OSGiFrameworkTest 
 {
    @Test
-   public void testBundleInstall() throws Exception
+   public void testBundleLifecycle() throws Exception
    {
       // Bundle-SymbolicName: simple-bundle
       final JavaArchive archive = Archives.create("simple-bundle", JavaArchive.class);
@@ -60,12 +60,14 @@ public class SimpleTestCase extends OSGiFrameworkTest
             OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
             builder.addBundleManifestVersion(2);
             builder.addBundleSymbolicName(archive.getName());
+            builder.addBundleVersion("1.0.0");
             //builder.addBundleActivator(SimpleActivator.class);
             return builder.openStream();
          }
       });
       Bundle bundle = installBundle(archive);
       assertEquals("simple-bundle", bundle.getSymbolicName());
+      assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
       assertEquals("Bundle state", Bundle.INSTALLED, bundle.getState());
 
       bundle.start();

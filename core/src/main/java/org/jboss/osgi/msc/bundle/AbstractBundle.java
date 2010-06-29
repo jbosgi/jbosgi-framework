@@ -35,6 +35,7 @@ import org.jboss.osgi.msc.metadata.OSGiMetaData;
 import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VFSUtils;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -68,10 +69,13 @@ public abstract class AbstractBundle implements Bundle
 
    public static AbstractBundle createBundle(BundleManager bundleManager, Deployment dep) throws BundleException
    {
+      VirtualFile rootFile = dep.getRoot();
+      String location = dep.getLocation();
+      
       Manifest manifest;
       try
       {
-         manifest = VFSUtils.getManifest(dep.getRoot());
+         manifest = VFSUtils.getManifest(rootFile);
       }
       catch (IOException ex)
       {
@@ -82,7 +86,7 @@ public abstract class AbstractBundle implements Bundle
       if (metadata.getFragmentHost() != null)
          throw new NotImplementedException("Fragments not support");
       
-      AbstractBundle bundleState = new HostBundle(bundleManager, metadata, dep.getLocation());
+      AbstractBundle bundleState = new HostBundle(bundleManager, metadata, location, rootFile);
       return bundleState;
    }
    
@@ -250,12 +254,6 @@ public abstract class AbstractBundle implements Bundle
    void setVersion(Version version)
    {
       this.version = version;
-   }
-
-   @Override
-   public Class<?> loadClass(String name) throws ClassNotFoundException
-   {
-      throw new NotImplementedException();
    }
 
    @Override

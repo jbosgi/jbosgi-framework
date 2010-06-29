@@ -23,8 +23,13 @@ package org.jboss.osgi.msc.bundle;
 
 import java.io.InputStream;
 
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleLoadException;
+import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.msc.metadata.OSGiMetaData;
 import org.jboss.osgi.spi.NotImplementedException;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -41,17 +46,24 @@ public class HostBundle extends AbstractBundle
 {
    private long bundleId;
    private String location;
+   private VirtualFile rootFile;
    private OSGiMetaData metadata;
    private BundleActivator bundleActivator;
+   private ModuleSpec moduleSpec;
+   private Module module;
 
-   public HostBundle(BundleManager bundleManager, OSGiMetaData metadata, String location)
+   public HostBundle(BundleManager bundleManager, OSGiMetaData metadata, String location, VirtualFile rootFile) throws BundleException
    {
       super(bundleManager, metadata.getBundleSymbolicName());
-      this.metadata = metadata;
-      this.location = location;
       if (location == null)
          throw new IllegalArgumentException("Null location");
+      if (rootFile == null)
+         throw new IllegalArgumentException("Null rootFile");
 
+      this.metadata = metadata;
+      this.location = location;
+      this.rootFile = rootFile;
+      
       // Set the bundle version if available
       String versionstr = metadata.getBundleVersion();
       if (versionstr != null)
@@ -59,11 +71,43 @@ public class HostBundle extends AbstractBundle
          Version version = Version.parseVersion(versionstr);
          setVersion(version);
       }
+      
+      // Create the ModuleSpec
+      moduleSpec = ModuleManager.createModuleSpec(this);
    }
 
-   public OSGiMetaData getOSGiMetaData()
+   VirtualFile getRootFile()
+   {
+      return rootFile;
+   }
+
+   OSGiMetaData getOSGiMetaData()
    {
       return metadata;
+   }
+
+   ModuleSpec getModuleSpec()
+   {
+      return moduleSpec;
+   }
+
+   Module getModule()
+   {
+      return module;
+   }
+
+   Module setModule(Module module)
+   {
+      if (module == null)
+         throw new IllegalArgumentException("Null module");
+      this.module = module;
+      changeState(RESOLVED);
+      return module;
+   }
+
+   void resetModule()
+   {
+      this.module = null;
    }
 
    @Override
@@ -84,8 +128,29 @@ public class HostBundle extends AbstractBundle
       return new HostBundleContext(this, null);
    }
 
+   @Override
+   public Class<?> loadClass(String className) throws ClassNotFoundException
+   {
+      try
+      {
+         ModuleIdentifier identifier = getModule().getIdentifier();
+         return Module.loadClass(identifier, className);
+      }
+      catch (ModuleLoadException ex)
+      {
+         throw new ClassNotFoundException("Cannot load class: " + className, ex);
+      }
+   }
+
    void startInternal() throws BundleException
    {
+      if (getState() == Bundle.UNINSTALLED)
+         throw new IllegalStateException("Cannot start an uninstalled bundle: " + this);
+      
+      // Resolve all installed bundles 
+      if (getState() == Bundle.INSTALLED)
+         getBundleManager().resolveBundles(null);
+      
       // This bundle's state is set to STARTING
       // A bundle event of type BundleEvent.STARTING is fired
       createBundleContext();

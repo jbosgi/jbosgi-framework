@@ -64,6 +64,13 @@ public class SystemBundle extends AbstractBundle
    }
 
    @Override
+   public Class<?> loadClass(String name) throws ClassNotFoundException
+   {
+      ClassLoader classLoader = getClass().getClassLoader();
+      return classLoader.loadClass(name);
+   }
+
+   @Override
    void startInternal() throws BundleException
    {
       createBundleContext();

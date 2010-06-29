@@ -34,6 +34,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleLoadException;
+import org.jboss.modules.ModuleLoader;
+import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.msc.plugin.BundleStoragePlugin;
@@ -57,17 +61,22 @@ public class BundleManager
    // Provide logging
    private static final Logger log = Logger.getLogger(BundleManager.class);
 
-   // The Framework state
-   private FrameworkState frameworkState;
    // Maps bundleId to Bundle
    private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
    /** The registered manager plugins */
    private Map<Class<?>, Plugin> plugins = Collections.synchronizedMap(new LinkedHashMap<Class<?>, Plugin>());
+   // The module loader
+   private ModuleManager moduleLoader;
+   // The Framework state
+   private FrameworkState frameworkState;
 
    public BundleManager(Map<String, String> props)
    {
       frameworkState = new FrameworkState(this, props);
       addBundleState(frameworkState.getSystemBundle());
+
+      // Create the ModuleLoader
+      moduleLoader = new ModuleManager(this);
       
       // Register the framework plugins
       // [TODO] Externalize plugin registration
@@ -253,6 +262,39 @@ public class BundleManager
       bundleState = AbstractBundle.createBundle(this, dep);
       addBundleState(bundleState);
       return bundleState;
+   }
+   
+   List<HostBundle> resolveBundles(List<HostBundle> bundles) throws BundleException
+   {
+      // Get the list of unresolved bundles
+      List<HostBundle> unresolvedBundles = new ArrayList<HostBundle>();
+      if (bundles == null)
+      {
+         for (AbstractBundle aux : getBundles())
+         {
+            if (aux instanceof HostBundle && aux.getState() == Bundle.INSTALLED)
+               unresolvedBundles.add((HostBundle)aux);
+         }
+      }
+      else
+      {
+         unresolvedBundles.addAll(bundles);
+      }
+      
+      List<HostBundle> resolvedBundles = new ArrayList<HostBundle>();
+      for (HostBundle aux : unresolvedBundles)
+      {
+         try
+         {
+            moduleLoader.createModule(aux);
+            resolvedBundles.add(aux);
+         }
+         catch (ModuleLoadException ex)
+         {
+            throw new BundleException("Cannot load module: " + aux, ex);
+         }
+      }
+      return Collections.unmodifiableList(resolvedBundles);
    }
    
    private URL getLocationURL(String location) throws BundleException
