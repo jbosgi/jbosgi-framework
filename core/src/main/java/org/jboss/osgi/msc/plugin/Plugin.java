@@ -19,40 +19,23 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.msc.launch;
+package org.jboss.osgi.msc.plugin;
 
-// $Id$
-
-import java.util.Map;
-
-import org.jboss.logging.Logger;
 import org.jboss.osgi.msc.bundle.BundleManager;
-import org.osgi.framework.launch.Framework;
-import org.osgi.framework.launch.FrameworkFactory;
+
 
 /**
- * An impementation of an OSGi FrameworkFactory
+ * The base of all framework plugins
  * 
  * @author thomas.diesler@jboss.com
- * @since 21-Aug-2009
+ * @since 20-Aug-2009
  */
-public class FrameworkFactoryImpl implements FrameworkFactory
+public interface Plugin
 {
-   // Provide logging
-   final Logger log = Logger.getLogger(FrameworkFactoryImpl.class);
-   
-   // Main entry point used by FrameworkLaunchTestCase
-   public static void main(String[] args) throws Exception
-   {
-      FrameworkFactoryImpl factory = new FrameworkFactoryImpl();
-      Framework framework = factory.newFramework(null);
-      framework.start();
-   }
+   BundleManager getBundleManager();
 
-   @SuppressWarnings({ "rawtypes", "unchecked" })
-   public Framework newFramework(Map props)
-   {
-      BundleManager bundleManager = new BundleManager(props);
-      return new FrameworkImpl(bundleManager);
-   }
+   <T extends Plugin> T getPlugin(Class<T> clazz);
+
+   <T extends Plugin> T getOptionalPlugin(Class<T> clazz);
+
 }

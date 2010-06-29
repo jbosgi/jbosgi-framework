@@ -19,40 +19,26 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.msc.launch;
+package org.jboss.osgi.msc.plugin;
 
 // $Id$
 
-import java.util.Map;
+import java.io.File;
 
-import org.jboss.logging.Logger;
-import org.jboss.osgi.msc.bundle.BundleManager;
-import org.osgi.framework.launch.Framework;
-import org.osgi.framework.launch.FrameworkFactory;
+import org.osgi.framework.Bundle;
 
 /**
- * An impementation of an OSGi FrameworkFactory
+ * An abstraction of a bundle persistent storage system.
  * 
  * @author thomas.diesler@jboss.com
- * @since 21-Aug-2009
+ * @since 18-Aug-2009
  */
-public class FrameworkFactoryImpl implements FrameworkFactory
+public interface BundleStoragePlugin extends Plugin 
 {
-   // Provide logging
-   final Logger log = Logger.getLogger(FrameworkFactoryImpl.class);
+   void cleanStorage(String propValue);
    
-   // Main entry point used by FrameworkLaunchTestCase
-   public static void main(String[] args) throws Exception
-   {
-      FrameworkFactoryImpl factory = new FrameworkFactoryImpl();
-      Framework framework = factory.newFramework(null);
-      framework.start();
-   }
+   File getStorageDir(Bundle bundle);
+   
+   File getDataFile(Bundle bundle, String filename);
 
-   @SuppressWarnings({ "rawtypes", "unchecked" })
-   public Framework newFramework(Map props)
-   {
-      BundleManager bundleManager = new BundleManager(props);
-      return new FrameworkImpl(bundleManager);
-   }
 }

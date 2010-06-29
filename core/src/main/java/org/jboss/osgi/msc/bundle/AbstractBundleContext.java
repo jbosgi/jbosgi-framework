@@ -24,6 +24,7 @@ package org.jboss.osgi.msc.bundle;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Dictionary;
+import java.util.Map;
 
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
@@ -46,12 +47,15 @@ import org.osgi.framework.ServiceRegistration;
 public abstract class AbstractBundleContext implements BundleContext
 {
    private AbstractBundle bundleState;
+   private Map<String, String> bundleProperties;
    
-   AbstractBundleContext(AbstractBundle bundle)
+   AbstractBundleContext(AbstractBundle bundle, Map<String, String> props)
    {
-      this.bundleState = bundle;
       if (bundle == null)
          throw new IllegalArgumentException("Null bundle");
+      
+      this.bundleState = bundle;
+      this.bundleProperties = props;
    }
 
    BundleManager getBundleManager()
@@ -62,7 +66,9 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public String getProperty(String key)
    {
-      throw new NotImplementedException();
+      if (bundleProperties == null)
+         return null;
+      return bundleProperties.get(key);
    }
 
    @Override

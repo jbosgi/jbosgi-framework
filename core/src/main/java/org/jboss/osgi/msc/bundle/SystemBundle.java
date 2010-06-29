@@ -22,6 +22,7 @@
 package org.jboss.osgi.msc.bundle;
 
 import java.io.InputStream;
+import java.util.Map;
 
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.BundleException;
@@ -36,9 +37,12 @@ import org.osgi.framework.Constants;
  */
 public class SystemBundle extends AbstractBundle
 {
-   public SystemBundle(BundleManager bundleManager)
+   private Map<String, String> systemProperties;
+   
+   public SystemBundle(BundleManager bundleManager, Map<String, String> props)
    {
       super(bundleManager, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+      this.systemProperties = props;
    }
 
    @Override
@@ -56,7 +60,7 @@ public class SystemBundle extends AbstractBundle
    @Override
    AbstractBundleContext createContextInternal()
    {
-      return new SystemBundleContext(this);
+      return new SystemBundleContext(this, systemProperties);
    }
 
    @Override

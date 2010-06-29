@@ -29,6 +29,7 @@ import java.io.InputStream;
 import org.jboss.logging.Logger;
 import org.jboss.osgi.msc.bundle.BundleManager;
 import org.jboss.osgi.msc.bundle.BundleWrapper;
+import org.jboss.osgi.msc.bundle.FrameworkState;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.launch.Framework;
@@ -44,52 +45,47 @@ public final class FrameworkImpl extends BundleWrapper implements Framework
    // Provide logging
    final Logger log = Logger.getLogger(FrameworkImpl.class);
    
-   private BundleManager bundleManager;
+   private FrameworkState frameworkState;
    
    FrameworkImpl(BundleManager bundleManager)
    {
       super(bundleManager.getSystemBundle());
-      this.bundleManager = bundleManager;
-   }
-
-   public BundleManager getBundleManager()
-   {
-      return bundleManager;
+      this.frameworkState = bundleManager.getFrameworkState();
    }
 
    public void init() throws BundleException
    {
-      bundleManager.initFramework();
+      frameworkState.initFramework();
    }
 
    @Override
    public void start() throws BundleException
    {
-      bundleManager.startFramework();
+      frameworkState.startFramework();
    }
 
    @Override
    public void start(int options) throws BundleException
    {
-      bundleManager.startFramework();
+      frameworkState.startFramework();
    }
 
    @Override
    public void stop() throws BundleException
    {
-      bundleManager.stopFramework();
+      frameworkState.stopFramework();
    }
 
    @Override
    public void stop(int options) throws BundleException
    {
-      bundleManager.stopFramework();
+      frameworkState.stopFramework();
    }
 
    @Override
    public void update() throws BundleException
    {
-      bundleManager.restartFramework();
+      frameworkState.restartFramework();
    }
 
    /**
@@ -112,7 +108,7 @@ public final class FrameworkImpl extends BundleWrapper implements Framework
 
       // [TODO] The method returns immediately to the caller after initiating the following steps
 
-      bundleManager.restartFramework();
+      frameworkState.restartFramework();
    }
 
    /**
@@ -131,6 +127,6 @@ public final class FrameworkImpl extends BundleWrapper implements Framework
     */
    public FrameworkEvent waitForStop(long timeout) throws InterruptedException
    {
-      return bundleManager.waitForStop(timeout);
+      return frameworkState.waitForStop(timeout);
    }
 }

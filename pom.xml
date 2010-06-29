@@ -40,7 +40,8 @@
   <properties>
     <version.jboss.common.core>2.2.17.GA</version.jboss.common.core>
     <version.jboss.msc>1.0.0.CR1-SNAPSHOT</version.jboss.msc>
-    <version.jboss.osgi.spi>1.0.8</version.jboss.osgi.spi>
+    <version.jboss.osgi.deployment>1.0.2</version.jboss.osgi.deployment>
+    <version.jboss.osgi.spi>1.0.9-SNAPSHOT</version.jboss.osgi.spi>
     <version.jboss.osgi.vfs>1.0.0</version.jboss.osgi.vfs>
     <version.mockito>1.8.4</version.mockito>
     <version.osgi>4.2.0</version.osgi>
@@ -61,6 +62,11 @@
       </dependency>
 
       <!-- JBoss OSGi Dependencies -->
+      <dependency>
+        <groupId>org.jboss.osgi.deployment</groupId>
+        <artifactId>jboss-osgi-deployment</artifactId>
+        <version>${version.jboss.osgi.deployment}</version>
+      </dependency>
       <dependency>
         <groupId>org.jboss.osgi</groupId>
         <artifactId>jboss-osgi-spi</artifactId>

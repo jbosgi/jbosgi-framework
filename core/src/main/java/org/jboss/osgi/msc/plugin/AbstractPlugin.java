@@ -19,40 +19,42 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.msc.launch;
+package org.jboss.osgi.msc.plugin;
 
-// $Id$
+//$Id$
 
-import java.util.Map;
-
-import org.jboss.logging.Logger;
 import org.jboss.osgi.msc.bundle.BundleManager;
-import org.osgi.framework.launch.Framework;
-import org.osgi.framework.launch.FrameworkFactory;
 
 /**
- * An impementation of an OSGi FrameworkFactory
+ * The base class of all framework plugins.
  * 
  * @author thomas.diesler@jboss.com
- * @since 21-Aug-2009
+ * @since 18-Aug-2009
  */
-public class FrameworkFactoryImpl implements FrameworkFactory
+public abstract class AbstractPlugin implements Plugin
 {
-   // Provide logging
-   final Logger log = Logger.getLogger(FrameworkFactoryImpl.class);
-   
-   // Main entry point used by FrameworkLaunchTestCase
-   public static void main(String[] args) throws Exception
+   private BundleManager bundleManager;
+
+   public AbstractPlugin(BundleManager bundleManager)
    {
-      FrameworkFactoryImpl factory = new FrameworkFactoryImpl();
-      Framework framework = factory.newFramework(null);
-      framework.start();
+      if (bundleManager == null)
+         throw new IllegalArgumentException("Null bundleManager");
+      
+      this.bundleManager = bundleManager;
+   }
+   
+   public BundleManager getBundleManager()
+   {
+      return bundleManager;
    }
 
-   @SuppressWarnings({ "rawtypes", "unchecked" })
-   public Framework newFramework(Map props)
+   public <T extends Plugin> T getPlugin(Class<T> clazz)
    {
-      BundleManager bundleManager = new BundleManager(props);
-      return new FrameworkImpl(bundleManager);
+      return bundleManager.getPlugin(clazz);
+   }
+   
+   public <T extends Plugin> T getOptionalPlugin(Class<T> clazz)
+   {
+      return bundleManager.getOptionalPlugin(clazz);
    }
 }

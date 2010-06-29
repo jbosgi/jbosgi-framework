@@ -28,8 +28,13 @@ import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.jar.Manifest;
 
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.msc.metadata.OSGiMetaData;
+import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.spi.NotImplementedException;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -61,6 +66,26 @@ public abstract class AbstractBundle implements Bundle
          throw new IllegalArgumentException("Null symbolicName");
    }
 
+   public static AbstractBundle createBundle(BundleManager bundleManager, Deployment dep) throws BundleException
+   {
+      Manifest manifest;
+      try
+      {
+         manifest = VFSUtils.getManifest(dep.getRoot());
+      }
+      catch (IOException ex)
+      {
+         throw new BundleException("Cannot obtain manifest from: " + dep);
+      }
+      
+      OSGiMetaData metadata = new OSGiManifestMetaData(manifest);
+      if (metadata.getFragmentHost() != null)
+         throw new NotImplementedException("Fragments not support");
+      
+      AbstractBundle bundleState = new HostBundle(bundleManager, metadata, dep.getLocation());
+      return bundleState;
+   }
+   
    /**
     * Assert that the given bundle is an instance of AbstractBundle
     * @throws IllegalArgumentException if the given bundle is not an instance of AbstractBundle

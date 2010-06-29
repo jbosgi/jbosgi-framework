@@ -21,6 +21,8 @@
 */
 package org.jboss.osgi.msc.bundle;
 
+import java.util.Map;
+
 import org.osgi.framework.BundleContext;
 
 /**
@@ -31,8 +33,8 @@ import org.osgi.framework.BundleContext;
  */
 public class SystemBundleContext extends AbstractBundleContext
 {
-   public SystemBundleContext(SystemBundle bundle)
+   public SystemBundleContext(SystemBundle bundle, Map<String, String> props)
    {
-      super(bundle);
+      super(bundle, props);
    }
 }

@@ -25,22 +25,40 @@ package org.jboss.osgi.msc.framework.bundle;
 import static org.junit.Assert.assertNotNull;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.osgi.framework.BundleException;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.launch.Framework;
 
 /**
- * Test various bootstrap options.
+ * Test framework bootstrap options.
  * 
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
 public class FrameworkLaunchTestCase extends OSGiFrameworkTest
 {
-   @Test
-   public void testBootstrapURL() throws BundleException
+   @BeforeClass
+   public static void beforeClass()
    {
-      Framework framework = getFramework();
+      // prevent framework creation
+   }
+   
+   @Test
+   public void frameworkStartStop() throws Exception
+   {
+      Framework framework = createFramework();
       assertNotNull("Framework not null", framework);
+      
+      assertBundleState(Bundle.INSTALLED, framework.getState());
+      
+      framework.start();
+      assertBundleState(Bundle.ACTIVE, framework.getState());
+      
+      framework.stop();
+      assertBundleState(Bundle.ACTIVE, framework.getState());
+      
+      framework.waitForStop(2000);
+      assertBundleState(Bundle.RESOLVED, framework.getState());
    }
 }

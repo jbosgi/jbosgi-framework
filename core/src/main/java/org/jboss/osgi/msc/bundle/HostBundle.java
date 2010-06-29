@@ -27,10 +27,9 @@ import org.jboss.osgi.msc.metadata.OSGiMetaData;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
-
-
 
 /**
  * A host bundle.
@@ -43,7 +42,8 @@ public class HostBundle extends AbstractBundle
    private long bundleId;
    private String location;
    private OSGiMetaData metadata;
-   
+   private BundleActivator bundleActivator;
+
    public HostBundle(BundleManager bundleManager, OSGiMetaData metadata, String location)
    {
       super(bundleManager, metadata.getBundleSymbolicName());
@@ -51,7 +51,7 @@ public class HostBundle extends AbstractBundle
       this.location = location;
       if (location == null)
          throw new IllegalArgumentException("Null location");
-      
+
       // Set the bundle version if available
       String versionstr = metadata.getBundleVersion();
       if (versionstr != null)
@@ -65,7 +65,7 @@ public class HostBundle extends AbstractBundle
    {
       return metadata;
    }
-   
+
    @Override
    public long getBundleId()
    {
@@ -81,7 +81,7 @@ public class HostBundle extends AbstractBundle
    @Override
    AbstractBundleContext createContextInternal()
    {
-      return new HostBundleContext(this);
+      return new HostBundleContext(this, null);
    }
 
    void startInternal() throws BundleException
@@ -106,7 +106,7 @@ public class HostBundle extends AbstractBundle
             if (result instanceof BundleActivator == false)
                throw new BundleException(bundleActivatorClassName + " is not an implementation of " + BundleActivator.class.getName());
 
-            BundleActivator bundleActivator = (BundleActivator)result;
+            bundleActivator = (BundleActivator)result;
             bundleActivator.start(getBundleContext());
          }
 
@@ -148,9 +148,67 @@ public class HostBundle extends AbstractBundle
       }
    }
 
-   void stopInternal()
+   void stopInternal() throws BundleException
    {
-      throw new NotImplementedException();
+      // If this bundle's state is UNINSTALLED then an IllegalStateException is thrown. 
+      if (getState() == Bundle.UNINSTALLED)
+         throw new IllegalStateException("Bundle already uninstalled: " + this);
+
+      // [TODO] If this bundle is in the process of being activated or deactivated then this method must wait for activation or deactivation 
+      // to complete before continuing. If this does not occur in a reasonable time, a BundleException is thrown to indicate this bundle 
+      // was unable to be stopped.
+
+      // [TODO] If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to to Stopped. 
+      // When the Framework is restarted and this bundle's autostart setting is Stopped, this bundle must not be automatically started. 
+
+      // If this bundle's state is not STARTING or ACTIVE then this method returns immediately
+      if (getState() != Bundle.STARTING && getState() != Bundle.ACTIVE)
+         return;
+
+      // This bundle's state is set to STOPPING
+      // A bundle event of type BundleEvent.STOPPING is fired
+      int priorState = getState();
+      changeState(STOPPING);
+
+      // If this bundle's state was ACTIVE prior to setting the state to STOPPING, 
+      // the BundleActivator.stop(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, if one is specified, is called. 
+      // If that method throws an exception, this method must continue to stop this bundle and a BundleException must be thrown after completion 
+      // of the remaining steps.
+      Throwable rethrow = null;
+      if (priorState == Bundle.ACTIVE)
+      {
+         BundleContext bundleContext = getBundleContext();
+         if (bundleActivator != null && bundleContext != null)
+         {
+            try
+            {
+               bundleActivator.stop(bundleContext);
+            }
+            catch (Throwable t)
+            {
+               rethrow = t;
+            }
+         }
+      }
+
+      // [TODO] Any services registered by this bundle must be unregistered
+      //ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
+      //plugin.unregisterServices(this);
+
+      // [TODO] Any listeners registered by this bundle must be removed
+
+      // If this bundle's state is UNINSTALLED, because this bundle was uninstalled while the 
+      // BundleActivator.stop method was running, a BundleException must be thrown
+      if (getState() == Bundle.UNINSTALLED)
+         throw new BundleException("Bundle uninstalled during activator stop: " + this);
+
+      // This bundle's state is set to RESOLVED
+      // A bundle event of type BundleEvent.STOPPED is fired
+      destroyBundleContext();
+      changeState(RESOLVED);
+
+      if (rethrow != null)
+         throw new BundleException("Error during stop of bundle: " + this, rethrow);
    }
 
    void updateInternal(InputStream input)
@@ -158,8 +216,29 @@ public class HostBundle extends AbstractBundle
       throw new NotImplementedException();
    }
 
-   void uninstallInternal()
+   void uninstallInternal() throws BundleException
    {
-      throw new NotImplementedException();
+      BundleManager bundleManager = getBundleManager();
+      if (bundleManager.getBundleById(getBundleId()) == null)
+         throw new BundleException("Not installed: " + this);
+
+      // If this bundle's state is ACTIVE, STARTING or STOPPING, this bundle is stopped 
+      // as described in the Bundle.stop method.
+      int state = getState();
+      if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING)
+      {
+         try
+         {
+            stopInternal();
+         }
+         catch (Exception ex)
+         {
+            // If Bundle.stop throws an exception, a Framework event of type FrameworkEvent.ERROR is
+            // fired containing the exception
+            bundleManager.fireError(this, "Error stopping bundle: " + this, ex);
+         }
+      }
+
+      bundleManager.removeBundleState(this);
    }
 }
