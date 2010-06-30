@@ -136,9 +136,10 @@ public class VirtualFileResourceLoader extends AbstractResourceLoader
       return Collections.singleton("/");
    }
 
-   private static void safeClose(final Closeable closeable)
+   private void safeClose(final Closeable closeable)
    {
       if (closeable != null)
+      {
          try
          {
             closeable.close();
@@ -147,6 +148,7 @@ public class VirtualFileResourceLoader extends AbstractResourceLoader
          {
             // ignore
          }
+      }
    }
 
    static class VirtualResource implements Resource

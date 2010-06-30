@@ -33,7 +33,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -56,12 +55,9 @@ import org.osgi.framework.BundleException;
  */
 public class BundleManager
 {
-   // Provide logging
-   private static final Logger log = Logger.getLogger(BundleManager.class);
-
    // Maps bundleId to Bundle
    private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
-   /** The registered manager plugins */
+   /// The registered manager plugins 
    private Map<Class<?>, Plugin> plugins = Collections.synchronizedMap(new LinkedHashMap<Class<?>, Plugin>());
    // The module loader
    private ModuleManager moduleManager;
@@ -74,7 +70,7 @@ public class BundleManager
       addBundleState(frameworkState.getSystemBundle());
 
       // Create the ModuleLoader
-      moduleManager = new ModuleManager(this);
+      moduleManager = new ModuleManager();
       
       // Register the framework plugins
       // [TODO] Externalize plugin registration
@@ -110,6 +106,9 @@ public class BundleManager
 
    AbstractBundle getBundleById(long bundleId)
    {
+      if (bundleId == 0)
+         return getSystemBundle();
+      
       return bundleMap.get(bundleId);
    }
 

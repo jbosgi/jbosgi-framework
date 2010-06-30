@@ -34,9 +34,12 @@ import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.osgi.msc.loading.SystemResourceLoader;
 import org.jboss.osgi.msc.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.msc.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.VirtualFile;
+import org.osgi.framework.Constants;
+import org.osgi.framework.Version;
 
 /**
  * Build the {@link ModuleSpec} from {@link OSGiMetaData}.
@@ -44,59 +47,87 @@ import org.jboss.osgi.vfs.VirtualFile;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-class ModuleManager extends ModuleLoader implements ModuleLoaderSelector
+public class ModuleManager extends ModuleLoader
 {
    // Provide logging
    private static final Logger log = Logger.getLogger(ModuleManager.class);
-   
+
    // The registered modules
    private Map<ModuleIdentifier, Module> modules = Collections.synchronizedMap(new LinkedHashMap<ModuleIdentifier, Module>());
-   
-   ModuleManager(BundleManager bundleManager)
+   // The system module identifier
+   private ModuleIdentifier systemModuleIdentifier;
+   // The system module
+   private Module systemModule;
+
+   public ModuleManager()
    {
       // Make sure this ModuleLoader is used
-      Module.setModuleLoaderSelector(this);
+      final ModuleLoader moduleLoader = this;
+      Module.setModuleLoaderSelector(new ModuleLoaderSelector()
+      {
+         @Override
+         public ModuleLoader getCurrentLoader()
+         {
+            return moduleLoader;
+         }
+      });
    }
 
-   ModuleSpec createModuleSpec(OSGiMetaData metadata, VirtualFile rootFile)
+   public ModuleIdentifier getSystemModuleIdentifier()
+   {
+      if (systemModuleIdentifier == null)
+         systemModuleIdentifier = new ModuleIdentifier("jbosgi", Constants.SYSTEM_BUNDLE_SYMBOLICNAME, Version.emptyVersion.toString());
+      
+      return systemModuleIdentifier;
+   }
+
+   public ModuleSpec createModuleSpec(OSGiMetaData metadata, VirtualFile rootFile)
    {
       String symbolicName = metadata.getBundleSymbolicName();
       String version = metadata.getBundleVersion();
       ModuleIdentifier moduleIdentifier = new ModuleIdentifier("jbosgi", symbolicName, version);
       ModuleSpec moduleSpec = new ModuleSpec(moduleIdentifier);
-      
+
       Builder builder = ModuleContentLoader.build();
       builder.add("/", new VirtualFileResourceLoader(rootFile));
       moduleSpec.setContentLoader(builder.create());
-      
+
+      log.debug("Created ModuleSpec: " + moduleSpec);
       return moduleSpec;
    }
-   
-   @Override
-   public ModuleLoader getCurrentLoader()
-   {
-      return this;
-   }
-   
+
    @Override
    protected Module findModule(ModuleIdentifier moduleIdentifier) throws ModuleLoadException
    {
       return modules.get(moduleIdentifier);
    }
 
-   Module createModule(ModuleSpec moduleSpec) throws ModuleLoadException
+   public Module getSystemModule() throws ModuleLoadException
+   {
+      if (systemModule == null)
+      {
+         ModuleSpec sysModuleSpec = new ModuleSpec(getSystemModuleIdentifier());
+         Builder builder = ModuleContentLoader.build();
+         builder.add("/", new SystemResourceLoader(BundleManager.class.getClassLoader()));
+         sysModuleSpec.setContentLoader(builder.create());
+         systemModule = createModule(sysModuleSpec);
+      }
+      return systemModule;
+   }
+
+   public Module createModule(ModuleSpec moduleSpec) throws ModuleLoadException
    {
       Module module = defineModule(moduleSpec);
       modules.put(module.getIdentifier(), module);
       return module;
    }
-   
-   Module destroyModule(HostBundle bundleState) throws ModuleLoadException
+
+   public Module destroyModule(HostBundle bundleState) throws ModuleLoadException
    {
       Module module = bundleState.getModule();
       if (module == null)
          throw new IllegalStateException("Cannot obtain module for: " + bundleState);
-      
+
       modules.remove(module.getIdentifier());
       bundleState.resetModule();
       return module;
