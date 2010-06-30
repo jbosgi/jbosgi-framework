@@ -27,6 +27,10 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.InputStream;
 
+import javax.inject.Inject;
+
+import org.jboss.arquillian.api.Deployment;
+import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.osgi.msc.simple.bundle.SimpleActivator;
 import org.jboss.osgi.msc.simple.bundle.SimpleService;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
@@ -34,10 +38,11 @@ import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archives;
 import org.jboss.shrinkwrap.api.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
 
 /**
@@ -46,10 +51,12 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public class SimpleBundleTestCase extends OSGiFrameworkTest 
+@Ignore
+@RunWith(Arquillian.class)
+public class SimpleArquillianBundleTestCase extends OSGiFrameworkTest 
 {
-   @Test
-   public void testBundleLifecycle() throws Exception
+   @Deployment
+   public static JavaArchive createdeployment()
    {
       // Bundle-Version: 1.0.0
       // Bundle-SymbolicName: simple-bundle
@@ -68,10 +75,18 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest
             return builder.openStream();
          }
       });
-      Bundle bundle = installBundle(archive);
+      return archive;
+   }
+   
+   @Inject
+   public Bundle bundle;
+   
+   @Test
+   public void testBundleLifecycle() throws Exception
+   {
       assertEquals("simple-bundle", bundle.getSymbolicName());
       assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
-      assertEquals("Bundle state", Bundle.INSTALLED, bundle.getState());
+      assertEquals("Bundle state", Bundle.RESOLVED, bundle.getState());
 
       bundle.start();
       assertEquals("Bundle state", Bundle.ACTIVE, bundle.getState());
@@ -79,11 +94,9 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest
       BundleContext context = bundle.getBundleContext();
       assertNotNull("BundleContext not null", context);
 
-      ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
-      assertNotNull("ServiceReference not null", sref);
-      
-      Object service = context.getService(sref);
-      assertEquals(SimpleService.class.getName(), service.getClass().getName());
+      // getServiceReference from bundle context
+      //ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
+      //assertNotNull("ServiceReference not null", sref);
 
       bundle.stop();
       assertEquals("Bundle state", Bundle.RESOLVED, bundle.getState());

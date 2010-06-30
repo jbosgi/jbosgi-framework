@@ -38,8 +38,10 @@ import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.msc.plugin.BundleStoragePlugin;
-import org.jboss.osgi.msc.plugin.BundleStoragePluginImpl;
 import org.jboss.osgi.msc.plugin.Plugin;
+import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
+import org.jboss.osgi.msc.plugin.internal.BundleStoragePluginImpl;
+import org.jboss.osgi.msc.plugin.internal.ServiceManagerPluginImpl;
 import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -75,6 +77,7 @@ public class BundleManager
       // Register the framework plugins
       // [TODO] Externalize plugin registration
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
+      plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
    }
 
    public ModuleManager getModuleManager()

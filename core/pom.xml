@@ -1,20 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- ====================================================================== -->
-<!--                                                                        -->
-<!-- JBoss, the OpenSource J2EE webOS                                       -->
-<!--                                                                        -->
-<!-- Distributable under LGPL license.                                      -->
-<!-- See terms of license at http://www.gnu.org.                            -->
-<!--                                                                        -->
+<!-- -->
+<!-- JBoss, the OpenSource J2EE webOS -->
+<!-- -->
+<!-- Distributable under LGPL license. -->
+<!-- See terms of license at http://www.gnu.org. -->
+<!-- -->
 <!-- ====================================================================== -->
 
-<!-- 
-  Set these VM properties in your IDE debugger 
-
-  -Dlog4j.output.dir=${workspace_loc:jbosgi-msc-core/target} 
-  -Dlog4j.configuration=log4j-console.xml 
--->
+<!-- Set these VM properties in your IDE debugger -Dlog4j.output.dir=${workspace_loc:jbosgi-msc-core/target} -Dlog4j.configuration=log4j-console.xml -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
@@ -59,6 +54,18 @@
     </dependency>
 
     <!-- Test Dependencies -->
+    <dependency>
+      <groupId>org.jboss.arquillian.container</groupId>
+      <artifactId>arquillian-osgi-embedded-4.2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.arquillian.protocol</groupId>
+      <artifactId>arquillian-protocol-jmx</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.arquillian</groupId>
+      <artifactId>arquillian-junit</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.jboss.osgi.vfs</groupId>
       <artifactId>jboss-osgi-vfs30</artifactId>

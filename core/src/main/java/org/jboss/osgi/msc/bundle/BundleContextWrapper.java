@@ -24,10 +24,7 @@ package org.jboss.osgi.msc.bundle;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Dictionary;
-import java.util.Map;
 
-import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -40,174 +37,133 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
 /**
- * The base of all {@link BundleContext} implementations.
+ * BundleContextWrapper.
  * 
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public abstract class AbstractBundleContext implements BundleContext
+public class BundleContextWrapper implements BundleContext
 {
-   private AbstractBundle bundleState;
-   private Map<String, String> bundleProperties;
+   /** The bundle state */
+   private BundleContext delegate;
 
-   AbstractBundleContext(AbstractBundle bundle, Map<String, String> props)
+   public BundleContextWrapper(AbstractBundleContext context)
    {
-      if (bundle == null)
-         throw new IllegalArgumentException("Null bundle");
-
-      this.bundleState = bundle;
-      this.bundleProperties = props;
+      if (context == null)
+         throw new IllegalArgumentException("Null context");
+      this.delegate = context;
    }
 
-   BundleManager getBundleManager()
-   {
-      return bundleState.getBundleManager();
-   }
-
-   @Override
    public String getProperty(String key)
    {
-      if (bundleProperties == null)
-         return null;
-      return bundleProperties.get(key);
+      return delegate.getProperty(key);
    }
 
-   @Override
    public Bundle getBundle()
    {
-      return bundleState.getBundleWrapper();
+      return delegate.getBundle();
    }
 
-   @Override
    public Bundle installBundle(String location, InputStream input) throws BundleException
    {
-      BundleManager bundleManager = getBundleManager();
-      return bundleManager.installBundle(location, input);
+      return delegate.installBundle(location, input);
    }
 
-   @Override
    public Bundle installBundle(String location) throws BundleException
    {
-      BundleManager bundleManager = getBundleManager();
-      return bundleManager.installBundle(location);
+      return delegate.installBundle(location);
    }
 
-   @Override
    public Bundle getBundle(long id)
    {
-      throw new NotImplementedException();
+      return delegate.getBundle(id);
    }
 
-   @Override
    public Bundle[] getBundles()
    {
-      throw new NotImplementedException();
+      return delegate.getBundles();
    }
 
-   @Override
    public void addServiceListener(ServiceListener listener, String filter) throws InvalidSyntaxException
    {
-      throw new NotImplementedException();
+      delegate.addServiceListener(listener, filter);
    }
 
-   @Override
    public void addServiceListener(ServiceListener listener)
    {
-      throw new NotImplementedException();
+      delegate.addServiceListener(listener);
    }
 
-   @Override
    public void removeServiceListener(ServiceListener listener)
    {
-      throw new NotImplementedException();
+      delegate.removeServiceListener(listener);
    }
 
-   @Override
    public void addBundleListener(BundleListener listener)
    {
-      throw new NotImplementedException();
+      delegate.addBundleListener(listener);
    }
 
-   @Override
    public void removeBundleListener(BundleListener listener)
    {
-      throw new NotImplementedException();
+      delegate.removeBundleListener(listener);
    }
 
-   @Override
    public void addFrameworkListener(FrameworkListener listener)
    {
-      throw new NotImplementedException();
+      delegate.addFrameworkListener(listener);
    }
 
-   @Override
    public void removeFrameworkListener(FrameworkListener listener)
    {
-      throw new NotImplementedException();
+      delegate.removeFrameworkListener(listener);
    }
 
-   @Override
    @SuppressWarnings("rawtypes")
    public ServiceRegistration registerService(String clazz, Object service, Dictionary properties)
    {
-      return registerService(new String[] { clazz }, service, properties);
+      return delegate.registerService(clazz, service, properties);
    }
 
-   @Override
    @SuppressWarnings("rawtypes")
    public ServiceRegistration registerService(String[] clazzes, Object service, Dictionary properties)
    {
-      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
-      ServiceState serviceState = plugin.registerService(bundleState, clazzes, service, properties);
-      return new ServiceRegistrationWrapper(serviceState);
+      return delegate.registerService(clazzes, service, properties);
    }
 
-   @Override
    public ServiceReference[] getServiceReferences(String clazz, String filter) throws InvalidSyntaxException
    {
-      return null;
+      return delegate.getServiceReferences(clazz, filter);
    }
 
-   @Override
    public ServiceReference[] getAllServiceReferences(String clazz, String filter) throws InvalidSyntaxException
    {
-      return null;
+      return delegate.getAllServiceReferences(clazz, filter);
    }
 
-   @Override
    public ServiceReference getServiceReference(String clazz)
    {
-      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
-      ServiceState serviceState = plugin.getServiceReference(bundleState, clazz);
-      if (serviceState == null)
-         return null;
-      
-      return new ServiceReferenceWrapper(serviceState);
+      return delegate.getServiceReference(clazz);
    }
 
-   @Override
-   public Object getService(ServiceReference sref)
+   public Object getService(ServiceReference reference)
    {
-      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
-      Object service = plugin.getService(bundleState, ServiceState.assertServiceState(sref));
-      return service;
+      return delegate.getService(reference);
    }
 
-   @Override
    public boolean ungetService(ServiceReference reference)
    {
-      throw new NotImplementedException();
+      return delegate.ungetService(reference);
    }
 
-   @Override
    public File getDataFile(String filename)
    {
-      throw new NotImplementedException();
+      return delegate.getDataFile(filename);
    }
 
-   @Override
    public Filter createFilter(String filter) throws InvalidSyntaxException
    {
-      throw new NotImplementedException();
+      return delegate.createFilter(filter);
    }
+
 }

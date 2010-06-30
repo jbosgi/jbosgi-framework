@@ -37,7 +37,7 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
 
 /**
- * OSGiBundleWrapper.
+ * BundleWrapper.
  * 
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
@@ -47,12 +47,6 @@ public class BundleWrapper implements Bundle
    /** The bundle state */
    private AbstractBundle bundleState;
 
-   /**
-    * Create a new OSGiBundleImpl.
-    * 
-    * @param bundle the bundle state
-    * @throws IllegalArgumentException for a null parameter
-    */
    public BundleWrapper(AbstractBundle bundleState)
    {
       if (bundleState == null)

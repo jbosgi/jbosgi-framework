@@ -52,7 +52,7 @@ public abstract class AbstractBundle implements Bundle
 {
    private BundleManager bundleManager;
    private BundleWrapper bundleWrapper;
-   private BundleContext bundleContext;
+   private AbstractBundleContext bundleContext;
    private AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
    private Version version = Version.emptyVersion;
    private String symbolicName;
@@ -133,6 +133,12 @@ public abstract class AbstractBundle implements Bundle
    }
 
    public BundleContext getBundleContext()
+   {
+      // [TODO] return new BundleContextWrapper(bundleContext);
+      return bundleContext;
+   }
+
+   BundleContext getBundleContextInternal()
    {
       return bundleContext;
    }

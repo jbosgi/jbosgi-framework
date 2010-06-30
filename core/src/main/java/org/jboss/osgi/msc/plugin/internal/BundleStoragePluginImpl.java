@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.msc.plugin;
+package org.jboss.osgi.msc.plugin.internal;
 
 //$Id$
 
@@ -29,6 +29,8 @@ import java.io.IOException;
 import org.jboss.logging.Logger;
 import org.jboss.osgi.msc.bundle.BundleManager;
 import org.jboss.osgi.msc.bundle.FrameworkState;
+import org.jboss.osgi.msc.plugin.AbstractPlugin;
+import org.jboss.osgi.msc.plugin.BundleStoragePlugin;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 
