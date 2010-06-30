@@ -49,11 +49,12 @@ import org.junit.Test;
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
-public class ResourceLoaderTestCase 
+public class VirtualFileResourceLoaderTestCase 
 {
    @Test
    public void testClassSpec() throws Exception
    {
+      ResourceLoader loader = new VirtualFileResourceLoader(rootFile);
       ClassSpec result = loader.getClassSpec(SimpleActivator.class.getName());
       assertNotNull("ClassSpec not null", result);
    }
@@ -61,6 +62,7 @@ public class ResourceLoaderTestCase
    @Test
    public void testPackageSpec() throws Exception
    {
+      ResourceLoader loader = new VirtualFileResourceLoader(rootFile);
       PackageSpec result = loader.getPackageSpec(SimpleActivator.class.getPackage().getName());
       assertNotNull("PackageSpec not null", result);
    }
@@ -68,12 +70,12 @@ public class ResourceLoaderTestCase
    @Test
    public void testResource() throws Exception
    {
+      ResourceLoader loader = new VirtualFileResourceLoader(rootFile);
       Resource result = loader.getResource("META-INF/MANIFEST.MF");
       assertNotNull("Resource not null", result);
    }
    
    private static VirtualFile rootFile;
-   private static ResourceLoader loader;
    
    @BeforeClass
    public static void beforeClass() throws Exception
@@ -97,7 +99,6 @@ public class ResourceLoaderTestCase
       });
       
       rootFile = OSGiTestHelper.toVirtualFile(archive);
-      loader = new VirtualFileResourceLoader(rootFile);
    }
    
    @AfterClass

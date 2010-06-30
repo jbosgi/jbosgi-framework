@@ -149,14 +149,14 @@ public abstract class AbstractBundleContext implements BundleContext
    @SuppressWarnings("rawtypes")
    public ServiceRegistration registerService(String[] clazzes, Object service, Dictionary properties)
    {
-      throw new NotImplementedException();
+      return null;
    }
 
    @Override
    @SuppressWarnings("rawtypes")
    public ServiceRegistration registerService(String clazz, Object service, Dictionary properties)
    {
-      throw new NotImplementedException();
+      return null;
    }
 
    @Override

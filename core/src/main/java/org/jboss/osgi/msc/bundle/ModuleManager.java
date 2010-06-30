@@ -23,23 +23,26 @@ package org.jboss.osgi.msc.bundle;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleContentLoader;
 import org.jboss.modules.ModuleContentLoader.Builder;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleLoaderSelector;
+import org.jboss.modules.ModuleLoaderSpec;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.osgi.msc.loading.SystemResourceLoader;
+import org.jboss.osgi.msc.loading.FrameworkModuleClassLoader;
 import org.jboss.osgi.msc.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.msc.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Constants;
-import org.osgi.framework.Version;
 
 /**
  * Build the {@link ModuleSpec} from {@link OSGiMetaData}.
@@ -53,11 +56,12 @@ public class ModuleManager extends ModuleLoader
    private static final Logger log = Logger.getLogger(ModuleManager.class);
 
    // The registered modules
+   // [FEEDBACK] ModuleManager needs to maintain this duplicate map to remove modules on Bundle.uninstall() 
    private Map<ModuleIdentifier, Module> modules = Collections.synchronizedMap(new LinkedHashMap<ModuleIdentifier, Module>());
-   // The system module identifier
-   private ModuleIdentifier systemModuleIdentifier;
-   // The system module
-   private Module systemModule;
+   // The framework module identifier
+   private ModuleIdentifier frameworkModuleIdentifier;
+   // The framework module
+   private Module frameworkModule;
 
    public ModuleManager()
    {
@@ -73,12 +77,12 @@ public class ModuleManager extends ModuleLoader
       });
    }
 
-   public ModuleIdentifier getSystemModuleIdentifier()
+   public ModuleIdentifier getFrameworkModuleIdentifier()
    {
-      if (systemModuleIdentifier == null)
-         systemModuleIdentifier = new ModuleIdentifier("jbosgi", Constants.SYSTEM_BUNDLE_SYMBOLICNAME, Version.emptyVersion.toString());
-      
-      return systemModuleIdentifier;
+      if (frameworkModuleIdentifier == null)
+         frameworkModuleIdentifier = new ModuleIdentifier("jbosgi", Constants.SYSTEM_BUNDLE_SYMBOLICNAME, null);
+
+      return frameworkModuleIdentifier;
    }
 
    public ModuleSpec createModuleSpec(OSGiMetaData metadata, VirtualFile rootFile)
@@ -88,8 +92,16 @@ public class ModuleManager extends ModuleLoader
       ModuleIdentifier moduleIdentifier = new ModuleIdentifier("jbosgi", symbolicName, version);
       ModuleSpec moduleSpec = new ModuleSpec(moduleIdentifier);
 
+      // Add the framework module as required dependency
+      List<DependencySpec> dependencies = moduleSpec.getDependencies();
+      DependencySpec frameworkDependency = new DependencySpec();
+      frameworkDependency.setModuleIdentifier(getFrameworkModuleIdentifier());
+      frameworkDependency.setExport(true);
+      dependencies.add(frameworkDependency);
+
+      // Add the bundle's {@link ResourceLoader}
       Builder builder = ModuleContentLoader.build();
-      builder.add("/", new VirtualFileResourceLoader(rootFile));
+      builder.add(moduleIdentifier.toString(), new VirtualFileResourceLoader(rootFile));
       moduleSpec.setContentLoader(builder.create());
 
       log.debug("Created ModuleSpec: " + moduleSpec);
@@ -102,34 +114,47 @@ public class ModuleManager extends ModuleLoader
       return modules.get(moduleIdentifier);
    }
 
-   public Module getSystemModule() throws ModuleLoadException
+   public Module createFrameworkModule() throws ModuleLoadException
    {
-      if (systemModule == null)
+      if (frameworkModule != null)
+         throw new IllegalStateException("Framework module already created");
+
+      final ModuleLoader moduleLoader = this;
+      frameworkModule = new Module(frameworkModuleIdentifier, new ModuleLoaderSpec()
       {
-         ModuleSpec sysModuleSpec = new ModuleSpec(getSystemModuleIdentifier());
-         Builder builder = ModuleContentLoader.build();
-         builder.add("/", new SystemResourceLoader(BundleManager.class.getClassLoader()));
-         sysModuleSpec.setContentLoader(builder.create());
-         systemModule = createModule(sysModuleSpec);
-      }
-      return systemModule;
+         @Override
+         public ModuleLoader getModuleLoader(Module module)
+         {
+            return moduleLoader;
+         }
+         
+         @Override
+         public ModuleClassLoader getModuleClassLoader(Module module)
+         {
+            return new FrameworkModuleClassLoader(module, BundleManager.class.getClassLoader());
+         }
+      });
+      registerModule(frameworkModule);
+      return frameworkModule;
    }
 
    public Module createModule(ModuleSpec moduleSpec) throws ModuleLoadException
    {
+      if (frameworkModule == null)
+         createFrameworkModule();
+      
       Module module = defineModule(moduleSpec);
-      modules.put(module.getIdentifier(), module);
+      registerModule(module);
       return module;
    }
 
-   public Module destroyModule(HostBundle bundleState) throws ModuleLoadException
+   private void registerModule(Module module) throws ModuleLoadException
    {
-      Module module = bundleState.getModule();
-      if (module == null)
-         throw new IllegalStateException("Cannot obtain module for: " + bundleState);
+      modules.put(module.getIdentifier(), module);
+   }
 
+   public void unregisterModule(Module module)
+   {
       modules.remove(module.getIdentifier());
-      bundleState.resetModule();
-      return module;
    }
 }

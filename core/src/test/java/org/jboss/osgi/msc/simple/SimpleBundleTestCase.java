@@ -63,7 +63,7 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest
             builder.addBundleManifestVersion(2);
             builder.addBundleSymbolicName(archive.getName());
             builder.addBundleVersion("1.0.0");
-            //builder.addBundleActivator(SimpleActivator.class);
+            builder.addBundleActivator(SimpleActivator.class);
             return builder.openStream();
          }
       });

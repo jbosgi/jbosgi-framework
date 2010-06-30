@@ -23,6 +23,7 @@ package org.jboss.osgi.msc.loader;
 
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.InputStream;
 import java.util.jar.Manifest;
@@ -45,6 +46,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.osgi.framework.BundleActivator;
 
 /**
  * Test the bundle content loader.
@@ -52,7 +54,7 @@ import org.junit.Test;
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
-public class ModuleClassLoaderTestCase 
+public class OSGiModuleClassLoaderTestCase 
 {
    @Test
    public void testLoadClass() throws Exception
@@ -60,6 +62,7 @@ public class ModuleClassLoaderTestCase
       ClassLoader loader = new OSGiModuleClassLoader(module);
       Class<?> result = loader.loadClass(SimpleActivator.class.getName());
       assertNotNull("Class loaded", result);
+      assertTrue("Is assignable", BundleActivator.class.isAssignableFrom(result));
    }
    
    private static Module module;
