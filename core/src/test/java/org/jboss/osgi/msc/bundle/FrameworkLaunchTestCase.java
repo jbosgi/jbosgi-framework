@@ -19,26 +19,46 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.msc.framework.simple.bundle;
+package org.jboss.osgi.msc.bundle;
 
-//$Id$
 
-import org.osgi.framework.BundleContext;
+import static org.junit.Assert.assertNotNull;
+
+import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.launch.Framework;
 
 /**
- * A SimpleService
+ * Test framework bootstrap options.
  * 
  * @author thomas.diesler@jboss.com
- * @since 24-Apr-2009
+ * @since 29-Apr-2010
  */
-public class SimpleService
+public class FrameworkLaunchTestCase extends OSGiFrameworkTest
 {
-   public SimpleService(BundleContext context)
+   @BeforeClass
+   public static void beforeClass()
    {
+      // prevent framework creation
    }
-
-   public String echo(String msg)
+   
+   @Test
+   public void frameworkStartStop() throws Exception
    {
-      return msg;
+      Framework framework = createFramework();
+      assertNotNull("Framework not null", framework);
+      
+      assertBundleState(Bundle.INSTALLED, framework.getState());
+      
+      framework.start();
+      assertBundleState(Bundle.ACTIVE, framework.getState());
+      
+      framework.stop();
+      assertBundleState(Bundle.ACTIVE, framework.getState());
+      
+      framework.waitForStop(2000);
+      assertBundleState(Bundle.RESOLVED, framework.getState());
    }
 }

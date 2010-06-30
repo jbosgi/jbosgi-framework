@@ -36,8 +36,6 @@ import java.util.Map;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.modules.ModuleLoader;
-import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.msc.plugin.BundleStoragePlugin;
@@ -81,6 +79,11 @@ public class BundleManager
       // Register the framework plugins
       // [TODO] Externalize plugin registration
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
+   }
+
+   public ModuleManager getModuleManager()
+   {
+      return moduleManager;
    }
 
    public FrameworkState getFrameworkState()

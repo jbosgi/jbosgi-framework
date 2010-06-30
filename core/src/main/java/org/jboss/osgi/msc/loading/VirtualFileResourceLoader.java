@@ -29,6 +29,8 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
 import org.jboss.modules.AbstractResourceLoader;
 import org.jboss.modules.ClassSpec;
@@ -62,7 +64,7 @@ public class VirtualFileResourceLoader extends AbstractResourceLoader
       VirtualFile child = virtualFile.getChild(fileName);
       if (child == null)
          return null;
-      
+
       ClassSpec spec = new ClassSpec();
       InputStream is = child.openStream();
       try
@@ -81,7 +83,31 @@ public class VirtualFileResourceLoader extends AbstractResourceLoader
    @Override
    public PackageSpec getPackageSpec(String name) throws IOException
    {
-      throw new NotImplementedException();
+      PackageSpec spec = new PackageSpec();
+      Manifest manifest = VFSUtils.getManifest(virtualFile);
+      if (manifest == null)
+      {
+         return spec;
+      }
+      Attributes mainAttribute = manifest.getAttributes(name);
+      Attributes entryAttribute = manifest.getAttributes(name);
+      spec.setSpecTitle(getDefinedAttribute(Attributes.Name.SPECIFICATION_TITLE, entryAttribute, mainAttribute));
+      spec.setSpecVersion(getDefinedAttribute(Attributes.Name.SPECIFICATION_VERSION, entryAttribute, mainAttribute));
+      spec.setSpecVendor(getDefinedAttribute(Attributes.Name.SPECIFICATION_VENDOR, entryAttribute, mainAttribute));
+      spec.setImplTitle(getDefinedAttribute(Attributes.Name.IMPLEMENTATION_TITLE, entryAttribute, mainAttribute));
+      spec.setImplVersion(getDefinedAttribute(Attributes.Name.IMPLEMENTATION_VERSION, entryAttribute, mainAttribute));
+      spec.setImplVendor(getDefinedAttribute(Attributes.Name.IMPLEMENTATION_VENDOR, entryAttribute, mainAttribute));
+      if (Boolean.parseBoolean(getDefinedAttribute(Attributes.Name.SEALED, entryAttribute, mainAttribute)))
+      {
+         spec.setSealBase(virtualFile.toURL());
+      }
+      return spec;
+   }
+
+   private static String getDefinedAttribute(Attributes.Name name, Attributes entryAttribute, Attributes mainAttribute)
+   {
+      final String value = entryAttribute == null ? null : entryAttribute.getValue(name);
+      return value == null ? mainAttribute == null ? null : mainAttribute.getValue(name) : value;
    }
 
    @Override

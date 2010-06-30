@@ -36,6 +36,7 @@ import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.msc.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.msc.metadata.OSGiMetaData;
+import org.jboss.osgi.vfs.VirtualFile;
 
 /**
  * Build the {@link ModuleSpec} from {@link OSGiMetaData}.
@@ -57,15 +58,15 @@ class ModuleManager extends ModuleLoader implements ModuleLoaderSelector
       Module.setModuleLoaderSelector(this);
    }
 
-   static ModuleSpec createModuleSpec(HostBundle bundleState)
+   ModuleSpec createModuleSpec(OSGiMetaData metadata, VirtualFile rootFile)
    {
-      String symbolicName = bundleState.getSymbolicName();
-      String version = bundleState.getVersion().toString();
+      String symbolicName = metadata.getBundleSymbolicName();
+      String version = metadata.getBundleVersion();
       ModuleIdentifier moduleIdentifier = new ModuleIdentifier("jbosgi", symbolicName, version);
       ModuleSpec moduleSpec = new ModuleSpec(moduleIdentifier);
       
       Builder builder = ModuleContentLoader.build();
-      builder.add("/", new VirtualFileResourceLoader(bundleState.getRootFile()));
+      builder.add("/", new VirtualFileResourceLoader(rootFile));
       moduleSpec.setContentLoader(builder.create());
       
       return moduleSpec;

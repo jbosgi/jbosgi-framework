@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.msc.framework.simple;
+package org.jboss.osgi.msc.simple;
 
 
 import static org.junit.Assert.assertEquals;
@@ -27,8 +27,8 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.InputStream;
 
-import org.jboss.osgi.msc.framework.simple.bundle.SimpleActivator;
-import org.jboss.osgi.msc.framework.simple.bundle.SimpleService;
+import org.jboss.osgi.msc.simple.bundle.SimpleActivator;
+import org.jboss.osgi.msc.simple.bundle.SimpleService;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archives;
@@ -50,7 +50,9 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest
    @Test
    public void testBundleLifecycle() throws Exception
    {
+      // Bundle-Version: 1.0.0
       // Bundle-SymbolicName: simple-bundle
+      // Bundle-Activator: org.jboss.osgi.msc.framework.simple.bundle.SimpleActivator
       final JavaArchive archive = Archives.create("simple-bundle", JavaArchive.class);
       archive.addClasses(SimpleService.class, SimpleActivator.class);
       archive.setManifest(new Asset()

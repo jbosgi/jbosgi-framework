@@ -46,7 +46,6 @@ public class HostBundle extends AbstractBundle
 {
    private long bundleId;
    private String location;
-   private VirtualFile rootFile;
    private OSGiMetaData metadata;
    private BundleActivator bundleActivator;
    private ModuleSpec moduleSpec;
@@ -62,7 +61,6 @@ public class HostBundle extends AbstractBundle
 
       this.metadata = metadata;
       this.location = location;
-      this.rootFile = rootFile;
       
       // Set the bundle version if available
       String versionstr = metadata.getBundleVersion();
@@ -73,12 +71,8 @@ public class HostBundle extends AbstractBundle
       }
       
       // Create the ModuleSpec
-      moduleSpec = ModuleManager.createModuleSpec(this);
-   }
-
-   VirtualFile getRootFile()
-   {
-      return rootFile;
+      ModuleManager moduleManager = bundleManager.getModuleManager();
+      moduleSpec = moduleManager.createModuleSpec(metadata, rootFile);
    }
 
    OSGiMetaData getOSGiMetaData()
