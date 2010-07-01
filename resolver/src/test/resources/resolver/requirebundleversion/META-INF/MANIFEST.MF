@@ -1,0 +1,3 @@
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: requirebundleversion
+Require-Bundle: simpleexport;bundle-version="[0.0.0,1.0.0]"

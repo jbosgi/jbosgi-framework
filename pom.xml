@@ -125,5 +125,6 @@
   <modules>
     <module>metadata</module>
     <module>core</module>
+    <module>resolver</module>
   </modules>
 </project>

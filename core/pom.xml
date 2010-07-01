@@ -33,6 +33,11 @@
       <version>${version}</version>
     </dependency>
     <dependency>
+      <groupId>org.jboss.osgi.msc</groupId>
+      <artifactId>jbosgi-msc-resolver</artifactId>
+      <version>${version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.jboss.msc</groupId>
       <artifactId>jboss-msc</artifactId>
     </dependency>

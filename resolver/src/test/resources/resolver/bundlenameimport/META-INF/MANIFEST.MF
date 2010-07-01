@@ -1,0 +1,3 @@
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: bundlenameimport
+Import-Package: org.jboss.test.osgi.framework.classloader.support.a;bundle-symbolic-name=simpleexport

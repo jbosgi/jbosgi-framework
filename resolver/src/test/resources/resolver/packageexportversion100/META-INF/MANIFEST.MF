@@ -1,0 +1,3 @@
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: packageexportversion100
+Export-Package: org.jboss.test.osgi.framework.classloader.support.a;version=1.0.0

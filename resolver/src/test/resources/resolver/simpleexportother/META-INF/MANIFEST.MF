@@ -1,0 +1,3 @@
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: simpleexportother
+Export-Package: org.jboss.test.osgi.framework.classloader.support.a

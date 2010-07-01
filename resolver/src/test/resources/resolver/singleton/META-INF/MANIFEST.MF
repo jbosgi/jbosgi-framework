@@ -1,0 +1,3 @@
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: sigleton;singleton:=true
+Export-Package: org.jboss.test.osgi.framework.classloader.support.a

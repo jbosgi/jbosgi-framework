@@ -1,0 +1,3 @@
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: versionimportversionfails
+Import-Package: org.jboss.test.osgi.framework.classloader.support.a;version="[3.0,4.0)"
