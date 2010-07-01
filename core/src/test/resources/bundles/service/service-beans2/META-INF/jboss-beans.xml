@@ -1,6 +1,6 @@
 <deployment xmlns="urn:jboss:bean-deployer:2.0">
 
-  <bean name="C" class="org.jboss.test.osgi.service.support.c.C">
+  <bean name="C" class="org.jboss.test.osgi.framework.service.support.c.C">
     <property name="a">
       <inject>
         <qualifier content="filter" type="required">(a=b)</qualifier>

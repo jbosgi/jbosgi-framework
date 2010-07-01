@@ -4,4 +4,4 @@ Implementation-Version: test
 Implementation-Vendor: jboss.org
 Bundle-ManifestVersion: 2
 Bundle-Name: Simple1
-Bundle-SymbolicName: org.jboss.test.osgi.simple1
+Bundle-SymbolicName: org.jboss.test.osgi.framework.simple1

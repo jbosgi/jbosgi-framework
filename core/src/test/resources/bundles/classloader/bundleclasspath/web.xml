@@ -4,7 +4,7 @@
 
   <servlet>
     <servlet-name>servlet</servlet-name>
-    <servlet-class>org.jboss.test.osgi.classloader.some.servlet</servlet-class>
+    <servlet-class>org.jboss.test.osgi.framework.classloader.some.servlet</servlet-class>
     <init-param>
       <param-name>initProp</param-name>
       <param-value>SomeValue</param-value>

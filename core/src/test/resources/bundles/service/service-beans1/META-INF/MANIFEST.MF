@@ -3,5 +3,5 @@ Implementation-Title: JBoss OSGi tests
 Implementation-Version: test
 Implementation-Vendor: jboss.org
 Bundle-Name: Beans1
-Bundle-SymbolicName: org.jboss.test.osgi.beans1
-Export-Package: org.jboss.test.osgi.service.support.a
+Bundle-SymbolicName: org.jboss.test.osgi.framework.beans1
+Export-Package: org.jboss.test.osgi.framework.service.support.a

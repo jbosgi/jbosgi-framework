@@ -4,7 +4,7 @@ Created-By: Ales Justin
 Implementation-Title: JBoss OSGi tests
 Implementation-Version: 2.0.0.beta2
 Implementation-Vendor: jboss.org
-Bundle-Activator: org.jboss.test.osgi.bundle.metadata.BundleActivator
+Bundle-Activator: org.jboss.test.osgi.framework.bundle.metadata.BundleActivator
 Bundle-ClassPath: test.jar,mc.jar,seam.jar
 Bundle-Description: TestHeadersManifest
 Bundle-Localization: OSGI-INF/l10n/bundle

@@ -1,7 +1,0 @@
-<deployment xmlns="urn:jboss:bean-deployer:2.0">
-  <start-level xmlns="urn:jboss:startlevel:1.0"> 
-    <bundle symbolic-name="some-other-bundle" version="1.2.3" start-level="5"/> 
-    <bundle symbolic-name="lifecycle-order02" version="1.1.2" start-level="3"/>
-    <bundle symbolic-name="lifecycle-order03" start-level="4"/>
-  </start-level>
-</deployment>

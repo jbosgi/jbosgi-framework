@@ -2,5 +2,5 @@
 
 Bundle-SymbolicName: simple-bundle
 
-Bundle-Activator: org.jboss.test.osgi.simple.bundleA.SimpleActivator
-Export-Package: org.jboss.test.osgi.simple.bundleA
+Bundle-Activator: org.jboss.test.osgi.framework.simple.bundleA.SimpleActivator
+Export-Package: org.jboss.test.osgi.framework.simple.bundleA

@@ -2,5 +2,5 @@
 
 Bundle-SymbolicName: simple-logservice-bundle
 
-Bundle-Activator: org.jboss.test.osgi.simple.bundleB.SimpleLogServiceActivator
-Private-Package: org.jboss.test.osgi.simple.bundleB
+Bundle-Activator: org.jboss.test.osgi.framework.simple.bundleB.SimpleLogServiceActivator
+Private-Package: org.jboss.test.osgi.framework.simple.bundleB
