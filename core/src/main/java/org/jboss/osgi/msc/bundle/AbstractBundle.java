@@ -53,7 +53,6 @@ public abstract class AbstractBundle implements Bundle
 {
    private static ServiceManagerPlugin serviceManager; 
    private BundleManager bundleManager;
-   private BundleWrapper bundleWrapper;
    private AbstractBundleContext bundleContext;
    private AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
    private Version version = Version.emptyVersion;
@@ -117,10 +116,7 @@ public abstract class AbstractBundle implements Bundle
 
    public Bundle getBundleWrapper()
    {
-      if (bundleWrapper == null)
-         bundleWrapper = new BundleWrapper(this);
-      
-      return bundleWrapper;
+      return new BundleWrapper(this);
    }
    
    public void changeState(int newstate)
@@ -136,13 +132,9 @@ public abstract class AbstractBundle implements Bundle
 
    public BundleContext getBundleContext()
    {
-      // [TODO] return new BundleContextWrapper(bundleContext);
-      return bundleContext;
-   }
-
-   BundleContext getBundleContextInternal()
-   {
-      return bundleContext;
+      if (bundleContext == null)
+         return null;
+      return new BundleContextWrapper(bundleContext);
    }
 
    void createBundleContext()

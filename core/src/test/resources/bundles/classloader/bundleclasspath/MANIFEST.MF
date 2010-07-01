@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: bundle-classpath
+Bundle-ClassPath: .,bundle-classpath-c.jar,WEB-INF/classes,WEB-INF/lib/bundle-classpath-b.jar

@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: lifecycle-bundle-stop-in-activator
+Export-Package: org.jboss.test.osgi.bundle.support.y
+Bundle-Activator: org.jboss.test.osgi.bundle.support.y.Activator
+

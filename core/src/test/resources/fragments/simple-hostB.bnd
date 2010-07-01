@@ -1,0 +1,7 @@
+# bnd build -classpath target/test-classes -output target/test-libs/fragments-simple-hostB.jar src/test/resources/fragments/simple-hostB.bnd
+
+Bundle-SymbolicName: simple-hostB
+Bundle-Activator: org.jboss.test.osgi.fragments.hostB.HostBActivator
+Export-Package: org.jboss.test.osgi.fragments.subA
+Private-Package: org.jboss.test.osgi.fragments.hostB 
+

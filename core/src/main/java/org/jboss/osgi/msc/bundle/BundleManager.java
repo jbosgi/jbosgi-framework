@@ -62,8 +62,8 @@ public class BundleManager
    private AtomicLong identityGenerator = new AtomicLong();
    // Maps bundleId to Bundle
    private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
-   /// The registered manager plugins 
-   private Map<Class<?>, Plugin> plugins = Collections.synchronizedMap(new LinkedHashMap<Class<?>, Plugin>());
+   /// The registered plugins 
+   private Map<Class<? extends Plugin>, Plugin> plugins = Collections.synchronizedMap(new LinkedHashMap<Class<? extends Plugin>, Plugin>());
    // The module loader
    private ModuleManager moduleManager;
    // The Framework state
@@ -71,7 +71,7 @@ public class BundleManager
 
    public BundleManager(Map<String, String> props)
    {
-      frameworkState = new FrameworkState(this, props);
+      frameworkState = new FrameworkState(this, plugins, props);
       addBundleState(frameworkState.getSystemBundle());
 
       // Create the ModuleLoader

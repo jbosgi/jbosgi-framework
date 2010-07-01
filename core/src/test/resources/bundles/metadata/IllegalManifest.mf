@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Ant-Version: Apache Ant 1.6.5
+Created-By: Ales Justin
+Implementation-Title: JBoss OSGi tests
+Implementation-Version: 2.0.0.beta2
+Implementation-Vendor: jboss.org
+

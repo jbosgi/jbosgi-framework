@@ -34,9 +34,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.BatchBuilder;
 import org.jboss.msc.service.DuplicateServiceException;
+import org.jboss.msc.service.RemovingServiceListener;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistryException;
 import org.jboss.msc.service.StartContext;
@@ -187,7 +189,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
                {
                }
             };
-            batchBuilder.addService(name, service);
+            batchBuilder.addService(name, service).setInitialMode(Mode.AUTOMATIC);
             associations.add(new NameAssociation(clazz, name));
          }
          catch (DuplicateServiceException ex)
@@ -277,7 +279,10 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
             for (String clazz : clazzes)
                unregisterServiceName(clazz, name);
             
-            //controller.remove();
+            // A service is brought DOWN by setting it's mode to NEVER
+            // Adding a {@link RemovingServiceListener} does this and will
+            // also synchronoulsy remove the service from the registry 
+            controller.addListener(new RemovingServiceListener());
          }
       }
    }

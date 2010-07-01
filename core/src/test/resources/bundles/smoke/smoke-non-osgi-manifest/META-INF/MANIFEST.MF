@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Implementation-Title: JBoss OSGi tests
+Implementation-Version: test
+Implementation-Vendor: jboss.org

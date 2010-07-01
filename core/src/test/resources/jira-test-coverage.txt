@@ -1,0 +1,5 @@
+
+[JBOSGI-38] Investigate bundle install/start behaviour with random deployment order
+[JBOSGI-323] DynamicImport-Package takes presendence over embedded classes
+[JBOSGI-326] MC service does not maintain properties
+[JBOSGI-331] Activator cannot change bundle start level

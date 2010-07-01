@@ -1,0 +1,6 @@
+# bnd build -classpath target/test-classes -output target/test-libs/fragments-simple-fragC.jar src/test/resources/fragments/simple-fragC.bnd
+
+Bundle-SymbolicName: simple-fragC
+Export-Package: org.jboss.test.osgi.fragments.fragC
+Require-Bundle: simple-hostB
+Fragment-Host: simple-hostA

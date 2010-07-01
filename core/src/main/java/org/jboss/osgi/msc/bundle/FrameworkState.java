@@ -23,12 +23,18 @@ package org.jboss.osgi.msc.bundle;
 
 // $Id$
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
+import org.jboss.osgi.msc.plugin.Plugin;
+import org.jboss.osgi.msc.plugin.ServicePlugin;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.osgi.framework.Bundle;
@@ -55,11 +61,15 @@ public final class FrameworkState
    private AtomicInteger stopMonitor = new AtomicInteger(0);
    // The framework stop executor 
    private Executor stopExecutor = Executors.newFixedThreadPool(10);
+   /// The registered plugins 
+   private Map<Class<? extends Plugin>, Plugin> plugins = Collections.synchronizedMap(new LinkedHashMap<Class<? extends Plugin>, Plugin>());
 
-   FrameworkState(BundleManager bundleManager, Map<String, String> props)
+   FrameworkState(BundleManager bundleManager, Map<Class<? extends Plugin>, Plugin> plugins, Map<String, String> props)
    {
       this.bundleManager = bundleManager;
-      systemBundle = new SystemBundle(bundleManager, props);
+      this.plugins = plugins;
+      
+      this.systemBundle = new SystemBundle(bundleManager, props);
    }
 
    public SystemBundle getSystemBundle()
@@ -205,73 +215,85 @@ public final class FrameworkState
       {
          public void run()
          {
-            synchronized (stopMonitor)
+            try
             {
-               // Do nothing if the framework is not active
-               if (systemBundle.getState() != Bundle.ACTIVE)
-                  return;
-
-               // This Framework's state is set to Bundle.STOPPING
-               systemBundle.changeState(Bundle.STOPPING);
+               stopInternal();
             }
-
-            //[TODO] Move to start level 0 in the current thread
-            // StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);
-            //if (startLevel != null)
-            //   startLevel.decreaseStartLevel(0);
-
-            // No Start Level Service available, stop all bundles individually...
-            // All installed bundles must be stopped without changing each bundle's persistent autostart setting
-            for (AbstractBundle bundleState : bundleManager.getBundles())
+            catch (Exception ex)
             {
-               if (bundleState != systemBundle)
-               {
-                  try
-                  {
-                     // [TODO] don't change the  persistent state
-                     bundleState.stop();
-                  }
-                  catch (Exception ex)
-                  {
-                     // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then 
-                     // published as a framework event of type FrameworkEvent.ERROR
-                     bundleManager.fireError(bundleState, "stopping bundle", ex);
-                  }
-               }
-            }
-
-            // [TODO] Stop registered service plugins
-            //List<Plugin> reverseServicePlugins = new ArrayList<Plugin>(plugins.values());
-            //Collections.reverse(reverseServicePlugins);
-            //for (Plugin plugin : reverseServicePlugins)
-            //{
-            //   if (plugin instanceof ServicePlugin)
-            //   {
-            //      ServicePlugin servicePlugin = (ServicePlugin)plugin;
-            //      servicePlugin.stopService();
-            //   }
-            //}
-
-            // [TODO] Event handling is disabled
-            //FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
-            //eventsPlugin.setActive(false);
-
-            // This Framework's state is set to Bundle.RESOLVED
-            systemBundle.changeState(Bundle.RESOLVED);
-
-            // All resources held by this Framework are released
-            systemBundle.destroyBundleContext();
-
-            // Notify all threads that are waiting at waitForStop that the stop operation has completed
-            synchronized (stopMonitor)
-            {
-               stopMonitor.notifyAll();
+               log.error("Error stopping framework", ex);
             }
          }
       };
       stopExecutor.execute(stopcmd);
    }
 
+   private void stopInternal()
+   {
+      synchronized (stopMonitor)
+      {
+         // Do nothing if the framework is not active
+         if (systemBundle.getState() != Bundle.ACTIVE)
+            return;
+
+         // This Framework's state is set to Bundle.STOPPING
+         systemBundle.changeState(Bundle.STOPPING);
+      }
+
+      //[TODO] Move to start level 0 in the current thread
+      // StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);
+      //if (startLevel != null)
+      //   startLevel.decreaseStartLevel(0);
+
+      // No Start Level Service available, stop all bundles individually...
+      // All installed bundles must be stopped without changing each bundle's persistent autostart setting
+      for (AbstractBundle bundleState : bundleManager.getBundles())
+      {
+         if (bundleState != systemBundle)
+         {
+            try
+            {
+               // [TODO] don't change the  persistent state
+               bundleState.stop();
+            }
+            catch (Exception ex)
+            {
+               // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then 
+               // published as a framework event of type FrameworkEvent.ERROR
+               bundleManager.fireError(bundleState, "stopping bundle", ex);
+            }
+         }
+      }
+
+      // Stop registered service plugins
+      List<Plugin> reverseServicePlugins = new ArrayList<Plugin>(plugins.values());
+      Collections.reverse(reverseServicePlugins);
+      for (Plugin plugin : reverseServicePlugins)
+      {
+         if (plugin instanceof ServicePlugin)
+         {
+            ServicePlugin servicePlugin = (ServicePlugin)plugin;
+            servicePlugin.stopService();
+         }
+      }
+
+      // [TODO] Event handling is disabled
+      //FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
+      //eventsPlugin.setActive(false);
+
+      // This Framework's state is set to Bundle.RESOLVED
+      systemBundle.changeState(Bundle.RESOLVED);
+
+      // All resources held by this Framework are released
+      systemBundle.destroyBundleContext();
+
+      // Notify all threads that are waiting at waitForStop that the stop operation has completed
+      synchronized (stopMonitor)
+      {
+         stopMonitor.notifyAll();
+      }
+   }
+   
    public void restartFramework()
    {
       throw new NotImplementedException();

@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: lifecycle-bundleA
+Export-Package: org.jboss.test.osgi.bundle.support.a
+Import-Package: org.jboss.test.osgi.bundle.support.b, org.jboss.test.osgi.bundle.support.x
+

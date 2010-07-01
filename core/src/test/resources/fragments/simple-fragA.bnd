@@ -1,0 +1,9 @@
+# bnd build -classpath target/test-classes -output target/test-libs/fragments-simple-fragA.jar src/test/resources/fragments/simple-fragA.bnd
+
+Bundle-SymbolicName: simple-fragA
+Export-Package: org.jboss.test.osgi.fragments.fragA
+Include-Resource: resources/resource.txt=resource.txt
+Fragment-Host: simple-hostA
+
+-removeheaders: Include-Resource
+

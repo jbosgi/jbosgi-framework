@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Implementation-Title: JBoss OSGi tests
+Implementation-Version: test
+Implementation-Vendor: jboss.org
+Bundle-ManifestVersion: 2
+Bundle-Name: Simple1
+Bundle-SymbolicName: org.jboss.test.osgi.simple1
