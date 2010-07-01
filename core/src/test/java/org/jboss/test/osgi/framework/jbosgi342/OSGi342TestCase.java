@@ -19,7 +19,7 @@
 * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 */
-package org.jboss.test.osgi.framework.core.jbosgi342;
+package org.jboss.test.osgi.framework.jbosgi342;
 
 import static org.junit.Assert.assertTrue;
 

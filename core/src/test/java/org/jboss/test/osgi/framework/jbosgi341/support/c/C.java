@@ -19,13 +19,13 @@
 * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 */
-package org.jboss.test.osgi.framework.core.jbosgi341.support.b;
+package org.jboss.test.osgi.framework.jbosgi341.support.c;
 
-import org.jboss.test.osgi.framework.core.jbosgi341.support.c.C;
+import org.jboss.test.osgi.framework.jbosgi341.support.a.A;
 
-public class B
+public class C
 {
-   public B(C c)
+   public C(A a)
    {
    }
 }
