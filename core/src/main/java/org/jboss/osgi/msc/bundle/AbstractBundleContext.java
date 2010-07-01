@@ -157,7 +157,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @SuppressWarnings("rawtypes")
    public ServiceRegistration registerService(String[] clazzes, Object service, Dictionary properties)
    {
-      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
+      ServiceManagerPlugin plugin = bundleState.getServiceManagerPlugin();
       ServiceState serviceState = plugin.registerService(bundleState, clazzes, service, properties);
       return new ServiceRegistrationWrapper(serviceState);
    }
@@ -177,7 +177,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public ServiceReference getServiceReference(String clazz)
    {
-      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
+      ServiceManagerPlugin plugin = bundleState.getServiceManagerPlugin();
       ServiceState serviceState = plugin.getServiceReference(bundleState, clazz);
       if (serviceState == null)
          return null;
@@ -188,7 +188,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public Object getService(ServiceReference sref)
    {
-      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
+      ServiceManagerPlugin plugin = bundleState.getServiceManagerPlugin();
       Object service = plugin.getService(bundleState, ServiceState.assertServiceState(sref));
       return service;
    }

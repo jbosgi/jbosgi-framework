@@ -59,6 +59,7 @@ public class HostBundle extends AbstractBundle
       if (rootFile == null)
          throw new IllegalArgumentException("Null rootFile");
 
+      this.bundleId = bundleManager.getNextBundleId();
       this.metadata = metadata;
       this.location = location;
       
@@ -250,9 +251,8 @@ public class HostBundle extends AbstractBundle
          }
       }
 
-      // [TODO] Any services registered by this bundle must be unregistered
-      //ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
-      //plugin.unregisterServices(this);
+      // Any services registered by this bundle must be unregistered
+      getServiceManagerPlugin().unregisterServices(this);
 
       // [TODO] Any listeners registered by this bundle must be removed
 

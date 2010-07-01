@@ -52,19 +52,19 @@
       <groupId>org.osgi</groupId>
       <artifactId>org.osgi.core</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.compendium</artifactId>
+    </dependency>
 
     <!-- Test Dependencies -->
     <dependency>
+      <groupId>org.jboss.arquillian</groupId>
+      <artifactId>arquillian-bundle</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.jboss.arquillian.container</groupId>
       <artifactId>arquillian-osgi-embedded-4.2</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.protocol</groupId>
-      <artifactId>arquillian-protocol-jmx</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian</groupId>
-      <artifactId>arquillian-junit</artifactId>
     </dependency>
     <dependency>
       <groupId>org.jboss.osgi.vfs</groupId>
@@ -86,6 +86,34 @@
   <!-- Build -->
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.jboss.arquillian</groupId>
+                  <artifactId>arquillian-bundle</artifactId>
+                  <destFileName>arquillian-bundle.jar</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.osgi</groupId>
+                  <artifactId>org.osgi.compendium</artifactId>
+                  <destFileName>org.osgi.compendium.jar</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}/test-libs/bundles</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>

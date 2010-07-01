@@ -22,28 +22,9 @@
 package org.jboss.osgi.msc.simple;
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.io.InputStream;
-
-import javax.inject.Inject;
-
-import org.jboss.arquillian.api.Deployment;
-import org.jboss.arquillian.junit.Arquillian;
-import org.jboss.osgi.msc.simple.bundle.SimpleActivator;
-import org.jboss.osgi.msc.simple.bundle.SimpleService;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.osgi.testing.OSGiManifestBuilder;
-import org.jboss.shrinkwrap.api.Archives;
-import org.jboss.shrinkwrap.api.Asset;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.Version;
 
 /**
  * A test that deployes a bundle and verifies its state
@@ -51,57 +32,16 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-@Ignore
-@RunWith(Arquillian.class)
 public class SimpleArquillianBundleTestCase extends OSGiFrameworkTest 
 {
-   @Deployment
-   public static JavaArchive createdeployment()
-   {
-      // Bundle-Version: 1.0.0
-      // Bundle-SymbolicName: simple-bundle
-      // Bundle-Activator: org.jboss.osgi.msc.framework.simple.bundle.SimpleActivator
-      final JavaArchive archive = Archives.create("simple-bundle", JavaArchive.class);
-      archive.addClasses(SimpleService.class, SimpleActivator.class);
-      archive.setManifest(new Asset()
-      {
-         public InputStream openStream()
-         {
-            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-            builder.addBundleManifestVersion(2);
-            builder.addBundleSymbolicName(archive.getName());
-            builder.addBundleVersion("1.0.0");
-            builder.addBundleActivator(SimpleActivator.class);
-            return builder.openStream();
-         }
-      });
-      return archive;
-   }
-   
-   @Inject
-   public Bundle bundle;
-   
    @Test
    public void testBundleLifecycle() throws Exception
    {
-      assertEquals("simple-bundle", bundle.getSymbolicName());
-      assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
-      assertEquals("Bundle state", Bundle.RESOLVED, bundle.getState());
-
-      bundle.start();
-      assertEquals("Bundle state", Bundle.ACTIVE, bundle.getState());
-
-      BundleContext context = bundle.getBundleContext();
-      assertNotNull("BundleContext not null", context);
-
-      // getServiceReference from bundle context
-      //ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
-      //assertNotNull("ServiceReference not null", sref);
-
-      bundle.stop();
-      assertEquals("Bundle state", Bundle.RESOLVED, bundle.getState());
+      Bundle cmpd = installBundle("bundles/org.osgi.compendium.jar");
+      Bundle arq = installBundle("bundles/arquillian-bundle.jar");
       
-      bundle.uninstall();
-      assertEquals("Bundle state", Bundle.UNINSTALLED, bundle.getState());
+      arq.start();
+      assertBundleState(Bundle.ACTIVE, arq.getState());
+      assertBundleState(Bundle.RESOLVED, cmpd.getState());
    }
 }

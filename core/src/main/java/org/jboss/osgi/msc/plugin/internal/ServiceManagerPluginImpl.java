@@ -23,8 +23,13 @@ package org.jboss.osgi.msc.plugin.internal;
 
 //$Id$
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Dictionary;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.BatchBuilder;
@@ -43,6 +48,7 @@ import org.jboss.osgi.msc.bundle.ServiceState;
 import org.jboss.osgi.msc.plugin.AbstractPlugin;
 import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.spi.NotImplementedException;
+import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
 
 /**
@@ -56,12 +62,25 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    // Provide logging
    private final Logger log = Logger.getLogger(ServiceManagerPluginImpl.class);
 
+   // The ServiceId generator 
+   private AtomicLong identityGenerator = new AtomicLong();
+   // The ServiceContainer
    private ServiceContainer serviceContainer;
+   // Maps the service interface to the list of registered service names
+   private Map<String, List<ServiceName>> serviceNameMap = new ConcurrentHashMap<String, List<ServiceName>>();
+   // Maps the owner bundleId to the list of it's registered services
+   private Map<Long, List<ServiceName>> serviceOwnerMap = new ConcurrentHashMap<Long, List<ServiceName>>();
 
    public ServiceManagerPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
       serviceContainer = ServiceContainer.Factory.create();
+   }
+
+   @Override
+   public long getNextServiceId()
+   {
+      return identityGenerator.incrementAndGet();
    }
 
    @Override
@@ -95,13 +114,22 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
    public ServiceState[] getServiceReferencesInternal(AbstractBundle bundleState, String clazz, String filter, boolean checkAssignable)
    {
-      ServiceName serviceName = ServiceName.of(clazz);
-      ServiceController<?> controller = serviceContainer.getService(serviceName);
-      if (controller == null)
+      List<ServiceState> services = new ArrayList<ServiceState>();
+      List<ServiceName> names = serviceNameMap.get(clazz);
+      if (names == null)
          return null;
 
-      ServiceState serviceState = (ServiceState)controller.getValue();
-      return new ServiceState[] { serviceState };
+      for (ServiceName name : names)
+      {
+         ServiceController<?> controller = serviceContainer.getService(name);
+         if (controller == null)
+            throw new IllegalStateException("Cannot obtain service for: " + name);
+
+         ServiceState serviceState = (ServiceState)controller.getValue();
+         services.add(serviceState);
+      }
+
+      return services.toArray(new ServiceState[services.size()]);
    }
 
    @Override
@@ -117,18 +145,35 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       if (clazzes == null || clazzes.length == 0)
          throw new IllegalArgumentException("Null service classes");
 
+      // A temporary association of the clazz and name
+      class NameAssociation
+      {
+         String clazz;
+         ServiceName name;
+
+         NameAssociation(String clazz, ServiceName name)
+         {
+            this.clazz = clazz;
+            this.name = name;
+         }
+
+      }
+      ;
+      List<NameAssociation> associations = new ArrayList<NameAssociation>();
+
       final ServiceState serviceState = new ServiceState(bundleState, clazzes, value, properties);
       BatchBuilder batchBuilder = serviceContainer.batchBuilder();
       for (String clazz : clazzes)
       {
          try
          {
-            ServiceName name = ServiceName.of(clazz);
+            ServiceName name = createServiceName(clazz, serviceState.getServiceId());
             Service service = new Service()
             {
                @Override
                public Object getValue() throws IllegalStateException
                {
+                  // [TODO] for injection to work this needs to be the Object value
                   return serviceState;
                }
 
@@ -143,6 +188,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
                }
             };
             batchBuilder.addService(name, service);
+            associations.add(new NameAssociation(clazz, name));
          }
          catch (DuplicateServiceException ex)
          {
@@ -153,12 +199,59 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       try
       {
          batchBuilder.install();
+
+         // Register the name association. We do this here 
+         // in case anything went wrong during the install
+         long bundleId = bundleState.getBundleId();
+         for (NameAssociation aux : associations)
+         {
+            registerServiceName(bundleId, aux.clazz, aux.name);
+         }
       }
       catch (ServiceRegistryException ex)
       {
          log.error("Cannot register services: " + Arrays.asList(clazzes), ex);
       }
+
       return serviceState;
+   }
+
+   // Creates a unique ServiceName
+   private ServiceName createServiceName(String className, long serviceId)
+   {
+      return ServiceName.of("jbosgi", "service", className, new Long(serviceId).toString());
+   }
+
+   private void registerServiceName(long bundleId, String clazz, ServiceName name)
+   {
+      List<ServiceName> names = serviceNameMap.get(clazz);
+      if (names == null)
+      {
+         names = new ArrayList<ServiceName>();
+         serviceNameMap.put(clazz, names);
+      }
+      names.add(name);
+
+      names = serviceOwnerMap.get(bundleId);
+      if (names == null)
+      {
+         names = new ArrayList<ServiceName>();
+         serviceOwnerMap.put(bundleId, names);
+      }
+      names.add(name);
+   }
+
+   private void unregisterServiceName(String clazz, ServiceName name)
+   {
+      List<ServiceName> names = serviceNameMap.get(clazz);
+      if (names == null)
+         throw new IllegalStateException("Cannot obtain service names for: " + clazz);
+
+      if (names.remove(name) == false)
+         throw new IllegalStateException("Cannot name [" + name + "] from: " + names);
+
+      if (names.isEmpty())
+         serviceNameMap.remove(clazz);
    }
 
    @Override
@@ -170,6 +263,22 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    @Override
    public void unregisterServices(AbstractBundle bundleState)
    {
-      throw new NotImplementedException();
+      long bundleId = bundleState.getBundleId();
+      List<ServiceName> names = serviceOwnerMap.remove(bundleId);
+      if (names != null)
+      {
+         for (ServiceName name : names)
+         {
+            ServiceController<?> controller = serviceContainer.getService(name);
+            
+            // Unregister the service names
+            ServiceState serviceState = (ServiceState)controller.getValue();
+            String[] clazzes = (String[])serviceState.getProperty(Constants.OBJECTCLASS);
+            for (String clazz : clazzes)
+               unregisterServiceName(clazz, name);
+            
+            //controller.remove();
+         }
+      }
    }
 }

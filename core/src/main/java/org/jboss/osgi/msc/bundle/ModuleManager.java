@@ -25,10 +25,13 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.AssertionSetting;
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
+import org.jboss.modules.Module.Flag;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleContentLoader;
 import org.jboss.modules.ModuleContentLoader.Builder;
@@ -38,7 +41,7 @@ import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleLoaderSpec;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.osgi.msc.loading.FrameworkModuleClassLoader;
+import org.jboss.modules.SystemModuleClassLoader;
 import org.jboss.osgi.msc.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.msc.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -59,13 +62,14 @@ public class ModuleManager extends ModuleLoader
    // [FEEDBACK] ModuleManager needs to maintain this duplicate map to remove modules on Bundle.uninstall() 
    private Map<ModuleIdentifier, Module> modules = Collections.synchronizedMap(new LinkedHashMap<ModuleIdentifier, Module>());
    // The framework module identifier
-   private ModuleIdentifier frameworkModuleIdentifier;
+   private ModuleIdentifier frameworkIdentifier;
    // The framework module
    private Module frameworkModule;
 
    public ModuleManager()
    {
       // Make sure this ModuleLoader is used
+      // This also registers the URLStreamHandlerFactory
       final ModuleLoader moduleLoader = this;
       Module.setModuleLoaderSelector(new ModuleLoaderSelector()
       {
@@ -79,10 +83,10 @@ public class ModuleManager extends ModuleLoader
 
    public ModuleIdentifier getFrameworkModuleIdentifier()
    {
-      if (frameworkModuleIdentifier == null)
-         frameworkModuleIdentifier = new ModuleIdentifier("jbosgi", Constants.SYSTEM_BUNDLE_SYMBOLICNAME, null);
+      if (frameworkIdentifier == null)
+         frameworkIdentifier = new ModuleIdentifier("jbosgi", Constants.SYSTEM_BUNDLE_SYMBOLICNAME, null);
 
-      return frameworkModuleIdentifier;
+      return frameworkIdentifier;
    }
 
    public ModuleSpec createModuleSpec(OSGiMetaData metadata, VirtualFile rootFile)
@@ -120,7 +124,7 @@ public class ModuleManager extends ModuleLoader
          throw new IllegalStateException("Framework module already created");
 
       final ModuleLoader moduleLoader = this;
-      frameworkModule = new Module(frameworkModuleIdentifier, new ModuleLoaderSpec()
+      frameworkModule = new Module(frameworkIdentifier, new ModuleLoaderSpec()
       {
          @Override
          public ModuleLoader getModuleLoader(Module module)
@@ -131,7 +135,18 @@ public class ModuleManager extends ModuleLoader
          @Override
          public ModuleClassLoader getModuleClassLoader(Module module)
          {
-            return new FrameworkModuleClassLoader(module, BundleManager.class.getClassLoader());
+            SystemModuleClassLoader smcl = new SystemModuleClassLoader(module, Collections.<Flag>emptySet(), AssertionSetting.INHERIT)
+            {
+               @Override
+               protected Set<String> getExportedPaths()
+               {
+                  Set<String> exportedPaths = super.getExportedPaths();
+                  // [TODO] read these from external properties
+                  exportedPaths.add("org/osgi/framework");
+                  return exportedPaths;
+               }
+            };
+            return smcl;
          }
       });
       registerModule(frameworkModule);

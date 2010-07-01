@@ -38,6 +38,11 @@ import org.osgi.framework.ServiceReference;
 public interface ServiceManagerPlugin extends Plugin
 {
    /**
+    * Get the next service is from the manager 
+    */
+   long getNextServiceId();
+   
+   /**
     * Returns this bundle's <code>ServiceReference</code> list for all
     * services it has registered or <code>null</code> if this bundle has no
     * registered services.

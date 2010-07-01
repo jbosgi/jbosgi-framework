@@ -24,6 +24,7 @@ package org.jboss.osgi.msc.simple;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.io.InputStream;
 
@@ -71,10 +72,10 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest
       Bundle bundle = installBundle(archive);
       assertEquals("simple-bundle", bundle.getSymbolicName());
       assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
-      assertEquals("Bundle state", Bundle.INSTALLED, bundle.getState());
+      assertBundleState(Bundle.INSTALLED, bundle.getState());
 
       bundle.start();
-      assertEquals("Bundle state", Bundle.ACTIVE, bundle.getState());
+      assertBundleState(Bundle.ACTIVE, bundle.getState());
 
       BundleContext context = bundle.getBundleContext();
       assertNotNull("BundleContext not null", context);
@@ -86,9 +87,12 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest
       assertEquals(SimpleService.class.getName(), service.getClass().getName());
 
       bundle.stop();
-      assertEquals("Bundle state", Bundle.RESOLVED, bundle.getState());
+      assertBundleState(Bundle.RESOLVED, bundle.getState());
+      
+      sref = context.getServiceReference(SimpleService.class.getName());
+      //assertNull("ServiceReference null", sref);
       
       bundle.uninstall();
-      assertEquals("Bundle state", Bundle.UNINSTALLED, bundle.getState());
+      assertBundleState(Bundle.UNINSTALLED, bundle.getState());
    }
 }

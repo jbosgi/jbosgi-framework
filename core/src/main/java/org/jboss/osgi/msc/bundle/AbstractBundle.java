@@ -33,6 +33,7 @@ import java.util.jar.Manifest;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.msc.metadata.OSGiMetaData;
 import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
+import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -50,6 +51,7 @@ import org.osgi.framework.Version;
  */
 public abstract class AbstractBundle implements Bundle
 {
+   private static ServiceManagerPlugin serviceManager; 
    private BundleManager bundleManager;
    private BundleWrapper bundleWrapper;
    private AbstractBundleContext bundleContext;
@@ -302,6 +304,13 @@ public abstract class AbstractBundle implements Bundle
       throw new NotImplementedException();
    }
 
+   ServiceManagerPlugin getServiceManagerPlugin()
+   {
+      if (serviceManager == null)
+         serviceManager = getBundleManager().getPlugin(ServiceManagerPlugin.class);
+      return serviceManager;
+   }
+   
    @Override
    public int hashCode()
    {

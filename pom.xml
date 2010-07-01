@@ -89,6 +89,11 @@
 
       <!-- Test Dependencies -->
       <dependency>
+        <groupId>org.jboss.arquillian</groupId>
+        <artifactId>arquillian-bundle</artifactId>
+        <version>${version.jboss.arquillian}</version>
+      </dependency>
+      <dependency>
         <groupId>org.jboss.arquillian.container</groupId>
         <artifactId>arquillian-osgi-embedded-4.2</artifactId>
         <version>${version.jboss.arquillian}</version>

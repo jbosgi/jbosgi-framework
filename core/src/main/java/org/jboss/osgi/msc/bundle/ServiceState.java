@@ -22,9 +22,14 @@
 package org.jboss.osgi.msc.bundle;
 
 import java.util.Dictionary;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
@@ -34,21 +39,40 @@ import org.osgi.framework.ServiceRegistration;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
+@SuppressWarnings("rawtypes")
 public class ServiceState  implements ServiceRegistration, ServiceReference
 {
+   private long serviceId;
    private AbstractBundle owner;
+   private Map<String, Object> properties;
    private Object value;
 
-   @SuppressWarnings("rawtypes")
-   public ServiceState(AbstractBundle owner, String[] clazzes, Object value, Dictionary properties)
+   public ServiceState(AbstractBundle owner, String[] clazzes, Object value, Dictionary props)
    {
       if (owner == null)
          throw new IllegalArgumentException("Null owner");
+      if (clazzes == null)
+         throw new IllegalArgumentException("Null clazzes");
       if (value == null)
          throw new IllegalArgumentException("Null value");
       
+      this.serviceId = owner.getServiceManagerPlugin().getNextServiceId();
       this.owner = owner;
       this.value = value;
+      
+      // Copy the given service properties
+      properties = new HashMap<String, Object>();
+      if (props != null)
+      {
+         Enumeration keys = props.keys();
+         while(keys.hasMoreElements())
+         {
+            String key = (String)keys.nextElement();
+            properties.put(key, props.get(key));
+         }
+      }
+      properties.put(Constants.SERVICE_ID, serviceId);
+      properties.put(Constants.OBJECTCLASS, clazzes);
    }
 
    /**
@@ -66,6 +90,11 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
       return (ServiceState)sref;
    }
 
+   public long getServiceId()
+   {
+      return serviceId;
+   }
+
    public Object getValue() 
    {
       return value;
@@ -78,7 +107,6 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    }
 
    @Override
-   @SuppressWarnings("rawtypes")
    public void setProperties(Dictionary properties)
    {
       throw new NotImplementedException();
@@ -93,13 +121,14 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    @Override
    public Object getProperty(String key)
    {
-      throw new NotImplementedException();
+      return properties.get(key);
    }
 
    @Override
    public String[] getPropertyKeys()
    {
-      throw new NotImplementedException();
+      Set<String> keys = properties.keySet();
+      return keys.toArray(new String[keys.size()]);
    }
 
    @Override

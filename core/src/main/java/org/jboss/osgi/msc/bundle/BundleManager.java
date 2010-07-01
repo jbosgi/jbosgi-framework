@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleLoadException;
@@ -57,6 +58,8 @@ import org.osgi.framework.BundleException;
  */
 public class BundleManager
 {
+   // The BundleId generator 
+   private AtomicLong identityGenerator = new AtomicLong();
    // Maps bundleId to Bundle
    private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
    /// The registered manager plugins 
@@ -95,6 +98,11 @@ public class BundleManager
       return frameworkState.getSystemBundle();
    }
 
+   long getNextBundleId()
+   {
+      return identityGenerator.incrementAndGet();
+   }
+   
    void addBundleState(AbstractBundle bundleState)
    {
       bundleMap.put(bundleState.getBundleId(), bundleState);
