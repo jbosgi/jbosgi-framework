@@ -28,7 +28,6 @@ import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.framework.classloader.support.a.A;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -39,7 +38,6 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 31-May-2010
  */
-@Ignore
 public class DefaultResolverTestCase extends OSGiFrameworkTest
 {
    @After

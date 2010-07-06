@@ -23,17 +23,21 @@ package org.jboss.osgi.msc.plugin.internal;
 
 //$Id$
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.jboss.logging.Logger;
+import org.jboss.osgi.msc.bundle.AbstractBundle;
 import org.jboss.osgi.msc.bundle.BundleManager;
 import org.jboss.osgi.msc.plugin.AbstractPlugin;
 import org.jboss.osgi.msc.plugin.ResolverPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XResolver;
-import org.jboss.osgi.resolver.XResolverCallback;
 import org.jboss.osgi.resolver.XResolverException;
 import org.jboss.osgi.resolver.XResolverFactory;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleException;
 
 /**
  * A simple implementation of a BundleStorage
@@ -47,46 +51,95 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    final Logger log = Logger.getLogger(ResolverPluginImpl.class);
    
    // The resolver delegate
-   private XResolver delegate;
+   private XResolver resolver;
 
    public ResolverPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
-      delegate = XResolverFactory.getResolver();
-   }
-   
-   public void addModule(XModule module)
-   {
-      delegate.addModule(module);
+      resolver = XResolverFactory.getResolver();
    }
 
-   public XModule removeModule(long moduleId)
+   @Override
+   public void addBundle(AbstractBundle bundleState)
    {
-      return delegate.removeModule(moduleId);
+      XModule resolverModule = bundleState.getResolverModule();
+      resolverModule.addAttachment(Bundle.class, bundleState);
+      resolver.addModule(resolverModule);
    }
 
-   public List<XModule> getModules()
+   @Override
+   public void removeBundle(AbstractBundle bundleState)
    {
-      return delegate.getModules();
+      XModule resolverModule = bundleState.getResolverModule();
+      if (resolver.removeModule(resolverModule) == null)
+         throw new IllegalStateException("Cannot remove bundle: " + bundleState);
    }
 
-   public XModule findModuleById(long moduleId)
+   @Override
+   public void resolve(AbstractBundle bundleState) throws BundleException
    {
-      return delegate.findModuleById(moduleId);
+      XModule module = bundleState.getResolverModule();
+      try
+      {
+         resolver.resolve(module);
+         loadResolvedModule(module);
+      }
+      catch (XResolverException rex)
+      {
+         throw new BundleException("Cannot resolve bundle: " + bundleState, rex);
+      }
    }
 
-   public void resolve(XModule rootModule) throws XResolverException
+   @Override
+   public List<AbstractBundle> resolve(List<AbstractBundle> bundles)
    {
-      delegate.resolve(rootModule);
+      // Get the list of unresolved modules
+      List<XModule> unresolved = new ArrayList<XModule>();
+      if (bundles == null)
+      {
+         for (AbstractBundle aux : getBundleManager().getBundles())
+         {
+            if (aux.getState() == Bundle.INSTALLED)
+               unresolved.add(aux.getResolverModule());
+         }
+      }
+      else
+      {
+         for (AbstractBundle aux : bundles)
+         {
+            if (aux.getState() == Bundle.INSTALLED)
+               unresolved.add(aux.getResolverModule());
+         }
+      }
+      log.debug("resolve bundles: " + unresolved);
+
+      // Resolve the modules and report resolver errors
+      List<XModule> resolved = resolver.resolve(unresolved);
+      for (XModule module : unresolved)
+      {
+         if (module.isResolved() == false)
+         {
+            XResolverException rex = module.getAttachment(XResolverException.class);
+            log.error("Cannot resolve: " + module, rex);
+         }
+         else
+         {
+            loadResolvedModule(module);
+         }
+      }
+
+      // Convert results into bundles
+      List<AbstractBundle> result = new ArrayList<AbstractBundle>();
+      for (XModule module : resolved)
+      {
+         Bundle bundle = module.getAttachment(Bundle.class);
+         result.add(AbstractBundle.assertBundleState(bundle));
+      }
+      return Collections.unmodifiableList(result);
    }
 
-   public List<XModule> resolve(List<XModule> modules)
+   private void loadResolvedModule(XModule module)
    {
-      return delegate.resolve(modules);
-   }
-
-   public void setCallbackHandler(XResolverCallback callback)
-   {
-      delegate.setCallbackHandler(callback);
+      // TODO Auto-generated method stub
    }
 }

@@ -33,12 +33,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
+import org.jboss.osgi.msc.plugin.BundleStoragePlugin;
 import org.jboss.osgi.msc.plugin.Plugin;
+import org.jboss.osgi.msc.plugin.ResolverPlugin;
 import org.jboss.osgi.msc.plugin.ServicePlugin;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 
 /**
@@ -158,21 +161,21 @@ public final class FrameworkState
       //FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
       //eventsPlugin.setActive(true);
 
-      // [TODO] Have registered any framework services.
-      //for (Plugin plugin : new ArrayList<Plugin>(plugins.values()))
-      //{
-      //   if (plugin instanceof ServicePlugin)
-      //   {
-      //      ServicePlugin servicePlugin = (ServicePlugin)plugin;
-      //      servicePlugin.startService();
-      //   }
-      //}
+      // Have registered any framework services.
+      for (Plugin plugin : new ArrayList<Plugin>(bundleManager.getPlugins()))
+      {
+         if (plugin instanceof ServicePlugin)
+         {
+            ServicePlugin servicePlugin = (ServicePlugin)plugin;
+            servicePlugin.startService();
+         }
+      }
 
-      // [TODO] Cleanup the storage area
-      //String storageClean = properties.getProperty(Constants.FRAMEWORK_STORAGE_CLEAN);
-      //BundleStoragePlugin storagePlugin = getOptionalPlugin(BundleStoragePlugin.class);
-      //if (storagePlugin != null)
-      //   storagePlugin.cleanStorage(storageClean);
+      // Cleanup the storage area
+      String storageClean = getPropertyInternal(Constants.FRAMEWORK_STORAGE_CLEAN);
+      BundleStoragePlugin storagePlugin = bundleManager.getOptionalPlugin(BundleStoragePlugin.class);
+      if (storagePlugin != null)
+         storagePlugin.cleanStorage(storageClean);
    }
 
    public void startFramework() throws BundleException
@@ -189,13 +192,9 @@ public final class FrameworkState
       //   autoInstall.startBundles();
       //}
 
-      // [TODO] Add the system bundle to the resolver
-      //ResolverPlugin resolver = getOptionalPlugin(ResolverPlugin.class);
-      //if (resolver != null)
-      //{
-      //   resolver.addBundle(systemBundle);
-      //   resolver.resolve(Collections.singletonList(systemBundle.getBundleInternal()));
-      //}
+      // Resolve the system bundle
+      ResolverPlugin resolver = bundleManager.getPlugin(ResolverPlugin.class);
+      resolver.resolve(systemBundle);
 
       // [TODO] Increase to initial start level
       //StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);

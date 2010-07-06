@@ -24,7 +24,12 @@ package org.jboss.osgi.msc.bundle;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.jar.Attributes;
+import java.util.jar.Attributes.Name;
+import java.util.jar.Manifest;
 
+import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.msc.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
@@ -44,13 +49,21 @@ import org.osgi.framework.Version;
  */
 public class SystemBundle extends AbstractBundle
 {
+   private OSGiMetaData metadata;
    private XModule resolverModule;
    
    public SystemBundle(BundleManager bundleManager)
    {
       super(bundleManager, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
 
+      // Initialize basic metadata
+      Manifest manifest = new Manifest();
+      Attributes attributes = manifest.getMainAttributes();
+      attributes.put(new Name(Constants.BUNDLE_SYMBOLICNAME), Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+      metadata = new OSGiManifestMetaData(manifest);
+      
       // Initialize the system resolver module
+      // [TODO] Bring the resolver module in sync with the metadata
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
       resolverModule = builder.createModule(0, getSymbolicName(), getVersion());
       builder.addBundleCapability(getSymbolicName(), getVersion());
@@ -74,6 +87,12 @@ public class SystemBundle extends AbstractBundle
          
          builder.addPackageCapability(packname, null, attrs);
       }
+   }
+
+   @Override
+   public OSGiMetaData getOSGiMetaData()
+   {
+      return metadata;
    }
 
    @Override

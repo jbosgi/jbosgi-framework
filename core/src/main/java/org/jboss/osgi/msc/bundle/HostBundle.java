@@ -26,8 +26,8 @@ import java.io.InputStream;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.msc.plugin.ResolverPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XResolverFactory;
@@ -51,7 +51,6 @@ public class HostBundle extends AbstractBundle
    private OSGiMetaData metadata;
    private BundleActivator bundleActivator;
    private XModule resolverModule;
-   private ModuleSpec moduleSpec;
    private Module module;
 
    public HostBundle(BundleManager bundleManager, OSGiMetaData metadata, String location, VirtualFile rootFile) throws BundleException
@@ -72,13 +71,10 @@ public class HostBundle extends AbstractBundle
       // Create the resolver module
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
       resolverModule = builder.createModule(bundleId, metadata);
-      
-      // Create the ModuleSpec
-      ModuleManager moduleManager = bundleManager.getModuleManager();
-      moduleSpec = moduleManager.createModuleSpec(metadata, rootFile);
    }
 
-   OSGiMetaData getOSGiMetaData()
+   @Override
+   public OSGiMetaData getOSGiMetaData()
    {
       return metadata;
    }
@@ -87,11 +83,6 @@ public class HostBundle extends AbstractBundle
    public XModule getResolverModule()
    {
       return resolverModule;
-   }
-
-   ModuleSpec getModuleSpec()
-   {
-      return moduleSpec;
    }
 
    Module getModule()
@@ -152,7 +143,10 @@ public class HostBundle extends AbstractBundle
       
       // Resolve all installed bundles 
       if (getState() == Bundle.INSTALLED)
-         getBundleManager().resolveBundles(null);
+      {
+         ResolverPlugin resolver = getBundleManager().getPlugin(ResolverPlugin.class);
+         resolver.resolve(this);
+      }
       
       // This bundle's state is set to STARTING
       // A bundle event of type BundleEvent.STARTING is fired

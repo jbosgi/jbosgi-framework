@@ -34,16 +34,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.msc.plugin.BundleStoragePlugin;
+import org.jboss.osgi.msc.plugin.PackageAdminPlugin;
 import org.jboss.osgi.msc.plugin.Plugin;
 import org.jboss.osgi.msc.plugin.ResolverPlugin;
 import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.msc.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.msc.plugin.internal.BundleStoragePluginImpl;
+import org.jboss.osgi.msc.plugin.internal.PackageAdminPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.ResolverPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.ServiceManagerPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.SystemPackagesPluginImpl;
@@ -79,10 +79,11 @@ public class BundleManager
 
       // Create the ModuleLoader
       moduleManager = new ModuleManager();
-      
+
       // Register the framework plugins
       // [TODO] Externalize plugin registration
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
+      plugins.put(PackageAdminPlugin.class, new PackageAdminPluginImpl(this));
       plugins.put(ResolverPlugin.class, new ResolverPluginImpl(this));
       plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
       plugins.put(SystemPackagesPlugin.class, new SystemPackagesPluginImpl(this));
@@ -110,15 +111,21 @@ public class BundleManager
    {
       return identityGenerator.incrementAndGet();
    }
-   
+
    void addBundleState(AbstractBundle bundleState)
    {
+      ResolverPlugin plugin = getPlugin(ResolverPlugin.class);
+      plugin.addBundle(bundleState);
+      
       bundleMap.put(bundleState.getBundleId(), bundleState);
       bundleState.changeState(Bundle.INSTALLED);
    }
 
    void removeBundleState(AbstractBundle bundleState)
    {
+      ResolverPlugin plugin = getPlugin(ResolverPlugin.class);
+      plugin.removeBundle(bundleState);
+      
       bundleMap.remove(bundleState.getBundleId());
       bundleState.changeState(Bundle.UNINSTALLED);
    }
@@ -127,7 +134,7 @@ public class BundleManager
    {
       if (bundleId == 0)
          return getSystemBundle();
-      
+
       return bundleMap.get(bundleId);
    }
 
@@ -154,8 +161,8 @@ public class BundleManager
       }
       return result;
    }
-   
-   List<AbstractBundle> getBundles()
+
+   public List<AbstractBundle> getBundles()
    {
       List<AbstractBundle> bundles = new ArrayList<AbstractBundle>(bundleMap.values());
       return Collections.unmodifiableList(bundles);
@@ -168,7 +175,7 @@ public class BundleManager
    {
       return Collections.unmodifiableList(new ArrayList<Plugin>(plugins.values()));
    }
-   
+
    /**
     * Get a plugin that is registered with the bundle manager.
     * @throws IllegalStateException if the requested plugin class is not registered
@@ -292,41 +299,7 @@ public class BundleManager
       addBundleState(bundleState);
       return bundleState;
    }
-   
-   List<HostBundle> resolveBundles(List<HostBundle> bundles) throws BundleException
-   {
-      // Get the list of unresolved bundles
-      List<HostBundle> unresolvedBundles = new ArrayList<HostBundle>();
-      if (bundles == null)
-      {
-         for (AbstractBundle aux : getBundles())
-         {
-            if (aux instanceof HostBundle && aux.getState() == Bundle.INSTALLED)
-               unresolvedBundles.add((HostBundle)aux);
-         }
-      }
-      else
-      {
-         unresolvedBundles.addAll(bundles);
-      }
-      
-      List<HostBundle> resolvedBundles = new ArrayList<HostBundle>();
-      for (HostBundle bundleState : unresolvedBundles)
-      {
-         try
-         {
-            Module module = moduleManager.createModule(bundleState.getModuleSpec());
-            bundleState.setModule(module);
-            resolvedBundles.add(bundleState);
-         }
-         catch (ModuleLoadException ex)
-         {
-            throw new BundleException("Cannot load module: " + bundleState, ex);
-         }
-      }
-      return Collections.unmodifiableList(resolvedBundles);
-   }
-   
+
    private URL getLocationURL(String location) throws BundleException
    {
       // Try location as URL

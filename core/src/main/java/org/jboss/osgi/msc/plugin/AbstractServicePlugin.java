@@ -21,46 +21,26 @@
  */
 package org.jboss.osgi.msc.plugin;
 
-// $Id$
+//$Id: AbstractPluginImpl.java 92725 2009-08-24 06:19:18Z thomas.diesler@jboss.com $
 
-import java.util.List;
-
-import org.jboss.osgi.msc.bundle.AbstractBundle;
-import org.osgi.framework.BundleException;
+import org.jboss.osgi.msc.bundle.BundleManager;
+import org.osgi.framework.BundleContext;
 
 /**
- * The resolver plugin.
+ * The base class of all service plugins.
  * 
  * @author thomas.diesler@jboss.com
- * @since 06-Jul-2009
+ * @since 18-Aug-2009
  */
-public interface ResolverPlugin extends Plugin 
+public abstract class AbstractServicePlugin extends AbstractPlugin implements ServicePlugin
 {
-   /**
-    * Add a bundle to the resolver.
-    * @param bundle the bundle
-    * @return The resBundle associated with the added bundle.
-    */
-   void addBundle(AbstractBundle bundle);
-   
-   /**
-    * Remove a bundle from the resolver.
-    * @param bundle the bundle
-    * @return The resBundle associated with the removed bundle.
-    */
-   void removeBundle(AbstractBundle bundle);
-   
-   /**
-    * Resolve the given bundle.
-    * @param bundles the bundles to resolve
-    * @throws BundleException If the bundle could not get resolved
-    */
-   void resolve(AbstractBundle bundle) throws BundleException;
-   
-   /**
-    * Resolve the given list of bundles.
-    * @param bundles the bundles to resolve
-    * @return The list of resolved bundles in the resolve order or an empty list
-    */
-   List<AbstractBundle> resolve(List<AbstractBundle> bundles);
+   public AbstractServicePlugin(BundleManager bundleManager)
+   {
+      super(bundleManager);
+   }
+
+   public BundleContext getSystemContext()
+   {
+      return getBundleManager().getSystemBundle().getBundleContext();
+   }
 }
