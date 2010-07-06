@@ -22,11 +22,18 @@
 package org.jboss.osgi.msc.bundle;
 
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.Map;
 
+import org.jboss.osgi.msc.plugin.SystemPackagesPlugin;
+import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleBuilder;
+import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.spi.NotImplementedException;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
+import org.osgi.framework.Version;
 
 
 /**
@@ -37,12 +44,42 @@ import org.osgi.framework.Constants;
  */
 public class SystemBundle extends AbstractBundle
 {
-   private Map<String, String> systemProperties;
+   private XModule resolverModule;
    
-   public SystemBundle(BundleManager bundleManager, Map<String, String> props)
+   public SystemBundle(BundleManager bundleManager)
    {
       super(bundleManager, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
-      this.systemProperties = props;
+
+      // Initialize the system resolver module
+      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
+      resolverModule = builder.createModule(0, getSymbolicName(), getVersion());
+      builder.addBundleCapability(getSymbolicName(), getVersion());
+      resolverModule.addAttachment(Bundle.class, this);
+      
+      SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
+      for (String packageSpec : plugin.getSystemPackages(true))
+      {
+         String packname = packageSpec;
+         Version version = Version.emptyVersion;
+
+         int versionIndex = packname.indexOf(";version=");
+         if (versionIndex > 0)
+         {
+            packname = packageSpec.substring(0, versionIndex);
+            version = Version.parseVersion(packageSpec.substring(versionIndex + 9));
+         }
+
+         Map<String, Object> attrs = new HashMap<String, Object>();
+         attrs.put(Constants.VERSION_ATTRIBUTE, version);
+         
+         builder.addPackageCapability(packname, null, attrs);
+      }
+   }
+
+   @Override
+   public XModule getResolverModule()
+   {
+      return resolverModule;
    }
 
    @Override
@@ -60,7 +97,7 @@ public class SystemBundle extends AbstractBundle
    @Override
    AbstractBundleContext createContextInternal()
    {
-      return new SystemBundleContext(this, systemProperties);
+      return new SystemBundleContext(this);
    }
 
    @Override

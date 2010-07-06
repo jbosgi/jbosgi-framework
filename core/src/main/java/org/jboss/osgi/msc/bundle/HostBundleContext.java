@@ -35,6 +35,6 @@ public class HostBundleContext extends AbstractBundleContext
 {
    public HostBundleContext(HostBundle bundle, Map<String, String> props)
    {
-      super(bundle, props);
+      super(bundle);
    }
 }

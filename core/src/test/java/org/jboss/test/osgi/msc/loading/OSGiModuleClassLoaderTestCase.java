@@ -30,9 +30,9 @@ import java.util.jar.Manifest;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.msc.bundle.ModuleManager;
 import org.jboss.osgi.msc.loading.OSGiModuleClassLoader;
-import org.jboss.osgi.msc.metadata.OSGiMetaData;
 import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiTestHelper;

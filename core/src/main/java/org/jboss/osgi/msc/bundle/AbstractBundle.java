@@ -31,9 +31,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.Manifest;
 
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.msc.metadata.OSGiMetaData;
+import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
+import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -114,6 +115,8 @@ public abstract class AbstractBundle implements Bundle
       return bundleManager;
    }
 
+   public abstract XModule getResolverModule();
+   
    public Bundle getBundleWrapper()
    {
       return new BundleWrapper(this);

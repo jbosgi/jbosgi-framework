@@ -28,11 +28,6 @@
   <!-- Dependencies -->
   <dependencies>
     <dependency>
-      <groupId>org.jboss.osgi.msc</groupId>
-      <artifactId>jbosgi-msc-metadata</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.jboss.msc</groupId>
       <artifactId>jboss-msc</artifactId>
     </dependency>
@@ -48,7 +43,7 @@
     </dependency>
     <dependency>
       <groupId>org.jboss.osgi.resolver</groupId>
-      <artifactId>jboss-osgi-resolver-api</artifactId>
+      <artifactId>jbosgi-resolver-api</artifactId>
     </dependency>
 
     <!-- OSGi Dependencies -->
@@ -74,7 +69,7 @@
     </dependency>
     <dependency>
       <groupId>org.jboss.osgi.resolver</groupId>
-      <artifactId>jboss-osgi-resolver-felix</artifactId>
+      <artifactId>jbosgi-resolver-felix</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

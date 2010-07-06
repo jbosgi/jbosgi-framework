@@ -25,7 +25,7 @@ package org.jboss.osgi.msc.bundle;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -38,7 +38,6 @@ import org.jboss.osgi.msc.plugin.ServicePlugin;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 
@@ -57,33 +56,50 @@ public final class FrameworkState
    private BundleManager bundleManager;
    // The sytem bundle
    private SystemBundle systemBundle;
+   // The framework properties
+   private Map<String, String> properties;
    // The framework stop monitor
    private AtomicInteger stopMonitor = new AtomicInteger(0);
    // The framework stop executor 
    private Executor stopExecutor = Executors.newFixedThreadPool(10);
-   /// The registered plugins 
-   private Map<Class<? extends Plugin>, Plugin> plugins = Collections.synchronizedMap(new LinkedHashMap<Class<? extends Plugin>, Plugin>());
 
-   FrameworkState(BundleManager bundleManager, Map<Class<? extends Plugin>, Plugin> plugins, Map<String, String> props)
+   FrameworkState(BundleManager bundleManager, Map<String, String> props)
    {
-      this.bundleManager = bundleManager;
-      this.plugins = plugins;
+      if (bundleManager == null)
+         throw new IllegalArgumentException("Null bundleManager");
       
-      this.systemBundle = new SystemBundle(bundleManager, props);
+      this.bundleManager = bundleManager;
+      
+      // Initialize the framework properties
+      properties = new HashMap<String, String>();
+      if (props != null)
+         properties.putAll(props);
    }
 
    public SystemBundle getSystemBundle()
    {
+      if (systemBundle == null)
+         systemBundle = new SystemBundle(bundleManager);
+      
       return systemBundle;
    }
 
    public String getProperty(String key)
    {
       assertFrameworkActive();
-      BundleContext bundleContext = systemBundle.getBundleContext();
-      return bundleContext.getProperty(key);
+      return getPropertyInternal(key);
    }
 
+   public String getPropertyInternal(String key)
+   {
+      return properties.get(key);
+   }
+
+   public void addProperty(String key, String value)
+   {
+      properties.put(key, value);
+   }
+   
    /**
     * True when the {@link SystemBundle} is active.
     */
@@ -266,9 +282,9 @@ public final class FrameworkState
       }
 
       // Stop registered service plugins
-      List<Plugin> reverseServicePlugins = new ArrayList<Plugin>(plugins.values());
-      Collections.reverse(reverseServicePlugins);
-      for (Plugin plugin : reverseServicePlugins)
+      List<Plugin> reversePlugins = new ArrayList<Plugin>(bundleManager.getPlugins());
+      Collections.reverse(reversePlugins);
+      for (Plugin plugin : reversePlugins)
       {
          if (plugin instanceof ServicePlugin)
          {

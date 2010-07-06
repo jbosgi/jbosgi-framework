@@ -48,15 +48,13 @@ import org.osgi.framework.ServiceRegistration;
 public abstract class AbstractBundleContext implements BundleContext
 {
    private AbstractBundle bundleState;
-   private Map<String, String> bundleProperties;
 
-   AbstractBundleContext(AbstractBundle bundle, Map<String, String> props)
+   AbstractBundleContext(AbstractBundle bundleState)
    {
-      if (bundle == null)
-         throw new IllegalArgumentException("Null bundle");
+      if (bundleState == null)
+         throw new IllegalArgumentException("Null bundleState");
 
-      this.bundleState = bundle;
-      this.bundleProperties = props;
+      this.bundleState = bundleState;
    }
 
    BundleManager getBundleManager()
@@ -67,9 +65,8 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public String getProperty(String key)
    {
-      if (bundleProperties == null)
-         return null;
-      return bundleProperties.get(key);
+      FrameworkState frameworkState = bundleState.getBundleManager().getFrameworkState();
+      return frameworkState.getProperty(key);
    }
 
    @Override

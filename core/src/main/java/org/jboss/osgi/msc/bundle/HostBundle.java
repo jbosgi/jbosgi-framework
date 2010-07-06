@@ -27,14 +27,16 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.osgi.msc.metadata.OSGiMetaData;
+import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleBuilder;
+import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Version;
 
 /**
  * A host bundle.
@@ -48,6 +50,7 @@ public class HostBundle extends AbstractBundle
    private String location;
    private OSGiMetaData metadata;
    private BundleActivator bundleActivator;
+   private XModule resolverModule;
    private ModuleSpec moduleSpec;
    private Module module;
 
@@ -63,13 +66,12 @@ public class HostBundle extends AbstractBundle
       this.metadata = metadata;
       this.location = location;
       
-      // Set the bundle version if available
-      String versionstr = metadata.getBundleVersion();
-      if (versionstr != null)
-      {
-         Version version = Version.parseVersion(versionstr);
-         setVersion(version);
-      }
+      // Set the bundle version
+      setVersion(metadata.getBundleVersion());
+      
+      // Create the resolver module
+      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
+      resolverModule = builder.createModule(bundleId, metadata);
       
       // Create the ModuleSpec
       ModuleManager moduleManager = bundleManager.getModuleManager();
@@ -79,6 +81,12 @@ public class HostBundle extends AbstractBundle
    OSGiMetaData getOSGiMetaData()
    {
       return metadata;
+   }
+
+   @Override
+   public XModule getResolverModule()
+   {
+      return resolverModule;
    }
 
    ModuleSpec getModuleSpec()

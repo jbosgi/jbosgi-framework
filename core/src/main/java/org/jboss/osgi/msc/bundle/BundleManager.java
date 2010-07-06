@@ -40,9 +40,13 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.msc.plugin.BundleStoragePlugin;
 import org.jboss.osgi.msc.plugin.Plugin;
+import org.jboss.osgi.msc.plugin.ResolverPlugin;
 import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
+import org.jboss.osgi.msc.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.msc.plugin.internal.BundleStoragePluginImpl;
+import org.jboss.osgi.msc.plugin.internal.ResolverPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.ServiceManagerPluginImpl;
+import org.jboss.osgi.msc.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -71,8 +75,7 @@ public class BundleManager
 
    public BundleManager(Map<String, String> props)
    {
-      frameworkState = new FrameworkState(this, plugins, props);
-      addBundleState(frameworkState.getSystemBundle());
+      frameworkState = new FrameworkState(this, props);
 
       // Create the ModuleLoader
       moduleManager = new ModuleManager();
@@ -80,7 +83,12 @@ public class BundleManager
       // Register the framework plugins
       // [TODO] Externalize plugin registration
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
+      plugins.put(ResolverPlugin.class, new ResolverPluginImpl(this));
       plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
+      plugins.put(SystemPackagesPlugin.class, new SystemPackagesPluginImpl(this));
+
+      // Create and add the system bundle
+      addBundleState(frameworkState.getSystemBundle());
    }
 
    public ModuleManager getModuleManager()
@@ -153,6 +161,14 @@ public class BundleManager
       return Collections.unmodifiableList(bundles);
    }
 
+   /**
+    * Get the list of registered plugins
+    */
+   public List<Plugin> getPlugins()
+   {
+      return Collections.unmodifiableList(new ArrayList<Plugin>(plugins.values()));
+   }
+   
    /**
     * Get a plugin that is registered with the bundle manager.
     * @throws IllegalStateException if the requested plugin class is not registered

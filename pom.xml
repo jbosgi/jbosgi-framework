@@ -77,7 +77,7 @@
       </dependency>
       <dependency>
         <groupId>org.jboss.osgi.resolver</groupId>
-        <artifactId>jboss-osgi-resolver-api</artifactId>
+        <artifactId>jbosgi-resolver-api</artifactId>
         <version>${version.jboss.osgi.resolver}</version>
       </dependency>
 
@@ -117,7 +117,7 @@
       </dependency>
       <dependency>
         <groupId>org.jboss.osgi.resolver</groupId>
-        <artifactId>jboss-osgi-resolver-felix</artifactId>
+        <artifactId>jbosgi-resolver-felix</artifactId>
         <version>${version.jboss.osgi.resolver.felix}</version>
       </dependency>
       <dependency>
@@ -135,7 +135,6 @@
 
   <!-- Modules -->
   <modules>
-    <module>metadata</module>
     <module>core</module>
   </modules>
 </project>

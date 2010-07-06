@@ -42,10 +42,11 @@ import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleLoaderSpec;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.SystemModuleClassLoader;
+import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.msc.loading.VirtualFileResourceLoader;
-import org.jboss.osgi.msc.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Constants;
+import org.osgi.framework.Version;
 
 /**
  * Build the {@link ModuleSpec} from {@link OSGiMetaData}.
@@ -92,8 +93,8 @@ public class ModuleManager extends ModuleLoader
    public ModuleSpec createModuleSpec(OSGiMetaData metadata, VirtualFile rootFile)
    {
       String symbolicName = metadata.getBundleSymbolicName();
-      String version = metadata.getBundleVersion();
-      ModuleIdentifier moduleIdentifier = new ModuleIdentifier("jbosgi", symbolicName, version);
+      Version version = metadata.getBundleVersion();
+      ModuleIdentifier moduleIdentifier = new ModuleIdentifier("jbosgi", symbolicName, version.toString());
       ModuleSpec moduleSpec = new ModuleSpec(moduleIdentifier);
 
       // Add the framework module as required dependency
