@@ -1,3 +1,0 @@
-Bundle-ManifestVersion: 2
-Bundle-SymbolicName: packageimportoptional
-Import-Package: org.jboss.test.osgi.framework.classloader.support.a;resolution:=optional

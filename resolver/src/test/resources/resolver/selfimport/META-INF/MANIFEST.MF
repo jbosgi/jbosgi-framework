@@ -1,4 +1,0 @@
-Bundle-ManifestVersion: 2
-Bundle-SymbolicName: selfimport
-Export-Package: org.jboss.test.osgi.framework.classloader.support.a
-Import-Package: org.jboss.test.osgi.framework.classloader.support.a

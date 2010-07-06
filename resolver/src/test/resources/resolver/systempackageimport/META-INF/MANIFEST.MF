@@ -1,3 +1,0 @@
-Bundle-ManifestVersion: 2
-Bundle-SymbolicName: systempackageimport
-Import-Package: org.osgi.framework;version=1.4

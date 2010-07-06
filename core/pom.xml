@@ -30,12 +30,7 @@
     <dependency>
       <groupId>org.jboss.osgi.msc</groupId>
       <artifactId>jbosgi-msc-metadata</artifactId>
-      <version>${version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.osgi.msc</groupId>
-      <artifactId>jbosgi-msc-resolver</artifactId>
-      <version>${version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.jboss.msc</groupId>
@@ -44,12 +39,16 @@
 
     <!-- JBoss OSGi Dependencies -->
     <dependency>
+      <groupId>org.jboss.osgi</groupId>
+      <artifactId>jboss-osgi-spi</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.jboss.osgi.deployment</groupId>
       <artifactId>jboss-osgi-deployment</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.jboss.osgi</groupId>
-      <artifactId>jboss-osgi-spi</artifactId>
+      <groupId>org.jboss.osgi.resolver</groupId>
+      <artifactId>jboss-osgi-resolver-api</artifactId>
     </dependency>
 
     <!-- OSGi Dependencies -->
@@ -66,10 +65,17 @@
     <dependency>
       <groupId>org.jboss.arquillian</groupId>
       <artifactId>arquillian-bundle</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jboss.arquillian.container</groupId>
       <artifactId>arquillian-osgi-embedded-4.2</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.osgi.resolver</groupId>
+      <artifactId>jboss-osgi-resolver-felix</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jboss.osgi.vfs</groupId>
