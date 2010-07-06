@@ -24,7 +24,6 @@ package org.jboss.osgi.msc.bundle;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Dictionary;
-import java.util.Map;
 
 import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.spi.NotImplementedException;
@@ -154,7 +153,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @SuppressWarnings("rawtypes")
    public ServiceRegistration registerService(String[] clazzes, Object service, Dictionary properties)
    {
-      ServiceManagerPlugin plugin = bundleState.getServiceManagerPlugin();
+      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
       ServiceState serviceState = plugin.registerService(bundleState, clazzes, service, properties);
       return new ServiceRegistrationWrapper(serviceState);
    }
@@ -174,7 +173,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public ServiceReference getServiceReference(String clazz)
    {
-      ServiceManagerPlugin plugin = bundleState.getServiceManagerPlugin();
+      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
       ServiceState serviceState = plugin.getServiceReference(bundleState, clazz);
       if (serviceState == null)
          return null;
@@ -185,7 +184,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public Object getService(ServiceReference sref)
    {
-      ServiceManagerPlugin plugin = bundleState.getServiceManagerPlugin();
+      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
       Object service = plugin.getService(bundleState, ServiceState.assertServiceState(sref));
       return service;
    }

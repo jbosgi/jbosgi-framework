@@ -27,7 +27,9 @@ import static org.junit.Assert.assertTrue;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.framework.classloader.support.a.A;
+import org.jboss.test.osgi.framework.classloader.support.c.C;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -59,13 +61,17 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       {
          // Bundle-SymbolicName: simpleexport
          // Export-Package: org.jboss.test.osgi.classloader.support.a
-         Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class);
+         Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class, C.class);
          Bundle bundleB = installBundle(assemblyB);
          try
          {
-            // Verify that the class load
-            assertLoadClass(bundleA, A.class.getName(), bundleB);
+            // Verify that the class load on bundleB
             assertLoadClass(bundleB, A.class.getName(), bundleB);
+            assertLoadClass(bundleB, C.class.getName(), bundleB);
+            
+            // Verify that the class load on bundleA
+            assertLoadClass(bundleA, A.class.getName(), bundleB);
+            assertLoadClassFail(bundleA, C.class.getName());
 
             // Verify bundle states
             assertEquals("BundleA RESOLVED", Bundle.RESOLVED, bundleA.getState());
@@ -82,7 +88,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testSimpleImportPackageFails() throws Exception
    {
       // Bundle-SymbolicName: simpleimport
@@ -103,7 +109,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testExplicitBundleResolve() throws Exception
    {
       // Bundle-SymbolicName: simpleimport
@@ -145,7 +151,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testSelfImportPackage() throws Exception
    {
       // Bundle-SymbolicName: selfimport
@@ -167,7 +173,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Ignore
    public void testVersionImportPackage() throws Exception
    {
       //Bundle-SymbolicName: packageimportversion
@@ -201,7 +207,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testVersionImportPackageFails() throws Exception
    {
       //Bundle-SymbolicName: packageimportversionfails
@@ -235,7 +241,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testOptionalImportPackage() throws Exception
    {
       //Bundle-SymbolicName: packageimportoptional
@@ -256,7 +262,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Ignore
    public void testOptionalImportPackageWired() throws Exception
    {
       //Bundle-SymbolicName: packageimportoptional
@@ -290,7 +296,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testOptionalImportPackageNotWired() throws Exception
    {
       //Bundle-SymbolicName: packageimportoptional
@@ -330,7 +336,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Ignore
    public void testBundleNameImportPackage() throws Exception
    {
       //Bundle-SymbolicName: bundlenameimport
@@ -364,7 +370,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testBundleNameImportPackageFails() throws Exception
    {
       //Bundle-SymbolicName: bundlenameimport
@@ -398,7 +404,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Ignore
    public void testBundleVersionImportPackage() throws Exception
    {
       //Bundle-SymbolicName: bundleversionimport
@@ -432,7 +438,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testBundleVersionImportPackageFails() throws Exception
    {
       //Bundle-SymbolicName: bundleversionimportfails
@@ -466,7 +472,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Ignore
    public void testRequireBundle() throws Exception
    {
       // [TODO] require bundle visibility
@@ -502,7 +508,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testRequireBundleFails() throws Exception
    {
       //Bundle-SymbolicName: requirebundle
@@ -523,7 +529,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testRequireBundleOptional() throws Exception
    {
       //Bundle-SymbolicName: requirebundleoptional
@@ -546,7 +552,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Ignore
    public void testRequireBundleVersion() throws Exception
    {
       //Bundle-SymbolicName: requirebundleversion
@@ -580,7 +586,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testRequireBundleVersionFails() throws Exception
    {
       //Bundle-SymbolicName: versionrequirebundlefails
@@ -614,7 +620,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testPreferredExporterResolved() throws Exception
    {
       // Bundle-SymbolicName: simpleexport
@@ -671,7 +677,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testPreferredExporterResolvedReverse() throws Exception
    {
       // Bundle-SymbolicName: simpleexport
@@ -731,7 +737,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testPreferredExporterHigherVersion() throws Exception
    {
       //Bundle-SymbolicName: packageexportversion100
@@ -781,7 +787,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testPreferredExporterHigherVersionReverse() throws Exception
    {
       //Bundle-SymbolicName: packageexportversion200
@@ -831,7 +837,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testPreferredExporterLowerId() throws Exception
    {
       // Bundle-SymbolicName: simpleexport
@@ -891,7 +897,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testPreferredExporterLowerIdReverse() throws Exception
    {
       // Bundle-SymbolicName: simpleexportother
@@ -951,7 +957,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testPackageAttribute() throws Exception
    {
       //Bundle-SymbolicName: packageexportattribute
@@ -1004,7 +1010,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testPackageAttributeFails() throws Exception
    {
       //Bundle-SymbolicName: packageexportattribute
@@ -1038,7 +1044,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testPackageAttributeMandatory() throws Exception
    {
       //Bundle-SymbolicName: packageexportattributemandatory
@@ -1072,7 +1078,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testPackageAttributeMandatoryFails() throws Exception
    {
       //Bundle-SymbolicName: packageexportattributemandatory
@@ -1106,7 +1112,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   //@Test
+   @Test
    public void testSystemPackageImport() throws Exception
    {
       //Bundle-SymbolicName: systempackageimport

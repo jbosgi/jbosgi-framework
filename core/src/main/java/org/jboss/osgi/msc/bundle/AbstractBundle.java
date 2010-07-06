@@ -39,7 +39,6 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
-import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -59,7 +58,6 @@ import org.osgi.framework.Version;
  */
 public abstract class AbstractBundle implements Bundle
 {
-   private static ServiceManagerPlugin serviceManager; 
    private BundleManager bundleManager;
    private AbstractBundleContext bundleContext;
    private AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
@@ -121,6 +119,8 @@ public abstract class AbstractBundle implements Bundle
    {
       return bundleManager;
    }
+
+   public abstract VirtualFile getRootFile();
 
    public abstract OSGiMetaData getOSGiMetaData();
    
@@ -434,13 +434,6 @@ public abstract class AbstractBundle implements Bundle
       throw new NotImplementedException();
    }
 
-   ServiceManagerPlugin getServiceManagerPlugin()
-   {
-      if (serviceManager == null)
-         serviceManager = getBundleManager().getPlugin(ServiceManagerPlugin.class);
-      return serviceManager;
-   }
-   
    @Override
    public int hashCode()
    {

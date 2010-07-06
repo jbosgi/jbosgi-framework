@@ -22,6 +22,7 @@
 package org.jboss.osgi.msc.bundle;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,8 +45,10 @@ import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.SystemModuleClassLoader;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.msc.loading.VirtualFileResourceLoader;
+import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XPackageCapability;
+import org.jboss.osgi.resolver.XWire;
 import org.jboss.osgi.vfs.VirtualFile;
-import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
 
 /**
@@ -62,8 +65,6 @@ public class ModuleManager extends ModuleLoader
    // The registered modules
    // [FEEDBACK] ModuleManager needs to maintain this duplicate map to remove modules on Bundle.uninstall() 
    private Map<ModuleIdentifier, Module> modules = Collections.synchronizedMap(new LinkedHashMap<ModuleIdentifier, Module>());
-   // The framework module identifier
-   private ModuleIdentifier frameworkIdentifier;
    // The framework module
    private Module frameworkModule;
 
@@ -82,68 +83,96 @@ public class ModuleManager extends ModuleLoader
       });
    }
 
-   public ModuleIdentifier getFrameworkModuleIdentifier()
+   public ModuleSpec createModuleSpec(XModule resModule, VirtualFile rootFile)
    {
-      if (frameworkIdentifier == null)
-         frameworkIdentifier = new ModuleIdentifier("jbosgi", Constants.SYSTEM_BUNDLE_SYMBOLICNAME, null);
-
-      return frameworkIdentifier;
-   }
-
-   public ModuleSpec createModuleSpec(OSGiMetaData metadata, VirtualFile rootFile)
-   {
-      String symbolicName = metadata.getBundleSymbolicName();
-      Version version = metadata.getBundleVersion();
-      ModuleIdentifier moduleIdentifier = new ModuleIdentifier("jbosgi", symbolicName, version.toString());
+      ModuleIdentifier moduleIdentifier = getModuleIdentifier(resModule);
       ModuleSpec moduleSpec = new ModuleSpec(moduleIdentifier);
 
       // Add the framework module as required dependency
       List<DependencySpec> dependencies = moduleSpec.getDependencies();
       DependencySpec frameworkDependency = new DependencySpec();
-      frameworkDependency.setModuleIdentifier(getFrameworkModuleIdentifier());
+      frameworkDependency.setModuleIdentifier(frameworkModule.getIdentifier());
       frameworkDependency.setExport(true);
       dependencies.add(frameworkDependency);
 
+      // Add the exported packages as paths
+      Set<String> paths = new HashSet<String>(Collections.singleton("/"));
+      for (XPackageCapability cap : resModule.getPackageCapabilities())
+         paths.add(cap.getName().replace('.', '/'));
+
       // Add the bundle's {@link ResourceLoader}
       Builder builder = ModuleContentLoader.build();
-      builder.add(moduleIdentifier.toString(), new VirtualFileResourceLoader(rootFile));
+      builder.add(moduleIdentifier.toString(), new VirtualFileResourceLoader(rootFile, paths));
       moduleSpec.setContentLoader(builder.create());
+      
+      List<XWire> wires = resModule.getWires();
+      if (wires != null)
+      {
+         for (XWire wire : wires)
+         {
+            XModule importer = wire.getImporter();
+            XModule exporter = wire.getExporter();
+            if (exporter != importer)
+            {
+               ModuleIdentifier depId = getModuleIdentifier(exporter);
+               DependencySpec dep = new DependencySpec();
+               dep.setModuleIdentifier(depId);
+               dep.setExport(true);
+               dependencies.add(dep);
+            }
+         }
+      }
 
       log.debug("Created ModuleSpec: " + moduleSpec);
       return moduleSpec;
    }
 
+   public static ModuleIdentifier getModuleIdentifier(XModule resModule)
+   {
+      String name = resModule.getName();
+      Version version = resModule.getVersion();
+      return new ModuleIdentifier("[" + resModule.getModuleId() + "]", name, version.toString());
+   }
+
+   public static long getModuleIdentifier(ModuleIdentifier identifier)
+   {
+      String moduleId = identifier.getGroup();
+      moduleId = moduleId.substring(1, moduleId.length() - 1);
+      return Long.parseLong(moduleId);
+   }
+
    @Override
-   protected Module findModule(ModuleIdentifier moduleIdentifier) throws ModuleLoadException
+   public Module findModule(ModuleIdentifier moduleIdentifier) throws ModuleLoadException
    {
       return modules.get(moduleIdentifier);
    }
 
-   public Module createFrameworkModule() throws ModuleLoadException
+   public Module createFrameworkModule(final XModule resModule) throws ModuleLoadException
    {
       if (frameworkModule != null)
          throw new IllegalStateException("Framework module already created");
 
       final ModuleLoader moduleLoader = this;
-      frameworkModule = new Module(frameworkIdentifier, new ModuleLoaderSpec()
+      ModuleIdentifier identifier = getModuleIdentifier(resModule);
+      frameworkModule = new Module(identifier, new ModuleLoaderSpec()
       {
          @Override
          public ModuleLoader getModuleLoader(Module module)
          {
             return moduleLoader;
          }
-         
+
          @Override
          public ModuleClassLoader getModuleClassLoader(Module module)
          {
-            SystemModuleClassLoader smcl = new SystemModuleClassLoader(module, Collections.<Flag>emptySet(), AssertionSetting.INHERIT)
+            SystemModuleClassLoader smcl = new SystemModuleClassLoader(module, Collections.<Flag> emptySet(), AssertionSetting.INHERIT)
             {
                @Override
                protected Set<String> getExportedPaths()
                {
                   Set<String> exportedPaths = super.getExportedPaths();
-                  // [TODO] read these from external properties
-                  exportedPaths.add("org/osgi/framework");
+                  for (XPackageCapability cap : resModule.getPackageCapabilities())
+                     exportedPaths.add(cap.getName());
                   return exportedPaths;
                }
             };
@@ -156,9 +185,6 @@ public class ModuleManager extends ModuleLoader
 
    public Module createModule(ModuleSpec moduleSpec) throws ModuleLoadException
    {
-      if (frameworkModule == null)
-         createFrameworkModule();
-      
       Module module = defineModule(moduleSpec);
       registerModule(module);
       return module;

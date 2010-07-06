@@ -21,35 +21,36 @@
  */
 package org.jboss.osgi.msc.plugin.internal;
 
-//$Id$
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.msc.bundle.AbstractBundle;
 import org.jboss.osgi.msc.bundle.BundleManager;
 import org.jboss.osgi.msc.plugin.AbstractPlugin;
+import org.jboss.osgi.msc.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.msc.plugin.ResolverPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XResolver;
+import org.jboss.osgi.resolver.XResolverCallback;
 import org.jboss.osgi.resolver.XResolverException;
 import org.jboss.osgi.resolver.XResolverFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
- * A simple implementation of a BundleStorage
+ * The resolver plugin.
  * 
  * @author thomas.diesler@jboss.com
- * @since 18-Aug-2009
+ * @since 06-Jul-2009
  */
 public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
 {
    // Provide logging
    final Logger log = Logger.getLogger(ResolverPluginImpl.class);
-   
+
    // The resolver delegate
    private XResolver resolver;
 
@@ -57,6 +58,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    {
       super(bundleManager);
       resolver = XResolverFactory.getResolver();
+      resolver.setCallbackHandler(new ResolverCallback());
    }
 
    @Override
@@ -78,15 +80,14 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    @Override
    public void resolve(AbstractBundle bundleState) throws BundleException
    {
-      XModule module = bundleState.getResolverModule();
+      XModule resModule = bundleState.getResolverModule();
       try
       {
-         resolver.resolve(module);
-         loadResolvedModule(module);
+         resolver.resolve(resModule);
       }
-      catch (XResolverException rex)
+      catch (XResolverException ex)
       {
-         throw new BundleException("Cannot resolve bundle: " + bundleState, rex);
+         throw new BundleException("Cannot resolve bundle: " + bundleState, ex);
       }
    }
 
@@ -111,35 +112,59 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
                unresolved.add(aux.getResolverModule());
          }
       }
-      log.debug("resolve bundles: " + unresolved);
+      log.debug("Resolve bundles: " + unresolved);
 
       // Resolve the modules and report resolver errors
       List<XModule> resolved = resolver.resolve(unresolved);
-      for (XModule module : unresolved)
+      for (XModule resModule : unresolved)
       {
-         if (module.isResolved() == false)
+         if (resModule.isResolved() == false)
          {
-            XResolverException rex = module.getAttachment(XResolverException.class);
-            log.error("Cannot resolve: " + module, rex);
-         }
-         else
-         {
-            loadResolvedModule(module);
+            XResolverException ex = resModule.getAttachment(XResolverException.class);
+            log.error("Cannot resolve: " + resModule, ex);
          }
       }
 
       // Convert results into bundles
       List<AbstractBundle> result = new ArrayList<AbstractBundle>();
-      for (XModule module : resolved)
+      for (XModule resModule : resolved)
       {
-         Bundle bundle = module.getAttachment(Bundle.class);
+         Bundle bundle = resModule.getAttachment(Bundle.class);
          result.add(AbstractBundle.assertBundleState(bundle));
       }
       return Collections.unmodifiableList(result);
    }
 
-   private void loadResolvedModule(XModule module)
+   class ResolverCallback implements XResolverCallback
    {
-      // TODO Auto-generated method stub
+      private ModuleManagerPlugin moduleManager;
+
+      @Override
+      public boolean acquireGlobalLock()
+      {
+         return true;
+      }
+
+      @Override
+      public void releaseGlobalLock()
+      {
+         // do nothing
+      }
+
+      @Override
+      public void markResolved(XModule module)
+      {
+         if (moduleManager == null)
+            moduleManager = getPlugin(ModuleManagerPlugin.class);
+
+         try
+         {
+            moduleManager.loadModule(module);
+         }
+         catch (ModuleLoadException ex)
+         {
+            log.error("Cannot load module: " + module);
+         }
+      }
    }
 }

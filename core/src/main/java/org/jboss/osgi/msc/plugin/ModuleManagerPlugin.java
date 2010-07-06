@@ -19,31 +19,25 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.framework.simple;
+package org.jboss.osgi.msc.plugin;
 
+// $Id$
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.osgi.framework.Bundle;
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleLoadException;
+import org.jboss.osgi.resolver.XModule;
 
 /**
- * A test that deployes a bundle and verifies its state
+ * The module manager plugin.
  * 
  * @author thomas.diesler@jboss.com
- * @since 18-Aug-2009
+ * @since 06-Jul-2009
  */
-@Ignore
-public class SimpleArquillianBundleTestCase extends OSGiFrameworkTest 
+public interface ModuleManagerPlugin extends Plugin 
 {
-   @Test
-   public void testBundleLifecycle() throws Exception
-   {
-      Bundle cmpd = installBundle("bundles/org.osgi.compendium.jar");
-      Bundle arq = installBundle("bundles/arquillian-bundle.jar");
-      
-      arq.start();
-      assertBundleState(Bundle.ACTIVE, arq.getState());
-      assertBundleState(Bundle.RESOLVED, cmpd.getState());
-   }
+   /**
+    * Load the given resover module
+    * @return The loaded module
+    */
+   Module loadModule(XModule resModule) throws ModuleLoadException;
 }

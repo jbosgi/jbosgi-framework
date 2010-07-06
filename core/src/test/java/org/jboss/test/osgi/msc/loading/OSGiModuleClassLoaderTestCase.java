@@ -30,10 +30,11 @@ import java.util.jar.Manifest;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.msc.bundle.ModuleManager;
 import org.jboss.osgi.msc.loading.OSGiModuleClassLoader;
-import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
+import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleBuilder;
+import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiTestHelper;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -47,6 +48,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.BundleActivator;
+import org.osgi.framework.Constants;
+import org.osgi.framework.Version;
 
 /**
  * Test the bundle content loader.
@@ -89,16 +92,23 @@ public class OSGiModuleClassLoaderTestCase
          }
       });
       
-      // [TODO] workaround for competing URLStreamHandlerFactory registration
+      // Create the {@link ModuleLoader}
       ModuleManager moduleManager = new ModuleManager();
       
-      // Get the OSGiMetaData
+      // Add the framework module to the manager
+      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
+      builder.createModule(0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME, Version.emptyVersion);
+      builder.addPackageCapability("org.osgi.framework", null, null);
+      moduleManager.createFrameworkModule(builder.getModule());
+      
+      // Create the test module 
       rootFile = OSGiTestHelper.toVirtualFile(archive);
       Manifest manifest = VFSUtils.getManifest(rootFile);
-      OSGiMetaData metadata = new OSGiManifestMetaData(manifest);
+      builder = XResolverFactory.getModuleBuilder();
+      XModule resModule = builder.createModule(1, manifest);
       
       // Create the ModuleSpec and the Module
-      ModuleSpec moduleSpec = moduleManager.createModuleSpec(metadata, rootFile);
+      ModuleSpec moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
       module = moduleManager.createModule(moduleSpec);
    }
    

@@ -25,8 +25,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
+import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.msc.bundle.AbstractBundle;
 import org.jboss.osgi.msc.bundle.BundleManager;
+import org.jboss.osgi.msc.bundle.ModuleManager;
 import org.jboss.osgi.msc.plugin.AbstractServicePlugin;
 import org.jboss.osgi.msc.plugin.PackageAdminPlugin;
 import org.jboss.osgi.msc.plugin.ResolverPlugin;
@@ -78,12 +82,12 @@ public class PackageAdminPluginImpl extends AbstractServicePlugin implements Pac
    public ExportedPackage[] getExportedPackages(Bundle bundle)
    {
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      XModule module = bundleState.getResolverModule();
-      if (module.isResolved() == false)
+      XModule resModule = bundleState.getResolverModule();
+      if (resModule.isResolved() == false)
          return null;
 
       List<ExportedPackage> result = new ArrayList<ExportedPackage>();
-      for (XPackageCapability cap : module.getPackageCapabilities())
+      for (XPackageCapability cap : resModule.getPackageCapabilities())
       {
          ExportedPackage exp = new ExportedPackageImpl(cap);
          result.add(exp);
@@ -168,7 +172,21 @@ public class PackageAdminPluginImpl extends AbstractServicePlugin implements Pac
    @SuppressWarnings("rawtypes")
    public Bundle getBundle(Class clazz)
    {
-      throw new NotImplementedException();
+      if (clazz == null)
+         throw new IllegalArgumentException("Null clazz");
+      
+      ClassLoader loader = clazz.getClassLoader();
+      if (loader instanceof ModuleClassLoader == false)
+      {
+         log.error("Cannot obtain bundle for: " + loader);
+         return null;
+      }
+      
+      ModuleClassLoader moduleCL = (ModuleClassLoader)loader;
+      Module module = moduleCL.getModule();
+      ModuleIdentifier identifier = module.getIdentifier();
+      long moduleId = ModuleManager.getModuleIdentifier(identifier);
+      return getBundleManager().getBundleById(moduleId);
    }
 
    @Override

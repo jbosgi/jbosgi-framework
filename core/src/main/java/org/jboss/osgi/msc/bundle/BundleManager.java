@@ -37,12 +37,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.msc.plugin.BundleStoragePlugin;
+import org.jboss.osgi.msc.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.msc.plugin.PackageAdminPlugin;
 import org.jboss.osgi.msc.plugin.Plugin;
 import org.jboss.osgi.msc.plugin.ResolverPlugin;
 import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.msc.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.msc.plugin.internal.BundleStoragePluginImpl;
+import org.jboss.osgi.msc.plugin.internal.ModuleManagerPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.PackageAdminPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.ResolverPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.ServiceManagerPluginImpl;
@@ -68,8 +70,6 @@ public class BundleManager
    private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
    /// The registered plugins 
    private Map<Class<? extends Plugin>, Plugin> plugins = Collections.synchronizedMap(new LinkedHashMap<Class<? extends Plugin>, Plugin>());
-   // The module loader
-   private ModuleManager moduleManager;
    // The Framework state
    private FrameworkState frameworkState;
 
@@ -77,12 +77,10 @@ public class BundleManager
    {
       frameworkState = new FrameworkState(this, props);
 
-      // Create the ModuleLoader
-      moduleManager = new ModuleManager();
-
       // Register the framework plugins
       // [TODO] Externalize plugin registration
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
+      plugins.put(ModuleManagerPlugin.class, new ModuleManagerPluginImpl(this));
       plugins.put(PackageAdminPlugin.class, new PackageAdminPluginImpl(this));
       plugins.put(ResolverPlugin.class, new ResolverPluginImpl(this));
       plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
@@ -90,11 +88,6 @@ public class BundleManager
 
       // Create and add the system bundle
       addBundleState(frameworkState.getSystemBundle());
-   }
-
-   public ModuleManager getModuleManager()
-   {
-      return moduleManager;
    }
 
    public FrameworkState getFrameworkState()
@@ -130,7 +123,7 @@ public class BundleManager
       bundleState.changeState(Bundle.UNINSTALLED);
    }
 
-   AbstractBundle getBundleById(long bundleId)
+   public AbstractBundle getBundleById(long bundleId)
    {
       if (bundleId == 0)
          return getSystemBundle();

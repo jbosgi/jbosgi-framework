@@ -287,8 +287,15 @@ public final class FrameworkState
       {
          if (plugin instanceof ServicePlugin)
          {
-            ServicePlugin servicePlugin = (ServicePlugin)plugin;
-            servicePlugin.stopService();
+            try
+            {
+               ServicePlugin servicePlugin = (ServicePlugin)plugin;
+               servicePlugin.stopService();
+            }
+            catch (RuntimeException ex)
+            {
+               log.error("Cannot stop service: " + plugin, ex);
+            }
          }
       }
 

@@ -35,6 +35,7 @@ import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.spi.NotImplementedException;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -67,7 +68,6 @@ public class SystemBundle extends AbstractBundle
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
       resolverModule = builder.createModule(0, getSymbolicName(), getVersion());
       builder.addBundleCapability(getSymbolicName(), getVersion());
-      resolverModule.addAttachment(Bundle.class, this);
       
       SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
       for (String packageSpec : plugin.getSystemPackages(true))
@@ -89,6 +89,20 @@ public class SystemBundle extends AbstractBundle
       }
    }
 
+   /**
+    * Assert that the given bundle is an instance of SystemBundle
+    * @throws IllegalArgumentException if the given bundle is not an instance of SystemBundle
+    */
+   public static SystemBundle assertBundleState(Bundle bundle)
+   {
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      
+      if (bundleState instanceof SystemBundle == false)
+         throw new IllegalArgumentException("Not an HostBundle: " + bundleState);
+
+      return (SystemBundle)bundleState;
+   }
+
    @Override
    public OSGiMetaData getOSGiMetaData()
    {
@@ -99,6 +113,12 @@ public class SystemBundle extends AbstractBundle
    public XModule getResolverModule()
    {
       return resolverModule;
+   }
+
+   @Override
+   public VirtualFile getRootFile()
+   {
+      return null;
    }
 
    @Override

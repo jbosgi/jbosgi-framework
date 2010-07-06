@@ -27,8 +27,12 @@ import static org.junit.Assert.assertTrue;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.osgi.msc.bundle.ModuleManager;
+import org.jboss.osgi.resolver.XModule;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.osgi.framework.BundleActivator;
+import org.osgi.framework.Constants;
+import org.osgi.framework.Version;
 
 /**
  * Test the bundle content loader.
@@ -41,8 +45,12 @@ public class FrameworkModuleTestCase
    @Test
    public void testClassLoad() throws Exception
    {
+      XModule resModule = Mockito.mock(XModule.class);
+      Mockito.when(resModule.getName()).thenReturn(Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+      Mockito.when(resModule.getVersion()).thenReturn(Version.emptyVersion);
+      
       ModuleManager moduleManager = new ModuleManager();
-      Module module = moduleManager.createFrameworkModule();
+      Module module = moduleManager.createFrameworkModule(resModule);
       ModuleClassLoader classLoader = module.getClassLoader();
       Class<?> result = classLoader.loadClass(BundleActivator.class.getName());
       assertNotNull("BundleActivator loaded", result);

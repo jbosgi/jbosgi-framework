@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
@@ -45,6 +46,7 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    private long serviceId;
    private AbstractBundle owner;
    private Map<String, Object> properties;
+   private ServiceManagerPlugin serviceManager;
    private Object value;
 
    public ServiceState(AbstractBundle owner, String[] clazzes, Object value, Dictionary props)
@@ -56,7 +58,8 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
       if (value == null)
          throw new IllegalArgumentException("Null value");
       
-      this.serviceId = owner.getServiceManagerPlugin().getNextServiceId();
+      this.serviceManager = owner.getBundleManager().getPlugin(ServiceManagerPlugin.class);
+      this.serviceId = serviceManager.getNextServiceId();
       this.owner = owner;
       this.value = value;
       

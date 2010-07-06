@@ -22,12 +22,14 @@
 package org.jboss.osgi.msc.bundle;
 
 import java.io.InputStream;
+import java.util.Collections;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.msc.plugin.ResolverPlugin;
+import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XResolverFactory;
@@ -51,6 +53,7 @@ public class HostBundle extends AbstractBundle
    private OSGiMetaData metadata;
    private BundleActivator bundleActivator;
    private XModule resolverModule;
+   private VirtualFile rootFile;
    private Module module;
 
    public HostBundle(BundleManager bundleManager, OSGiMetaData metadata, String location, VirtualFile rootFile) throws BundleException
@@ -64,6 +67,7 @@ public class HostBundle extends AbstractBundle
       this.bundleId = bundleManager.getNextBundleId();
       this.metadata = metadata;
       this.location = location;
+      this.rootFile = rootFile;
       
       // Set the bundle version
       setVersion(metadata.getBundleVersion());
@@ -71,6 +75,20 @@ public class HostBundle extends AbstractBundle
       // Create the resolver module
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
       resolverModule = builder.createModule(bundleId, metadata);
+   }
+
+   /**
+    * Assert that the given bundle is an instance of HostBundle
+    * @throws IllegalArgumentException if the given bundle is not an instance of HostBundle
+    */
+   public static HostBundle assertBundleState(Bundle bundle)
+   {
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      
+      if (bundleState instanceof HostBundle == false)
+         throw new IllegalArgumentException("Not an HostBundle: " + bundleState);
+
+      return (HostBundle)bundleState;
    }
 
    @Override
@@ -85,12 +103,18 @@ public class HostBundle extends AbstractBundle
       return resolverModule;
    }
 
-   Module getModule()
+   @Override
+   public VirtualFile getRootFile()
+   {
+      return rootFile;
+   }
+
+   public Module getModule()
    {
       return module;
    }
 
-   Module setModule(Module module)
+   public Module setModule(Module module)
    {
       if (module == null)
          throw new IllegalArgumentException("Null module");
@@ -125,6 +149,20 @@ public class HostBundle extends AbstractBundle
    @Override
    public Class<?> loadClass(String className) throws ClassNotFoundException
    {
+      // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle 
+      // [TODO] If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired 
+      //        containing a BundleException with details of the reason this bundle could not be resolved. 
+      //        This method must then throw a ClassNotFoundException.
+      if (getState() == Bundle.INSTALLED)
+      {
+         ResolverPlugin plugin = getBundleManager().getPlugin(ResolverPlugin.class);
+         plugin.resolve(Collections.singletonList((AbstractBundle)this));
+         
+         if (getState() == Bundle.INSTALLED)
+            throw new ClassNotFoundException("Cannot load class: " + className);
+      }
+      
+      // Load the class through the module
       try
       {
          ModuleIdentifier identifier = getModule().getIdentifier();
@@ -254,7 +292,8 @@ public class HostBundle extends AbstractBundle
       }
 
       // Any services registered by this bundle must be unregistered
-      getServiceManagerPlugin().unregisterServices(this);
+      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
+      plugin.unregisterServices(this);
 
       // [TODO] Any listeners registered by this bundle must be removed
 

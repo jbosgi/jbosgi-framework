@@ -54,7 +54,7 @@ public class VirtualFileResourceLoaderTestCase
    @Test
    public void testClassSpec() throws Exception
    {
-      ResourceLoader loader = new VirtualFileResourceLoader(rootFile);
+      ResourceLoader loader = new VirtualFileResourceLoader(rootFile, null);
       ClassSpec result = loader.getClassSpec(SimpleActivator.class.getName());
       assertNotNull("ClassSpec not null", result);
    }
@@ -62,7 +62,7 @@ public class VirtualFileResourceLoaderTestCase
    @Test
    public void testPackageSpec() throws Exception
    {
-      ResourceLoader loader = new VirtualFileResourceLoader(rootFile);
+      ResourceLoader loader = new VirtualFileResourceLoader(rootFile, null);
       PackageSpec result = loader.getPackageSpec(SimpleActivator.class.getPackage().getName());
       assertNotNull("PackageSpec not null", result);
    }
@@ -70,7 +70,7 @@ public class VirtualFileResourceLoaderTestCase
    @Test
    public void testResource() throws Exception
    {
-      ResourceLoader loader = new VirtualFileResourceLoader(rootFile);
+      ResourceLoader loader = new VirtualFileResourceLoader(rootFile, null);
       Resource result = loader.getResource("META-INF/MANIFEST.MF");
       assertNotNull("Resource not null", result);
    }

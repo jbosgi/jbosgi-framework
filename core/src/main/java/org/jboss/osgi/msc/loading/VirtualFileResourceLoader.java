@@ -29,6 +29,8 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -49,12 +51,18 @@ import org.jboss.osgi.vfs.VirtualFile;
 public class VirtualFileResourceLoader extends AbstractResourceLoader
 {
    private VirtualFile virtualFile;
+   private Set<String> filteredPaths;
 
-   public VirtualFileResourceLoader(VirtualFile virtualFile)
+   public VirtualFileResourceLoader(VirtualFile virtualFile, Set<String> paths)
    {
       if (virtualFile == null)
          throw new IllegalArgumentException("Null virtualFile");
+      
       this.virtualFile = virtualFile;
+      
+      filteredPaths = new HashSet<String>();
+      if (paths != null)
+         filteredPaths.addAll(paths);
    }
 
    @Override
@@ -133,7 +141,7 @@ public class VirtualFileResourceLoader extends AbstractResourceLoader
    @Override
    public Collection<String> getPaths()
    {
-      return Collections.singleton("/");
+      return Collections.unmodifiableSet(filteredPaths);
    }
 
    private void safeClose(final Closeable closeable)
