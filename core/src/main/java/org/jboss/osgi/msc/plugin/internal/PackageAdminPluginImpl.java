@@ -185,7 +185,7 @@ public class PackageAdminPluginImpl extends AbstractServicePlugin implements Pac
       ModuleClassLoader moduleCL = (ModuleClassLoader)loader;
       Module module = moduleCL.getModule();
       ModuleIdentifier identifier = module.getIdentifier();
-      long moduleId = ModuleManager.getModuleIdentifier(identifier);
+      long moduleId = ModuleManager.getModuleId(identifier);
       return getBundleManager().getBundleById(moduleId);
    }
 

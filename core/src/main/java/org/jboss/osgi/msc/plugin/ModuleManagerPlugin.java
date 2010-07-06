@@ -21,10 +21,10 @@
  */
 package org.jboss.osgi.msc.plugin;
 
-// $Id$
-
 import org.jboss.modules.Module;
+import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
+import org.jboss.osgi.msc.bundle.ModuleManager;
 import org.jboss.osgi.resolver.XModule;
 
 /**
@@ -36,8 +36,13 @@ import org.jboss.osgi.resolver.XModule;
 public interface ModuleManagerPlugin extends Plugin 
 {
    /**
-    * Load the given resover module
-    * @return The loaded module
+    * Get the module with the given identifier
+    * @return The module or null
     */
-   Module loadModule(XModule resModule) throws ModuleLoadException;
+   Module findModule(ModuleIdentifier identifier, boolean create) throws ModuleLoadException;
+   
+   /**
+    * Register the module with the {@link ModuleManager}
+    */
+   void registerModule(XModule resModule) throws ModuleLoadException;
 }

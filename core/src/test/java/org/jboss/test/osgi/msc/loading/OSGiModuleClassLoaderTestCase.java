@@ -30,6 +30,7 @@ import java.util.jar.Manifest;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.osgi.msc.bundle.BundleManager;
 import org.jboss.osgi.msc.bundle.ModuleManager;
 import org.jboss.osgi.msc.loading.OSGiModuleClassLoader;
 import org.jboss.osgi.resolver.XModule;
@@ -47,6 +48,7 @@ import org.jboss.test.osgi.framework.simple.bundleC.SimpleService;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
@@ -93,7 +95,7 @@ public class OSGiModuleClassLoaderTestCase
       });
       
       // Create the {@link ModuleLoader}
-      ModuleManager moduleManager = new ModuleManager();
+      ModuleManager moduleManager = new ModuleManager(Mockito.mock(BundleManager.class));
       
       // Add the framework module to the manager
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
@@ -109,7 +111,7 @@ public class OSGiModuleClassLoaderTestCase
       
       // Create the ModuleSpec and the Module
       ModuleSpec moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
-      module = moduleManager.createModule(moduleSpec);
+      module = moduleManager.createModule(moduleSpec, false);
    }
    
    @AfterClass

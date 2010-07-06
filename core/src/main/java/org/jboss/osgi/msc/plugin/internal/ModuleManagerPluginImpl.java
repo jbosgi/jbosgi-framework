@@ -23,8 +23,8 @@ package org.jboss.osgi.msc.plugin.internal;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
+import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.msc.bundle.BundleManager;
 import org.jboss.osgi.msc.bundle.HostBundle;
 import org.jboss.osgi.msc.bundle.ModuleManager;
@@ -51,19 +51,24 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    public ModuleManagerPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
-      moduleManager = new ModuleManager();
+      moduleManager = new ModuleManager(bundleManager);
    }
 
    @Override
-   public Module loadModule(XModule resModule) throws ModuleLoadException
+   public Module findModule(ModuleIdentifier identifier, boolean create) throws ModuleLoadException
+   {
+      return moduleManager.findModule(identifier, create);
+   }
+
+   @Override
+   public void registerModule(XModule resModule)
    {
       if (resModule == null)
          throw new IllegalArgumentException("Null module");
       
-      Module module;
       if (resModule.getModuleId() == 0)
       {
-         module = moduleManager.createFrameworkModule(resModule);
+         moduleManager.createFrameworkModule(resModule);
       }
       else
       {
@@ -72,11 +77,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          HostBundle bundleState = HostBundle.assertBundleState(bundle);
          VirtualFile rootFile = bundleState.getRootFile();
 
-         ModuleSpec moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
-         module = moduleManager.createModule(moduleSpec);
-         bundleState.setModule(module);
+         moduleManager.createModuleSpec(resModule, rootFile);
       }
-
-      return module;
    }
 }

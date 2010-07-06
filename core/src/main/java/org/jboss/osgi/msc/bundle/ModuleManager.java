@@ -49,6 +49,7 @@ import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XWire;
 import org.jboss.osgi.vfs.VirtualFile;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;
 
 /**
@@ -62,14 +63,22 @@ public class ModuleManager extends ModuleLoader
    // Provide logging
    private static final Logger log = Logger.getLogger(ModuleManager.class);
 
-   // The registered modules
-   // [FEEDBACK] ModuleManager needs to maintain this duplicate map to remove modules on Bundle.uninstall() 
+   // the bundle manager
+   private BundleManager bundleManager;
+   // The loaded modules
    private Map<ModuleIdentifier, Module> modules = Collections.synchronizedMap(new LinkedHashMap<ModuleIdentifier, Module>());
+   // The registered module specs
+   private Map<ModuleIdentifier, ModuleSpec> moduleSpecs = Collections.synchronizedMap(new LinkedHashMap<ModuleIdentifier, ModuleSpec>());
    // The framework module
    private Module frameworkModule;
 
-   public ModuleManager()
+   public ModuleManager(BundleManager bundleManager)
    {
+      if (bundleManager == null)
+         throw new IllegalArgumentException("Null bundleManager");
+      
+      this.bundleManager = bundleManager;
+      
       // Make sure this ModuleLoader is used
       // This also registers the URLStreamHandlerFactory
       final ModuleLoader moduleLoader = this;
@@ -83,10 +92,49 @@ public class ModuleManager extends ModuleLoader
       });
    }
 
+   public static ModuleIdentifier getModuleIdentifier(XModule resModule)
+   {
+      String name = resModule.getName();
+      Version version = resModule.getVersion();
+      return new ModuleIdentifier("" + resModule.getModuleId(), name, version.toString());
+   }
+
+   public static long getModuleId(ModuleIdentifier identifier)
+   {
+      String moduleId = identifier.getGroup();
+      return Long.parseLong(moduleId);
+   }
+
+   public Module getModule(ModuleIdentifier identifier) 
+   {
+      Module module = modules.get(identifier);
+      return module;
+   }
+
+   @Override
+   public Module findModule(ModuleIdentifier identifier) throws ModuleLoadException
+   {
+      return findModule(identifier, true);
+   }
+
+   public Module findModule(ModuleIdentifier identifier, boolean create) throws ModuleLoadException
+   {
+      Module module = modules.get(identifier);
+      if (module == null && create == true)
+      {
+         ModuleSpec moduleSpec = moduleSpecs.remove(identifier);
+         if (moduleSpec != null)
+         {
+            module = createModule(moduleSpec, true);
+         }
+      }
+      return module;
+   }
+
    public ModuleSpec createModuleSpec(XModule resModule, VirtualFile rootFile)
    {
-      ModuleIdentifier moduleIdentifier = getModuleIdentifier(resModule);
-      ModuleSpec moduleSpec = new ModuleSpec(moduleIdentifier);
+      ModuleIdentifier identifier = getModuleIdentifier(resModule);
+      ModuleSpec moduleSpec = new ModuleSpec(identifier);
 
       // Add the framework module as required dependency
       List<DependencySpec> dependencies = moduleSpec.getDependencies();
@@ -102,7 +150,7 @@ public class ModuleManager extends ModuleLoader
 
       // Add the bundle's {@link ResourceLoader}
       Builder builder = ModuleContentLoader.build();
-      builder.add(moduleIdentifier.toString(), new VirtualFileResourceLoader(rootFile, paths));
+      builder.add(identifier.toString(), new VirtualFileResourceLoader(rootFile, paths));
       moduleSpec.setContentLoader(builder.create());
       
       // For every {@link XWire} add a dependency on the exporter
@@ -124,31 +172,12 @@ public class ModuleManager extends ModuleLoader
          }
       }
 
-      log.debug("Created ModuleSpec: " + moduleSpec.getIdentifier());
+      log.debug("Created ModuleSpec: " + identifier);
+      moduleSpecs.put(identifier, moduleSpec);
       return moduleSpec;
    }
 
-   public static ModuleIdentifier getModuleIdentifier(XModule resModule)
-   {
-      String name = resModule.getName();
-      Version version = resModule.getVersion();
-      return new ModuleIdentifier("[" + resModule.getModuleId() + "]", name, version.toString());
-   }
-
-   public static long getModuleIdentifier(ModuleIdentifier identifier)
-   {
-      String moduleId = identifier.getGroup();
-      moduleId = moduleId.substring(1, moduleId.length() - 1);
-      return Long.parseLong(moduleId);
-   }
-
-   @Override
-   public Module findModule(ModuleIdentifier moduleIdentifier) throws ModuleLoadException
-   {
-      return modules.get(moduleIdentifier);
-   }
-
-   public Module createFrameworkModule(final XModule resModule) throws ModuleLoadException
+   public Module createFrameworkModule(final XModule resModule) 
    {
       if (frameworkModule != null)
          throw new IllegalStateException("Framework module already created");
@@ -180,24 +209,24 @@ public class ModuleManager extends ModuleLoader
             return smcl;
          }
       });
-      registerModule(frameworkModule);
+      modules.put(identifier, frameworkModule);
       return frameworkModule;
    }
 
-   public Module createModule(ModuleSpec moduleSpec) throws ModuleLoadException
+   public Module createModule(ModuleSpec moduleSpec, boolean resolveBundle) throws ModuleLoadException
    {
       Module module = defineModule(moduleSpec);
-      registerModule(module);
+      ModuleIdentifier identifier = module.getIdentifier();
+      modules.put(identifier, module);
+      
+      // Change the bundle state to RESOLVED 
+      if (resolveBundle == true)
+      {
+         long moduleId = getModuleId(identifier);
+         AbstractBundle bundleState = bundleManager.getBundleById(moduleId);
+         bundleState.changeState(Bundle.RESOLVED);
+      }
+      
       return module;
-   }
-
-   private void registerModule(Module module) throws ModuleLoadException
-   {
-      modules.put(module.getIdentifier(), module);
-   }
-
-   public void unregisterModule(Module module)
-   {
-      modules.remove(module.getIdentifier());
    }
 }

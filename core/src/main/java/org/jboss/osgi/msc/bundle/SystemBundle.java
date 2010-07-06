@@ -122,12 +122,6 @@ public class SystemBundle extends AbstractBundle
    }
 
    @Override
-   public long getBundleId()
-   {
-      return 0;
-   }
-
-   @Override
    public String getLocation()
    {
       return Constants.SYSTEM_BUNDLE_LOCATION;

@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.msc.bundle.AbstractBundle;
 import org.jboss.osgi.msc.bundle.BundleManager;
@@ -89,6 +90,18 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       {
          throw new BundleException("Cannot resolve bundle: " + bundleState, ex);
       }
+      
+      // Load the resolved module
+      ModuleManagerPlugin moduleManger = getPlugin(ModuleManagerPlugin.class);
+      ModuleIdentifier identifier = bundleState.getModuleIdentifier();
+      try
+      {
+         moduleManger.findModule(identifier, true);
+      }
+      catch (ModuleLoadException ex)
+      {
+         throw new BundleException("Cannot load module: " + identifier);
+      }
    }
 
    @Override
@@ -125,12 +138,24 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
          }
       }
 
+      ModuleManagerPlugin moduleManger = getPlugin(ModuleManagerPlugin.class);
+      
       // Convert results into bundles
       List<AbstractBundle> result = new ArrayList<AbstractBundle>();
       for (XModule resModule : resolved)
       {
          Bundle bundle = resModule.getAttachment(Bundle.class);
-         result.add(AbstractBundle.assertBundleState(bundle));
+         AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+         ModuleIdentifier identifier = bundleState.getModuleIdentifier();
+         try
+         {
+            moduleManger.findModule(identifier, true);
+            result.add(bundleState);
+         }
+         catch (ModuleLoadException ex)
+         {
+            log.error("Cannot load module: " + identifier, ex);
+         }
       }
       return Collections.unmodifiableList(result);
    }
@@ -152,19 +177,19 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       }
 
       @Override
-      public void markResolved(XModule module)
+      public void markResolved(XModule resModule)
       {
          if (moduleManager == null)
             moduleManager = getPlugin(ModuleManagerPlugin.class);
 
          try
          {
-            log.debug("Mark resolved: " + module);
-            moduleManager.loadModule(module);
+            log.debug("Mark resolved: " + resModule);
+            moduleManager.registerModule(resModule);
          }
          catch (ModuleLoadException ex)
          {
-            log.error("Cannot load module: " + module, ex);
+            log.error("Cannot load module: " + resModule, ex);
          }
       }
    }

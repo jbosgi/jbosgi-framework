@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.util.Collections;
 
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.msc.plugin.ResolverPlugin;
@@ -48,13 +47,11 @@ import org.osgi.framework.BundleException;
  */
 public class HostBundle extends AbstractBundle
 {
-   private long bundleId;
    private String location;
    private OSGiMetaData metadata;
    private BundleActivator bundleActivator;
    private XModule resolverModule;
    private VirtualFile rootFile;
-   private Module module;
 
    public HostBundle(BundleManager bundleManager, OSGiMetaData metadata, String location, VirtualFile rootFile) throws BundleException
    {
@@ -64,7 +61,6 @@ public class HostBundle extends AbstractBundle
       if (rootFile == null)
          throw new IllegalArgumentException("Null rootFile");
 
-      this.bundleId = bundleManager.getNextBundleId();
       this.metadata = metadata;
       this.location = location;
       this.rootFile = rootFile;
@@ -74,7 +70,7 @@ public class HostBundle extends AbstractBundle
       
       // Create the resolver module
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
-      resolverModule = builder.createModule(bundleId, metadata);
+      resolverModule = builder.createModule(getBundleId(), metadata);
    }
 
    /**
@@ -109,31 +105,6 @@ public class HostBundle extends AbstractBundle
       return rootFile;
    }
 
-   public Module getModule()
-   {
-      return module;
-   }
-
-   public Module setModule(Module module)
-   {
-      if (module == null)
-         throw new IllegalArgumentException("Null module");
-      this.module = module;
-      changeState(RESOLVED);
-      return module;
-   }
-
-   void resetModule()
-   {
-      this.module = null;
-   }
-
-   @Override
-   public long getBundleId()
-   {
-      return bundleId;
-   }
-
    @Override
    public String getLocation()
    {
@@ -155,22 +126,14 @@ public class HostBundle extends AbstractBundle
       //        This method must then throw a ClassNotFoundException.
       if (getState() == Bundle.INSTALLED)
       {
-         ResolverPlugin plugin = getBundleManager().getPlugin(ResolverPlugin.class);
-         plugin.resolve(Collections.singletonList((AbstractBundle)this));
-         
-         if (getState() == Bundle.INSTALLED)
-            throw new ClassNotFoundException("Cannot load class: " + className);
+         ResolverPlugin resolver = getBundleManager().getPlugin(ResolverPlugin.class);
+         resolver.resolve(Collections.singletonList((AbstractBundle)this));
       }
 
-      // Verify that the module has been loaded
-      if (getModule() == null)
-         throw new IllegalStateException("Module not loaded for: " + this);
-      
       // Load the class through the module
       try
       {
-         ModuleIdentifier identifier = getModule().getIdentifier();
-         return Module.loadClass(identifier, className);
+         return Module.loadClass(getModuleIdentifier(), className);
       }
       catch (ModuleLoadException ex)
       {

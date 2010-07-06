@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
+import org.jboss.osgi.msc.bundle.BundleManager;
 import org.jboss.osgi.msc.bundle.ModuleManager;
 import org.jboss.osgi.resolver.XModule;
 import org.junit.Test;
@@ -49,7 +50,7 @@ public class FrameworkModuleTestCase
       Mockito.when(resModule.getName()).thenReturn(Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
       Mockito.when(resModule.getVersion()).thenReturn(Version.emptyVersion);
       
-      ModuleManager moduleManager = new ModuleManager();
+      ModuleManager moduleManager = new ModuleManager(Mockito.mock(BundleManager.class));
       Module module = moduleManager.createFrameworkModule(resModule);
       ModuleClassLoader classLoader = module.getClassLoader();
       Class<?> result = classLoader.loadClass(BundleActivator.class.getName());

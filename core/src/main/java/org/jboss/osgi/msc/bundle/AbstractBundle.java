@@ -35,6 +35,7 @@ import java.util.ResourceBundle;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.Manifest;
 
+import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -58,27 +59,33 @@ import org.osgi.framework.Version;
  */
 public abstract class AbstractBundle implements Bundle
 {
+   private long bundleId;
+   private ModuleIdentifier identifier;
    private BundleManager bundleManager;
    private AbstractBundleContext bundleContext;
    private AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
    private Version version = Version.emptyVersion;
    private String symbolicName;
-   
+
    public AbstractBundle(BundleManager bundleManager, String symbolicName)
    {
-      this.bundleManager = bundleManager;
-      this.symbolicName = symbolicName;
       if (bundleManager == null)
          throw new IllegalArgumentException("Null bundleManager");
       if (symbolicName == null)
          throw new IllegalArgumentException("Null symbolicName");
+
+      this.bundleManager = bundleManager;
+      this.symbolicName = symbolicName;
+
+      if (symbolicName.equals(Constants.SYSTEM_BUNDLE_SYMBOLICNAME) == false)
+         this.bundleId = bundleManager.getNextBundleId();
    }
 
    public static AbstractBundle createBundle(BundleManager bundleManager, Deployment dep) throws BundleException
    {
       VirtualFile rootFile = dep.getRoot();
       String location = dep.getLocation();
-      
+
       Manifest manifest;
       try
       {
@@ -88,15 +95,15 @@ public abstract class AbstractBundle implements Bundle
       {
          throw new BundleException("Cannot obtain manifest from: " + dep);
       }
-      
+
       OSGiMetaData metadata = new OSGiManifestMetaData(manifest);
       if (metadata.getFragmentHost() != null)
          throw new NotImplementedException("Fragments not support");
-      
+
       AbstractBundle bundleState = new HostBundle(bundleManager, metadata, location, rootFile);
       return bundleState;
    }
-   
+
    /**
     * Assert that the given bundle is an instance of AbstractBundle
     * @throws IllegalArgumentException if the given bundle is not an instance of AbstractBundle
@@ -123,9 +130,23 @@ public abstract class AbstractBundle implements Bundle
    public abstract VirtualFile getRootFile();
 
    public abstract OSGiMetaData getOSGiMetaData();
-   
+
    public abstract XModule getResolverModule();
-   
+
+   @Override
+   public long getBundleId()
+   {
+      return bundleId;
+   }
+
+   public ModuleIdentifier getModuleIdentifier()
+   {
+      if (identifier == null)
+         identifier = ModuleManager.getModuleIdentifier(getResolverModule());
+      
+      return identifier;
+   }
+
    @Override
    public String getSymbolicName()
    {
@@ -137,7 +158,7 @@ public abstract class AbstractBundle implements Bundle
    {
       return version;
    }
-   
+
    void setVersion(Version version)
    {
       this.version = version;
@@ -147,12 +168,12 @@ public abstract class AbstractBundle implements Bundle
    {
       return new BundleWrapper(this);
    }
-   
+
    public void changeState(int newstate)
    {
       bundleState.getAndSet(newstate);
    }
-   
+
    @Override
    public int getState()
    {
@@ -172,14 +193,14 @@ public abstract class AbstractBundle implements Bundle
          throw new IllegalStateException("BundleContext already available");
       bundleContext = createContextInternal();
    }
-   
+
    abstract AbstractBundleContext createContextInternal();
-   
+
    void destroyBundleContext()
    {
       bundleContext = null;
    }
-   
+
    @Override
    public void start(int options) throws BundleException
    {
@@ -229,7 +250,7 @@ public abstract class AbstractBundle implements Bundle
    }
 
    abstract void uninstallInternal() throws BundleException;
-   
+
    @Override
    public ServiceReference[] getRegisteredServices()
    {
@@ -447,7 +468,7 @@ public abstract class AbstractBundle implements Bundle
          return false;
       if (obj == this)
          return true;
-      
+
       AbstractBundle other = (AbstractBundle)obj;
       return getBundleId() == other.getBundleId();
    }
