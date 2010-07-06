@@ -112,6 +112,11 @@ public interface ServiceManagerPlugin extends Plugin
    ServiceState registerService(AbstractBundle bundleState, String[] clazzes, Object service, Dictionary properties);
 
    /**
+    * Unregister the given service. 
+    */
+   void unregisterService(ServiceState reference);
+   
+   /**
     * Releases the service object referenced by the specified
     * <code>ServiceReference</code> object. If the context bundle's use count
     * for the service is zero, this method returns <code>false</code>.

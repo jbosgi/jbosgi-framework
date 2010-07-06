@@ -161,6 +161,10 @@ public class HostBundle extends AbstractBundle
          if (getState() == Bundle.INSTALLED)
             throw new ClassNotFoundException("Cannot load class: " + className);
       }
+
+      // Verify that the module has been loaded
+      if (getModule() == null)
+         throw new IllegalStateException("Module not loaded for: " + this);
       
       // Load the class through the module
       try

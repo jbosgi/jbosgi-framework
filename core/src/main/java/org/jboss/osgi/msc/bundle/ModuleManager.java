@@ -105,6 +105,7 @@ public class ModuleManager extends ModuleLoader
       builder.add(moduleIdentifier.toString(), new VirtualFileResourceLoader(rootFile, paths));
       moduleSpec.setContentLoader(builder.create());
       
+      // For every {@link XWire} add a dependency on the exporter
       List<XWire> wires = resModule.getWires();
       if (wires != null)
       {
@@ -123,7 +124,7 @@ public class ModuleManager extends ModuleLoader
          }
       }
 
-      log.debug("Created ModuleSpec: " + moduleSpec);
+      log.debug("Created ModuleSpec: " + moduleSpec.getIdentifier());
       return moduleSpec;
    }
 

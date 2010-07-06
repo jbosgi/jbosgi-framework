@@ -159,11 +159,12 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
 
          try
          {
+            log.debug("Mark resolved: " + module);
             moduleManager.loadModule(module);
          }
          catch (ModuleLoadException ex)
          {
-            log.error("Cannot load module: " + module);
+            log.error("Cannot load module: " + module, ex);
          }
       }
    }

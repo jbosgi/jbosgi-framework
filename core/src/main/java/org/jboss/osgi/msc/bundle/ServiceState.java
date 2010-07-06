@@ -21,12 +21,16 @@
 */
 package org.jboss.osgi.msc.bundle;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
@@ -47,6 +51,7 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    private AbstractBundle owner;
    private Map<String, Object> properties;
    private ServiceManagerPlugin serviceManager;
+   private List<ServiceName> serviceNames;
    private Object value;
 
    public ServiceState(AbstractBundle owner, String[] clazzes, Object value, Dictionary props)
@@ -102,6 +107,20 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    {
       return value;
    }
+
+   
+   public List<ServiceName> getServiceNames()
+   {
+      return Collections.unmodifiableList(serviceNames);
+   }
+
+   public void addServiceName(ServiceName name)
+   {
+      if (serviceNames == null)
+         serviceNames = new ArrayList<ServiceName>();
+      
+      serviceNames.add(name);
+   }
    
    @Override
    public ServiceReference getReference()
@@ -118,7 +137,7 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    @Override
    public void unregister()
    {
-      throw new NotImplementedException();
+      serviceManager.unregisterService(this);
    }
 
    @Override

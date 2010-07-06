@@ -208,6 +208,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          for (NameAssociation aux : associations)
          {
             registerServiceName(bundleId, aux.clazz, aux.name);
+            serviceState.addServiceName(aux.name);
          }
       }
       catch (ServiceRegistryException ex)
@@ -216,6 +217,19 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       }
 
       return serviceState;
+   }
+
+   @Override
+   public void unregisterService(ServiceState serviceState)
+   {
+      List<ServiceName> names = serviceState.getServiceNames();
+      if (names != null)
+      {
+         for (ServiceName name : names)
+         {
+            unregisterService(name);
+         }
+      }
    }
 
    // Creates a unique ServiceName
@@ -271,19 +285,24 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       {
          for (ServiceName name : names)
          {
-            ServiceController<?> controller = serviceContainer.getService(name);
-            
-            // Unregister the service names
-            ServiceState serviceState = (ServiceState)controller.getValue();
-            String[] clazzes = (String[])serviceState.getProperty(Constants.OBJECTCLASS);
-            for (String clazz : clazzes)
-               unregisterServiceName(clazz, name);
-            
-            // A service is brought DOWN by setting it's mode to NEVER
-            // Adding a {@link RemovingServiceListener} does this and will
-            // also synchronoulsy remove the service from the registry 
-            controller.addListener(new RemovingServiceListener());
+            unregisterService(name);
          }
       }
+   }
+
+   private void unregisterService(ServiceName name)
+   {
+      ServiceController<?> controller = serviceContainer.getService(name);
+      
+      // Unregister the service names
+      ServiceState serviceState = (ServiceState)controller.getValue();
+      String[] clazzes = (String[])serviceState.getProperty(Constants.OBJECTCLASS);
+      for (String clazz : clazzes)
+         unregisterServiceName(clazz, name);
+      
+      // A service is brought DOWN by setting it's mode to NEVER
+      // Adding a {@link RemovingServiceListener} does this and will
+      // also synchronoulsy remove the service from the registry 
+      controller.addListener(new RemovingServiceListener());
    }
 }
