@@ -114,13 +114,8 @@ public class ModuleManager extends ModuleLoader
    @Override
    public Module findModule(ModuleIdentifier identifier) throws ModuleLoadException
    {
-      return findModule(identifier, true);
-   }
-
-   public Module findModule(ModuleIdentifier identifier, boolean create) throws ModuleLoadException
-   {
       Module module = modules.get(identifier);
-      if (module == null && create == true)
+      if (module == null)
       {
          ModuleSpec moduleSpec = moduleSpecs.remove(identifier);
          if (moduleSpec != null)

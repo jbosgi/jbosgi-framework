@@ -33,9 +33,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.jar.Manifest;
 
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
+import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.msc.plugin.BundleStoragePlugin;
 import org.jboss.osgi.msc.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.msc.plugin.PackageAdminPlugin;
@@ -49,6 +52,7 @@ import org.jboss.osgi.msc.plugin.internal.PackageAdminPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.ResolverPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.ServiceManagerPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.SystemPackagesPluginImpl;
+import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -288,8 +292,31 @@ public class BundleManager
          return bundleState;
 
       // Create the bundle state
-      bundleState = AbstractBundle.createBundle(this, dep);
+      bundleState = createBundle(dep);
       addBundleState(bundleState);
+      return bundleState;
+   }
+
+   private AbstractBundle createBundle(Deployment dep) throws BundleException
+   {
+      VirtualFile rootFile = dep.getRoot();
+      String location = dep.getLocation();
+
+      Manifest manifest;
+      try
+      {
+         manifest = VFSUtils.getManifest(rootFile);
+      }
+      catch (IOException ex)
+      {
+         throw new BundleException("Cannot obtain manifest from: " + dep);
+      }
+
+      OSGiMetaData metadata = new OSGiManifestMetaData(manifest);
+      if (metadata.getFragmentHost() != null)
+         throw new NotImplementedException("Fragments not support");
+
+      AbstractBundle bundleState = new HostBundle(this, metadata, location, rootFile);
       return bundleState;
    }
 

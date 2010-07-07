@@ -24,25 +24,30 @@ package org.jboss.osgi.msc.bundle;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.jar.Manifest;
 
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
+import org.jboss.osgi.msc.plugin.ModuleManagerPlugin;
+import org.jboss.osgi.msc.plugin.ResolverPlugin;
+import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.NotImplementedException;
-import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -59,15 +64,31 @@ import org.osgi.framework.Version;
  */
 public abstract class AbstractBundle implements Bundle
 {
+   // The bundle id
    private long bundleId;
+   // The identifier of the associated module
    private ModuleIdentifier identifier;
-   private BundleManager bundleManager;
+   //The {@link BundleContext} 
    private AbstractBundleContext bundleContext;
+   // The bundle state
    private AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
+   // The bundle version
    private Version version = Version.emptyVersion;
+   // The bundle symbolic name
    private String symbolicName;
+   
+   // The set of owned services
+   private Set<ServiceState> ownedServices;
+   // The set of used services
+   private Set<ServiceState> usedServices;
 
-   public AbstractBundle(BundleManager bundleManager, String symbolicName)
+   // Cache commonly used managers
+   private BundleManager bundleManager;
+   private ModuleManagerPlugin modulePlugin;
+   private ServiceManagerPlugin servicePlugin;
+   private ResolverPlugin resolverPlugin;
+
+   AbstractBundle(BundleManager bundleManager, String symbolicName)
    {
       if (bundleManager == null)
          throw new IllegalArgumentException("Null bundleManager");
@@ -79,29 +100,6 @@ public abstract class AbstractBundle implements Bundle
 
       if (symbolicName.equals(Constants.SYSTEM_BUNDLE_SYMBOLICNAME) == false)
          this.bundleId = bundleManager.getNextBundleId();
-   }
-
-   public static AbstractBundle createBundle(BundleManager bundleManager, Deployment dep) throws BundleException
-   {
-      VirtualFile rootFile = dep.getRoot();
-      String location = dep.getLocation();
-
-      Manifest manifest;
-      try
-      {
-         manifest = VFSUtils.getManifest(rootFile);
-      }
-      catch (IOException ex)
-      {
-         throw new BundleException("Cannot obtain manifest from: " + dep);
-      }
-
-      OSGiMetaData metadata = new OSGiManifestMetaData(manifest);
-      if (metadata.getFragmentHost() != null)
-         throw new NotImplementedException("Fragments not support");
-
-      AbstractBundle bundleState = new HostBundle(bundleManager, metadata, location, rootFile);
-      return bundleState;
    }
 
    /**
@@ -127,6 +125,48 @@ public abstract class AbstractBundle implements Bundle
       return bundleManager;
    }
 
+   ModuleManagerPlugin getModuleManagerPlugin()
+   {
+      if (modulePlugin == null)
+         modulePlugin = bundleManager.getPlugin(ModuleManagerPlugin.class);
+
+      return modulePlugin;
+   }
+
+   ServiceManagerPlugin getServiceManagerPlugin()
+   {
+      if (servicePlugin == null)
+         servicePlugin = bundleManager.getPlugin(ServiceManagerPlugin.class);
+
+      return servicePlugin;
+   }
+
+   ResolverPlugin getResolverPlugin()
+   {
+      if (resolverPlugin == null)
+         resolverPlugin = bundleManager.getPlugin(ResolverPlugin.class);
+
+      return resolverPlugin;
+   }
+
+   ModuleClassLoader getBundleClassLoader()
+   {
+      ModuleIdentifier identifier = getModuleIdentifier();
+      Module module = getModuleManagerPlugin().getModule(identifier);
+      if (module != null)
+      {
+         try
+         {
+            return ModuleClassLoader.forModule(identifier);
+         }
+         catch (ModuleLoadException ex)
+         {
+            throw new IllegalStateException("Cannot load module: " + identifier);
+         }
+      }
+      return null;
+   }
+
    public abstract VirtualFile getRootFile();
 
    public abstract OSGiMetaData getOSGiMetaData();
@@ -143,7 +183,7 @@ public abstract class AbstractBundle implements Bundle
    {
       if (identifier == null)
          identifier = ModuleManager.getModuleIdentifier(getResolverModule());
-      
+
       return identifier;
    }
 
@@ -199,6 +239,48 @@ public abstract class AbstractBundle implements Bundle
    void destroyBundleContext()
    {
       bundleContext = null;
+   }
+
+   public void addOwnedService(ServiceState serviceState)
+   {
+      if (ownedServices == null)
+         ownedServices = new HashSet<ServiceState>();
+      ownedServices.add(serviceState);
+   }
+   
+   public void removeOwnedService(ServiceState serviceState)
+   {
+      if (ownedServices != null)
+         ownedServices.remove(serviceState);
+   }
+   
+   public Set<ServiceState> getOwnedServices()
+   {
+      if (ownedServices == null)
+         return Collections.emptySet();
+      
+      return Collections.unmodifiableSet(ownedServices);
+   }
+
+   public void addUsedService(ServiceState serviceState)
+   {
+      if (usedServices == null)
+         usedServices = new HashSet<ServiceState>();
+      usedServices.add(serviceState);
+   }
+   
+   public void removeUsedService(ServiceState serviceState)
+   {
+      if (usedServices != null)
+         usedServices.remove(serviceState);
+   }
+   
+   public Set<ServiceState> getUsedServices()
+   {
+      if (usedServices == null)
+         return Collections.emptySet();
+      
+      return Collections.unmodifiableSet(usedServices);
    }
 
    @Override
@@ -265,12 +347,6 @@ public abstract class AbstractBundle implements Bundle
 
    @Override
    public boolean hasPermission(Object permission)
-   {
-      throw new NotImplementedException();
-   }
-
-   @Override
-   public URL getResource(String name)
    {
       throw new NotImplementedException();
    }
@@ -416,34 +492,7 @@ public abstract class AbstractBundle implements Bundle
    }
 
    @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration getResources(String name) throws IOException
-   {
-      throw new NotImplementedException();
-   }
-
-   @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration getEntryPaths(String path)
-   {
-      throw new NotImplementedException();
-   }
-
-   @Override
-   public URL getEntry(String path)
-   {
-      throw new NotImplementedException();
-   }
-
-   @Override
    public long getLastModified()
-   {
-      throw new NotImplementedException();
-   }
-
-   @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration findEntries(String path, String filePattern, boolean recurse)
    {
       throw new NotImplementedException();
    }

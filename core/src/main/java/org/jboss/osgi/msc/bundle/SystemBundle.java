@@ -21,7 +21,10 @@
 */
 package org.jboss.osgi.msc.bundle;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.jar.Attributes;
@@ -134,13 +137,6 @@ public class SystemBundle extends AbstractBundle
    }
 
    @Override
-   public Class<?> loadClass(String name) throws ClassNotFoundException
-   {
-      ClassLoader classLoader = getClass().getClassLoader();
-      return classLoader.loadClass(name);
-   }
-
-   @Override
    void startInternal() throws BundleException
    {
       createBundleContext();
@@ -162,5 +158,50 @@ public class SystemBundle extends AbstractBundle
    void uninstallInternal() throws BundleException
    {
       throw new NotImplementedException();
+   }
+
+   @Override
+   public Class<?> loadClass(String name) throws ClassNotFoundException
+   {
+      ClassLoader classLoader = getClass().getClassLoader();
+      return classLoader.loadClass(name);
+   }
+
+   @Override
+   public Enumeration<URL> findEntries(String path, String filePattern, boolean recurse)
+   {
+      // [Bug-1472] Clarify the semantic of resource API when called on the system bundle
+      // https://www.osgi.org/members/bugzilla/show_bug.cgi?id=1472
+      return null;
+   }
+
+   @Override
+   public URL getEntry(String path)
+   {
+      // [Bug-1472] Clarify the semantic of resource API when called on the system bundle
+      // https://www.osgi.org/members/bugzilla/show_bug.cgi?id=1472
+      return null;
+   }
+
+   @Override
+   @SuppressWarnings({ "rawtypes" })
+   public Enumeration getEntryPaths(String path)
+   {
+      // [Bug-1472] Clarify the semantic of resource API when called on the system bundle
+      // https://www.osgi.org/members/bugzilla/show_bug.cgi?id=1472
+      return null;
+   }
+
+   @Override
+   public URL getResource(String name)
+   {
+      return getClass().getClassLoader().getResource(name);
+   }
+
+   @Override
+   @SuppressWarnings({ "rawtypes" })
+   public Enumeration getResources(String name) throws IOException
+   {
+      return getClass().getClassLoader().getResources(name);
    }
 }

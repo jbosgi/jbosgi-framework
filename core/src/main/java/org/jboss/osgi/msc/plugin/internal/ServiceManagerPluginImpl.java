@@ -26,8 +26,10 @@ package org.jboss.osgi.msc.plugin.internal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Dictionary;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -70,8 +72,6 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    private ServiceContainer serviceContainer;
    // Maps the service interface to the list of registered service names
    private Map<String, List<ServiceName>> serviceNameMap = new ConcurrentHashMap<String, List<ServiceName>>();
-   // Maps the owner bundleId to the list of it's registered services
-   private Map<Long, List<ServiceName>> serviceOwnerMap = new ConcurrentHashMap<Long, List<ServiceName>>();
 
    public ServiceManagerPluginImpl(BundleManager bundleManager)
    {
@@ -148,28 +148,15 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          throw new IllegalArgumentException("Null service classes");
 
       // A temporary association of the clazz and name
-      class NameAssociation
-      {
-         String clazz;
-         ServiceName name;
-
-         NameAssociation(String clazz, ServiceName name)
-         {
-            this.clazz = clazz;
-            this.name = name;
-         }
-
-      }
-      ;
-      List<NameAssociation> associations = new ArrayList<NameAssociation>();
+      Map<ServiceName, String> associations = new LinkedHashMap<ServiceName, String>();
 
       final ServiceState serviceState = new ServiceState(bundleState, clazzes, value, properties);
       BatchBuilder batchBuilder = serviceContainer.batchBuilder();
-      for (String clazz : clazzes)
+      for (String className : clazzes)
       {
          try
          {
-            ServiceName name = createServiceName(clazz, serviceState.getServiceId());
+            ServiceName serviceName = createServiceName(className, serviceState.getServiceId());
             Service service = new Service()
             {
                @Override
@@ -189,12 +176,13 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
                {
                }
             };
-            batchBuilder.addService(name, service).setInitialMode(Mode.AUTOMATIC);
-            associations.add(new NameAssociation(clazz, name));
+            log.debug("Register service: " + serviceName);
+            batchBuilder.addService(serviceName, service).setInitialMode(Mode.AUTOMATIC);
+            associations.put(serviceName, className);
          }
          catch (DuplicateServiceException ex)
          {
-            log.error("Cannot register service: " + clazz, ex);
+            log.error("Cannot register service: " + className, ex);
          }
       }
 
@@ -204,11 +192,11 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
          // Register the name association. We do this here 
          // in case anything went wrong during the install
-         long bundleId = bundleState.getBundleId();
-         for (NameAssociation aux : associations)
+         for (Entry<ServiceName,String> aux : associations.entrySet())
          {
-            registerServiceName(bundleId, aux.clazz, aux.name);
-            serviceState.addServiceName(aux.name);
+            bundleState.addOwnedService(serviceState);
+            registerServiceName(aux.getValue(), aux.getKey());
+            serviceState.addServiceName(aux.getKey());
          }
       }
       catch (ServiceRegistryException ex)
@@ -238,36 +226,28 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       return ServiceName.of("jbosgi", "service", className, new Long(serviceId).toString());
    }
 
-   private void registerServiceName(long bundleId, String clazz, ServiceName name)
+   private void registerServiceName(String className, ServiceName serviceName)
    {
-      List<ServiceName> names = serviceNameMap.get(clazz);
+      List<ServiceName> names = serviceNameMap.get(className);
       if (names == null)
       {
          names = new ArrayList<ServiceName>();
-         serviceNameMap.put(clazz, names);
+         serviceNameMap.put(className, names);
       }
-      names.add(name);
-
-      names = serviceOwnerMap.get(bundleId);
-      if (names == null)
-      {
-         names = new ArrayList<ServiceName>();
-         serviceOwnerMap.put(bundleId, names);
-      }
-      names.add(name);
+      names.add(serviceName);
    }
 
-   private void unregisterServiceName(String clazz, ServiceName name)
+   private void unregisterServiceName(String className, ServiceName serviceName)
    {
-      List<ServiceName> names = serviceNameMap.get(clazz);
+      List<ServiceName> names = serviceNameMap.get(className);
       if (names == null)
-         throw new IllegalStateException("Cannot obtain service names for: " + clazz);
+         throw new IllegalStateException("Cannot obtain service names for: " + className);
 
-      if (names.remove(name) == false)
-         throw new IllegalStateException("Cannot name [" + name + "] from: " + names);
+      if (names.remove(serviceName) == false)
+         throw new IllegalStateException("Cannot name [" + serviceName + "] from: " + names);
 
       if (names.isEmpty())
-         serviceNameMap.remove(clazz);
+         serviceNameMap.remove(className);
    }
 
    @Override
@@ -279,26 +259,27 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    @Override
    public void unregisterServices(AbstractBundle bundleState)
    {
-      long bundleId = bundleState.getBundleId();
-      List<ServiceName> names = serviceOwnerMap.remove(bundleId);
-      if (names != null)
+      for (ServiceState serviceState : bundleState.getOwnedServices())
       {
-         for (ServiceName name : names)
+         bundleState.removeOwnedService(serviceState);
+         for (ServiceName name : serviceState.getServiceNames())
          {
             unregisterService(name);
          }
       }
    }
 
-   private void unregisterService(ServiceName name)
+   private void unregisterService(ServiceName serviceName)
    {
-      ServiceController<?> controller = serviceContainer.getService(name);
+      log.debug("Unregister service: " + serviceName);
+      
+      ServiceController<?> controller = serviceContainer.getService(serviceName);
       
       // Unregister the service names
       ServiceState serviceState = (ServiceState)controller.getValue();
       String[] clazzes = (String[])serviceState.getProperty(Constants.OBJECTCLASS);
       for (String clazz : clazzes)
-         unregisterServiceName(clazz, name);
+         unregisterServiceName(clazz, serviceName);
       
       // A service is brought DOWN by setting it's mode to NEVER
       // Adding a {@link RemovingServiceListener} does this and will

@@ -53,10 +53,7 @@ import org.osgi.framework.ServiceRegistration;
 /**
  * BundleContextTest.
  *
- * TODO test security
- * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author thomas.diesler@jboss.com
- * @version $Revision: 1.1 $
  */
 @Ignore
 public class BundleContextTestCase extends OSGiFrameworkTest

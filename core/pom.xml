@@ -58,6 +58,14 @@
 
     <!-- Test Dependencies -->
     <dependency>
+      <groupId>org.apache.felix</groupId>
+      <artifactId>org.apache.felix.eventadmin</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.felix</groupId>
+      <artifactId>org.apache.felix.log</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.jboss.arquillian</groupId>
       <artifactId>arquillian-bundle</artifactId>
       <scope>test</scope>
@@ -104,6 +112,16 @@
             </goals>
             <configuration>
               <artifactItems>
+                <artifactItem>
+                  <groupId>org.apache.felix</groupId>
+                  <artifactId>org.apache.felix.eventadmin</artifactId>
+                  <destFileName>org.apache.felix.eventadmin.jar</destFileName>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>org.apache.felix</groupId>
+                  <artifactId>org.apache.felix.log</artifactId>
+                  <destFileName>org.apache.felix.log.jar</destFileName>
+                </artifactItem>
                 <artifactItem>
                   <groupId>org.jboss.arquillian</groupId>
                   <artifactId>arquillian-bundle</artifactId>

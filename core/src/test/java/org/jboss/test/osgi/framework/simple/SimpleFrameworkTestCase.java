@@ -21,20 +21,25 @@
  */
 package org.jboss.test.osgi.framework.simple;
 
-//$Id$
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
-import java.net.URL;
+import java.io.InputStream;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.test.osgi.framework.simple.bundleA.SimpleService;
-import org.junit.Ignore;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.shrinkwrap.api.Archives;
+import org.jboss.shrinkwrap.api.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.test.osgi.framework.simple.bundleC.SimpleActivator;
+import org.jboss.test.osgi.framework.simple.bundleC.SimpleService;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.Version;
 
 /**
  * A test that deployes a bundle and verifies its state
@@ -42,33 +47,52 @@ import org.osgi.framework.ServiceReference;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-@Ignore
 public class SimpleFrameworkTestCase extends OSGiFrameworkTest 
 {
    @Test
-   public void testBundleInstall() throws Exception
+   public void testBundleLifecycle() throws Exception
    {
-      URL bundleURL = getTestArchiveURL("simple-bundle.jar");
-      Bundle bundle = installBundle(bundleURL.toExternalForm());
-
+      // Bundle-Version: 1.0.0
+      // Bundle-SymbolicName: simple-bundle
+      // Bundle-Activator: org.jboss.osgi.msc.framework.simple.bundle.SimpleActivator
+      final JavaArchive archive = Archives.create("simple-bundle", JavaArchive.class);
+      archive.addClasses(SimpleService.class, SimpleActivator.class);
+      archive.setManifest(new Asset()
+      {
+         public InputStream openStream()
+         {
+            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+            builder.addBundleManifestVersion(2);
+            builder.addBundleSymbolicName(archive.getName());
+            builder.addBundleVersion("1.0.0");
+            builder.addBundleActivator(SimpleActivator.class);
+            return builder.openStream();
+         }
+      });
+      Bundle bundle = installBundle(archive);
       assertEquals("simple-bundle", bundle.getSymbolicName());
+      assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
+      assertBundleState(Bundle.INSTALLED, bundle.getState());
 
       bundle.start();
-      assertEquals("Bundle state", Bundle.ACTIVE, bundle.getState());
+      assertBundleState(Bundle.ACTIVE, bundle.getState());
 
-      BundleContext bndContext = bundle.getBundleContext();
-      assertNotNull("BundleContext not null", bndContext);
+      BundleContext context = bundle.getBundleContext();
+      assertNotNull("BundleContext not null", context);
 
-      // getServiceReference from bundle context
-      ServiceReference sref = bndContext.getServiceReference(SimpleService.class.getName());
+      ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
       assertNotNull("ServiceReference not null", sref);
+      
+      Object service = context.getService(sref);
+      assertEquals(SimpleService.class.getName(), service.getClass().getName());
 
-      // getServiceReference from system context
-      BundleContext systemContext = getFramework().getBundleContext();
-      sref = systemContext.getServiceReference(SimpleService.class.getName());
-      assertNotNull("ServiceReference not null", sref);
-
+      bundle.stop();
+      assertBundleState(Bundle.RESOLVED, bundle.getState());
+      
+      sref = context.getServiceReference(SimpleService.class.getName());
+      assertNull("ServiceReference null", sref);
+      
       bundle.uninstall();
-      assertEquals("Bundle state", Bundle.UNINSTALLED, bundle.getState());
+      assertBundleState(Bundle.UNINSTALLED, bundle.getState());
    }
 }

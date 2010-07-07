@@ -1,6 +1,5 @@
 # bnd build -classpath target/test-classes -output target/test-libs/simple-bundle.jar src/test/resources/integration/simple/simple-logservice.bnd
 
 Bundle-SymbolicName: simple-logservice-bundle
-
 Bundle-Activator: org.jboss.test.osgi.framework.simple.bundleB.SimpleLogServiceActivator
 Private-Package: org.jboss.test.osgi.framework.simple.bundleB

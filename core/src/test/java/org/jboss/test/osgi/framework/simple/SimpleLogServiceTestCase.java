@@ -21,15 +21,22 @@
  */
 package org.jboss.test.osgi.framework.simple;
 
-//$Id$
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.InputStream;
+
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.shrinkwrap.api.Archives;
+import org.jboss.shrinkwrap.api.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.test.osgi.framework.simple.bundleB.SimpleLogServiceActivator;
 import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
@@ -41,9 +48,37 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-@Ignore
 public class SimpleLogServiceTestCase extends OSGiFrameworkTest
 {
+   static JavaArchive archive;
+   
+   @BeforeClass
+   public static void beforeClass()
+   {
+      // Bundle-SymbolicName: simple-logservice-bundle
+      // Bundle-Activator: org.jboss.test.osgi.framework.simple.bundleB.SimpleLogServiceActivator
+      archive = Archives.create("simple-logservice-bundle", JavaArchive.class);
+      archive.addClasses(SimpleLogServiceActivator.class);
+      archive.setManifest(new Asset()
+      {
+         public InputStream openStream()
+         {
+            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+            builder.addBundleManifestVersion(2);
+            builder.addBundleSymbolicName(archive.getName());
+            builder.addBundleActivator(SimpleLogServiceActivator.class);
+            return builder.openStream();
+         }
+      });
+   }
+   
+   @Before
+   public void setUp() throws Exception
+   {
+      super.setUp();
+      createFramework().start();
+   }
+
    @After
    public void tearDown() throws Exception
    {
@@ -54,7 +89,7 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
    @Test
    public void testNoLogService() throws Exception
    {
-      Bundle bundle = installBundle(getTestArchivePath("simple-logservice-bundle.jar"));
+      Bundle bundle = installBundle(archive);
       try
       {
          bundle.start();
@@ -70,7 +105,7 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Test
+   @Ignore
    public void testLogServiceFromThirdParty() throws Exception
    {
       Bundle logBundle = installBundle(getTestArchivePath("bundles/org.apache.felix.log.jar"));
@@ -78,7 +113,7 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
       {
          logBundle.start();
 
-         Bundle bundle = installBundle(getTestArchivePath("simple-logservice-bundle.jar"));
+         Bundle bundle = installBundle(archive);
          try
          {
             try
@@ -102,13 +137,13 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Test
+   @Ignore
    public void testLogServiceFromCompendium() throws Exception
    {
       Bundle cmpnBundle = installBundle(getTestArchivePath("bundles/org.osgi.compendium.jar"));
       try
       {
-         Bundle bundle = installBundle(getTestArchivePath("simple-logservice-bundle.jar"));
+         Bundle bundle = installBundle(archive);
          try
          {
             bundle.start();
@@ -132,7 +167,7 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Test
+   @Ignore
    public void testLogServiceFromTwoExporters() throws Exception
    {
       Bundle cmpnBundle = installBundle(getTestArchivePath("bundles/org.osgi.compendium.jar"));
@@ -143,7 +178,7 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
          {
             logBundle.start();
 
-            Bundle bundle = installBundle(getTestArchivePath("simple-logservice-bundle.jar"));
+            Bundle bundle = installBundle(archive);
             try
             {
                bundle.start();

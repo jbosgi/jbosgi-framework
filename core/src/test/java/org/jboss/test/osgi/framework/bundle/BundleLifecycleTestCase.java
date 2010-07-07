@@ -55,7 +55,6 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 15-Dec-2009
  */
-@Ignore
 public class BundleLifecycleTestCase extends OSGiFrameworkTest
 {
    @Test
@@ -126,7 +125,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest
    /**
     * Verifies that BundleB can get started when the service is available
     */
-   @Test
+   @Ignore
    public void testDependencyAvailable() throws Exception
    {
       Archive<?> assemblyA = assembleArchive("lifecycle-service", "/bundles/lifecycle/simple-service", LifecycleService.class);
@@ -159,7 +158,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest
    /**
     * Verifies that BundleB can get started when the service is made available 
     */
-   @Test
+   @Ignore
    public void testStartRetry() throws Exception
    {
       Archive<?> assemblyA = assembleArchive("lifecycle-service", "/bundles/lifecycle/simple-service", LifecycleService.class);
@@ -239,7 +238,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest
    /**
     * Verifies that we get a BundleException when an invalid bundle is installed
     */
-   @Test
+   @Ignore
    public void testInstallInvalid() throws Exception
    {
       try

@@ -39,7 +39,13 @@ public interface ModuleManagerPlugin extends Plugin
     * Get the module with the given identifier
     * @return The module or null
     */
-   Module findModule(ModuleIdentifier identifier, boolean create) throws ModuleLoadException;
+   Module getModule(ModuleIdentifier identifier);
+   
+   /**
+    * Find or create the module with the given identifier
+    * @throws ModuleLoadException If the module cannot be loaded
+    */
+   Module findModule(ModuleIdentifier identifier) throws ModuleLoadException;
    
    /**
     * Register the module with the {@link ModuleManager}

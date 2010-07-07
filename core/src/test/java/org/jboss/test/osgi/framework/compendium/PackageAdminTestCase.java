@@ -30,7 +30,6 @@ import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.framework.compendium.support.a.PA;
 import org.jboss.test.osgi.framework.compendium.support.b.Other;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -38,10 +37,8 @@ import org.osgi.service.packageadmin.PackageAdmin;
 /**
  * Test PackageAdmin service.
  *
- * @author <a href="mailto:ales.justin@jboss.org">Ales Justin</a>
  * @author thomas.diesler@jboss.com
  */
-@Ignore
 public class PackageAdminTestCase extends OSGiFrameworkTest
 {
    @Test

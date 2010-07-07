@@ -21,8 +21,6 @@
  */
 package org.jboss.test.osgi.framework.nativecode;
 
-//$Id: FragmentTestCase.java 99648 2010-01-20 09:27:43Z thomas.diesler@jboss.com $
-
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.Ignore;
 import org.junit.Test;

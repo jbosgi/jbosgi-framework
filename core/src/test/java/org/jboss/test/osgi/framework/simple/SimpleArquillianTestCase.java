@@ -23,7 +23,6 @@ package org.jboss.test.osgi.framework.simple;
 
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 
@@ -33,8 +32,7 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-@Ignore
-public class SimpleArquillianBundleTestCase extends OSGiFrameworkTest 
+public class SimpleArquillianTestCase extends OSGiFrameworkTest 
 {
    @Test
    public void testBundleLifecycle() throws Exception

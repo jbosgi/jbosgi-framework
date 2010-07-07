@@ -43,16 +43,11 @@ import org.osgi.framework.Bundle;
 /**
  * BundleEntriesTest.
  * 
- * TODO test security
- * TODO test fragments
- * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author thomas.diesler@jboss.com
- * @version $Revision: 1.1 $
  */
-@Ignore
 public class BundleEntriesTestCase extends OSGiFrameworkTest
 {
-   @Test
+   @Ignore
    public void testEntriesNotInstalled() throws Exception
    {
       Bundle bundle = installBundle(assembleArchive("entries-simple", "/bundles/entries/entries-simple"));
@@ -96,7 +91,7 @@ public class BundleEntriesTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Test
+   @Ignore
    public void testEntries() throws Exception
    {
       Bundle bundle = installBundle(assembleArchive("entries-simple", "/bundles/entries/entries-simple"));

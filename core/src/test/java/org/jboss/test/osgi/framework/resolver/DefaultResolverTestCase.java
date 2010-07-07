@@ -29,7 +29,6 @@ import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.framework.classloader.support.a.A;
 import org.jboss.test.osgi.framework.classloader.support.c.C;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -173,7 +172,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Ignore
+   @Test
    public void testVersionImportPackage() throws Exception
    {
       //Bundle-SymbolicName: packageimportversion
@@ -262,7 +261,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Ignore
+   @Test
    public void testOptionalImportPackageWired() throws Exception
    {
       //Bundle-SymbolicName: packageimportoptional
@@ -336,7 +335,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Ignore
+   @Test
    public void testBundleNameImportPackage() throws Exception
    {
       //Bundle-SymbolicName: bundlenameimport
@@ -404,7 +403,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Ignore
+   @Test
    public void testBundleVersionImportPackage() throws Exception
    {
       //Bundle-SymbolicName: bundleversionimport
@@ -472,7 +471,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Ignore
+   @Test
    public void testRequireBundle() throws Exception
    {
       // [TODO] require bundle visibility
@@ -552,7 +551,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Ignore
+   @Test
    public void testRequireBundleVersion() throws Exception
    {
       //Bundle-SymbolicName: requirebundleversion

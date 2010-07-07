@@ -47,13 +47,20 @@ import org.osgi.framework.ServiceRegistration;
 @SuppressWarnings("rawtypes")
 public class ServiceState  implements ServiceRegistration, ServiceReference
 {
+   // The service id 
    private long serviceId;
+   // The bundle that ownes this service
    private AbstractBundle owner;
+   // The service properties
    private Map<String, Object> properties;
-   private ServiceManagerPlugin serviceManager;
+   // The list of service names associated with this service
    private List<ServiceName> serviceNames;
+   // The service object value
    private Object value;
 
+   // Cache commonly used managers
+   private ServiceManagerPlugin serviceManager;
+   
    public ServiceState(AbstractBundle owner, String[] clazzes, Object value, Dictionary props)
    {
       if (owner == null)
@@ -63,7 +70,7 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
       if (value == null)
          throw new IllegalArgumentException("Null value");
       
-      this.serviceManager = owner.getBundleManager().getPlugin(ServiceManagerPlugin.class);
+      this.serviceManager = owner.getServiceManagerPlugin();
       this.serviceId = serviceManager.getNextServiceId();
       this.owner = owner;
       this.value = value;

@@ -35,7 +35,6 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -44,12 +43,8 @@ import org.osgi.framework.Constants;
 /**
  * SystemBundleTest.
  *
- * TODO test security
- * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author thomas.diesler@jboss.com
- * @version $Revision: 1.1 $
  */
-@Ignore
 public class SystemBundleTestCase extends OSGiFrameworkTest
 {
    @Test

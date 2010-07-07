@@ -48,12 +48,8 @@ import org.osgi.framework.Constants;
 /**
  * BundleTest.
  *
- * TODO test security
- * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author thomas.diesler@jboss.com
- * @version $Revision: 1.1 $
  */
-@Ignore
 public class BundleTestCase extends OSGiFrameworkTest
 {
    @Test
@@ -93,13 +89,13 @@ public class BundleTestCase extends OSGiFrameworkTest
       Bundle bundle = installBundle(assembly);
       try
       {
-         assertEquals("org.jboss.test.osgi.simple1", bundle.getSymbolicName());
+         assertEquals("org.jboss.test.osgi.framework.simple1", bundle.getSymbolicName());
       }
       finally
       {
          bundle.uninstall();
       }
-      assertEquals("org.jboss.test.osgi.simple1", bundle.getSymbolicName());
+      assertEquals("org.jboss.test.osgi.framework.simple1", bundle.getSymbolicName());
    }
 
    @Test
@@ -160,7 +156,7 @@ public class BundleTestCase extends OSGiFrameworkTest
       // TODO testStartStop
    }
 
-   @Test
+   @Ignore
    public void testUpdate() throws Exception
    {
       Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundle1");
@@ -200,7 +196,7 @@ public class BundleTestCase extends OSGiFrameworkTest
       // TODO testUninstall
    }
 
-   @Test
+   @Ignore
    public void testSingleton() throws Exception
    {
       Archive<?> assemblyA = assembleArchive("bundle10", "/bundles/singleton/singleton1");
@@ -210,7 +206,7 @@ public class BundleTestCase extends OSGiFrameworkTest
          Archive<?> assemblyB = assembleArchive("bundle20", "/bundles/singleton/singleton2");
          Bundle bundleB = installBundle(assemblyB);
          bundleB.uninstall();
-         fail("Should not be here!");
+         fail("BundleException expected");
       }
       catch (BundleException t)
       {
@@ -256,7 +252,7 @@ public class BundleTestCase extends OSGiFrameworkTest
       {
          Dictionary expected = new Hashtable();
          expected.put(Constants.BUNDLE_NAME, "Simple1");
-         expected.put(Constants.BUNDLE_SYMBOLICNAME, "org.jboss.test.osgi.simple1");
+         expected.put(Constants.BUNDLE_SYMBOLICNAME, "org.jboss.test.osgi.framework.simple1");
          expected.put(Constants.BUNDLE_MANIFESTVERSION, "2");
          expected.put(Attributes.Name.MANIFEST_VERSION.toString(), "1.0");
          expected.put(Attributes.Name.IMPLEMENTATION_TITLE.toString(), "JBoss OSGi tests");

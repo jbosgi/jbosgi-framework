@@ -21,14 +21,15 @@
 */
 package org.jboss.osgi.msc.bundle;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Vector;
 
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleLoadException;
+import org.jboss.modules.ModuleClassLoader;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.msc.plugin.ResolverPlugin;
-import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XResolverFactory;
@@ -64,10 +65,10 @@ public class HostBundle extends AbstractBundle
       this.metadata = metadata;
       this.location = location;
       this.rootFile = rootFile;
-      
+
       // Set the bundle version
       setVersion(metadata.getBundleVersion());
-      
+
       // Create the resolver module
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
       resolverModule = builder.createModule(getBundleId(), metadata);
@@ -80,7 +81,7 @@ public class HostBundle extends AbstractBundle
    public static HostBundle assertBundleState(Bundle bundle)
    {
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      
+
       if (bundleState instanceof HostBundle == false)
          throw new IllegalArgumentException("Not an HostBundle: " + bundleState);
 
@@ -120,24 +121,117 @@ public class HostBundle extends AbstractBundle
    @Override
    public Class<?> loadClass(String className) throws ClassNotFoundException
    {
+      // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
+      if (checkResolved() == false)
+         throw new ClassNotFoundException("Class '" + className + "' not found in: " + this);
+
+      // Load the class through the module
+      ModuleClassLoader loader = getBundleClassLoader();
+      return loader.loadClass(className);
+   }
+
+   private boolean checkResolved()
+   {
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle 
       // [TODO] If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired 
       //        containing a BundleException with details of the reason this bundle could not be resolved. 
       //        This method must then throw a ClassNotFoundException.
       if (getState() == Bundle.INSTALLED)
+         getResolverPlugin().resolve(Collections.singletonList((AbstractBundle)this));
+
+      return getBundleClassLoader() != null;
+   }
+
+   @Override
+   public URL getResource(String name)
+   {
+      // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
+      checkResolved();
+
+      ModuleClassLoader classLoader = getBundleClassLoader();
+      if (classLoader != null)
       {
-         ResolverPlugin resolver = getBundleManager().getPlugin(ResolverPlugin.class);
-         resolver.resolve(Collections.singletonList((AbstractBundle)this));
+         return classLoader.getResource(name);
       }
 
-      // Load the class through the module
+      // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
       try
       {
-         return Module.loadClass(getModuleIdentifier(), className);
+         VirtualFile child = getRootFile().getChild(name);
+         return child.toURL();
       }
-      catch (ModuleLoadException ex)
+      catch (IOException ex)
       {
-         throw new ClassNotFoundException("Cannot load class: " + className, ex);
+         return null;
+      }
+   }
+
+   @Override
+   @SuppressWarnings("rawtypes")
+   public Enumeration getResources(String name) throws IOException
+   {
+      // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
+      checkResolved();
+
+      ModuleClassLoader classLoader = getBundleClassLoader();
+      if (classLoader != null)
+      {
+         return classLoader.getResources(name);
+      }
+
+      // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
+      try
+      {
+         VirtualFile child = getRootFile().getChild(name);
+         Vector<URL> vector = new Vector<URL>();
+         vector.add(child.toURL());
+         return vector.elements();
+      }
+      catch (IOException ex)
+      {
+         return null;
+      }
+   }
+
+   @Override
+   @SuppressWarnings("rawtypes")
+   public Enumeration getEntryPaths(String path)
+   {
+      try
+      {
+         return getRootFile().getEntryPaths(path);
+      }
+      catch (IOException ex)
+      {
+         return null;
+      }
+   }
+
+   @Override
+   public URL getEntry(String path)
+   {
+      try
+      {
+         VirtualFile child = getRootFile().getChild(path);
+         return child.toURL();
+      }
+      catch (IOException ex)
+      {
+         return null;
+      }
+   }
+
+   @Override
+   @SuppressWarnings("rawtypes")
+   public Enumeration findEntries(String path, String pattern, boolean recurse)
+   {
+      try
+      {
+         return getRootFile().findEntries(path, pattern, recurse);
+      }
+      catch (IOException ex)
+      {
+         return null;
       }
    }
 
@@ -145,14 +239,13 @@ public class HostBundle extends AbstractBundle
    {
       if (getState() == Bundle.UNINSTALLED)
          throw new IllegalStateException("Cannot start an uninstalled bundle: " + this);
-      
+
       // Resolve all installed bundles 
       if (getState() == Bundle.INSTALLED)
       {
-         ResolverPlugin resolver = getBundleManager().getPlugin(ResolverPlugin.class);
-         resolver.resolve(this);
+         getResolverPlugin().resolve(this);
       }
-      
+
       // This bundle's state is set to STARTING
       // A bundle event of type BundleEvent.STARTING is fired
       createBundleContext();
@@ -259,8 +352,7 @@ public class HostBundle extends AbstractBundle
       }
 
       // Any services registered by this bundle must be unregistered
-      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
-      plugin.unregisterServices(this);
+      getServiceManagerPlugin().unregisterServices(this);
 
       // [TODO] Any listeners registered by this bundle must be removed
 
