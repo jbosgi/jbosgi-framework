@@ -18,14 +18,13 @@
   <!-- Limit categories -->
   <!-- ================ -->
 
-  <!-- Show jboss classloading traces - ->
-  <category name="org.jboss.classloading">
+  <!-- Show jboss classloading traces -->
+  <category name="org.jboss.mosc">
     <priority value="TRACE" />
   </category>
-  <category name="org.jboss.classloader">
+  <category name="org.jboss.modules">
     <priority value="TRACE" />
   </category>
-  -->
 
   <!-- ======================= -->
   <!-- Setup the Root category -->

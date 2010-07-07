@@ -195,9 +195,9 @@ public class ModuleManager extends ModuleLoader
                @Override
                protected Set<String> getExportedPaths()
                {
-                  Set<String> exportedPaths = super.getExportedPaths();
+                  Set<String> exportedPaths = new HashSet<String>();
                   for (XPackageCapability cap : resModule.getPackageCapabilities())
-                     exportedPaths.add(cap.getName());
+                     exportedPaths.add(cap.getName().replace('.', '/'));
                   return exportedPaths;
                }
             };

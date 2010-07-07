@@ -25,8 +25,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
@@ -36,6 +38,7 @@ import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceEvent;
+import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
@@ -46,7 +49,7 @@ import org.osgi.framework.ServiceRegistration;
  * @since 29-Jun-2010
  */
 @SuppressWarnings("rawtypes")
-public class ServiceState  implements ServiceRegistration, ServiceReference
+public class ServiceState implements ServiceRegistration, ServiceReference
 {
    // The service id 
    private long serviceId;
@@ -58,17 +61,19 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    private ServiceRegistration registration;
    // The service reference
    private ServiceReference reference;
+   // The {@link ServiceFactory} value registry
+   private Map<Long, ServiceFactoryHolder> factoryValues;
    // The service object value
    private Object value;
-   
+
    // The properties 
    private CaseInsensitiveDictionary prevProperties;
    private CaseInsensitiveDictionary currProperties;
-   
+
    // Cache commonly used managers
    private ServiceManagerPlugin serviceManager;
    private FrameworkEventsPlugin eventsPlugin;
-   
+
    @SuppressWarnings("unchecked")
    public ServiceState(AbstractBundle owner, String[] clazzes, Object value, Dictionary properties)
    {
@@ -78,21 +83,21 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
          throw new IllegalArgumentException("Null clazzes");
       if (value == null)
          throw new IllegalArgumentException("Null value");
-      
+
       this.serviceManager = owner.getServiceManagerPlugin();
       this.eventsPlugin = owner.getFrameworkEventsPlugin();
-      
+
       this.serviceId = serviceManager.getNextServiceId();
       this.owner = owner;
       this.value = value;
-      
+
       if (properties == null)
          properties = new Hashtable();
-      
+
       properties.put(Constants.SERVICE_ID, serviceId);
       properties.put(Constants.OBJECTCLASS, clazzes);
       this.currProperties = new CaseInsensitiveDictionary(properties);
-      
+
       // Create the {@link ServiceRegistration} and {@link ServiceReference}
       this.registration = new ServiceRegistrationWrapper(this);
       this.reference = new ServiceReferenceWrapper(this);
@@ -118,7 +123,7 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
       return serviceId;
    }
 
-   public Object getValue() 
+   public Object getValue()
    {
       return value;
    }
@@ -127,17 +132,17 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    {
       return registration;
    }
-   
+
    public ServiceReference getServiceReference()
    {
       return reference;
    }
-   
+
    public void removeServiceRegistration()
    {
       registration = null;
    }
-   
+
    public List<ServiceName> getServiceNames()
    {
       return Collections.unmodifiableList(serviceNames);
@@ -147,10 +152,10 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    {
       if (serviceNames == null)
          serviceNames = new ArrayList<ServiceName>();
-      
+
       serviceNames.add(name);
    }
-   
+
    @Override
    public ServiceReference getReference()
    {
@@ -193,10 +198,10 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
       // Remember the previous properties for a potential
       // delivery of the MODIFIED_ENDMATCH event
       prevProperties = currProperties;
-      
+
       if (properties == null)
          properties = new Hashtable();
-      
+
       properties.put(Constants.SERVICE_ID, currProperties.get(Constants.SERVICE_ID));
       properties.put(Constants.OBJECTCLASS, currProperties.get(Constants.OBJECTCLASS));
       currProperties = new CaseInsensitiveDictionary(properties);
@@ -209,7 +214,7 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    {
       return prevProperties;
    }
-   
+
    @Override
    public Bundle getBundle()
    {
@@ -233,7 +238,7 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    {
       throw new NotImplementedException();
    }
-   
+
    private void checkUnregistered()
    {
       if (isUnregistered())
@@ -243,5 +248,38 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    synchronized boolean isUnregistered()
    {
       return registration == null;
+   }
+
+   public Object getServiceFactoryValue(AbstractBundle bundleState)
+   {
+      if (factoryValues == null)
+         factoryValues = new HashMap<Long, ServiceFactoryHolder>();
+      
+      ServiceFactoryHolder factoryHolder = factoryValues.get(bundleState.getBundleId());
+      if (factoryHolder == null)
+      {
+         ServiceFactory factory = (ServiceFactory)value;
+         factoryHolder = new ServiceFactoryHolder(bundleState, factory);
+         factoryValues.put(bundleState.getBundleId(), factoryHolder);
+      }
+      
+      return factoryHolder.getValue();
+   }
+   
+   class ServiceFactoryHolder
+   {
+      ServiceFactory factory;
+      AbstractBundle bundleState;
+      
+      ServiceFactoryHolder(AbstractBundle bundleState, ServiceFactory factory)
+      {
+         this.bundleState = bundleState;
+         this.factory = factory;
+      }
+
+      Object getValue()
+      {
+         return factory.getService(bundleState, getServiceRegistration());
+      }
    }
 }

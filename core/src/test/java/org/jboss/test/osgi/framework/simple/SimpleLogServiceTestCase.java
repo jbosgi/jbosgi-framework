@@ -37,7 +37,6 @@ import org.jboss.test.osgi.framework.simple.bundleB.SimpleLogServiceActivator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -109,7 +108,7 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Ignore
+   @Test
    public void testLogServiceFromThirdParty() throws Exception
    {
       Bundle logBundle = installBundle(getTestArchivePath("bundles/org.apache.felix.log.jar"));
@@ -141,7 +140,7 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Ignore
+   @Test
    public void testLogServiceFromCompendium() throws Exception
    {
       Bundle cmpnBundle = installBundle(getTestArchivePath("bundles/org.osgi.compendium.jar"));
@@ -171,7 +170,7 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Ignore
+   @Test
    public void testLogServiceFromTwoExporters() throws Exception
    {
       Bundle cmpnBundle = installBundle(getTestArchivePath("bundles/org.osgi.compendium.jar"));

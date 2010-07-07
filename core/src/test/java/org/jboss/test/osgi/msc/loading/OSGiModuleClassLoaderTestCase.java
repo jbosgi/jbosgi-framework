@@ -24,6 +24,7 @@ package org.jboss.test.osgi.msc.loading;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.InputStream;
 import java.util.jar.Manifest;
@@ -52,6 +53,7 @@ import org.mockito.Mockito;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
+import org.osgi.service.log.LogService;
 
 /**
  * Test the bundle content loader.
@@ -61,15 +63,6 @@ import org.osgi.framework.Version;
  */
 public class OSGiModuleClassLoaderTestCase 
 {
-   @Test
-   public void testLoadClass() throws Exception
-   {
-      ClassLoader loader = new OSGiModuleClassLoader(module);
-      Class<?> result = loader.loadClass(SimpleActivator.class.getName());
-      assertNotNull("Class loaded", result);
-      assertTrue("Is assignable", BundleActivator.class.isAssignableFrom(result));
-   }
-   
    private static Module module;
    private static VirtualFile rootFile;
    
@@ -118,5 +111,29 @@ public class OSGiModuleClassLoaderTestCase
    public static void afterClass() throws Exception
    {
       rootFile.close();
+   }
+
+   @Test
+   public void testLoadBundleActivator() throws Exception
+   {
+      ClassLoader loader = new OSGiModuleClassLoader(module);
+      Class<?> result = loader.loadClass(SimpleActivator.class.getName());
+      assertNotNull("Class loaded", result);
+      assertTrue("Is assignable", BundleActivator.class.isAssignableFrom(result));
+   }
+
+   @Test
+   public void testLoadLogServiceFail() throws Exception
+   {
+      ClassLoader loader = new OSGiModuleClassLoader(module);
+      try
+      {
+         loader.loadClass(LogService.class.getName());
+         fail("ClassNotFoundException expected");
+      }
+      catch (ClassNotFoundException ex)
+      {
+         // expected
+      }
    }
 }

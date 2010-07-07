@@ -55,6 +55,7 @@ import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceFactory;
 
 /**
  * A plugin that manages OSGi services
@@ -93,9 +94,13 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    }
 
    @Override
-   public Object getService(AbstractBundle bundleState, ServiceState sref)
+   public Object getService(AbstractBundle bundleState, ServiceState serviceState)
    {
-      return sref.getValue();
+      Object value = serviceState.getValue();
+      if (value instanceof ServiceFactory)
+         value = serviceState.getServiceFactoryValue(bundleState);
+      
+      return value;
    }
 
    @Override
