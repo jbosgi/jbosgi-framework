@@ -33,8 +33,8 @@ import org.jboss.arquillian.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
-import org.jboss.shrinkwrap.api.Archives;
 import org.jboss.shrinkwrap.api.Asset;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.simple.bundleA.SimpleActivator;
 import org.jboss.test.osgi.framework.simple.bundleA.SimpleService;
@@ -51,14 +51,14 @@ import org.osgi.framework.ServiceReference;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-@RunWith(Arquillian.class)
 @Ignore
+@RunWith(Arquillian.class)
 public class SimpleArquillianTestCase extends OSGiFrameworkTest 
 {
    @Deployment
    public static JavaArchive createdeployment()
    {
-      final JavaArchive archive = Archives.create("test.jar", JavaArchive.class);
+      final JavaArchive archive = ShrinkWrap.create("test.jar", JavaArchive.class);
       archive.setManifest(new Asset()
       {
          public InputStream openStream()

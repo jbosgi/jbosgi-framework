@@ -34,7 +34,7 @@ import org.jboss.osgi.msc.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiTestHelper;
 import org.jboss.osgi.vfs.VirtualFile;
-import org.jboss.shrinkwrap.api.Archives;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.simple.bundleC.SimpleActivator;
@@ -83,7 +83,7 @@ public class VirtualFileResourceLoaderTestCase
       // Bundle-Version: 1.0.0
       // Bundle-SymbolicName: simple-bundle
       // Bundle-Activator: org.jboss.osgi.msc.framework.simple.bundle.SimpleActivator
-      final JavaArchive archive = Archives.create("simple-bundle", JavaArchive.class);
+      final JavaArchive archive = ShrinkWrap.create("simple-bundle", JavaArchive.class);
       archive.addClasses(SimpleService.class, SimpleActivator.class);
       archive.setManifest(new Asset()
       {

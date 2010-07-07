@@ -32,8 +32,11 @@
   <!-- Limit categories -->
   <!-- ================ -->
 
-  <!-- Show jboss deployer traces 
-  <category name="org.jboss.deployers">
+  <!-- Show jboss msc traces - ->
+  <category name="org.jboss.msc">
+    <priority value="TRACE" />
+  </category>
+  <category name="org.jboss.modules">
     <priority value="TRACE" />
   </category>
   -->
