@@ -23,16 +23,20 @@ package org.jboss.osgi.msc.bundle;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.List;
 
+import org.jboss.osgi.msc.plugin.BundleStoragePlugin;
+import org.jboss.osgi.msc.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkListener;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
@@ -65,6 +69,7 @@ public abstract class AbstractBundleContext implements BundleContext
    public String getProperty(String key)
    {
       FrameworkState frameworkState = bundleState.getBundleManager().getFrameworkState();
+      frameworkState.assertFrameworkActive();
       return frameworkState.getProperty(key);
    }
 
@@ -91,55 +96,73 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public Bundle getBundle(long id)
    {
-      throw new NotImplementedException();
+      AbstractBundle bundle = getBundleManager().getBundleById(id);
+      return bundle != null ? bundle.getBundleWrapper() : null;
    }
 
    @Override
    public Bundle[] getBundles()
    {
-      throw new NotImplementedException();
+      List<Bundle> result = new ArrayList<Bundle>();
+      for (AbstractBundle bundle : getBundleManager().getBundles())
+         result.add(bundle.getBundleWrapper());
+      return result.toArray(new Bundle[result.size()]);
    }
 
    @Override
    public void addServiceListener(ServiceListener listener, String filter) throws InvalidSyntaxException
    {
-      throw new NotImplementedException();
+      FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
+      eventsPlugin.addServiceListener(bundleState, listener, filter);
    }
 
    @Override
    public void addServiceListener(ServiceListener listener)
    {
-      throw new NotImplementedException();
+      try
+      {
+         FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
+         eventsPlugin.addServiceListener(bundleState, listener, null);
+      }
+      catch (InvalidSyntaxException ex)
+      {
+         // ignore
+      }
    }
 
    @Override
    public void removeServiceListener(ServiceListener listener)
    {
-      throw new NotImplementedException();
+      FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
+      eventsPlugin.removeServiceListener(bundleState, listener);
    }
 
    @Override
    public void addBundleListener(BundleListener listener)
    {
-      throw new NotImplementedException();
+      FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
+      eventsPlugin.addBundleListener(bundleState, listener);
    }
 
    @Override
    public void removeBundleListener(BundleListener listener)
    {
-      throw new NotImplementedException();
+      FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
+      eventsPlugin.removeBundleListener(bundleState, listener);
    }
 
    @Override
    public void addFrameworkListener(FrameworkListener listener)
    {
-      throw new NotImplementedException();
+      FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
+      eventsPlugin.addFrameworkListener(bundleState, listener);
    }
 
    @Override
    public void removeFrameworkListener(FrameworkListener listener)
    {
-      throw new NotImplementedException();
+      FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
+      eventsPlugin.removeFrameworkListener(bundleState, listener);
    }
 
    @Override
@@ -153,28 +176,38 @@ public abstract class AbstractBundleContext implements BundleContext
    @SuppressWarnings("rawtypes")
    public ServiceRegistration registerService(String[] clazzes, Object service, Dictionary properties)
    {
-      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
-      ServiceState serviceState = plugin.registerService(bundleState, clazzes, service, properties);
-      return new ServiceRegistrationWrapper(serviceState);
+      ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
+      ServiceState serviceState = servicePlugin.registerService(bundleState, clazzes, service, properties);
+      return serviceState.getServiceRegistration();
    }
 
    @Override
    public ServiceReference[] getServiceReferences(String clazz, String filter) throws InvalidSyntaxException
    {
-      return null;
+      List<ServiceReference> result = new ArrayList<ServiceReference>();
+      ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
+      for (ServiceState serviceState : servicePlugin.getServiceReferences(bundleState, clazz, filter, true))
+         result.add(serviceState.getServiceReference());
+      
+      return result.toArray(new ServiceReference[result.size()]);
    }
 
    @Override
    public ServiceReference[] getAllServiceReferences(String clazz, String filter) throws InvalidSyntaxException
    {
-      return null;
+      List<ServiceReference> result = new ArrayList<ServiceReference>();
+      ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
+      for (ServiceState serviceState : servicePlugin.getServiceReferences(bundleState, clazz, filter, false))
+         result.add(serviceState.getServiceReference());
+      
+      return result.toArray(new ServiceReference[result.size()]);
    }
 
    @Override
    public ServiceReference getServiceReference(String clazz)
    {
-      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
-      ServiceState serviceState = plugin.getServiceReference(bundleState, clazz);
+      ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
+      ServiceState serviceState = servicePlugin.getServiceReference(bundleState, clazz);
       if (serviceState == null)
          return null;
       
@@ -184,26 +217,28 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public Object getService(ServiceReference sref)
    {
-      ServiceManagerPlugin plugin = getBundleManager().getPlugin(ServiceManagerPlugin.class);
-      Object service = plugin.getService(bundleState, ServiceState.assertServiceState(sref));
+      ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
+      Object service = servicePlugin.getService(bundleState, ServiceState.assertServiceState(sref));
       return service;
    }
 
    @Override
-   public boolean ungetService(ServiceReference reference)
+   public boolean ungetService(ServiceReference sref)
    {
-      throw new NotImplementedException();
+      ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
+      return servicePlugin.ungetService(bundleState, ServiceState.assertServiceState(sref));
    }
 
    @Override
    public File getDataFile(String filename)
    {
-      throw new NotImplementedException();
+      BundleStoragePlugin storagePlugin = getBundleManager().getOptionalPlugin(BundleStoragePlugin.class);
+      return storagePlugin != null ? storagePlugin.getDataFile(bundleState, filename) : null;
    }
 
    @Override
    public Filter createFilter(String filter) throws InvalidSyntaxException
    {
-      throw new NotImplementedException();
+      return FrameworkUtil.createFilter(filter);
    }
 }

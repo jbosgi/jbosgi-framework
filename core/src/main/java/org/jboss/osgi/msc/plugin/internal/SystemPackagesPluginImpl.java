@@ -55,7 +55,7 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
       super(bundleManager);
       
       FrameworkState frameworkState = getBundleManager().getFrameworkState();
-      String systemPackages = frameworkState.getPropertyInternal(Constants.FRAMEWORK_SYSTEMPACKAGES);
+      String systemPackages = frameworkState.getProperty(Constants.FRAMEWORK_SYSTEMPACKAGES);
       initSystemPackages(systemPackages);
    }
    
@@ -129,7 +129,7 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
          frameworkState.addProperty(Constants.FRAMEWORK_SYSTEMPACKAGES, asString);
       }
       
-      String extraPackages = frameworkState.getPropertyInternal(Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA);
+      String extraPackages = frameworkState.getProperty(Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA);
       if (extraPackages != null)
       {
          allPackages.addAll(packagesAsList(extraPackages));

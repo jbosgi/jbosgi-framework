@@ -109,23 +109,13 @@
 
       <!-- Test Dependencies -->
       <dependency>
-        <groupId>org.jboss.arquillian</groupId>
+        <groupId>org.jboss.arquillian.osgi</groupId>
         <artifactId>arquillian-bundle</artifactId>
         <version>${version.jboss.arquillian}</version>
       </dependency>
       <dependency>
-        <groupId>org.jboss.arquillian.container</groupId>
-        <artifactId>arquillian-osgi-embedded-4.2</artifactId>
-        <version>${version.jboss.arquillian}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.arquillian.protocol</groupId>
-        <artifactId>arquillian-protocol-jmx</artifactId>
-        <version>${version.jboss.arquillian}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.arquillian</groupId>
-        <artifactId>arquillian-junit</artifactId>
+        <groupId>org.jboss.arquillian.osgi</groupId>
+        <artifactId>arquillian-osgi-container</artifactId>
         <version>${version.jboss.arquillian}</version>
       </dependency>
       <dependency>

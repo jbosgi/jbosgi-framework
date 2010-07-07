@@ -22,6 +22,7 @@
 package org.jboss.osgi.msc.plugin;
 
 import java.util.Dictionary;
+import java.util.List;
 
 import org.jboss.osgi.msc.bundle.AbstractBundle;
 import org.jboss.osgi.msc.bundle.ServiceState;
@@ -47,9 +48,9 @@ public interface ServiceManagerPlugin extends Plugin
     * services it has registered or <code>null</code> if this bundle has no
     * registered services.
     * 
-    * @return An array of <code>ServiceReference</code> objects or <code>null</code>.
+    * @return A potentially empty list of <code>ServiceReference</code> objects.
     */
-   ServiceState[] getRegisteredServices(AbstractBundle bundleState);
+   List<ServiceState> getRegisteredServices(AbstractBundle bundleState);
 
    /**
     * Returns the service object referenced by the specified
@@ -82,8 +83,9 @@ public interface ServiceManagerPlugin extends Plugin
     * 
     * @param clazz The class name with which the service was registered or <code>null</code> for all services.
     * @param filter The filter expression or <code>null</code> for all services.
+    * @return A potentially empty list of <code>ServiceReference</code> objects.
     */
-   ServiceState[] getServiceReferences(AbstractBundle bundleState, String clazz, String filter, boolean checkAssignable) throws InvalidSyntaxException;
+   List<ServiceState> getServiceReferences(AbstractBundle bundleState, String clazz, String filter, boolean checkAssignable) throws InvalidSyntaxException;
 
    /**
     * Returns this bundle's <code>ServiceReference</code> list for all
@@ -92,10 +94,10 @@ public interface ServiceManagerPlugin extends Plugin
     * use count for that service is greater than zero.
     * 
     * 
-    * @return An array of <code>ServiceReference</code> objects or <code>null</code>.
+    * @return A potentially empty list of <code>ServiceReference</code> objects.
     * @throws IllegalStateException If this bundle has been uninstalled.
     */
-   ServiceState[] getServicesInUse(AbstractBundle bundleState);
+   List<ServiceState> getServicesInUse(AbstractBundle bundleState);
 
    /**
     * Registers the specified service object with the specified properties under the specified class names 

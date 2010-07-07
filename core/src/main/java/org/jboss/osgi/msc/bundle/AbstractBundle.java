@@ -37,20 +37,25 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.msc.plugin.FrameworkEventsPlugin;
+import org.jboss.osgi.msc.plugin.LifecycleInterceptorPlugin;
 import org.jboss.osgi.msc.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.msc.plugin.ResolverPlugin;
 import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.NotImplementedException;
+import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
@@ -64,6 +69,9 @@ import org.osgi.framework.Version;
  */
 public abstract class AbstractBundle implements Bundle
 {
+   // Provide logging
+   private static final Logger log = Logger.getLogger(AbstractBundle.class);
+   
    // The bundle id
    private long bundleId;
    // The identifier of the associated module
@@ -84,9 +92,11 @@ public abstract class AbstractBundle implements Bundle
 
    // Cache commonly used managers
    private BundleManager bundleManager;
+   private FrameworkEventsPlugin eventsPlugin;
+   private LifecycleInterceptorPlugin interceptorPlugin;
    private ModuleManagerPlugin modulePlugin;
-   private ServiceManagerPlugin servicePlugin;
    private ResolverPlugin resolverPlugin;
+   private ServiceManagerPlugin servicePlugin;
 
    AbstractBundle(BundleManager bundleManager, String symbolicName)
    {
@@ -129,7 +139,6 @@ public abstract class AbstractBundle implements Bundle
    {
       if (modulePlugin == null)
          modulePlugin = bundleManager.getPlugin(ModuleManagerPlugin.class);
-
       return modulePlugin;
    }
 
@@ -137,7 +146,6 @@ public abstract class AbstractBundle implements Bundle
    {
       if (servicePlugin == null)
          servicePlugin = bundleManager.getPlugin(ServiceManagerPlugin.class);
-
       return servicePlugin;
    }
 
@@ -145,10 +153,23 @@ public abstract class AbstractBundle implements Bundle
    {
       if (resolverPlugin == null)
          resolverPlugin = bundleManager.getPlugin(ResolverPlugin.class);
-
       return resolverPlugin;
    }
 
+   public FrameworkEventsPlugin getFrameworkEventsPlugin()
+   {
+      if (eventsPlugin == null)
+         eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
+      return eventsPlugin;
+   }
+   
+   public LifecycleInterceptorPlugin getLifecycleInterceptorPlugin()
+   {
+      if (interceptorPlugin == null)
+         interceptorPlugin = bundleManager.getPlugin(LifecycleInterceptorPlugin.class);
+      return interceptorPlugin;
+   }
+   
    ModuleClassLoader getBundleClassLoader()
    {
       ModuleIdentifier identifier = getModuleIdentifier();
@@ -209,9 +230,59 @@ public abstract class AbstractBundle implements Bundle
       return new BundleWrapper(this);
    }
 
-   public void changeState(int newstate)
+   public void changeState(int state)
    {
-      bundleState.getAndSet(newstate);
+      int previous = getState();
+
+      // Get the corresponding bundle event type
+      int bundleEventType;
+      switch (state)
+      {
+         case Bundle.STARTING:
+            bundleEventType = BundleEvent.STARTING;
+            break;
+         case Bundle.ACTIVE:
+            bundleEventType = BundleEvent.STARTED;
+            break;
+         case Bundle.STOPPING:
+            bundleEventType = BundleEvent.STOPPING;
+            break;
+         case Bundle.UNINSTALLED:
+            bundleEventType = BundleEvent.UNINSTALLED;
+            break;
+         case Bundle.INSTALLED:
+         {
+            if (previous == Bundle.RESOLVED)
+               bundleEventType = BundleEvent.UNRESOLVED;
+            else
+               bundleEventType = BundleEvent.INSTALLED;
+            break;
+         }
+         case Bundle.RESOLVED:
+         {
+            if (previous == Bundle.STOPPING)
+               bundleEventType = BundleEvent.STOPPED;
+            else
+               bundleEventType = BundleEvent.RESOLVED;
+            break;
+         }
+         default:
+            throw new IllegalArgumentException("Unknown bundle state: " + state);
+      }
+
+      // Invoke the bundle lifecycle interceptors
+      if (getBundleManager().isFrameworkActive() && getBundleId() != 0)
+      {
+         if (interceptorPlugin != null)
+            interceptorPlugin.handleStateChange(state, getBundleWrapper());
+      }
+
+      bundleState.set(state);
+      log.debug(this + " change state=" + ConstantsHelper.bundleState(state));
+
+      // Fire the bundle event
+      if (getBundleManager().isFrameworkActive())
+         getFrameworkEventsPlugin().fireBundleEvent(this, bundleEventType);
    }
 
    @Override

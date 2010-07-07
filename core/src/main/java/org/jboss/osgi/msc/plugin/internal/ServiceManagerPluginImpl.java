@@ -25,6 +25,7 @@ package org.jboss.osgi.msc.plugin.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -86,7 +87,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    }
 
    @Override
-   public ServiceState[] getRegisteredServices(AbstractBundle bundleState)
+   public List<ServiceState> getRegisteredServices(AbstractBundle bundleState)
    {
       throw new NotImplementedException();
    }
@@ -100,26 +101,25 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    @Override
    public ServiceState getServiceReference(AbstractBundle bundleState, String clazz)
    {
-      ServiceState[] srefs = getServiceReferencesInternal(bundleState, clazz, null, true);
-      if (srefs == null || srefs.length == 0)
+      List<ServiceState> srefs = getServiceReferencesInternal(bundleState, clazz, null, true);
+      if (srefs == null || srefs.isEmpty())
          return null;
 
-      return srefs[0];
+      return srefs.get(0);
    }
 
    @Override
-   public ServiceState[] getServiceReferences(AbstractBundle bundleState, String clazz, String filter, boolean checkAssignable) throws InvalidSyntaxException
+   public List<ServiceState> getServiceReferences(AbstractBundle bundleState, String clazz, String filter, boolean checkAssignable) throws InvalidSyntaxException
    {
-      ServiceState[] srefs = getServiceReferencesInternal(bundleState, clazz, null, true);
-      return srefs;
+      return getServiceReferencesInternal(bundleState, clazz, null, true);
    }
 
-   public ServiceState[] getServiceReferencesInternal(AbstractBundle bundleState, String clazz, String filter, boolean checkAssignable)
+   public List<ServiceState> getServiceReferencesInternal(AbstractBundle bundleState, String clazz, String filter, boolean checkAssignable)
    {
-      List<ServiceState> services = new ArrayList<ServiceState>();
+      List<ServiceState> result = new ArrayList<ServiceState>();
       List<ServiceName> names = serviceNameMap.get(clazz);
       if (names == null)
-         return null;
+         return Collections.emptyList();
 
       for (ServiceName name : names)
       {
@@ -128,14 +128,13 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
             throw new IllegalStateException("Cannot obtain service for: " + name);
 
          ServiceState serviceState = (ServiceState)controller.getValue();
-         services.add(serviceState);
+         result.add(serviceState);
       }
-
-      return services.toArray(new ServiceState[services.size()]);
+      return Collections.unmodifiableList(result);
    }
 
    @Override
-   public ServiceState[] getServicesInUse(AbstractBundle bundleState)
+   public List<ServiceState> getServicesInUse(AbstractBundle bundleState)
    {
       throw new NotImplementedException();
    }
@@ -192,7 +191,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
          // Register the name association. We do this here 
          // in case anything went wrong during the install
-         for (Entry<ServiceName,String> aux : associations.entrySet())
+         for (Entry<ServiceName, String> aux : associations.entrySet())
          {
             bundleState.addOwnedService(serviceState);
             registerServiceName(aux.getValue(), aux.getKey());
@@ -272,15 +271,15 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    private void unregisterService(ServiceName serviceName)
    {
       log.debug("Unregister service: " + serviceName);
-      
+
       ServiceController<?> controller = serviceContainer.getService(serviceName);
-      
+
       // Unregister the service names
       ServiceState serviceState = (ServiceState)controller.getValue();
       String[] clazzes = (String[])serviceState.getProperty(Constants.OBJECTCLASS);
       for (String clazz : clazzes)
          unregisterServiceName(clazz, serviceName);
-      
+
       // A service is brought DOWN by setting it's mode to NEVER
       // Adding a {@link RemovingServiceListener} does this and will
       // also synchronoulsy remove the service from the registry 

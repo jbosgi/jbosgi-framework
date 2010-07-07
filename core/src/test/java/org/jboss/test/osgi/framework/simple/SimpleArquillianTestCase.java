@@ -22,9 +22,28 @@
 package org.jboss.test.osgi.framework.simple;
 
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.io.InputStream;
+
+import javax.inject.Inject;
+
+import org.jboss.arquillian.api.Deployment;
+import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.shrinkwrap.api.Archives;
+import org.jboss.shrinkwrap.api.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.test.osgi.framework.simple.bundleA.SimpleActivator;
+import org.jboss.test.osgi.framework.simple.bundleA.SimpleService;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 
 /**
  * A test that deployes a bundle and verifies its state
@@ -32,16 +51,79 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
+@RunWith(Arquillian.class)
+@Ignore
 public class SimpleArquillianTestCase extends OSGiFrameworkTest 
 {
-   @Test
-   public void testBundleLifecycle() throws Exception
+   @Deployment
+   public static JavaArchive createdeployment()
    {
-      Bundle cmpd = installBundle("bundles/org.osgi.compendium.jar");
-      Bundle arq = installBundle("bundles/arquillian-bundle.jar");
+      final JavaArchive archive = Archives.create("test.jar", JavaArchive.class);
+      archive.setManifest(new Asset()
+      {
+         public InputStream openStream()
+         {
+            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+            builder.addBundleSymbolicName(archive.getName());
+            builder.addBundleManifestVersion(2);
+            builder.addBundleActivator(SimpleActivator.class.getName());
+            // [TODO] generate a separate bundle the contains the test case
+            builder.addExportPackages(SimpleArquillianTestCase.class);
+            builder.addImportPackages("org.jboss.arquillian.junit", "org.jboss.shrinkwrap.api", "org.jboss.shrinkwrap.api.spec");
+            builder.addImportPackages("javax.inject", "org.junit", "org.junit.runner");
+            return builder.openStream();
+         }
+      });
+      archive.addClasses(SimpleActivator.class, SimpleService.class);
+      archive.addClasses(SimpleArquillianTestCase.class);
+      return archive;
+   }
+   
+   @Inject
+   public BundleContext context;
+   
+   @Test
+   public void testBundleContextInjection() throws Exception
+   {
+      assertNotNull("BundleContext injected", context);
+      assertEquals("System Bundle ID", 0, context.getBundle().getBundleId());
+   }
+
+   @Inject
+   public Bundle bundle;
+   
+   @Test
+   public void testBundleInjection() throws Exception
+   {
+      // Assert that the bundle is injected
+      assertNotNull("Bundle injected", bundle);
       
-      arq.start();
-      assertBundleState(Bundle.ACTIVE, arq.getState());
-      assertBundleState(Bundle.RESOLVED, cmpd.getState());
+      // Assert that the bundle is in state RESOLVED
+      // Note when the test bundle contains the test case it 
+      // must be resolved already when this test method is called
+      assertEquals("Bundle RESOLVED", Bundle.RESOLVED, bundle.getState());
+      
+      // Start the bundle
+      bundle.start();
+      assertEquals("Bundle ACTIVE", Bundle.ACTIVE, bundle.getState());
+      
+      // Assert the bundle context
+      BundleContext context = bundle.getBundleContext();
+      assertNotNull("BundleContext available", context);
+      
+      // Get the service reference
+      ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
+      assertNotNull("ServiceReference not null", sref);
+      
+      // Get the service for the reference
+      SimpleService service = (SimpleService)context.getService(sref);
+      assertNotNull("Service not null", service);
+      
+      // Invoke the service 
+      assertEquals("hello", service.echo("hello"));
+      
+      // Stop the bundle
+      bundle.stop();
+      assertEquals("Bundle RESOLVED", Bundle.RESOLVED, bundle.getState());
    }
 }

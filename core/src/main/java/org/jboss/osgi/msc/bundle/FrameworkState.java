@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.msc.bundle;
 
-// $Id$
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,7 +31,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
+import org.jboss.osgi.msc.plugin.AutoInstallPlugin;
 import org.jboss.osgi.msc.plugin.BundleStoragePlugin;
+import org.jboss.osgi.msc.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.msc.plugin.Plugin;
 import org.jboss.osgi.msc.plugin.ResolverPlugin;
 import org.jboss.osgi.msc.plugin.ServicePlugin;
@@ -45,7 +45,7 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 
 /**
- * An impementation of an OSGi Framework
+ * The Framework state.
  * 
  * @author thomas.diesler@jboss.com
  * @since 21-Aug-2009
@@ -87,19 +87,21 @@ public final class FrameworkState
       return systemBundle;
    }
 
-   public String getProperty(String key)
+   public Map<String, String> getProperties()
    {
-      assertFrameworkActive();
-      return getPropertyInternal(key);
+      return Collections.unmodifiableMap(properties);
    }
 
-   public String getPropertyInternal(String key)
+   public String getProperty(String key)
    {
       return properties.get(key);
    }
 
    public void addProperty(String key, String value)
    {
+      if (systemBundle != null && systemBundle.getState() != Bundle.INSTALLED)
+         throw new IllegalStateException("Cannot add property to ACTIVE framwork");
+      
       properties.put(key, value);
    }
    
@@ -157,9 +159,9 @@ public final class FrameworkState
       // Create the system bundle context
       systemBundle.start();
 
-      // [TODO] Have event handling enabled
-      //FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
-      //eventsPlugin.setActive(true);
+      // Have event handling enabled
+      FrameworkEventsPlugin eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
+      eventsPlugin.setActive(true);
 
       // Have registered any framework services.
       for (Plugin plugin : new ArrayList<Plugin>(bundleManager.getPlugins()))
@@ -172,7 +174,7 @@ public final class FrameworkState
       }
 
       // Cleanup the storage area
-      String storageClean = getPropertyInternal(Constants.FRAMEWORK_STORAGE_CLEAN);
+      String storageClean = getProperty(Constants.FRAMEWORK_STORAGE_CLEAN);
       BundleStoragePlugin storagePlugin = bundleManager.getOptionalPlugin(BundleStoragePlugin.class);
       if (storagePlugin != null)
          storagePlugin.cleanStorage(storageClean);
@@ -184,13 +186,13 @@ public final class FrameworkState
       if (systemBundle.getState() != Bundle.STARTING)
          initFramework();
 
-      // [TODO] All installed bundles must be started
-      //AutoInstallPlugin autoInstall = getOptionalPlugin(AutoInstallPlugin.class);
-      //if (autoInstall != null)
-      //{
-      //   autoInstall.installBundles();
-      //   autoInstall.startBundles();
-      //}
+      // All installed bundles must be started
+      AutoInstallPlugin autoInstall = bundleManager.getOptionalPlugin(AutoInstallPlugin.class);
+      if (autoInstall != null)
+      {
+         autoInstall.installBundles();
+         autoInstall.startBundles();
+      }
 
       // Resolve the system bundle
       ResolverPlugin resolver = bundleManager.getPlugin(ResolverPlugin.class);

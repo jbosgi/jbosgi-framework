@@ -30,11 +30,11 @@ import org.osgi.framework.ServiceReference;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-class ServiceReferenceWrapper implements ServiceReference
+public class ServiceReferenceWrapper implements ServiceReference
 {
    private ServiceState delegate;
 
-   ServiceReferenceWrapper(ServiceState serviceState)
+   public ServiceReferenceWrapper(ServiceState serviceState)
    {
       if (serviceState == null)
          throw new IllegalArgumentException("Null serviceState");

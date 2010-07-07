@@ -25,16 +25,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
-import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
+import org.jboss.osgi.msc.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
+import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
@@ -51,17 +52,25 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    private long serviceId;
    // The bundle that ownes this service
    private AbstractBundle owner;
-   // The service properties
-   private Map<String, Object> properties;
    // The list of service names associated with this service
    private List<ServiceName> serviceNames;
+   // The service registration
+   private ServiceRegistration registration;
+   // The service reference
+   private ServiceReference reference;
    // The service object value
    private Object value;
-
+   
+   // The properties 
+   private CaseInsensitiveDictionary prevProperties;
+   private CaseInsensitiveDictionary currProperties;
+   
    // Cache commonly used managers
    private ServiceManagerPlugin serviceManager;
+   private FrameworkEventsPlugin eventsPlugin;
    
-   public ServiceState(AbstractBundle owner, String[] clazzes, Object value, Dictionary props)
+   @SuppressWarnings("unchecked")
+   public ServiceState(AbstractBundle owner, String[] clazzes, Object value, Dictionary properties)
    {
       if (owner == null)
          throw new IllegalArgumentException("Null owner");
@@ -71,23 +80,22 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
          throw new IllegalArgumentException("Null value");
       
       this.serviceManager = owner.getServiceManagerPlugin();
+      this.eventsPlugin = owner.getFrameworkEventsPlugin();
+      
       this.serviceId = serviceManager.getNextServiceId();
       this.owner = owner;
       this.value = value;
       
-      // Copy the given service properties
-      properties = new HashMap<String, Object>();
-      if (props != null)
-      {
-         Enumeration keys = props.keys();
-         while(keys.hasMoreElements())
-         {
-            String key = (String)keys.nextElement();
-            properties.put(key, props.get(key));
-         }
-      }
+      if (properties == null)
+         properties = new Hashtable();
+      
       properties.put(Constants.SERVICE_ID, serviceId);
       properties.put(Constants.OBJECTCLASS, clazzes);
+      this.currProperties = new CaseInsensitiveDictionary(properties);
+      
+      // Create the {@link ServiceRegistration} and {@link ServiceReference}
+      this.registration = new ServiceRegistrationWrapper(this);
+      this.reference = new ServiceReferenceWrapper(this);
    }
 
    /**
@@ -115,6 +123,20 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
       return value;
    }
 
+   public ServiceRegistration getServiceRegistration()
+   {
+      return registration;
+   }
+   
+   public ServiceReference getServiceReference()
+   {
+      return reference;
+   }
+   
+   public void removeServiceRegistration()
+   {
+      registration = null;
+   }
    
    public List<ServiceName> getServiceNames()
    {
@@ -136,12 +158,6 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    }
 
    @Override
-   public void setProperties(Dictionary properties)
-   {
-      throw new NotImplementedException();
-   }
-
-   @Override
    public void unregister()
    {
       serviceManager.unregisterService(this);
@@ -150,16 +166,50 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    @Override
    public Object getProperty(String key)
    {
-      return properties.get(key);
+      if (key == null)
+         return null;
+      return currProperties.get(key);
    }
 
    @Override
    public String[] getPropertyKeys()
    {
-      Set<String> keys = properties.keySet();
-      return keys.toArray(new String[keys.size()]);
+      ArrayList<String> result = new ArrayList<String>();
+      if (currProperties != null)
+      {
+         Enumeration<String> keys = currProperties.keys();
+         while (keys.hasMoreElements())
+            result.add(keys.nextElement());
+      }
+      return result.toArray(new String[result.size()]);
    }
 
+   @Override
+   @SuppressWarnings({ "unchecked" })
+   public void setProperties(Dictionary properties)
+   {
+      checkUnregistered();
+
+      // Remember the previous properties for a potential
+      // delivery of the MODIFIED_ENDMATCH event
+      prevProperties = currProperties;
+      
+      if (properties == null)
+         properties = new Hashtable();
+      
+      properties.put(Constants.SERVICE_ID, currProperties.get(Constants.SERVICE_ID));
+      properties.put(Constants.OBJECTCLASS, currProperties.get(Constants.OBJECTCLASS));
+      currProperties = new CaseInsensitiveDictionary(properties);
+
+      // This event is synchronously delivered after the service properties have been modified. 
+      eventsPlugin.fireServiceEvent(owner, ServiceEvent.MODIFIED, this);
+   }
+
+   public Dictionary getPreviousProperties()
+   {
+      return prevProperties;
+   }
+   
    @Override
    public Bundle getBundle()
    {
@@ -182,5 +232,16 @@ public class ServiceState  implements ServiceRegistration, ServiceReference
    public int compareTo(Object reference)
    {
       throw new NotImplementedException();
+   }
+   
+   private void checkUnregistered()
+   {
+      if (isUnregistered())
+         throw new IllegalStateException("Service is unregistered: " + this);
+   }
+
+   synchronized boolean isUnregistered()
+   {
+      return registration == null;
    }
 }

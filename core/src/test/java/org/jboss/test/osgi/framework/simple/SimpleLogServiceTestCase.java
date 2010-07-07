@@ -40,7 +40,10 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleException;
+import org.osgi.service.log.LogService;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * A test that deployes a bundle and verifies its state
@@ -67,6 +70,7 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
             builder.addBundleManifestVersion(2);
             builder.addBundleSymbolicName(archive.getName());
             builder.addBundleActivator(SimpleLogServiceActivator.class);
+            builder.addImportPackages(BundleActivator.class, LogService.class, ServiceTracker.class);
             return builder.openStream();
          }
       });

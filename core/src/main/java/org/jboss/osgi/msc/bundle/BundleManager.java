@@ -35,18 +35,25 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.jar.Manifest;
 
+import org.jboss.logging.Logger;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
+import org.jboss.osgi.msc.plugin.AutoInstallPlugin;
 import org.jboss.osgi.msc.plugin.BundleStoragePlugin;
+import org.jboss.osgi.msc.plugin.FrameworkEventsPlugin;
+import org.jboss.osgi.msc.plugin.LifecycleInterceptorPlugin;
 import org.jboss.osgi.msc.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.msc.plugin.PackageAdminPlugin;
 import org.jboss.osgi.msc.plugin.Plugin;
 import org.jboss.osgi.msc.plugin.ResolverPlugin;
 import org.jboss.osgi.msc.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.msc.plugin.SystemPackagesPlugin;
+import org.jboss.osgi.msc.plugin.internal.AutoInstallPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.BundleStoragePluginImpl;
+import org.jboss.osgi.msc.plugin.internal.FrameworkEventsPluginImpl;
+import org.jboss.osgi.msc.plugin.internal.LifecycleInterceptorPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.ModuleManagerPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.PackageAdminPluginImpl;
 import org.jboss.osgi.msc.plugin.internal.ResolverPluginImpl;
@@ -58,7 +65,9 @@ import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.FrameworkEvent;
 
 /**
  * OSGiBundleManager.
@@ -68,6 +77,9 @@ import org.osgi.framework.BundleException;
  */
 public class BundleManager
 {
+   // Provide logging
+   private static final Logger log = Logger.getLogger(BundleManager.class);
+   
    // The BundleId generator 
    private AtomicLong identityGenerator = new AtomicLong();
    // Maps bundleId to Bundle
@@ -83,7 +95,10 @@ public class BundleManager
 
       // Register the framework plugins
       // [TODO] Externalize plugin registration
+      plugins.put(AutoInstallPlugin.class, new AutoInstallPluginImpl(this));
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
+      plugins.put(FrameworkEventsPlugin.class, new FrameworkEventsPluginImpl(this));
+      plugins.put(LifecycleInterceptorPlugin.class, new LifecycleInterceptorPluginImpl(this));
       plugins.put(ModuleManagerPlugin.class, new ModuleManagerPluginImpl(this));
       plugins.put(PackageAdminPlugin.class, new PackageAdminPluginImpl(this));
       plugins.put(ResolverPlugin.class, new ResolverPluginImpl(this));
@@ -99,16 +114,28 @@ public class BundleManager
       return frameworkState;
    }
 
-   public SystemBundle getSystemBundle()
-   {
-      return frameworkState.getSystemBundle();
-   }
-
    long getNextBundleId()
    {
       return identityGenerator.incrementAndGet();
    }
 
+   public SystemBundle getSystemBundle()
+   {
+      return frameworkState.getSystemBundle();
+   }
+
+   public BundleContext getSystemContext()
+   {
+      return getSystemBundle().getBundleContext();
+   }
+
+   public boolean isFrameworkActive()
+   {
+      // We are active if the system bundle is ACTIVE
+      SystemBundle bundleState = getSystemBundle();
+      return bundleState.getState() == Bundle.ACTIVE;
+   }
+   
    void addBundleState(AbstractBundle bundleState)
    {
       ResolverPlugin plugin = getPlugin(ResolverPlugin.class);
@@ -200,7 +227,15 @@ public class BundleManager
    /**
     * Install a bundle from the given location.
     */
-   AbstractBundle installBundle(String location) throws BundleException
+   public AbstractBundle installBundle(URL location) throws BundleException
+   {
+      return installBundle(location.toExternalForm(), null);
+   }
+
+   /**
+    * Install a bundle from the given location.
+    */
+   public AbstractBundle installBundle(String location) throws BundleException
    {
       return installBundle(location, null);
    }
@@ -208,7 +243,7 @@ public class BundleManager
    /**
     * Install a bundle from the given location and optional input stream.
     */
-   AbstractBundle installBundle(String location, InputStream input) throws BundleException
+   public AbstractBundle installBundle(String location, InputStream input) throws BundleException
    {
       if (location == null)
          throw new BundleException("Null location");
@@ -359,13 +394,13 @@ public class BundleManager
     */
    void fireError(Bundle bundle, String context, Throwable t)
    {
-      //FrameworkEventsPlugin plugin = getPlugin(FrameworkEventsPlugin.class);
-      //if (t instanceof BundleException)
-      //   plugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, t);
-      //else if (bundle != null)
-      //   plugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, new BundleException("Error " + context + " bundle: " + bundle, t));
-      //else
-      //   plugin.fireFrameworkEvent(systemBundle, FrameworkEvent.ERROR, new BundleException("Error " + context, t));
+      FrameworkEventsPlugin plugin = getPlugin(FrameworkEventsPlugin.class);
+      if (t instanceof BundleException)
+         plugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, t);
+      else if (bundle != null)
+         plugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, new BundleException("Error " + context + " bundle: " + bundle, t));
+      else
+         plugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.ERROR, new BundleException("Error " + context, t));
    }
 
    /**
@@ -373,12 +408,12 @@ public class BundleManager
     */
    void fireWarning(Bundle bundle, String context, Throwable t)
    {
-      //FrameworkEventsPlugin plugin = getPlugin(FrameworkEventsPlugin.class);
-      //if (t instanceof BundleException)
-      //   plugin.fireFrameworkEvent(bundle, FrameworkEvent.WARNING, t);
-      //else if (bundle != null)
-      //   plugin.fireFrameworkEvent(bundle, FrameworkEvent.WARNING, new BundleException("Error " + context + " bundle: " + bundle, t));
-      //else
-      //   plugin.fireFrameworkEvent(systemBundle, FrameworkEvent.WARNING, new BundleException("Error " + context, t));
+      FrameworkEventsPlugin plugin = getPlugin(FrameworkEventsPlugin.class);
+      if (t instanceof BundleException)
+         plugin.fireFrameworkEvent(bundle, FrameworkEvent.WARNING, t);
+      else if (bundle != null)
+         plugin.fireFrameworkEvent(bundle, FrameworkEvent.WARNING, new BundleException("Error " + context + " bundle: " + bundle, t));
+      else
+         plugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.WARNING, new BundleException("Error " + context, t));
    }
 }

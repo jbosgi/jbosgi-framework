@@ -84,7 +84,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       if (storageArea == null)
       {
          FrameworkState frameworkState = getBundleManager().getFrameworkState();
-         String dirName = frameworkState.getPropertyInternal(Constants.FRAMEWORK_STORAGE);
+         String dirName = frameworkState.getProperty(Constants.FRAMEWORK_STORAGE);
          if (dirName == null)
          {
             try

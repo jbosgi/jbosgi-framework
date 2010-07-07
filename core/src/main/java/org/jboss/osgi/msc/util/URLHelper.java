@@ -19,46 +19,56 @@
 * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 */
-package org.jboss.osgi.msc.bundle;
+package org.jboss.osgi.msc.util;
 
-import java.util.Dictionary;
+import java.net.MalformedURLException;
+import java.net.URL;
 
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
+import org.jboss.osgi.vfs.VirtualFile;
 
 /**
- * ServiceRegistrationWrapper
+ * A helper for URL convertions that does not throw checked exceptions.
  * 
  * @author thomas.diesler@jboss.com
- * @since 29-Jun-2010
+ * @since 19-Dec-2009
  */
-public class ServiceRegistrationWrapper implements ServiceRegistration
+public final class URLHelper
 {
-   private ServiceState delegate;
-
-   public ServiceRegistrationWrapper(ServiceState serviceState)
+   // Hide the ctor
+   private URLHelper()
    {
-      if (serviceState == null)
-         throw new IllegalArgumentException("Null serviceState");
-      this.delegate = serviceState;
    }
 
-   @Override
-   public ServiceReference getReference()
+   /**
+    * Get a URL from the given string
+    * @throws IllegalArgumentException if the urlstr does not represent a valid URL
+    */
+   public static URL toURL(String urlstr)
    {
-      return delegate.getReference();
+      try
+      {
+         return new URL(urlstr);
+      }
+      catch (MalformedURLException ex)
+      {
+         throw new IllegalArgumentException("Malformed URL: " + urlstr);
+      }
    }
 
-   @Override
-   @SuppressWarnings("rawtypes")
-   public void setProperties(Dictionary properties)
+   /**
+    * Get a URL from the given virtual file
+    * @throws IllegalArgumentException if the file does not represent a valid URL
+    */
+   public static URL toURL(VirtualFile file)
    {
-      delegate.setProperties(properties);
+      try
+      {
+         return file.toURL();
+      }
+      catch (Exception ex)
+      {
+         throw new IllegalArgumentException("Cannot convert to URL: " + file, ex);
+      }
    }
-
-   @Override
-   public void unregister()
-   {
-      delegate.unregister();
-   }
+   
 }

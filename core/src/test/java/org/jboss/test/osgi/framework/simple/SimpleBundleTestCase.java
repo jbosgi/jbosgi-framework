@@ -47,7 +47,7 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public class SimpleFrameworkTestCase extends OSGiFrameworkTest 
+public class SimpleBundleTestCase extends OSGiFrameworkTest 
 {
    @Test
    public void testBundleLifecycle() throws Exception

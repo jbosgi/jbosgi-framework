@@ -19,46 +19,51 @@
 * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 */
-package org.jboss.osgi.msc.bundle;
+package org.jboss.osgi.msc.util;
 
 import java.util.Dictionary;
 
+import org.osgi.framework.Filter;
 import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
 
 /**
- * ServiceRegistrationWrapper
+ * Dummy filter implementation
  * 
- * @author thomas.diesler@jboss.com
- * @since 29-Jun-2010
+ * @author <a href="adrian@jboss.com">Adrian Brock</a>
+ * @version $Revision: 1.1 $
  */
-public class ServiceRegistrationWrapper implements ServiceRegistration
+public class NoFilter implements Filter
 {
-   private ServiceState delegate;
-
-   public ServiceRegistrationWrapper(ServiceState serviceState)
+   /** Singleton instance */
+   public static final Filter INSTANCE = new NoFilter();
+   
+   /**
+    * Singleton
+    */
+   private NoFilter()
    {
-      if (serviceState == null)
-         throw new IllegalArgumentException("Null serviceState");
-      this.delegate = serviceState;
    }
 
-   @Override
-   public ServiceReference getReference()
-   {
-      return delegate.getReference();
-   }
-
-   @Override
    @SuppressWarnings("rawtypes")
-   public void setProperties(Dictionary properties)
+   public boolean match(Dictionary dictionary)
    {
-      delegate.setProperties(properties);
+      return true;
+   }
+
+   public boolean match(ServiceReference reference)
+   {
+      return true;
+   }
+
+   @SuppressWarnings("rawtypes")
+   public boolean matchCase(Dictionary dictionary)
+   {
+      return true;
    }
 
    @Override
-   public void unregister()
+   public String toString()
    {
-      delegate.unregister();
+      return null;
    }
 }
