@@ -65,10 +65,8 @@ public class ModuleManager extends ModuleLoader
 
    // the bundle manager
    private BundleManager bundleManager;
-   // The loaded modules
-   private Map<ModuleIdentifier, Module> modules = Collections.synchronizedMap(new LinkedHashMap<ModuleIdentifier, Module>());
-   // The registered module specs
-   private Map<ModuleIdentifier, ModuleSpec> moduleSpecs = Collections.synchronizedMap(new LinkedHashMap<ModuleIdentifier, ModuleSpec>());
+   // The modules
+   private Map<ModuleIdentifier, ModuleHolder> modules = Collections.synchronizedMap(new LinkedHashMap<ModuleIdentifier, ModuleHolder>());
    // The framework module
    private Module frameworkModule;
 
@@ -92,6 +90,9 @@ public class ModuleManager extends ModuleLoader
       });
    }
 
+   /**
+    * Construct the ModuleIdentifier from a resolver module 
+    */
    public static ModuleIdentifier getModuleIdentifier(XModule resModule)
    {
       String name = resModule.getName();
@@ -99,33 +100,50 @@ public class ModuleManager extends ModuleLoader
       return new ModuleIdentifier("" + resModule.getModuleId(), name, version.toString());
    }
 
+   /**
+    * Get the moduleId, which is also the bundleId from a module identifier 
+    */
    public static long getModuleId(ModuleIdentifier identifier)
    {
       String moduleId = identifier.getGroup();
       return Long.parseLong(moduleId);
    }
 
+   /**
+    * Get the module for a given identifier
+    * @return The module or null
+    */
    public Module getModule(ModuleIdentifier identifier) 
    {
-      Module module = modules.get(identifier);
-      return module;
+      ModuleHolder holder = modules.get(identifier);
+      return holder != null ? holder.getModule() : null;
    }
 
+   /**
+    * Find the module in this {@link ModuleLoader}.
+    * 
+    * If the module has not been defined yet and a {@link ModuleSpec} is registered
+    * under the given identifier, it creates the module from the spec. 
+    */
    @Override
    public Module findModule(ModuleIdentifier identifier) throws ModuleLoadException
    {
-      Module module = modules.get(identifier);
+      ModuleHolder holder = modules.get(identifier);
+      if (holder == null)
+         return null;
+      
+      Module module = holder.getModule();
       if (module == null)
       {
-         ModuleSpec moduleSpec = moduleSpecs.remove(identifier);
-         if (moduleSpec != null)
-         {
-            module = createModule(moduleSpec, true);
-         }
+         ModuleSpec moduleSpec = holder.getModuleSpec();
+         module = createModule(moduleSpec, true);
       }
       return module;
    }
 
+   /**
+    * Create a {@link ModuleSpec} from the given resolver module definition
+    */
    public ModuleSpec createModuleSpec(XModule resModule, VirtualFile rootFile)
    {
       ModuleIdentifier identifier = getModuleIdentifier(resModule);
@@ -139,7 +157,7 @@ public class ModuleManager extends ModuleLoader
       dependencies.add(frameworkDependency);
 
       // Add the exported packages as paths
-      Set<String> paths = new HashSet<String>(Collections.singleton("/"));
+      Set<String> paths = new HashSet<String>();
       for (XPackageCapability cap : resModule.getPackageCapabilities())
          paths.add(cap.getName().replace('.', '/'));
 
@@ -168,10 +186,13 @@ public class ModuleManager extends ModuleLoader
       }
 
       log.debug("Created ModuleSpec: " + identifier);
-      moduleSpecs.put(identifier, moduleSpec);
+      modules.put(identifier, new ModuleHolder(moduleSpec));
       return moduleSpec;
    }
 
+   /**
+    * Create the {@link Framework} module from the give resolver module definition.
+    */
    public Module createFrameworkModule(final XModule resModule) 
    {
       if (frameworkModule != null)
@@ -204,15 +225,18 @@ public class ModuleManager extends ModuleLoader
             return smcl;
          }
       });
-      modules.put(identifier, frameworkModule);
+      modules.put(identifier, new ModuleHolder(frameworkModule));
       return frameworkModule;
    }
 
+   /**
+    * Create a {@link Module} from the given {@link ModuleSpec}
+    * Optionally, change the associated bundle state to RESOLVED
+    */
    public Module createModule(ModuleSpec moduleSpec, boolean resolveBundle) throws ModuleLoadException
    {
       Module module = defineModule(moduleSpec);
       ModuleIdentifier identifier = module.getIdentifier();
-      modules.put(identifier, module);
       
       // Change the bundle state to RESOLVED 
       if (resolveBundle == true)
@@ -222,6 +246,36 @@ public class ModuleManager extends ModuleLoader
          bundleState.changeState(Bundle.RESOLVED);
       }
       
+      modules.put(identifier, new ModuleHolder(module));
       return module;
+   }
+
+   /**
+    * A holder for the {@link ModuleSpec}  @{link Module} tuple
+    */
+   class ModuleHolder 
+   {
+      private ModuleSpec moduleSpec;
+      private Module module;
+      
+      ModuleHolder(ModuleSpec moduleSpec)
+      {
+         this.moduleSpec = moduleSpec;
+      }
+
+      ModuleHolder(Module module)
+      {
+         this.module = module;
+      }
+
+      ModuleSpec getModuleSpec()
+      {
+         return moduleSpec;
+      }
+
+      Module getModule()
+      {
+         return module;
+      }
    }
 }

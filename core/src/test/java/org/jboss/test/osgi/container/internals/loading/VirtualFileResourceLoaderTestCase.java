@@ -19,27 +19,20 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.msc.loading;
+package org.jboss.test.osgi.container.internals.loading;
 
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.io.InputStream;
-import java.util.jar.Manifest;
 
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleSpec;
-import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.container.loading.OSGiModuleClassLoader;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XModuleBuilder;
-import org.jboss.osgi.resolver.XResolverFactory;
+import org.jboss.modules.ClassSpec;
+import org.jboss.modules.PackageSpec;
+import org.jboss.modules.Resource;
+import org.jboss.modules.ResourceLoader;
+import org.jboss.osgi.container.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiTestHelper;
-import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.Asset;
@@ -49,11 +42,6 @@ import org.jboss.test.osgi.container.simple.bundleC.SimpleService;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.Mockito;
-import org.osgi.framework.BundleActivator;
-import org.osgi.framework.Constants;
-import org.osgi.framework.Version;
-import org.osgi.service.log.LogService;
 
 /**
  * Test the bundle content loader.
@@ -61,9 +49,32 @@ import org.osgi.service.log.LogService;
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
-public class OSGiModuleClassLoaderTestCase 
+public class VirtualFileResourceLoaderTestCase 
 {
-   private static Module module;
+   @Test
+   public void testClassSpec() throws Exception
+   {
+      ResourceLoader loader = new VirtualFileResourceLoader(rootFile, null);
+      ClassSpec result = loader.getClassSpec(SimpleActivator.class.getName());
+      assertNotNull("ClassSpec not null", result);
+   }
+   
+   @Test
+   public void testPackageSpec() throws Exception
+   {
+      ResourceLoader loader = new VirtualFileResourceLoader(rootFile, null);
+      PackageSpec result = loader.getPackageSpec(SimpleActivator.class.getPackage().getName());
+      assertNotNull("PackageSpec not null", result);
+   }
+   
+   @Test
+   public void testResource() throws Exception
+   {
+      ResourceLoader loader = new VirtualFileResourceLoader(rootFile, null);
+      Resource result = loader.getResource("META-INF/MANIFEST.MF");
+      assertNotNull("Resource not null", result);
+   }
+   
    private static VirtualFile rootFile;
    
    @BeforeClass
@@ -87,53 +98,12 @@ public class OSGiModuleClassLoaderTestCase
          }
       });
       
-      // Create the {@link ModuleLoader}
-      ModuleManager moduleManager = new ModuleManager(Mockito.mock(BundleManager.class));
-      
-      // Add the framework module to the manager
-      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
-      builder.createModule(0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME, Version.emptyVersion);
-      builder.addPackageCapability("org.osgi.framework", null, null);
-      moduleManager.createFrameworkModule(builder.getModule());
-      
-      // Create the test module 
       rootFile = OSGiTestHelper.toVirtualFile(archive);
-      Manifest manifest = VFSUtils.getManifest(rootFile);
-      builder = XResolverFactory.getModuleBuilder();
-      XModule resModule = builder.createModule(1, manifest);
-      
-      // Create the ModuleSpec and the Module
-      ModuleSpec moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
-      module = moduleManager.createModule(moduleSpec, false);
    }
    
    @AfterClass
    public static void afterClass() throws Exception
    {
       rootFile.close();
-   }
-
-   @Test
-   public void testLoadBundleActivator() throws Exception
-   {
-      ClassLoader loader = new OSGiModuleClassLoader(module);
-      Class<?> result = loader.loadClass(SimpleActivator.class.getName());
-      assertNotNull("Class loaded", result);
-      assertTrue("Is assignable", BundleActivator.class.isAssignableFrom(result));
-   }
-
-   @Test
-   public void testLoadLogServiceFail() throws Exception
-   {
-      ClassLoader loader = new OSGiModuleClassLoader(module);
-      try
-      {
-         loader.loadClass(LogService.class.getName());
-         fail("ClassNotFoundException expected");
-      }
-      catch (ClassNotFoundException ex)
-      {
-         // expected
-      }
    }
 }

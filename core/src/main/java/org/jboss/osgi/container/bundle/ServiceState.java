@@ -30,6 +30,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
+import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
@@ -51,6 +52,9 @@ import org.osgi.framework.ServiceRegistration;
 @SuppressWarnings("rawtypes")
 public class ServiceState implements ServiceRegistration, ServiceReference
 {
+   // Provide logging
+   private static final Logger log = Logger.getLogger(ServiceState.class);
+
    // The service id 
    private long serviceId;
    // The bundle that ownes this service
@@ -254,7 +258,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    {
       if (factoryValues == null)
          factoryValues = new HashMap<Long, ServiceFactoryHolder>();
-      
+
       ServiceFactoryHolder factoryHolder = factoryValues.get(bundleState.getBundleId());
       if (factoryHolder == null)
       {
@@ -262,24 +266,51 @@ public class ServiceState implements ServiceRegistration, ServiceReference
          factoryHolder = new ServiceFactoryHolder(bundleState, factory);
          factoryValues.put(bundleState.getBundleId(), factoryHolder);
       }
-      
+
       return factoryHolder.getValue();
    }
-   
+
    class ServiceFactoryHolder
    {
       ServiceFactory factory;
       AbstractBundle bundleState;
-      
+      Object value;
+
       ServiceFactoryHolder(AbstractBundle bundleState, ServiceFactory factory)
       {
          this.bundleState = bundleState;
          this.factory = factory;
+
+         // The Framework must not allow this method to be concurrently called for the same bundle
+         synchronized (bundleState)
+         {
+            value = factory.getService(bundleState, getServiceRegistration());
+            
+            // The Framework will check if the returned service object is an instance of all the 
+            // classes named when the service was registered. If not, then null is returned to the bundle.
+            for (String clazzName : (String[])getProperty(Constants.OBJECTCLASS))
+            {
+               try
+               {
+                  Class<?> clazz = bundleState.loadClass(clazzName);
+                  if (clazz.isAssignableFrom(value.getClass()) == false)
+                  {
+                     log.error("Service interface [" + clazzName + "] is not assignable from [" + value.getClass().getName() + "]");
+                     value = null;
+                  }
+               }
+               catch (ClassNotFoundException ex)
+               {
+                  log.error("Cannot load [" + clazzName + "] from: " + bundleState);
+                  value = null;
+               }
+            }
+         }
       }
 
       Object getValue()
       {
-         return factory.getService(bundleState, getServiceRegistration());
+         return value;
       }
    }
 }
