@@ -19,14 +19,19 @@
 * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 */
-package org.jboss.test.osgi.container.classloader.support.b;
+package org.jboss.test.osgi.container.resolver.support.c;
+
+import org.jboss.test.osgi.container.resolver.support.a.A;
 
 /**
- * B.
+ * CA.
  * 
- * @author <a href="adrian@jboss.com">Adrian Brock</a>
- * @version $Revision: 1.1 $
+ * @author thomas.diesler@jboss.com
+ * @version $Revision$
  */
-public class B
+public class CA
 {
+   public CA(A a)
+   {
+   }
 }

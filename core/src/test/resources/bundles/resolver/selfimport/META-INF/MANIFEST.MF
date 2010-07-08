@@ -1,4 +1,4 @@
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: selfimport
-Export-Package: org.jboss.test.osgi.container.classloader.support.a
-Import-Package: org.jboss.test.osgi.container.classloader.support.a
+Export-Package: org.jboss.test.osgi.container.resolver.support.a
+Import-Package: org.jboss.test.osgi.container.resolver.support.a

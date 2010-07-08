@@ -26,8 +26,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
-import org.jboss.test.osgi.container.classloader.support.a.A;
-import org.jboss.test.osgi.container.classloader.support.c.C;
+import org.jboss.test.osgi.container.resolver.support.a.A;
+import org.jboss.test.osgi.container.resolver.support.c.C;
 import org.junit.After;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
