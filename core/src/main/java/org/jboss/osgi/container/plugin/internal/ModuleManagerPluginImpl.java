@@ -21,10 +21,13 @@
  */
 package org.jboss.osgi.container.plugin.internal;
 
+import java.util.Set;
+
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
+import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.HostBundle;
 import org.jboss.osgi.container.bundle.ModuleManager;
@@ -52,6 +55,18 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    {
       super(bundleManager);
       moduleManager = new ModuleManager(bundleManager);
+   }
+
+   @Override
+   public Set<ModuleIdentifier> getModuleIdentifiers()
+   {
+      return moduleManager.getModuleIdentifiers();
+   }
+
+   @Override
+   public ModuleSpec getModuleSpec(ModuleIdentifier identifier)
+   {
+      return moduleManager.getModuleSpec(identifier);
    }
 
    @Override

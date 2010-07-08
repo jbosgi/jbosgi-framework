@@ -108,6 +108,24 @@ public class ModuleManager extends ModuleLoader
    }
 
    /**
+    * Get the set of registered module idetifiers
+    */
+   public Set<ModuleIdentifier> getModuleIdentifiers()
+   {
+      return Collections.unmodifiableSet(modules.keySet());
+   }
+   
+   /**
+    * Get the module spec for a given identifier
+    * @return The module spec or null
+    */
+   public ModuleSpec getModuleSpec(ModuleIdentifier identifier)
+   {
+      ModuleHolder holder = modules.get(identifier);
+      return holder != null ? holder.getModuleSpec() : null;
+   }
+   
+   /**
     * Get the module for a given identifier
     * @return The module or null
     */
@@ -142,7 +160,7 @@ public class ModuleManager extends ModuleLoader
    /**
     * Create a {@link ModuleSpec} from the given resolver module definition
     */
-   public ModuleSpec createModuleSpec(XModule resModule, VirtualFile rootFile)
+   public ModuleSpec createModuleSpec(final XModule resModule, VirtualFile rootFile)
    {
       ModuleIdentifier identifier = getModuleIdentifier(resModule);
       ModuleSpec.Builder builder = ModuleSpec.build(identifier);
@@ -181,7 +199,7 @@ public class ModuleManager extends ModuleLoader
          @Override
          public ModuleClassLoader getModuleClassLoader(Module module, ModuleSpec moduleSpec)
          {
-            return new HostModuleClassLoader(bundleManager, module, moduleSpec);
+            return new HostModuleClassLoader(bundleManager, resModule, module, moduleSpec);
          }
       };
       builder.setClassLoaderFactory(loaderFactory);
@@ -224,8 +242,13 @@ public class ModuleManager extends ModuleLoader
     */
    public Module createModule(ModuleSpec moduleSpec, boolean resolveBundle) throws ModuleLoadException
    {
+      ModuleIdentifier identifier = moduleSpec.getIdentifier();
+      ModuleHolder holder = modules.get(identifier);
+      if (holder == null)
+         throw new IllegalStateException("ModuleSpec not registered: " + identifier);
+      
       Module module = defineModule(moduleSpec);
-      ModuleIdentifier identifier = module.getIdentifier();
+      holder.setModule(module);
 
       // Change the bundle state to RESOLVED 
       if (resolveBundle == true)
@@ -235,7 +258,6 @@ public class ModuleManager extends ModuleLoader
          bundleState.changeState(Bundle.RESOLVED);
       }
 
-      modules.put(identifier, new ModuleHolder(module));
       return module;
    }
 
@@ -252,11 +274,6 @@ public class ModuleManager extends ModuleLoader
          this.moduleSpec = moduleSpec;
       }
 
-      ModuleHolder(Module module)
-      {
-         this.module = module;
-      }
-
       ModuleSpec getModuleSpec()
       {
          return moduleSpec;
@@ -265,6 +282,11 @@ public class ModuleManager extends ModuleLoader
       Module getModule()
       {
          return module;
+      }
+
+      void setModule(Module module)
+      {
+         this.module = module;
       }
    }
 }

@@ -124,6 +124,9 @@ public class VirtualFileResourceLoader extends AbstractResourceLoader
       try
       {
          VirtualFile child = virtualFile.getChild(name);
+         if (child == null)
+            return null;
+         
          return new VirtualResource(child);
       }
       catch (IOException ex)
@@ -165,6 +168,8 @@ public class VirtualFileResourceLoader extends AbstractResourceLoader
 
       VirtualResource(VirtualFile child)
       {
+         if (child == null)
+            throw new IllegalArgumentException("Null child");
          this.child = child;
       }
 
