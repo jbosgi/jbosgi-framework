@@ -348,8 +348,39 @@ public class BundleManager
       if (metadata.getFragmentHost() != null)
          throw new NotImplementedException("Fragments not support");
 
+      rootFile = aggregatedBundleClassPath(rootFile, metadata);
       AbstractBundle bundleState = new HostBundle(this, metadata, location, rootFile);
       return bundleState;
+   }
+
+   public static VirtualFile aggregatedBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata)
+   {
+      VirtualFile result = rootFile;
+      
+      // Add the Bundle-ClassPath to the root virtual files
+      if (metadata.getBundleClassPath().size() > 0)
+      {
+         List<VirtualFile> rootList = new ArrayList<VirtualFile>(Collections.singleton(rootFile));
+         for (String path : metadata.getBundleClassPath())
+         {
+            if (path.equals("."))
+               continue;
+            
+            try
+            {
+               VirtualFile child = rootFile.getChild(path);
+               VirtualFile root = AbstractVFS.getRoot(child.toURL()); 
+               rootList.add(root);
+            }
+            catch (IOException ex)
+            {
+               log.error("Cannot get class path element: " + path, ex);
+            }
+         }
+         VirtualFile[] roots = rootList.toArray(new VirtualFile[rootList.size()]);
+         result = AbstractVFS.aggregateFiles(roots);
+      }
+      return result;
    }
 
    private URL getLocationURL(String location) throws BundleException

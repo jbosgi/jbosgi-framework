@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.container.resolver.support.a.A;
+import org.jboss.test.osgi.container.resolver.support.b.B;
 import org.jboss.test.osgi.container.resolver.support.c.C;
 import org.junit.After;
 import org.junit.Test;
@@ -53,24 +54,26 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testSimpleImport() throws Exception
    {
       // Bundle-SymbolicName: simpleimport
-      // Import-Package: org.jboss.test.osgi.classloader.support.a
+      // Import-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/simpleimport");
       Bundle bundleA = installBundle(assemblyA);
       try
       {
          // Bundle-SymbolicName: simpleexport
-         // Export-Package: org.jboss.test.osgi.classloader.support.a
-         Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class, C.class);
+         // Export-Package: org.jboss.test.osgi.resolver.support.a, org.jboss.test.osgi.resolver.support.b
+         Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class, B.class, C.class);
          Bundle bundleB = installBundle(assemblyB);
          try
          {
-            // Verify that the class load on bundleB
+            // Verify the class load on bundleB
             assertLoadClass(bundleB, A.class.getName(), bundleB);
+            assertLoadClass(bundleB, B.class.getName(), bundleB);
             assertLoadClass(bundleB, C.class.getName(), bundleB);
             
-            // Verify that the class load on bundleA
-            assertLoadClass(bundleA, A.class.getName(), bundleB);
-            assertLoadClassFail(bundleA, C.class.getName());
+            // Verify the class load on bundleA
+            assertLoadClass(bundleA, A.class.getName(), bundleB); // This should work because bundleA imports packageA 
+            assertLoadClassFail(bundleA, B.class.getName()); // This should fail because bundleA does not import packageB 
+            assertLoadClassFail(bundleA, C.class.getName()); // This should fail because packageC is private
 
             // Verify bundle states
             assertEquals("BundleA RESOLVED", Bundle.RESOLVED, bundleA.getState());
@@ -91,7 +94,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testSimpleImportPackageFails() throws Exception
    {
       // Bundle-SymbolicName: simpleimport
-      // Import-Package: org.jboss.test.osgi.classloader.support.a
+      // Import-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/simpleimport");
       Bundle bundleA = installBundle(assemblyA);
       try
@@ -112,13 +115,13 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testExplicitBundleResolve() throws Exception
    {
       // Bundle-SymbolicName: simpleimport
-      // Import-Package: org.jboss.test.osgi.classloader.support.a
+      // Import-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/simpleimport");
       Bundle bundleA = installBundle(assemblyA);
       try
       {
          // Bundle-SymbolicName: simpleexport
-         // Export-Package: org.jboss.test.osgi.classloader.support.a
+         // Export-Package: org.jboss.test.osgi.resolver.support.a
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class);
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -154,8 +157,8 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testSelfImportPackage() throws Exception
    {
       // Bundle-SymbolicName: selfimport
-      // Export-Package: org.jboss.test.osgi.classloader.support.a
-      // Import-Package: org.jboss.test.osgi.classloader.support.a
+      // Export-Package: org.jboss.test.osgi.resolver.support.a
+      // Import-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/selfimport", A.class);
       Bundle bundleA = installBundle(assemblyA);
       try
@@ -176,13 +179,13 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testVersionImportPackage() throws Exception
    {
       //Bundle-SymbolicName: packageimportversion
-      //Import-Package: org.jboss.test.osgi.classloader.support.a;version="[0.0.0,1.0.0]"
+      //Import-Package: org.jboss.test.osgi.resolver.support.a;version="[0.0.0,1.0.0]"
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/packageimportversion");
       Bundle bundleA = installBundle(assemblyA);
       try
       {
          //Bundle-SymbolicName: packageexportversion100
-         //Export-Package: org.jboss.test.osgi.classloader.support.a;version=1.0.0
+         //Export-Package: org.jboss.test.osgi.resolver.support.a;version=1.0.0
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/packageexportversion100", A.class);
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -210,13 +213,13 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testVersionImportPackageFails() throws Exception
    {
       //Bundle-SymbolicName: packageimportversionfails
-      //Import-Package: org.jboss.test.osgi.classloader.support.a;version="[3.0,4.0)"
+      //Import-Package: org.jboss.test.osgi.resolver.support.a;version="[3.0,4.0)"
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/packageimportversionfails");
       Bundle bundleA = installBundle(assemblyA);
       try
       {
          //Bundle-SymbolicName: packageexportversion100
-         //Export-Package: org.jboss.test.osgi.classloader.support.a;version=1.0.0
+         //Export-Package: org.jboss.test.osgi.resolver.support.a;version=1.0.0
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/packageexportversion100", A.class);
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -244,7 +247,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testOptionalImportPackage() throws Exception
    {
       //Bundle-SymbolicName: packageimportoptional
-      //Import-Package: org.jboss.test.osgi.classloader.support.a;resolution:=optional
+      //Import-Package: org.jboss.test.osgi.resolver.support.a;resolution:=optional
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/packageimportoptional");
       Bundle bundleA = installBundle(assemblyA);
       try
@@ -265,13 +268,13 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testOptionalImportPackageWired() throws Exception
    {
       //Bundle-SymbolicName: packageimportoptional
-      //Import-Package: org.jboss.test.osgi.classloader.support.a;resolution:=optional
+      //Import-Package: org.jboss.test.osgi.resolver.support.a;resolution:=optional
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/packageimportoptional");
       Bundle bundleA = installBundle(assemblyA);
       try
       {
          // Bundle-SymbolicName: simpleexport
-         // Export-Package: org.jboss.test.osgi.classloader.support.a
+         // Export-Package: org.jboss.test.osgi.resolver.support.a
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class);
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -299,7 +302,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testOptionalImportPackageNotWired() throws Exception
    {
       //Bundle-SymbolicName: packageimportoptional
-      //Import-Package: org.jboss.test.osgi.classloader.support.a;resolution:=optional
+      //Import-Package: org.jboss.test.osgi.resolver.support.a;resolution:=optional
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/packageimportoptional");
       Bundle bundleA = installBundle(assemblyA);
       try
@@ -310,7 +313,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
          assertTrue("All resolved", allResolved);
 
          // Bundle-SymbolicName: simpleexport
-         // Export-Package: org.jboss.test.osgi.classloader.support.a
+         // Export-Package: org.jboss.test.osgi.resolver.support.a
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class);
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -339,13 +342,13 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testBundleNameImportPackage() throws Exception
    {
       //Bundle-SymbolicName: bundlenameimport
-      //Import-Package: org.jboss.test.osgi.classloader.support.a;bundle-symbolic-name=simpleexport
+      //Import-Package: org.jboss.test.osgi.resolver.support.a;bundle-symbolic-name=simpleexport
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/bundlenameimport");
       Bundle bundleA = installBundle(assemblyA);
       try
       {
          //Bundle-SymbolicName: simpleexport
-         //Export-Package: org.jboss.test.osgi.classloader.support.a
+         //Export-Package: org.jboss.test.osgi.resolver.support.a
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class);
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -373,13 +376,13 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testBundleNameImportPackageFails() throws Exception
    {
       //Bundle-SymbolicName: bundlenameimport
-      //Import-Package: org.jboss.test.osgi.classloader.support.a;bundle-symbolic-name=simpleexport
+      //Import-Package: org.jboss.test.osgi.resolver.support.a;bundle-symbolic-name=simpleexport
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/bundlenameimport");
       Bundle bundleA = installBundle(assemblyA);
       try
       {
          //Bundle-SymbolicName: sigleton;singleton:=true
-         //Export-Package: org.jboss.test.osgi.classloader.support.a
+         //Export-Package: org.jboss.test.osgi.resolver.support.a
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/singleton", A.class);
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -407,13 +410,13 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testBundleVersionImportPackage() throws Exception
    {
       //Bundle-SymbolicName: bundleversionimport
-      //Import-Package: org.jboss.test.osgi.classloader.support.a;bundle-version="[0.0.0,1.0.0)"
+      //Import-Package: org.jboss.test.osgi.resolver.support.a;bundle-version="[0.0.0,1.0.0)"
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/bundleversionimport");
       Bundle bundleA = installBundle(assemblyA);
       try
       {
          // Bundle-SymbolicName: simpleexport
-         // Export-Package: org.jboss.test.osgi.classloader.support.a
+         // Export-Package: org.jboss.test.osgi.resolver.support.a
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class);
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -441,13 +444,13 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testBundleVersionImportPackageFails() throws Exception
    {
       //Bundle-SymbolicName: bundleversionimportfails
-      //Import-Package: org.jboss.test.osgi.classloader.support.a;bundle-version="[1.0.0,2.0.0)"
+      //Import-Package: org.jboss.test.osgi.resolver.support.a;bundle-version="[1.0.0,2.0.0)"
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/bundleversionimportfails");
       Bundle bundleA = installBundle(assemblyA);
       try
       {
          // Bundle-SymbolicName: simpleexport
-         // Export-Package: org.jboss.test.osgi.classloader.support.a
+         // Export-Package: org.jboss.test.osgi.resolver.support.a
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class);
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -483,7 +486,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       try
       {
          // Bundle-SymbolicName: simpleexport
-         // Export-Package: org.jboss.test.osgi.classloader.support.a
+         // Export-Package: org.jboss.test.osgi.resolver.support.a
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class);
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -561,7 +564,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       try
       {
          // Bundle-SymbolicName: simpleexport
-         // Export-Package: org.jboss.test.osgi.classloader.support.a
+         // Export-Package: org.jboss.test.osgi.resolver.support.a
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class);
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -595,7 +598,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       try
       {
          // Bundle-SymbolicName: simpleexport
-         // Export-Package: org.jboss.test.osgi.classloader.support.a
+         // Export-Package: org.jboss.test.osgi.resolver.support.a
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class);
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -623,15 +626,15 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testPreferredExporterResolved() throws Exception
    {
       // Bundle-SymbolicName: simpleexport
-      // Export-Package: org.jboss.test.osgi.classloader.support.a
+      // Export-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/simpleexport", A.class);
 
       // Bundle-SymbolicName: simpleexportother
-      // Export-Package: org.jboss.test.osgi.classloader.support.a
+      // Export-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexportother", A.class);
 
       // Bundle-SymbolicName: simpleimport
-      // Import-Package: org.jboss.test.osgi.classloader.support.a
+      // Import-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyC = assembleArchive("bundleC", "/bundles/resolver/simpleimport");
 
       Bundle bundleA = installBundle(assemblyA);
@@ -680,15 +683,15 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testPreferredExporterResolvedReverse() throws Exception
    {
       // Bundle-SymbolicName: simpleexport
-      // Export-Package: org.jboss.test.osgi.classloader.support.a
+      // Export-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/simpleexport", A.class);
 
       // Bundle-SymbolicName: simpleexportother
-      // Export-Package: org.jboss.test.osgi.classloader.support.a
+      // Export-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexportother", A.class);
 
       // Bundle-SymbolicName: simpleimport
-      // Import-Package: org.jboss.test.osgi.classloader.support.a
+      // Import-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyC = assembleArchive("bundleC", "/bundles/resolver/simpleimport");
 
       Bundle bundleB = installBundle(assemblyB);
@@ -740,15 +743,15 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testPreferredExporterHigherVersion() throws Exception
    {
       //Bundle-SymbolicName: packageexportversion100
-      //Export-Package: org.jboss.test.osgi.classloader.support.a;version=1.0.0
+      //Export-Package: org.jboss.test.osgi.resolver.support.a;version=1.0.0
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/packageexportversion100", A.class);
 
       //Bundle-SymbolicName: packageexportversion200
-      //Export-Package: org.jboss.test.osgi.classloader.support.a;version=2.0.0
+      //Export-Package: org.jboss.test.osgi.resolver.support.a;version=2.0.0
       Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/packageexportversion200", A.class);
 
       // Bundle-SymbolicName: simpleimport
-      // Import-Package: org.jboss.test.osgi.classloader.support.a
+      // Import-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyC = assembleArchive("bundleC", "/bundles/resolver/simpleimport");
 
       Bundle bundleA = installBundle(assemblyA);
@@ -790,15 +793,15 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testPreferredExporterHigherVersionReverse() throws Exception
    {
       //Bundle-SymbolicName: packageexportversion200
-      //Export-Package: org.jboss.test.osgi.classloader.support.a;version=2.0.0
+      //Export-Package: org.jboss.test.osgi.resolver.support.a;version=2.0.0
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/packageexportversion200", A.class);
 
       //Bundle-SymbolicName: packageexportversion100
-      //Export-Package: org.jboss.test.osgi.classloader.support.a;version=1.0.0
+      //Export-Package: org.jboss.test.osgi.resolver.support.a;version=1.0.0
       Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/packageexportversion100", A.class);
 
       // Bundle-SymbolicName: simpleimport
-      // Import-Package: org.jboss.test.osgi.classloader.support.a
+      // Import-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyC = assembleArchive("bundleC", "/bundles/resolver/simpleimport");
 
       Bundle bundleA = installBundle(assemblyA);
@@ -840,15 +843,15 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testPreferredExporterLowerId() throws Exception
    {
       // Bundle-SymbolicName: simpleexport
-      // Export-Package: org.jboss.test.osgi.classloader.support.a
+      // Export-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/simpleexport", A.class);
 
       // Bundle-SymbolicName: simpleexportother
-      // Export-Package: org.jboss.test.osgi.classloader.support.a
+      // Export-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexportother", A.class);
 
       // Bundle-SymbolicName: simpleimport
-      // Import-Package: org.jboss.test.osgi.classloader.support.a
+      // Import-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyC = assembleArchive("bundleC", "/bundles/resolver/simpleimport");
 
       Bundle bundleA = installBundle(assemblyA);
@@ -900,15 +903,15 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testPreferredExporterLowerIdReverse() throws Exception
    {
       // Bundle-SymbolicName: simpleexportother
-      // Export-Package: org.jboss.test.osgi.classloader.support.a
+      // Export-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/simpleexportother", A.class);
 
       // Bundle-SymbolicName: simpleexport
-      // Export-Package: org.jboss.test.osgi.classloader.support.a
+      // Export-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleexport", A.class);
 
       // Bundle-SymbolicName: simpleimport
-      // Import-Package: org.jboss.test.osgi.classloader.support.a
+      // Import-Package: org.jboss.test.osgi.resolver.support.a
       Archive<?> assemblyC = assembleArchive("bundleC", "/bundles/resolver/simpleimport");
 
       Bundle bundleA = installBundle(assemblyA);
@@ -960,13 +963,13 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testPackageAttribute() throws Exception
    {
       //Bundle-SymbolicName: packageexportattribute
-      //Export-Package: org.jboss.test.osgi.classloader.support.a;test=x
+      //Export-Package: org.jboss.test.osgi.resolver.support.a;test=x
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/packageexportattribute", A.class);
       Bundle bundleA = installBundle(assemblyA);
       try
       {
          //Bundle-SymbolicName: simpleimport
-         //Import-Package: org.jboss.test.osgi.classloader.support.a
+         //Import-Package: org.jboss.test.osgi.resolver.support.a
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleimport");
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -985,7 +988,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
          }
 
          //Bundle-SymbolicName: packageimportattribute
-         //Import-Package: org.jboss.test.osgi.classloader.support.a;test=x
+         //Import-Package: org.jboss.test.osgi.resolver.support.a;test=x
          assemblyB = assembleArchive("bundleB", "/bundles/resolver/packageimportattribute");
          bundleB = installBundle(assemblyB);
          try
@@ -1013,13 +1016,13 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testPackageAttributeFails() throws Exception
    {
       //Bundle-SymbolicName: packageexportattribute
-      //Export-Package: org.jboss.test.osgi.classloader.support.a;test=x
+      //Export-Package: org.jboss.test.osgi.resolver.support.a;test=x
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/packageexportattribute", A.class);
       Bundle bundleA = installBundle(assemblyA);
       try
       {
          //Bundle-SymbolicName: packageimportattributefails
-         //Import-Package: org.jboss.test.osgi.classloader.support.a;test=y
+         //Import-Package: org.jboss.test.osgi.resolver.support.a;test=y
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/packageimportattributefails");
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -1047,13 +1050,13 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testPackageAttributeMandatory() throws Exception
    {
       //Bundle-SymbolicName: packageexportattributemandatory
-      //Export-Package: org.jboss.test.osgi.classloader.support.a;test=x;mandatory:=test
+      //Export-Package: org.jboss.test.osgi.resolver.support.a;test=x;mandatory:=test
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/packageexportattributemandatory", A.class);
       Bundle bundleA = installBundle(assemblyA);
       try
       {
          //Bundle-SymbolicName: packageimportattribute
-         //Import-Package: org.jboss.test.osgi.classloader.support.a;test=x
+         //Import-Package: org.jboss.test.osgi.resolver.support.a;test=x
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/packageimportattribute");
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -1081,13 +1084,13 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
    public void testPackageAttributeMandatoryFails() throws Exception
    {
       //Bundle-SymbolicName: packageexportattributemandatory
-      //Export-Package: org.jboss.test.osgi.classloader.support.a;test=x;mandatory:=test
+      //Export-Package: org.jboss.test.osgi.resolver.support.a;test=x;mandatory:=test
       Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/packageexportattributemandatory", A.class);
       Bundle bundleA = installBundle(assemblyA);
       try
       {
          //Bundle-SymbolicName: simpleimport
-         //Import-Package: org.jboss.test.osgi.classloader.support.a
+         //Import-Package: org.jboss.test.osgi.resolver.support.a
          Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/simpleimport");
          Bundle bundleB = installBundle(assemblyB);
          try

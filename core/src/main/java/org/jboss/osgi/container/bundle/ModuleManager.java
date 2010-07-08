@@ -49,6 +49,7 @@ import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XWire;
 import org.jboss.osgi.vfs.VirtualFile;
+import org.osgi.application.Framework;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;
 
@@ -157,13 +158,13 @@ public class ModuleManager extends ModuleLoader
       dependencies.add(frameworkDependency);
 
       // Add the exported packages as paths
-      Set<String> paths = new HashSet<String>();
+      Set<String> exportPaths = new HashSet<String>();
       for (XPackageCapability cap : resModule.getPackageCapabilities())
-         paths.add(cap.getName().replace('.', '/'));
+         exportPaths.add(cap.getName().replace('.', '/'));
 
       // Add the bundle's {@link ResourceLoader}
       Builder builder = ModuleContentLoader.build();
-      builder.add(identifier.toString(), new VirtualFileResourceLoader(rootFile, paths));
+      builder.add(identifier.toString(), new VirtualFileResourceLoader(rootFile, exportPaths));
       moduleSpec.setContentLoader(builder.create());
       
       // For every {@link XWire} add a dependency on the exporter

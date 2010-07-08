@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.container.internals.loading;
 
-
 import static org.junit.Assert.assertNotNull;
 
 import java.io.InputStream;
@@ -34,8 +33,8 @@ import org.jboss.osgi.container.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiTestHelper;
 import org.jboss.osgi.vfs.VirtualFile;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.Asset;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.container.simple.bundleC.SimpleActivator;
 import org.jboss.test.osgi.container.simple.bundleC.SimpleService;
@@ -49,7 +48,7 @@ import org.junit.Test;
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
-public class VirtualFileResourceLoaderTestCase 
+public class VirtualFileResourceLoaderTestCase
 {
    @Test
    public void testClassSpec() throws Exception
@@ -58,7 +57,7 @@ public class VirtualFileResourceLoaderTestCase
       ClassSpec result = loader.getClassSpec(SimpleActivator.class.getName());
       assertNotNull("ClassSpec not null", result);
    }
-   
+
    @Test
    public void testPackageSpec() throws Exception
    {
@@ -66,7 +65,7 @@ public class VirtualFileResourceLoaderTestCase
       PackageSpec result = loader.getPackageSpec(SimpleActivator.class.getPackage().getName());
       assertNotNull("PackageSpec not null", result);
    }
-   
+
    @Test
    public void testResource() throws Exception
    {
@@ -74,9 +73,9 @@ public class VirtualFileResourceLoaderTestCase
       Resource result = loader.getResource("META-INF/MANIFEST.MF");
       assertNotNull("Resource not null", result);
    }
-   
+
    private static VirtualFile rootFile;
-   
+
    @BeforeClass
    public static void beforeClass() throws Exception
    {
@@ -97,10 +96,10 @@ public class VirtualFileResourceLoaderTestCase
             return builder.openStream();
          }
       });
-      
+
       rootFile = OSGiTestHelper.toVirtualFile(archive);
    }
-   
+
    @AfterClass
    public static void afterClass() throws Exception
    {
