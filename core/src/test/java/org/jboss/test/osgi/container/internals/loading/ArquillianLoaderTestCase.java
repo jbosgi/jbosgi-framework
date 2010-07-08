@@ -30,10 +30,14 @@ import java.util.jar.Manifest;
 import org.jboss.arquillian.osgi.ArquillianBundleActivator;
 import org.jboss.arquillian.testenricher.osgi.OSGiTestEnricher;
 import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.FrameworkState;
 import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.container.loading.OSGiModuleClassLoader;
+import org.jboss.osgi.container.bundle.SystemBundle;
+import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
+import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
@@ -42,12 +46,9 @@ import org.jboss.osgi.testing.OSGiTestHelper;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.osgi.framework.Constants;
-import org.osgi.framework.Version;
 
 /**
  * Test the bundle content loader.
@@ -57,57 +58,58 @@ import org.osgi.framework.Version;
  */
 public class ArquillianLoaderTestCase
 {
-   private static Module module;
-   private static VirtualFile rootFile;
+   static ModuleClassLoader classLoader;
    
    @BeforeClass
    public static void beforeClass() throws Exception
    {
-      // Create the {@link ModuleLoader}
-      ModuleManager moduleManager = new ModuleManager(Mockito.mock(BundleManager.class));
+      // Mock the BundleManager to return the {@link FrameworkState}
+      BundleManager bundleManager = Mockito.mock(BundleManager.class);
+      FrameworkState frameworkState = Mockito.mock(FrameworkState.class);
+      Mockito.when(bundleManager.getFrameworkState()).thenReturn(frameworkState);
       
-      // Add the framework module to the manager
-      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
-      builder.createModule(0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME, Version.emptyVersion);
-      builder.addPackageCapability("org.osgi.framework", null, null);
-      moduleManager.createFrameworkModule(builder.getModule());
+      // Mock the BundleManager to return an instance of the {@link SystemPackagesPlugin}
+      SystemPackagesPluginImpl sysPackagesPlugin = new SystemPackagesPluginImpl(bundleManager);
+      Mockito.when(bundleManager.getPlugin(SystemPackagesPlugin.class)).thenReturn(sysPackagesPlugin);
+
+      // Get the resolver module for the SystemBundle
+      SystemBundle systemBundle = new SystemBundle(bundleManager);
+      XModule resModule = systemBundle.getResolverModule();
+      
+      // Create the Framework module
+      ModuleManager moduleManager = new ModuleManager(bundleManager);
+      ModuleSpec moduleSpec = moduleManager.createFrameworkModule(resModule);
+      moduleManager.createModule(moduleSpec, false);
       
       // Create the Arquillian resolver module 
       URL url = new OSGiTestHelper().getTestArchiveURL("bundles/arquillian-bundle.jar");
-      rootFile = AbstractVFS.getRoot(url);
+      VirtualFile rootFile = AbstractVFS.getRoot(url);
       
       Manifest manifest = VFSUtils.getManifest(rootFile);
       OSGiManifestMetaData metadata = new OSGiManifestMetaData(manifest);
-      builder = XResolverFactory.getModuleBuilder();
-      XModule resModule = builder.createModule(1, metadata);
+      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
+      resModule = builder.createModule(1, metadata);
 
       // Add the Bundle-ClassPath to the root virtual files
       rootFile = BundleManager.aggregatedBundleClassPath(rootFile, metadata);
       
       // Create the ModuleSpec and the Module
-      ModuleSpec moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
-      module = moduleManager.createModule(moduleSpec, false);
+      moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
+      Module module = moduleManager.createModule(moduleSpec, false);
+      classLoader = module.getClassLoader();
    }
    
-   @AfterClass
-   public static void afterClass() throws Exception
-   {
-      rootFile.close();
-   }
-
    @Test
    public void testLoadBundleActivator() throws Exception
    {
-      ClassLoader loader = new OSGiModuleClassLoader(module);
-      Class<?> result = loader.loadClass(ArquillianBundleActivator.class.getName());
-      assertNotNull("Class loaded", result);
+      Class<?> result = classLoader.loadClass(ArquillianBundleActivator.class.getName());
+      assertNotNull("ArquillianBundleActivator loaded", result);
    }
    
    @Test
    public void testLoadTestEnricher() throws Exception
    {
-      ClassLoader loader = new OSGiModuleClassLoader(module);
-      Class<?> result = loader.loadClass(OSGiTestEnricher.class.getName());
-      assertNotNull("Class loaded", result);
+      Class<?> result = classLoader.loadClass(OSGiTestEnricher.class.getName());
+      assertNotNull("OSGiTestEnricher loaded", result);
    }
 }

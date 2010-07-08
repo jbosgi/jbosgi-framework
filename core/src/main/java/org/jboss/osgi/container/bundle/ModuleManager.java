@@ -29,20 +29,17 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.AssertionSetting;
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
-import org.jboss.modules.Module.Flag;
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleContentLoader;
-import org.jboss.modules.ModuleContentLoader.Builder;
+import org.jboss.modules.ModuleClassLoaderFactory;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleLoaderSelector;
-import org.jboss.modules.ModuleLoaderSpec;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.modules.SystemModuleClassLoader;
+import org.jboss.osgi.container.loading.FrameworkModuleClassLoader;
+import org.jboss.osgi.container.loading.HostModuleClassLoader;
 import org.jboss.osgi.container.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
@@ -66,18 +63,18 @@ public class ModuleManager extends ModuleLoader
 
    // the bundle manager
    private BundleManager bundleManager;
-   // The modules
+   // The framework module identifier
+   private ModuleIdentifier frameworkIdentifier;
+   // The modules that are registered with this {@link ModuleLoader}
    private Map<ModuleIdentifier, ModuleHolder> modules = Collections.synchronizedMap(new LinkedHashMap<ModuleIdentifier, ModuleHolder>());
-   // The framework module
-   private Module frameworkModule;
 
    public ModuleManager(BundleManager bundleManager)
    {
       if (bundleManager == null)
          throw new IllegalArgumentException("Null bundleManager");
-      
+
       this.bundleManager = bundleManager;
-      
+
       // Make sure this ModuleLoader is used
       // This also registers the URLStreamHandlerFactory
       final ModuleLoader moduleLoader = this;
@@ -114,7 +111,7 @@ public class ModuleManager extends ModuleLoader
     * Get the module for a given identifier
     * @return The module or null
     */
-   public Module getModule(ModuleIdentifier identifier) 
+   public Module getModule(ModuleIdentifier identifier)
    {
       ModuleHolder holder = modules.get(identifier);
       return holder != null ? holder.getModule() : null;
@@ -132,7 +129,7 @@ public class ModuleManager extends ModuleLoader
       ModuleHolder holder = modules.get(identifier);
       if (holder == null)
          return null;
-      
+
       Module module = holder.getModule();
       if (module == null)
       {
@@ -148,14 +145,11 @@ public class ModuleManager extends ModuleLoader
    public ModuleSpec createModuleSpec(XModule resModule, VirtualFile rootFile)
    {
       ModuleIdentifier identifier = getModuleIdentifier(resModule);
-      ModuleSpec moduleSpec = new ModuleSpec(identifier);
+      ModuleSpec.Builder builder = ModuleSpec.build(identifier);
 
       // Add the framework module as required dependency
-      List<DependencySpec> dependencies = moduleSpec.getDependencies();
-      DependencySpec frameworkDependency = new DependencySpec();
-      frameworkDependency.setModuleIdentifier(frameworkModule.getIdentifier());
-      frameworkDependency.setExport(true);
-      dependencies.add(frameworkDependency);
+      DependencySpec.Builder depBuilder = builder.addDependency(frameworkIdentifier);
+      depBuilder.setExport(true);
 
       // Add the exported packages as paths
       Set<String> exportPaths = new HashSet<String>();
@@ -163,10 +157,8 @@ public class ModuleManager extends ModuleLoader
          exportPaths.add(cap.getName().replace('.', '/'));
 
       // Add the bundle's {@link ResourceLoader}
-      Builder builder = ModuleContentLoader.build();
-      builder.add(identifier.toString(), new VirtualFileResourceLoader(rootFile, exportPaths));
-      moduleSpec.setContentLoader(builder.create());
-      
+      builder.addRoot("[TODO] What Value?", new VirtualFileResourceLoader(rootFile, exportPaths));
+
       // For every {@link XWire} add a dependency on the exporter
       List<XWire> wires = resModule.getWires();
       if (wires != null)
@@ -177,14 +169,23 @@ public class ModuleManager extends ModuleLoader
             XModule exporter = wire.getExporter();
             if (exporter != importer)
             {
-               ModuleIdentifier depId = getModuleIdentifier(exporter);
-               DependencySpec dep = new DependencySpec();
-               dep.setModuleIdentifier(depId);
-               dep.setExport(true);
-               dependencies.add(dep);
+               ModuleIdentifier exporterId = getModuleIdentifier(exporter);
+               depBuilder = builder.addDependency(exporterId);
+               depBuilder.setExport(true);
             }
          }
       }
+      
+      ModuleClassLoaderFactory loaderFactory = new ModuleClassLoaderFactory()
+      {
+         @Override
+         public ModuleClassLoader getModuleClassLoader(Module module, ModuleSpec moduleSpec)
+         {
+            return new HostModuleClassLoader(bundleManager, module, moduleSpec);
+         }
+      };
+      builder.setClassLoaderFactory(loaderFactory);
+      ModuleSpec moduleSpec = builder.create();
 
       log.debug("Created ModuleSpec: " + identifier);
       modules.put(identifier, new ModuleHolder(moduleSpec));
@@ -194,40 +195,27 @@ public class ModuleManager extends ModuleLoader
    /**
     * Create the {@link Framework} module from the give resolver module definition.
     */
-   public Module createFrameworkModule(final XModule resModule) 
+   public ModuleSpec createFrameworkModule(final XModule resModule)
    {
-      if (frameworkModule != null)
+      if (frameworkIdentifier != null)
          throw new IllegalStateException("Framework module already created");
 
-      final ModuleLoader moduleLoader = this;
-      ModuleIdentifier identifier = getModuleIdentifier(resModule);
-      frameworkModule = new Module(identifier, new ModuleLoaderSpec()
+      frameworkIdentifier = getModuleIdentifier(resModule);
+      ModuleSpec.Builder builder = ModuleSpec.build(frameworkIdentifier);
+
+      ModuleClassLoaderFactory loaderFactory = new ModuleClassLoaderFactory()
       {
          @Override
-         public ModuleLoader getModuleLoader(Module module)
+         public ModuleClassLoader getModuleClassLoader(Module module, ModuleSpec moduleSpec)
          {
-            return moduleLoader;
+            return new FrameworkModuleClassLoader(bundleManager, resModule, module);
          }
+      };
+      builder.setClassLoaderFactory(loaderFactory);
+      ModuleSpec frameworkSpec = builder.create();
 
-         @Override
-         public ModuleClassLoader getModuleClassLoader(Module module)
-         {
-            SystemModuleClassLoader smcl = new SystemModuleClassLoader(module, Collections.<Flag> emptySet(), AssertionSetting.INHERIT)
-            {
-               @Override
-               protected Set<String> getExportedPaths()
-               {
-                  Set<String> exportedPaths = new HashSet<String>();
-                  for (XPackageCapability cap : resModule.getPackageCapabilities())
-                     exportedPaths.add(cap.getName().replace('.', '/'));
-                  return exportedPaths;
-               }
-            };
-            return smcl;
-         }
-      });
-      modules.put(identifier, new ModuleHolder(frameworkModule));
-      return frameworkModule;
+      modules.put(frameworkIdentifier, new ModuleHolder(frameworkSpec));
+      return frameworkSpec;
    }
 
    /**
@@ -238,7 +226,7 @@ public class ModuleManager extends ModuleLoader
    {
       Module module = defineModule(moduleSpec);
       ModuleIdentifier identifier = module.getIdentifier();
-      
+
       // Change the bundle state to RESOLVED 
       if (resolveBundle == true)
       {
@@ -246,7 +234,7 @@ public class ModuleManager extends ModuleLoader
          AbstractBundle bundleState = bundleManager.getBundleById(moduleId);
          bundleState.changeState(Bundle.RESOLVED);
       }
-      
+
       modules.put(identifier, new ModuleHolder(module));
       return module;
    }
@@ -254,11 +242,11 @@ public class ModuleManager extends ModuleLoader
    /**
     * A holder for the {@link ModuleSpec}  @{link Module} tuple
     */
-   class ModuleHolder 
+   class ModuleHolder
    {
       private ModuleSpec moduleSpec;
       private Module module;
-      
+
       ModuleHolder(ModuleSpec moduleSpec)
       {
          this.moduleSpec = moduleSpec;

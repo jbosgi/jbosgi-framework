@@ -23,17 +23,28 @@ package org.jboss.test.osgi.container.internals.loading;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.HashMap;
+
+import javax.management.MBeanServer;
+import javax.transaction.xa.XAResource;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.FrameworkState;
 import org.jboss.osgi.container.bundle.ModuleManager;
+import org.jboss.osgi.container.bundle.SystemBundle;
+import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
+import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.resolver.XModule;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.BundleActivator;
-import org.osgi.framework.Constants;
-import org.osgi.framework.Version;
 
 /**
  * Test the bundle content loader.
@@ -43,18 +54,80 @@ import org.osgi.framework.Version;
  */
 public class FrameworkModuleTestCase
 {
-   @Test
-   public void testClassLoad() throws Exception
+   static ModuleClassLoader classLoader;
+   
+   @BeforeClass
+   public static void beforeClass() throws Exception
    {
-      XModule resModule = Mockito.mock(XModule.class);
-      Mockito.when(resModule.getName()).thenReturn(Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
-      Mockito.when(resModule.getVersion()).thenReturn(Version.emptyVersion);
+      // Mock the BundleManager to return the {@link FrameworkState}
+      BundleManager bundleManager = Mockito.mock(BundleManager.class);
+      FrameworkState frameworkState = Mockito.mock(FrameworkState.class);
+      Mockito.when(bundleManager.getFrameworkState()).thenReturn(frameworkState);
       
-      ModuleManager moduleManager = new ModuleManager(Mockito.mock(BundleManager.class));
-      Module module = moduleManager.createFrameworkModule(resModule);
-      ModuleClassLoader classLoader = module.getClassLoader();
+      // Mock the BundleManager to return an instance of the {@link SystemPackagesPlugin}
+      SystemPackagesPluginImpl sysPackagesPlugin = new SystemPackagesPluginImpl(bundleManager);
+      Mockito.when(bundleManager.getPlugin(SystemPackagesPlugin.class)).thenReturn(sysPackagesPlugin);
+
+      // Get the resolver module for the SystemBundle
+      SystemBundle systemBundle = new SystemBundle(bundleManager);
+      XModule resModule = systemBundle.getResolverModule();
+      
+      // Create the Framework module
+      ModuleManager moduleManager = new ModuleManager(bundleManager);
+      ModuleSpec moduleSpec = moduleManager.createFrameworkModule(resModule);
+      Module module = moduleManager.createModule(moduleSpec, false);
+      classLoader = module.getClassLoader();
+   }
+   
+   @Test
+   public void testLoadJavaClass() throws Exception
+   {
+      Class<?> result = classLoader.loadClass(HashMap.class.getName());
+      assertNotNull("HashMap loaded", result);
+      assertTrue("Is assignable", HashMap.class.isAssignableFrom(result));
+   }
+   
+   @Test
+   public void testLoadJavaXSuccess() throws Exception
+   {
+      Class<?> result = classLoader.loadClass(MBeanServer.class.getName());
+      assertNotNull("MBeanServer loaded", result);
+      assertTrue("Is assignable", MBeanServer.class.isAssignableFrom(result));
+   }
+   
+   @Test
+   public void testLoadJavaXFail() throws Exception
+   {
+      try
+      {
+         classLoader.loadClass(XAResource.class.getName());
+         fail("ClassNotFoundException expected");
+      }
+      catch (ClassNotFoundException ex)
+      {
+         //expected
+      }
+   }
+   
+   @Test
+   public void testLoadClassSuccess() throws Exception
+   {
       Class<?> result = classLoader.loadClass(BundleActivator.class.getName());
       assertNotNull("BundleActivator loaded", result);
       assertTrue("Is assignable", BundleActivator.class.isAssignableFrom(result));
+   }
+   
+   @Test
+   public void testLoadClassFail() throws Exception
+   {
+      try
+      {
+         classLoader.loadClass(ModuleIdentifier.class.getName());
+         fail("ClassNotFoundException expected");
+      }
+      catch (ClassNotFoundException ex)
+      {
+         //expected
+      }
    }
 }

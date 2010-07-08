@@ -30,10 +30,14 @@ import java.io.InputStream;
 import java.util.jar.Manifest;
 
 import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.FrameworkState;
 import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.container.loading.OSGiModuleClassLoader;
+import org.jboss.osgi.container.bundle.SystemBundle;
+import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
+import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XResolverFactory;
@@ -41,18 +45,15 @@ import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiTestHelper;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.Asset;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.container.simple.bundleC.SimpleActivator;
 import org.jboss.test.osgi.container.simple.bundleC.SimpleService;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.BundleActivator;
-import org.osgi.framework.Constants;
-import org.osgi.framework.Version;
 import org.osgi.service.log.LogService;
 
 /**
@@ -61,14 +62,31 @@ import org.osgi.service.log.LogService;
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
-public class OSGiModuleClassLoaderTestCase 
+public class HostModuleClassLoaderTestCase 
 {
-   private static Module module;
-   private static VirtualFile rootFile;
+   static ModuleClassLoader classLoader;
    
    @BeforeClass
    public static void beforeClass() throws Exception
    {
+      // Mock the BundleManager to return the {@link FrameworkState}
+      BundleManager bundleManager = Mockito.mock(BundleManager.class);
+      FrameworkState frameworkState = Mockito.mock(FrameworkState.class);
+      Mockito.when(bundleManager.getFrameworkState()).thenReturn(frameworkState);
+      
+      // Mock the BundleManager to return an instance of the {@link SystemPackagesPlugin}
+      SystemPackagesPluginImpl sysPackagesPlugin = new SystemPackagesPluginImpl(bundleManager);
+      Mockito.when(bundleManager.getPlugin(SystemPackagesPlugin.class)).thenReturn(sysPackagesPlugin);
+
+      // Get the resolver module for the SystemBundle
+      SystemBundle systemBundle = new SystemBundle(bundleManager);
+      XModule resModule = systemBundle.getResolverModule();
+      
+      // Create the Framework module
+      ModuleManager moduleManager = new ModuleManager(bundleManager);
+      ModuleSpec moduleSpec = moduleManager.createFrameworkModule(resModule);
+      moduleManager.createModule(moduleSpec, false);
+      
       // Bundle-Version: 1.0.0
       // Bundle-SymbolicName: simple-bundle
       // Bundle-Activator: org.jboss.osgi.msc.framework.simple.bundle.SimpleActivator
@@ -87,37 +105,22 @@ public class OSGiModuleClassLoaderTestCase
          }
       });
       
-      // Create the {@link ModuleLoader}
-      ModuleManager moduleManager = new ModuleManager(Mockito.mock(BundleManager.class));
-      
-      // Add the framework module to the manager
-      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
-      builder.createModule(0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME, Version.emptyVersion);
-      builder.addPackageCapability("org.osgi.framework", null, null);
-      moduleManager.createFrameworkModule(builder.getModule());
-      
       // Create the test module 
-      rootFile = OSGiTestHelper.toVirtualFile(archive);
+      VirtualFile rootFile = OSGiTestHelper.toVirtualFile(archive);
       Manifest manifest = VFSUtils.getManifest(rootFile);
-      builder = XResolverFactory.getModuleBuilder();
-      XModule resModule = builder.createModule(1, manifest);
+      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
+      resModule = builder.createModule(1, manifest);
       
       // Create the ModuleSpec and the Module
-      ModuleSpec moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
-      module = moduleManager.createModule(moduleSpec, false);
+      moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
+      Module module = moduleManager.createModule(moduleSpec, false);
+      classLoader = module.getClassLoader();
    }
    
-   @AfterClass
-   public static void afterClass() throws Exception
-   {
-      rootFile.close();
-   }
-
    @Test
    public void testLoadBundleActivator() throws Exception
    {
-      ClassLoader loader = new OSGiModuleClassLoader(module);
-      Class<?> result = loader.loadClass(SimpleActivator.class.getName());
+      Class<?> result = classLoader.loadClass(SimpleActivator.class.getName());
       assertNotNull("Class loaded", result);
       assertTrue("Is assignable", BundleActivator.class.isAssignableFrom(result));
    }
@@ -125,10 +128,9 @@ public class OSGiModuleClassLoaderTestCase
    @Test
    public void testLoadLogServiceFail() throws Exception
    {
-      ClassLoader loader = new OSGiModuleClassLoader(module);
       try
       {
-         loader.loadClass(LogService.class.getName());
+         classLoader.loadClass(LogService.class.getName());
          fail("ClassNotFoundException expected");
       }
       catch (ClassNotFoundException ex)

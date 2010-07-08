@@ -50,7 +50,7 @@ import org.osgi.framework.FrameworkEvent;
  * @author thomas.diesler@jboss.com
  * @since 21-Aug-2009
  */
-public final class FrameworkState
+public class FrameworkState
 {
    // Provide logging
    final Logger log = Logger.getLogger(FrameworkState.class);

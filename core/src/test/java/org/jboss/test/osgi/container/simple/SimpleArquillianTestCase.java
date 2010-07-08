@@ -31,7 +31,6 @@ import javax.inject.Inject;
 
 import org.jboss.arquillian.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
-import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Asset;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -53,7 +52,7 @@ import org.osgi.framework.ServiceReference;
  */
 @Ignore
 @RunWith(Arquillian.class)
-public class SimpleArquillianTestCase extends OSGiFrameworkTest 
+public class SimpleArquillianTestCase
 {
    @Deployment
    public static JavaArchive createdeployment()
