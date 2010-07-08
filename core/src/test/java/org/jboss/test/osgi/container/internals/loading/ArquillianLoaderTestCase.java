@@ -34,7 +34,7 @@ import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.container.loading.OSGiModuleClassLoader;
-import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
+import org.jboss.osgi.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XResolverFactory;

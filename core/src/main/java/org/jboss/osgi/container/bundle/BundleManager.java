@@ -53,10 +53,11 @@ import org.jboss.osgi.container.plugin.internal.PackageAdminPluginImpl;
 import org.jboss.osgi.container.plugin.internal.ResolverPluginImpl;
 import org.jboss.osgi.container.plugin.internal.ServiceManagerPluginImpl;
 import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
+import org.jboss.osgi.container.util.AggregatedVirtualFile;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
+import org.jboss.osgi.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.vfs.AbstractVFS;
@@ -378,7 +379,7 @@ public class BundleManager
             }
          }
          VirtualFile[] roots = rootList.toArray(new VirtualFile[rootList.size()]);
-         result = AbstractVFS.aggregateFiles(roots);
+         result = new AggregatedVirtualFile(roots);
       }
       return result;
    }

@@ -33,7 +33,7 @@ import java.util.jar.Manifest;
 
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.msc.metadata.internal.OSGiManifestMetaData;
+import org.jboss.osgi.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XResolverFactory;
