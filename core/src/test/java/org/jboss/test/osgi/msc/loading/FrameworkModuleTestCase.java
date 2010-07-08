@@ -26,8 +26,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.osgi.msc.bundle.BundleManager;
-import org.jboss.osgi.msc.bundle.ModuleManager;
+import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.resolver.XModule;
 import org.junit.Test;
 import org.mockito.Mockito;

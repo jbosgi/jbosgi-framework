@@ -1,1 +1,1 @@
-org.jboss.osgi.msc.launch.FrameworkFactoryImpl
+org.jboss.osgi.container.launch.FrameworkFactoryImpl

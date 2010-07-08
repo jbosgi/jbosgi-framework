@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: lifecycle-order03
-Bundle-Activator: org.jboss.test.osgi.framework.bundle.support.lifecycle3.Activator
+Bundle-Activator: org.jboss.test.osgi.container.bundle.support.lifecycle3.Activator
 Bundle-Version: 1.1.1
 

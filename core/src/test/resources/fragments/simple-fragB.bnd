@@ -1,6 +1,6 @@
 # bnd build -classpath target/test-classes -output target/test-libs/fragments-simple-fragB.jar src/test/resources/fragments/simple-fragB.bnd
 
 Bundle-SymbolicName: simple-fragB
-Export-Package: org.jboss.test.osgi.framework.fragments.fragB
-Import-Package: org.jboss.test.osgi.framework.fragments.subA
+Export-Package: org.jboss.test.osgi.container.fragments.fragB
+Import-Package: org.jboss.test.osgi.container.fragments.subA
 Fragment-Host: simple-hostA

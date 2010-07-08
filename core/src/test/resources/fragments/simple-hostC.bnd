@@ -1,7 +1,7 @@
 # bnd build -classpath target/test-classes -output target/test-libs/fragments-simple-hostC.jar src/test/resources/fragments/simple-hostC.bnd
 
 Bundle-SymbolicName: simple-hostC
-Bundle-Activator: org.jboss.test.osgi.framework.fragments.hostC.HostCActivator
-Private-Package: org.jboss.test.osgi.framework.fragments.hostC 
-Import-Package: org.osgi.framework, org.jboss.test.osgi.framework.fragments.fragA
+Bundle-Activator: org.jboss.test.osgi.container.fragments.hostC.HostCActivator
+Private-Package: org.jboss.test.osgi.container.fragments.hostC 
+Import-Package: org.osgi.framework, org.jboss.test.osgi.container.fragments.fragA
 

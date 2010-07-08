@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: lifecycle-service
-Export-Package: org.jboss.test.osgi.framework.bundle.support.b
-Bundle-Activator: org.jboss.test.osgi.framework.bundle.support.b.LifecycleServiceActivator
+Export-Package: org.jboss.test.osgi.container.bundle.support.b
+Bundle-Activator: org.jboss.test.osgi.container.bundle.support.b.LifecycleServiceActivator
 

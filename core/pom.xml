@@ -9,19 +9,25 @@
 <!-- -->
 <!-- ====================================================================== -->
 
-<!-- Set these VM properties in your IDE debugger -Dlog4j.output.dir=${workspace_loc:jbosgi-msc-core/target} -Dlog4j.configuration=log4j-console.xml -->
+<!-- 
+  Set these VM properties in your IDE debugger 
+  
+  -Dtest.archive.directory=${workspace_loc:jbosgi-container-core/target}/test-libs
+  -Dlog4j.output.dir=${workspace_loc:jbosgi-container-core/target} 
+  -Dlog4j.configuration=log4j-console.xml 
+-->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <name>JBossOSGi Container Core</name>
-  <groupId>org.jboss.osgi.msc</groupId>
-  <artifactId>jbosgi-msc-core</artifactId>
+  <groupId>org.jboss.osgi.container</groupId>
+  <artifactId>jbosgi-container-core</artifactId>
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>org.jboss.osgi.msc</groupId>
-    <artifactId>jbosgi-msc-parent</artifactId>
+    <groupId>org.jboss.osgi.container</groupId>
+    <artifactId>jbosgi-container-parent</artifactId>
     <version>0.1-SNAPSHOT</version>
   </parent>
 

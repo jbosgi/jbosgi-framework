@@ -17,8 +17,8 @@
   <modelVersion>4.0.0</modelVersion>
 
   <name>JBossOSGi Container</name>
-  <groupId>org.jboss.osgi.msc</groupId>
-  <artifactId>jbosgi-msc-parent</artifactId>
+  <groupId>org.jboss.osgi.container</groupId>
+  <artifactId>jbosgi-container-parent</artifactId>
   <packaging>pom</packaging>
 
   <version>0.1-SNAPSHOT</version>
