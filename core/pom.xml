@@ -13,7 +13,6 @@
   Set these VM properties in your IDE debugger 
   
   -Dtest.archive.directory=${workspace_loc:jbosgi-container-core/target}/test-libs
-  -Dlog4j.output.dir=${workspace_loc:jbosgi-container-core/target} 
   -Dlog4j.configuration=log4j-console.xml 
 -->
 
@@ -30,6 +29,11 @@
     <artifactId>jbosgi-container-parent</artifactId>
     <version>0.1-SNAPSHOT</version>
   </parent>
+  
+  <!-- Properties -->
+  <properties>
+    <surefire.system.args>-disableassertions</surefire.system.args>
+  </properties>
 
   <!-- Dependencies -->
   <dependencies>
@@ -147,6 +151,7 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+          <argLine>${surefire.system.args}</argLine>
           <systemProperties>
             <property>
               <name>log4j.output.dir</name>

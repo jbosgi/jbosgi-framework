@@ -27,16 +27,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Dictionary;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
+import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.BatchBuilder;
 import org.jboss.msc.service.DuplicateServiceException;
 import org.jboss.msc.service.RemovingServiceListener;
@@ -165,16 +167,19 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       if (clazzes == null || clazzes.length == 0)
          throw new IllegalArgumentException("Null service classes");
 
+      final boolean traceEnabled = log.isTraceEnabled();
+
       // A temporary association of the clazz and name
-      Map<ServiceName, String> associations = new LinkedHashMap<ServiceName, String>();
+      Map<ServiceName, String> associations = new HashMap<ServiceName, String>();
 
       final ServiceState serviceState = new ServiceState(bundleState, clazzes, value, properties);
       BatchBuilder batchBuilder = serviceContainer.batchBuilder();
+      ServiceName serviceName = null;
       for (String className : clazzes)
       {
          try
          {
-            ServiceName serviceName = createServiceName(className, serviceState.getServiceId());
+            serviceName = createServiceName(className, serviceState.getServiceId());
             Service service = new Service()
             {
                @Override
@@ -195,7 +200,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
                }
             };
             log.debug("Register service: " + serviceName);
-            batchBuilder.addService(serviceName, service).setInitialMode(Mode.AUTOMATIC);
+            batchBuilder.addService(serviceName, service).setInitialMode(Mode.IMMEDIATE);
             associations.put(serviceName, className);
          }
          catch (DuplicateServiceException ex)
@@ -203,6 +208,21 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
             log.error("Cannot register service: " + className, ex);
          }
       }
+
+      // Install a startup listener with every service
+      final CountDownLatch serviceStartedLatch = new CountDownLatch(clazzes.length);
+      class ServiceStartupListener<S> extends AbstractServiceListener<S>
+      {
+         @Override
+         public void serviceStarted(ServiceController<? extends S> controller)
+         {
+            if (traceEnabled == true)
+               log.trace("Service started: " + controller.getName());
+
+            serviceStartedLatch.countDown();
+         }
+      }
+      batchBuilder.addListener(new ServiceStartupListener());
 
       try
       {
@@ -220,6 +240,22 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       catch (ServiceRegistryException ex)
       {
          log.error("Cannot register services: " + Arrays.asList(clazzes), ex);
+      }
+
+      // Wait for all services to get started
+      try
+      {
+         if (traceEnabled == true && serviceStartedLatch.getCount() > 0)
+            log.trace("Await service startup ...");
+
+         serviceStartedLatch.await();
+
+         if (traceEnabled == true)
+            log.trace("All services started");
+      }
+      catch (InterruptedException ex)
+      {
+         // ignore
       }
 
       return serviceState;
