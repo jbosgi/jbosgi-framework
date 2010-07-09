@@ -337,9 +337,16 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       for (String clazz : clazzes)
          unregisterServiceName(clazz, name);
 
-      // A service is brought DOWN by setting it's mode to NEVER
-      // Adding a {@link RemovingServiceListener} does this and will
-      // also synchronoulsy remove the service from the registry 
-      controller.addListener(new RemovingServiceListener());
+      try
+      {
+         // A service is brought DOWN by setting it's mode to NEVER
+         // Adding a {@link RemovingServiceListener} does this and will
+         // also synchronoulsy remove the service from the registry 
+         controller.addListener(new RemovingServiceListener());
+      }
+      catch (RuntimeException ex)
+      {
+         log.error("Cannot remove service: " + name, ex);
+      }
    }
 }
