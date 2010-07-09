@@ -27,7 +27,6 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Locale;
 import java.util.Map;
@@ -35,6 +34,7 @@ import java.util.MissingResourceException;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
@@ -315,7 +315,7 @@ public abstract class AbstractBundle implements Bundle
    public void addOwnedService(ServiceState serviceState)
    {
       if (ownedServices == null)
-         ownedServices = new HashSet<ServiceState>();
+         ownedServices = new CopyOnWriteArraySet<ServiceState>();
       ownedServices.add(serviceState);
    }
    
@@ -336,7 +336,7 @@ public abstract class AbstractBundle implements Bundle
    public void addUsedService(ServiceState serviceState)
    {
       if (usedServices == null)
-         usedServices = new HashSet<ServiceState>();
+         usedServices = new CopyOnWriteArraySet<ServiceState>();
       usedServices.add(serviceState);
    }
    

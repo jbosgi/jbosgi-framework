@@ -27,11 +27,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Dictionary;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
@@ -76,7 +78,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    // The ServiceContainer
    private ServiceContainer serviceContainer;
    // Maps the service interface to the list of registered service names
-   private Map<String, List<ServiceName>> serviceNameMap = new HashMap<String, List<ServiceName>>();
+   private Map<String, List<ServiceName>> serviceNameMap = new ConcurrentHashMap<String, List<ServiceName>>();
 
    public ServiceManagerPluginImpl(BundleManager bundleManager)
    {
@@ -102,7 +104,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       Object value = serviceState.getValue();
       if (value instanceof ServiceFactory)
          value = serviceState.getServiceFactoryValue(bundleState);
-      
+
       return value;
    }
 
@@ -117,12 +119,13 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    }
 
    @Override
-   public List<ServiceState> getServiceReferences(AbstractBundle bundleState, String clazz, String filterStr, boolean checkAssignable) throws InvalidSyntaxException
+   public List<ServiceState> getServiceReferences(AbstractBundle bundleState, String clazz, String filterStr, boolean checkAssignable)
+         throws InvalidSyntaxException
    {
       Filter filter = null;
       if (filterStr != null)
          filter = FrameworkUtil.createFilter(filterStr);
-      
+
       return getServiceReferencesInternal(bundleState, clazz, filter, true);
    }
 
@@ -135,7 +138,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
       if (filter == null)
          filter = NoFilter.INSTANCE;
-      
+
       for (ServiceName name : names)
       {
          ServiceController<?> controller = getServiceController(name);
@@ -243,32 +246,26 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
    private void registerServiceName(String className, ServiceName serviceName)
    {
-      synchronized (serviceNameMap)
+      List<ServiceName> names = serviceNameMap.get(className);
+      if (names == null)
       {
-         List<ServiceName> names = serviceNameMap.get(className);
-         if (names == null)
-         {
-            names = new ArrayList<ServiceName>();
-            serviceNameMap.put(className, names);
-         }
-         names.add(serviceName);
+         names = new CopyOnWriteArrayList<ServiceName>();
+         serviceNameMap.put(className, names);
       }
+      names.add(serviceName);
    }
 
    private void unregisterServiceName(String className, ServiceName serviceName)
    {
-      synchronized (serviceNameMap)
+      List<ServiceName> names = serviceNameMap.get(className);
+      if (names == null)
       {
-         List<ServiceName> names = serviceNameMap.get(className);
-         if (names == null)
-         {
-            log.warn("Cannot obtain service names for: " + className);
-            return;
-         }
-         
-         if (names.remove(serviceName) == false)
-            log.warn("Cannot remove [" + serviceName + "] from: " + names);
+         log.warn("Cannot obtain service names for: " + className);
+         return;
       }
+
+      if (names.remove(serviceName) == false)
+         log.warn("Cannot remove [" + serviceName + "] from: " + names);
    }
 
    @Override
@@ -281,7 +278,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    @Override
    public void unregisterServices(AbstractBundle bundleState)
    {
-      ArrayList<ServiceState> ownedServices = new ArrayList<ServiceState>(bundleState.getOwnedServices());
+      Set<ServiceState> ownedServices = bundleState.getOwnedServices();
       for (ServiceState serviceState : ownedServices)
       {
          bundleState.removeOwnedService(serviceState);
@@ -313,10 +310,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    private ServiceController<?> getServiceController(ServiceName serviceName)
    {
       ServiceController<?> controller;
-      synchronized (serviceContainer)
-      {
-         controller = serviceContainer.getService(serviceName);
-      }
+      controller = serviceContainer.getService(serviceName);
       return controller;
    }
 }
