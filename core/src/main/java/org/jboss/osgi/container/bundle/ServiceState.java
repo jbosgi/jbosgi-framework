@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceName;
@@ -155,7 +156,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    public void addServiceName(ServiceName name)
    {
       if (serviceNames == null)
-         serviceNames = new ArrayList<ServiceName>();
+         serviceNames = new CopyOnWriteArrayList<ServiceName>();
 
       serviceNames.add(name);
    }
@@ -183,7 +184,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    @Override
    public String[] getPropertyKeys()
    {
-      ArrayList<String> result = new ArrayList<String>();
+      List<String> result = new ArrayList<String>();
       if (currProperties != null)
       {
          Enumeration<String> keys = currProperties.keys();

@@ -141,7 +141,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
       for (ServiceName name : names)
       {
-         ServiceController<?> controller = getServiceController(name);
+         ServiceController<?> controller = serviceContainer.getService(name);
          if (controller == null)
             throw new IllegalStateException("Cannot obtain service for: " + name);
 
@@ -289,28 +289,21 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       }
    }
 
-   private void unregisterService(ServiceName serviceName)
+   private void unregisterService(ServiceName name)
    {
-      log.debug("Unregister service: " + serviceName);
+      log.debug("Unregister service: " + name);
 
-      ServiceController<?> controller = getServiceController(serviceName);
+      ServiceController<?> controller = serviceContainer.getService(name);
 
       // Unregister the service names
       ServiceState serviceState = (ServiceState)controller.getValue();
       String[] clazzes = (String[])serviceState.getProperty(Constants.OBJECTCLASS);
       for (String clazz : clazzes)
-         unregisterServiceName(clazz, serviceName);
+         unregisterServiceName(clazz, name);
 
       // A service is brought DOWN by setting it's mode to NEVER
       // Adding a {@link RemovingServiceListener} does this and will
       // also synchronoulsy remove the service from the registry 
       controller.addListener(new RemovingServiceListener());
-   }
-
-   private ServiceController<?> getServiceController(ServiceName serviceName)
-   {
-      ServiceController<?> controller;
-      controller = serviceContainer.getService(serviceName);
-      return controller;
    }
 }
