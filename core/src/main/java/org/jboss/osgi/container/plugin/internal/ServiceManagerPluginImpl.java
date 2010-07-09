@@ -27,11 +27,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
@@ -52,8 +52,11 @@ import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ServiceState;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
+import org.jboss.osgi.container.util.NoFilter;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Constants;
+import org.osgi.framework.Filter;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceFactory;
 
@@ -73,7 +76,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    // The ServiceContainer
    private ServiceContainer serviceContainer;
    // Maps the service interface to the list of registered service names
-   private Map<String, List<ServiceName>> serviceNameMap = new ConcurrentHashMap<String, List<ServiceName>>();
+   private Map<String, List<ServiceName>> serviceNameMap = new HashMap<String, List<ServiceName>>();
 
    public ServiceManagerPluginImpl(BundleManager bundleManager)
    {
@@ -114,26 +117,34 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    }
 
    @Override
-   public List<ServiceState> getServiceReferences(AbstractBundle bundleState, String clazz, String filter, boolean checkAssignable) throws InvalidSyntaxException
+   public List<ServiceState> getServiceReferences(AbstractBundle bundleState, String clazz, String filterStr, boolean checkAssignable) throws InvalidSyntaxException
    {
-      return getServiceReferencesInternal(bundleState, clazz, null, true);
+      Filter filter = null;
+      if (filterStr != null)
+         filter = FrameworkUtil.createFilter(filterStr);
+      
+      return getServiceReferencesInternal(bundleState, clazz, filter, true);
    }
 
-   public List<ServiceState> getServiceReferencesInternal(AbstractBundle bundleState, String clazz, String filter, boolean checkAssignable)
+   public List<ServiceState> getServiceReferencesInternal(AbstractBundle bundleState, String clazz, Filter filter, boolean checkAssignable)
    {
       List<ServiceState> result = new ArrayList<ServiceState>();
       List<ServiceName> names = serviceNameMap.get(clazz);
       if (names == null)
          return Collections.emptyList();
 
+      if (filter == null)
+         filter = NoFilter.INSTANCE;
+      
       for (ServiceName name : names)
       {
-         ServiceController<?> controller = serviceContainer.getService(name);
+         ServiceController<?> controller = getServiceController(name);
          if (controller == null)
             throw new IllegalStateException("Cannot obtain service for: " + name);
 
          ServiceState serviceState = (ServiceState)controller.getValue();
-         result.add(serviceState);
+         if (filter.match(serviceState))
+            result.add(serviceState);
       }
       return Collections.unmodifiableList(result);
    }
@@ -232,38 +243,46 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
    private void registerServiceName(String className, ServiceName serviceName)
    {
-      List<ServiceName> names = serviceNameMap.get(className);
-      if (names == null)
+      synchronized (serviceNameMap)
       {
-         names = new ArrayList<ServiceName>();
-         serviceNameMap.put(className, names);
+         List<ServiceName> names = serviceNameMap.get(className);
+         if (names == null)
+         {
+            names = new ArrayList<ServiceName>();
+            serviceNameMap.put(className, names);
+         }
+         names.add(serviceName);
       }
-      names.add(serviceName);
    }
 
    private void unregisterServiceName(String className, ServiceName serviceName)
    {
-      List<ServiceName> names = serviceNameMap.get(className);
-      if (names == null)
-         throw new IllegalStateException("Cannot obtain service names for: " + className);
-
-      if (names.remove(serviceName) == false)
-         throw new IllegalStateException("Cannot name [" + serviceName + "] from: " + names);
-
-      if (names.isEmpty())
-         serviceNameMap.remove(className);
+      synchronized (serviceNameMap)
+      {
+         List<ServiceName> names = serviceNameMap.get(className);
+         if (names == null)
+         {
+            log.warn("Cannot obtain service names for: " + className);
+            return;
+         }
+         
+         if (names.remove(serviceName) == false)
+            log.warn("Cannot remove [" + serviceName + "] from: " + names);
+      }
    }
 
    @Override
    public boolean ungetService(AbstractBundle bundleState, ServiceState reference)
    {
-      throw new NotImplementedException();
+      // [TODO] ungetService
+      return true;
    }
 
    @Override
    public void unregisterServices(AbstractBundle bundleState)
    {
-      for (ServiceState serviceState : bundleState.getOwnedServices())
+      ArrayList<ServiceState> ownedServices = new ArrayList<ServiceState>(bundleState.getOwnedServices());
+      for (ServiceState serviceState : ownedServices)
       {
          bundleState.removeOwnedService(serviceState);
          for (ServiceName name : serviceState.getServiceNames())
@@ -277,7 +296,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    {
       log.debug("Unregister service: " + serviceName);
 
-      ServiceController<?> controller = serviceContainer.getService(serviceName);
+      ServiceController<?> controller = getServiceController(serviceName);
 
       // Unregister the service names
       ServiceState serviceState = (ServiceState)controller.getValue();
@@ -289,5 +308,15 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       // Adding a {@link RemovingServiceListener} does this and will
       // also synchronoulsy remove the service from the registry 
       controller.addListener(new RemovingServiceListener());
+   }
+
+   private ServiceController<?> getServiceController(ServiceName serviceName)
+   {
+      ServiceController<?> controller;
+      synchronized (serviceContainer)
+      {
+         controller = serviceContainer.getService(serviceName);
+      }
+      return controller;
    }
 }
