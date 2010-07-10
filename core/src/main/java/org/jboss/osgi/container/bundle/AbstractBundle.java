@@ -314,8 +314,11 @@ public abstract class AbstractBundle implements Bundle
 
    public void addOwnedService(ServiceState serviceState)
    {
-      if (ownedServices == null)
-         ownedServices = new CopyOnWriteArraySet<ServiceState>();
+      synchronized (this)
+      {
+         if (ownedServices == null)
+            ownedServices = new CopyOnWriteArraySet<ServiceState>();
+      }
       ownedServices.add(serviceState);
    }
    
@@ -335,8 +338,11 @@ public abstract class AbstractBundle implements Bundle
 
    public void addUsedService(ServiceState serviceState)
    {
-      if (usedServices == null)
-         usedServices = new CopyOnWriteArraySet<ServiceState>();
+      synchronized (this)
+      {
+         if (usedServices == null)
+            usedServices = new CopyOnWriteArraySet<ServiceState>();
+      }
       usedServices.add(serviceState);
    }
    

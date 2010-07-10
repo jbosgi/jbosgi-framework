@@ -132,12 +132,6 @@ public interface ServiceManagerPlugin extends Plugin
    boolean ungetService(AbstractBundle bundleState, ServiceState reference);
 
    /**
-    * Unregister all services that were registered on behalf of the given bundle. 
-    * @param bundleState The bundle that registered the services.
-    */
-   void unregisterServices(AbstractBundle bundleState);
-
-   /**
     * Returns the bundles that are using the service.
     * @return A set of bundles or an empty set.
     */

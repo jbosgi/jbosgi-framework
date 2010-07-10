@@ -24,22 +24,19 @@ package org.jboss.osgi.container.plugin.internal;
 //$Id$
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
-import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.BatchBuilder;
+import org.jboss.msc.service.BatchServiceBuilder;
 import org.jboss.msc.service.DuplicateServiceException;
 import org.jboss.msc.service.RemovingServiceListener;
 import org.jboss.msc.service.Service;
@@ -167,62 +164,56 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       if (clazzes == null || clazzes.length == 0)
          throw new IllegalArgumentException("Null service classes");
 
-      final boolean traceEnabled = log.isTraceEnabled();
-
       // A temporary association of the clazz and name
       Map<ServiceName, String> associations = new HashMap<ServiceName, String>();
 
       final ServiceState serviceState = new ServiceState(bundleState, clazzes, value, properties);
       BatchBuilder batchBuilder = serviceContainer.batchBuilder();
-      ServiceName serviceName = null;
-      for (String className : clazzes)
-      {
-         try
-         {
-            serviceName = createServiceName(className, serviceState.getServiceId());
-            Service service = new Service()
-            {
-               @Override
-               public Object getValue() throws IllegalStateException
-               {
-                  // [TODO] for injection to work this needs to be the Object value
-                  return serviceState;
-               }
-
-               @Override
-               public void start(StartContext context) throws StartException
-               {
-               }
-
-               @Override
-               public void stop(StopContext context)
-               {
-               }
-            };
-            log.debug("Register service: " + serviceName);
-            batchBuilder.addService(serviceName, service).setInitialMode(Mode.IMMEDIATE);
-            associations.put(serviceName, className);
-         }
-         catch (DuplicateServiceException ex)
-         {
-            log.error("Cannot register service: " + className, ex);
-         }
-      }
-
-      // Install a startup listener with every service
-      final CountDownLatch serviceStartedLatch = new CountDownLatch(clazzes.length);
-      class ServiceStartupListener<S> extends AbstractServiceListener<S>
+      Service service = new Service()
       {
          @Override
-         public void serviceStarted(ServiceController<? extends S> controller)
+         public Object getValue() throws IllegalStateException
          {
-            if (traceEnabled == true)
-               log.trace("Service started: " + controller.getName());
-
-            serviceStartedLatch.countDown();
+            // [TODO] for injection to work this needs to be the Object value
+            return serviceState;
          }
+
+         @Override
+         public void start(StartContext context) throws StartException
+         {
+         }
+
+         @Override
+         public void stop(StopContext context)
+         {
+         }
+      };
+
+      List<ServiceName> serviceNames = serviceState.getServiceNames();
+      log.debug("Register service: " + serviceNames);
+
+      BatchServiceBuilder serviceBuilder;
+      ServiceName rootServiceName = serviceNames.get(0);
+      try
+      {
+         serviceBuilder = batchBuilder.addService(rootServiceName, service);
+         associations.put(rootServiceName, clazzes[0]);
       }
-      batchBuilder.addListener(new ServiceStartupListener());
+      catch (DuplicateServiceException ex)
+      {
+         throw new IllegalStateException("Cannot register service: " + rootServiceName, ex);
+      }
+
+      // Set the startup mode
+      serviceBuilder.setInitialMode(Mode.AUTOMATIC);
+
+      // Add the service aliases
+      for (int i = 1; i < serviceNames.size(); i++)
+      {
+         ServiceName alias = serviceNames.get(i);
+         associations.put(alias, clazzes[1]);
+         serviceBuilder.addAliases(alias);
+      }
 
       try
       {
@@ -233,29 +224,12 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          for (Entry<ServiceName, String> aux : associations.entrySet())
          {
             bundleState.addOwnedService(serviceState);
-            registerServiceName(aux.getValue(), aux.getKey());
-            serviceState.addServiceName(aux.getKey());
+            registerNameAssociation(aux.getValue(), aux.getKey());
          }
       }
       catch (ServiceRegistryException ex)
       {
-         log.error("Cannot register services: " + Arrays.asList(clazzes), ex);
-      }
-
-      // Wait for all services to get started
-      try
-      {
-         if (traceEnabled == true && serviceStartedLatch.getCount() > 0)
-            log.trace("Await service startup ...");
-
-         serviceStartedLatch.await();
-
-         if (traceEnabled == true)
-            log.trace("All services started");
-      }
-      catch (InterruptedException ex)
-      {
-         // ignore
+         log.error("Cannot register services: " + serviceNames, ex);
       }
 
       return serviceState;
@@ -264,44 +238,59 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    @Override
    public void unregisterService(ServiceState serviceState)
    {
-      List<ServiceName> names = serviceState.getServiceNames();
-      if (names != null)
+      List<ServiceName> serviceNames = serviceState.getServiceNames();
+      log.debug("Unregister service: " + serviceNames);
+
+      // Unregister name associations
+      for (ServiceName name : serviceNames)
       {
-         for (ServiceName name : names)
+         String[] clazzes = (String[])serviceState.getProperty(Constants.OBJECTCLASS);
+         for (String clazz : clazzes)
+            unregisterNameAssociation(clazz, name);
+      }
+
+      // Remove from owner bundle
+      AbstractBundle serviceOwner = serviceState.getServiceOwner();
+      serviceOwner.removeOwnedService(serviceState);
+
+      // Remove from controller
+      ServiceName rootServiceName = serviceNames.get(0);
+      try
+      {
+         // A service is brought DOWN by setting it's mode to NEVER
+         // Adding a {@link RemovingServiceListener} does this and will
+         // also synchronoulsy remove the service from the registry 
+         ServiceController<?> controller = serviceContainer.getService(rootServiceName);
+         controller.addListener(new RemovingServiceListener());
+      }
+      catch (RuntimeException ex)
+      {
+         log.error("Cannot remove service: " + rootServiceName, ex);
+      }
+   }
+
+   private void registerNameAssociation(String className, ServiceName serviceName)
+   {
+      synchronized (serviceNameMap)
+      {
+         List<ServiceName> names = serviceNameMap.get(className);
+         if (names == null)
          {
-            unregisterService(name);
+            names = new CopyOnWriteArrayList<ServiceName>();
+            serviceNameMap.put(className, names);
          }
+         names.add(serviceName);
       }
    }
 
-   // Creates a unique ServiceName
-   private ServiceName createServiceName(String className, long serviceId)
-   {
-      return ServiceName.of("jbosgi", "service", className, new Long(serviceId).toString());
-   }
-
-   private void registerServiceName(String className, ServiceName serviceName)
+   private void unregisterNameAssociation(String className, ServiceName serviceName)
    {
       List<ServiceName> names = serviceNameMap.get(className);
       if (names == null)
-      {
-         names = new CopyOnWriteArrayList<ServiceName>();
-         serviceNameMap.put(className, names);
-      }
-      names.add(serviceName);
-   }
-
-   private void unregisterServiceName(String className, ServiceName serviceName)
-   {
-      List<ServiceName> names = serviceNameMap.get(className);
-      if (names == null)
-      {
-         log.warn("Cannot obtain service names for: " + className);
-         return;
-      }
+         throw new IllegalStateException("Cannot obtain service names for: " + className);
 
       if (names.remove(serviceName) == false)
-         log.warn("Cannot remove [" + serviceName + "] from: " + names);
+         throw new IllegalStateException("Cannot remove [" + serviceName + "] from: " + names);
    }
 
    @Override
@@ -309,44 +298,5 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    {
       // [TODO] ungetService
       return true;
-   }
-
-   @Override
-   public void unregisterServices(AbstractBundle bundleState)
-   {
-      Set<ServiceState> ownedServices = bundleState.getOwnedServices();
-      for (ServiceState serviceState : ownedServices)
-      {
-         bundleState.removeOwnedService(serviceState);
-         for (ServiceName name : serviceState.getServiceNames())
-         {
-            unregisterService(name);
-         }
-      }
-   }
-
-   private void unregisterService(ServiceName name)
-   {
-      log.debug("Unregister service: " + name);
-
-      ServiceController<?> controller = serviceContainer.getService(name);
-
-      // Unregister the service names
-      ServiceState serviceState = (ServiceState)controller.getValue();
-      String[] clazzes = (String[])serviceState.getProperty(Constants.OBJECTCLASS);
-      for (String clazz : clazzes)
-         unregisterServiceName(clazz, name);
-
-      try
-      {
-         // A service is brought DOWN by setting it's mode to NEVER
-         // Adding a {@link RemovingServiceListener} does this and will
-         // also synchronoulsy remove the service from the registry 
-         controller.addListener(new RemovingServiceListener());
-      }
-      catch (RuntimeException ex)
-      {
-         log.error("Cannot remove service: " + name, ex);
-      }
    }
 }

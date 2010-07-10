@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceName;
@@ -61,7 +60,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    // The bundle that ownes this service
    private AbstractBundle owner;
    // The list of service names associated with this service
-   private List<ServiceName> serviceNames;
+   private List<ServiceName> serviceNames = new ArrayList<ServiceName>();
    // The service registration
    private ServiceRegistration registration;
    // The service reference
@@ -84,7 +83,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    {
       if (owner == null)
          throw new IllegalArgumentException("Null owner");
-      if (clazzes == null)
+      if (clazzes == null || clazzes.length == 0)
          throw new IllegalArgumentException("Null clazzes");
       if (value == null)
          throw new IllegalArgumentException("Null value");
@@ -95,6 +94,12 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       this.serviceId = serviceManager.getNextServiceId();
       this.owner = owner;
       this.value = value;
+
+      for (String clazz : clazzes)
+      {
+         String shortName = clazz.substring(clazz.lastIndexOf(".") + 1);
+         serviceNames.add(ServiceName.of("jbosgi", owner.getSymbolicName(), shortName, new Long(serviceId).toString()));
+      }
 
       if (properties == null)
          properties = new Hashtable();
@@ -151,14 +156,6 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    public List<ServiceName> getServiceNames()
    {
       return Collections.unmodifiableList(serviceNames);
-   }
-
-   public void addServiceName(ServiceName name)
-   {
-      if (serviceNames == null)
-         serviceNames = new CopyOnWriteArrayList<ServiceName>();
-
-      serviceNames.add(name);
    }
 
    @Override
@@ -220,6 +217,11 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       return prevProperties;
    }
 
+   public AbstractBundle getServiceOwner()
+   {
+      return owner;
+   }
+   
    @Override
    public Bundle getBundle()
    {
@@ -286,7 +288,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
          synchronized (bundleState)
          {
             value = factory.getService(bundleState, getServiceRegistration());
-            
+
             // The Framework will check if the returned service object is an instance of all the 
             // classes named when the service was registered. If not, then null is returned to the bundle.
             for (String clazzName : (String[])getProperty(Constants.OBJECTCLASS))

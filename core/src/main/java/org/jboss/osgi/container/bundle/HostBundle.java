@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Set;
 import java.util.Vector;
 
 import org.jboss.modules.ModuleClassLoader;
@@ -352,7 +353,9 @@ public class HostBundle extends AbstractBundle
       }
 
       // Any services registered by this bundle must be unregistered
-      getServiceManagerPlugin().unregisterServices(this);
+      Set<ServiceState> ownedServices = getOwnedServices();
+      for (ServiceState serviceState : ownedServices)
+         getServiceManagerPlugin().unregisterService(serviceState);
 
       // [TODO] Any listeners registered by this bundle must be removed
 
