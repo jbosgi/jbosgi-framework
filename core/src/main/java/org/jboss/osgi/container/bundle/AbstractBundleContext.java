@@ -50,24 +50,26 @@ import org.osgi.framework.ServiceRegistration;
  */
 public abstract class AbstractBundleContext implements BundleContext
 {
+   private BundleManager bundleManager;
    private AbstractBundle bundleState;
 
    AbstractBundleContext(AbstractBundle bundleState)
    {
       if (bundleState == null)
          throw new IllegalArgumentException("Null bundleState");
-
+      this.bundleManager = bundleState.getBundleManager();
       this.bundleState = bundleState;
    }
 
-   BundleManager getBundleManager()
+   void destroy()
    {
-      return bundleState.getBundleManager();
+      bundleState = null;
    }
-
+   
    @Override
    public String getProperty(String key)
    {
+      checkValidBundleContext();
       FrameworkState frameworkState = bundleState.getBundleManager().getFrameworkState();
       frameworkState.assertFrameworkActive();
       return frameworkState.getProperty(key);
@@ -76,35 +78,40 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public Bundle getBundle()
    {
+      checkValidBundleContext();
       return bundleState.getBundleWrapper();
    }
 
    @Override
    public Bundle installBundle(String location, InputStream input) throws BundleException
    {
-      BundleManager bundleManager = getBundleManager();
-      return bundleManager.installBundle(location, input);
+      checkValidBundleContext();
+      AbstractBundle bundleState = bundleManager.installBundle(location, input);
+      return bundleState.getBundleWrapper();
    }
 
    @Override
    public Bundle installBundle(String location) throws BundleException
    {
-      BundleManager bundleManager = getBundleManager();
-      return bundleManager.installBundle(location);
+      checkValidBundleContext();
+      AbstractBundle bundleState = bundleManager.installBundle(location);
+      return bundleState.getBundleWrapper();
    }
 
    @Override
    public Bundle getBundle(long id)
    {
-      AbstractBundle bundle = getBundleManager().getBundleById(id);
+      checkValidBundleContext();
+      AbstractBundle bundle = bundleManager.getBundleById(id);
       return bundle != null ? bundle.getBundleWrapper() : null;
    }
 
    @Override
    public Bundle[] getBundles()
    {
+      checkValidBundleContext();
       List<Bundle> result = new ArrayList<Bundle>();
-      for (AbstractBundle bundle : getBundleManager().getBundles())
+      for (AbstractBundle bundle : bundleManager.getBundles())
          result.add(bundle.getBundleWrapper());
       return result.toArray(new Bundle[result.size()]);
    }
@@ -112,6 +119,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public void addServiceListener(ServiceListener listener, String filter) throws InvalidSyntaxException
    {
+      checkValidBundleContext();
       FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
       eventsPlugin.addServiceListener(bundleState, listener, filter);
    }
@@ -119,6 +127,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public void addServiceListener(ServiceListener listener)
    {
+      checkValidBundleContext();
       try
       {
          FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
@@ -133,6 +142,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public void removeServiceListener(ServiceListener listener)
    {
+      checkValidBundleContext();
       FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
       eventsPlugin.removeServiceListener(bundleState, listener);
    }
@@ -140,6 +150,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public void addBundleListener(BundleListener listener)
    {
+      checkValidBundleContext();
       FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
       eventsPlugin.addBundleListener(bundleState, listener);
    }
@@ -147,6 +158,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public void removeBundleListener(BundleListener listener)
    {
+      checkValidBundleContext();
       FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
       eventsPlugin.removeBundleListener(bundleState, listener);
    }
@@ -154,6 +166,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public void addFrameworkListener(FrameworkListener listener)
    {
+      checkValidBundleContext();
       FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
       eventsPlugin.addFrameworkListener(bundleState, listener);
    }
@@ -161,6 +174,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public void removeFrameworkListener(FrameworkListener listener)
    {
+      checkValidBundleContext();
       FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
       eventsPlugin.removeFrameworkListener(bundleState, listener);
    }
@@ -169,6 +183,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @SuppressWarnings("rawtypes")
    public ServiceRegistration registerService(String clazz, Object service, Dictionary properties)
    {
+      checkValidBundleContext();
       return registerService(new String[] { clazz }, service, properties);
    }
 
@@ -176,6 +191,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @SuppressWarnings("rawtypes")
    public ServiceRegistration registerService(String[] clazzes, Object service, Dictionary properties)
    {
+      checkValidBundleContext();
       ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
       ServiceState serviceState = servicePlugin.registerService(bundleState, clazzes, service, properties);
       return serviceState.getServiceRegistration();
@@ -184,6 +200,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public ServiceReference[] getServiceReferences(String clazz, String filter) throws InvalidSyntaxException
    {
+      checkValidBundleContext();
       List<ServiceReference> result = new ArrayList<ServiceReference>();
       ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
       for (ServiceState serviceState : servicePlugin.getServiceReferences(bundleState, clazz, filter, true))
@@ -195,6 +212,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public ServiceReference[] getAllServiceReferences(String clazz, String filter) throws InvalidSyntaxException
    {
+      checkValidBundleContext();
       List<ServiceReference> result = new ArrayList<ServiceReference>();
       ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
       for (ServiceState serviceState : servicePlugin.getServiceReferences(bundleState, clazz, filter, false))
@@ -206,6 +224,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public ServiceReference getServiceReference(String clazz)
    {
+      checkValidBundleContext();
       ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
       ServiceState serviceState = servicePlugin.getServiceReference(bundleState, clazz);
       if (serviceState == null)
@@ -217,6 +236,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public Object getService(ServiceReference sref)
    {
+      checkValidBundleContext();
       ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
       Object service = servicePlugin.getService(bundleState, ServiceState.assertServiceState(sref));
       return service;
@@ -225,6 +245,7 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public boolean ungetService(ServiceReference sref)
    {
+      checkValidBundleContext();
       ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
       return servicePlugin.ungetService(bundleState, ServiceState.assertServiceState(sref));
    }
@@ -232,13 +253,21 @@ public abstract class AbstractBundleContext implements BundleContext
    @Override
    public File getDataFile(String filename)
    {
-      BundleStoragePlugin storagePlugin = getBundleManager().getOptionalPlugin(BundleStoragePlugin.class);
+      checkValidBundleContext();
+      BundleStoragePlugin storagePlugin = bundleManager.getOptionalPlugin(BundleStoragePlugin.class);
       return storagePlugin != null ? storagePlugin.getDataFile(bundleState, filename) : null;
    }
 
    @Override
    public Filter createFilter(String filter) throws InvalidSyntaxException
    {
+      checkValidBundleContext();
       return FrameworkUtil.createFilter(filter);
+   }
+
+   void checkValidBundleContext()
+   {
+      if (bundleState == null)
+         throw new IllegalStateException("Invalid bundle context: " + this);
    }
 }

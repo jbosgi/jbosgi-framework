@@ -89,7 +89,7 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest
       bundle.stop();
       assertBundleState(Bundle.RESOLVED, bundle.getState());
       
-      sref = context.getServiceReference(SimpleService.class.getName());
+      sref = getSystemContext().getServiceReference(SimpleService.class.getName());
       assertNull("ServiceReference null", sref);
       
       bundle.uninstall();

@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.Attributes.Name;
@@ -73,7 +74,12 @@ public class SystemBundle extends AbstractBundle
       builder.addBundleCapability(getSymbolicName(), getVersion());
       
       SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
-      for (String packageSpec : plugin.getSystemPackages(true))
+      List<String> systemPackages = plugin.getSystemPackages(true);
+      if (systemPackages.isEmpty() == true)
+         throw new IllegalStateException("Framework system packages not available");
+      
+      // Construct framework capabilities from system packages
+      for (String packageSpec : systemPackages)
       {
          String packname = packageSpec;
          Version version = Version.emptyVersion;
@@ -90,6 +96,9 @@ public class SystemBundle extends AbstractBundle
          
          builder.addPackageCapability(packname, null, attrs);
       }
+
+      // Add the system bundle
+      bundleManager.addBundleState(this);
    }
 
    /**

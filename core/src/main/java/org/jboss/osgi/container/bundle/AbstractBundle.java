@@ -76,6 +76,8 @@ public abstract class AbstractBundle implements Bundle
    private long bundleId;
    // The identifier of the associated module
    private ModuleIdentifier identifier;
+   //The {@link Bundle} 
+   private BundleWrapper bundleWrapper;
    //The {@link BundleContext} 
    private AbstractBundleContext bundleContext;
    // The bundle state
@@ -227,9 +229,16 @@ public abstract class AbstractBundle implements Bundle
 
    public Bundle getBundleWrapper()
    {
+      if (bundleWrapper == null)
+         bundleWrapper = createBundleWrapper();
+      return bundleWrapper;
+   }
+   
+   BundleWrapper createBundleWrapper()
+   {
       return new BundleWrapper(this);
    }
-
+   
    public void changeState(int state)
    {
       int previous = getState();
@@ -309,6 +318,11 @@ public abstract class AbstractBundle implements Bundle
 
    void destroyBundleContext()
    {
+      // The BundleContext object is only valid during the execution of its context bundle; 
+      // that is, during the period from when the context bundle is in the STARTING, STOPPING, and ACTIVE bundle states. 
+      // If the BundleContext  object is used subsequently, an IllegalStateException must be thrown. 
+      // The BundleContext object must never be reused after its context bundle is stopped.
+      bundleContext.destroy();
       bundleContext = null;
    }
 
@@ -581,6 +595,16 @@ public abstract class AbstractBundle implements Bundle
       throw new NotImplementedException();
    }
 
+   /**
+    * Check a bundle context is still valid
+    * @throws IllegalStateException when the context is no longer valid
+    */
+   void checkValidBundleContext()
+   {
+      if (bundleContext == null)
+         throw new IllegalStateException("Invalid bundle context: " + this);
+   }
+   
    @Override
    public int hashCode()
    {

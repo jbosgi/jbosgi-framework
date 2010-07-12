@@ -29,6 +29,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,17 +82,17 @@ public class BundleManager
    
    // The BundleId generator 
    private AtomicLong identityGenerator = new AtomicLong();
+   // The sytem bundle
+   private SystemBundle systemBundle;
    // Maps bundleId to Bundle
    private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
    /// The registered plugins 
-   private Map<Class<? extends Plugin>, Plugin> plugins = Collections.synchronizedMap(new LinkedHashMap<Class<? extends Plugin>, Plugin>());
+   private Map<Class<? extends Plugin>, Plugin> plugins = new HashMap<Class<? extends Plugin>, Plugin>();
    // The Framework state
    private FrameworkState frameworkState;
 
    public BundleManager(Map<String, String> props)
    {
-      frameworkState = new FrameworkState(this, props);
-
       // Register the framework plugins
       // [TODO] Externalize plugin registration
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
@@ -103,8 +104,7 @@ public class BundleManager
       plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
       plugins.put(SystemPackagesPlugin.class, new SystemPackagesPluginImpl(this));
 
-      // Create and add the system bundle
-      addBundleState(frameworkState.getSystemBundle());
+      frameworkState = new FrameworkState(this, props);
    }
 
    public FrameworkState getFrameworkState()
@@ -119,7 +119,7 @@ public class BundleManager
 
    public SystemBundle getSystemBundle()
    {
-      return frameworkState.getSystemBundle();
+      return systemBundle;
    }
 
    public BundleContext getSystemContext()
@@ -136,10 +136,23 @@ public class BundleManager
    
    void addBundleState(AbstractBundle bundleState)
    {
+      if (bundleState == null)
+         throw new IllegalArgumentException("Null bundleState");
+      
+      long bundleId = bundleState.getBundleId();
+      if(bundleMap.containsKey(bundleId) == true)
+         throw new IllegalStateException("Bundle already added: " + bundleState);
+      
+      // Cache the frequently accessed system bundle
+      if (bundleId == 0)
+         systemBundle = (SystemBundle)bundleState;
+
+      // Add the bundle to the resolver
       ResolverPlugin plugin = getPlugin(ResolverPlugin.class);
       plugin.addBundle(bundleState);
       
-      bundleMap.put(bundleState.getBundleId(), bundleState);
+      // Register the bundle with the manager
+      bundleMap.put(bundleId, bundleState);
       bundleState.changeState(Bundle.INSTALLED);
    }
 
@@ -155,7 +168,7 @@ public class BundleManager
    public AbstractBundle getBundleById(long bundleId)
    {
       if (bundleId == 0)
-         return getSystemBundle();
+         return systemBundle;
 
       return bundleMap.get(bundleId);
    }

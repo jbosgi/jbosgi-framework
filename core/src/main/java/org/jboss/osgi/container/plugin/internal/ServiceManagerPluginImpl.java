@@ -24,6 +24,7 @@ package org.jboss.osgi.container.plugin.internal;
 //$Id$
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.HashMap;
@@ -52,6 +53,7 @@ import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ServiceState;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
+import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.container.util.NoFilter;
 import org.jboss.osgi.spi.NotImplementedException;
@@ -59,7 +61,10 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceFactory;
+import org.osgi.framework.hooks.service.ListenerHook;
+import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 
 /**
  * A plugin that manages OSGi services
@@ -164,6 +169,15 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       if (clazzes == null || clazzes.length == 0)
          throw new IllegalArgumentException("Null service classes");
 
+      // Immediately after registration of a {@link ListenerHook}, the ListenerHook.added() method will be called 
+      // to provide the current collection of service listeners which had been added prior to the hook being registered.
+      Collection<ListenerInfo> listenerInfos = null;
+      if (value instanceof ListenerHook)
+      {
+         FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
+         listenerInfos = eventsPlugin.getServiceListenerInfos(null);
+      }
+
       // A temporary association of the clazz and name
       Map<ServiceName, String> associations = new HashMap<ServiceName, String>();
 
@@ -232,6 +246,17 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          log.error("Cannot register services: " + serviceNames, ex);
       }
 
+      // Call the newly added ListenerHook.added() method
+      if (service instanceof ListenerHook)
+      {
+         ListenerHook listenerHook = (ListenerHook)service;
+         listenerHook.added(listenerInfos);
+      }
+
+      // This event is synchronously delivered after the service has been registered with the Framework. 
+      FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
+      eventsPlugin.fireServiceEvent(bundleState, ServiceEvent.REGISTERED, serviceState);
+      
       return serviceState;
    }
 
@@ -240,6 +265,12 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    {
       List<ServiceName> serviceNames = serviceState.getServiceNames();
       log.debug("Unregister service: " + serviceNames);
+
+      AbstractBundle serviceOwner = serviceState.getServiceOwner();
+      
+      // This event is synchronously delivered before the service has completed unregistering. 
+      FrameworkEventsPlugin plugin = getPlugin(FrameworkEventsPlugin.class);
+      plugin.fireServiceEvent(serviceOwner, ServiceEvent.UNREGISTERING, serviceState);
 
       // Unregister name associations
       for (ServiceName name : serviceNames)
@@ -250,7 +281,6 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       }
 
       // Remove from owner bundle
-      AbstractBundle serviceOwner = serviceState.getServiceOwner();
       serviceOwner.removeOwnedService(serviceState);
 
       // Remove from controller

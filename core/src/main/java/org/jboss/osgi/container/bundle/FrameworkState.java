@@ -21,10 +21,13 @@
  */
 package org.jboss.osgi.container.bundle;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -36,9 +39,9 @@ import org.jboss.osgi.container.plugin.BundleStoragePlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.Plugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
-import org.jboss.osgi.container.plugin.ServicePlugin;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.spi.util.ConstantsHelper;
+import org.jboss.util.platform.Java;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -55,10 +58,23 @@ public class FrameworkState
    // Provide logging
    final Logger log = Logger.getLogger(FrameworkState.class);
 
+   // The framework execution environment 
+   private static String OSGi_FRAMEWORK_EXECUTIONENVIRONMENT;
+   // The framework language 
+   private static String OSGi_FRAMEWORK_LANGUAGE = Locale.getDefault().getISO3Language(); // REVIEW correct?
+   // The os name 
+   private static String OSGi_FRAMEWORK_OS_NAME;
+   // The os version 
+   private static String OSGi_FRAMEWORK_OS_VERSION;
+   // The os version 
+   private static String OSGi_FRAMEWORK_PROCESSOR;
+   // The framework vendor 
+   private static String OSGi_FRAMEWORK_VENDOR = "jboss.org";
+   // The framework version. This is the version of the org.osgi.framework package in r4v42 
+   private static String OSGi_FRAMEWORK_VERSION = "1.5";
+
    // The bundle manager
    private BundleManager bundleManager;
-   // The sytem bundle
-   private SystemBundle systemBundle;
    // The framework properties
    private Map<String, String> properties;
    // The framework stop monitor
@@ -66,25 +82,64 @@ public class FrameworkState
    // The framework stop executor 
    private Executor stopExecutor = Executors.newFixedThreadPool(10);
 
+   static
+   {
+      AccessController.doPrivileged(new PrivilegedAction<Object>()
+      {
+         public Object run()
+         {
+            List<String> execEnvironments = new ArrayList<String>();
+            if (Java.isCompatible(Java.VERSION_1_5))
+               execEnvironments.add("J2SE-1.5");
+            if (Java.isCompatible(Java.VERSION_1_6))
+               execEnvironments.add("JavaSE-1.6");
+
+            String envlist = execEnvironments.toString();
+            envlist = envlist.substring(1, envlist.length() - 1);
+            OSGi_FRAMEWORK_EXECUTIONENVIRONMENT = envlist;
+
+            OSGi_FRAMEWORK_OS_NAME = System.getProperty("os.name");
+            OSGi_FRAMEWORK_OS_VERSION = System.getProperty("os.version");
+            OSGi_FRAMEWORK_PROCESSOR = System.getProperty("os.arch");
+
+            System.setProperty("org.osgi.vendor.framework", "org.jboss.osgi.framework");
+            return null;
+         }
+      });
+   }
+
    FrameworkState(BundleManager bundleManager, Map<String, String> props)
    {
       if (bundleManager == null)
          throw new IllegalArgumentException("Null bundleManager");
-      
+
       this.bundleManager = bundleManager;
-      
+
       // Initialize the framework properties
       properties = new HashMap<String, String>();
       if (props != null)
          properties.putAll(props);
+
+      // Init default framework properties
+      if (getProperty(Constants.FRAMEWORK_EXECUTIONENVIRONMENT) == null)
+         setProperty(Constants.FRAMEWORK_EXECUTIONENVIRONMENT, OSGi_FRAMEWORK_EXECUTIONENVIRONMENT);
+      if (getProperty(Constants.FRAMEWORK_LANGUAGE) == null)
+         setProperty(Constants.FRAMEWORK_LANGUAGE, OSGi_FRAMEWORK_LANGUAGE);
+      if (getProperty(Constants.FRAMEWORK_OS_NAME) == null)
+         setProperty(Constants.FRAMEWORK_OS_NAME, OSGi_FRAMEWORK_OS_NAME);
+      if (getProperty(Constants.FRAMEWORK_OS_VERSION) == null)
+         setProperty(Constants.FRAMEWORK_OS_VERSION, OSGi_FRAMEWORK_OS_VERSION);
+      if (getProperty(Constants.FRAMEWORK_PROCESSOR) == null)
+         setProperty(Constants.FRAMEWORK_PROCESSOR, OSGi_FRAMEWORK_PROCESSOR);
+      if (getProperty(Constants.FRAMEWORK_VENDOR) == null)
+         setProperty(Constants.FRAMEWORK_VENDOR, OSGi_FRAMEWORK_VENDOR);
+      if (getProperty(Constants.FRAMEWORK_VERSION) == null)
+         setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
    }
 
    public SystemBundle getSystemBundle()
    {
-      if (systemBundle == null)
-         systemBundle = new SystemBundle(bundleManager);
-      
-      return systemBundle;
+      return bundleManager.getSystemBundle();
    }
 
    public Map<String, String> getProperties()
@@ -94,37 +149,45 @@ public class FrameworkState
 
    public String getProperty(String key)
    {
-      return properties.get(key);
+      Object value = properties.get(key);
+      if (value == null)
+         value = System.getProperty(key);
+
+      if (value instanceof String == false)
+         return null;
+
+      return (String)value;
    }
 
-   public void addProperty(String key, String value)
+   public void setProperty(String key, String value)
    {
-      if (systemBundle != null && systemBundle.getState() != Bundle.INSTALLED)
+      SystemBundle sysBundle = getSystemBundle();
+      if (sysBundle != null && sysBundle.getState() != Bundle.INSTALLED)
          throw new IllegalStateException("Cannot add property to ACTIVE framwork");
-      
+
       properties.put(key, value);
    }
-   
+
    /**
-    * True when the {@link SystemBundle} is active.
+    * True when the {@link getSystemBundle()} is active.
     */
    boolean isFrameworkActive()
    {
       // We are active if the system bundle is ACTIVE
-      return systemBundle.getState() == Bundle.ACTIVE;
+      return getSystemBundle().getState() == Bundle.ACTIVE;
    }
-   
+
    /**
-    * Assert that the {@link SystemBundle} is active.
+    * Assert that the {@link getSystemBundle()} is active.
     * @throws IllegalStateException if not
     */
    void assertFrameworkActive()
    {
-      int systemState = systemBundle.getState();
+      int systemState = getSystemBundle().getState();
       if (systemState != Bundle.ACTIVE)
-         throw new IllegalStateException("SystemBundle not ACTIVE, it is: " + ConstantsHelper.bundleState(systemState));
+         throw new IllegalStateException("getSystemBundle() not ACTIVE, it is: " + ConstantsHelper.bundleState(systemState));
    }
-   
+
    /**
     * Initialize this Framework. 
     * 
@@ -147,30 +210,26 @@ public class FrameworkState
       String implVersion = getClass().getPackage().getImplementationVersion();
       log.info(implTitle + " - " + implVersion);
 
-      int state = systemBundle.getState();
+      int state = getSystemBundle().getState();
 
       // This method does nothing if called when this Framework is in the STARTING, ACTIVE or STOPPING state
       if (state == Bundle.STARTING || state == Bundle.ACTIVE || state == Bundle.STOPPING)
          return;
 
       // Put into the STARTING state
-      systemBundle.changeState(Bundle.STARTING);
+      getSystemBundle().changeState(Bundle.STARTING);
 
       // Create the system bundle context
-      systemBundle.start();
+      getSystemBundle().createBundleContext();
 
       // Have event handling enabled
       FrameworkEventsPlugin eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
       eventsPlugin.setActive(true);
 
-      // Have registered any framework services.
-      for (Plugin plugin : new ArrayList<Plugin>(bundleManager.getPlugins()))
+      // Init Plugins Lifecycle
+      for (Plugin plugin : bundleManager.getPlugins())
       {
-         if (plugin instanceof ServicePlugin)
-         {
-            ServicePlugin servicePlugin = (ServicePlugin)plugin;
-            servicePlugin.startService();
-         }
+         plugin.initPlugin();
       }
 
       // Cleanup the storage area
@@ -183,8 +242,14 @@ public class FrameworkState
    public void startFramework() throws BundleException
    {
       // If this Framework is not in the STARTING state, initialize this Framework
-      if (systemBundle.getState() != Bundle.STARTING)
+      if (getSystemBundle().getState() != Bundle.STARTING)
          initFramework();
+
+      // Start Plugins Lifecycle
+      for (Plugin plugin : bundleManager.getPlugins())
+      {
+         plugin.startPlugin();
+      }
 
       // All installed bundles must be started
       AutoInstallPlugin autoInstall = bundleManager.getOptionalPlugin(AutoInstallPlugin.class);
@@ -196,7 +261,7 @@ public class FrameworkState
 
       // Resolve the system bundle
       ResolverPlugin resolver = bundleManager.getPlugin(ResolverPlugin.class);
-      resolver.resolve(systemBundle);
+      resolver.resolve(getSystemBundle());
 
       // [TODO] Increase to initial start level
       //StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);
@@ -204,11 +269,11 @@ public class FrameworkState
       //   startLevel.increaseStartLevel(startLevel.getInitialBundleStartLevel());
 
       // This Framework's state is set to ACTIVE
-      systemBundle.changeState(Bundle.ACTIVE);
+      getSystemBundle().changeState(Bundle.ACTIVE);
 
-      // [TODO] A framework event of type STARTED is fired
-      //FrameworkEventsPlugin plugin = getPlugin(FrameworkEventsPlugin.class);
-      //plugin.fireFrameworkEvent(systemBundle, FrameworkEvent.STARTED, null);
+      // A framework event of type STARTED is fired
+      FrameworkEventsPlugin plugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
+      plugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
    }
 
    /**
@@ -250,11 +315,11 @@ public class FrameworkState
       synchronized (stopMonitor)
       {
          // Do nothing if the framework is not active
-         if (systemBundle.getState() != Bundle.ACTIVE)
+         if (getSystemBundle().getState() != Bundle.ACTIVE)
             return;
 
          // This Framework's state is set to Bundle.STOPPING
-         systemBundle.changeState(Bundle.STOPPING);
+         getSystemBundle().changeState(Bundle.STOPPING);
       }
 
       //[TODO] Move to start level 0 in the current thread
@@ -266,7 +331,7 @@ public class FrameworkState
       // All installed bundles must be stopped without changing each bundle's persistent autostart setting
       for (AbstractBundle bundleState : bundleManager.getBundles())
       {
-         if (bundleState != systemBundle)
+         if (bundleState != getSystemBundle())
          {
             try
             {
@@ -282,34 +347,43 @@ public class FrameworkState
          }
       }
 
-      // Stop registered service plugins
+      // Strop Plugins Lifecycle
       List<Plugin> reversePlugins = new ArrayList<Plugin>(bundleManager.getPlugins());
       Collections.reverse(reversePlugins);
       for (Plugin plugin : reversePlugins)
       {
-         if (plugin instanceof ServicePlugin)
+         try
          {
-            try
-            {
-               ServicePlugin servicePlugin = (ServicePlugin)plugin;
-               servicePlugin.stopService();
-            }
-            catch (RuntimeException ex)
-            {
-               log.error("Cannot stop service: " + plugin, ex);
-            }
+            plugin.stopPlugin();
+         }
+         catch (RuntimeException ex)
+         {
+            log.error("Cannot stop service: " + plugin, ex);
          }
       }
 
-      // [TODO] Event handling is disabled
-      //FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
-      //eventsPlugin.setActive(false);
+      // Event handling is disabled
+      FrameworkEventsPlugin eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
+      eventsPlugin.setActive(false);
 
       // This Framework's state is set to Bundle.RESOLVED
-      systemBundle.changeState(Bundle.RESOLVED);
+      getSystemBundle().changeState(Bundle.RESOLVED);
+
+      // Destroy Plugins Lifecycle
+      for (Plugin plugin : reversePlugins)
+      {
+         try
+         {
+            plugin.destroyPlugin();
+         }
+         catch (RuntimeException ex)
+         {
+            log.error("Cannot destroy service: " + plugin, ex);
+         }
+      }
 
       // All resources held by this Framework are released
-      systemBundle.destroyBundleContext();
+      getSystemBundle().destroyBundleContext();
 
       // Notify all threads that are waiting at waitForStop that the stop operation has completed
       synchronized (stopMonitor)
@@ -317,7 +391,7 @@ public class FrameworkState
          stopMonitor.notifyAll();
       }
    }
-   
+
    public void restartFramework()
    {
       throw new NotImplementedException();
@@ -338,16 +412,16 @@ public class FrameworkState
       synchronized (stopMonitor)
       {
          // Only wait when this Framework is in Bundle.STARTING, Bundle.ACTIVE, or Bundle.STOPPING state
-         int state = systemBundle.getState();
+         int state = getSystemBundle().getState();
          if (state != Bundle.STARTING && state != Bundle.ACTIVE && state != Bundle.STOPPING)
-            return new FrameworkEvent(FrameworkEvent.STOPPED, systemBundle, null);
+            return new FrameworkEvent(FrameworkEvent.STOPPED, getSystemBundle(), null);
 
          stopMonitor.wait(timeout);
       }
 
-      if (systemBundle.getState() != Bundle.RESOLVED)
-         return new FrameworkEvent(FrameworkEvent.WAIT_TIMEDOUT, systemBundle, null);
+      if (getSystemBundle().getState() != Bundle.RESOLVED)
+         return new FrameworkEvent(FrameworkEvent.WAIT_TIMEDOUT, getSystemBundle(), null);
 
-      return new FrameworkEvent(FrameworkEvent.STOPPED, systemBundle, null);
+      return new FrameworkEvent(FrameworkEvent.STOPPED, getSystemBundle(), null);
    }
 }

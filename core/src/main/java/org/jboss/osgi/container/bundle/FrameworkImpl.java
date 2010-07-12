@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.container.launch;
+package org.jboss.osgi.container.bundle;
 
 // $Id$
 
@@ -27,9 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import org.jboss.logging.Logger;
-import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.BundleWrapper;
-import org.jboss.osgi.container.bundle.FrameworkState;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.launch.Framework;
@@ -40,17 +37,23 @@ import org.osgi.framework.launch.Framework;
  * @author thomas.diesler@jboss.com
  * @since 21-Aug-2009
  */
-public final class FrameworkImpl extends BundleWrapper implements Framework
+public final class FrameworkImpl extends SystemBundle implements Framework
 {
    // Provide logging
    final Logger log = Logger.getLogger(FrameworkImpl.class);
    
    private FrameworkState frameworkState;
    
-   FrameworkImpl(BundleManager bundleManager)
+   public FrameworkImpl(BundleManager bundleManager)
    {
-      super(bundleManager.getSystemBundle());
-      this.frameworkState = bundleManager.getFrameworkState();
+      super(bundleManager);
+      frameworkState = bundleManager.getFrameworkState();
+   }
+
+   @Override
+   BundleWrapper createBundleWrapper()
+   {
+      return new FrameworkWrapper(this);
    }
 
    public void init() throws BundleException

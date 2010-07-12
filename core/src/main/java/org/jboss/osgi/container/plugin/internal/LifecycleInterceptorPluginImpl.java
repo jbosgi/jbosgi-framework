@@ -24,7 +24,7 @@ package org.jboss.osgi.container.plugin.internal;
 import org.jboss.logging.Logger;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.plugin.AbstractServicePlugin;
+import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.LifecycleInterceptorPlugin;
 import org.jboss.osgi.deployment.interceptor.AbstractLifecycleInterceptorService;
 import org.jboss.osgi.deployment.interceptor.InvocationContext;
@@ -42,7 +42,7 @@ import org.osgi.framework.ServiceRegistration;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-public class LifecycleInterceptorPluginImpl extends AbstractServicePlugin implements LifecycleInterceptorPlugin
+public class LifecycleInterceptorPluginImpl extends AbstractPlugin implements LifecycleInterceptorPlugin
 {
    // Provide logging
    final Logger log = Logger.getLogger(LifecycleInterceptorPluginImpl.class);
@@ -55,9 +55,10 @@ public class LifecycleInterceptorPluginImpl extends AbstractServicePlugin implem
       super(bundleManager);
    }
 
-   public void startService()
+   @Override
+   public void startPlugin()
    {
-      BundleContext sysContext = getSystemContext();
+      BundleContext sysContext = getBundleManager().getSystemContext();
       delegate = new AbstractLifecycleInterceptorService(sysContext)
       {
          @Override
@@ -84,7 +85,8 @@ public class LifecycleInterceptorPluginImpl extends AbstractServicePlugin implem
       registration = sysContext.registerService(LifecycleInterceptorService.class.getName(), delegate, null);
    }
 
-   public void stopService()
+   @Override
+   public void stopPlugin()
    {
       if (registration != null)
       {

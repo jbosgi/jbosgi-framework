@@ -31,7 +31,7 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-public interface LifecycleInterceptorPlugin extends ServicePlugin, LifecycleInterceptorService
+public interface LifecycleInterceptorPlugin extends Plugin, LifecycleInterceptorService
 {
    /**
     * Invoke the registered set of interceptors for the given bundle state change.

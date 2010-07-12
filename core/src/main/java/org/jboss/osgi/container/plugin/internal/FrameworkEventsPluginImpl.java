@@ -401,7 +401,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       }
 
       // Expose the bundl wrapper not the state itself
-      final BundleEvent event = new OSGiBundleEvent(type, assertBundle(bundle));
+      final BundleEvent event = new BundleEventImpl(type, assertBundle(bundle));
       final String typeName = ConstantsHelper.bundleEvent(event.getType());
 
       if (infoEvents.contains(ConstantsHelper.bundleEvent(event.getType())))
@@ -488,7 +488,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
          public void run()
          {
             // Expose the wrapper not the state itself
-            FrameworkEvent event = new OSGiFrameworkEvent(type, assertBundle(bundle), throwable);
+            FrameworkEvent event = new FrameworkEventImpl(type, assertBundle(bundle), throwable);
             String typeName = ConstantsHelper.frameworkEvent(event.getType());
 
             if (infoEvents.contains(ConstantsHelper.frameworkEvent(event.getType())))
@@ -554,7 +554,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       }
 
       // Expose the wrapper not the state itself
-      ServiceEvent event = new OSGiServiceEvent(type, new ServiceReferenceWrapper(serviceState));
+      ServiceEvent event = new ServiceEventImpl(type, new ServiceReferenceWrapper(serviceState));
       String typeName = ConstantsHelper.serviceEvent(event.getType());
 
       if (infoEvents.contains(ConstantsHelper.serviceEvent(event.getType())))
@@ -592,7 +592,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
             {
                if (listener.filter.match(serviceState.getPreviousProperties()))
                {
-                  event = new OSGiServiceEvent(ServiceEvent.MODIFIED_ENDMATCH, new ServiceReferenceWrapper(serviceState));
+                  event = new ServiceEventImpl(ServiceEvent.MODIFIED_ENDMATCH, new ServiceReferenceWrapper(serviceState));
                   listener.listener.serviceChanged(event);
                }
             }
@@ -822,13 +822,15 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       }
    }
 
-   static class OSGiFrameworkEvent extends FrameworkEvent
+   static class FrameworkEventImpl extends FrameworkEvent
    {
       private static final long serialVersionUID = 6505331543651318189L;
 
-      public OSGiFrameworkEvent(int type, Bundle bundle, Throwable throwable)
+      public FrameworkEventImpl(int type, Bundle bundle, Throwable throwable)
       {
          super(type, bundle, throwable);
+         if (bundle instanceof AbstractBundle)
+            throw new IllegalArgumentException("Event must expose impl details");
       }
 
       @Override
@@ -838,13 +840,15 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       }
    }
 
-   static class OSGiBundleEvent extends BundleEvent
+   static class BundleEventImpl extends BundleEvent
    {
       private static final long serialVersionUID = -2705304702665185935L;
 
-      public OSGiBundleEvent(int type, Bundle bundle)
+      public BundleEventImpl(int type, Bundle bundle)
       {
          super(type, bundle);
+         if (bundle instanceof AbstractBundle)
+            throw new IllegalArgumentException("Event must expose impl details");
       }
 
       @Override
@@ -854,13 +858,15 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       }
    }
 
-   static class OSGiServiceEvent extends ServiceEvent
+   static class ServiceEventImpl extends ServiceEvent
    {
       private static final long serialVersionUID = 62018288275708239L;
 
-      public OSGiServiceEvent(int type, ServiceReference reference)
+      public ServiceEventImpl(int type, ServiceReference sref)
       {
-         super(type, reference);
+         super(type, sref);
+         if (sref instanceof ServiceState)
+            throw new IllegalArgumentException("Event must expose impl details");
       }
 
       @Override

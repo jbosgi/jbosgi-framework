@@ -32,15 +32,11 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Dictionary;
-import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Locale;
-import java.util.Set;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -55,7 +51,6 @@ import org.osgi.framework.ServiceRegistration;
  *
  * @author thomas.diesler@jboss.com
  */
-@Ignore
 public class BundleContextTestCase extends OSGiFrameworkTest
 {
    @Test
@@ -71,9 +66,9 @@ public class BundleContextTestCase extends OSGiFrameworkTest
          assertEquals(bundle1, context1.getBundle(bundle1.getBundleId()));
 
          Bundle[] bundles = context1.getBundles();
-         Set<Bundle> actual = new HashSet<Bundle>(Arrays.asList(bundles));
-         Set<Bundle> expected = new HashSet<Bundle>(Arrays.asList(getFramework(), bundle1));
-         assertEquals(expected, actual);
+         assertEquals(2, bundles.length);
+         assertEquals(context1.getBundle(0), bundles[0]);
+         assertEquals(bundle1, bundles[1]);
 
          Bundle bundle2 = installBundle(assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2"));
          BundleContext context2 = null;
@@ -84,9 +79,10 @@ public class BundleContextTestCase extends OSGiFrameworkTest
             assertEquals(bundle2, context2.getBundle());
 
             bundles = context1.getBundles();
-            actual = new HashSet<Bundle>(Arrays.asList(bundles));
-            expected = new HashSet<Bundle>(Arrays.asList(getFramework(), bundle1, bundle2));
-            assertEquals(expected, actual);
+            assertEquals(3, bundles.length);
+            assertEquals(context1.getBundle(0), bundles[0]);
+            assertEquals(bundle1, bundles[1]);
+            assertEquals(bundle2, bundles[2]);
 
             assertEquals(bundle1, context2.getBundle(bundle1.getBundleId()));
             assertEquals(bundle2, context1.getBundle(bundle2.getBundleId()));
@@ -100,9 +96,9 @@ public class BundleContextTestCase extends OSGiFrameworkTest
          assertNull(context1.getBundle(bundle2.getBundleId()));
 
          bundles = context1.getBundles();
-         actual = new HashSet<Bundle>(Arrays.asList(bundles));
-         expected = new HashSet<Bundle>(Arrays.asList(getFramework(), bundle1));
-         assertEquals(expected, actual);
+         assertEquals(2, bundles.length);
+         assertEquals(context1.getBundle(0), bundles[0]);
+         assertEquals(bundle1, bundles[1]);
 
          try
          {
@@ -210,7 +206,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest
    @Test
    public void testInstallBundle() throws Exception
    {
-      URL url = getTestArchiveURL("bundles/jboss-osgi-common.jar");
+      URL url = getTestArchiveURL("bundles/org.apache.felix.log.jar");
       Bundle bundle = installBundle(url.toExternalForm());
       try
       {
@@ -227,7 +223,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest
       }
 
       // Test file location
-      String location = getTestArchivePath("bundles/jboss-osgi-common.jar");
+      String location = getTestArchivePath("bundles/org.apache.felix.log.jar");
       bundle = installBundle(location);
       try
       {

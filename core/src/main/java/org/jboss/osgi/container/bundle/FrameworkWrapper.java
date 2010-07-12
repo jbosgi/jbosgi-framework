@@ -19,21 +19,40 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.container.plugin;
+package org.jboss.osgi.container.bundle;
 
-import org.osgi.framework.BundleContext;
+//$Id$
+
+import org.osgi.framework.BundleException;
+import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.launch.Framework;
 
 /**
- * The base of all service plugins
+ * A generic Framework wrapper that delegates all method calls to the underlying 
+ * Framework implementation.
  * 
  * @author thomas.diesler@jboss.com
- * @since 07-Sep-2009
+ * @since 16-Oct-2009
  */
-public interface ServicePlugin extends Plugin
+public class FrameworkWrapper extends BundleWrapper implements Framework
 {
-   BundleContext getSystemContext();
+   private Framework framework;
 
-   void startService();
-   
-   void stopService();
+   public FrameworkWrapper(FrameworkImpl framework)
+   {
+      super(framework);
+      this.framework = framework;
+   }
+
+   @Override
+   public void init() throws BundleException
+   {
+      framework.init();
+   }
+
+   @Override
+   public FrameworkEvent waitForStop(long timeout) throws InterruptedException
+   {
+      return framework.waitForStop(timeout);
+   }
 }

@@ -75,4 +75,27 @@ public class ServiceReferenceWrapper implements ServiceReference
    {
       return delegate.compareTo(reference);
    }
+
+   @Override
+   public int hashCode()
+   {
+      return delegate.hashCode();
+   }
+
+   @Override
+   public boolean equals(Object obj)
+   {
+      if (obj instanceof ServiceReferenceWrapper == false)
+         return false;
+      if (obj == this)
+         return true;
+      ServiceReferenceWrapper other = (ServiceReferenceWrapper)obj;
+      return delegate.equals(other.delegate);
+   }
+
+   @Override
+   public String toString()
+   {
+      return delegate.toString();
+   }
 }

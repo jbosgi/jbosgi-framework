@@ -61,4 +61,27 @@ public class ServiceRegistrationWrapper implements ServiceRegistration
    {
       delegate.unregister();
    }
+
+   @Override
+   public int hashCode()
+   {
+      return delegate.hashCode();
+   }
+
+   @Override
+   public boolean equals(Object obj)
+   {
+      if (obj instanceof ServiceRegistrationWrapper == false)
+         return false;
+      if (obj == this)
+         return true;
+      ServiceRegistrationWrapper other = (ServiceRegistrationWrapper)obj;
+      return delegate.equals(other.delegate);
+   }
+
+   @Override
+   public String toString()
+   {
+      return delegate.toString();
+   }
 }

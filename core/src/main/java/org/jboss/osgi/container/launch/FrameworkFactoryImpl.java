@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.FrameworkImpl;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
 
@@ -53,6 +54,7 @@ public class FrameworkFactoryImpl implements FrameworkFactory
    public Framework newFramework(Map props)
    {
       BundleManager bundleManager = new BundleManager(props);
-      return new FrameworkImpl(bundleManager);
+      FrameworkImpl framework = new FrameworkImpl(bundleManager);
+      return (Framework)framework.getBundleWrapper();
    }
 }

@@ -31,13 +31,14 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.container.plugin.AbstractServicePlugin;
+import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.PackageAdminPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
 import org.osgi.service.packageadmin.ExportedPackage;
@@ -50,7 +51,7 @@ import org.osgi.service.packageadmin.RequiredBundle;
  * @author thomas.diesler@jboss.com
  * @since 06-Jul-2010
  */
-public class PackageAdminPluginImpl extends AbstractServicePlugin implements PackageAdminPlugin
+public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdminPlugin
 {
    // Provide logging
    final Logger log = Logger.getLogger(PackageAdminPluginImpl.class);
@@ -63,13 +64,14 @@ public class PackageAdminPluginImpl extends AbstractServicePlugin implements Pac
    }
 
    @Override
-   public void startService()
+   public void startPlugin()
    {
-      registration = getSystemContext().registerService(PackageAdmin.class.getName(), this, null);
+      BundleContext sysContext = getBundleManager().getSystemContext();
+      registration = sysContext.registerService(PackageAdmin.class.getName(), this, null);
    }
 
    @Override
-   public void stopService()
+   public void stopPlugin()
    {
       if (registration != null)
       {
@@ -186,7 +188,7 @@ public class PackageAdminPluginImpl extends AbstractServicePlugin implements Pac
       Module module = moduleCL.getModule();
       ModuleIdentifier identifier = module.getIdentifier();
       long moduleId = ModuleManager.getModuleId(identifier);
-      return getBundleManager().getBundleById(moduleId);
+      return getBundleManager().getSystemContext().getBundle(moduleId);
    }
 
    @Override

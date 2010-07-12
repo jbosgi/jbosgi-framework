@@ -48,6 +48,30 @@ public abstract class AbstractPlugin implements Plugin
       return bundleManager;
    }
 
+   @Override
+   public void initPlugin()
+   {
+      // do nothing
+   }
+
+   @Override
+   public void startPlugin()
+   {
+      // do nothing
+   }
+
+   @Override
+   public void stopPlugin()
+   {
+      // do nothing
+   }
+
+   @Override
+   public void destroyPlugin()
+   {
+      // do nothing
+   }
+
    public <T extends Plugin> T getPlugin(Class<T> clazz)
    {
       return bundleManager.getPlugin(clazz);

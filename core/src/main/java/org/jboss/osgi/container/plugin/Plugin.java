@@ -23,7 +23,6 @@ package org.jboss.osgi.container.plugin;
 
 import org.jboss.osgi.container.bundle.BundleManager;
 
-
 /**
  * The base of all framework plugins
  * 
@@ -33,6 +32,14 @@ import org.jboss.osgi.container.bundle.BundleManager;
 public interface Plugin
 {
    BundleManager getBundleManager();
+
+   void initPlugin();
+
+   void startPlugin();
+
+   void stopPlugin();
+
+   void destroyPlugin();
 
    <T extends Plugin> T getPlugin(Class<T> clazz);
 
