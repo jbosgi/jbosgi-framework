@@ -56,6 +56,7 @@ import org.jboss.osgi.container.plugin.internal.ServiceManagerPluginImpl;
 import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XVersionRange;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -162,6 +163,12 @@ public class BundleManager
       bundleState.changeState(Bundle.UNINSTALLED);
    }
 
+   /**
+    * Get a bundle by id
+    * 
+    * @param bundleId The identifier of the bundle
+    * @return the bundle or null if there is no bundle with that id
+    */
    public AbstractBundle getBundleById(long bundleId)
    {
       if (bundleId == 0)
@@ -176,7 +183,7 @@ public class BundleManager
     * @param location the location of the bundle
     * @return the bundle or null if there is no bundle with that location
     */
-   AbstractBundle getBundleByLocation(String location)
+   public AbstractBundle getBundleByLocation(String location)
    {
       if (location == null)
          throw new IllegalArgumentException("Null location");
@@ -194,6 +201,30 @@ public class BundleManager
       return result;
    }
 
+   /**
+    * Get a bundle by symbolic name and version
+    * 
+    * @param symbolicName The bundle symbolic name
+    * @param versionRange The optional bundle version 
+    * @return The bundle or null if there is no bundle with that name and version
+    */
+   public AbstractBundle getBundle(String symbolicName, String versionRange)
+   {
+      AbstractBundle result = null;
+      for (AbstractBundle aux : getBundles())
+      {
+         if (aux.getSymbolicName().equals(symbolicName))
+         {
+            if (versionRange == null || XVersionRange.parse(versionRange).isInRange(aux.getVersion()))
+            {
+               result = aux;
+               break;
+            }
+         }
+      }
+      return result;
+   }
+   
    public List<AbstractBundle> getBundles()
    {
       List<AbstractBundle> bundles = new ArrayList<AbstractBundle>(bundleMap.values());

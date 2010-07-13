@@ -40,7 +40,6 @@ import org.jboss.test.osgi.container.servicemix.moduleA.ModuleActivatorA;
 import org.jboss.test.osgi.container.servicemix.moduleA.ModuleServiceA;
 import org.jboss.test.osgi.container.servicemix.moduleB.ModuleActivatorB;
 import org.jboss.test.osgi.container.servicemix.moduleB.ModuleServiceB;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -52,7 +51,6 @@ import org.osgi.framework.Version;
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jul-2010
  */
-@Ignore
 public class ServiceMixTestCase extends OSGiFrameworkTest
 {
    @Test
@@ -123,7 +121,44 @@ public class ServiceMixTestCase extends OSGiFrameworkTest
    @Test
    public void testBundleDependsOnModule() throws Exception
    {
-      
+      Bundle bundleA = installBundle(getBundleA());
+      try
+      {
+         assertNotNull("Bundle not null", bundleA);
+         assertEquals("bundleA", bundleA.getSymbolicName());
+         assertEquals(Version.parseVersion("1.0"), bundleA.getVersion());
+         
+         try
+         {
+            bundleA.start();
+            fail("BundleException expected");
+         }
+         catch (BundleException ex)
+         {
+            // ignore
+         }
+         
+         // Install the dependent bundle
+         Bundle moduleA = installBundle(getModuleA());
+         try
+         {
+            assertBundleState(Bundle.INSTALLED, moduleA.getState());
+            
+            bundleA.start();
+            assertBundleState(Bundle.ACTIVE, bundleA.getState());
+         }
+         finally
+         {
+            moduleA.uninstall();
+         }
+         
+         bundleA.stop();
+         assertBundleState(Bundle.RESOLVED, bundleA.getState());
+      }
+      finally
+      {
+         bundleA.uninstall();
+      }
    }
    
    private JavaArchive getBundleA()
@@ -151,9 +186,10 @@ public class ServiceMixTestCase extends OSGiFrameworkTest
    
    private JavaArchive getBundleB()
    {
-      // Bundle-SymbolicName: bundleB
+      // Bundle-Version: 1.0.0
+      // Bundle-SymbolicName: servicemix.bundleB
       // Bundle-Activator: org.jboss.test.osgi.container.servicemix.bundleB.BundleActivatorB
-      final JavaArchive archive = ShrinkWrap.create("bundleB", JavaArchive.class);
+      final JavaArchive archive = ShrinkWrap.create("servicemix.bundleB", JavaArchive.class);
       archive.addClasses(BundleActivatorB.class, BundleServiceB.class);
       archive.setManifest(new Asset()
       {

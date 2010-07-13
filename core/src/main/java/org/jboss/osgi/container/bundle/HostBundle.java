@@ -41,7 +41,6 @@ import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
 /**
@@ -360,12 +359,18 @@ public class HostBundle extends AbstractBundle
       Throwable rethrow = null;
       if (priorState == Bundle.ACTIVE)
       {
-         BundleContext bundleContext = getBundleContext();
-         if (bundleActivator != null && bundleContext != null)
+         if (bundleActivator != null && getBundleContext() != null)
          {
             try
             {
-               bundleActivator.stop(bundleContext);
+               if (bundleActivator instanceof ModuleActivatorBridge)
+               {
+                  bundleActivator.stop(getBundleContextInternal());
+               }
+               else
+               {
+                  bundleActivator.stop(getBundleContext());
+               }
             }
             catch (Throwable t)
             {

@@ -23,9 +23,7 @@ package org.jboss.test.osgi.container.servicemix.bundleA;
 
 //$Id$
 
-import org.jboss.test.osgi.container.servicemix.moduleA.ModuleServiceA;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 
 /**
  * A SimpleService
@@ -35,16 +33,12 @@ import org.osgi.framework.ServiceReference;
  */
 public class BundleServiceA
 {
-   private ModuleServiceA moduleService;
-   
    public BundleServiceA(BundleContext context)
    {
-      ServiceReference sref = context.getServiceReference(ModuleServiceA.class.getName());
-      moduleService = (ModuleServiceA)context.getService(sref);
    }
 
    public String echo(String msg)
    {
-      return moduleService.echo(msg);
+      return msg;
    }
 }

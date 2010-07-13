@@ -100,7 +100,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       }
       catch (ModuleLoadException ex)
       {
-         throw new BundleException("Cannot load module: " + identifier);
+         throw new BundleException("Cannot load module: " + identifier, ex);
       }
    }
 

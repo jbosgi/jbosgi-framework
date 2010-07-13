@@ -22,8 +22,8 @@
 package org.jboss.osgi.container.bundle;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,9 +103,22 @@ public class ModuleManager extends ModuleLoader
       if (moduleSpec != null)
          return moduleSpec.getIdentifier();
 
-      String name = resModule.getName();
+      long moduleId = resModule.getModuleId();
+      String artifact = resModule.getName();
       Version version = resModule.getVersion();
-      return new ModuleIdentifier("" + resModule.getModuleId(), name, version.toString());
+
+      // Modules can define their dependencies on bundles by prefixing the artifact name with 'servicemix'
+      // For ordinary modules we encode the bundleId in the group name to make sure the identifier is unique.
+      // When the underlying ModuleLoader supports unloading of modules we can hopefully create stable module identifiers
+      // that do not contain the bundleId, which is inherently unstable accross framework restarts.
+
+      // [TODO] Remove symbolic name prefix hack 
+      String group = "jbosgi";
+      if (moduleId > 0 && artifact.startsWith("servicemix") == false)
+         group += "[" + moduleId + "]";
+
+      ModuleIdentifier identifier = new ModuleIdentifier(group, artifact, version.toString());
+      return identifier;
    }
 
    /**
@@ -183,7 +196,7 @@ public class ModuleManager extends ModuleLoader
          depBuilder.setExport(true);
 
          // Add the exported packages as paths
-         Set<String> exportPaths = new HashSet<String>();
+         List<String> exportPaths = new ArrayList<String>();
          for (XPackageCapability cap : resModule.getPackageCapabilities())
             exportPaths.add(cap.getName().replace('.', File.separatorChar));
 
@@ -233,7 +246,7 @@ public class ModuleManager extends ModuleLoader
          builder.setClassLoaderFactory(loaderFactory);
          moduleSpec = builder.create();
       }
-      
+
       log.debug("Created ModuleSpec: " + moduleSpec.getIdentifier());
       AbstractBundle bundleState = (AbstractBundle)resModule.getAttachment(Bundle.class);
       modules.put(moduleSpec.getIdentifier(), new ModuleHolder(bundleState, moduleSpec));
@@ -284,7 +297,7 @@ public class ModuleManager extends ModuleLoader
       // Every module we create does logging
       ModuleClassLoader classLoader = module.getClassLoader();
       classLoader.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
-      
+
       // Change the bundle state to RESOLVED 
       if (resolveBundle == true)
       {
