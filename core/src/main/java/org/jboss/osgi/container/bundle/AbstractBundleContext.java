@@ -66,6 +66,11 @@ public abstract class AbstractBundleContext implements BundleContext
       bundleState = null;
    }
    
+   AbstractBundle getBundleInternal()
+   {
+      return bundleState;
+   }
+   
    @Override
    public String getProperty(String key)
    {

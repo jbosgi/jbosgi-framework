@@ -30,6 +30,9 @@ import java.util.Set;
 import java.util.Vector;
 
 import org.jboss.modules.ModuleClassLoader;
+import org.jboss.modules.ModuleSpec;
+import org.jboss.osgi.container.util.AggregatedVirtualFile;
+import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
@@ -55,17 +58,23 @@ public class HostBundle extends AbstractBundle
    private XModule resolverModule;
    private VirtualFile rootFile;
 
-   public HostBundle(BundleManager bundleManager, OSGiMetaData metadata, String location, VirtualFile rootFile) throws BundleException
+   public HostBundle(BundleManager bundleManager, Deployment dep) throws BundleException
    {
-      super(bundleManager, metadata.getBundleSymbolicName());
+      super(bundleManager, dep.getSymbolicName());
+
+      metadata = dep.getAttachment(OSGiMetaData.class);
+      location = dep.getLocation();
+      rootFile = dep.getRoot();
+
+      if (metadata == null)
+         throw new IllegalArgumentException("Null metadata");
       if (location == null)
          throw new IllegalArgumentException("Null location");
       if (rootFile == null)
          throw new IllegalArgumentException("Null rootFile");
 
-      this.metadata = metadata;
-      this.location = location;
-      this.rootFile = rootFile;
+      // Set the aggregated root file
+      rootFile = AggregatedVirtualFile.aggregatedBundleClassPath(rootFile, metadata);
 
       // Set the bundle version
       setVersion(metadata.getBundleVersion());
@@ -73,6 +82,11 @@ public class HostBundle extends AbstractBundle
       // Create the resolver module
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
       resolverModule = builder.createModule(getBundleId(), metadata);
+
+      // In case this bundle is a module.xml deployment, we already have a ModuleSpec
+      ModuleSpec moduleSpec = dep.getAttachment(ModuleSpec.class);
+      if (moduleSpec != null)
+         resolverModule.addAttachment(ModuleSpec.class, moduleSpec);
    }
 
    /**
@@ -263,12 +277,20 @@ public class HostBundle extends AbstractBundle
          String bundleActivatorClassName = osgiMetaData.getBundleActivator();
          if (bundleActivatorClassName != null)
          {
-            Object result = loadClass(bundleActivatorClassName).newInstance();
-            if (result instanceof BundleActivator == false)
-               throw new BundleException(bundleActivatorClassName + " is not an implementation of " + BundleActivator.class.getName());
-
-            bundleActivator = (BundleActivator)result;
-            bundleActivator.start(getBundleContext());
+            if (bundleActivatorClassName.equals(ModuleActivatorBridge.class.getName()))
+            {
+               bundleActivator = new ModuleActivatorBridge();
+               bundleActivator.start(getBundleContextInternal());
+            }
+            else
+            {
+               Object result = loadClass(bundleActivatorClassName).newInstance();
+               if (result instanceof BundleActivator == false)
+                  throw new BundleException(bundleActivatorClassName + " is not an implementation of " + BundleActivator.class.getName());
+               
+               bundleActivator = (BundleActivator)result;
+               bundleActivator.start(getBundleContext());
+            }
          }
 
          if (getState() != STARTING)

@@ -24,6 +24,7 @@ package org.jboss.osgi.container.plugin;
 import java.util.Dictionary;
 import java.util.List;
 
+import org.jboss.msc.service.ServiceContainer;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.ServiceState;
 import org.osgi.framework.Bundle;
@@ -42,7 +43,12 @@ public interface ServiceManagerPlugin extends Plugin
     * Get the next service is from the manager 
     */
    long getNextServiceId();
-   
+
+   /**
+    * Get the service container
+    */
+   ServiceContainer getServiceContainer();
+
    /**
     * Returns this bundle's <code>ServiceReference</code> list for all
     * services it has registered or <code>null</code> if this bundle has no

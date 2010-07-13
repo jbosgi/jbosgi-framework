@@ -91,6 +91,12 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    }
 
    @Override
+   public ServiceContainer getServiceContainer()
+   {
+      return serviceContainer;
+   }
+
+   @Override
    public long getNextServiceId()
    {
       return identityGenerator.incrementAndGet();

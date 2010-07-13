@@ -32,6 +32,7 @@ import org.jboss.arquillian.testenricher.osgi.OSGiTestEnricher;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.FrameworkState;
 import org.jboss.osgi.container.bundle.ModuleManager;
@@ -50,6 +51,7 @@ import org.jboss.osgi.vfs.VirtualFile;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.osgi.framework.Bundle;
 
 /**
  * Test the bundle content loader.
@@ -90,6 +92,7 @@ public class ArquillianLoaderTestCase
       OSGiManifestMetaData metadata = new OSGiManifestMetaData(manifest);
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
       resModule = builder.createModule(1, metadata);
+      resModule.addAttachment(Bundle.class, Mockito.mock(AbstractBundle.class));
 
       // Add the Bundle-ClassPath to the root virtual files
       rootFile = AggregatedVirtualFile.aggregatedBundleClassPath(rootFile, metadata);

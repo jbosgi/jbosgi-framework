@@ -33,6 +33,7 @@ import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.ModuleXmlParser;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.ModuleActivatorBridge;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -43,7 +44,6 @@ import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
 
 /**
@@ -147,6 +147,10 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       ModuleIdentifier identifier = moduleSpec.getIdentifier();
       builder.addBundleSymbolicName(identifier.getArtifact());
       builder.addBundleVersion(identifier.getVersion());
+
+      // Set the module activator bridge
+      if (moduleSpec.getMainClass() != null)
+         builder.addBundleActivator(ModuleActivatorBridge.class);
       
       for (DependencySpec depSpec : moduleSpec.getDependencies())
       {
@@ -154,13 +158,13 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          String name = depid.getArtifact();
          String version = depid.getVersion();
          boolean optional = depSpec.isOptional();
-         
+
+         // Require-Bundle
          StringBuffer buffer = new StringBuffer(name);
          if (version != null)
             buffer.append(";bundle-version=" + Version.parseVersion(version));
          if (optional == true)
             buffer.append(";resolution:=optional");
-         
          builder.addRequireBundle(buffer.toString());
       }
       

@@ -28,6 +28,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.HostBundle;
 import org.jboss.osgi.container.bundle.ModuleManager;
@@ -73,6 +74,12 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    public Module getModule(ModuleIdentifier identifier)
    {
       return moduleManager.getModule(identifier);
+   }
+
+   @Override
+   public AbstractBundle getBundle(ModuleIdentifier identifier)
+   {
+      return moduleManager.getBundle(identifier);
    }
 
    @Override

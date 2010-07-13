@@ -71,6 +71,8 @@ public class SystemBundle extends AbstractBundle
       // [TODO] Bring the resolver module in sync with the metadata
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
       resolverModule = builder.createModule(0, getSymbolicName(), getVersion());
+      resolverModule.addAttachment(Bundle.class, this);
+      
       builder.addBundleCapability(getSymbolicName(), getVersion());
       
       SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);

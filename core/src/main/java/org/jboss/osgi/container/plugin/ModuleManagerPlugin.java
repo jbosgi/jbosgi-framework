@@ -27,6 +27,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.resolver.XModule;
 
@@ -54,6 +55,12 @@ public interface ModuleManagerPlugin extends Plugin
     * @return The module or null
     */
    Module getModule(ModuleIdentifier identifier);
+   
+   /**
+    * Get the bundle for the given identifier
+    * @return The bundle or null
+    */
+   AbstractBundle getBundle(ModuleIdentifier identifier);
    
    /**
     * Find or create the module with the given identifier

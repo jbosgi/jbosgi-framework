@@ -54,7 +54,6 @@ import org.jboss.osgi.container.plugin.internal.PackageAdminPluginImpl;
 import org.jboss.osgi.container.plugin.internal.ResolverPluginImpl;
 import org.jboss.osgi.container.plugin.internal.ServiceManagerPluginImpl;
 import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
-import org.jboss.osgi.container.util.AggregatedVirtualFile;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.spi.NotImplementedException;
@@ -331,16 +330,14 @@ public class BundleManager
 
    private AbstractBundle createBundle(Deployment dep) throws BundleException
    {
-      VirtualFile rootFile = dep.getRoot();
-      String location = dep.getLocation();
-      
       BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
       OSGiMetaData metadata = plugin.createOSGiMetaData(dep);
       if (metadata.getFragmentHost() != null)
          throw new NotImplementedException("Fragments not support");
+      
+      dep.addAttachment(OSGiMetaData.class, metadata);
 
-      rootFile = AggregatedVirtualFile.aggregatedBundleClassPath(rootFile, metadata);
-      AbstractBundle bundleState = new HostBundle(this, metadata, location, rootFile);
+      AbstractBundle bundleState = new HostBundle(this, dep);
       return bundleState;
    }
 

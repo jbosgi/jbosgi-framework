@@ -220,10 +220,13 @@ public class BundleTestCase extends OSGiFrameworkTest
    @Test
    public void testNotSingleton() throws Exception
    {
+      // Bundle-SymbolicName: singleton;singleton:=true
       Archive<?> assemblyA = assembleArchive("bundle1", "/bundles/singleton/singleton1");
       Bundle bundleA = installBundle(assemblyA);
       try
       {
+         // Bundle-SymbolicName: singleton
+         // Bundle-Version: 2.0.0
          Archive<?> assemblyB = assembleArchive("not-singleton", "/bundles/singleton/not-singleton");
          Bundle bundleB = installBundle(assemblyB);
          try

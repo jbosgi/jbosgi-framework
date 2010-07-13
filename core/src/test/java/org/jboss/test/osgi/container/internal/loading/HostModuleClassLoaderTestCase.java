@@ -32,6 +32,7 @@ import java.util.jar.Manifest;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.FrameworkState;
 import org.jboss.osgi.container.bundle.ModuleManager;
@@ -53,6 +54,7 @@ import org.jboss.test.osgi.container.simple.bundleC.SimpleService;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.service.log.LogService;
 
@@ -110,6 +112,7 @@ public class HostModuleClassLoaderTestCase
       Manifest manifest = VFSUtils.getManifest(rootFile);
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
       resModule = builder.createModule(1, manifest);
+      resModule.addAttachment(Bundle.class, Mockito.mock(AbstractBundle.class));
       
       // Create the ModuleSpec and the Module
       moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
