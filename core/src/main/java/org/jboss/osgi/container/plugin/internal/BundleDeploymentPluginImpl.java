@@ -21,9 +21,9 @@
  */
 package org.jboss.osgi.container.plugin.internal;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
@@ -32,7 +32,11 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.ModuleXmlParser;
+import org.jboss.modules.ModuleXmlParser.ResourceLoaderFactory;
+import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.ModuleActivatorBridge;
+import org.jboss.osgi.container.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -43,7 +47,6 @@ import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
 
 /**
@@ -68,7 +71,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
     * @param location The bundle location to be associated with the deployment  
     * @throws BundleException If the given root file does not 
     */
-   public Deployment createDeployment(VirtualFile rootFile, String location) throws BundleException
+   public Deployment createDeployment(final VirtualFile rootFile, final String location) throws BundleException
    {
       if (rootFile == null)
          throw new IllegalArgumentException("Null rootFile");
@@ -94,7 +97,16 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          VirtualFile child = rootFile.getChild("META-INF/module.xml");
          InputStream inputStream = child.openStream();
 
-         ModuleSpec moduleSpec = ModuleXmlParser.parse(new File(rootFile.getPathName()), inputStream);
+         ResourceLoaderFactory factory = new ResourceLoaderFactory()
+         {
+            @Override
+            public ResourceLoader getResourceLoader(String path, String name) throws IOException
+            {
+               return new VirtualFileResourceLoader(rootFile, Collections.singletonList(path));
+            }
+         };
+         
+         ModuleSpec moduleSpec = ModuleXmlParser.parse(factory, inputStream);
          ModuleIdentifier identifier = moduleSpec.getIdentifier();
          String symbolicName = identifier.getArtifact();
          String version = identifier.getVersion();
@@ -118,20 +130,20 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
    public OSGiMetaData createOSGiMetaData(Deployment dep) throws BundleException
    {
       OSGiMetaData metadata = null;
-      
+
       // First check if the Deployment contains a valid BundleInfo
       BundleInfo info = dep.getAttachment(BundleInfo.class);
       if (info != null)
          metadata = toOSGiMetaData(info);
-      
+
       // Secondly, we support deployments that contain ModuleSpec
       ModuleSpec moduleSpec = dep.getAttachment(ModuleSpec.class);
       if (metadata == null && moduleSpec != null)
          metadata = toOSGiMetaData(moduleSpec);
-      
+
       if (metadata == null)
          throw new BundleException("Cannot construct OSGiMetaData from: " + dep);
-      
+
       return metadata;
    }
 
@@ -147,23 +159,27 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       ModuleIdentifier identifier = moduleSpec.getIdentifier();
       builder.addBundleSymbolicName(identifier.getArtifact());
       builder.addBundleVersion(identifier.getVersion());
-      
+
+      // Set the module activator bridge
+      if (moduleSpec.getMainClass() != null)
+         builder.addBundleActivator(ModuleActivatorBridge.class);
+
       for (DependencySpec depSpec : moduleSpec.getDependencies())
       {
          ModuleIdentifier depid = depSpec.getModuleIdentifier();
          String name = depid.getArtifact();
          String version = depid.getVersion();
          boolean optional = depSpec.isOptional();
-         
+
+         // Require-Bundle
          StringBuffer buffer = new StringBuffer(name);
          if (version != null)
             buffer.append(";bundle-version=" + Version.parseVersion(version));
          if (optional == true)
             buffer.append(";resolution:=optional");
-         
          builder.addRequireBundle(buffer.toString());
       }
-      
+
       Manifest manifest = builder.getManifest();
       return new OSGiManifestMetaData(manifest);
    }

@@ -27,10 +27,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
@@ -38,6 +38,7 @@ import org.jboss.modules.AbstractResourceLoader;
 import org.jboss.modules.ClassSpec;
 import org.jboss.modules.PackageSpec;
 import org.jboss.modules.Resource;
+import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -51,16 +52,16 @@ import org.jboss.osgi.vfs.VirtualFile;
 public class VirtualFileResourceLoader extends AbstractResourceLoader
 {
    private VirtualFile virtualFile;
-   private Set<String> filteredPaths;
+   private List<String> filteredPaths;
 
-   public VirtualFileResourceLoader(VirtualFile virtualFile, Set<String> paths)
+   public VirtualFileResourceLoader(VirtualFile virtualFile, List<String> paths)
    {
       if (virtualFile == null)
          throw new IllegalArgumentException("Null virtualFile");
       
       this.virtualFile = virtualFile;
       
-      filteredPaths = new HashSet<String>();
+      filteredPaths = new ArrayList<String>();
       if (paths != null)
          filteredPaths.addAll(paths);
    }
@@ -144,7 +145,7 @@ public class VirtualFileResourceLoader extends AbstractResourceLoader
    @Override
    public Collection<String> getPaths()
    {
-      return Collections.unmodifiableSet(filteredPaths);
+      return Collections.unmodifiableList(filteredPaths);
    }
 
    private void safeClose(final Closeable closeable)

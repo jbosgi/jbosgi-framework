@@ -92,7 +92,7 @@ public abstract class AbstractBundle implements Bundle
    // The set of used services
    private Set<ServiceState> usedServices;
 
-   // Cache commonly used managers
+   // Cache commonly used plugins
    private BundleManager bundleManager;
    private FrameworkEventsPlugin eventsPlugin;
    private LifecycleInterceptorPlugin interceptorPlugin;
@@ -107,6 +107,10 @@ public abstract class AbstractBundle implements Bundle
       if (symbolicName == null)
          throw new IllegalArgumentException("Null symbolicName");
 
+      // strip-off the directives
+      if (symbolicName.indexOf(';') > 0)
+         symbolicName = symbolicName.substring(0, symbolicName.indexOf(';'));
+      
       this.bundleManager = bundleManager;
       this.symbolicName = symbolicName;
 
@@ -305,6 +309,11 @@ public abstract class AbstractBundle implements Bundle
       if (bundleContext == null)
          return null;
       return new BundleContextWrapper(bundleContext);
+   }
+
+   BundleContext getBundleContextInternal()
+   {
+      return bundleContext;
    }
 
    void createBundleContext()

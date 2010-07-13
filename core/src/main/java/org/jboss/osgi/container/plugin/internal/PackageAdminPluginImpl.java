@@ -30,8 +30,8 @@ import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
+import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.PackageAdminPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.resolver.XModule;
@@ -187,7 +187,8 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       ModuleClassLoader moduleCL = (ModuleClassLoader)loader;
       Module module = moduleCL.getModule();
       ModuleIdentifier identifier = module.getIdentifier();
-      long moduleId = ModuleManager.getModuleId(identifier);
+      ModuleManagerPlugin plugin = getPlugin(ModuleManagerPlugin.class);
+      long moduleId = plugin.getBundle(identifier).getBundleId();
       return getBundleManager().getSystemContext().getBundle(moduleId);
    }
 

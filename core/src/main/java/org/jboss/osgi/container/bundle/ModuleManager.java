@@ -22,8 +22,8 @@
 package org.jboss.osgi.container.bundle;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +40,7 @@ import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.loading.FrameworkModuleClassLoader;
+import org.jboss.osgi.container.loading.JBossLoggingModuleLogger;
 import org.jboss.osgi.container.loading.OSGiModuleClassLoader;
 import org.jboss.osgi.container.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -98,18 +99,35 @@ public class ModuleManager extends ModuleLoader
     */
    public static ModuleIdentifier getModuleIdentifier(XModule resModule)
    {
-      String name = resModule.getName();
+      ModuleSpec moduleSpec = resModule.getAttachment(ModuleSpec.class);
+      if (moduleSpec != null)
+         return moduleSpec.getIdentifier();
+
+      long moduleId = resModule.getModuleId();
+      String artifact = resModule.getName();
       Version version = resModule.getVersion();
-      return new ModuleIdentifier("" + resModule.getModuleId(), name, version.toString());
+
+      // Modules can define their dependencies on bundles by prefixing the artifact name with 'servicemix'
+      // For ordinary modules we encode the bundleId in the group name to make sure the identifier is unique.
+      // When the underlying ModuleLoader supports unloading of modules we can hopefully create stable module identifiers
+      // that do not contain the bundleId, which is inherently unstable accross framework restarts.
+
+      // [TODO] Remove symbolic name prefix hack 
+      String group = "jbosgi";
+      if (moduleId > 0 && artifact.startsWith("servicemix") == false)
+         group += "[" + moduleId + "]";
+
+      ModuleIdentifier identifier = new ModuleIdentifier(group, artifact, version.toString());
+      return identifier;
    }
 
    /**
-    * Get the moduleId, which is also the bundleId from a module identifier 
+    * Get the bundleId from a module identifier 
     */
-   public static long getModuleId(ModuleIdentifier identifier)
+   public AbstractBundle getBundle(ModuleIdentifier identifier)
    {
-      String moduleId = identifier.getGroup();
-      return Long.parseLong(moduleId);
+      ModuleHolder holder = modules.get(identifier);
+      return holder.getBundle();
    }
 
    /**
@@ -167,66 +185,71 @@ public class ModuleManager extends ModuleLoader
     */
    public ModuleSpec createModuleSpec(final XModule resModule, VirtualFile rootFile)
    {
-      ModuleIdentifier identifier = getModuleIdentifier(resModule);
-      ModuleSpec.Builder builder = ModuleSpec.build(identifier);
-
-      // Add the framework module as required dependency
-      DependencySpec.Builder depBuilder = builder.addDependency(frameworkIdentifier);
-      depBuilder.setExport(true);
-
-      // Add the exported packages as paths
-      Set<String> exportPaths = new HashSet<String>();
-      for (XPackageCapability cap : resModule.getPackageCapabilities())
-         exportPaths.add(cap.getName().replace('.', File.separatorChar));
-
-      // Add the bundle's {@link ResourceLoader}
-      builder.addRoot("[TODO] What Value?", new VirtualFileResourceLoader(rootFile, exportPaths));
-
-      // For every {@link XWire} add a dependency on the exporter
-      List<XWire> wires = resModule.getWires();
-      if (wires != null)
+      ModuleSpec moduleSpec = resModule.getAttachment(ModuleSpec.class);
+      if (moduleSpec == null)
       {
-         for (XWire wire : wires)
+         ModuleIdentifier identifier = getModuleIdentifier(resModule);
+         ModuleSpec.Builder builder = ModuleSpec.build(identifier);
+
+         // Add the framework module as required dependency
+         DependencySpec.Builder depBuilder = builder.addDependency(frameworkIdentifier);
+         depBuilder.setExport(true);
+
+         // Add the exported packages as paths
+         List<String> exportPaths = new ArrayList<String>();
+         for (XPackageCapability cap : resModule.getPackageCapabilities())
+            exportPaths.add(cap.getName().replace('.', File.separatorChar));
+
+         // Add the bundle's {@link ResourceLoader}
+         builder.addRoot("[TODO] What Value?", new VirtualFileResourceLoader(rootFile, exportPaths));
+
+         // For every {@link XWire} add a dependency on the exporter
+         List<XWire> wires = resModule.getWires();
+         if (wires != null)
          {
-            XRequirement req = wire.getRequirement();
-            XModule importer = wire.getImporter();
-            XModule exporter = wire.getExporter();
-            if (exporter == importer)
-               continue;
-
-            if (req instanceof XPackageRequirement)
+            for (XWire wire : wires)
             {
-               ModuleIdentifier exporterId = getModuleIdentifier(exporter);
-               depBuilder = builder.addDependency(exporterId);
-               depBuilder.setExport(true);
-               continue;
-            }
+               XRequirement req = wire.getRequirement();
+               XModule importer = wire.getImporter();
+               XModule exporter = wire.getExporter();
+               if (exporter == importer)
+                  continue;
 
-            if (req instanceof XRequireBundleRequirement)
-            {
-               XRequireBundleRequirement bndreq = (XRequireBundleRequirement)req;
-               boolean reexport = Constants.VISIBILITY_REEXPORT.equals(bndreq.getVisibility());
-               ModuleIdentifier exporterId = getModuleIdentifier(exporter);
-               depBuilder = builder.addDependency(exporterId);
-               depBuilder.setExport(reexport);
-               continue;
+               if (req instanceof XPackageRequirement)
+               {
+                  ModuleIdentifier exporterId = getModuleIdentifier(exporter);
+                  depBuilder = builder.addDependency(exporterId);
+                  depBuilder.setExport(true);
+                  continue;
+               }
+
+               if (req instanceof XRequireBundleRequirement)
+               {
+                  XRequireBundleRequirement bndreq = (XRequireBundleRequirement)req;
+                  boolean reexport = Constants.VISIBILITY_REEXPORT.equals(bndreq.getVisibility());
+                  ModuleIdentifier exporterId = getModuleIdentifier(exporter);
+                  depBuilder = builder.addDependency(exporterId);
+                  depBuilder.setExport(reexport);
+                  continue;
+               }
             }
          }
+
+         ModuleClassLoaderFactory loaderFactory = new ModuleClassLoaderFactory()
+         {
+            @Override
+            public ModuleClassLoader getModuleClassLoader(Module module, ModuleSpec moduleSpec)
+            {
+               return new OSGiModuleClassLoader(bundleManager, resModule, module, moduleSpec);
+            }
+         };
+         builder.setClassLoaderFactory(loaderFactory);
+         moduleSpec = builder.create();
       }
 
-      ModuleClassLoaderFactory loaderFactory = new ModuleClassLoaderFactory()
-      {
-         @Override
-         public ModuleClassLoader getModuleClassLoader(Module module, ModuleSpec moduleSpec)
-         {
-            return new OSGiModuleClassLoader(bundleManager, resModule, module, moduleSpec);
-         }
-      };
-      builder.setClassLoaderFactory(loaderFactory);
-      ModuleSpec moduleSpec = builder.create();
-
-      log.debug("Created ModuleSpec: " + identifier);
-      modules.put(identifier, new ModuleHolder(moduleSpec));
+      log.debug("Created ModuleSpec: " + moduleSpec.getIdentifier());
+      AbstractBundle bundleState = (AbstractBundle)resModule.getAttachment(Bundle.class);
+      modules.put(moduleSpec.getIdentifier(), new ModuleHolder(bundleState, moduleSpec));
       return moduleSpec;
    }
 
@@ -252,7 +275,8 @@ public class ModuleManager extends ModuleLoader
       builder.setClassLoaderFactory(loaderFactory);
       ModuleSpec frameworkSpec = builder.create();
 
-      modules.put(frameworkIdentifier, new ModuleHolder(frameworkSpec));
+      AbstractBundle bundleState = (AbstractBundle)resModule.getAttachment(Bundle.class);
+      modules.put(frameworkIdentifier, new ModuleHolder(bundleState, frameworkSpec));
       return frameworkSpec;
    }
 
@@ -270,11 +294,14 @@ public class ModuleManager extends ModuleLoader
       Module module = defineModule(moduleSpec);
       holder.setModule(module);
 
+      // Every module we create does logging
+      ModuleClassLoader classLoader = module.getClassLoader();
+      classLoader.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
+
       // Change the bundle state to RESOLVED 
       if (resolveBundle == true)
       {
-         long moduleId = getModuleId(identifier);
-         AbstractBundle bundleState = bundleManager.getBundleById(moduleId);
+         AbstractBundle bundleState = getBundle(identifier);
          bundleState.changeState(Bundle.RESOLVED);
       }
 
@@ -286,12 +313,23 @@ public class ModuleManager extends ModuleLoader
     */
    class ModuleHolder
    {
+      private AbstractBundle bundle;
       private ModuleSpec moduleSpec;
       private Module module;
 
-      ModuleHolder(ModuleSpec moduleSpec)
+      ModuleHolder(AbstractBundle bundle, ModuleSpec moduleSpec)
       {
+         if (bundle == null)
+            throw new IllegalArgumentException("Null bundle");
+         if (moduleSpec == null)
+            throw new IllegalArgumentException("Null moduleSpec");
+         this.bundle = bundle;
          this.moduleSpec = moduleSpec;
+      }
+
+      AbstractBundle getBundle()
+      {
+         return bundle;
       }
 
       ModuleSpec getModuleSpec()
