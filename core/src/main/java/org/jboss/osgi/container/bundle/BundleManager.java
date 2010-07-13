@@ -34,9 +34,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.jar.Manifest;
 
-import org.jboss.logging.Logger;
+import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.container.plugin.BundleStoragePlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.LifecycleInterceptorPlugin;
@@ -46,6 +45,7 @@ import org.jboss.osgi.container.plugin.Plugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
+import org.jboss.osgi.container.plugin.internal.BundleDeploymentPluginImpl;
 import org.jboss.osgi.container.plugin.internal.BundleStoragePluginImpl;
 import org.jboss.osgi.container.plugin.internal.FrameworkEventsPluginImpl;
 import org.jboss.osgi.container.plugin.internal.LifecycleInterceptorPluginImpl;
@@ -56,11 +56,8 @@ import org.jboss.osgi.container.plugin.internal.ServiceManagerPluginImpl;
 import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.container.util.AggregatedVirtualFile;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.spi.NotImplementedException;
-import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -78,7 +75,7 @@ import org.osgi.framework.FrameworkEvent;
 public class BundleManager
 {
    // Provide logging
-   private static final Logger log = Logger.getLogger(BundleManager.class);
+   // private static final Logger log = Logger.getLogger(BundleManager.class);
    
    // The BundleId generator 
    private AtomicLong identityGenerator = new AtomicLong();
@@ -95,6 +92,7 @@ public class BundleManager
    {
       // Register the framework plugins
       // [TODO] Externalize plugin registration
+      plugins.put(BundleDeploymentPlugin.class, new BundleDeploymentPluginImpl(this));
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
       plugins.put(FrameworkEventsPlugin.class, new FrameworkEventsPluginImpl(this));
       plugins.put(LifecycleInterceptorPlugin.class, new LifecycleInterceptorPluginImpl(this));
@@ -303,22 +301,10 @@ public class BundleManager
    /**
     * Install a bundle from the given {@link VirtualFile}
     */
-   private AbstractBundle install(VirtualFile root, String location, boolean autoStart) throws BundleException
+   private AbstractBundle install(VirtualFile rootFile, String location, boolean autoStart) throws BundleException
    {
-      if (location == null)
-         throw new IllegalArgumentException("Null location");
-
-      Deployment dep;
-      try
-      {
-         BundleInfo info = BundleInfo.createBundleInfo(root, location);
-         dep = DeploymentFactory.createDeployment(info);
-         dep.setAutoStart(autoStart);
-      }
-      catch (RuntimeException ex)
-      {
-         throw new BundleException("Cannot install bundle: " + root, ex);
-      }
+      BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
+      Deployment dep = plugin.createDeployment(rootFile, location);
 
       return installBundle(dep);
    }
@@ -347,54 +333,15 @@ public class BundleManager
    {
       VirtualFile rootFile = dep.getRoot();
       String location = dep.getLocation();
-
-      Manifest manifest;
-      try
-      {
-         manifest = VFSUtils.getManifest(rootFile);
-      }
-      catch (IOException ex)
-      {
-         throw new BundleException("Cannot obtain manifest from: " + dep);
-      }
-
-      OSGiMetaData metadata = new OSGiManifestMetaData(manifest);
+      
+      BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
+      OSGiMetaData metadata = plugin.createOSGiMetaData(dep);
       if (metadata.getFragmentHost() != null)
          throw new NotImplementedException("Fragments not support");
 
-      rootFile = aggregatedBundleClassPath(rootFile, metadata);
+      rootFile = AggregatedVirtualFile.aggregatedBundleClassPath(rootFile, metadata);
       AbstractBundle bundleState = new HostBundle(this, metadata, location, rootFile);
       return bundleState;
-   }
-
-   public static VirtualFile aggregatedBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata)
-   {
-      VirtualFile result = rootFile;
-      
-      // Add the Bundle-ClassPath to the root virtual files
-      if (metadata.getBundleClassPath().size() > 0)
-      {
-         List<VirtualFile> rootList = new ArrayList<VirtualFile>(Collections.singleton(rootFile));
-         for (String path : metadata.getBundleClassPath())
-         {
-            if (path.equals("."))
-               continue;
-            
-            try
-            {
-               VirtualFile child = rootFile.getChild(path);
-               VirtualFile root = AbstractVFS.getRoot(child.toURL()); 
-               rootList.add(root);
-            }
-            catch (IOException ex)
-            {
-               log.error("Cannot get class path element: " + path, ex);
-            }
-         }
-         VirtualFile[] roots = rootList.toArray(new VirtualFile[rootList.size()]);
-         result = new AggregatedVirtualFile(roots);
-      }
-      return result;
    }
 
    private URL getLocationURL(String location) throws BundleException

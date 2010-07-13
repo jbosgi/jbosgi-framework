@@ -29,6 +29,9 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
+import org.jboss.logging.Logger;
+import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 
 
@@ -40,11 +43,14 @@ import org.jboss.osgi.vfs.VirtualFile;
  * @author thomas.diesler@jboss.com
  * @since 08-Jul-2010
  */
-public class AggregatedVirtualFile implements VirtualFile
+public final class AggregatedVirtualFile implements VirtualFile
 {
+   // Provide logging
+   private static final Logger log = Logger.getLogger(AggregatedVirtualFile.class);
+   
    private VirtualFile[] roots;
    
-   public AggregatedVirtualFile(VirtualFile[] roots)
+   private AggregatedVirtualFile(VirtualFile[] roots)
    {
       if (roots == null || roots.length == 0)
          throw new IllegalArgumentException("Null roots");
@@ -52,6 +58,36 @@ public class AggregatedVirtualFile implements VirtualFile
       this.roots = roots;
    }
 
+   public static VirtualFile aggregatedBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata)
+   {
+      VirtualFile result = rootFile;
+      
+      // Add the Bundle-ClassPath to the root virtual files
+      if (metadata.getBundleClassPath().size() > 0)
+      {
+         List<VirtualFile> rootList = new ArrayList<VirtualFile>(Collections.singleton(rootFile));
+         for (String path : metadata.getBundleClassPath())
+         {
+            if (path.equals("."))
+               continue;
+            
+            try
+            {
+               VirtualFile child = rootFile.getChild(path);
+               VirtualFile root = AbstractVFS.getRoot(child.toURL()); 
+               rootList.add(root);
+            }
+            catch (IOException ex)
+            {
+               log.error("Cannot get class path element: " + path, ex);
+            }
+         }
+         VirtualFile[] roots = rootList.toArray(new VirtualFile[rootList.size()]);
+         result = new AggregatedVirtualFile(roots);
+      }
+      return result;
+   }
+   
    @Override
    public String getName()
    {

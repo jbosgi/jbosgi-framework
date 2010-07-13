@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ============================================================ -->
+<!--  JBoss, the OpenSource J2EE webOS                            -->
+<!--  Distributable under LGPL license.                           -->
+<!--  See terms of license at http://www.gnu.org.                 -->
+<!-- ============================================================ -->
+
+<!-- $Id$ -->
+
+<project default="build-test-jars">
+
+  <description>OSGi test archive builder</description>
+
+  <!-- ================================================================== -->
+  <!-- Init                                                               -->
+  <!-- ================================================================== -->
+
+  <target name="init">
+
+    <!-- Property override when not called from maven -->
+    <property name="maven.runtime.classpath" value="/usr/java/bnd.jar" />
+    <property name="tests.output.dir" value="${basedir}/../target" />
+
+    <mkdir dir="${tests.output.dir}/test-libs" />
+    <property name="tests.classes.dir" value="${tests.output.dir}/test-classes" />
+    <property name="tests.resources.dir" value="${tests.output.dir}/test-classes" />
+
+    <taskdef resource="aQute/bnd/ant/taskdef.properties">
+      <classpath>
+        <pathelement path="${maven.runtime.classpath}" />
+      </classpath>
+    </taskdef>
+
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Building                                                           -->
+  <!-- ================================================================== -->
+
+  <target name="build-test-jars" depends="init" description="Build the test deployments">
+
+    <!-- Please add alphabetically -->
+
+    <!-- bundle-classpath -->
+    <jar destfile="${tests.output.dir}/test-libs/bundle-classpath-b.jar">
+      <fileset dir="${tests.classes.dir}">
+        <include name="**/classloader/support/b/B.class"/>
+      </fileset>
+    </jar> 
+    <jar destfile="${tests.output.dir}/test-libs/bundle-classpath-c.jar">
+      <fileset dir="${tests.classes.dir}">
+        <include name="**/classloader/support/c/CA.class"/>
+      </fileset>
+    </jar> 
+    <war destfile="${tests.output.dir}/test-libs/bundle-classpath.war"
+      manifest="${tests.resources.dir}/bundles/classloader/bundleclasspath/MANIFEST.MF"
+      webxml="${tests.resources.dir}/bundles/classloader/bundleclasspath/web.xml">
+      <classes dir="${tests.classes.dir}">
+        <include name="**/classloader/support/a/A.class"/>
+      </classes>
+      <lib dir="${tests.output.dir}/test-libs">
+        <include name="bundle-classpath-b.jar"/>
+      </lib>
+      <fileset dir="${tests.resources.dir}/bundles/classloader/bundleclasspath">
+        <include name="message.txt"/>
+      </fileset>
+      <fileset dir="${tests.output.dir}/test-libs">
+        <include name="bundle-classpath-c.jar"/>
+      </fileset>
+    </war> 
+    
+    <!-- fragments/simple - ->
+    <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/fragments-simple-hostA.jar" files="${tests.resources.dir}/fragments/simple-hostA.bnd" />
+    <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/fragments-simple-hostB.jar" files="${tests.resources.dir}/fragments/simple-hostB.bnd" />
+    <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/fragments-simple-hostC.jar" files="${tests.resources.dir}/fragments/simple-hostC.bnd" />
+    <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/fragments-simple-fragA.jar" files="${tests.resources.dir}/fragments/simple-fragA.bnd" />
+    <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/fragments-simple-fragB.jar" files="${tests.resources.dir}/fragments/simple-fragB.bnd" />
+    <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/fragments-simple-fragC.jar" files="${tests.resources.dir}/fragments/simple-fragC.bnd" />
+    -->
+  	
+    <!-- nativecode - ->
+    <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/simple-nativecode.jar" files="${tests.resources.dir}/nativecode/simple-nativecode.bnd" />
+    -->
+  	
+    <!-- Please add alphabetically -->
+
+  </target>
+
+</project>

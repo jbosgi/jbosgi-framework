@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: classloader.bundleB
+Require-Bundle: classloader.bundleA;visibility:=reexport
+Export-Package: org.jboss.test.osgi.container.classloader.support.b

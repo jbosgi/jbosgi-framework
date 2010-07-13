@@ -21,6 +21,7 @@
 */
 package org.jboss.osgi.container.loading;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -76,13 +77,13 @@ public class FrameworkModuleClassLoader extends ModuleClassLoader
                if (path.endsWith(".*"))
                   path = path.substring(0, path.length() - 2);
 
-               exportedPaths.add(path.replace('.', '/'));
+               exportedPaths.add(path.replace('.', File.separatorChar));
             }
          }
 
          // Add package capabilities exported by the framework
          for (XPackageCapability cap : resModule.getPackageCapabilities())
-            exportedPaths.add(cap.getName().replace('.', '/'));
+            exportedPaths.add(cap.getName().replace('.', File.separatorChar));
       }
       return exportedPaths;
    }

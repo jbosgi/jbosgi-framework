@@ -1,7 +1,0 @@
-Manifest-Version: 1.0
-Implementation-Title: JBoss OSGi tests
-Implementation-Version: test
-Implementation-Vendor: jboss.org
-Bundle-Name: Beans3
-Bundle-SymbolicName: org.jboss.test.osgi.container.beans3
-Export-Package: org.jboss.test.osgi.container.service.support.a

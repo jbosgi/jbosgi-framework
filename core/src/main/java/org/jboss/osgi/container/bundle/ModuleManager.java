@@ -21,6 +21,7 @@
 */
 package org.jboss.osgi.container.bundle;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -39,15 +40,19 @@ import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.loading.FrameworkModuleClassLoader;
-import org.jboss.osgi.container.loading.HostModuleClassLoader;
+import org.jboss.osgi.container.loading.OSGiModuleClassLoader;
 import org.jboss.osgi.container.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageCapability;
+import org.jboss.osgi.resolver.XPackageRequirement;
+import org.jboss.osgi.resolver.XRequireBundleRequirement;
+import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XWire;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.application.Framework;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
 
 /**
@@ -114,7 +119,7 @@ public class ModuleManager extends ModuleLoader
    {
       return Collections.unmodifiableSet(modules.keySet());
    }
-   
+
    /**
     * Get the module spec for a given identifier
     * @return The module spec or null
@@ -124,7 +129,7 @@ public class ModuleManager extends ModuleLoader
       ModuleHolder holder = modules.get(identifier);
       return holder != null ? holder.getModuleSpec() : null;
    }
-   
+
    /**
     * Get the module for a given identifier
     * @return The module or null
@@ -172,7 +177,7 @@ public class ModuleManager extends ModuleLoader
       // Add the exported packages as paths
       Set<String> exportPaths = new HashSet<String>();
       for (XPackageCapability cap : resModule.getPackageCapabilities())
-         exportPaths.add(cap.getName().replace('.', '/'));
+         exportPaths.add(cap.getName().replace('.', File.separatorChar));
 
       // Add the bundle's {@link ResourceLoader}
       builder.addRoot("[TODO] What Value?", new VirtualFileResourceLoader(rootFile, exportPaths));
@@ -183,23 +188,38 @@ public class ModuleManager extends ModuleLoader
       {
          for (XWire wire : wires)
          {
+            XRequirement req = wire.getRequirement();
             XModule importer = wire.getImporter();
             XModule exporter = wire.getExporter();
-            if (exporter != importer)
+            if (exporter == importer)
+               continue;
+
+            if (req instanceof XPackageRequirement)
             {
                ModuleIdentifier exporterId = getModuleIdentifier(exporter);
                depBuilder = builder.addDependency(exporterId);
                depBuilder.setExport(true);
+               continue;
+            }
+
+            if (req instanceof XRequireBundleRequirement)
+            {
+               XRequireBundleRequirement bndreq = (XRequireBundleRequirement)req;
+               boolean reexport = Constants.VISIBILITY_REEXPORT.equals(bndreq.getVisibility());
+               ModuleIdentifier exporterId = getModuleIdentifier(exporter);
+               depBuilder = builder.addDependency(exporterId);
+               depBuilder.setExport(reexport);
+               continue;
             }
          }
       }
-      
+
       ModuleClassLoaderFactory loaderFactory = new ModuleClassLoaderFactory()
       {
          @Override
          public ModuleClassLoader getModuleClassLoader(Module module, ModuleSpec moduleSpec)
          {
-            return new HostModuleClassLoader(bundleManager, resModule, module, moduleSpec);
+            return new OSGiModuleClassLoader(bundleManager, resModule, module, moduleSpec);
          }
       };
       builder.setClassLoaderFactory(loaderFactory);
@@ -246,7 +266,7 @@ public class ModuleManager extends ModuleLoader
       ModuleHolder holder = modules.get(identifier);
       if (holder == null)
          throw new IllegalStateException("ModuleSpec not registered: " + identifier);
-      
+
       Module module = defineModule(moduleSpec);
       holder.setModule(module);
 
