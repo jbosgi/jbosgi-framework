@@ -38,7 +38,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.BatchBuilder;
 import org.jboss.msc.service.BatchServiceBuilder;
-import org.jboss.msc.service.DuplicateServiceException;
 import org.jboss.msc.service.RemovingServiceListener;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceContainer;
@@ -214,15 +213,8 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
       BatchServiceBuilder serviceBuilder;
       ServiceName rootServiceName = serviceNames.get(0);
-      try
-      {
-         serviceBuilder = batchBuilder.addService(rootServiceName, service);
-         associations.put(rootServiceName, clazzes[0]);
-      }
-      catch (DuplicateServiceException ex)
-      {
-         throw new IllegalStateException("Cannot register service: " + rootServiceName, ex);
-      }
+      serviceBuilder = batchBuilder.addService(rootServiceName, service);
+      associations.put(rootServiceName, clazzes[0]);
 
       // Set the startup mode
       serviceBuilder.setInitialMode(Mode.AUTOMATIC);
@@ -262,7 +254,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       // This event is synchronously delivered after the service has been registered with the Framework. 
       FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
       eventsPlugin.fireServiceEvent(bundleState, ServiceEvent.REGISTERED, serviceState);
-      
+
       return serviceState;
    }
 
@@ -273,7 +265,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       log.debug("Unregister service: " + serviceNames);
 
       AbstractBundle serviceOwner = serviceState.getServiceOwner();
-      
+
       // This event is synchronously delivered before the service has completed unregistering. 
       FrameworkEventsPlugin plugin = getPlugin(FrameworkEventsPlugin.class);
       plugin.fireServiceEvent(serviceOwner, ServiceEvent.UNREGISTERING, serviceState);

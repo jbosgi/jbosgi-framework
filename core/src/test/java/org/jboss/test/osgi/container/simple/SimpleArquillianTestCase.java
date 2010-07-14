@@ -32,8 +32,8 @@ import javax.inject.Inject;
 import org.jboss.arquillian.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
-import org.jboss.shrinkwrap.api.Asset;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.container.simple.bundleA.SimpleActivator;
 import org.jboss.test.osgi.container.simple.bundleA.SimpleService;
@@ -57,7 +57,7 @@ public class SimpleArquillianTestCase
    @Deployment
    public static JavaArchive createdeployment()
    {
-      final JavaArchive archive = ShrinkWrap.create("test.jar", JavaArchive.class);
+      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "test.jar");
       archive.setManifest(new Asset()
       {
          public InputStream openStream()

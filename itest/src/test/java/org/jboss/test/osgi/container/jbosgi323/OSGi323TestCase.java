@@ -28,7 +28,7 @@ import java.io.InputStream;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.Asset;
+import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.container.resolver.support.a.A;
 import org.jboss.test.osgi.container.resolver.support.b.B;
@@ -61,7 +61,7 @@ public class OSGi323TestCase extends OSGiFrameworkTest
    {
       // Bundle-SymbolicName: jbosgi323-bundleA
       // DynamicImport-Package: org.jboss.test.osgi.container.classloader.support.a
-      final JavaArchive archiveA = ShrinkWrap.create("jbosgi323-bundleA", JavaArchive.class);
+      final JavaArchive archiveA = ShrinkWrap.create(JavaArchive.class, "jbosgi323-bundleA");
       archiveA.addClass(A.class);
       archiveA.setManifest(new Asset()
       {
@@ -77,7 +77,7 @@ public class OSGi323TestCase extends OSGiFrameworkTest
 
       // Bundle-SymbolicName: jbosgi323-bundleB
       // Export-Package: org.jboss.test.osgi.container.classloader.support.a, org.jboss.test.osgi.container.classloader.support.b
-      final JavaArchive archiveB = ShrinkWrap.create("jbosgi323-bundleB", JavaArchive.class);
+      final JavaArchive archiveB = ShrinkWrap.create(JavaArchive.class, "jbosgi323-bundleB");
       archiveB.addClasses(A.class, B.class);
       archiveB.setManifest(new Asset()
       {
@@ -110,7 +110,7 @@ public class OSGi323TestCase extends OSGiFrameworkTest
    {
       // Bundle-SymbolicName: jbosgi323-bundleA
       // DynamicImport-Package: org.jboss.test.osgi.container.classloader.support.a
-      final JavaArchive archiveA = ShrinkWrap.create("jbosgi323-bundleA", JavaArchive.class);
+      final JavaArchive archiveA = ShrinkWrap.create(JavaArchive.class, "jbosgi323-bundleA");
       archiveA.addClass(A.class);
       archiveA.setManifest(new Asset()
       {
@@ -126,7 +126,7 @@ public class OSGi323TestCase extends OSGiFrameworkTest
 
       // Bundle-SymbolicName: jbosgi323-bundleB
       // Export-Package: org.jboss.test.osgi.container.classloader.support.a, org.jboss.test.osgi.container.classloader.support.b
-      final JavaArchive archiveB = ShrinkWrap.create("jbosgi323-bundleB", JavaArchive.class);
+      final JavaArchive archiveB = ShrinkWrap.create(JavaArchive.class, "jbosgi323-bundleB");
       archiveB.addClasses(A.class, B.class);
       archiveB.setManifest(new Asset()
       {
@@ -159,7 +159,7 @@ public class OSGi323TestCase extends OSGiFrameworkTest
    {
       // Bundle-SymbolicName: jbosgi323-bundleA
       // DynamicImport-Package: *
-      final JavaArchive archiveA = ShrinkWrap.create("jbosgi323-bundleA", JavaArchive.class);
+      final JavaArchive archiveA = ShrinkWrap.create(JavaArchive.class, "jbosgi323-bundleA");
       archiveA.addClass(A.class);
       archiveA.setManifest(new Asset()
       {
@@ -175,7 +175,7 @@ public class OSGi323TestCase extends OSGiFrameworkTest
 
       // Bundle-SymbolicName: jbosgi323-bundleB
       // Export-Package: org.jboss.test.osgi.container.classloader.support.a, org.jboss.test.osgi.container.classloader.support.b
-      final JavaArchive archiveB = ShrinkWrap.create("jbosgi323-bundleB", JavaArchive.class);
+      final JavaArchive archiveB = ShrinkWrap.create(JavaArchive.class, "jbosgi323-bundleB");
       archiveB.addClasses(A.class, B.class);
       archiveB.setManifest(new Asset()
       {

@@ -31,7 +31,7 @@ import java.io.InputStream;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.Asset;
+import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.container.simple.bundleC.SimpleActivator;
 import org.jboss.test.osgi.container.simple.bundleC.SimpleService;
@@ -56,7 +56,7 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest
       // Bundle-Version: 1.0.0
       // Bundle-SymbolicName: simple-bundle
       // Bundle-Activator: org.jboss.osgi.msc.framework.simple.bundle.SimpleActivator
-      final JavaArchive archive = ShrinkWrap.create("simple-bundle", JavaArchive.class);
+      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
       archive.addClasses(SimpleService.class, SimpleActivator.class);
       archive.setManifest(new Asset()
       {

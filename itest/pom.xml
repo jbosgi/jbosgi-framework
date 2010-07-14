@@ -49,13 +49,13 @@
       <artifactId>org.apache.felix.log</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.jboss.arquillian.osgi</groupId>
+      <groupId>org.jboss.arquillian</groupId>
       <artifactId>arquillian-bundle</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.jboss.arquillian.osgi</groupId>
-      <artifactId>arquillian-osgi-container</artifactId>
+      <groupId>org.jboss.arquillian.container</groupId>
+      <artifactId>arquillian-osgi-embedded-4.2</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -119,7 +119,7 @@
                   <destFileName>org.apache.felix.log.jar</destFileName>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.jboss.arquillian.osgi</groupId>
+                  <groupId>org.jboss.arquillian</groupId>
                   <artifactId>arquillian-bundle</artifactId>
                   <destFileName>arquillian-bundle.jar</destFileName>
                 </artifactItem>

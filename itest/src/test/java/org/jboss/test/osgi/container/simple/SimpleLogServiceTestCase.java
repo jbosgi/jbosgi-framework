@@ -31,7 +31,7 @@ import java.io.InputStream;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.Asset;
+import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.container.simple.bundleB.SimpleLogServiceActivator;
 import org.junit.After;
@@ -59,7 +59,7 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
    {
       // Bundle-SymbolicName: simple-logservice-bundle
       // Bundle-Activator: org.jboss.test.osgi.framework.simple.bundleB.SimpleLogServiceActivator
-      archive = ShrinkWrap.create("simple-logservice-bundle", JavaArchive.class);
+      archive = ShrinkWrap.create(JavaArchive.class, "simple-logservice-bundle");
       archive.addClasses(SimpleLogServiceActivator.class);
       archive.setManifest(new Asset()
       {

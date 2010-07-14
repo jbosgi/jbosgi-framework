@@ -31,8 +31,8 @@ import java.util.Properties;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
-import org.jboss.shrinkwrap.api.Asset;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.BeforeClass;
@@ -166,7 +166,7 @@ public class FrameworkLaunchTestCase extends OSGiFrameworkTest
 
    private InputStream createTestBundle(String name, final Class<? extends BundleActivator> activator)
    {
-      final JavaArchive archive = ShrinkWrap.create(name, JavaArchive.class);
+      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, name);
       archive.setManifest(new Asset()
       {
          @Override

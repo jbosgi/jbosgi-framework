@@ -29,8 +29,8 @@ import java.io.InputStream;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
-import org.jboss.shrinkwrap.api.Asset;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.container.servicemix.bundleA.BundleActivatorA;
 import org.jboss.test.osgi.container.servicemix.bundleA.BundleServiceA;
@@ -166,7 +166,7 @@ public class ServiceMixTestCase extends OSGiFrameworkTest
       // Bundle-SymbolicName: bundleA
       // Bundle-Activator: org.jboss.test.osgi.container.servicemix.bundleA.BundleActivatorA
       // Require-Bundle: moduleA;bundle-version:=1.0.0
-      final JavaArchive archive = ShrinkWrap.create("bundleA", JavaArchive.class);
+      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA");
       archive.addClasses(BundleActivatorA.class, BundleServiceA.class);
       archive.setManifest(new Asset()
       {
@@ -189,7 +189,7 @@ public class ServiceMixTestCase extends OSGiFrameworkTest
       // Bundle-Version: 1.0.0
       // Bundle-SymbolicName: servicemix.bundleB
       // Bundle-Activator: org.jboss.test.osgi.container.servicemix.bundleB.BundleActivatorB
-      final JavaArchive archive = ShrinkWrap.create("servicemix.bundleB", JavaArchive.class);
+      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "servicemix.bundleB");
       archive.addClasses(BundleActivatorB.class, BundleServiceB.class);
       archive.setManifest(new Asset()
       {
@@ -208,7 +208,7 @@ public class ServiceMixTestCase extends OSGiFrameworkTest
    
    private JavaArchive getModuleA()
    {
-      JavaArchive archive = ShrinkWrap.create("moduleA", JavaArchive.class);
+      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
       archive.addManifestResource(getResourceFile("servicemix/moduleA/META-INF/module.xml"));
       archive.addClasses(ModuleActivatorA.class, ModuleServiceA.class);
       return archive;
@@ -216,7 +216,7 @@ public class ServiceMixTestCase extends OSGiFrameworkTest
 
    private JavaArchive getModuleB()
    {
-      JavaArchive archive = ShrinkWrap.create("moduleB", JavaArchive.class);
+      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
       archive.addManifestResource(getResourceFile("servicemix/moduleB/META-INF/module.xml"));
       archive.addClasses(ModuleActivatorB.class, ModuleServiceB.class);
       return archive;

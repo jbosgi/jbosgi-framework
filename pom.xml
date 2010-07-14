@@ -42,13 +42,14 @@
     <version.apache.felix.log>1.0.0</version.apache.felix.log>
     <version.jboss.arquillian>1.0.0-SNAPSHOT</version.jboss.arquillian>
     <version.jboss.common.core>2.2.17.GA</version.jboss.common.core>
-    <version.jboss.msc>1.0.0.CR1-SNAPSHOT</version.jboss.msc>
+    <version.jboss.msc>1.0.0.Beta2-SNAPSHOT</version.jboss.msc>
+    <version.jboss.modules>1.0.0.Beta2-SNAPSHOT</version.jboss.modules>
     <version.jboss.osgi.deployment>1.0.3-SNAPSHOT</version.jboss.osgi.deployment>
     <version.jboss.osgi.felix>3.0.2-SNAPSHOT</version.jboss.osgi.felix>
     <version.jboss.osgi.resolver>1.0.0-SNAPSHOT</version.jboss.osgi.resolver>
     <version.jboss.osgi.resolver.felix>2.1.0-SNAPSHOT</version.jboss.osgi.resolver.felix>
-    <version.jboss.osgi.spi>1.0.9-SNAPSHOT</version.jboss.osgi.spi>
-    <version.jboss.osgi.vfs>1.0.1-SNAPSHOT</version.jboss.osgi.vfs>
+    <version.jboss.osgi.spi>1.0.10-SNAPSHOT</version.jboss.osgi.spi>
+    <version.jboss.osgi.vfs>1.0.0</version.jboss.osgi.vfs>
     <version.mockito>1.8.4</version.mockito>
     <version.osgi>4.2.0</version.osgi>
   </properties>
@@ -60,6 +61,11 @@
         <groupId>org.jboss</groupId>
         <artifactId>jboss-common-core</artifactId>
         <version>${version.jboss.common.core}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.modules</groupId>
+        <artifactId>jboss-modules</artifactId>
+        <version>${version.jboss.modules}</version>
       </dependency>
       <dependency>
         <groupId>org.jboss.msc</groupId>
@@ -115,13 +121,13 @@
 
       <!-- Test Dependencies -->
       <dependency>
-        <groupId>org.jboss.arquillian.osgi</groupId>
+        <groupId>org.jboss.arquillian</groupId>
         <artifactId>arquillian-bundle</artifactId>
         <version>${version.jboss.arquillian}</version>
       </dependency>
       <dependency>
-        <groupId>org.jboss.arquillian.osgi</groupId>
-        <artifactId>arquillian-osgi-container</artifactId>
+        <groupId>org.jboss.arquillian.container</groupId>
+        <artifactId>arquillian-osgi-embedded-4.2</artifactId>
         <version>${version.jboss.arquillian}</version>
       </dependency>
       <dependency>
