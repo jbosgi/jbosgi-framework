@@ -31,6 +31,7 @@ import java.util.Vector;
 
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.container.util.AggregatedVirtualFile;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -54,8 +55,10 @@ public class HostBundle extends AbstractBundle
    private String location;
    private OSGiMetaData metadata;
    private BundleActivator bundleActivator;
+   private boolean persistentlyStarted = false;
    private XModule resolverModule;
    private VirtualFile rootFile;
+   private int startLevel = StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
 
    public HostBundle(BundleManager bundleManager, Deployment dep) throws BundleException
    {
@@ -86,6 +89,10 @@ public class HostBundle extends AbstractBundle
       ModuleSpec moduleSpec = dep.getAttachment(ModuleSpec.class);
       if (moduleSpec != null)
          resolverModule.addAttachment(ModuleSpec.class, moduleSpec);
+
+      StartLevelPlugin sl = bundleManager.getOptionalPlugin(StartLevelPlugin.class);
+      if (sl != null)
+         startLevel = sl.getInitialBundleStartLevel();
    }
 
    /**
@@ -249,6 +256,40 @@ public class HostBundle extends AbstractBundle
       }
    }
 
+   public boolean isPersistentlyStarted()
+   {
+      return persistentlyStarted;
+   }
+
+   public void setPersistentlyStarted(boolean val)
+   {
+      persistentlyStarted = val;
+   }
+
+   public int getStartLevel()
+   {
+      return startLevel;
+   }
+
+   public void setStartLevel(int sl)
+   {
+      startLevel = sl;
+   }
+
+   @Override
+   public void start(int options) throws BundleException
+   {
+      if ((options & Bundle.START_TRANSIENT) == 0)
+         setPersistentlyStarted(true);
+
+      if (isPersistentlyStarted())
+      {
+         StartLevelPlugin sl = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
+         if (sl == null || sl.getStartLevel() >= getStartLevel())
+            super.start(options);
+      }
+   }
+
    void startInternal() throws BundleException
    {
       if (getState() == Bundle.UNINSTALLED)
@@ -328,6 +369,15 @@ public class HostBundle extends AbstractBundle
 
          throw new BundleException("Cannot start bundle: " + this, t);
       }
+   }
+
+   @Override
+   public void stop(int options) throws BundleException
+   {
+      if ((options & Bundle.STOP_TRANSIENT) == 0)
+         setPersistentlyStarted(false);
+
+      super.stop(options);
    }
 
    void stopInternal() throws BundleException

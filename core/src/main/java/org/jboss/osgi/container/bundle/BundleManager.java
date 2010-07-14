@@ -44,6 +44,7 @@ import org.jboss.osgi.container.plugin.PackageAdminPlugin;
 import org.jboss.osgi.container.plugin.Plugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
+import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.container.plugin.internal.BundleDeploymentPluginImpl;
 import org.jboss.osgi.container.plugin.internal.BundleStoragePluginImpl;
@@ -53,6 +54,7 @@ import org.jboss.osgi.container.plugin.internal.ModuleManagerPluginImpl;
 import org.jboss.osgi.container.plugin.internal.PackageAdminPluginImpl;
 import org.jboss.osgi.container.plugin.internal.ResolverPluginImpl;
 import org.jboss.osgi.container.plugin.internal.ServiceManagerPluginImpl;
+import org.jboss.osgi.container.plugin.internal.StartLevelPluginImpl;
 import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -100,6 +102,7 @@ public class BundleManager
       plugins.put(PackageAdminPlugin.class, new PackageAdminPluginImpl(this));
       plugins.put(ResolverPlugin.class, new ResolverPluginImpl(this));
       plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
+      plugins.put(StartLevelPlugin.class, new StartLevelPluginImpl(this));
       plugins.put(SystemPackagesPlugin.class, new SystemPackagesPluginImpl(this));
 
       frameworkState = new FrameworkState(this, props);

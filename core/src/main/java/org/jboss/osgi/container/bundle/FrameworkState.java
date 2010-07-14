@@ -39,6 +39,7 @@ import org.jboss.osgi.container.plugin.BundleStoragePlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.Plugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
+import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.jboss.util.platform.Java;
@@ -263,17 +264,34 @@ public class FrameworkState
       ResolverPlugin resolver = bundleManager.getPlugin(ResolverPlugin.class);
       resolver.resolve(getSystemBundle());
 
-      // [TODO] Increase to initial start level
-      //StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);
-      //if (startLevel != null)
-      //   startLevel.increaseStartLevel(startLevel.getInitialBundleStartLevel());
-
       // This Framework's state is set to ACTIVE
       getSystemBundle().changeState(Bundle.ACTIVE);
+
+      // Increase to initial start level
+      StartLevelPlugin startLevel = bundleManager.getOptionalPlugin(StartLevelPlugin.class);
+      if (startLevel != null)
+         startLevel.increaseStartLevel(getBeginningStartLevel());
 
       // A framework event of type STARTED is fired
       FrameworkEventsPlugin plugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
       plugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
+   }
+
+   private int getBeginningStartLevel()
+   {
+      String beginning = bundleManager.getSystemContext().getProperty(Constants.FRAMEWORK_BEGINNING_STARTLEVEL);
+      if (beginning == null)
+         return 1;
+
+      try
+      {
+         return Integer.parseInt(beginning);
+      }
+      catch (NumberFormatException nfe)
+      {
+         log.error("Could not set beginning start level to: '" + beginning + "'");
+         return 1;
+      }
    }
 
    /**
@@ -322,32 +340,34 @@ public class FrameworkState
          getSystemBundle().changeState(Bundle.STOPPING);
       }
 
-      //[TODO] Move to start level 0 in the current thread
-      // StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);
-      //if (startLevel != null)
-      //   startLevel.decreaseStartLevel(0);
-
-      // No Start Level Service available, stop all bundles individually...
-      // All installed bundles must be stopped without changing each bundle's persistent autostart setting
-      for (AbstractBundle bundleState : bundleManager.getBundles())
+      // Move to start level 0 in the current thread
+      StartLevelPlugin startLevel = bundleManager.getOptionalPlugin(StartLevelPlugin.class);
+      if (startLevel != null)
+         startLevel.decreaseStartLevel(0);
+      else
       {
-         if (bundleState != getSystemBundle())
+         // No Start Level Service available, stop all bundles individually...
+         // All installed bundles must be stopped without changing each bundle's persistent autostart setting
+         for (AbstractBundle bundleState : bundleManager.getBundles())
          {
-            try
+            if (bundleState != getSystemBundle())
             {
-               // [TODO] don't change the  persistent state
-               bundleState.stop();
-            }
-            catch (Exception ex)
-            {
-               // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then 
-               // published as a framework event of type FrameworkEvent.ERROR
-               bundleManager.fireError(bundleState, "stopping bundle", ex);
+               try
+               {
+                  // [TODO] don't change the  persistent state
+                  bundleState.stop();
+               }
+               catch (Exception ex)
+               {
+                  // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then 
+                  // published as a framework event of type FrameworkEvent.ERROR
+                  bundleManager.fireError(bundleState, "stopping bundle", ex);
+               }
             }
          }
       }
 
-      // Strop Plugins Lifecycle
+      // Stop Plugins Lifecycle
       List<Plugin> reversePlugins = new ArrayList<Plugin>(bundleManager.getPlugins());
       Collections.reverse(reversePlugins);
       for (Plugin plugin : reversePlugins)
