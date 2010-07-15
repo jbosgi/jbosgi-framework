@@ -22,13 +22,13 @@
 package org.jboss.osgi.container.bundle;
 
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleActivator;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
+import org.jboss.osgi.modules.ModuleActivator;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 

@@ -100,6 +100,7 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
 
          allPackages.add("org.jboss.osgi.deployment.deployer");
          allPackages.add("org.jboss.osgi.deployment.interceptor");
+         allPackages.add("org.jboss.osgi.modules");
 
          allPackages.add("org.osgi.framework;version=1.5");
          allPackages.add("org.osgi.framework.hooks;version=1.0");

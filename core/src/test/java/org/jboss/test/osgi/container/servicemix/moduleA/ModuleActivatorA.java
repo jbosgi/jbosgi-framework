@@ -24,8 +24,8 @@ package org.jboss.test.osgi.container.servicemix.moduleA;
 //$Id$
 
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleActivator;
 import org.jboss.msc.service.ServiceContainer;
+import org.jboss.osgi.modules.ModuleActivator;
 
 /**
  * A Service Activator
