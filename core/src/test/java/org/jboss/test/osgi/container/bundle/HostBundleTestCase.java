@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Hashtable;
 
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.HostBundle;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
@@ -51,7 +52,7 @@ public class HostBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      HostBundle hb = new HostBundle(bm, dep);
+      AbstractBundle hb = new HostBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
       assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
@@ -70,7 +71,7 @@ public class HostBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      HostBundle hb = new HostBundle(bm, dep);
+      AbstractBundle hb = new HostBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
       assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
@@ -142,7 +143,7 @@ public class HostBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      HostBundle hb = new HostBundle(bm, dep);
+      AbstractBundle hb = new HostBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
       assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
@@ -157,7 +158,7 @@ public class HostBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      HostBundle hb = new HostBundle(bm, dep);
+      AbstractBundle hb = new HostBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
       assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());

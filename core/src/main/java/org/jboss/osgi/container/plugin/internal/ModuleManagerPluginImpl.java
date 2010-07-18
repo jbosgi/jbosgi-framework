@@ -102,7 +102,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       {
          // Get the root virtual file
          Bundle bundle = resModule.getAttachment(Bundle.class);
-         HostBundle bundleState = HostBundle.assertBundleState(bundle);
+         AbstractBundle bundleState = HostBundle.assertBundleState(bundle);
          VirtualFile rootFile = bundleState.getRootFile();
 
          moduleManager.createModuleSpec(resModule, rootFile);

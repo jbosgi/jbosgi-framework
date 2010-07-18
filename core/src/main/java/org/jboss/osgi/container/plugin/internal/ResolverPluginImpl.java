@@ -63,6 +63,12 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    }
 
    @Override
+   public XResolver getResolver()
+   {
+      return resolver;
+   }
+
+   @Override
    public void addBundle(AbstractBundle bundleState)
    {
       XModule resolverModule = bundleState.getResolverModule();
@@ -74,8 +80,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    public void removeBundle(AbstractBundle bundleState)
    {
       XModule resolverModule = bundleState.getResolverModule();
-      if (resolver.removeModule(resolverModule) == null)
-         throw new IllegalStateException("Cannot remove bundle: " + bundleState);
+      resolver.removeModule(resolverModule);
    }
 
    @Override

@@ -26,7 +26,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.Set;
+import java.util.List;
 import java.util.Vector;
 
 import org.jboss.modules.ModuleClassLoader;
@@ -55,7 +55,6 @@ public class HostBundle extends AbstractBundle
    private String location;
    private OSGiMetaData metadata;
    private BundleActivator bundleActivator;
-   private boolean persistentlyStarted = false;
    private XModule resolverModule;
    private VirtualFile rootFile;
    private int startLevel = StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
@@ -256,16 +255,6 @@ public class HostBundle extends AbstractBundle
       }
    }
 
-   public boolean isPersistentlyStarted()
-   {
-      return persistentlyStarted;
-   }
-
-   public void setPersistentlyStarted(boolean val)
-   {
-      persistentlyStarted = val;
-   }
-
    public int getStartLevel()
    {
       return startLevel;
@@ -430,7 +419,7 @@ public class HostBundle extends AbstractBundle
       }
 
       // Any services registered by this bundle must be unregistered
-      Set<ServiceState> ownedServices = getOwnedServices();
+      List<ServiceState> ownedServices = getOwnedServices();
       for (ServiceState serviceState : ownedServices)
          getServiceManagerPlugin().unregisterService(serviceState);
 

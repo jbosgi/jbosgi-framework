@@ -206,8 +206,8 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
    @Override
    public boolean isBundlePersistentlyStarted(Bundle bundle)
    {
-      HostBundle hb = HostBundle.assertBundleState(bundle);
-      return hb.isPersistentlyStarted();
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      return bundleState.isPersistentlyStarted();
    }
 
    @Override

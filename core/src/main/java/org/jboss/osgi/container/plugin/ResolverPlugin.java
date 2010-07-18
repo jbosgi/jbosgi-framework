@@ -26,6 +26,7 @@ package org.jboss.osgi.container.plugin;
 import java.util.List;
 
 import org.jboss.osgi.container.bundle.AbstractBundle;
+import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.BundleException;
 
 /**
@@ -36,6 +37,11 @@ import org.osgi.framework.BundleException;
  */
 public interface ResolverPlugin extends Plugin 
 {
+   /**
+    * Get the resolver instance
+    */
+   XResolver getResolver();
+   
    /**
     * Add a bundle to the resolver.
     * @param bundle the bundle

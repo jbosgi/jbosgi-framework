@@ -24,17 +24,20 @@ package org.jboss.osgi.container.bundle;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
@@ -71,7 +74,7 @@ public abstract class AbstractBundle implements Bundle
 {
    // Provide logging
    private static final Logger log = Logger.getLogger(AbstractBundle.class);
-   
+
    // The bundle id
    private long bundleId;
    // The identifier of the associated module
@@ -82,15 +85,19 @@ public abstract class AbstractBundle implements Bundle
    private AbstractBundleContext bundleContext;
    // The bundle state
    private AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
+   // The last modified time stamp 
+   private long lastModified = System.currentTimeMillis();
+   // The flag for start level persistence
+   private boolean persistentlyStarted;
    // The bundle version
    private Version version = Version.emptyVersion;
    // The bundle symbolic name
    private String symbolicName;
-   
+
    // The set of owned services
-   private Set<ServiceState> ownedServices;
+   private List<ServiceState> ownedServices;
    // The set of used services
-   private Set<ServiceState> usedServices;
+   private Map<ServiceState, AtomicInteger> usedServices;
 
    // Cache commonly used plugins
    private BundleManager bundleManager;
@@ -110,7 +117,7 @@ public abstract class AbstractBundle implements Bundle
       // strip-off the directives
       if (symbolicName.indexOf(';') > 0)
          symbolicName = symbolicName.substring(0, symbolicName.indexOf(';'));
-      
+
       this.bundleManager = bundleManager;
       this.symbolicName = symbolicName;
 
@@ -168,14 +175,19 @@ public abstract class AbstractBundle implements Bundle
          eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
       return eventsPlugin;
    }
-   
+
    public LifecycleInterceptorPlugin getLifecycleInterceptorPlugin()
    {
       if (interceptorPlugin == null)
          interceptorPlugin = bundleManager.getPlugin(LifecycleInterceptorPlugin.class);
       return interceptorPlugin;
    }
-   
+
+   public boolean isFragment()
+   {
+      return false;
+   }
+
    ModuleClassLoader getBundleClassLoader()
    {
       ModuleIdentifier identifier = getModuleIdentifier();
@@ -237,12 +249,12 @@ public abstract class AbstractBundle implements Bundle
          bundleWrapper = createBundleWrapper();
       return bundleWrapper;
    }
-   
+
    BundleWrapper createBundleWrapper()
    {
       return new BundleWrapper(this);
    }
-   
+
    public void changeState(int state)
    {
       int previous = getState();
@@ -340,47 +352,63 @@ public abstract class AbstractBundle implements Bundle
       synchronized (this)
       {
          if (ownedServices == null)
-            ownedServices = new CopyOnWriteArraySet<ServiceState>();
+            ownedServices = new CopyOnWriteArrayList<ServiceState>();
       }
       ownedServices.add(serviceState);
    }
-   
+
    public void removeOwnedService(ServiceState serviceState)
    {
       if (ownedServices != null)
          ownedServices.remove(serviceState);
    }
-   
-   public Set<ServiceState> getOwnedServices()
+
+   public List<ServiceState> getOwnedServices()
    {
       if (ownedServices == null)
-         return Collections.emptySet();
-      
-      return Collections.unmodifiableSet(ownedServices);
+         return Collections.emptyList();
+
+      return Collections.unmodifiableList(ownedServices);
    }
 
    public void addUsedService(ServiceState serviceState)
    {
+      AtomicInteger count;
       synchronized (this)
       {
          if (usedServices == null)
-            usedServices = new CopyOnWriteArraySet<ServiceState>();
+            usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
+
+         count = usedServices.get(serviceState);
+         if (count == null)
+         {
+            usedServices.put(serviceState, count = new AtomicInteger());
+         }
       }
-      usedServices.add(serviceState);
+      count.incrementAndGet();
    }
-   
-   public void removeUsedService(ServiceState serviceState)
+
+   public boolean removeUsedService(ServiceState serviceState)
    {
-      if (usedServices != null)
-         usedServices.remove(serviceState);
+      AtomicInteger count;
+      synchronized (this)
+      {
+         if (usedServices == null)
+            return false;
+
+         count = usedServices.remove(serviceState);
+         if (count == null || count.get() == 0)
+            throw new IllegalStateException("Invalid use count [" + count + "] for: " + serviceState);
+      }
+      return count.decrementAndGet() == 0;
    }
-   
+
    public Set<ServiceState> getUsedServices()
    {
       if (usedServices == null)
          return Collections.emptySet();
-      
-      return Collections.unmodifiableSet(usedServices);
+
+      return Collections.unmodifiableSet(usedServices.keySet());
    }
 
    @Override
@@ -415,12 +443,18 @@ public abstract class AbstractBundle implements Bundle
    public void update(InputStream input) throws BundleException
    {
       updateInternal(input);
+
+      // A bundle is considered to be modified when it is installed, updated or uninstalled.
+      lastModified = System.currentTimeMillis();
    }
 
    @Override
    public void update() throws BundleException
    {
       updateInternal(null);
+
+      // A bundle is considered to be modified when it is installed, updated or uninstalled.
+      lastModified = System.currentTimeMillis();
    }
 
    abstract void updateInternal(InputStream input) throws BundleException;
@@ -429,6 +463,9 @@ public abstract class AbstractBundle implements Bundle
    public void uninstall() throws BundleException
    {
       uninstallInternal();
+
+      // A bundle is considered to be modified when it is installed, updated or uninstalled.
+      lastModified = System.currentTimeMillis();
    }
 
    abstract void uninstallInternal() throws BundleException;
@@ -436,13 +473,21 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public ServiceReference[] getRegisteredServices()
    {
-      throw new NotImplementedException();
+      List<ServiceReference> srefs = new ArrayList<ServiceReference>();
+      for (ServiceState serviceState : getServiceManagerPlugin().getRegisteredServices(this))
+         srefs.add(serviceState.getReference());
+
+      return srefs.toArray(new ServiceReference[srefs.size()]);
    }
 
    @Override
    public ServiceReference[] getServicesInUse()
    {
-      throw new NotImplementedException();
+      List<ServiceReference> srefs = new ArrayList<ServiceReference>();
+      for (ServiceState serviceState : getServiceManagerPlugin().getServicesInUse(this))
+         srefs.add(serviceState.getReference());
+
+      return srefs.toArray(new ServiceReference[srefs.size()]);
    }
 
    @Override
@@ -594,7 +639,18 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public long getLastModified()
    {
-      throw new NotImplementedException();
+      // A bundle is considered to be modified when it is installed, updated or uninstalled.
+      return lastModified;
+   }
+
+   public boolean isPersistentlyStarted()
+   {
+      return persistentlyStarted;
+   }
+
+   public void setPersistentlyStarted(boolean val)
+   {
+      persistentlyStarted = val;
    }
 
    @Override
@@ -613,7 +669,7 @@ public abstract class AbstractBundle implements Bundle
       if (bundleContext == null)
          throw new IllegalStateException("Invalid bundle context: " + this);
    }
-   
+
    @Override
    public int hashCode()
    {

@@ -22,7 +22,9 @@
 package org.jboss.osgi.container.plugin.internal;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
@@ -34,8 +36,12 @@ import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.PackageAdminPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
+import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageCapability;
+import org.jboss.osgi.resolver.XRequireBundleRequirement;
+import org.jboss.osgi.resolver.XRequirement;
+import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -100,13 +106,37 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public ExportedPackage[] getExportedPackages(String name)
    {
-      throw new NotImplementedException();
+      if (name == null)
+         throw new IllegalArgumentException("Null name");
+      
+      Set<ExportedPackage> result = new HashSet<ExportedPackage>();
+      ResolverPlugin plugin = getBundleManager().getPlugin(ResolverPlugin.class);
+      for (XModule mod : plugin.getResolver().getModules())
+      {
+         for (XCapability cap : mod.getCapabilities())
+         {
+            if (cap instanceof XPackageCapability)
+            {
+               if (name.equals(cap.getName()))
+                  result.add(new ExportedPackageImpl((XPackageCapability)cap));
+            }
+         }
+      }
+      return result.toArray(new ExportedPackage[result.size()]);
    }
 
    @Override
    public ExportedPackage getExportedPackage(String name)
    {
-      throw new NotImplementedException();
+      ExportedPackage bestMatch = null;
+      for (ExportedPackage aux : getExportedPackages(name))
+      {
+         if (bestMatch == null)
+            bestMatch = aux;
+         if (aux.getVersion().compareTo(bestMatch.getVersion()) > 0)
+            bestMatch = aux;
+      }
+      return bestMatch;
    }
 
    @Override
@@ -149,7 +179,18 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public RequiredBundle[] getRequiredBundles(String symbolicName)
    {
-      throw new NotImplementedException();
+      List<RequiredBundle> result = new ArrayList<RequiredBundle>();
+      for (AbstractBundle aux : getBundleManager().getBundles())
+      {
+         XModule resModule = aux.getResolverModule();
+         for (XRequireBundleRequirement req : resModule.getBundleRequirements())
+         {
+            String name = req.getName();
+            if (symbolicName == null || name.equals(symbolicName))
+               result.add (new RequiredBundleImpl(req));
+         }
+      }
+      return result.toArray(new RequiredBundle[result.size()]);
    }
 
    @Override
@@ -161,13 +202,23 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public Bundle[] getFragments(Bundle bundle)
    {
-      throw new NotImplementedException();
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      if (bundleState.isFragment() == true)
+         return null;
+
+      // [TODO] PackageAdmin.getFragments
+      return null;
    }
 
    @Override
    public Bundle[] getHosts(Bundle bundle)
    {
-      throw new NotImplementedException();
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      if (bundleState.isFragment() == false)
+         return null;
+
+      // [TODO] PackageAdmin.getHosts
+      return null;
    }
 
    @Override
@@ -176,14 +227,14 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    {
       if (clazz == null)
          throw new IllegalArgumentException("Null clazz");
-      
+
       ClassLoader loader = clazz.getClassLoader();
       if (loader instanceof ModuleClassLoader == false)
       {
          log.error("Cannot obtain bundle for: " + loader);
          return null;
       }
-      
+
       ModuleClassLoader moduleCL = (ModuleClassLoader)loader;
       Module module = moduleCL.getModule();
       ModuleIdentifier identifier = module.getIdentifier();
@@ -195,13 +246,14 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public int getBundleType(Bundle bundle)
    {
-      throw new NotImplementedException();
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      return bundleState.isFragment() ? BUNDLE_TYPE_FRAGMENT : 0;
    }
-   
+
    static class ExportedPackageImpl implements ExportedPackage
    {
       private XPackageCapability cap;
-      
+
       ExportedPackageImpl(XPackageCapability cap)
       {
          this.cap = cap;
@@ -223,7 +275,23 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       @Override
       public Bundle[] getImportingBundles()
       {
-         throw new NotImplementedException();
+         XModule module = cap.getModule();
+         if (module.isResolved() == false)
+            return null;
+         
+         XResolver resolver = module.getResolver();
+         Set<XRequirement> reqset = resolver.getWiredRequirements(cap);
+         if (reqset == null || reqset.isEmpty())
+            return new Bundle[0];
+         
+         Set<Bundle> bundles = new HashSet<Bundle>();
+         for (XRequirement req : reqset)
+         {
+            XModule reqmod = req.getModule();
+            Bundle bundle = reqmod.getAttachment(Bundle.class);
+            bundles.add(AbstractBundle.assertBundleState(bundle).getBundleWrapper());
+         }
+         return bundles.toArray(new Bundle[bundles.size()]);
       }
 
       @Override
@@ -236,6 +304,46 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       public Version getVersion()
       {
          return cap.getVersion();
+      }
+
+      @Override
+      public boolean isRemovalPending()
+      {
+         return false;
+      }
+   }
+
+   static class RequiredBundleImpl implements RequiredBundle
+   {
+      private XRequireBundleRequirement bundleRequirement;
+
+      public RequiredBundleImpl(XRequireBundleRequirement bundleRequirement)
+      {
+         this.bundleRequirement = bundleRequirement;
+      }
+
+      @Override
+      public String getSymbolicName()
+      {
+         return bundleRequirement.getName();
+      }
+
+      @Override
+      public Bundle getBundle()
+      {
+         throw new NotImplementedException();
+      }
+
+      @Override
+      public Bundle[] getRequiringBundles()
+      {
+         throw new NotImplementedException();
+      }
+
+      @Override
+      public Version getVersion()
+      {
+         throw new NotImplementedException();
       }
 
       @Override

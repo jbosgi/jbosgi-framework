@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -55,7 +56,6 @@ import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.container.util.NoFilter;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
@@ -104,7 +104,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    @Override
    public List<ServiceState> getRegisteredServices(AbstractBundle bundleState)
    {
-      throw new NotImplementedException();
+      return bundleState.getOwnedServices();
    }
 
    @Override
@@ -114,6 +114,8 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       if (value instanceof ServiceFactory)
          value = serviceState.getServiceFactoryValue(bundleState);
 
+      // Add the given service ref to the list of used services
+      bundleState.addUsedService(serviceState);
       return value;
    }
 
@@ -162,9 +164,9 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    }
 
    @Override
-   public List<ServiceState> getServicesInUse(AbstractBundle bundleState)
+   public Set<ServiceState> getServicesInUse(AbstractBundle bundleState)
    {
-      throw new NotImplementedException();
+      return bundleState.getUsedServices();
    }
 
    @Override
@@ -322,9 +324,8 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    }
 
    @Override
-   public boolean ungetService(AbstractBundle bundleState, ServiceState reference)
+   public boolean ungetService(AbstractBundle bundleState, ServiceState serviceState)
    {
-      // [TODO] ungetService
-      return true;
+      return bundleState.removeUsedService(serviceState);
    }
 }

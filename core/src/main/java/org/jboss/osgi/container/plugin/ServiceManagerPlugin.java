@@ -23,6 +23,7 @@ package org.jboss.osgi.container.plugin;
 
 import java.util.Dictionary;
 import java.util.List;
+import java.util.Set;
 
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.osgi.container.bundle.AbstractBundle;
@@ -103,7 +104,7 @@ public interface ServiceManagerPlugin extends Plugin
     * @return A potentially empty list of <code>ServiceReference</code> objects.
     * @throws IllegalStateException If this bundle has been uninstalled.
     */
-   List<ServiceState> getServicesInUse(AbstractBundle bundleState);
+   Set<ServiceState> getServicesInUse(AbstractBundle bundleState);
 
    /**
     * Registers the specified service object with the specified properties under the specified class names 

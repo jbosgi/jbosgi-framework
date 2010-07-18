@@ -33,7 +33,7 @@ import org.osgi.framework.BundleContext;
  */
 public class HostBundleContext extends AbstractBundleContext
 {
-   public HostBundleContext(HostBundle bundle, Map<String, String> props)
+   public HostBundleContext(AbstractBundle bundle, Map<String, String> props)
    {
       super(bundle);
    }
