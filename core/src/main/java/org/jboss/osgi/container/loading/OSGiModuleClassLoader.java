@@ -23,9 +23,12 @@ package org.jboss.osgi.container.loading;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.AssertionSetting;
@@ -57,6 +60,7 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
    // Provide logging
    private static final Logger log = Logger.getLogger(OSGiModuleClassLoader.class);
 
+   private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts = new ThreadLocal<Map<String, AtomicInteger>>();
    private BundleManager bundleManager;
    private ModuleManagerPlugin moduleManager;
    private Set<ModuleIdentifier> dependencyIdentifiers;
@@ -70,7 +74,7 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       this.moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
       this.moduleSpec = moduleSpec;
       this.resModule = resModule;
-      
+
       setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
    }
 
@@ -80,9 +84,7 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       // Check if we have already loaded it..
       Class<?> loadedClass = findLoadedClass(className);
       if (loadedClass != null)
-      {
          return loadedClass;
-      }
 
       boolean traceEnabled = log.isTraceEnabled();
       if (traceEnabled)
@@ -107,60 +109,90 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       }
 
       // Try to load the class dynamically
-      List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
-      if (dynamicRequirements.isEmpty() == false)
+      Map<String, AtomicInteger> mapping = dynamicLoadAttempts.get();
+      try
       {
-         String foundMatch = null;
-         for (XPackageRequirement dynreq : dynamicRequirements)
+         if (mapping == null)
          {
-            String pattern = dynreq.getName();
-            if (pattern.equals("*"))
-            {
-               foundMatch = pattern;
-               break;
-            }
-
-            if (pattern.endsWith(".*"))
-               pattern = pattern.substring(0, pattern.length() - 2);
-
-            pattern = pattern.replace('.', File.separatorChar);
-            String path = getPathFromClassName(className);
-            if (path.startsWith(pattern))
-            {
-               foundMatch = pattern;
-               break;
-            }
+            mapping = new HashMap<String, AtomicInteger>();
+            dynamicLoadAttempts.set(mapping);
          }
          
-         if (traceEnabled && foundMatch == null)
-            log.trace("Class [" + className + "] does not match Dynamic-ImportPackage patterns");
-         if (traceEnabled && foundMatch != null)
-            log.trace("Found match for class [" + className + "] with Dynamic-ImportPackage pattern: " + foundMatch);
-
-         if (foundMatch != null)
+         AtomicInteger recursiveDepth = mapping.get(className);
+         if (recursiveDepth == null)
+            mapping.put(className, recursiveDepth = new AtomicInteger());
+         
+         if (recursiveDepth.incrementAndGet() == 1)
          {
-            if (traceEnabled)
-               log.trace("Attempt to find class dynamically in resolved modules ...");
-
-            result = findInResolvedModules(className);
-            if (result != null)
-               return result;
-
-            if (traceEnabled)
-               log.trace("Attempt to find class dynamically in unresolved modules ...");
-
-            result = findInUnresolvedModules(className);
+            result = findClassDynamically(className);
             if (result != null)
                return result;
          }
+      }
+      finally
+      {
+         AtomicInteger recursiveDepth = mapping.get(className);
+         if (recursiveDepth.decrementAndGet() == 0)
+            mapping.remove(className);
       }
 
       throw new ClassNotFoundException(className);
    }
 
+   private Class<?> findClassDynamically(String className)
+   {
+      Class<?> result = null;
+      if (findMatchingDynamicImportPattern(className) != null)
+      {
+         result = findInResolvedModules(className);
+         if (result == null)
+            result = findInUnresolvedModules(className);
+      }
+      return result;
+   }
+
+   private String findMatchingDynamicImportPattern(String className)
+   {
+      String foundMatch = null;
+
+      List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
+      for (XPackageRequirement dynreq : dynamicRequirements)
+      {
+         String pattern = dynreq.getName();
+         if (pattern.equals("*"))
+         {
+            foundMatch = pattern;
+            break;
+         }
+
+         if (pattern.endsWith(".*"))
+            pattern = pattern.substring(0, pattern.length() - 2);
+
+         pattern = pattern.replace('.', File.separatorChar);
+         String path = getPathFromClassName(className);
+         if (path.startsWith(pattern))
+         {
+            foundMatch = pattern;
+            break;
+         }
+      }
+
+      if (log.isTraceEnabled())
+      {
+         if (foundMatch != null)
+            log.trace("Found match for class [" + className + "] with Dynamic-ImportPackage pattern: " + foundMatch);
+         else
+            log.trace("Class [" + className + "] does not match Dynamic-ImportPackage patterns");
+      }
+
+      return foundMatch;
+   }
+
    private Class<?> findInResolvedModules(String className)
    {
       boolean traceEnabled = log.isTraceEnabled();
+      if (traceEnabled)
+         log.trace("Attempt to find class dynamically in resolved modules ...");
 
       // Iterate over all registered modules
       for (ModuleIdentifier aux : moduleManager.getModuleIdentifiers())
@@ -198,6 +230,8 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
    private Class<?> findInUnresolvedModules(String className)
    {
       boolean traceEnabled = log.isTraceEnabled();
+      if (traceEnabled)
+         log.trace("Attempt to find class dynamically in unresolved modules ...");
 
       // Iteraterate over all bundles in state INSTALLED
       ResolverPlugin resolver = bundleManager.getPlugin(ResolverPlugin.class);
