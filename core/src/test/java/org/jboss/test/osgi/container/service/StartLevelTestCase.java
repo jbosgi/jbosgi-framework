@@ -58,37 +58,37 @@ public class StartLevelTestCase extends OSGiFrameworkTest
       assertEquals(5, sls.getInitialBundleStartLevel());
       
       Bundle bundle = installBundle("b1", createTestBundle("bundle1"));
-      assertEquals(Bundle.INSTALLED, bundle.getState());
+      assertBundleState(Bundle.INSTALLED, bundle.getState());
       assertEquals(5, sls.getBundleStartLevel(bundle));
       bundle.start();
-      assertEquals(Bundle.INSTALLED, bundle.getState());
+      assertBundleState(Bundle.INSTALLED, bundle.getState());
 
       sls.setStartLevel(5);
-      assertEquals(Bundle.ACTIVE, bundle.getState());
+      assertBundleState(Bundle.ACTIVE, bundle.getState());
       
       sls.setStartLevel(4);
-      assertEquals(Bundle.RESOLVED, bundle.getState());
+      assertBundleState(Bundle.RESOLVED, bundle.getState());
       
       sls.setInitialBundleStartLevel(7);
       assertEquals(7, sls.getInitialBundleStartLevel());
 
       sls.setStartLevel(10);
-      assertEquals(Bundle.ACTIVE, bundle.getState());
+      assertBundleState(Bundle.ACTIVE, bundle.getState());
       
       Bundle bundle2 = installBundle("b2", createTestBundle("bundle2"));
-      assertEquals(Bundle.INSTALLED, bundle2.getState());
+      assertBundleState(Bundle.INSTALLED, bundle2.getState());
       assertEquals(7, sls.getBundleStartLevel(bundle2));
       bundle2.start();
-      assertEquals(Bundle.ACTIVE, bundle2.getState());
+      assertBundleState(Bundle.ACTIVE, bundle2.getState());
 
       sls.setBundleStartLevel(bundle2, 11);
-      assertEquals(Bundle.RESOLVED, bundle2.getState());
+      assertBundleState(Bundle.RESOLVED, bundle2.getState());
       sls.setBundleStartLevel(bundle2, 9);
-      assertEquals(Bundle.ACTIVE, bundle2.getState());
+      assertBundleState(Bundle.ACTIVE, bundle2.getState());
 
       sls.setStartLevel(1);
-      assertEquals(Bundle.RESOLVED, bundle.getState());
-      assertEquals(Bundle.RESOLVED, bundle2.getState());
+      assertBundleState(Bundle.RESOLVED, bundle.getState());
+      assertBundleState(Bundle.RESOLVED, bundle2.getState());
    }
 
    @Test

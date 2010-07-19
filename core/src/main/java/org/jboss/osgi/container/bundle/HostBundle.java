@@ -294,24 +294,23 @@ public class HostBundle extends AbstractBundle
       if (getState() == Bundle.UNINSTALLED)
          throw new IllegalStateException("Cannot start an uninstalled bundle: " + this);
 
-      // Resolve all installed bundles 
-      if (getState() == Bundle.INSTALLED)
-      {
-         getResolverPlugin().resolve(this);
-      }
+      OSGiMetaData osgiMetaData = getOSGiMetaData();
+      if (osgiMetaData == null)
+         throw new IllegalStateException("Cannot obtain OSGi meta data");
 
-      // This bundle's state is set to STARTING
-      // A bundle event of type BundleEvent.STARTING is fired
-      createBundleContext();
-      changeState(Bundle.STARTING);
+      // Resolve this bundles 
+      if (getState() == Bundle.INSTALLED)
+         getResolverPlugin().resolve(this);
 
       // The BundleActivator.start(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, if one is specified, is called. 
       try
       {
-         OSGiMetaData osgiMetaData = getOSGiMetaData();
-         if (osgiMetaData == null)
-            throw new IllegalStateException("Cannot obtain OSGi meta data");
-
+         // Create the bundle context
+         createBundleContext();
+         
+         // This bundle's state is set to STARTING
+         changeState(Bundle.STARTING);
+         
          // Do we have a bundle activator
          String bundleActivatorClassName = osgiMetaData.getBundleActivator();
          if (bundleActivatorClassName != null)

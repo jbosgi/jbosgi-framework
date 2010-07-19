@@ -229,9 +229,7 @@ public class FrameworkState
 
       // Init Plugins Lifecycle
       for (Plugin plugin : bundleManager.getPlugins())
-      {
          plugin.initPlugin();
-      }
 
       // Cleanup the storage area
       String storageClean = getProperty(Constants.FRAMEWORK_STORAGE_CLEAN);
@@ -246,11 +244,16 @@ public class FrameworkState
       if (getSystemBundle().getState() != Bundle.STARTING)
          initFramework();
 
+      // Resolve the system bundle
+      ResolverPlugin resolver = bundleManager.getPlugin(ResolverPlugin.class);
+      resolver.resolve(getSystemBundle());
+
+      // This Framework's state is set to ACTIVE
+      getSystemBundle().changeState(Bundle.ACTIVE);
+
       // Start Plugins Lifecycle
       for (Plugin plugin : bundleManager.getPlugins())
-      {
          plugin.startPlugin();
-      }
 
       // All installed bundles must be started
       AutoInstallPlugin autoInstall = bundleManager.getOptionalPlugin(AutoInstallPlugin.class);
@@ -259,13 +262,6 @@ public class FrameworkState
          autoInstall.installBundles();
          autoInstall.startBundles();
       }
-
-      // Resolve the system bundle
-      ResolverPlugin resolver = bundleManager.getPlugin(ResolverPlugin.class);
-      resolver.resolve(getSystemBundle());
-
-      // This Framework's state is set to ACTIVE
-      getSystemBundle().changeState(Bundle.ACTIVE);
 
       // Increase to initial start level
       StartLevelPlugin startLevel = bundleManager.getOptionalPlugin(StartLevelPlugin.class);
