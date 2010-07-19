@@ -95,24 +95,27 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       try
       {
          VirtualFile child = rootFile.getChild("META-INF/module.xml");
-         InputStream inputStream = child.openStream();
-
-         ResourceLoaderFactory factory = new ResourceLoaderFactory()
+         if (child != null)
          {
-            @Override
-            public ResourceLoader getResourceLoader(String path, String name) throws IOException
+            InputStream inputStream = child.openStream();
+
+            ResourceLoaderFactory factory = new ResourceLoaderFactory()
             {
-               return new VirtualFileResourceLoader(rootFile, Collections.singletonList(path));
-            }
-         };
-         
-         ModuleSpec moduleSpec = ModuleXmlParser.parse(factory, inputStream);
-         ModuleIdentifier identifier = moduleSpec.getIdentifier();
-         String symbolicName = identifier.getArtifact();
-         String version = identifier.getVersion();
-         Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, Version.parseVersion(version));
-         dep.addAttachment(ModuleSpec.class, moduleSpec);
-         return dep;
+               @Override
+               public ResourceLoader getResourceLoader(String path, String name) throws IOException
+               {
+                  return new VirtualFileResourceLoader(rootFile, Collections.singletonList(path));
+               }
+            };
+            
+            ModuleSpec moduleSpec = ModuleXmlParser.parse(factory, inputStream);
+            ModuleIdentifier identifier = moduleSpec.getIdentifier();
+            String symbolicName = identifier.getArtifact();
+            String version = identifier.getVersion();
+            Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, Version.parseVersion(version));
+            dep.addAttachment(ModuleSpec.class, moduleSpec);
+            return dep;
+         }
       }
       catch (IOException ex)
       {

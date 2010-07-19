@@ -24,6 +24,7 @@ package org.jboss.osgi.container.bundle;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
@@ -490,7 +491,15 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public boolean hasPermission(Object permission)
    {
-      throw new NotImplementedException();
+      if (permission == null || permission instanceof Permission == false)
+         return false;
+
+      SecurityManager sm = System.getSecurityManager();
+      if (sm == null)
+         return true;
+
+      // [TODO] AbstractBundle.hasPermission
+      return true;
    }
 
    @Override

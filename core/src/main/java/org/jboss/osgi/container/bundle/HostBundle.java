@@ -29,6 +29,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Vector;
 
+import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
@@ -52,6 +53,9 @@ import org.osgi.framework.BundleException;
  */
 public class HostBundle extends AbstractBundle
 {
+   // Provide logging
+   private static final Logger log = Logger.getLogger(HostBundle.class);
+   
    private String location;
    private OSGiMetaData metadata;
    private BundleActivator bundleActivator;
@@ -178,10 +182,11 @@ public class HostBundle extends AbstractBundle
       try
       {
          VirtualFile child = getRootFile().getChild(name);
-         return child.toURL();
+         return child != null ? child.toURL() : null;
       }
       catch (IOException ex)
       {
+         log.error("Cannot get resource: " + name, ex);
          return null;
       }
    }
@@ -203,12 +208,16 @@ public class HostBundle extends AbstractBundle
       try
       {
          VirtualFile child = getRootFile().getChild(name);
+         if (child == null)
+            return null;
+         
          Vector<URL> vector = new Vector<URL>();
          vector.add(child.toURL());
          return vector.elements();
       }
       catch (IOException ex)
       {
+         log.error("Cannot get resource: " + name, ex);
          return null;
       }
    }
@@ -233,10 +242,11 @@ public class HostBundle extends AbstractBundle
       try
       {
          VirtualFile child = getRootFile().getChild(path);
-         return child.toURL();
+         return child != null ? child.toURL() : null;
       }
       catch (IOException ex)
       {
+         log.error("Cannot get entry: " + path, ex);
          return null;
       }
    }

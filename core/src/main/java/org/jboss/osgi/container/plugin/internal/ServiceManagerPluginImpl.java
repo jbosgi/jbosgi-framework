@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -142,8 +143,19 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
    public List<ServiceState> getServiceReferencesInternal(AbstractBundle bundleState, String clazz, Filter filter, boolean checkAssignable)
    {
+      if (bundleState == null)
+         throw new IllegalArgumentException("Null bundleState");
+      
       List<ServiceState> result = new ArrayList<ServiceState>();
-      List<ServiceName> names = serviceNameMap.get(clazz);
+      List<ServiceName> names = (clazz != null ? serviceNameMap.get(clazz) : null);
+      if (clazz == null)
+      {
+         // [MSC-9] Add ability to query the ServiceContainer
+         Set<ServiceName> allNames = new HashSet<ServiceName>();
+         for (List<ServiceName> auxList : serviceNameMap.values())
+            allNames.addAll(auxList);
+      }
+      
       if (names == null)
          return Collections.emptyList();
 

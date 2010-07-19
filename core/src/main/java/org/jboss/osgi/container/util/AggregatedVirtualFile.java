@@ -74,8 +74,11 @@ public final class AggregatedVirtualFile implements VirtualFile
             try
             {
                VirtualFile child = rootFile.getChild(path);
-               VirtualFile root = AbstractVFS.getRoot(child.toURL()); 
-               rootList.add(root);
+               if (child != null)
+               {
+                  VirtualFile root = AbstractVFS.getRoot(child.toURL()); 
+                  rootList.add(root);
+               }
             }
             catch (IOException ex)
             {
@@ -135,9 +138,9 @@ public final class AggregatedVirtualFile implements VirtualFile
    {
       for (VirtualFile root : roots)
       {
-         VirtualFile result = root.getChild(path);
-         if (result != null)
-            return result;
+         VirtualFile child = root.getChild(path);
+         if (child != null)
+            return child;
       }
       return null;
    }

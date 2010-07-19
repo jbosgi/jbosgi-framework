@@ -56,6 +56,7 @@ import org.jboss.osgi.container.plugin.internal.ResolverPluginImpl;
 import org.jboss.osgi.container.plugin.internal.ServiceManagerPluginImpl;
 import org.jboss.osgi.container.plugin.internal.StartLevelPluginImpl;
 import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
+import org.jboss.osgi.container.plugin.internal.WebXMLVerifierInterceptor;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XVersionRange;
@@ -104,6 +105,7 @@ public class BundleManager
       plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
       plugins.put(StartLevelPlugin.class, new StartLevelPluginImpl(this));
       plugins.put(SystemPackagesPlugin.class, new SystemPackagesPluginImpl(this));
+      plugins.put(WebXMLVerifierInterceptor.class, new WebXMLVerifierInterceptor(this));
 
       frameworkState = new FrameworkState(this, props);
    }
