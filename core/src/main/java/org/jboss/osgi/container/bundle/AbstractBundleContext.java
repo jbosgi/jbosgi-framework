@@ -206,9 +206,13 @@ public abstract class AbstractBundleContext implements BundleContext
    public ServiceReference[] getServiceReferences(String clazz, String filter) throws InvalidSyntaxException
    {
       checkValidBundleContext();
-      List<ServiceReference> result = new ArrayList<ServiceReference>();
       ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
-      for (ServiceState serviceState : servicePlugin.getServiceReferences(bundleState, clazz, filter, true))
+      List<ServiceState> srefs = servicePlugin.getServiceReferences(bundleState, clazz, filter, true);
+      if (srefs.isEmpty())
+         return null;
+      
+      List<ServiceReference> result = new ArrayList<ServiceReference>();
+      for (ServiceState serviceState : srefs)
          result.add(serviceState.getServiceReference());
       
       return result.toArray(new ServiceReference[result.size()]);
@@ -220,7 +224,11 @@ public abstract class AbstractBundleContext implements BundleContext
       checkValidBundleContext();
       List<ServiceReference> result = new ArrayList<ServiceReference>();
       ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
-      for (ServiceState serviceState : servicePlugin.getServiceReferences(bundleState, clazz, filter, false))
+      List<ServiceState> srefs = servicePlugin.getServiceReferences(bundleState, clazz, filter, false);
+      if (srefs.isEmpty())
+         return null;
+      
+      for (ServiceState serviceState : srefs)
          result.add(serviceState.getServiceReference());
       
       return result.toArray(new ServiceReference[result.size()]);

@@ -162,8 +162,8 @@ public class BundleManager
       ResolverPlugin plugin = getPlugin(ResolverPlugin.class);
       plugin.removeBundle(bundleState);
       
-      bundleMap.remove(bundleState.getBundleId());
       bundleState.changeState(Bundle.UNINSTALLED);
+      bundleMap.remove(bundleState.getBundleId());
    }
 
    /**

@@ -297,10 +297,7 @@ public abstract class AbstractBundle implements Bundle
 
       // Invoke the bundle lifecycle interceptors
       if (getBundleManager().isFrameworkActive() && getBundleId() != 0)
-      {
-         if (interceptorPlugin != null)
-            interceptorPlugin.handleStateChange(state, getBundleWrapper());
-      }
+         getLifecycleInterceptorPlugin().handleStateChange(state, getBundleWrapper());
 
       bundleState.set(state);
       log.debug(this + " change state=" + ConstantsHelper.bundleState(state));
