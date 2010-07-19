@@ -418,7 +418,7 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public void start() throws BundleException
    {
-      start(0);
+      startInternal();
    }
 
    abstract void startInternal() throws BundleException;
@@ -432,7 +432,7 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public void stop() throws BundleException
    {
-      stop(0);
+      stopInternal();
    }
 
    abstract void stopInternal() throws BundleException;

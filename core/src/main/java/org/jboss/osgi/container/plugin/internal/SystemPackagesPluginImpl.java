@@ -151,7 +151,7 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
    {
       if (allPackages.isEmpty())
          initSystemPackages();
-      
+
       return Collections.unmodifiableList(version ? allPackages : allPackageNames);
    }
 
@@ -162,7 +162,7 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
 
       if (allPackages.isEmpty())
          initSystemPackages();
-      
+
       // [TODO] version specifier for system packages
       int semiIndex = name.indexOf(';');
       if (semiIndex > 0)
@@ -188,7 +188,9 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
       List<String> result = new ArrayList<String>();
       for (String name : sysPackages.split(","))
       {
-         result.add(name.trim());
+         name = name.trim();
+         if (name.length() > 0)
+            result.add(name);
       }
       return result;
    }
