@@ -199,7 +199,7 @@ public abstract class AbstractBundleContext implements BundleContext
       checkValidBundleContext();
       ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
       ServiceState serviceState = servicePlugin.registerService(bundleState, clazzes, service, properties);
-      return serviceState.getServiceRegistration();
+      return serviceState.getRegistration();
    }
 
    @Override
@@ -213,7 +213,7 @@ public abstract class AbstractBundleContext implements BundleContext
       
       List<ServiceReference> result = new ArrayList<ServiceReference>();
       for (ServiceState serviceState : srefs)
-         result.add(serviceState.getServiceReference());
+         result.add(serviceState.getReference());
       
       return result.toArray(new ServiceReference[result.size()]);
    }
@@ -229,7 +229,7 @@ public abstract class AbstractBundleContext implements BundleContext
          return null;
       
       for (ServiceState serviceState : srefs)
-         result.add(serviceState.getServiceReference());
+         result.add(serviceState.getReference());
       
       return result.toArray(new ServiceReference[result.size()]);
    }

@@ -27,9 +27,11 @@ import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceName;
@@ -60,6 +62,8 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    private long serviceId;
    // The bundle that ownes this service
    private AbstractBundle owner;
+   // The bundles that use this service
+   private Set<AbstractBundle> usingBundles;
    // The list of service names associated with this service
    private List<ServiceName> serviceNames = new ArrayList<ServiceName>();
    // The service registration
@@ -139,19 +143,9 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       return value;
    }
 
-   public ServiceRegistration getServiceRegistration()
+   public ServiceRegistration getRegistration()
    {
       return registration;
-   }
-
-   public ServiceReference getServiceReference()
-   {
-      return reference;
-   }
-
-   public void removeServiceRegistration()
-   {
-      registration = null;
    }
 
    public List<ServiceName> getServiceNames()
@@ -162,13 +156,20 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    @Override
    public ServiceReference getReference()
    {
-      return new ServiceReferenceWrapper(this);
+      return reference;
    }
 
    @Override
    public void unregister()
    {
       serviceManager.unregisterService(this);
+      if (factoryValues != null)
+      {
+         for (ServiceFactoryHolder holder : factoryValues.values())
+            holder.ungetService();
+      }
+      usingBundles = null;
+      registration = null;
    }
 
    @Override
@@ -222,17 +223,47 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    {
       return owner;
    }
-   
+
    @Override
    public Bundle getBundle()
    {
       return owner.getBundleWrapper();
    }
 
+   void addUsingBundle(AbstractBundle bundleState)
+   {
+      synchronized (this)
+      {
+         if (usingBundles == null)
+            usingBundles = new HashSet<AbstractBundle>();
+
+         usingBundles.add(bundleState);
+      }
+   }
+
+   void removeUsingBundle(AbstractBundle bundleState)
+   {
+      synchronized (this)
+      {
+         if (usingBundles != null)
+            usingBundles.remove(bundleState);
+      }
+   }
+
    @Override
    public Bundle[] getUsingBundles()
    {
-      throw new NotImplementedException();
+      synchronized (this)
+      {
+         if (usingBundles == null)
+            return null;
+         
+         Set<Bundle> bundles = new HashSet<Bundle>();
+         for (AbstractBundle aux : usingBundles)
+            bundles.add(aux.getBundleWrapper());
+         
+         return bundles.toArray(new Bundle[bundles.size()]);
+      }
    }
 
    @Override
@@ -247,15 +278,15 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       throw new NotImplementedException();
    }
 
-   private void checkUnregistered()
+   public boolean isUnregistered()
+   {
+      return registration == null;
+   }
+
+   void checkUnregistered()
    {
       if (isUnregistered())
          throw new IllegalStateException("Service is unregistered: " + this);
-   }
-
-   synchronized boolean isUnregistered()
-   {
-      return registration == null;
    }
 
    public Object getServiceFactoryValue(AbstractBundle bundleState)
@@ -271,7 +302,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
          factoryValues.put(bundleState.getBundleId(), factoryHolder);
       }
 
-      return factoryHolder.getValue();
+      return factoryHolder.getService();
    }
 
    @Override
@@ -294,11 +325,14 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       {
          this.bundleState = bundleState;
          this.factory = factory;
+      }
 
+      Object getService()
+      {
          // The Framework must not allow this method to be concurrently called for the same bundle
          synchronized (bundleState)
          {
-            value = factory.getService(bundleState, getServiceRegistration());
+            value = factory.getService(bundleState.getBundleWrapper(), getRegistration());
 
             // The Framework will check if the returned service object is an instance of all the 
             // classes named when the service was registered. If not, then null is returned to the bundle.
@@ -320,11 +354,15 @@ public class ServiceState implements ServiceRegistration, ServiceReference
                }
             }
          }
+         return value;
       }
 
-      Object getValue()
+      void ungetService()
       {
-         return value;
+         synchronized (bundleState)
+         {
+            factory.ungetService(bundleState.getBundleWrapper(), getRegistration(), value);
+         }
       }
    }
 }

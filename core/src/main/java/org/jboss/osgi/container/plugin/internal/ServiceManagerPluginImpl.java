@@ -111,12 +111,18 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    @Override
    public Object getService(AbstractBundle bundleState, ServiceState serviceState)
    {
+      if (serviceState.isUnregistered())
+         return null;
+      
       Object value = serviceState.getValue();
-      if (value instanceof ServiceFactory)
-         value = serviceState.getServiceFactoryValue(bundleState);
 
       // Add the given service ref to the list of used services
       bundleState.addUsedService(serviceState);
+      
+      // Get the ServiceFactory value
+      if (value instanceof ServiceFactory)
+         value = serviceState.getServiceFactoryValue(bundleState);
+      
       return value;
    }
 

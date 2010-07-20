@@ -86,6 +86,10 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          dep.addAttachment(BundleInfo.class, info);
          return dep;
       }
+      catch (NumberFormatException rte)
+      {
+         throw new BundleException("Invalid OSGi version", rte);
+      }
       catch (BundleException ex)
       {
          log.warn("Cannot process as OSGi deployment: " + location);

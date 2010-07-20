@@ -383,9 +383,9 @@ public abstract class AbstractBundle implements Bundle
 
          count = usedServices.get(serviceState);
          if (count == null)
-         {
             usedServices.put(serviceState, count = new AtomicInteger());
-         }
+         
+         serviceState.addUsingBundle(this);
       }
       count.incrementAndGet();
    }
@@ -397,6 +397,8 @@ public abstract class AbstractBundle implements Bundle
       AtomicInteger count;
       synchronized (this)
       {
+         serviceState.removeUsingBundle(this);
+         
          if (usedServices == null)
             return false;
 
