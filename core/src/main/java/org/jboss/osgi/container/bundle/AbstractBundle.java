@@ -345,6 +345,8 @@ public abstract class AbstractBundle implements Bundle
 
    public void addOwnedService(ServiceState serviceState)
    {
+      log.debug("Add owned service [" + serviceState + "] to: " + this);
+      
       synchronized (this)
       {
          if (ownedServices == null)
@@ -355,6 +357,8 @@ public abstract class AbstractBundle implements Bundle
 
    public void removeOwnedService(ServiceState serviceState)
    {
+      log.debug("Remove owned service [" + serviceState + "] from: " + this);
+      
       if (ownedServices != null)
          ownedServices.remove(serviceState);
    }
@@ -369,6 +373,8 @@ public abstract class AbstractBundle implements Bundle
 
    public void addUsedService(ServiceState serviceState)
    {
+      log.debug("Add used service [" + serviceState + "] to: " + this);
+      
       AtomicInteger count;
       synchronized (this)
       {
@@ -386,6 +392,8 @@ public abstract class AbstractBundle implements Bundle
 
    public boolean removeUsedService(ServiceState serviceState)
    {
+      log.debug("Remove used service [" + serviceState + "] from: " + this);
+      
       AtomicInteger count;
       synchronized (this)
       {
@@ -394,7 +402,7 @@ public abstract class AbstractBundle implements Bundle
 
          count = usedServices.remove(serviceState);
          if (count == null || count.get() == 0)
-            throw new IllegalStateException("Invalid use count [" + count + "] for: " + serviceState);
+            return false;
       }
       return count.decrementAndGet() == 0;
    }

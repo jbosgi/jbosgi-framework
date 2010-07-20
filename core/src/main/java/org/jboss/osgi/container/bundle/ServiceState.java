@@ -22,6 +22,7 @@
 package org.jboss.osgi.container.bundle;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
@@ -271,6 +272,16 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       }
 
       return factoryHolder.getValue();
+   }
+
+   @Override
+   @SuppressWarnings("unchecked")
+   public String toString()
+   {
+      Hashtable<String, Object> props = new Hashtable<String, Object>(currProperties);
+      String[] classes = (String[])props.get(Constants.OBJECTCLASS);
+      props.put(Constants.OBJECTCLASS, Arrays.asList(classes));
+      return "ServiceState" + props;
    }
 
    class ServiceFactoryHolder
