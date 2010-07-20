@@ -158,7 +158,7 @@ public class HostBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      AbstractBundle hb = new HostBundle(bm, dep);
+      HostBundle hb = new HostBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
       assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());

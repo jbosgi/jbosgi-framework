@@ -88,8 +88,6 @@ public abstract class AbstractBundle implements Bundle
    private AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
    // The last modified time stamp 
    private long lastModified = System.currentTimeMillis();
-   // The flag for start level persistence
-   private boolean persistentlyStarted;
    // The bundle version
    private Version version = Version.emptyVersion;
    // The bundle symbolic name
@@ -418,7 +416,7 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public void start() throws BundleException
    {
-      startInternal();
+      start(0);
    }
 
    abstract void startInternal() throws BundleException;
@@ -432,7 +430,7 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public void stop() throws BundleException
    {
-      stopInternal();
+      stop(0);
    }
 
    abstract void stopInternal() throws BundleException;
@@ -649,16 +647,8 @@ public abstract class AbstractBundle implements Bundle
       return lastModified;
    }
 
-   public boolean isPersistentlyStarted()
-   {
-      return persistentlyStarted;
-   }
-
-   public void setPersistentlyStarted(boolean val)
-   {
-      persistentlyStarted = val;
-   }
-
+   public abstract boolean isPersistentlyStarted();
+   
    @Override
    @SuppressWarnings("rawtypes")
    public Map getSignerCertificates(int signersType)

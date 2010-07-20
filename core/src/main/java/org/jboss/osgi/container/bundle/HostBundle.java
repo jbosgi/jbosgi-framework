@@ -62,6 +62,7 @@ public class HostBundle extends AbstractBundle
    private XModule resolverModule;
    private VirtualFile rootFile;
    private int startLevel = StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
+   private boolean persistentlyStarted;
 
    public HostBundle(BundleManager bundleManager, Deployment dep) throws BundleException
    {
@@ -134,6 +135,16 @@ public class HostBundle extends AbstractBundle
    public String getLocation()
    {
       return location;
+   }
+
+   public boolean isPersistentlyStarted()
+   {
+      return persistentlyStarted;
+   }
+
+   public void setPersistentlyStarted(boolean started)
+   {
+      persistentlyStarted = started;
    }
 
    @Override

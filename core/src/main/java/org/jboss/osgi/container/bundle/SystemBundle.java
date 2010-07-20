@@ -142,6 +142,12 @@ public class SystemBundle extends AbstractBundle
    }
 
    @Override
+   public boolean isPersistentlyStarted()
+   {
+      return false;
+   }
+
+   @Override
    AbstractBundleContext createContextInternal()
    {
       return new SystemBundleContext(this);
