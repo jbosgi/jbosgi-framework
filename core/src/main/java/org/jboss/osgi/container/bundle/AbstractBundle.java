@@ -420,7 +420,7 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public void start(int options) throws BundleException
    {
-      startInternal();
+      startInternal(options);
    }
 
    @Override
@@ -429,12 +429,12 @@ public abstract class AbstractBundle implements Bundle
       start(0);
    }
 
-   abstract void startInternal() throws BundleException;
+   abstract void startInternal(int options) throws BundleException;
 
    @Override
    public void stop(int options) throws BundleException
    {
-      stopInternal();
+      stopInternal(options);
    }
 
    @Override
@@ -443,7 +443,7 @@ public abstract class AbstractBundle implements Bundle
       stop(0);
    }
 
-   abstract void stopInternal() throws BundleException;
+   abstract void stopInternal(int options) throws BundleException;
 
    @Override
    public void update(InputStream input) throws BundleException

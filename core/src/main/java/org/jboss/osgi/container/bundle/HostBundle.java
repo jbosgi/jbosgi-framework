@@ -294,13 +294,14 @@ public class HostBundle extends AbstractBundle
 
       if (isPersistentlyStarted())
       {
-         StartLevelPlugin sl = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
-         if (sl == null || sl.getStartLevel() >= getStartLevel())
-            super.start(options);
+         StartLevelPlugin plugin = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
+         if (plugin == null || plugin.getStartLevel() >= getStartLevel())
+            startInternal(options);
       }
    }
 
-   void startInternal() throws BundleException
+   @Override
+   void startInternal(int options) throws BundleException
    {
       if (getState() == Bundle.UNINSTALLED)
          throw new IllegalStateException("Cannot start an uninstalled bundle: " + this);
@@ -366,7 +367,7 @@ public class HostBundle extends AbstractBundle
          // Any services registered by this bundle must be unregistered.
          // Any services used by this bundle must be released.
          // Any listeners registered by this bundle must be removed.
-         stopInternal();
+         stopInternal(options);
 
          // This bundle's state is set to RESOLVED
          // A bundle event of type BundleEvent.STOPPED is fired
@@ -389,7 +390,8 @@ public class HostBundle extends AbstractBundle
       super.stop(options);
    }
 
-   void stopInternal() throws BundleException
+   @Override
+   void stopInternal(int options) throws BundleException
    {
       // If this bundle's state is UNINSTALLED then an IllegalStateException is thrown. 
       if (getState() == Bundle.UNINSTALLED)
@@ -477,7 +479,7 @@ public class HostBundle extends AbstractBundle
       {
          try
          {
-            stopInternal();
+            stopInternal(0);
          }
          catch (Exception ex)
          {

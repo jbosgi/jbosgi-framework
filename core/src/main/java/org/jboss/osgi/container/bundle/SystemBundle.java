@@ -154,13 +154,13 @@ public class SystemBundle extends AbstractBundle
    }
 
    @Override
-   void startInternal() throws BundleException
+   void startInternal(int options) throws BundleException
    {
       createBundleContext();
    }
 
    @Override
-   void stopInternal() throws BundleException
+   void stopInternal(int options) throws BundleException
    {
       destroyBundleContext();
    }
