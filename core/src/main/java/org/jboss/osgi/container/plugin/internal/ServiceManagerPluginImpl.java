@@ -147,26 +147,28 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          throw new IllegalArgumentException("Null bundleState");
       
       List<ServiceState> result = new ArrayList<ServiceState>();
-      List<ServiceName> names = (clazz != null ? serviceNameMap.get(clazz) : null);
+      List<ServiceName> serviceNames = (clazz != null ? serviceNameMap.get(clazz) : new ArrayList<ServiceName>());
       if (clazz == null)
       {
          // [MSC-9] Add ability to query the ServiceContainer
-         Set<ServiceName> allNames = new HashSet<ServiceName>();
+         Set<ServiceName> allServiceNames = new HashSet<ServiceName>();
          for (List<ServiceName> auxList : serviceNameMap.values())
-            allNames.addAll(auxList);
+            allServiceNames.addAll(auxList);
+         
+         serviceNames.addAll(allServiceNames);
       }
       
-      if (names == null)
+      if (serviceNames == null)
          return Collections.emptyList();
 
       if (filter == null)
          filter = NoFilter.INSTANCE;
 
-      for (ServiceName name : names)
+      for (ServiceName serviceName : serviceNames)
       {
-         ServiceController<?> controller = serviceContainer.getService(name);
+         ServiceController<?> controller = serviceContainer.getService(serviceName);
          if (controller == null)
-            throw new IllegalStateException("Cannot obtain service for: " + name);
+            throw new IllegalStateException("Cannot obtain service for: " + serviceName);
 
          ServiceState serviceState = (ServiceState)controller.getValue();
          if (filter.match(serviceState))
@@ -285,11 +287,11 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       plugin.fireServiceEvent(serviceOwner, ServiceEvent.UNREGISTERING, serviceState);
 
       // Unregister name associations
-      for (ServiceName name : serviceNames)
+      for (ServiceName serviceName : serviceNames)
       {
          String[] clazzes = (String[])serviceState.getProperty(Constants.OBJECTCLASS);
          for (String clazz : clazzes)
-            unregisterNameAssociation(clazz, name);
+            unregisterNameAssociation(clazz, serviceName);
       }
 
       // Remove from owner bundle
