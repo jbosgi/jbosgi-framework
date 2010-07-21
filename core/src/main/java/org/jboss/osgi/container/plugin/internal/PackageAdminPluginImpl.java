@@ -41,7 +41,6 @@ import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XRequireBundleRequirement;
 import org.jboss.osgi.resolver.XRequirement;
-import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -279,8 +278,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          if (module.isResolved() == false)
             return null;
          
-         XResolver resolver = module.getResolver();
-         Set<XRequirement> reqset = resolver.getWiredRequirements(cap);
+         Set<XRequirement> reqset = cap.getWiredRequirements();
          if (reqset == null || reqset.isEmpty())
             return new Bundle[0];
          

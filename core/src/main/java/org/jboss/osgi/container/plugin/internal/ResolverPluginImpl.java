@@ -23,7 +23,9 @@ package org.jboss.osgi.container.plugin.internal;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
@@ -113,7 +115,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    public List<AbstractBundle> resolve(List<AbstractBundle> bundles)
    {
       // Get the list of unresolved modules
-      List<XModule> unresolved = new ArrayList<XModule>();
+      Set<XModule> unresolved = new LinkedHashSet<XModule>();
       if (bundles == null)
       {
          for (AbstractBundle aux : getBundleManager().getBundles())
@@ -133,7 +135,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       log.debug("Resolve bundles: " + unresolved);
 
       // Resolve the modules and report resolver errors
-      List<XModule> resolved = resolver.resolve(unresolved);
+      Set<XModule> resolved = resolver.resolveAll(unresolved);
       for (XModule resModule : unresolved)
       {
          if (resModule.isResolved() == false)
