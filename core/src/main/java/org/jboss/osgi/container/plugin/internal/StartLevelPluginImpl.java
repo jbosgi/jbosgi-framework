@@ -237,18 +237,21 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
             HostBundle hb = (HostBundle)b;
             if (hb.getStartLevel() == startLevel && hb.isPersistentlyStarted())
             {
-               try
+               if (hb.isPersistentlyStarted())
                {
-                  int opts = Bundle.START_TRANSIENT;
-                  if (isBundleActivationPolicyUsed(b))
+                  try
                   {
-                     opts |= Bundle.START_ACTIVATION_POLICY;
+                     int opts = Bundle.START_TRANSIENT;
+                     if (isBundleActivationPolicyUsed(b))
+                     {
+                        opts |= Bundle.START_ACTIVATION_POLICY;
+                     }
+                     b.start(opts);
                   }
-                  b.start(opts);
-               }
-               catch (Throwable e)
-               {
-                  eventsPlugin.fireFrameworkEvent(b, FrameworkEvent.ERROR, e);
+                  catch (Throwable e)
+                  {
+                     eventsPlugin.fireFrameworkEvent(b, FrameworkEvent.ERROR, e);
+                  }
                }
             }
          }

@@ -150,7 +150,7 @@ public class HostBundleTestCase extends OSGiFrameworkTest
       assertFalse(hb.isPersistentlyStarted());
       hb.start(Bundle.START_TRANSIENT);
       assertFalse(hb.isPersistentlyStarted());
-      assertEquals(Bundle.INSTALLED, hb.getState());
+      assertEquals(Bundle.ACTIVE, hb.getState());
    }
 
    @Test
