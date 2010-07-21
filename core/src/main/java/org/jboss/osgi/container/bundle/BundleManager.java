@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.container.plugin.BundleStoragePlugin;
+import org.jboss.osgi.container.plugin.DeployerServicePlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.LifecycleInterceptorPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
@@ -47,6 +48,7 @@ import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.container.plugin.internal.BundleDeploymentPluginImpl;
 import org.jboss.osgi.container.plugin.internal.BundleStoragePluginImpl;
+import org.jboss.osgi.container.plugin.internal.DeployerServicePluginImpl;
 import org.jboss.osgi.container.plugin.internal.FrameworkEventsPluginImpl;
 import org.jboss.osgi.container.plugin.internal.LifecycleInterceptorPluginImpl;
 import org.jboss.osgi.container.plugin.internal.ModuleManagerPluginImpl;
@@ -96,6 +98,7 @@ public class BundleManager
       // [TODO] Externalize plugin registration
       plugins.put(BundleDeploymentPlugin.class, new BundleDeploymentPluginImpl(this));
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
+      plugins.put(DeployerServicePlugin.class, new DeployerServicePluginImpl(this));
       plugins.put(FrameworkEventsPlugin.class, new FrameworkEventsPluginImpl(this));
       plugins.put(LifecycleInterceptorPlugin.class, new LifecycleInterceptorPluginImpl(this));
       plugins.put(ModuleManagerPlugin.class, new ModuleManagerPluginImpl(this));
