@@ -168,6 +168,8 @@ public class ModuleManager extends ModuleLoader
    public Module findModule(ModuleIdentifier identifier) throws ModuleLoadException
    {
       ModuleHolder holder = modules.get(identifier);
+      
+      // TODO explain how this can be null
       if (holder == null)
          return null;
 
@@ -204,6 +206,7 @@ public class ModuleManager extends ModuleLoader
          builder.addRoot("[TODO] What Value?", new VirtualFileResourceLoader(rootFile, exportPaths));
 
          // For every {@link XWire} add a dependency on the exporter
+         // TODO revisit - should be empty list perhaps?
          List<XWire> wires = resModule.getWires();
          if (wires != null)
          {
@@ -299,6 +302,7 @@ public class ModuleManager extends ModuleLoader
       classLoader.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
 
       // Change the bundle state to RESOLVED 
+      // TODO revisit if this can go into the ResolverPlugin
       if (resolveBundle == true)
       {
          AbstractBundle bundleState = getBundle(identifier);
