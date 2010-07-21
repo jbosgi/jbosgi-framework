@@ -287,24 +287,20 @@ public class HostBundle extends AbstractBundle
    }
 
    @Override
-   public void start(int options) throws BundleException
-   {
-      if ((options & Bundle.START_TRANSIENT) == 0)
-         setPersistentlyStarted(true);
-
-      if (isPersistentlyStarted())
-      {
-         StartLevelPlugin plugin = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
-         if (plugin == null || plugin.getStartLevel() >= getStartLevel())
-            startInternal(options);
-      }
-   }
-
-   @Override
    void startInternal(int options) throws BundleException
    {
       if (getState() == Bundle.UNINSTALLED)
          throw new IllegalStateException("Cannot start an uninstalled bundle: " + this);
+
+      if ((options & Bundle.START_TRANSIENT) == 0)
+         setPersistentlyStarted(true);
+
+      StartLevelPlugin plugin = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
+      if (plugin != null && plugin.getStartLevel() < getStartLevel())
+         // Not at the required start level yet. This bundle will be started later once
+         // the required start level has been reached.
+         // TODO the spec says that we need to throw a BundleException here... 
+         return;
 
       OSGiMetaData osgiMetaData = getOSGiMetaData();
       if (osgiMetaData == null)

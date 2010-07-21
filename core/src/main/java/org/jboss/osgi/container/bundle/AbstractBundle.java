@@ -426,7 +426,7 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public void start() throws BundleException
    {
-      start(0);
+      startInternal(0);
    }
 
    abstract void startInternal(int options) throws BundleException;
