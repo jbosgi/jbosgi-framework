@@ -44,7 +44,7 @@
     <version.jboss.common.core>2.2.17.GA</version.jboss.common.core>
     <version.jboss.msc>1.0.0.Beta2-SNAPSHOT</version.jboss.msc>
     <version.jboss.modules>1.0.0.Beta2-SNAPSHOT</version.jboss.modules>
-    <version.jboss.osgi.deployment>1.0.3-SNAPSHOT</version.jboss.osgi.deployment>
+    <version.jboss.osgi.deployment>1.0.3</version.jboss.osgi.deployment>
     <version.jboss.osgi.felix>3.0.1</version.jboss.osgi.felix>
     <version.jboss.osgi.resolver>1.0.0</version.jboss.osgi.resolver>
     <version.jboss.osgi.resolver.felix>3.0.1</version.jboss.osgi.resolver.felix>
