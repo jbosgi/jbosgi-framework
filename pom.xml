@@ -26,7 +26,7 @@
   <parent>
     <groupId>org.jboss.osgi</groupId>
     <artifactId>jboss-osgi-parent</artifactId>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
   </parent>
 
   <!-- Source Control -->
@@ -45,10 +45,10 @@
     <version.jboss.msc>1.0.0.Beta2-SNAPSHOT</version.jboss.msc>
     <version.jboss.modules>1.0.0.Beta2-SNAPSHOT</version.jboss.modules>
     <version.jboss.osgi.deployment>1.0.3-SNAPSHOT</version.jboss.osgi.deployment>
-    <version.jboss.osgi.felix>3.0.2-SNAPSHOT</version.jboss.osgi.felix>
-    <version.jboss.osgi.resolver>1.0.0-SNAPSHOT</version.jboss.osgi.resolver>
-    <version.jboss.osgi.resolver.felix>2.1.0-SNAPSHOT</version.jboss.osgi.resolver.felix>
-    <version.jboss.osgi.spi>1.0.10-SNAPSHOT</version.jboss.osgi.spi>
+    <version.jboss.osgi.felix>3.0.1</version.jboss.osgi.felix>
+    <version.jboss.osgi.resolver>1.0.0</version.jboss.osgi.resolver>
+    <version.jboss.osgi.resolver.felix>3.0.1</version.jboss.osgi.resolver.felix>
+    <version.jboss.osgi.spi>1.0.10</version.jboss.osgi.spi>
     <version.jboss.osgi.vfs>1.0.0</version.jboss.osgi.vfs>
     <version.mockito>1.8.4</version.mockito>
     <version.osgi>4.2.0</version.osgi>
