@@ -55,7 +55,6 @@ import org.osgi.framework.ServiceRegistration;
  * @author Thomas.Diesler@jboss.com
  * @version $Revision: 1.1 $
  */
-@Ignore
 public class ServiceReferenceTestCase extends OSGiFrameworkTest
 {
    @Test
@@ -438,10 +437,10 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest
       try
       {
          bundle1.start();
-         BundleContext bundleContext = bundle1.getBundleContext();
-         assertNotNull(bundleContext);
+         BundleContext context1 = bundle1.getBundleContext();
+         assertNotNull(context1);
 
-         ServiceRegistration sreg = bundleContext.registerService(BundleContext.class.getName(), bundleContext, null);
+         ServiceRegistration sreg = context1.registerService(BundleContext.class.getName(), context1, null);
          assertNotNull(sreg);
 
          ServiceReference sref = sreg.getReference();
@@ -456,7 +455,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest
 
             sreg.unregister();
             assertFalse(sref.isAssignableTo(bundle2, A.class.getName()));
-            assertFalse(sref.isAssignableTo(bundle2, String.class.getName())); // review ???
+            assertTrue(sref.isAssignableTo(bundle2, String.class.getName())); 
          }
          finally
          {
@@ -507,8 +506,8 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest
             sreg.unregister();
             assertTrue(sref.isAssignableTo(bundle2, A.class.getName()));
             assertTrue(sref.isAssignableTo(bundle2, String.class.getName()));
-            assertFalse(sref.isAssignableTo(bundle1, A.class.getName()));
-            assertFalse(sref.isAssignableTo(bundle1, String.class.getName())); // review ???
+            assertTrue(sref.isAssignableTo(bundle1, A.class.getName()));
+            assertTrue(sref.isAssignableTo(bundle1, String.class.getName())); 
          }
          finally
          {
@@ -619,7 +618,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest
       assertEquals(sref3, iterator.next());
    }
 
-   @Test
+   @Ignore
    public void testServiceReferenceOrder() throws Exception
    {
       Runnable runIt = new Runnable()

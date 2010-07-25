@@ -78,6 +78,7 @@ public class ArquillianLoaderTestCase
       // Get the resolver module for the SystemBundle
       SystemBundle systemBundle = new SystemBundle(bundleManager);
       XModule resModule = systemBundle.getResolverModule();
+      Mockito.when(bundleManager.getSystemBundle()).thenReturn(systemBundle);
       
       // Create the Framework module
       ModuleManager moduleManager = new ModuleManager(bundleManager);

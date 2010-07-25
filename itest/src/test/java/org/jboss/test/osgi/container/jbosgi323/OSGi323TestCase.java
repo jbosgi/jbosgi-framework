@@ -30,10 +30,9 @@ import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.test.osgi.container.resolver.support.a.A;
-import org.jboss.test.osgi.container.resolver.support.b.B;
+import org.jboss.test.osgi.container.classloader.support.a.A;
+import org.jboss.test.osgi.container.classloader.support.b.B;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 
@@ -45,7 +44,6 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 04-May-2010
  */
-@Ignore
 public class OSGi323TestCase extends OSGiFrameworkTest
 {
    @After
@@ -60,7 +58,7 @@ public class OSGi323TestCase extends OSGiFrameworkTest
    public void testStaticImport() throws Exception
    {
       // Bundle-SymbolicName: jbosgi323-bundleA
-      // DynamicImport-Package: org.jboss.test.osgi.container.classloader.support.a
+      // Import-Package: org.jboss.test.osgi.container.classloader.support.a
       final JavaArchive archiveA = ShrinkWrap.create(JavaArchive.class, "jbosgi323-bundleA");
       archiveA.addClass(A.class);
       archiveA.setManifest(new Asset()

@@ -24,6 +24,7 @@ package org.jboss.osgi.container.bundle;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -168,7 +169,7 @@ public class ModuleManager extends ModuleLoader
    public Module findModule(ModuleIdentifier identifier) throws ModuleLoadException
    {
       ModuleHolder holder = modules.get(identifier);
-      
+
       // TODO explain how this can be null
       if (holder == null)
          return null;
@@ -191,22 +192,27 @@ public class ModuleManager extends ModuleLoader
       if (moduleSpec == null)
       {
          ModuleIdentifier identifier = getModuleIdentifier(resModule);
-         ModuleSpec.Builder builder = ModuleSpec.build(identifier);
+         ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
 
          // Add the framework module as required dependency
-         DependencySpec.Builder depBuilder = builder.addDependency(frameworkIdentifier);
-         depBuilder.setExport(true);
+         DependencySpec.Builder depBuilder = specBuilder.addDependency(frameworkIdentifier);
+         depBuilder.setExport(false); // no re-export
 
          // Add the exported packages as paths
          List<String> exportPaths = new ArrayList<String>();
          for (XPackageCapability cap : resModule.getPackageCapabilities())
-            exportPaths.add(cap.getName().replace('.', File.separatorChar));
+            exportPaths.add(getPathFromPackageName(cap.getName()));
 
          // Add the bundle's {@link ResourceLoader}
-         builder.addRoot("[TODO] What Value?", new VirtualFileResourceLoader(rootFile, exportPaths));
+         specBuilder.addRoot("[TODO] What Value?", new VirtualFileResourceLoader(rootFile, exportPaths));
 
+         // Map the dependency builder for (the likely) case that the same exporter is choosen for multiple wires
+         Map<XModule, DependencySpec.Builder> depBuilders = new HashMap<XModule, DependencySpec.Builder>();
+         depBuilders.put(bundleManager.getSystemBundle().getResolverModule(), depBuilder);
+         
          // For every {@link XWire} add a dependency on the exporter
-         // TODO revisit - should be empty list perhaps?
+         // The resolver module will have wires when this method is 
+         // called as a result of the resolver callback
          List<XWire> wires = resModule.getWires();
          if (wires != null)
          {
@@ -218,20 +224,29 @@ public class ModuleManager extends ModuleLoader
                if (exporter == importer)
                   continue;
 
+               // Get or create the dependency builder for the exporter
+               ModuleIdentifier exporterId = getModuleIdentifier(exporter);
+               depBuilder = depBuilders.get(exporter);
+               if (depBuilder == null)
+               {
+                  depBuilder = specBuilder.addDependency(exporterId);
+                  depBuilders.put(exporter, depBuilder);
+               }
+               
+               // Dependency for Import-Package
                if (req instanceof XPackageRequirement)
                {
-                  ModuleIdentifier exporterId = getModuleIdentifier(exporter);
-                  depBuilder = builder.addDependency(exporterId);
-                  depBuilder.setExport(true);
+                  String path = getPathFromPackageName(req.getName());
+                  specBuilder.addImportedPath(path);
+                  depBuilder.setExport(false); // no re-export
                   continue;
                }
 
+               // Dependency for Require-Bundle
                if (req instanceof XRequireBundleRequirement)
                {
                   XRequireBundleRequirement bndreq = (XRequireBundleRequirement)req;
                   boolean reexport = Constants.VISIBILITY_REEXPORT.equals(bndreq.getVisibility());
-                  ModuleIdentifier exporterId = getModuleIdentifier(exporter);
-                  depBuilder = builder.addDependency(exporterId);
                   depBuilder.setExport(reexport);
                   continue;
                }
@@ -246,8 +261,8 @@ public class ModuleManager extends ModuleLoader
                return new OSGiModuleClassLoader(bundleManager, resModule, module, moduleSpec);
             }
          };
-         builder.setClassLoaderFactory(loaderFactory);
-         moduleSpec = builder.create();
+         specBuilder.setClassLoaderFactory(loaderFactory);
+         moduleSpec = specBuilder.create();
       }
 
       log.debug("Created ModuleSpec: " + moduleSpec.getIdentifier());
@@ -267,6 +282,9 @@ public class ModuleManager extends ModuleLoader
       frameworkIdentifier = getModuleIdentifier(resModule);
       ModuleSpec.Builder builder = ModuleSpec.build(frameworkIdentifier);
 
+      // The Framework ModuleSpec has no associated {@link ModuleContentLoader}
+      // Instead, we use a {@link ModuleClassLoaderFactory} that reports the 
+      // exported paths through {@link ModuleClassLoader#getExportedPaths()} 
       ModuleClassLoaderFactory loaderFactory = new ModuleClassLoaderFactory()
       {
          @Override
@@ -310,6 +328,11 @@ public class ModuleManager extends ModuleLoader
       }
 
       return module;
+   }
+
+   private String getPathFromPackageName(String packageName)
+   {
+      return packageName.replace('.', File.separatorChar);
    }
 
    /**

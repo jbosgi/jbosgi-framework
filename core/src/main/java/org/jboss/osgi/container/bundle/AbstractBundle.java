@@ -93,8 +93,8 @@ public abstract class AbstractBundle implements Bundle
    // The bundle symbolic name
    private String symbolicName;
 
-   // The set of owned services
-   private List<ServiceState> ownedServices;
+   // The set of registered services
+   private List<ServiceState> registeredServices;
    // The set of used services
    private Map<ServiceState, AtomicInteger> usedServices;
 
@@ -343,37 +343,52 @@ public abstract class AbstractBundle implements Bundle
       bundleContext = null;
    }
 
-   public void addOwnedService(ServiceState serviceState)
+   public void addRegisteredService(ServiceState serviceState)
    {
-      log.debug("Add owned service [" + serviceState + "] to: " + this);
+      log.debug("Add registered service [" + serviceState + "] to: " + this);
       
       synchronized (this)
       {
-         if (ownedServices == null)
-            ownedServices = new CopyOnWriteArrayList<ServiceState>();
+         if (registeredServices == null)
+            registeredServices = new CopyOnWriteArrayList<ServiceState>();
       }
-      ownedServices.add(serviceState);
+      registeredServices.add(serviceState);
    }
 
-   public void removeOwnedService(ServiceState serviceState)
+   public void removeRegisteredService(ServiceState serviceState)
    {
-      log.debug("Remove owned service [" + serviceState + "] from: " + this);
+      log.debug("Remove registered service [" + serviceState + "] from: " + this);
       
-      if (ownedServices != null)
-         ownedServices.remove(serviceState);
+      if (registeredServices != null)
+         registeredServices.remove(serviceState);
    }
 
-   public List<ServiceState> getOwnedServices()
+   public List<ServiceState> getRegisteredServicesInternal()
    {
-      if (ownedServices == null)
+      if (registeredServices == null)
          return Collections.emptyList();
 
-      return Collections.unmodifiableList(ownedServices);
+      return Collections.unmodifiableList(registeredServices);
    }
 
-   public void addUsedService(ServiceState serviceState)
+   @Override
+   public ServiceReference[] getRegisteredServices()
    {
-      log.debug("Add used service [" + serviceState + "] to: " + this);
+      assertNotUninstalled();
+      List<ServiceState> registeredServices = getRegisteredServicesInternal();
+      if (registeredServices.isEmpty())
+         return null;
+      
+      List<ServiceReference> srefs = new ArrayList<ServiceReference>();
+      for (ServiceState serviceState : registeredServices)
+         srefs.add(serviceState.getReference());
+
+      return srefs.toArray(new ServiceReference[srefs.size()]);
+   }
+
+   public void addServiceInUse(ServiceState serviceState)
+   {
+      log.debug("Add service in use [" + serviceState + "] to: " + this);
       
       AtomicInteger count;
       synchronized (this)
@@ -384,32 +399,31 @@ public abstract class AbstractBundle implements Bundle
          count = usedServices.get(serviceState);
          if (count == null)
             usedServices.put(serviceState, count = new AtomicInteger());
-         
-         serviceState.addUsingBundle(this);
       }
       count.incrementAndGet();
    }
 
-   public boolean removeUsedService(ServiceState serviceState)
+   public int removeServiceInUse(ServiceState serviceState)
    {
-      log.debug("Remove used service [" + serviceState + "] from: " + this);
+      log.debug("Remove service in use [" + serviceState + "] from: " + this);
       
       AtomicInteger count;
       synchronized (this)
       {
-         serviceState.removeUsingBundle(this);
-         
          if (usedServices == null)
-            return false;
+            return -1;
 
-         count = usedServices.remove(serviceState);
-         if (count == null || count.get() == 0)
-            return false;
+         count = usedServices.get(serviceState);
+         if (count == null)
+            return -1;
+         
+         if (count.decrementAndGet() == 0)
+            usedServices.remove(serviceState);
       }
-      return count.decrementAndGet() == 0;
+      return count.get();
    }
 
-   public Set<ServiceState> getUsedServices()
+   public Set<ServiceState> getServicesInUseInternal()
    {
       if (usedServices == null)
          return Collections.emptySet();
@@ -418,14 +432,31 @@ public abstract class AbstractBundle implements Bundle
    }
 
    @Override
+   public ServiceReference[] getServicesInUse()
+   {
+      assertNotUninstalled();
+      Set<ServiceState> servicesInUse = getServicesInUseInternal();
+      if (servicesInUse.isEmpty())
+         return null;
+      
+      List<ServiceReference> srefs = new ArrayList<ServiceReference>();
+      for (ServiceState serviceState : servicesInUse)
+         srefs.add(serviceState.getReference());
+
+      return srefs.toArray(new ServiceReference[srefs.size()]);
+   }
+
+   @Override
    public void start(int options) throws BundleException
    {
+      assertNotUninstalled();
       startInternal(options);
    }
 
    @Override
    public void start() throws BundleException
    {
+      assertNotUninstalled();
       startInternal(0);
    }
 
@@ -434,12 +465,14 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public void stop(int options) throws BundleException
    {
+      assertNotUninstalled();
       stopInternal(options);
    }
 
    @Override
    public void stop() throws BundleException
    {
+      assertNotUninstalled();
       stop(0);
    }
 
@@ -448,6 +481,7 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public void update(InputStream input) throws BundleException
    {
+      assertNotUninstalled();
       updateInternal(input);
 
       // A bundle is considered to be modified when it is installed, updated or uninstalled.
@@ -457,6 +491,7 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public void update() throws BundleException
    {
+      assertNotUninstalled();
       updateInternal(null);
 
       // A bundle is considered to be modified when it is installed, updated or uninstalled.
@@ -468,6 +503,7 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public void uninstall() throws BundleException
    {
+      assertNotUninstalled();
       uninstallInternal();
 
       // A bundle is considered to be modified when it is installed, updated or uninstalled.
@@ -477,28 +513,9 @@ public abstract class AbstractBundle implements Bundle
    abstract void uninstallInternal() throws BundleException;
 
    @Override
-   public ServiceReference[] getRegisteredServices()
-   {
-      List<ServiceReference> srefs = new ArrayList<ServiceReference>();
-      for (ServiceState serviceState : getServiceManagerPlugin().getRegisteredServices(this))
-         srefs.add(serviceState.getReference());
-
-      return srefs.toArray(new ServiceReference[srefs.size()]);
-   }
-
-   @Override
-   public ServiceReference[] getServicesInUse()
-   {
-      List<ServiceReference> srefs = new ArrayList<ServiceReference>();
-      for (ServiceState serviceState : getServiceManagerPlugin().getServicesInUse(this))
-         srefs.add(serviceState.getReference());
-
-      return srefs.toArray(new ServiceReference[srefs.size()]);
-   }
-
-   @Override
    public boolean hasPermission(Object permission)
    {
+      assertNotUninstalled();
       if (permission == null || permission instanceof Permission == false)
          return false;
 
@@ -667,13 +684,23 @@ public abstract class AbstractBundle implements Bundle
    }
 
    /**
-    * Check a bundle context is still valid
+    * Assert that the bundle context is still valid
     * @throws IllegalStateException when the context is no longer valid
     */
-   void checkValidBundleContext()
+   void assertValidBundleContext()
    {
       if (bundleContext == null)
          throw new IllegalStateException("Invalid bundle context: " + this);
+   }
+
+   /**
+    * Assert that the bundle context is not uninstalled
+    * @throws IllegalStateException when the bundle is uninstalled
+    */
+   void assertNotUninstalled()
+   {
+      if (getState() == Bundle.UNINSTALLED)
+         throw new IllegalStateException("Bundle uninstalled: " + this);
    }
 
    @Override

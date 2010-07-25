@@ -24,15 +24,12 @@ package org.jboss.osgi.container.loading;
 import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.AssertionSetting;
-import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.Module.Flag;
 import org.jboss.modules.ModuleClassLoader;
@@ -63,8 +60,6 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts = new ThreadLocal<Map<String, AtomicInteger>>();
    private BundleManager bundleManager;
    private ModuleManagerPlugin moduleManager;
-   private Set<ModuleIdentifier> dependencyIdentifiers;
-   private ModuleSpec moduleSpec;
    private XModule resModule;
 
    public OSGiModuleClassLoader(BundleManager bundleManager, XModule resModule, Module module, ModuleSpec moduleSpec)
@@ -72,7 +67,6 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       super(module, Collections.<Flag> emptySet(), AssertionSetting.INHERIT, moduleSpec.getContentLoader());
       this.bundleManager = bundleManager;
       this.moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
-      this.moduleSpec = moduleSpec;
       this.resModule = resModule;
 
       setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
@@ -197,11 +191,6 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       // Iterate over all registered modules
       for (ModuleIdentifier aux : moduleManager.getModuleIdentifiers())
       {
-         // Get the identifiers of the modules that we don't need to check
-         Set<ModuleIdentifier> blacklist = getDependencyIdentifiers();
-         if (blacklist.contains(aux))
-            continue;
-
          // Try to load the class from the candidate
          try
          {
@@ -284,33 +273,5 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       }
 
       return null;
-   }
-
-   private Set<ModuleIdentifier> getDependencyIdentifiers()
-   {
-      if (dependencyIdentifiers == null)
-      {
-         dependencyIdentifiers = new HashSet<ModuleIdentifier>();
-         dependencyIdentifiers.add(moduleSpec.getIdentifier());
-         collectDependencyIdentifiers(moduleSpec, dependencyIdentifiers);
-      }
-      return dependencyIdentifiers;
-   }
-
-   /**
-    * Recursively collect the identifiers of the dependencies
-    */
-   private void collectDependencyIdentifiers(ModuleSpec moduleSpec, Set<ModuleIdentifier> result)
-   {
-      for (DependencySpec depSpec : moduleSpec.getDependencies())
-      {
-         ModuleIdentifier identifier = depSpec.getModuleIdentifier();
-         if (result.contains(identifier) == false)
-         {
-            result.add(identifier);
-            ModuleSpec depModule = moduleManager.getModuleSpec(identifier);
-            collectDependencyIdentifiers(depModule, result);
-         }
-      }
    }
 }

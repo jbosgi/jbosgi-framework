@@ -28,11 +28,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.jboss.osgi.container.bundle.BundleWrapper;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.container.service.support.SimpleServiceFactory;
 import org.jboss.test.osgi.container.service.support.a.A;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -49,7 +49,6 @@ import org.osgi.framework.ServiceRegistration;
  * @author thomas.diesler@jboss.com
  * @version $Revision$
  */
-@Ignore
 public class ServiceFactoryTestCase extends OSGiFrameworkTest
 {
    static String OBJCLASS = BundleContext.class.getName();
@@ -72,14 +71,14 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest
          ServiceReference srefA = sregA.getReference();
          Object actual = contextA.getService(srefA);
          assertEquals(contextA, actual);
-         //assertInstanceOf(serviceFactory.getBundle, OSGiBundleWrapper.class);
+         assertInstanceOf(serviceFactory.getBundle, BundleWrapper.class);
          assertEquals(bundleA.getSymbolicName(), serviceFactory.getBundle.getSymbolicName());
          assertEquals(1, serviceFactory.getCount);
 
          srefA = contextA.getServiceReference(OBJCLASS);
          actual = contextA.getService(srefA);
          assertEquals(contextA, actual);
-         //assertInstanceOf(serviceFactory.getBundle, OSGiBundleWrapper.class);
+         assertInstanceOf(serviceFactory.getBundle, BundleWrapper.class);
          assertEquals(bundleA.getSymbolicName(), serviceFactory.getBundle.getSymbolicName());
          assertEquals(1, serviceFactory.getCount);
 
@@ -94,7 +93,7 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest
             ServiceReference srefB = contextB.getServiceReference(OBJCLASS);
             actual = contextB.getService(srefB);
             assertEquals(contextA, actual);
-            //assertInstanceOf(serviceFactory.getBundle, OSGiBundleWrapper.class);
+            assertInstanceOf(serviceFactory.getBundle, BundleWrapper.class);
 
             assertEquals(bundleB.getSymbolicName(), serviceFactory.getBundle.getSymbolicName());
             assertEquals(2, serviceFactory.getCount);

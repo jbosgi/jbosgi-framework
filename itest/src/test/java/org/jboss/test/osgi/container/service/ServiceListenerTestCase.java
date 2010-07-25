@@ -45,7 +45,6 @@ import org.osgi.framework.ServiceRegistration;
  * @author thomas.diesler@jboss.com
  * @since 20-Mar-2010
  */
-@Ignore
 public class ServiceListenerTestCase extends OSGiFrameworkTest
 {
    @Test

@@ -32,7 +32,6 @@ import java.util.Hashtable;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -49,7 +48,6 @@ import org.osgi.framework.ServiceRegistration;
  * @author Thomas.Diesler@jboss.com
  * @version $Revision: 1.1 $
  */
-@Ignore
 public class RegisterServiceTestCase extends OSGiFrameworkTest
 {
    static String OBJCLASS = BundleContext.class.getName();

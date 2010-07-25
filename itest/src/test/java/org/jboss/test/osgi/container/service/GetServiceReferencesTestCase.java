@@ -56,7 +56,6 @@ import org.osgi.framework.ServiceRegistration;
  * @author Thomas.Diesler@jboss.com
  * @version $Revision: 1.1 $
  */
-@Ignore
 public class GetServiceReferencesTestCase extends OSGiFrameworkTest
 {
    @Test
@@ -173,6 +172,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest
    public void testGetServiceReferencesNoWire() throws Exception
    {
       JavaArchive archiveA = ShrinkWrap.create(JavaArchive.class, "bundleA");
+      archiveA.addClass(A.class);
       archiveA.setManifest(new Asset()
       {
          public InputStream openStream()
@@ -180,11 +180,10 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest
             OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
             builder.addBundleManifestVersion(2);
             builder.addBundleSymbolicName("bundleA");
-            builder.addExportPackages("org.jboss.test.osgi.service.support.a");
+            builder.addExportPackages(A.class);
             return builder.openStream();
          }
       });
-      archiveA.addClass(A.class);
       
       Bundle bundleA = installBundle(archiveA);
       try
@@ -282,6 +281,8 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest
 
    private void assertGetServiceReferencesNotAssignable(String className) throws Exception
    {
+      // Bundle-Name: Simple1
+      // Bundle-SymbolicName: simple1
       Archive<?> assemblyA = assembleArchive("simple1", "/bundles/simple/simple-bundle1", A.class);
       Bundle bundleA = installBundle(assemblyA);
       try
@@ -300,6 +301,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest
          ServiceReference sref1 = sreg1.getReference();
          assertNotNull(sref1);
 
+         // Bundle-SymbolicName: simple2
          Archive<?> assemblyB = assembleArchive("simple2", "/bundles/simple/simple-bundle2", A.class);
          Bundle bundleB = installBundle(assemblyB);
          try
@@ -376,7 +378,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest
       assertGetServiceReferencesAssignable(null);
    }
 
-   @Test
+   @Ignore
    public void testGetServiceReferencesClassAssignable() throws Exception
    {
       assertGetServiceReferencesAssignable(A.class.getName());
@@ -478,7 +480,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Test
+   @Ignore
    public void testGetServiceReferencesRankings() throws Exception
    {
       String className = A.class.getName();

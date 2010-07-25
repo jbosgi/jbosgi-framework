@@ -195,7 +195,7 @@ public class BundleTestCase extends OSGiFrameworkTest
       // TODO testUninstall
    }
 
-   @Ignore
+   @Test
    public void testSingleton() throws Exception
    {
       Archive<?> assemblyA = assembleArchive("bundle10", "/bundles/singleton/singleton1");

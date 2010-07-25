@@ -51,22 +51,18 @@ public interface ServiceManagerPlugin extends Plugin
    ServiceContainer getServiceContainer();
 
    /**
-    * Returns this bundle's <code>ServiceReference</code> list for all
-    * services it has registered or <code>null</code> if this bundle has no
-    * registered services.
+    * Registers the specified service object with the specified properties under the specified class names 
+    * into the Framework. A <code>ServiceRegistration</code> object is returned. The <code>ServiceRegistration</code> 
+    * object is for the private use of the bundle registering the service and should not be shared with other
+    * bundles. The registering bundle is defined to be the context bundle.
     * 
-    * @return A potentially empty list of <code>ServiceReference</code> objects.
+    * @param clazzes The class names under which the service can be located.
+    * @param service The service object or a <code>ServiceFactory</code> object.
+    * @param properties The properties for this service. 
+    * @return A <code>ServiceRegistration</code> object for use by the bundle registering the service 
     */
-   List<ServiceState> getRegisteredServices(AbstractBundle bundleState);
-
-   /**
-    * Returns the service object referenced by the specified
-    * <code>ServiceReference</code> object.
-    * 
-    * @param reference A reference to the service.
-    * @return A service object for the service associated with <code>reference</code> or <code>null</code>
-    */
-   Object getService(AbstractBundle bundleState, ServiceState reference);
+   @SuppressWarnings("rawtypes")
+   ServiceState registerService(AbstractBundle bundleState, String[] clazzes, Object service, Dictionary properties);
 
    /**
     * Returns a <code>ServiceReference</code> object for a service that
@@ -95,36 +91,14 @@ public interface ServiceManagerPlugin extends Plugin
    List<ServiceState> getServiceReferences(AbstractBundle bundleState, String clazz, String filter, boolean checkAssignable) throws InvalidSyntaxException;
 
    /**
-    * Returns this bundle's <code>ServiceReference</code> list for all
-    * services it is using or returns <code>null</code> if this bundle is not
-    * using any services. A bundle is considered to be using a service if its
-    * use count for that service is greater than zero.
+    * Returns the service object referenced by the specified
+    * <code>ServiceReference</code> object.
     * 
-    * 
-    * @return A potentially empty list of <code>ServiceReference</code> objects.
-    * @throws IllegalStateException If this bundle has been uninstalled.
+    * @param reference A reference to the service.
+    * @return A service object for the service associated with <code>reference</code> or <code>null</code>
     */
-   Set<ServiceState> getServicesInUse(AbstractBundle bundleState);
+   Object getService(AbstractBundle bundleState, ServiceState reference);
 
-   /**
-    * Registers the specified service object with the specified properties under the specified class names 
-    * into the Framework. A <code>ServiceRegistration</code> object is returned. The <code>ServiceRegistration</code> 
-    * object is for the private use of the bundle registering the service and should not be shared with other
-    * bundles. The registering bundle is defined to be the context bundle.
-    * 
-    * @param clazzes The class names under which the service can be located.
-    * @param service The service object or a <code>ServiceFactory</code> object.
-    * @param properties The properties for this service. 
-    * @return A <code>ServiceRegistration</code> object for use by the bundle registering the service 
-    */
-   @SuppressWarnings("rawtypes")
-   ServiceState registerService(AbstractBundle bundleState, String[] clazzes, Object service, Dictionary properties);
-
-   /**
-    * Unregister the given service. 
-    */
-   void unregisterService(ServiceState reference);
-   
    /**
     * Releases the service object referenced by the specified
     * <code>ServiceReference</code> object. If the context bundle's use count
@@ -139,18 +113,34 @@ public interface ServiceManagerPlugin extends Plugin
    boolean ungetService(AbstractBundle bundleState, ServiceState reference);
 
    /**
+    * Returns this bundle's <code>ServiceReference</code> list for all
+    * services it has registered or <code>null</code> if this bundle has no
+    * registered services.
+    * 
+    * @return A potentially empty list of <code>ServiceReference</code> objects.
+    */
+   List<ServiceState> getRegisteredServices(AbstractBundle bundleState);
+   
+   /**
+    * Returns this bundle's <code>ServiceReference</code> list for all
+    * services it is using or returns <code>null</code> if this bundle is not
+    * using any services. A bundle is considered to be using a service if its
+    * use count for that service is greater than zero.
+    * 
+    * 
+    * @return A potentially empty list of <code>ServiceReference</code> objects.
+    * @throws IllegalStateException If this bundle has been uninstalled.
+    */
+   Set<ServiceState> getServicesInUse(AbstractBundle bundleState);
+
+   /**
     * Returns the bundles that are using the service.
     * @return A set of bundles or an empty set.
     */
-   //Set<Bundle> getUsingBundles(OSGiServiceState serviceState);
-   
+   Set<AbstractBundle> getUsingBundles(ServiceState serviceState);
+
    /**
-    * Unregisters a service. Remove a <code>ServiceRegistration</code> object
-    * from the Framework service registry. All <code>ServiceReference</code>
-    * objects associated with this <code>ServiceRegistration</code> object
-    * can no longer be used to interact with the service once unregistration is
-    * complete.
-    * 
+    * Unregister the given service. 
     */
-   //void unregisterService(OSGiServiceState serviceState);
+   void unregisterService(ServiceState reference);
 }

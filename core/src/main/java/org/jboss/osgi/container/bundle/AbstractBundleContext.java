@@ -206,8 +206,9 @@ public abstract class AbstractBundleContext implements BundleContext
    public ServiceReference[] getServiceReferences(String clazz, String filter) throws InvalidSyntaxException
    {
       checkValidBundleContext();
+      boolean checkAssignable = (clazz != null && bundleState.getBundleId() != 0);
       ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
-      List<ServiceState> srefs = servicePlugin.getServiceReferences(bundleState, clazz, filter, true);
+      List<ServiceState> srefs = servicePlugin.getServiceReferences(bundleState, clazz, filter, checkAssignable);
       if (srefs.isEmpty())
          return null;
       
@@ -250,8 +251,9 @@ public abstract class AbstractBundleContext implements BundleContext
    public Object getService(ServiceReference sref)
    {
       checkValidBundleContext();
+      ServiceState serviceState = ServiceState.assertServiceState(sref);
       ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
-      Object service = servicePlugin.getService(bundleState, ServiceState.assertServiceState(sref));
+      Object service = servicePlugin.getService(bundleState, serviceState);
       return service;
    }
 
@@ -259,8 +261,9 @@ public abstract class AbstractBundleContext implements BundleContext
    public boolean ungetService(ServiceReference sref)
    {
       checkValidBundleContext();
+      ServiceState serviceState = ServiceState.assertServiceState(sref);
       ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
-      return servicePlugin.ungetService(bundleState, ServiceState.assertServiceState(sref));
+      return servicePlugin.ungetService(bundleState, serviceState);
    }
 
    @Override

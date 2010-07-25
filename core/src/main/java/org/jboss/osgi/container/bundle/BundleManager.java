@@ -80,7 +80,7 @@ public class BundleManager
 {
    // Provide logging
    // private static final Logger log = Logger.getLogger(BundleManager.class);
-   
+
    // The BundleId generator 
    private AtomicLong identityGenerator = new AtomicLong();
    // The sytem bundle
@@ -138,16 +138,16 @@ public class BundleManager
       SystemBundle bundleState = getSystemBundle();
       return bundleState.getState() == Bundle.ACTIVE;
    }
-   
+
    void addBundleState(AbstractBundle bundleState)
    {
       if (bundleState == null)
          throw new IllegalArgumentException("Null bundleState");
-      
+
       long bundleId = bundleState.getBundleId();
-      if(bundleMap.containsKey(bundleId) == true)
+      if (bundleMap.containsKey(bundleId) == true)
          throw new IllegalStateException("Bundle already added: " + bundleState);
-      
+
       // Cache the frequently accessed system bundle
       if (bundleId == 0)
          systemBundle = (SystemBundle)bundleState;
@@ -155,7 +155,7 @@ public class BundleManager
       // Add the bundle to the resolver
       ResolverPlugin plugin = getPlugin(ResolverPlugin.class);
       plugin.addBundle(bundleState);
-      
+
       // Register the bundle with the manager
       bundleMap.put(bundleId, bundleState);
       bundleState.changeState(Bundle.INSTALLED);
@@ -165,7 +165,7 @@ public class BundleManager
    {
       ResolverPlugin plugin = getPlugin(ResolverPlugin.class);
       plugin.removeBundle(bundleState);
-      
+
       bundleState.changeState(Bundle.UNINSTALLED);
       bundleMap.remove(bundleState.getBundleId());
    }
@@ -231,7 +231,7 @@ public class BundleManager
       }
       return result;
    }
-   
+
    public List<AbstractBundle> getBundles()
    {
       List<AbstractBundle> bundles = new ArrayList<AbstractBundle>(bundleMap.values());
@@ -372,11 +372,32 @@ public class BundleManager
       OSGiMetaData metadata = plugin.createOSGiMetaData(dep);
       if (metadata.getFragmentHost() != null)
          throw new NotImplementedException("Fragments not support");
-      
+
       dep.addAttachment(OSGiMetaData.class, metadata);
 
       AbstractBundle bundleState = new HostBundle(this, dep);
+      
+      // Validate every deployed bundle (i.e. the system bundle is not validated)
+      validateBundle(bundleState);
+      
       return bundleState;
+   }
+
+   private void validateBundle(AbstractBundle bundleState) throws BundleException
+   {
+      OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
+      if (osgiMetaData == null)
+         return;
+
+      BundleValidator validator;
+
+      // Delegate to the validator for the appropriate revision
+      if (osgiMetaData.getBundleManifestVersion() > 1)
+         validator = new BundleValidatorR4(this);
+      else
+         validator = new BundleValidatorR3(this);
+
+      validator.validateBundle(bundleState);
    }
 
    private URL getLocationURL(String location) throws BundleException

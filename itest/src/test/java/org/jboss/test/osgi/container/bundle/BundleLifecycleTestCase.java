@@ -35,7 +35,6 @@ import org.jboss.test.osgi.container.bundle.support.b.ActivatorB;
 import org.jboss.test.osgi.container.bundle.support.b.LifecycleService;
 import org.jboss.test.osgi.container.bundle.support.b.ServiceB;
 import org.jboss.test.osgi.container.bundle.support.x.X;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -125,7 +124,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest
    /**
     * Verifies that BundleB can get started when the service is available
     */
-   @Ignore
+   @Test
    public void testDependencyAvailable() throws Exception
    {
       Archive<?> assemblyA = assembleArchive("lifecycle-service", "/bundles/lifecycle/simple-service", LifecycleService.class);
@@ -158,7 +157,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest
    /**
     * Verifies that BundleB can get started when the service is made available 
     */
-   @Ignore
+   @Test
    public void testStartRetry() throws Exception
    {
       Archive<?> assemblyA = assembleArchive("lifecycle-service", "/bundles/lifecycle/simple-service", LifecycleService.class);
@@ -238,7 +237,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest
    /**
     * Verifies that we get a BundleException when an invalid bundle is installed
     */
-   @Ignore
+   @Test
    public void testInstallInvalid() throws Exception
    {
       try

@@ -33,7 +33,6 @@ import java.util.Hashtable;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.container.service.support.SimpleServiceFactory;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -49,7 +48,6 @@ import org.osgi.framework.ServiceRegistration;
  * @author thomas.diesler@jboss.com
  * @version $Revision: 1.1 $
  */
-@Ignore
 public class ServiceRegistrationTestCase extends OSGiFrameworkTest
 {
    @Test
@@ -264,59 +262,59 @@ public class ServiceRegistrationTestCase extends OSGiFrameworkTest
       try
       {
          bundle1.start();
-         BundleContext bundleContext = bundle1.getBundleContext();
-         assertNotNull(bundleContext);
+         BundleContext context1 = bundle1.getBundleContext();
+         assertNotNull(context1);
 
-         SimpleServiceFactory factory = new SimpleServiceFactory(bundleContext);
-         ServiceRegistration registration = bundleContext.registerService(BundleContext.class.getName(), factory, null);
-         assertNotNull(registration);
+         SimpleServiceFactory factory = new SimpleServiceFactory(context1);
+         ServiceRegistration sreg1 = context1.registerService(BundleContext.class.getName(), factory, null);
+         assertNotNull(sreg1);
 
-         ServiceReference reference = registration.getReference();
-         assertNotNull(reference);
+         ServiceReference sref1 = sreg1.getReference();
+         assertNotNull(sref1);
 
-         ServiceReference reference2 = bundleContext.getServiceReference(BundleContext.class.getName());
-         assertEquals(reference, reference2);
+         ServiceReference sref2 = context1.getServiceReference(BundleContext.class.getName());
+         assertEquals(sref1, sref2);
 
          ServiceReference[] inUse = bundle1.getServicesInUse();
          assertNull(inUse);
 
-         bundleContext.getService(reference);
+         context1.getService(sref1);
          inUse = bundle1.getServicesInUse();
-         assertArrayEquals(new ServiceReference[] { reference }, inUse);
+         assertArrayEquals(new ServiceReference[] { sref1 }, inUse);
 
          Archive<?> assembly2 = assembleArchive("simple2", "/bundles/simple/simple-bundle2");
          Bundle bundle2 = installBundle(assembly2);
          try
          {
             bundle2.start();
-            BundleContext bundleContext2 = bundle2.getBundleContext();
-            assertNotNull(bundleContext2);
-            bundleContext2.getService(reference);
+            BundleContext context2 = bundle2.getBundleContext();
+            assertNotNull(context2);
+            context2.getService(sref1);
             inUse = bundle2.getServicesInUse();
-            assertArrayEquals(new ServiceReference[] { reference }, inUse);
+            assertArrayEquals(new ServiceReference[] { sref1 }, inUse);
 
             assertNull(factory.ungetBundle);
             assertNull(factory.ungetRegistration);
             assertNull(factory.ungetService);
 
-            bundleContext.addServiceListener(this);
-            registration.unregister();
+            context1.addServiceListener(this);
+            sreg1.unregister();
 
-            reference2 = bundleContext.getServiceReference(BundleContext.class.getName());
-            assertNull("" + reference2, reference2);
+            sref2 = context1.getServiceReference(BundleContext.class.getName());
+            assertNull("" + sref2, sref2);
 
-            Object actual = bundleContext.getService(reference);
+            Object actual = context1.getService(sref1);
             assertNull("" + actual, actual);
 
-            assertServiceEvent(ServiceEvent.UNREGISTERING, reference);
+            assertServiceEvent(ServiceEvent.UNREGISTERING, sref1);
 
             inUse = bundle1.getServicesInUse();
             assertNull(inUse);
             inUse = bundle2.getServicesInUse();
             assertNull(inUse);
 
-            assertEquals(registration, factory.ungetRegistration);
-            assertEquals(bundleContext, factory.ungetService);
+            assertEquals(sreg1, factory.ungetRegistration);
+            assertEquals(context1, factory.ungetService);
          }
          finally
          {
@@ -325,7 +323,7 @@ public class ServiceRegistrationTestCase extends OSGiFrameworkTest
 
          try
          {
-            registration.unregister();
+            sreg1.unregister();
             fail("Should not be here!");
          }
          catch (IllegalStateException t)

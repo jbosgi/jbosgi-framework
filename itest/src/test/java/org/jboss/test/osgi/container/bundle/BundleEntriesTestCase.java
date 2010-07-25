@@ -36,7 +36,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 
@@ -47,7 +46,7 @@ import org.osgi.framework.Bundle;
  */
 public class BundleEntriesTestCase extends OSGiFrameworkTest
 {
-   @Ignore
+   @Test
    public void testEntriesNotInstalled() throws Exception
    {
       Bundle bundle = installBundle(assembleArchive("entries-simple", "/bundles/entries/entries-simple"));
@@ -91,7 +90,7 @@ public class BundleEntriesTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Ignore
+   @Test
    public void testEntries() throws Exception
    {
       Bundle bundle = installBundle(assembleArchive("entries-simple", "/bundles/entries/entries-simple"));

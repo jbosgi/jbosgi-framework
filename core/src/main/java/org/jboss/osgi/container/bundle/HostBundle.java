@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.Vector;
 
 import org.jboss.logging.Logger;
@@ -156,6 +155,8 @@ public class HostBundle extends AbstractBundle
    @Override
    public Class<?> loadClass(String className) throws ClassNotFoundException
    {
+      assertNotUninstalled();
+      
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
       if (checkResolved() == false)
          throw new ClassNotFoundException("Class '" + className + "' not found in: " + this);
@@ -180,6 +181,8 @@ public class HostBundle extends AbstractBundle
    @Override
    public URL getResource(String name)
    {
+      assertNotUninstalled();
+      
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
       checkResolved();
 
@@ -206,6 +209,8 @@ public class HostBundle extends AbstractBundle
    @SuppressWarnings("rawtypes")
    public Enumeration getResources(String name) throws IOException
    {
+      assertNotUninstalled();
+      
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
       checkResolved();
 
@@ -237,6 +242,7 @@ public class HostBundle extends AbstractBundle
    @SuppressWarnings("rawtypes")
    public Enumeration getEntryPaths(String path)
    {
+      assertNotUninstalled();
       try
       {
          return getRootFile().getEntryPaths(path);
@@ -250,6 +256,7 @@ public class HostBundle extends AbstractBundle
    @Override
    public URL getEntry(String path)
    {
+      assertNotUninstalled();
       try
       {
          VirtualFile child = getRootFile().getChild(path);
@@ -266,6 +273,7 @@ public class HostBundle extends AbstractBundle
    @SuppressWarnings("rawtypes")
    public Enumeration findEntries(String path, String pattern, boolean recurse)
    {
+      assertNotUninstalled();
       try
       {
          return getRootFile().findEntries(path, pattern, recurse);
@@ -289,9 +297,6 @@ public class HostBundle extends AbstractBundle
    @Override
    void startInternal(int options) throws BundleException
    {
-      if (getState() == Bundle.UNINSTALLED)
-         throw new IllegalStateException("Cannot start an uninstalled bundle: " + this);
-
       if ((options & Bundle.START_TRANSIENT) == 0)
          setPersistentlyStarted(true);
 
@@ -437,9 +442,8 @@ public class HostBundle extends AbstractBundle
       }
 
       // Any services registered by this bundle must be unregistered
-      List<ServiceState> ownedServices = getOwnedServices();
-      for (ServiceState serviceState : ownedServices)
-         getServiceManagerPlugin().unregisterService(serviceState);
+      for (ServiceState serviceState : getRegisteredServicesInternal())
+         serviceState.unregister();
 
       // [TODO] Any listeners registered by this bundle must be removed
 

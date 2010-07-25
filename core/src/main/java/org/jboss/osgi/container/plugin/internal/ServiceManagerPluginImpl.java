@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.container.plugin.internal;
 
-//$Id$
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -52,6 +50,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.ServiceReferenceComparator;
 import org.jboss.osgi.container.bundle.ServiceState;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
@@ -84,10 +83,19 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    // Maps the service interface to the list of registered service names
    private Map<String, List<ServiceName>> serviceNameMap = new ConcurrentHashMap<String, List<ServiceName>>();
 
+   // Cache commonly used plugins
+   private FrameworkEventsPlugin eventsPlugin;
+
    public ServiceManagerPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
+   }
+
+   @Override
+   public void initPlugin()
+   {
       serviceContainer = ServiceContainer.Factory.create();
+      eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
    }
 
    @Override
@@ -103,93 +111,6 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    }
 
    @Override
-   public List<ServiceState> getRegisteredServices(AbstractBundle bundleState)
-   {
-      return bundleState.getOwnedServices();
-   }
-
-   @Override
-   public Object getService(AbstractBundle bundleState, ServiceState serviceState)
-   {
-      if (serviceState.isUnregistered())
-         return null;
-      
-      Object value = serviceState.getValue();
-
-      // Add the given service ref to the list of used services
-      bundleState.addUsedService(serviceState);
-      
-      // Get the ServiceFactory value
-      if (value instanceof ServiceFactory)
-         value = serviceState.getServiceFactoryValue(bundleState);
-      
-      return value;
-   }
-
-   @Override
-   public ServiceState getServiceReference(AbstractBundle bundleState, String clazz)
-   {
-      List<ServiceState> srefs = getServiceReferencesInternal(bundleState, clazz, null, true);
-      if (srefs == null || srefs.isEmpty())
-         return null;
-
-      return srefs.get(0);
-   }
-
-   @Override
-   public List<ServiceState> getServiceReferences(AbstractBundle bundleState, String clazz, String filterStr, boolean checkAssignable)
-         throws InvalidSyntaxException
-   {
-      Filter filter = null;
-      if (filterStr != null)
-         filter = FrameworkUtil.createFilter(filterStr);
-
-      return getServiceReferencesInternal(bundleState, clazz, filter, true);
-   }
-
-   public List<ServiceState> getServiceReferencesInternal(AbstractBundle bundleState, String clazz, Filter filter, boolean checkAssignable)
-   {
-      if (bundleState == null)
-         throw new IllegalArgumentException("Null bundleState");
-      
-      List<ServiceState> result = new ArrayList<ServiceState>();
-      List<ServiceName> serviceNames = (clazz != null ? serviceNameMap.get(clazz) : new ArrayList<ServiceName>());
-      if (clazz == null)
-      {
-         // [MSC-9] Add ability to query the ServiceContainer
-         Set<ServiceName> allServiceNames = new HashSet<ServiceName>();
-         for (List<ServiceName> auxList : serviceNameMap.values())
-            allServiceNames.addAll(auxList);
-         
-         serviceNames.addAll(allServiceNames);
-      }
-      
-      if (serviceNames == null)
-         return Collections.emptyList();
-
-      if (filter == null)
-         filter = NoFilter.INSTANCE;
-
-      for (ServiceName serviceName : serviceNames)
-      {
-         ServiceController<?> controller = serviceContainer.getService(serviceName);
-         if (controller == null)
-            throw new IllegalStateException("Cannot obtain service for: " + serviceName);
-
-         ServiceState serviceState = (ServiceState)controller.getValue();
-         if (filter.match(serviceState))
-            result.add(serviceState);
-      }
-      return Collections.unmodifiableList(result);
-   }
-
-   @Override
-   public Set<ServiceState> getServicesInUse(AbstractBundle bundleState)
-   {
-      return bundleState.getUsedServices();
-   }
-
-   @Override
    @SuppressWarnings({ "rawtypes", "unchecked" })
    public ServiceState registerService(AbstractBundle bundleState, String[] clazzes, Object value, Dictionary properties)
    {
@@ -200,10 +121,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       // to provide the current collection of service listeners which had been added prior to the hook being registered.
       Collection<ListenerInfo> listenerInfos = null;
       if (value instanceof ListenerHook)
-      {
-         FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
          listenerInfos = eventsPlugin.getServiceListenerInfos(null);
-      }
 
       // A temporary association of the clazz and name
       Map<ServiceName, String> associations = new HashMap<ServiceName, String>();
@@ -257,7 +175,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          // in case anything went wrong during the install
          for (Entry<ServiceName, String> aux : associations.entrySet())
          {
-            bundleState.addOwnedService(serviceState);
+            bundleState.addRegisteredService(serviceState);
             registerNameAssociation(aux.getValue(), aux.getKey());
          }
       }
@@ -274,49 +192,131 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       }
 
       // This event is synchronously delivered after the service has been registered with the Framework. 
-      FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
       eventsPlugin.fireServiceEvent(bundleState, ServiceEvent.REGISTERED, serviceState);
 
       return serviceState;
    }
 
    @Override
-   public void unregisterService(ServiceState serviceState)
+   public List<ServiceState> getRegisteredServices(AbstractBundle bundleState)
    {
-      List<ServiceName> serviceNames = serviceState.getServiceNames();
-      log.debug("Unregister service: " + serviceNames);
+      return bundleState.getRegisteredServicesInternal();
+   }
 
-      AbstractBundle serviceOwner = serviceState.getServiceOwner();
+   @Override
+   public ServiceState getServiceReference(AbstractBundle bundleState, String clazz)
+   {
+      if (clazz == null)
+         throw new IllegalArgumentException("Null clazz");
 
-      // This event is synchronously delivered before the service has completed unregistering. 
-      FrameworkEventsPlugin plugin = getPlugin(FrameworkEventsPlugin.class);
-      plugin.fireServiceEvent(serviceOwner, ServiceEvent.UNREGISTERING, serviceState);
+      boolean checkAssignable = (bundleState.getBundleId() != 0);
+      List<ServiceState> srefs = getServiceReferencesInternal(bundleState, clazz, null, checkAssignable);
+      if (srefs == null || srefs.isEmpty())
+         return null;
 
-      // Unregister name associations
+      return srefs.get(0);
+   }
+
+   @Override
+   public List<ServiceState> getServiceReferences(AbstractBundle bundleState, String clazz, String filterStr, boolean checkAssignable)
+         throws InvalidSyntaxException
+   {
+      Filter filter = null;
+      if (filterStr != null)
+         filter = FrameworkUtil.createFilter(filterStr);
+
+      return getServiceReferencesInternal(bundleState, clazz, filter, checkAssignable);
+   }
+
+   public List<ServiceState> getServiceReferencesInternal(AbstractBundle bundleState, String clazz, Filter filter, boolean checkAssignable)
+   {
+      if (bundleState == null)
+         throw new IllegalArgumentException("Null bundleState");
+
+      List<ServiceState> result = new ArrayList<ServiceState>();
+      List<ServiceName> serviceNames = (clazz != null ? serviceNameMap.get(clazz) : new ArrayList<ServiceName>());
+      if (clazz == null)
+      {
+         // [MSC-9] Add ability to query the ServiceContainer
+         Set<ServiceName> allServiceNames = new HashSet<ServiceName>();
+         for (List<ServiceName> auxList : serviceNameMap.values())
+            allServiceNames.addAll(auxList);
+
+         serviceNames.addAll(allServiceNames);
+      }
+
+      if (serviceNames == null)
+         return Collections.emptyList();
+
+      if (filter == null)
+         filter = NoFilter.INSTANCE;
+
       for (ServiceName serviceName : serviceNames)
       {
-         String[] clazzes = (String[])serviceState.getProperty(Constants.OBJECTCLASS);
-         for (String clazz : clazzes)
-            unregisterNameAssociation(clazz, serviceName);
+         ServiceController<?> controller = serviceContainer.getService(serviceName);
+         if (controller == null)
+            throw new IllegalStateException("Cannot obtain service for: " + serviceName);
+
+         ServiceState serviceState = (ServiceState)controller.getValue();
+         if (filter.match(serviceState) == false)
+            continue;
+
+         Object rawValue = serviceState.getRawValue();
+         if (checkAssignable == true && rawValue instanceof ServiceFactory == false)
+         {
+            if (serviceState.isAssignableTo(bundleState, clazz) == false)
+               continue;
+         }
+         
+         result.add(serviceState);
+      }
+      
+      // Sort the result
+      Collections.sort(result, ServiceReferenceComparator.getInstance());
+      
+      return Collections.unmodifiableList(result);
+   }
+
+   @Override
+   public Object getService(AbstractBundle bundleState, ServiceState serviceState)
+   {
+      // If the service has been unregistered, null is returned.
+      if (serviceState.isUnregistered())
+         return null;
+
+      // Add the given service ref to the list of used services
+      bundleState.addServiceInUse(serviceState);
+      serviceState.addUsingBundle(bundleState);
+
+      Object value = serviceState.getScopedValue(bundleState);
+
+      // If the factory returned an invalid value 
+      // restore the service usage counts
+      if (value == null)
+      {
+         bundleState.removeServiceInUse(serviceState);
+         serviceState.removeUsingBundle(bundleState);
       }
 
-      // Remove from owner bundle
-      serviceOwner.removeOwnedService(serviceState);
+      return value;
+   }
 
-      // Remove from controller
-      ServiceName rootServiceName = serviceNames.get(0);
-      try
-      {
-         // A service is brought DOWN by setting it's mode to NEVER
-         // Adding a {@link RemovingServiceListener} does this and will
-         // also synchronoulsy remove the service from the registry 
-         ServiceController<?> controller = serviceContainer.getService(rootServiceName);
-         controller.addListener(new RemovingServiceListener());
-      }
-      catch (RuntimeException ex)
-      {
-         log.error("Cannot remove service: " + rootServiceName, ex);
-      }
+   @Override
+   public boolean ungetService(AbstractBundle bundleState, ServiceState serviceState)
+   {
+      serviceState.ungetScopedValue(bundleState);
+
+      int useCount = bundleState.removeServiceInUse(serviceState);
+      if (useCount == 0)
+         serviceState.removeUsingBundle(bundleState);
+
+      return useCount >= 0;
+   }
+
+   @Override
+   public Set<ServiceState> getServicesInUse(AbstractBundle bundleState)
+   {
+      return bundleState.getServicesInUseInternal();
    }
 
    private void registerNameAssociation(String className, ServiceName serviceName)
@@ -344,8 +344,54 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    }
 
    @Override
-   public boolean ungetService(AbstractBundle bundleState, ServiceState serviceState)
+   public Set<AbstractBundle> getUsingBundles(ServiceState serviceState)
    {
-      return bundleState.removeUsedService(serviceState);
+      return serviceState.getUsingBundlesInternal();
    }
+
+   @Override
+   public void unregisterService(ServiceState serviceState)
+   {
+      List<ServiceName> serviceNames = serviceState.getServiceNames();
+      log.debug("Unregister service: " + serviceNames);
+
+      AbstractBundle serviceOwner = serviceState.getServiceOwner();
+
+      // This event is synchronously delivered before the service has completed unregistering. 
+      eventsPlugin.fireServiceEvent(serviceOwner, ServiceEvent.UNREGISTERING, serviceState);
+
+      // Remove from using bundles
+      for (AbstractBundle bundleState : serviceState.getUsingBundlesInternal())
+      {
+         while (ungetService(bundleState, serviceState))
+            ;
+      }
+
+      // Remove from owner bundle
+      serviceOwner.removeRegisteredService(serviceState);
+
+      // Unregister name associations
+      for (ServiceName serviceName : serviceNames)
+      {
+         String[] clazzes = (String[])serviceState.getProperty(Constants.OBJECTCLASS);
+         for (String clazz : clazzes)
+            unregisterNameAssociation(clazz, serviceName);
+      }
+
+      // Remove from controller
+      ServiceName rootServiceName = serviceNames.get(0);
+      try
+      {
+         // A service is brought DOWN by setting it's mode to NEVER
+         // Adding a {@link RemovingServiceListener} does this and will
+         // also synchronoulsy remove the service from the registry 
+         ServiceController<?> controller = serviceContainer.getService(rootServiceName);
+         controller.addListener(new RemovingServiceListener());
+      }
+      catch (RuntimeException ex)
+      {
+         log.error("Cannot remove service: " + rootServiceName, ex);
+      }
+   }
+
 }
