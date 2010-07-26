@@ -66,12 +66,12 @@ public class ServiceReferenceComparator implements Comparator<ServiceReference>
       int thisRanking = s1.getServiceRanking();
       int otherRanking = s2.getServiceRanking();
       if (thisRanking != otherRanking)
-         return (thisRanking - otherRanking < 0 ? -1 : 1);
+         return thisRanking < otherRanking ? -1 : 1;
       
       // This ServiceReference is less than the specified ServiceReference if it has a higher service id 
       // and greater if it has a lower service id
       long thisId = s1.getServiceId();
       long otherId = s2.getServiceId();
-      return (otherId - thisId < 0 ? -1 : 1);
+      return thisId > otherId ? -1 : 1;
    }
 }

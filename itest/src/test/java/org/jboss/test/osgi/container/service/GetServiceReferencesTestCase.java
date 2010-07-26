@@ -531,12 +531,12 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest
             assertNotNull(sref2);
 
             assertGetReference(context1, className, sref2);
-            assertReferences(context1, className, sref1, sref2);
-            assertAllReferences(context1, className, sref1, sref2);
+            assertReferences(context1, className, sref2, sref1);
+            assertAllReferences(context1, className, sref2, sref1);
 
             assertGetReference(context2, className, sref2);
-            assertReferences(context2, className, sref1, sref2);
-            assertAllReferences(context2, className, sref1, sref2);
+            assertReferences(context2, className, sref2, sref1);
+            assertAllReferences(context2, className, sref2, sref1);
 
             sreg1.unregister();
 
@@ -554,12 +554,12 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest
             assertNotNull(sref1);
 
             assertGetReference(context1, className, sref2);
-            assertReferences(context1, className, sref1, sref2);
-            assertAllReferences(context1, className, sref1, sref2);
+            assertReferences(context1, className, sref2, sref1);
+            assertAllReferences(context1, className, sref2, sref1);
 
             assertGetReference(context2, className, sref2);
-            assertReferences(context2, className, sref1, sref2);
-            assertAllReferences(context2, className, sref1, sref2);
+            assertReferences(context2, className, sref2, sref1);
+            assertAllReferences(context2, className, sref2, sref1);
 
             sreg2.unregister();
 

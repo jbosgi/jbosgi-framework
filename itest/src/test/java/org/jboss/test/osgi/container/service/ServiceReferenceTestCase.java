@@ -553,12 +553,12 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest
       ServiceReference sref4 = sreg4.getReference();
       assertNotNull(sref4);
 
-      assertGreaterRanking(sref1, sref2);
-      assertGreaterRanking(sref3, sref1);
-      assertGreaterRanking(sref3, sref2);
-      assertGreaterRanking(sref1, sref4);
-      assertGreaterRanking(sref2, sref4);
-      assertGreaterRanking(sref3, sref4);
+      assertCompareTo(sref1, sref2);
+      assertCompareTo(sref3, sref1);
+      assertCompareTo(sref3, sref2);
+      assertCompareTo(sref1, sref4);
+      assertCompareTo(sref2, sref4);
+      assertCompareTo(sref3, sref4);
 
       try
       {
@@ -588,7 +588,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest
       ServiceReference sref5 = sreg5.getReference();
       assertNotNull(sref5);
 
-      assertGreaterRanking(sref1, sref5); 
+      assertCompareTo(sref1, sref5); 
 
       Set<ServiceReference> ordering = new TreeSet<ServiceReference>();
       ordering.add(sref1);
@@ -651,10 +651,10 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest
       
       ServiceReference[] srefs = context.getServiceReferences(Runnable.class.getName(), null);
       assertEquals(4, srefs.length);
-      assertEquals(sref1, srefs[0]);
-      assertEquals(sref4, srefs[1]);
-      assertEquals(sref3, srefs[2]);
-      assertEquals(sref2, srefs[3]);
+      assertEquals(sref2, srefs[0]);
+      assertEquals(sref3, srefs[1]);
+      assertEquals(sref4, srefs[2]);
+      assertEquals(sref1, srefs[3]);
       
       ServiceReference sref = context.getServiceReference(Runnable.class.getName());
       assertEquals(sref2, sref);
@@ -672,7 +672,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest
       assertEquals(sref1, sref);
    }
 
-   protected void assertGreaterRanking(ServiceReference sref1, ServiceReference sref2) throws Exception
+   protected void assertCompareTo(ServiceReference sref1, ServiceReference sref2) throws Exception
    {
       assertTrue(sref1 + " > " + sref2, sref1.compareTo(sref2) > 0);
       assertTrue(sref2 + " < " + sref1, sref2.compareTo(sref1) < 0);

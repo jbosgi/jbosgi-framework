@@ -273,6 +273,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       
       // Sort the result
       Collections.sort(result, ServiceReferenceComparator.getInstance());
+      Collections.reverse(result);
       
       return Collections.unmodifiableList(result);
    }
