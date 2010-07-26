@@ -49,7 +49,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
  * @author thomas.diesler@jboss.com
  * @since 20-Mar-2010
  */
-@Ignore
+@Ignore("service listener hook")
 public class ServiceListenerHookTestCase extends OSGiFrameworkTest
 {
    @Test

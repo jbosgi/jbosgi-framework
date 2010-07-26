@@ -34,7 +34,6 @@ import org.jboss.test.osgi.container.service.support.BrokenServiceFactory;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceException;
 import org.osgi.framework.ServiceReference;

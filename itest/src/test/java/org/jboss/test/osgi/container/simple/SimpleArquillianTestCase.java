@@ -50,7 +50,7 @@ import org.osgi.framework.ServiceReference;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-@Ignore
+@Ignore("arquillian")
 @RunWith(Arquillian.class)
 public class SimpleArquillianTestCase
 {

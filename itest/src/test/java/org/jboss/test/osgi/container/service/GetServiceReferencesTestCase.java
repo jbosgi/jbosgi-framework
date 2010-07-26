@@ -21,8 +21,6 @@
 */
 package org.jboss.test.osgi.container.service;
 
-// $Id: $
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -39,7 +37,6 @@ import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.container.service.support.a.A;
 import org.jboss.test.osgi.container.service.support.b.B;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -378,7 +375,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest
       assertGetServiceReferencesAssignable(null);
    }
 
-   @Ignore
+   @Test
    public void testGetServiceReferencesClassAssignable() throws Exception
    {
       assertGetServiceReferencesAssignable(A.class.getName());
@@ -480,7 +477,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Ignore
+   @Test
    public void testGetServiceReferencesRankings() throws Exception
    {
       String className = A.class.getName();

@@ -48,7 +48,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 07-Jan-2010
  */
-@Ignore
+@Ignore("fragments")
 public class FragmentTestCase extends OSGiFrameworkTest
 {
    @After

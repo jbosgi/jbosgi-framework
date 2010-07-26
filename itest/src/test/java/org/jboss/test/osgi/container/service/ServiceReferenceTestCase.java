@@ -39,7 +39,6 @@ import java.util.TreeSet;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.container.service.support.a.A;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -618,7 +617,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest
       assertEquals(sref3, iterator.next());
    }
 
-   @Ignore
+   @Test
    public void testServiceReferenceOrder() throws Exception
    {
       Runnable runIt = new Runnable()

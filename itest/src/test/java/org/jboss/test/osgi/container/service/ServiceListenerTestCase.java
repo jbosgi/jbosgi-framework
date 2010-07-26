@@ -21,15 +21,12 @@
 */
 package org.jboss.test.osgi.container.service;
 
-// Id: $
-
 import static org.junit.Assert.assertNotNull;
 
 import java.util.Hashtable;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;

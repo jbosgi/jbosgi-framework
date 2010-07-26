@@ -47,7 +47,7 @@ import org.osgi.framework.hooks.service.EventHook;
  * @author thomas.diesler@jboss.com
  * @since 20-Mar-2010
  */
-@Ignore
+@Ignore("service event hook")
 public class ServiceEventHookTestCase extends OSGiFrameworkTest
 {
    @Test

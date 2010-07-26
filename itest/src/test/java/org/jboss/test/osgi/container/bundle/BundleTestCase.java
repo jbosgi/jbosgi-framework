@@ -155,7 +155,7 @@ public class BundleTestCase extends OSGiFrameworkTest
       // TODO testStartStop
    }
 
-   @Ignore
+   @Ignore("bundle update")
    public void testUpdate() throws Exception
    {
       Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundle1");

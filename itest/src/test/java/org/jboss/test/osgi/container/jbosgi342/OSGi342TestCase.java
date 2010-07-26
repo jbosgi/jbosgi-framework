@@ -38,7 +38,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 11-Jun-2010
  */
-@Ignore
+@Ignore("deadlock in modules")
 public class OSGi342TestCase extends OSGiFrameworkTest
 {
    @After

@@ -33,7 +33,7 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 21-Jan-2010
  */
-@Ignore
+@Ignore("native code")
 public class NativeCodeTestCase extends OSGiFrameworkTest
 {
    @Test
