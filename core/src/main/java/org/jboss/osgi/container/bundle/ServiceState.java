@@ -64,7 +64,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    // The service id 
    private long serviceId;
    // The bundle that ownes this service
-   private AbstractBundle owner;
+   private AbstractBundle ownerBundle;
    // The bundles that use this service
    private Set<AbstractBundle> usingBundles;
    // The list of service names associated with this service
@@ -100,7 +100,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       this.eventsPlugin = owner.getFrameworkEventsPlugin();
 
       this.serviceId = serviceManager.getNextServiceId();
-      this.owner = owner;
+      this.ownerBundle = owner;
       this.value = value;
 
       if (checkValidClassNames(owner, clazzes, value) == false)
@@ -273,7 +273,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       currProperties = new CaseInsensitiveDictionary(properties);
 
       // This event is synchronously delivered after the service properties have been modified. 
-      eventsPlugin.fireServiceEvent(owner, ServiceEvent.MODIFIED, this);
+      eventsPlugin.fireServiceEvent(ownerBundle, ServiceEvent.MODIFIED, this);
    }
 
    public Dictionary getPreviousProperties()
@@ -283,7 +283,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
 
    public AbstractBundle getServiceOwner()
    {
-      return owner;
+      return ownerBundle;
    }
 
    @Override
@@ -292,7 +292,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       if (isUnregistered())
          return null;
       
-      return owner.getBundleWrapper();
+      return ownerBundle.getBundleWrapper();
    }
 
    public void addUsingBundle(AbstractBundle bundleState)
@@ -351,7 +351,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       if (className == null)
          throw new IllegalArgumentException("Null className");
       
-      if (owner == AbstractBundle.assertBundleState(bundle))
+      if (ownerBundle == AbstractBundle.assertBundleState(bundle))
          return true;
       
       Class<?> targetClass = null;
@@ -370,7 +370,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       Class<?> ownerClass = null;
       try
       {
-         ownerClass = owner.loadClass(className);
+         ownerClass = ownerBundle.loadClass(className);
       }
       catch (ClassNotFoundException ex)
       {
@@ -481,7 +481,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
 
                // The Framework will check if the returned service object is an instance of all the 
                // classes named when the service was registered. If not, then null is returned to the bundle.
-               if (checkValidClassNames(bundleState, (String[])getProperty(Constants.OBJECTCLASS), retValue) == false)
+               if (checkValidClassNames(ownerBundle, (String[])getProperty(Constants.OBJECTCLASS), retValue) == false)
                   return null;
 
                value = retValue;
