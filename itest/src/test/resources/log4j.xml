@@ -32,10 +32,13 @@
   <!-- Limit categories -->
   <!-- ================ -->
 
-  <!-- Show jboss msc traces - ->
-  <category name="org.jboss.msc">
+  <!-- Show jboss-osgi traces - ->
+  <category name="org.jboss.osgi">
     <priority value="TRACE" />
   </category>
+  -->
+  
+  <!-- Show jboss msc traces - ->
   <category name="org.jboss.modules">
     <priority value="TRACE" />
   </category>

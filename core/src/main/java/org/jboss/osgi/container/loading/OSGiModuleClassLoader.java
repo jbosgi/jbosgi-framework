@@ -41,6 +41,7 @@ import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
+import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.osgi.framework.Bundle;
@@ -60,6 +61,7 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts = new ThreadLocal<Map<String, AtomicInteger>>();
    private BundleManager bundleManager;
    private ModuleManagerPlugin moduleManager;
+   private SystemPackagesPlugin systemPackages;
    private XModule resModule;
 
    public OSGiModuleClassLoader(BundleManager bundleManager, XModule resModule, Module module, ModuleSpec moduleSpec)
@@ -67,6 +69,7 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       super(module, Collections.<Flag> emptySet(), AssertionSetting.INHERIT, moduleSpec.getContentLoader());
       this.bundleManager = bundleManager;
       this.moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
+      this.systemPackages = bundleManager.getPlugin(SystemPackagesPlugin.class);
       this.resModule = resModule;
 
       setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
@@ -83,6 +86,16 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       boolean traceEnabled = log.isTraceEnabled();
       if (traceEnabled)
          log.trace("Attempt to find class [" + className + "] in " + getModule() + " ...");
+      
+      // Delegate to framework loader for boot delegation 
+      String packageName = className.substring(0, className.lastIndexOf('.'));
+      if (systemPackages.isBootDelegationPackage(packageName))
+      {
+         if (traceEnabled)
+            log.trace("Load class through boot delegation [" + className + "] ...");
+         
+         return getSystemClassLoader().loadClass(className);
+      }
 
       // Try the Module delegation graph
       Class<?> result = null;

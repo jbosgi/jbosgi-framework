@@ -45,10 +45,12 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
    // Provide logging
    final Logger log = Logger.getLogger(SystemPackagesPluginImpl.class);
 
-   /** The derived combination of all system packages */
+   // The derived combination of all system packages 
    private List<String> allPackages = new ArrayList<String>();
-   /** The derived combination of all system packages without version specifier */
+   // The derived combination of all system packages without version specifier 
    private List<String> allPackageNames = new ArrayList<String>();
+   // The boot delegation packages 
+   private List<String> bootDelegationPackages = new ArrayList<String>();
 
    public SystemPackagesPluginImpl(BundleManager bundleManager)
    {
@@ -128,6 +130,7 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
          frameworkState.setProperty(Constants.FRAMEWORK_SYSTEMPACKAGES, asString);
       }
 
+      // Add the extra system packages
       String extraPackages = frameworkState.getProperty(Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA);
       if (extraPackages != null)
       {
@@ -136,6 +139,7 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
 
       Collections.sort(allPackages);
 
+      // Initialize the package names (without the version)
       for (String name : allPackages)
       {
          log.debug("   " + name);
@@ -145,6 +149,48 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
 
          allPackageNames.add(name);
       }
+      
+      // Initialize the boot delegation package names
+      String bootDelegationProp = frameworkState.getProperty(Constants.FRAMEWORK_BOOTDELEGATION);
+      if (bootDelegationProp != null)
+      {
+         String[] packageNames = bootDelegationProp.split(",");
+         for (String packageName : packageNames)
+         {
+            bootDelegationPackages.add(packageName);
+         }
+      }
+   }
+
+   @Override
+   public List<String> getBootDelegationPackages()
+   {
+      if (allPackages.isEmpty())
+         initSystemPackages();
+      
+      return Collections.unmodifiableList(bootDelegationPackages);
+   }
+
+   @Override
+   public boolean isBootDelegationPackage(String name)
+   {
+      if (name == null)
+         throw new IllegalArgumentException("Null package name");
+
+      if (allPackages.isEmpty())
+         initSystemPackages();
+
+      if (bootDelegationPackages.contains(name))
+         return true;
+      
+      // Match foo with foo.*
+      for (String aux : bootDelegationPackages)
+      {
+         if (aux.equals(name + ".*"))
+            return true;
+      }
+      
+      return false;
    }
 
    public List<String> getSystemPackages(boolean version)

@@ -34,6 +34,21 @@ import java.util.List;
 public interface SystemPackagesPlugin extends Plugin
 {
    /**
+    * Get the list of defined boot delegation packages
+    * 
+    * @return The list of defined system packages
+    */
+   List<String> getBootDelegationPackages();
+
+   /**
+    * Return whether the given package name is a boot delegation package.
+    * 
+    * @param name The package name
+    * @return True if the given package name is a boot delegation package.
+    */
+   boolean isBootDelegationPackage(String name);
+
+   /**
     * Get the list of defined system packages
     * 
     * @param version If true includes potential version qualifiers
