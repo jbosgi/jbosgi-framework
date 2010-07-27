@@ -1,6 +1,0 @@
-# bnd build -classpath target/test-classes -output target/test-libs/simple-bundle.jar src/test/resources/integration/simple/simple.bnd
-
-Bundle-SymbolicName: simple-bundle
-
-Bundle-Activator: org.jboss.test.osgi.container.simple.bundleA.SimpleActivator
-Export-Package: org.jboss.test.osgi.container.simple.bundleA

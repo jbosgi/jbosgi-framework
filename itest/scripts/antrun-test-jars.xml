@@ -83,6 +83,9 @@
     <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/simple-nativecode.jar" files="${tests.resources.dir}/nativecode/simple-nativecode.bnd" />
     -->
   	
+    <!-- simple -->
+    <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/simple-husky.jar" files="${tests.resources.dir}/simple/simple-husky.bnd" />
+  	
     <!-- Please add alphabetically -->
 
   </target>
