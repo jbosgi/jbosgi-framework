@@ -44,7 +44,6 @@
     <version.apache.felix.eventadmin>1.2.2</version.apache.felix.eventadmin>
     <version.apache.felix.log>1.0.0</version.apache.felix.log>
     <version.jboss.arquillian>1.0.0-SNAPSHOT</version.jboss.arquillian>
-    <version.jboss.common.core>2.2.17.GA</version.jboss.common.core>
     <version.jboss.msc>1.0.0.Beta2-SNAPSHOT</version.jboss.msc>
     <version.jboss.modules>1.0.0.Beta2-SNAPSHOT</version.jboss.modules>
     <version.jboss.osgi.deployment>1.0.3</version.jboss.osgi.deployment>
@@ -62,11 +61,6 @@
   <!-- Dependency Management -->
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>org.jboss</groupId>
-        <artifactId>jboss-common-core</artifactId>
-        <version>${version.jboss.common.core}</version>
-      </dependency>
       <dependency>
         <groupId>org.jboss.modules</groupId>
         <artifactId>jboss-modules</artifactId>

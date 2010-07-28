@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.container.compendium;
+package org.jboss.test.osgi.container.service.packageadmin;
 
 // $Id: $
 
@@ -28,8 +28,8 @@ import static org.junit.Assert.assertSame;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
-import org.jboss.test.osgi.container.compendium.support.a.PA;
-import org.jboss.test.osgi.container.compendium.support.b.Other;
+import org.jboss.test.osgi.container.service.support.a.PA;
+import org.jboss.test.osgi.container.service.support.b.Other;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
