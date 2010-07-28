@@ -27,7 +27,7 @@
   <parent>
     <groupId>org.jboss.osgi.container</groupId>
     <artifactId>jbosgi-container-parent</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>1.0.0.Alpha7-SNAPSHOT</version>
   </parent>
   
   <!-- Properties -->

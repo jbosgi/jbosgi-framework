@@ -23,7 +23,7 @@
   <artifactId>jbosgi-container-parent</artifactId>
   <packaging>pom</packaging>
 
-  <version>0.1-SNAPSHOT</version>
+  <version>1.0.0.Alpha7-SNAPSHOT</version>
 
   <parent>
     <groupId>org.jboss.osgi</groupId>
