@@ -62,7 +62,7 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
    // Provide logging
    private static final Logger log = Logger.getLogger(OSGiModuleClassLoader.class);
 
-   private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts = new ThreadLocal<Map<String, AtomicInteger>>();
+   private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
    private BundleManager bundleManager;
    private ModuleManagerPlugin moduleManager;
    private SystemPackagesPlugin systemPackages;
@@ -168,13 +168,32 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       }
 
       // Try to load the class dynamically
+      if (findMatchingDynamicImportPattern(className) != null)
+      {
+         result = loadClassDynamically(className);
+         if (result != null)
+            return result;
+      }
+
+      throw new ClassNotFoundException(className);
+   }
+
+   private Class<?> loadClassDynamically(String className) throws ClassNotFoundException
+   {
+      Class<?> result;
+      
+      if (dynamicLoadAttempts == null)
+         dynamicLoadAttempts  = new ThreadLocal<Map<String, AtomicInteger>>();
+      
       Map<String, AtomicInteger> mapping = dynamicLoadAttempts.get();
+      boolean removeThreadLocalMapping = false;
       try
       {
          if (mapping == null)
          {
             mapping = new HashMap<String, AtomicInteger>();
             dynamicLoadAttempts.set(mapping);
+            removeThreadLocalMapping = true;
          }
          
          AtomicInteger recursiveDepth = mapping.get(className);
@@ -183,38 +202,40 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
          
          if (recursiveDepth.incrementAndGet() == 1)
          {
-            result = findClassDynamically(className);
+            result = findInResolvedModules(className);
+            if (result != null)
+               return result;
+            
+            result = findInUnresolvedModules(className);
             if (result != null)
                return result;
          }
       }
       finally
       {
-         AtomicInteger recursiveDepth = mapping.get(className);
-         if (recursiveDepth.decrementAndGet() == 0)
-            mapping.remove(className);
+         if (removeThreadLocalMapping == true)
+         {
+            dynamicLoadAttempts.remove();
+         }
+         else
+         {
+            AtomicInteger recursiveDepth = mapping.get(className);
+            if (recursiveDepth.decrementAndGet() == 0)
+               mapping.remove(className);
+         }
       }
-
+      
       throw new ClassNotFoundException(className);
-   }
-
-   private Class<?> findClassDynamically(String className)
-   {
-      Class<?> result = null;
-      if (findMatchingDynamicImportPattern(className) != null)
-      {
-         result = findInResolvedModules(className);
-         if (result == null)
-            result = findInUnresolvedModules(className);
-      }
-      return result;
    }
 
    private String findMatchingDynamicImportPattern(String className)
    {
-      String foundMatch = null;
-
       List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
+      if (dynamicRequirements.isEmpty())
+         return null;
+      
+      String foundMatch = null;
+      
       for (XPackageRequirement dynreq : dynamicRequirements)
       {
          String pattern = dynreq.getName();
