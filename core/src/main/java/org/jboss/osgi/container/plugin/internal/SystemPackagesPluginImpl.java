@@ -180,13 +180,16 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
       if (allPackages.isEmpty())
          initSystemPackages();
 
+      if (name.startsWith("java."))
+         return true;
+      
       if (bootDelegationPackages.contains(name))
          return true;
       
       // Match foo with foo.*
       for (String aux : bootDelegationPackages)
       {
-         if (aux.equals(name + ".*"))
+         if (aux.endsWith(".*") && name.startsWith(aux.substring(0, aux.length() -2 )))
             return true;
       }
       

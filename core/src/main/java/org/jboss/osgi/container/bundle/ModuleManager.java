@@ -237,7 +237,7 @@ public class ModuleManager extends ModuleLoader
                if (req instanceof XPackageRequirement)
                {
                   String path = getPathFromPackageName(req.getName());
-                  specBuilder.addImportedPath(path);
+                  depBuilder.addExportInclude(path);
                   depBuilder.setExport(false); // no re-export
                   continue;
                }

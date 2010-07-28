@@ -24,8 +24,10 @@ package org.jboss.osgi.container.loading;
 import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
@@ -44,6 +46,8 @@ import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
+import org.jboss.osgi.resolver.XRequirement;
+import org.jboss.osgi.resolver.XWire;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -62,6 +66,7 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
    private BundleManager bundleManager;
    private ModuleManagerPlugin moduleManager;
    private SystemPackagesPlugin systemPackages;
+   private Set<String> importedPaths;
    private XModule resModule;
 
    public OSGiModuleClassLoader(BundleManager bundleManager, XModule resModule, Module module, ModuleSpec moduleSpec)
@@ -73,6 +78,30 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       this.resModule = resModule;
 
       setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
+      
+      // Initialize the Module's imported paths
+      List<XWire> wires = resModule.getWires();
+      if (wires != null)
+      {
+         for (XWire wire : wires)
+         {
+            XRequirement req = wire.getRequirement();
+            XModule importer = wire.getImporter();
+            XModule exporter = wire.getExporter();
+            if (exporter == importer)
+               continue;
+
+            // Dependency for Import-Package
+            if (req instanceof XPackageRequirement)
+            {
+               if (importedPaths == null)
+                  importedPaths = new HashSet<String>();
+               
+               String path = getPathFromPackageName(req.getName());
+               importedPaths.add(path);
+            }
+         }
+      }
    }
 
    @Override
@@ -83,12 +112,16 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       if (loadedClass != null)
          return loadedClass;
 
+      Class<?> result = null;
+      
       boolean traceEnabled = log.isTraceEnabled();
       if (traceEnabled)
          log.trace("Attempt to find class [" + className + "] in " + getModule() + " ...");
       
-      // Delegate to framework loader for boot delegation 
       String packageName = className.substring(0, className.lastIndexOf('.'));
+      String path = getPathFromPackageName(packageName);
+      
+      // Delegate to framework loader for boot delegation 
       if (systemPackages.isBootDelegationPackage(packageName))
       {
          if (traceEnabled)
@@ -98,21 +131,40 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       }
 
       // Try the Module delegation graph
-      Class<?> result = null;
+      if (importedPaths == null || importedPaths.contains(path))
+      {
+         try
+         {
+            result = super.findClass(className, exportsOnly);
+            if (result != null)
+            {
+               if (traceEnabled)
+                  log.trace("Found class [" + className + "] in imports " + getModule());
+               return result;
+            }
+         }
+         catch (ClassNotFoundException ex)
+         {
+            if (traceEnabled)
+               log.trace("Cannot find class [" + className + "] in imports " + getModule());
+         }
+      }
+
+      // Try the Module local content
       try
       {
-         result = super.findClass(className, exportsOnly);
+         result = loadClassLocal(className, exportsOnly);
          if (result != null)
          {
             if (traceEnabled)
-               log.trace("Found class [" + className + "] in " + getModule());
+               log.trace("Found class [" + className + "] local in " + getModule());
             return result;
          }
       }
       catch (ClassNotFoundException ex)
       {
          if (traceEnabled)
-            log.trace("Cannot find class [" + className + "] in " + getModule());
+            log.trace("Cannot find class [" + className + "] local in " + getModule());
       }
 
       // Try to load the class dynamically
@@ -286,5 +338,10 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       }
 
       return null;
+   }
+
+   private String getPathFromPackageName(String packageName)
+   {
+      return packageName.replace('.', File.separatorChar);
    }
 }
