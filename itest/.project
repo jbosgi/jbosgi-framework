@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>jbosgi-msc-core</name>
+	<name>jbosgi-container-itest</name>
 	<comment></comment>
 	<projects>
 	</projects>
