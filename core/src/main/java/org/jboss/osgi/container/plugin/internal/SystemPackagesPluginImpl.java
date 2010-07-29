@@ -127,9 +127,6 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
          allPackages.add("org.xml.sax.ext");
          allPackages.add("org.xml.sax.helpers");
          
-         // needed by core tck
-         allPackages.add("sun.reflect");
-
          String asString = packagesAsString(allPackages);
          frameworkState.setProperty(Constants.FRAMEWORK_SYSTEMPACKAGES, asString);
       }
@@ -163,6 +160,10 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
          {
             bootDelegationPackages.add(packageName);
          }
+      }
+      else
+      {
+         bootDelegationPackages.add("sun.reflect");
       }
    }
 

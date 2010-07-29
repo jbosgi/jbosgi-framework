@@ -306,9 +306,15 @@ public class BundleManager
 
             File file = new File(path + "/bundle-" + System.currentTimeMillis() + ".jar");
             FileOutputStream fos = new FileOutputStream(file);
-            VFSUtils.copyStream(input, fos);
-            fos.close();
-
+            try
+            {
+               VFSUtils.copyStream(input, fos);
+            }
+            finally
+            {
+               input.close();
+               fos.close();
+            }
             locationURL = file.toURI().toURL();
          }
          catch (IOException ex)

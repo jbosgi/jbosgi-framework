@@ -141,7 +141,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public void refreshPackages(Bundle[] bundles)
    {
-      throw new NotImplementedException();
+      // [TODO] refreshPackages
    }
 
    @Override
