@@ -21,9 +21,6 @@
  */
 package org.jboss.test.osgi.container.simple;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.InputStream;
@@ -53,12 +50,13 @@ import org.osgi.util.tracker.ServiceTracker;
 public class SimpleLogServiceTestCase extends OSGiFrameworkTest
 {
    static JavaArchive archive;
-   
+
    @BeforeClass
    public static void beforeClass()
    {
       // Bundle-SymbolicName: simple-logservice-bundle
-      // Bundle-Activator: org.jboss.test.osgi.framework.simple.bundleB.SimpleLogServiceActivator
+      // Bundle-Activator:
+      // org.jboss.test.osgi.framework.simple.bundleB.SimpleLogServiceActivator
       archive = ShrinkWrap.create(JavaArchive.class, "simple-logservice-bundle");
       archive.addClasses(SimpleLogServiceActivator.class);
       archive.setManifest(new Asset()
@@ -74,7 +72,7 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
          }
       });
    }
-   
+
    @Before
    public void setUp() throws Exception
    {
@@ -115,19 +113,13 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
       try
       {
          logBundle.start();
+         assertBundleState(Bundle.ACTIVE, logBundle.getState());
 
          Bundle bundle = installBundle(archive);
          try
          {
-            try
-            {
-               bundle.start();
-               fail("Expected UNRESOLVED OSGiPackageRequirement{org.osgi.util.tracker [0.0.0,?)}");
-            }
-            catch (BundleException ex)
-            {
-               // expected
-            }
+            bundle.start();
+            assertBundleState(Bundle.ACTIVE, bundle.getState());
          }
          finally
          {
@@ -137,76 +129,6 @@ public class SimpleLogServiceTestCase extends OSGiFrameworkTest
       finally
       {
          logBundle.uninstall();
-      }
-   }
-
-   @Test
-   public void testLogServiceFromCompendium() throws Exception
-   {
-      Bundle cmpnBundle = installBundle(getTestArchivePath("bundles/org.osgi.compendium.jar"));
-      try
-      {
-         Bundle bundle = installBundle(archive);
-         try
-         {
-            bundle.start();
-
-            // The bundle activator is expected to set this property
-            String result = System.getProperty(bundle.getSymbolicName());
-            assertNotNull("Result property not null", result);
-
-            assertTrue("BundleActivator start", result.indexOf("startBundleActivator") > 0);
-            assertFalse("getService", result.indexOf("getService") > 0);
-            assertFalse("addingService", result.indexOf("addingService") > 0);
-         }
-         finally
-         {
-            bundle.uninstall();
-         }
-      }
-      finally
-      {
-         cmpnBundle.uninstall();
-      }
-   }
-
-   @Test
-   public void testLogServiceFromTwoExporters() throws Exception
-   {
-      Bundle cmpnBundle = installBundle(getTestArchivePath("bundles/org.osgi.compendium.jar"));
-      try
-      {
-         Bundle logBundle = installBundle(getTestArchivePath("bundles/org.apache.felix.log.jar"));
-         try
-         {
-            logBundle.start();
-
-            Bundle bundle = installBundle(archive);
-            try
-            {
-               bundle.start();
-
-               // The bundle activator is expected to set this property
-               String result = System.getProperty(bundle.getSymbolicName());
-               assertNotNull("Result property not null", result);
-
-               assertTrue("BundleActivator start", result.indexOf("startBundleActivator") > 0);
-               assertTrue("getService", result.indexOf("getService") > 0);
-               assertTrue("addingService", result.indexOf("addingService") > 0);
-            }
-            finally
-            {
-               bundle.uninstall();
-            }
-         }
-         finally
-         {
-            logBundle.uninstall();
-         }
-      }
-      finally
-      {
-         cmpnBundle.uninstall();
       }
    }
 }

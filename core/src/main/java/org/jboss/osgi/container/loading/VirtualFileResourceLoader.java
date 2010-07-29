@@ -39,7 +39,6 @@ import org.jboss.modules.ClassSpec;
 import org.jboss.modules.PackageSpec;
 import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoader;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 
@@ -139,7 +138,7 @@ public class VirtualFileResourceLoader extends AbstractResourceLoader
    @Override
    public String getLibrary(String name)
    {
-      throw new NotImplementedException();
+      return null;
    }
 
    @Override

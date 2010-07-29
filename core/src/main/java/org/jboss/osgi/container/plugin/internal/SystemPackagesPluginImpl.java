@@ -113,6 +113,7 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
          allPackages.add("org.osgi.service.permissionadmin;version=1.2");
          allPackages.add("org.osgi.service.startlevel;version=1.1");
          allPackages.add("org.osgi.service.url;version=1.0");
+         allPackages.add("org.osgi.util.tracker;version=1.4");
 
          allPackages.add("org.w3c.dom");
          allPackages.add("org.w3c.dom.bootstrap");
@@ -125,6 +126,9 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
          allPackages.add("org.xml.sax");
          allPackages.add("org.xml.sax.ext");
          allPackages.add("org.xml.sax.helpers");
+         
+         // needed by core tck
+         allPackages.add("sun.reflect");
 
          String asString = packagesAsString(allPackages);
          frameworkState.setProperty(Constants.FRAMEWORK_SYSTEMPACKAGES, asString);
@@ -196,6 +200,7 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
       return false;
    }
 
+   @Override
    public List<String> getSystemPackages(boolean version)
    {
       if (allPackages.isEmpty())
@@ -204,11 +209,12 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
       return Collections.unmodifiableList(version ? allPackages : allPackageNames);
    }
 
+   @Override
    public boolean isSystemPackage(String name)
    {
       if (name == null)
          throw new IllegalArgumentException("Null package name");
-
+      
       if (allPackages.isEmpty())
          initSystemPackages();
 

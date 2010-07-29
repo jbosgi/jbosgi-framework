@@ -13,33 +13,26 @@
       <outputFileNameMapping>${artifact.artifactId}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
       <includes>
         <include>*:args4j:jar</include>
+        <include>*:log4j:jar</include>
+        <include>*:jbosgi-container-core:jar</include>
         <include>*:jbosgi-resolver-api:jar</include>
+        <include>*:jbosgi-resolver-felix:jar</include>
         <include>*:jbosgi-resolver-metadata:jar</include>
+        <include>*:jbosgi-resolver-spi:jar</include>
+        <include>*:jboss-logging-log4j:jar</include>
         <include>*:jboss-logging-spi:jar</include>
         <include>*:jboss-modules:jar</include>
         <include>*:jboss-msc:jar</include>
+        <include>*:jboss-vfs:jar</include>
         <include>*:jboss-osgi-deployment:jar</include>
         <include>*:jboss-osgi-spi:jar</include>
         <include>*:jboss-osgi-vfs:jar</include>
+        <include>*:jboss-osgi-vfs30:jar</include>
         <include>*:org.osgi.core:jar</include>
         <include>*:org.osgi.compendium:jar</include>
       </includes>
       <useStrictFiltering>true</useStrictFiltering>
       <scope>compile</scope>
-      <unpack>true</unpack>
-    </dependencySet>
-    <dependencySet>
-      <outputFileNameMapping>${artifact.artifactId}${dashClassifier?}.${artifact.extension}</outputFileNameMapping>
-      <includes>
-        <include>*:jbosgi-resolver-felix:jar</include>
-        <include>*:jbosgi-resolver-spi:jar</include>
-        <include>*:jboss-logging-log4j:jar</include>
-        <include>*:jboss-osgi-vfs30:jar</include>
-        <include>*:jboss-vfs:jar</include>
-        <include>*:log4j:jar</include>
-      </includes>
-      <useStrictFiltering>true</useStrictFiltering>
-      <scope>test</scope>
       <unpack>true</unpack>
     </dependencySet>
   </dependencySets>
@@ -48,20 +41,6 @@
     <fileSet>
       <directory>target/classes</directory>
       <outputDirectory>/</outputDirectory>
-    </fileSet>
-    <fileSet>
-      <directory>src/etc/osgitck</directory>
-      <outputDirectory>/</outputDirectory>
-      <includes>
-        <include>log4j.xml</include>
-      </includes>
-    </fileSet>
-    <fileSet>
-      <directory>src/etc/osgitck</directory>
-      <outputDirectory>/META-INF</outputDirectory>
-      <includes>
-        <include>jboss-osgi-framework.properties</include>
-      </includes>
     </fileSet>
   </fileSets>
 </assembly>

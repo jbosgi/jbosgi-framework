@@ -23,17 +23,8 @@ package org.jboss.test.osgi.container.bundle;
 
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.InputStreamReader;
-import java.util.Arrays;
-
-import org.jboss.osgi.container.launch.FrameworkFactoryImpl;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
@@ -69,58 +60,5 @@ public class FrameworkLaunchTestCase extends OSGiFrameworkTest
       
       framework.waitForStop(2000);
       assertBundleState(Bundle.RESOLVED, framework.getState());
-   }
-
-   @Test
-   public void testFrameworkAllLaunch() throws Exception
-   {
-      // Get the aggregated jboss-osgi-framework-all.jar
-      File[] files = new File("../core/target").listFiles(new FilenameFilter()
-      {
-         public boolean accept(File dir, String name)
-         {
-            return name.startsWith("jbosgi-container-") && name.endsWith("-all.jar");
-         }
-      });
-      
-      System.out.println("jbosgi-container-all.jar => " + Arrays.asList(files));
-      
-      // Assume that the jboss-osgi-framework-all.jar exists
-      Assume.assumeTrue(files.length == 1);
-      
-      // Run the java command
-      String alljar = files[0].getAbsolutePath();
-      String cmd = "java -cp " + alljar + " " + FrameworkFactoryImpl.class.getName();
-      Process proc = Runtime.getRuntime().exec(cmd);
-      int exitValue = proc.waitFor();
-      
-      // Delete/move the jboss-osgi-framework.log
-      File logfile = new File("./generated/jbosgi-container.log");
-      if (logfile.exists())
-      {
-         File logdir = logfile.getParentFile();
-         File targetdir = new File("./target");
-         if (targetdir.exists())
-            logfile.renameTo(new File("./target/jbosgi316.log"));
-         else
-            logfile.delete();
-         
-         logdir.delete();
-      }
-      
-      // Generate the error message and fail
-      if (exitValue != 0)
-      {
-         StringBuffer failmsg = new StringBuffer("Error running command: " + cmd + "\n");
-         BufferedReader errReader = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-         String line = errReader.readLine();
-         while(line != null)
-         {
-            failmsg.append("\n" + line);
-            line = errReader.readLine();
-         }
-         
-         fail(failmsg.toString());
-      }
    }
 }

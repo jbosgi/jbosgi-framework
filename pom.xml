@@ -172,4 +172,17 @@
     <module>core</module>
     <module>itest</module>
   </modules>
+
+  <profiles>
+    <!-- 
+      Name: all 
+      Desc: Build the aggregated framework jar
+    -->
+    <profile>
+      <id>all</id>
+      <modules>
+        <module>aggregated</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>

@@ -113,12 +113,6 @@
 
   <!-- Build -->
   <build>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-        <filtering>true</filtering>
-      </resource>
-    </resources>
     <plugins>
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
@@ -166,37 +160,4 @@
     </plugins>
   </build>
 
-  <profiles>
-    <!-- 
-      Name: all 
-      Desc: Build the aggregated framework jar
-    -->
-    <profile>
-      <id>all</id>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>all</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
-                <configuration>
-                  <descriptors>
-                    <descriptor>scripts/assembly-all.xml</descriptor>
-                  </descriptors>
-                  <archive>
-                    <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-                  </archive>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>
