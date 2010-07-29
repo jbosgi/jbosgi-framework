@@ -265,7 +265,7 @@ public class ModuleManager extends ModuleLoader
          moduleSpec = specBuilder.create();
       }
 
-      log.debug("Created ModuleSpec: " + moduleSpec.getIdentifier());
+      log.debug("Created " + moduleSpec.toLongString(new StringBuffer()));
       AbstractBundle bundleState = (AbstractBundle)resModule.getAttachment(Bundle.class);
       modules.put(moduleSpec.getIdentifier(), new ModuleHolder(bundleState, moduleSpec));
       return moduleSpec;

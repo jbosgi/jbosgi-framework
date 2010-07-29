@@ -79,7 +79,9 @@ public class AggregatedFrameworkLaunchTestCase extends OSGiFrameworkTest
       {
          public boolean accept(File dir, String name)
          {
-            return name.startsWith("jbosgi-container-aggregated-") && name.endsWith(".jar");
+            boolean match = name.startsWith("jbosgi-container-aggregated-");
+            match &= (name.endsWith("-sources.jar") == false);
+            return match;
          }
       });
       
