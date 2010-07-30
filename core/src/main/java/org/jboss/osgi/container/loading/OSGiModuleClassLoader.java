@@ -36,7 +36,6 @@ import org.jboss.modules.Module;
 import org.jboss.modules.Module.Flag;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
@@ -325,16 +324,8 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
          }
 
          // Create and load the module. This should not fail for resolved bundles.
-         Module candidate;
-         try
-         {
-            ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(bundleState.getResolverModule());
-            candidate = moduleManager.loadModule(identifier);
-         }
-         catch (ModuleLoadException ex)
-         {
-            continue;
-         }
+         ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(bundleState.getResolverModule());
+         Module candidate = moduleManager.getModule(identifier);
 
          // Try to load the class from the now resolved module
          try

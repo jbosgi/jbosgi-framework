@@ -161,7 +161,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
          }
          catch (ModuleLoadException ex)
          {
-            log.error("Cannot load module: " + identifier, ex);
+            throw new IllegalStateException("Cannot load module: " + identifier, ex);
          }
       }
       return Collections.unmodifiableList(result);

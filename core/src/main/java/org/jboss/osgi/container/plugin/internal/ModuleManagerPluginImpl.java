@@ -71,29 +71,21 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    }
 
    @Override
+   public Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException
+   {
+      return moduleManager.loadModule(identifier);
+   }
+
+   @Override
    public Module getModule(ModuleIdentifier identifier)
    {
-      try
-      {
-         return moduleManager.loadModule(identifier);
-      }
-      catch (ModuleLoadException ex)
-      {
-         log.debug("Cannot load module: " + identifier);
-         return null;
-      }
+      return moduleManager.getModule(identifier);
    }
 
    @Override
    public AbstractBundle getBundle(ModuleIdentifier identifier)
    {
       return moduleManager.getBundle(identifier);
-   }
-
-   @Override
-   public Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException
-   {
-      return moduleManager.loadModule(identifier);
    }
 
    @Override

@@ -152,17 +152,37 @@ public class ModuleManager extends ModuleLoader
       return holder != null ? holder.getModuleSpec() : null;
    }
 
-   /**
-    * Find the module in this {@link ModuleLoader}.
-    * 
-    * If the module has not been defined yet and a {@link ModuleSpec} is registered
-    * under the given identifier, it creates the module from the spec. 
-    */
    @Override
    public ModuleSpec findModule(ModuleIdentifier identifier) throws ModuleLoadException
    {
       ModuleHolder holder = modules.get(identifier);
       return holder != null ? holder.getModuleSpec() : null;
+   }
+
+   /**
+    * Get the module for the given identifier
+    * @return The previously loaded module or null
+    */
+   public Module getModule(ModuleIdentifier identifier)
+   {
+      ModuleHolder holder = modules.get(identifier);
+      return holder != null ? holder.getModule() : null;
+   }
+   
+   @Override
+   public Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException
+   {
+      ModuleHolder holder = modules.get(identifier);
+      if (holder == null)
+         throw new IllegalStateException("Cannot find module: " + identifier);
+      
+      Module module = holder.getModule();
+      if (module == null)
+      {
+         module = super.loadModule(identifier);
+         holder.setModule(module);
+      }
+      return module;
    }
 
    /**
