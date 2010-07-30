@@ -45,7 +45,6 @@ import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.LifecycleInterceptorPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
@@ -191,18 +190,7 @@ public abstract class AbstractBundle implements Bundle
    {
       ModuleIdentifier identifier = getModuleIdentifier();
       Module module = getModuleManagerPlugin().getModule(identifier);
-      if (module != null)
-      {
-         try
-         {
-            return ModuleClassLoader.forModule(identifier);
-         }
-         catch (ModuleLoadException ex)
-         {
-            throw new IllegalStateException("Cannot load module: " + identifier);
-         }
-      }
-      return null;
+      return module != null ? module.getClassLoader() : null;
    }
 
    public abstract VirtualFile getRootFile();

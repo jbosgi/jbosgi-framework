@@ -77,8 +77,6 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       this.systemPackages = bundleManager.getPlugin(SystemPackagesPlugin.class);
       this.resModule = resModule;
 
-      setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
-      
       // Initialize the Module's imported paths
       List<XWire> wires = resModule.getWires();
       if (wires != null)
@@ -331,7 +329,7 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
          try
          {
             ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(bundleState.getResolverModule());
-            candidate = moduleManager.findModule(identifier);
+            candidate = moduleManager.loadModule(identifier);
          }
          catch (ModuleLoadException ex)
          {

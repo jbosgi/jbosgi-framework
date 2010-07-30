@@ -63,10 +63,10 @@ public interface ModuleManagerPlugin extends Plugin
    AbstractBundle getBundle(ModuleIdentifier identifier);
    
    /**
-    * Find or create the module with the given identifier
+    * Load the module for the given identifier
     * @throws ModuleLoadException If the module cannot be loaded
     */
-   Module findModule(ModuleIdentifier identifier) throws ModuleLoadException;
+   Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException;
    
    /**
     * Register the module with the {@link ModuleManager}

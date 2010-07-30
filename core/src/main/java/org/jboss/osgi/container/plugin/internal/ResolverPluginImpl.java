@@ -103,7 +103,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       ModuleIdentifier identifier = bundleState.getModuleIdentifier();
       try
       {
-         moduleManger.findModule(identifier);
+         moduleManger.loadModule(identifier);
       }
       catch (ModuleLoadException ex)
       {
@@ -156,7 +156,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
          ModuleIdentifier identifier = bundleState.getModuleIdentifier();
          try
          {
-            moduleManger.findModule(identifier);
+            moduleManger.loadModule(identifier);
             result.add(bundleState);
          }
          catch (ModuleLoadException ex)

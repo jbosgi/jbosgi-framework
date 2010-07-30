@@ -82,6 +82,9 @@ public class ModuleManager extends ModuleLoader
 
       this.bundleManager = bundleManager;
 
+      // Set the {@link ModuleLogger}
+      Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
+      
       // Make sure this ModuleLoader is used
       // This also registers the URLStreamHandlerFactory
       final ModuleLoader moduleLoader = this;
@@ -150,37 +153,16 @@ public class ModuleManager extends ModuleLoader
    }
 
    /**
-    * Get the module for a given identifier
-    * @return The module or null
-    */
-   public Module getModule(ModuleIdentifier identifier)
-   {
-      ModuleHolder holder = modules.get(identifier);
-      return holder != null ? holder.getModule() : null;
-   }
-
-   /**
     * Find the module in this {@link ModuleLoader}.
     * 
     * If the module has not been defined yet and a {@link ModuleSpec} is registered
     * under the given identifier, it creates the module from the spec. 
     */
    @Override
-   public Module findModule(ModuleIdentifier identifier) throws ModuleLoadException
+   public ModuleSpec findModule(ModuleIdentifier identifier) throws ModuleLoadException
    {
       ModuleHolder holder = modules.get(identifier);
-
-      // TODO explain how this can be null
-      if (holder == null)
-         return null;
-
-      Module module = holder.getModule();
-      if (module == null)
-      {
-         ModuleSpec moduleSpec = holder.getModuleSpec();
-         module = createModule(moduleSpec, true);
-      }
-      return module;
+      return holder != null ? holder.getModuleSpec() : null;
    }
 
    /**
@@ -308,17 +290,8 @@ public class ModuleManager extends ModuleLoader
    public Module createModule(ModuleSpec moduleSpec, boolean resolveBundle) throws ModuleLoadException
    {
       ModuleIdentifier identifier = moduleSpec.getIdentifier();
-      ModuleHolder holder = modules.get(identifier);
-      if (holder == null)
-         throw new IllegalStateException("ModuleSpec not registered: " + identifier);
-
-      Module module = defineModule(moduleSpec);
-      holder.setModule(module);
-
-      // Every module we create does logging
-      ModuleClassLoader classLoader = module.getClassLoader();
-      classLoader.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
-
+      Module module = loadModule(identifier);
+      
       // Change the bundle state to RESOLVED 
       // TODO revisit if this can go into the ResolverPlugin
       if (resolveBundle == true)

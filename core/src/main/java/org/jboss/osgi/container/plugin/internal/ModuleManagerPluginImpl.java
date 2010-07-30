@@ -73,7 +73,15 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    @Override
    public Module getModule(ModuleIdentifier identifier)
    {
-      return moduleManager.getModule(identifier);
+      try
+      {
+         return moduleManager.loadModule(identifier);
+      }
+      catch (ModuleLoadException ex)
+      {
+         log.debug("Cannot load module: " + identifier);
+         return null;
+      }
    }
 
    @Override
@@ -83,9 +91,9 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    }
 
    @Override
-   public Module findModule(ModuleIdentifier identifier) throws ModuleLoadException
+   public Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException
    {
-      return moduleManager.findModule(identifier);
+      return moduleManager.loadModule(identifier);
    }
 
    @Override

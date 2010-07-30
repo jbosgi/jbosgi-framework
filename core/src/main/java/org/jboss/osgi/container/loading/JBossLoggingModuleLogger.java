@@ -38,60 +38,77 @@ public class JBossLoggingModuleLogger implements ModuleLogger
    {
       if (log == null)
          throw new IllegalArgumentException("Null logger");
+      
       this.log = log;
-   }
-
-   @Override
-   public boolean isTraceEnabled()
-   {
-      return log.isTraceEnabled();
    }
 
    @Override
    public void trace(String message)
    {
-      log.trace(message);
+      if (log.isTraceEnabled())
+         log.trace(message);
    }
 
    @Override
-   public void trace(String message, Throwable th)
+   public void trace(final String format, final Object arg1)
    {
-      log.trace(message, th);
+      if (log.isTraceEnabled())
+         log.trace(String.format(format, arg1));
    }
 
    @Override
-   public void debug(String message)
+   public void trace(final String format, final Object arg1, final Object arg2)
    {
-      log.debug(message);
+      if (log.isTraceEnabled())
+         log.trace(String.format(format, arg1, arg2));
    }
 
    @Override
-   public void debug(String message, Throwable th)
+   public void trace(final String format, final Object arg1, final Object arg2, final Object arg3)
    {
-      log.debug(message, th);
+      if (log.isTraceEnabled())
+         log.trace(String.format(format, arg1, arg2, arg3));
    }
 
    @Override
-   public void warn(String message)
+   public void trace(final String format, final Object... args)
    {
-      log.warn(message);
+      if (log.isTraceEnabled())
+         log.trace(String.format(format, (Object[])args));
    }
 
    @Override
-   public void warn(String message, Throwable th)
+   public void trace(final Throwable t, final String message)
    {
-      log.warn(message, th);
+      if (log.isTraceEnabled())
+         log.trace(message, t);
    }
 
    @Override
-   public void error(String message)
+   public void trace(final Throwable t, final String format, final Object arg1)
    {
-      log.error(message);
+      if (log.isTraceEnabled())
+         log.trace(String.format(format, arg1), t);
    }
 
    @Override
-   public void error(String message, Throwable th)
+   public void trace(final Throwable t, final String format, final Object arg1, final Object arg2)
    {
-      log.error(message, th);
+      if (log.isTraceEnabled())
+         log.trace(String.format(format, arg1, arg2), t);
+   }
+
+   @Override
+   public void trace(final Throwable t, final String format, final Object arg1, final Object arg2, final Object arg3)
+   {
+      if (log.isTraceEnabled())
+         log.trace(String.format(format, arg1, arg2, arg3), t);
+   }
+
+   @Override
+   public void trace(final Throwable t, final String format, final Object... args)
+   {
+      if (log.isTraceEnabled())
+         log.trace(String.format(format, (Object[])args), t);
    }
 }

@@ -25,7 +25,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -38,7 +37,6 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 11-Jun-2010
  */
-@Ignore("deadlock in modules")
 public class OSGi342TestCase extends OSGiFrameworkTest
 {
    @After

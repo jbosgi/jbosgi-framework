@@ -62,7 +62,7 @@ public class FrameworkModuleClassLoader extends ModuleClassLoader
    }
 
    @Override
-   protected Set<String> getExportedPaths()
+   protected Set<String> getFilteredLocalPaths()
    {
       if (exportedPaths == null)
       {
@@ -90,12 +90,21 @@ public class FrameworkModuleClassLoader extends ModuleClassLoader
    protected Class<?> findClass(String className, boolean exportsOnly) throws ClassNotFoundException
    {
       // Check if we have already loaded it..
-      Class<?> loadedClass = findLoadedClass(className);
-      if (loadedClass != null)
-      {
-         return loadedClass;
-      }
+      Class<?> result = findLoadedClass(className);
+      if (result != null)
+         return result;
 
+      return findClassInternal(className);
+   }
+
+   @Override
+   protected Class<?> loadClassLocal(String className, boolean exportOnly) throws ClassNotFoundException
+   {
+      return findClassInternal(className);
+   }
+
+   private Class<?> findClassInternal(String className) throws ClassNotFoundException
+   {
       boolean traceEnabled = log.isTraceEnabled();
       if (traceEnabled)
          log.trace("Attempt to find framework class [" + className + "] ...");
@@ -111,7 +120,7 @@ public class FrameworkModuleClassLoader extends ModuleClassLoader
       }
 
       String path = getPathFromClassName(className);
-      if (getExportedPaths().contains(path))
+      if (getFilteredLocalPaths().contains(path))
       {
          Class<?> result = null;
          try
