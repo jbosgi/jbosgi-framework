@@ -19,8 +19,7 @@
         <include>*:jbosgi-resolver-felix:jar</include>
         <include>*:jbosgi-resolver-metadata:jar</include>
         <include>*:jbosgi-resolver-spi:jar</include>
-        <include>*:jboss-logging-log4j:jar</include>
-        <include>*:jboss-logging-spi:jar</include>
+        <include>*:jboss-logging:jar</include>
         <include>*:jboss-modules:jar</include>
         <include>*:jboss-msc:jar</include>
         <include>*:jboss-vfs:jar</include>

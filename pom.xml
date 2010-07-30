@@ -28,7 +28,7 @@
   <parent>
     <groupId>org.jboss.osgi</groupId>
     <artifactId>jboss-osgi-parent</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.9-SNAPSHOT</version>
   </parent>
 
   <!-- Source Control -->
@@ -44,9 +44,9 @@
     <version.apache.felix.eventadmin>1.2.2</version.apache.felix.eventadmin>
     <version.apache.felix.log>1.0.0</version.apache.felix.log>
     <version.jboss.arquillian>1.0.0-SNAPSHOT</version.jboss.arquillian>
-    <version.jboss.msc>1.0.0.Beta2-SNAPSHOT</version.jboss.msc>
+    <version.jboss.msc>1.0.0.Beta3-SNAPSHOT</version.jboss.msc>
     <version.jboss.modules>1.0.0.Beta2-SNAPSHOT</version.jboss.modules>
-    <version.jboss.osgi.deployment>1.0.3</version.jboss.osgi.deployment>
+    <version.jboss.osgi.deployment>1.0.4-SNAPSHOT</version.jboss.osgi.deployment>
     <version.jboss.osgi.felix>3.0.1</version.jboss.osgi.felix>
     <version.jboss.osgi.husky>1.0.6-SNAPSHOT</version.jboss.osgi.husky>
     <version.jboss.osgi.jmx>1.0.7</version.jboss.osgi.jmx>
@@ -87,6 +87,12 @@
         <groupId>org.jboss.osgi.resolver</groupId>
         <artifactId>jbosgi-resolver-api</artifactId>
         <version>${version.jboss.osgi.resolver}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging-spi</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       
       <!-- Felix Dependencies -->
@@ -133,6 +139,12 @@
         <groupId>org.jboss.arquillian</groupId>
         <artifactId>arquillian-bundle</artifactId>
         <version>${version.jboss.arquillian}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging-spi</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.jboss.arquillian.container</groupId>
@@ -158,6 +170,12 @@
         <groupId>org.jboss.osgi.vfs</groupId>
         <artifactId>jboss-osgi-vfs30</artifactId>
         <version>${version.jboss.osgi.vfs}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging-spi</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>

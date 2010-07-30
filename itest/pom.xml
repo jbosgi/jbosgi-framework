@@ -62,6 +62,12 @@
     <dependency>
       <groupId>org.jboss.arquillian</groupId>
       <artifactId>arquillian-bundle</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jboss.logging</groupId>
+          <artifactId>jboss-logging-spi</artifactId>
+        </exclusion>
+      </exclusions>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -85,13 +91,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.jboss.logging</groupId>
-      <artifactId>jboss-logging-log4j</artifactId>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

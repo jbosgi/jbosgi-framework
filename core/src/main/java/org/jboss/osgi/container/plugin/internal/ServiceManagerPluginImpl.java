@@ -38,7 +38,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.BatchBuilder;
 import org.jboss.msc.service.BatchServiceBuilder;
-import org.jboss.msc.service.RemovingServiceListener;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
@@ -383,11 +382,8 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       ServiceName rootServiceName = serviceNames.get(0);
       try
       {
-         // A service is brought DOWN by setting it's mode to NEVER
-         // Adding a {@link RemovingServiceListener} does this and will
-         // also synchronoulsy remove the service from the registry 
          ServiceController<?> controller = serviceContainer.getService(rootServiceName);
-         controller.addListener(new RemovingServiceListener());
+         controller.setMode(Mode.REMOVE);
       }
       catch (RuntimeException ex)
       {
