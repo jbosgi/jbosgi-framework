@@ -68,14 +68,11 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
-            <id>all</id>
             <phase>process-test-resources</phase>
             <goals>
               <goal>single</goal>
             </goals>
             <configuration>
-              <finalName>jbosgi-container-${project.version}-assembly</finalName>
-              <appendAssemblyId>false</appendAssemblyId>
               <descriptors>
                 <descriptor>scripts/assembly-all.xml</descriptor>
               </descriptors>
