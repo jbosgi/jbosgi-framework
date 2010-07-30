@@ -24,6 +24,7 @@ package org.jboss.test.osgi.container.launch;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.BufferedReader;
@@ -79,14 +80,13 @@ public class AggregatedFrameworkLaunchTestCase extends OSGiFrameworkTest
       {
          public boolean accept(File dir, String name)
          {
-            boolean match = name.startsWith("jbosgi-container-aggregated-");
-            match &= (name.endsWith("-sources.jar") == false);
-            return match;
+            return name.startsWith("jbosgi-container-") && name.endsWith("-assembly.jar");
          }
       });
       
       // Assert that the jbosgi-container-aggregated exists
-      assertEquals("jbosgi-container-aggregated exists: " + Arrays.asList(files), 1, files.length);
+      assertEquals("Aggregated file exists: " + Arrays.asList(files), 1, files.length);
+      assertTrue("File.length > 1M", files[0].length() > 1024*1014L);
       
       // Run the java command
       String alljar = files[0].getAbsolutePath();
@@ -94,23 +94,24 @@ public class AggregatedFrameworkLaunchTestCase extends OSGiFrameworkTest
       Process proc = Runtime.getRuntime().exec(cmd);
       int exitValue = proc.waitFor();
       
-      // Delete/move the jboss-osgi-framework.log
-      File logfile = new File("./generated/jboss-osgi.log");
-      if (logfile.exists())
+      if (exitValue == 0)
       {
+         File logfile = new File("./generated/jboss-osgi.log");
+         assertTrue("Logfile exists", logfile.exists());
+         
+         // Delete/move the jboss-osgi-framework.log
          File logdir = logfile.getParentFile();
          File targetdir = new File("./target");
          if (targetdir.exists())
-            logfile.renameTo(new File("./target/jbosgi-container-aggregated.log"));
+            logfile.renameTo(new File("./target/jboss-osgi.log"));
          else
             logfile.delete();
          
          logdir.delete();
       }
-      
-      // Generate the error message and fail
-      if (exitValue != 0)
+      else
       {
+         // Generate the error message and fail
          StringBuffer failmsg = new StringBuffer("Error running command: " + cmd + "\n");
          BufferedReader errReader = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
          String line = errReader.readLine();
