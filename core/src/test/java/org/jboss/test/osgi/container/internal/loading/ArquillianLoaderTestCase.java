@@ -83,7 +83,6 @@ public class ArquillianLoaderTestCase
       // Create the Framework module
       ModuleManager moduleManager = new ModuleManager(bundleManager);
       ModuleSpec moduleSpec = moduleManager.createFrameworkModule(resModule);
-      moduleManager.createModule(moduleSpec, false);
       
       // Create the Arquillian resolver module 
       URL url = new OSGiTestHelper().getTestArchiveURL("bundles/arquillian-bundle.jar");
@@ -100,7 +99,7 @@ public class ArquillianLoaderTestCase
       
       // Create the ModuleSpec and the Module
       moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
-      Module module = moduleManager.createModule(moduleSpec, false);
+      Module module = moduleManager.loadModule(moduleSpec.getIdentifier());
       classLoader = module.getClassLoader();
    }
    

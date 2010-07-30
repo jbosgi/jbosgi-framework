@@ -97,7 +97,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       {
          throw new BundleException("Cannot resolve bundle: " + bundleState, ex);
       }
-      
+
       // Load the resolved module
       ModuleManagerPlugin moduleManger = getPlugin(ModuleManagerPlugin.class);
       ModuleIdentifier identifier = bundleState.getModuleIdentifier();
@@ -146,7 +146,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       }
 
       ModuleManagerPlugin moduleManger = getPlugin(ModuleManagerPlugin.class);
-      
+
       // Convert results into bundles
       List<AbstractBundle> result = new ArrayList<AbstractBundle>();
       for (XModule resModule : resolved)
@@ -189,15 +189,12 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
          if (moduleManager == null)
             moduleManager = getPlugin(ModuleManagerPlugin.class);
 
-         try
-         {
-            log.debug("Mark resolved: " + resModule);
-            moduleManager.registerModule(resModule);
-         }
-         catch (ModuleLoadException ex)
-         {
-            log.error("Cannot load module: " + resModule, ex);
-         }
+         moduleManager.createModuleSpec(resModule);
+
+         log.debug("Mark resolved: " + resModule);
+         Bundle bundle = resModule.getAttachment(Bundle.class);
+         AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+         bundleState.changeState(Bundle.RESOLVED);
       }
    }
 }

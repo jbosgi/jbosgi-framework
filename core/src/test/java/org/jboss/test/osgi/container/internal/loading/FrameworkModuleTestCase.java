@@ -75,7 +75,7 @@ public class FrameworkModuleTestCase
       // Create the Framework module
       ModuleManager moduleManager = new ModuleManager(bundleManager);
       ModuleSpec moduleSpec = moduleManager.createFrameworkModule(resModule);
-      Module module = moduleManager.createModule(moduleSpec, false);
+      Module module = moduleManager.loadModule(moduleSpec.getIdentifier());
       classLoader = module.getClassLoader();
    }
    

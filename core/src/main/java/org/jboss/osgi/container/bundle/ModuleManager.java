@@ -283,26 +283,6 @@ public class ModuleManager extends ModuleLoader
       return frameworkSpec;
    }
 
-   /**
-    * Create a {@link Module} from the given {@link ModuleSpec}
-    * Optionally, change the associated bundle state to RESOLVED
-    */
-   public Module createModule(ModuleSpec moduleSpec, boolean resolveBundle) throws ModuleLoadException
-   {
-      ModuleIdentifier identifier = moduleSpec.getIdentifier();
-      Module module = loadModule(identifier);
-      
-      // Change the bundle state to RESOLVED 
-      // TODO revisit if this can go into the ResolverPlugin
-      if (resolveBundle == true)
-      {
-         AbstractBundle bundleState = getBundle(identifier);
-         bundleState.changeState(Bundle.RESOLVED);
-      }
-
-      return module;
-   }
-
    private String getPathFromPackageName(String packageName)
    {
       return packageName.replace('.', File.separatorChar);

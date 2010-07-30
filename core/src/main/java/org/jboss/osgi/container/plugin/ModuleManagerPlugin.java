@@ -45,6 +45,12 @@ public interface ModuleManagerPlugin extends Plugin
    Set<ModuleIdentifier> getModuleIdentifiers();
    
    /**
+    * Create the module with the {@link ModuleManager}
+    * @return The module identifier
+    */
+   ModuleSpec createModuleSpec(XModule resModule);
+   
+   /**
     * Get the module spec for a given identifier
     * @return The module spec or null
     */
@@ -67,9 +73,4 @@ public interface ModuleManagerPlugin extends Plugin
     * @throws ModuleLoadException If the module cannot be loaded
     */
    Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException;
-   
-   /**
-    * Register the module with the {@link ModuleManager}
-    */
-   void registerModule(XModule resModule) throws ModuleLoadException;
 }

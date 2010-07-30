@@ -88,7 +88,6 @@ public class HostModuleClassLoaderTestCase
       // Create the Framework module
       ModuleManager moduleManager = new ModuleManager(bundleManager);
       ModuleSpec moduleSpec = moduleManager.createFrameworkModule(resModule);
-      moduleManager.createModule(moduleSpec, false);
       
       // Bundle-Version: 1.0.0
       // Bundle-SymbolicName: simple-bundle
@@ -117,7 +116,7 @@ public class HostModuleClassLoaderTestCase
       
       // Create the ModuleSpec and the Module
       moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
-      Module module = moduleManager.createModule(moduleSpec, false);
+      Module module = moduleManager.loadModule(moduleSpec.getIdentifier());
       classLoader = module.getClassLoader();
    }
    

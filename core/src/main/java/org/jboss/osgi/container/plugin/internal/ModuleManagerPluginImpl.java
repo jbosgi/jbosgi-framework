@@ -97,14 +97,14 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    }
 
    @Override
-   public void registerModule(XModule resModule)
+   public ModuleSpec createModuleSpec(XModule resModule)
    {
       if (resModule == null)
          throw new IllegalArgumentException("Null module");
       
       if (resModule.getModuleId() == 0)
       {
-         moduleManager.createFrameworkModule(resModule);
+         return moduleManager.createFrameworkModule(resModule);
       }
       else
       {
@@ -113,7 +113,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          AbstractBundle bundleState = HostBundle.assertBundleState(bundle);
          VirtualFile rootFile = bundleState.getRootFile();
 
-         moduleManager.createModuleSpec(resModule, rootFile);
+         return moduleManager.createModuleSpec(resModule, rootFile);
       }
    }
 }
