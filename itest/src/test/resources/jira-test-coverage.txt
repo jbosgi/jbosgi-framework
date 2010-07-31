@@ -4,3 +4,4 @@
 [JBOSGI-336] Implement PackageAdmin.refreshPackages(Bundle[])
 [JBOSGI-342] Bundle resolution depends on install order
 [JBOSGI-343] Comprehensive PackageAdmin test coverage
+[JBOSGI-373] Cannot load service through java.util.ServiceLoader

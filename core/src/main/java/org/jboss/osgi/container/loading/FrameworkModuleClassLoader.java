@@ -22,6 +22,7 @@
 package org.jboss.osgi.container.loading;
 
 import java.io.File;
+import java.net.URL;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -146,5 +147,11 @@ public class FrameworkModuleClassLoader extends ModuleClassLoader
       }
 
       throw new ClassNotFoundException(className);
+   }
+
+   @Override
+   protected URL getLocalResource(String resourcePath, boolean exportOnly)
+   {
+      return getSystemResource(resourcePath);
    }
 }

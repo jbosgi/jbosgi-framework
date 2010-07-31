@@ -175,55 +175,37 @@ public class HostBundle extends AbstractBundle
       if (getState() == Bundle.INSTALLED)
          getResolverPlugin().resolve(Collections.singletonList((AbstractBundle)this));
 
+      // If the bundle has a ClassLoader it is in state {@link Bundle#RESOLVED}
       return getBundleClassLoader() != null;
    }
 
    @Override
-   public URL getResource(String name)
+   public URL getResource(String path)
    {
       assertNotUninstalled();
       
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      checkResolved();
-
-      ModuleClassLoader classLoader = getBundleClassLoader();
-      if (classLoader != null)
-      {
-         return classLoader.getResource(name);
-      }
+      if (checkResolved() == true)
+         return getBundleClassLoader().getResource(path);
 
       // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
-      try
-      {
-         VirtualFile child = getRootFile().getChild(name);
-         return child != null ? child.toURL() : null;
-      }
-      catch (IOException ex)
-      {
-         log.error("Cannot get resource: " + name, ex);
-         return null;
-      }
+      return getEntry(path);
    }
 
    @Override
    @SuppressWarnings("rawtypes")
-   public Enumeration getResources(String name) throws IOException
+   public Enumeration getResources(String path) throws IOException
    {
       assertNotUninstalled();
       
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      checkResolved();
-
-      ModuleClassLoader classLoader = getBundleClassLoader();
-      if (classLoader != null)
-      {
-         return classLoader.getResources(name);
-      }
-
+      if (checkResolved() == true)
+         return getBundleClassLoader().getResources(path);
+      
       // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
       try
       {
-         VirtualFile child = getRootFile().getChild(name);
+         VirtualFile child = getRootFile().getChild(path);
          if (child == null)
             return null;
          
@@ -233,7 +215,7 @@ public class HostBundle extends AbstractBundle
       }
       catch (IOException ex)
       {
-         log.error("Cannot get resource: " + name, ex);
+         log.error("Cannot get resources: " + path, ex);
          return null;
       }
    }
