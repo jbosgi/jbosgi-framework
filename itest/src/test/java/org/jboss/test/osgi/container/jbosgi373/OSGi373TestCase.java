@@ -22,7 +22,10 @@
 package org.jboss.test.osgi.container.jbosgi373;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.BufferedReader;
@@ -116,7 +119,7 @@ public class OSGi373TestCase extends OSGiFrameworkTest
    }
 
    @Test
-   public void testServiceResourceAsStream() throws Exception
+   public void testServiceResources() throws Exception
    {
       Archive<?> archiveA = assembleArchive("bundleA", "/osgi373/bundleA", OSGi373Service.class, OSGi373ServiceImpl.class);
       Bundle bundleA = installBundle(archiveA);
@@ -128,16 +131,20 @@ public class OSGi373TestCase extends OSGiFrameworkTest
          {
             assertBundleState(Bundle.INSTALLED, bundleA.getState());
             assertBundleState(Bundle.INSTALLED, bundleB.getState());
-            
+
             String serviceId = "META-INF/services/" + OSGi373Service.class.getName();
-            
+
             ClassLoader loaderA = bundleA.loadClass(OSGi373ServiceImpl.class.getName()).getClassLoader();
             assertResourceURL(loaderA.getResource(serviceId));
             assertResourceURL(bundleA.getResource(serviceId));
-            
+            assertTrue("Enumeration has elements", loaderA.getResources(serviceId).hasMoreElements());
+            assertTrue("Enumeration has elements", bundleA.getResources(serviceId).hasMoreElements());
+
             ClassLoader loaderB = bundleB.loadClass(ObjectB.class.getName()).getClassLoader();
-            assertResourceURL(loaderB.getResource(serviceId));
-            assertResourceURL(bundleB.getResource(serviceId));
+            assertNull("Resource URL null", loaderB.getResource(serviceId));
+            assertNull("Resource URL null", bundleB.getResource(serviceId));
+            assertFalse("Enumeration is empty", loaderB.getResources(serviceId).hasMoreElements());
+            assertNull("Enumeration null", bundleB.getResources(serviceId));
          }
          finally
          {

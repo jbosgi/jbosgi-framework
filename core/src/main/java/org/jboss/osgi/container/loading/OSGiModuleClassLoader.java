@@ -22,7 +22,6 @@
 package org.jboss.osgi.container.loading;
 
 import java.io.File;
-import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,7 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.AssertionSetting;
-import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.Module.Flag;
 import org.jboss.modules.ModuleClassLoader;
@@ -68,7 +66,6 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
    private ModuleManagerPlugin moduleManager;
    private SystemPackagesPlugin systemPackages;
    private Set<String> importedPaths;
-   private ModuleSpec moduleSpec;
    private XModule resModule;
 
    public OSGiModuleClassLoader(BundleManager bundleManager, XModule resModule, Module module, ModuleSpec moduleSpec)
@@ -77,7 +74,6 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       this.bundleManager = bundleManager;
       this.moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
       this.systemPackages = bundleManager.getPlugin(SystemPackagesPlugin.class);
-      this.moduleSpec = moduleSpec;
       this.resModule = resModule;
 
       // Initialize the Module's imported paths
@@ -357,25 +353,5 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
    private String getPathFromPackageName(String packageName)
    {
       return packageName.replace('.', File.separatorChar);
-   }
-
-   @Override
-   public URL findResource(String name, boolean exportsOnly)
-   {
-      // [MODULES-19] Revisit and document resource loading
-      DependencySpec[] dependencies = moduleSpec.getDependencies();
-      if (dependencies != null)
-      {
-         for (DependencySpec dep : dependencies)
-         {
-            ModuleIdentifier depid = dep.getModuleIdentifier();
-            Module depmod = moduleManager.getModule(depid);
-            URL resURL = depmod.getClassLoader().findResource(name, exportsOnly);
-            if (resURL != null)
-               return resURL;
-         }
-      }
-      
-      return super.findResource(name, exportsOnly);
    }
 }
