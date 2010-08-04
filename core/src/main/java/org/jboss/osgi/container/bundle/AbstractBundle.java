@@ -42,12 +42,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.LifecycleInterceptorPlugin;
-import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
@@ -62,66 +59,65 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
-import org.osgi.framework.Version;
 
 /**
- * The base of all {@link Bundle} implementations.
+ * This is the internal base class for all bundles and fragments, including
+ * the System Bundle. 
  * 
  * @author thomas.diesler@jboss.com
- * @since 29-Jun-2010
+ * @author <a href="david@redhat.com">David Bosschaert</a>
  */
 public abstract class AbstractBundle implements Bundle
 {
-   // Provide logging
    private static final Logger log = Logger.getLogger(AbstractBundle.class);
 
-   // The bundle id
-   private long bundleId;
-   // The identifier of the associated module
-   private ModuleIdentifier identifier;
-   //The {@link Bundle} 
-   private BundleWrapper bundleWrapper;
-   //The {@link BundleContext} 
    private AbstractBundleContext bundleContext;
-   // The bundle state
+   private final long bundleId;
    private AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
-   // The last modified time stamp 
+   private BundleWrapper bundleWrapper;
+   private ModuleIdentifier identifier;
    private long lastModified = System.currentTimeMillis();
-   // The bundle version
-   private Version version = Version.emptyVersion;
-   // The bundle symbolic name
-   private String symbolicName;
-
-   // The set of registered services
-   private List<ServiceState> registeredServices;
-   // The set of used services
-   private Map<ServiceState, AtomicInteger> usedServices;
+   private CopyOnWriteArrayList<ServiceState> registeredServices;
+   private final String symbolicName;
+   private ConcurrentHashMap<ServiceState, AtomicInteger> usedServices;
 
    // Cache commonly used plugins
-   private BundleManager bundleManager;
+   private final BundleManager bundleManager;
    private FrameworkEventsPlugin eventsPlugin;
    private LifecycleInterceptorPlugin interceptorPlugin;
-   private ModuleManagerPlugin modulePlugin;
    private ResolverPlugin resolverPlugin;
    private ServiceManagerPlugin servicePlugin;
 
-   AbstractBundle(BundleManager bundleManager, String symbolicName)
+   AbstractBundle(BundleManager bundleManager, String bsn)
    {
       if (bundleManager == null)
          throw new IllegalArgumentException("Null bundleManager");
-      if (symbolicName == null)
+      if (bsn == null)
          throw new IllegalArgumentException("Null symbolicName");
 
       // strip-off the directives
-      if (symbolicName.indexOf(';') > 0)
-         symbolicName = symbolicName.substring(0, symbolicName.indexOf(';'));
+      if (bsn.indexOf(';') > 0)
+         bsn = bsn.substring(0, bsn.indexOf(';'));
 
       this.bundleManager = bundleManager;
-      this.symbolicName = symbolicName;
+      this.symbolicName = bsn;
 
-      if (symbolicName.equals(Constants.SYSTEM_BUNDLE_SYMBOLICNAME) == false)
-         this.bundleId = bundleManager.getNextBundleId();
+      if (bsn.equals(Constants.SYSTEM_BUNDLE_SYMBOLICNAME) == false)
+         bundleId = bundleManager.getNextBundleId();
+      else
+         bundleId = 0;
    }
+
+   abstract AbstractBundleContext createContextInternal();
+
+   @Override
+   public abstract String getLocation();
+
+   abstract OSGiMetaData getOSGiMetaData();
+
+   public abstract XModule getResolverModule();
+
+   public abstract VirtualFile getRootFile();
 
    /**
     * Assert that the given bundle is an instance of AbstractBundle
@@ -141,68 +137,45 @@ public abstract class AbstractBundle implements Bundle
       return (AbstractBundle)bundle;
    }
 
-   public BundleManager getBundleManager()
+   @Override
+   public BundleContext getBundleContext()
    {
-      return bundleManager;
+      if (bundleContext == null)
+         return null;
+      return new BundleContextWrapper(bundleContext);
    }
 
-   ModuleManagerPlugin getModuleManagerPlugin()
+   BundleContext getBundleContextInternal()
    {
-      if (modulePlugin == null)
-         modulePlugin = bundleManager.getPlugin(ModuleManagerPlugin.class);
-      return modulePlugin;
+      return bundleContext;
    }
 
-   ServiceManagerPlugin getServiceManagerPlugin()
+   void createBundleContext()
    {
-      if (servicePlugin == null)
-         servicePlugin = bundleManager.getPlugin(ServiceManagerPlugin.class);
-      return servicePlugin;
+      if (bundleContext != null)
+         throw new IllegalStateException("BundleContext already available");
+      bundleContext = createContextInternal();
    }
 
-   ResolverPlugin getResolverPlugin()
+   void destroyBundleContext()
    {
-      if (resolverPlugin == null)
-         resolverPlugin = bundleManager.getPlugin(ResolverPlugin.class);
-      return resolverPlugin;
+      // The BundleContext object is only valid during the execution of its context bundle; 
+      // that is, during the period from when the context bundle is in the STARTING, STOPPING, and ACTIVE bundle states. 
+      // If the BundleContext  object is used subsequently, an IllegalStateException must be thrown. 
+      // The BundleContext object must never be reused after its context bundle is stopped.
+      bundleContext.destroy();
+      bundleContext = null;
    }
-
-   public FrameworkEventsPlugin getFrameworkEventsPlugin()
-   {
-      if (eventsPlugin == null)
-         eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
-      return eventsPlugin;
-   }
-
-   public LifecycleInterceptorPlugin getLifecycleInterceptorPlugin()
-   {
-      if (interceptorPlugin == null)
-         interceptorPlugin = bundleManager.getPlugin(LifecycleInterceptorPlugin.class);
-      return interceptorPlugin;
-   }
-
-   public boolean isFragment()
-   {
-      return false;
-   }
-
-   ModuleClassLoader getBundleClassLoader()
-   {
-      ModuleIdentifier identifier = getModuleIdentifier();
-      Module module = getModuleManagerPlugin().getModule(identifier);
-      return module != null ? module.getClassLoader() : null;
-   }
-
-   public abstract VirtualFile getRootFile();
-
-   public abstract OSGiMetaData getOSGiMetaData();
-
-   public abstract XModule getResolverModule();
 
    @Override
    public long getBundleId()
    {
       return bundleId;
+   }
+
+   public BundleManager getBundleManager()
+   {
+      return bundleManager;
    }
 
    public ModuleIdentifier getModuleIdentifier()
@@ -219,15 +192,135 @@ public abstract class AbstractBundle implements Bundle
       return symbolicName;
    }
 
-   @Override
-   public Version getVersion()
+   public void addRegisteredService(ServiceState serviceState)
    {
-      return version;
+      log.debug("Add registered service [" + serviceState + "] to: " + this);
+
+      synchronized (this)
+      {
+         if (registeredServices == null)
+            registeredServices = new CopyOnWriteArrayList<ServiceState>();
+      }
+      registeredServices.add(serviceState);
    }
 
-   void setVersion(Version version)
+   public void removeRegisteredService(ServiceState serviceState)
    {
-      this.version = version;
+      log.debug("Remove registered service [" + serviceState + "] from: " + this);
+
+      if (registeredServices != null)
+         registeredServices.remove(serviceState);
+   }
+
+   public List<ServiceState> getRegisteredServicesInternal()
+   {
+      if (registeredServices == null)
+         return Collections.emptyList();
+
+      return Collections.unmodifiableList(registeredServices);
+   }
+
+   @Override
+   public ServiceReference[] getRegisteredServices()
+   {
+      assertNotUninstalled();
+      List<ServiceState> registeredServices = getRegisteredServicesInternal();
+      if (registeredServices.isEmpty())
+         return null;
+
+      List<ServiceReference> srefs = new ArrayList<ServiceReference>();
+      for (ServiceState serviceState : registeredServices)
+         srefs.add(serviceState.getReference());
+
+      return srefs.toArray(new ServiceReference[srefs.size()]);
+   }
+
+   public void addServiceInUse(ServiceState serviceState)
+   {
+      log.debug("Add service in use [" + serviceState + "] to: " + this);
+
+      AtomicInteger count;
+      synchronized (this)
+      {
+         if (usedServices == null)
+            usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
+
+         count = usedServices.get(serviceState);
+         if (count == null)
+            usedServices.put(serviceState, count = new AtomicInteger());
+      }
+      count.incrementAndGet();
+   }
+
+   public int removeServiceInUse(ServiceState serviceState)
+   {
+      log.debug("Remove service in use [" + serviceState + "] from: " + this);
+
+      AtomicInteger count;
+      synchronized (this)
+      {
+         if (usedServices == null)
+            return -1;
+
+         count = usedServices.get(serviceState);
+         if (count == null)
+            return -1;
+
+         if (count.decrementAndGet() == 0)
+            usedServices.remove(serviceState);
+      }
+      return count.get();
+   }
+
+   public Set<ServiceState> getServicesInUseInternal()
+   {
+      if (usedServices == null)
+         return Collections.emptySet();
+
+      return Collections.unmodifiableSet(usedServices.keySet());
+   }
+
+   @Override
+   public ServiceReference[] getServicesInUse()
+   {
+      assertNotUninstalled();
+      Set<ServiceState> servicesInUse = getServicesInUseInternal();
+      if (servicesInUse.isEmpty())
+         return null;
+
+      List<ServiceReference> srefs = new ArrayList<ServiceReference>();
+      for (ServiceState serviceState : servicesInUse)
+         srefs.add(serviceState.getReference());
+
+      return srefs.toArray(new ServiceReference[srefs.size()]);
+   }
+
+   public FrameworkEventsPlugin getFrameworkEventsPlugin()
+   {
+      if (eventsPlugin == null)
+         eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
+      return eventsPlugin;
+   }
+
+   public LifecycleInterceptorPlugin getLifecycleInterceptorPlugin()
+   {
+      if (interceptorPlugin == null)
+         interceptorPlugin = bundleManager.getPlugin(LifecycleInterceptorPlugin.class);
+      return interceptorPlugin;
+   }
+
+   ResolverPlugin getResolverPlugin()
+   {
+      if (resolverPlugin == null)
+         resolverPlugin = getBundleManager().getPlugin(ResolverPlugin.class);
+      return resolverPlugin;
+   }
+
+   ServiceManagerPlugin getServiceManagerPlugin()
+   {
+      if (servicePlugin == null)
+         servicePlugin = bundleManager.getPlugin(ServiceManagerPlugin.class);
+      return servicePlugin;
    }
 
    public Bundle getBundleWrapper()
@@ -298,140 +391,6 @@ public abstract class AbstractBundle implements Bundle
    public int getState()
    {
       return bundleState.get();
-   }
-
-   public BundleContext getBundleContext()
-   {
-      if (bundleContext == null)
-         return null;
-      return new BundleContextWrapper(bundleContext);
-   }
-
-   BundleContext getBundleContextInternal()
-   {
-      return bundleContext;
-   }
-
-   void createBundleContext()
-   {
-      if (bundleContext != null)
-         throw new IllegalStateException("BundleContext already available");
-      bundleContext = createContextInternal();
-   }
-
-   abstract AbstractBundleContext createContextInternal();
-
-   void destroyBundleContext()
-   {
-      // The BundleContext object is only valid during the execution of its context bundle; 
-      // that is, during the period from when the context bundle is in the STARTING, STOPPING, and ACTIVE bundle states. 
-      // If the BundleContext  object is used subsequently, an IllegalStateException must be thrown. 
-      // The BundleContext object must never be reused after its context bundle is stopped.
-      bundleContext.destroy();
-      bundleContext = null;
-   }
-
-   public void addRegisteredService(ServiceState serviceState)
-   {
-      log.debug("Add registered service [" + serviceState + "] to: " + this);
-      
-      synchronized (this)
-      {
-         if (registeredServices == null)
-            registeredServices = new CopyOnWriteArrayList<ServiceState>();
-      }
-      registeredServices.add(serviceState);
-   }
-
-   public void removeRegisteredService(ServiceState serviceState)
-   {
-      log.debug("Remove registered service [" + serviceState + "] from: " + this);
-      
-      if (registeredServices != null)
-         registeredServices.remove(serviceState);
-   }
-
-   public List<ServiceState> getRegisteredServicesInternal()
-   {
-      if (registeredServices == null)
-         return Collections.emptyList();
-
-      return Collections.unmodifiableList(registeredServices);
-   }
-
-   @Override
-   public ServiceReference[] getRegisteredServices()
-   {
-      assertNotUninstalled();
-      List<ServiceState> registeredServices = getRegisteredServicesInternal();
-      if (registeredServices.isEmpty())
-         return null;
-      
-      List<ServiceReference> srefs = new ArrayList<ServiceReference>();
-      for (ServiceState serviceState : registeredServices)
-         srefs.add(serviceState.getReference());
-
-      return srefs.toArray(new ServiceReference[srefs.size()]);
-   }
-
-   public void addServiceInUse(ServiceState serviceState)
-   {
-      log.debug("Add service in use [" + serviceState + "] to: " + this);
-      
-      AtomicInteger count;
-      synchronized (this)
-      {
-         if (usedServices == null)
-            usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
-
-         count = usedServices.get(serviceState);
-         if (count == null)
-            usedServices.put(serviceState, count = new AtomicInteger());
-      }
-      count.incrementAndGet();
-   }
-
-   public int removeServiceInUse(ServiceState serviceState)
-   {
-      log.debug("Remove service in use [" + serviceState + "] from: " + this);
-      
-      AtomicInteger count;
-      synchronized (this)
-      {
-         if (usedServices == null)
-            return -1;
-
-         count = usedServices.get(serviceState);
-         if (count == null)
-            return -1;
-         
-         if (count.decrementAndGet() == 0)
-            usedServices.remove(serviceState);
-      }
-      return count.get();
-   }
-
-   public Set<ServiceState> getServicesInUseInternal()
-   {
-      if (usedServices == null)
-         return Collections.emptySet();
-
-      return Collections.unmodifiableSet(usedServices.keySet());
-   }
-
-   @Override
-   public ServiceReference[] getServicesInUse()
-   {
-      assertNotUninstalled();
-      Set<ServiceState> servicesInUse = getServicesInUseInternal();
-      if (servicesInUse.isEmpty())
-         return null;
-      
-      List<ServiceReference> srefs = new ArrayList<ServiceReference>();
-      for (ServiceState serviceState : servicesInUse)
-         srefs.add(serviceState.getReference());
-
-      return srefs.toArray(new ServiceReference[srefs.size()]);
    }
 
    @Override
@@ -597,7 +556,7 @@ public abstract class AbstractBundle implements Bundle
       return new CaseInsensitiveDictionary(locHeaders);
    }
 
-   URL getLocalizationEntry(String baseName, String locale)
+   private URL getLocalizationEntry(String baseName, String locale)
    {
       // The Framework searches for localization entries by appending suffixes to
       // the localization base name according to a specified locale and finally
@@ -630,30 +589,21 @@ public abstract class AbstractBundle implements Bundle
       }
       return entryURL;
    }
-
+   
    /**
-   * The framework must search for localization entries using the follow-
-   * ing search rules based on the bundle type:
-   *
-   * fragment bundle - If the bundle is a resolved fragment, then the search
-   *   for localization data must delegate to the attached host bundle with the
-   *   highest version. If the fragment is not resolved, then the framework
-   *   must search the fragment's JAR for the localization entry.
-   *
-   * other bundle - The framework must first search in the bundle’s JAR for
-   *   the localization entry. If the entry is not found and the bundle has fragments, 
-   *   then the attached fragment JARs must be searched for the localization entry.
-   */
-   URL getLocalizationEntry(String entryPath)
-   {
-      return null;
-   }
-
-   // Get the entry without checking permissions and bundle state. 
-   URL getEntryInternal(String path)
-   {
-      return null;
-   }
+    * The framework must search for localization entries using the follow-
+    * ing search rules based on the bundle type:
+    *
+    * fragment bundle - If the bundle is a resolved fragment, then the search
+    *   for localization data must delegate to the attached host bundle with the
+    *   highest version. If the fragment is not resolved, then the framework
+    *   must search the fragment's JAR for the localization entry.
+    *
+    * other bundle - The framework must first search in the bundle’s JAR for
+    *   the localization entry. If the entry is not found and the bundle has fragments, 
+    *   then the attached fragment JARs must be searched for the localization entry.
+    */
+   abstract URL getLocalizationEntry(String entryPath);
 
    @Override
    public long getLastModified()
@@ -662,8 +612,6 @@ public abstract class AbstractBundle implements Bundle
       return lastModified;
    }
 
-   public abstract boolean isPersistentlyStarted();
-   
    @Override
    @SuppressWarnings("rawtypes")
    public Map getSignerCertificates(int signersType)
@@ -677,7 +625,7 @@ public abstract class AbstractBundle implements Bundle
     */
    void assertValidBundleContext()
    {
-      if (bundleContext == null)
+      if (getBundleContext() == null)
          throw new IllegalStateException("Invalid bundle context: " + this);
    }
 
@@ -694,7 +642,7 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public int hashCode()
    {
-      return (symbolicName + ":" + version).hashCode();
+      return (int)getBundleId() * 51;
    }
 
    @Override
@@ -712,6 +660,6 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public String toString()
    {
-      return symbolicName + ":" + version;
+      return symbolicName + ":" + getVersion();
    }
 }

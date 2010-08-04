@@ -27,8 +27,8 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.ModuleManager;
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.resolver.XModule;
 
 /**

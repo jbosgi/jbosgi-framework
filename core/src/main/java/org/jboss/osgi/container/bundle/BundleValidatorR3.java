@@ -37,7 +37,7 @@ public class BundleValidatorR3 implements BundleValidator
    }
 
    @Override
-   public void validateBundle(AbstractBundle bundleState) throws BundleException
+   public void validateBundle(InternalBundle bundleState) throws BundleException
    {
       OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
       int manifestVersion = osgiMetaData.getBundleManifestVersion();

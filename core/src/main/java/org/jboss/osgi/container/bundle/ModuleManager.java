@@ -126,7 +126,7 @@ public class ModuleManager extends ModuleLoader
    }
 
    /**
-    * Get the bundleId from a module identifier 
+    * Get the bundle from a module identifier 
     */
    public AbstractBundle getBundle(ModuleIdentifier identifier)
    {

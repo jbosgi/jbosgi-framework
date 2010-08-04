@@ -22,8 +22,8 @@
 package org.jboss.osgi.container.plugin.internal;
 
 import org.jboss.logging.Logger;
-import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.LifecycleInterceptorPlugin;
 import org.jboss.osgi.deployment.interceptor.AbstractLifecycleInterceptorService;

@@ -30,8 +30,8 @@ import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.PackageAdminPlugin;
@@ -201,10 +201,6 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public Bundle[] getFragments(Bundle bundle)
    {
-      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      if (bundleState.isFragment() == true)
-         return null;
-
       // [TODO] PackageAdmin.getFragments
       return null;
    }
@@ -212,10 +208,6 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public Bundle[] getHosts(Bundle bundle)
    {
-      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      if (bundleState.isFragment() == false)
-         return null;
-
       // [TODO] PackageAdmin.getHosts
       return null;
    }
@@ -238,15 +230,14 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       Module module = moduleCL.getModule();
       ModuleIdentifier identifier = module.getIdentifier();
       ModuleManagerPlugin plugin = getPlugin(ModuleManagerPlugin.class);
-      long moduleId = plugin.getBundle(identifier).getBundleId();
-      return getBundleManager().getSystemContext().getBundle(moduleId);
+      return plugin.getBundle(identifier).getBundleWrapper();
    }
 
    @Override
    public int getBundleType(Bundle bundle)
    {
-      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      return bundleState.isFragment() ? BUNDLE_TYPE_FRAGMENT : 0;
+      // TODO support Fragments
+      return 0;
    }
 
    static class ExportedPackageImpl implements ExportedPackage

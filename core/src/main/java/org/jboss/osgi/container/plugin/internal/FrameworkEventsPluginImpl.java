@@ -41,9 +41,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
-import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.BundleWrapper;
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.ServiceReferenceWrapper;
 import org.jboss.osgi.container.bundle.ServiceState;
 import org.jboss.osgi.container.plugin.AbstractPlugin;

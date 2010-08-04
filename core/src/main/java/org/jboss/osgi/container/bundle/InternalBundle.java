@@ -26,147 +26,63 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.Vector;
 
-import org.jboss.logging.Logger;
-import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
-import org.jboss.osgi.container.util.AggregatedVirtualFile;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XModuleBuilder;
-import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Version;
 
 /**
- * A host bundle.
+ * This is the internal implementation of a bundle. The logic related to loading of classes
+ * and resources is delegated to the current BundleRevision. As bundles can be updated there
+ * can be multiple bundle revisions. 
  * 
  * @author thomas.diesler@jboss.com
- * @since 29-Jun-2010
+ * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public class HostBundle extends AbstractBundle
+public class InternalBundle extends AbstractBundle
 {
-   // Provide logging
-   private static final Logger log = Logger.getLogger(HostBundle.class);
-   
-   private String location;
-   private OSGiMetaData metadata;
    private BundleActivator bundleActivator;
-   private XModule resolverModule;
-   private VirtualFile rootFile;
+   private final String location;
+   private AbstractBundleRevision currentRevision;
    private int startLevel = StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
    private boolean persistentlyStarted;
 
-   public HostBundle(BundleManager bundleManager, Deployment dep) throws BundleException
+   InternalBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {
-      super(bundleManager, dep.getSymbolicName());
-
-      metadata = dep.getAttachment(OSGiMetaData.class);
-      location = dep.getLocation();
-      rootFile = dep.getRoot();
-
-      if (metadata == null)
-         throw new IllegalArgumentException("Null metadata");
+      super(bundleManager, deployment.getSymbolicName());
+      location = deployment.getLocation();
       if (location == null)
          throw new IllegalArgumentException("Null location");
-      if (rootFile == null)
-         throw new IllegalArgumentException("Null rootFile");
 
-      // Set the aggregated root file
-      rootFile = AggregatedVirtualFile.aggregatedBundleClassPath(rootFile, metadata);
+      currentRevision = new BundleRevision(this, deployment);
 
-      // Set the bundle version
-      setVersion(metadata.getBundleVersion());
-
-      // Create the resolver module
-      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
-      resolverModule = builder.createModule(getBundleId(), metadata);
-
-      // In case this bundle is a module.xml deployment, we already have a ModuleSpec
-      ModuleSpec moduleSpec = dep.getAttachment(ModuleSpec.class);
-      if (moduleSpec != null)
-         resolverModule.addAttachment(ModuleSpec.class, moduleSpec);
-
-      StartLevelPlugin sl = bundleManager.getOptionalPlugin(StartLevelPlugin.class);
+      StartLevelPlugin sl = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
       if (sl != null)
          startLevel = sl.getInitialBundleStartLevel();
    }
 
    /**
-    * Assert that the given bundle is an instance of HostBundle
-    * @throws IllegalArgumentException if the given bundle is not an instance of HostBundle
+    * Assert that the given bundle is an instance of InternalBundle
+    * @throws IllegalArgumentException if the given bundle is not an instance of InternalBundle
     */
-   public static HostBundle assertBundleState(Bundle bundle)
+   public static InternalBundle assertBundleState(Bundle bundle)
    {
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
 
-      if (bundleState instanceof HostBundle == false)
-         throw new IllegalArgumentException("Not an HostBundle: " + bundleState);
+      if (bundleState instanceof InternalBundle == false)
+         throw new IllegalArgumentException("Not an InternalBundle: " + bundleState);
 
-      return (HostBundle)bundleState;
+      return (InternalBundle)bundleState;
    }
 
-   @Override
-   public OSGiMetaData getOSGiMetaData()
-   {
-      return metadata;
-   }
-
-   @Override
-   public XModule getResolverModule()
-   {
-      return resolverModule;
-   }
-
-   @Override
-   public VirtualFile getRootFile()
-   {
-      return rootFile;
-   }
-
-   @Override
-   public String getLocation()
-   {
-      return location;
-   }
-
-   public boolean isPersistentlyStarted()
-   {
-      return persistentlyStarted;
-   }
-
-   public void setPersistentlyStarted(boolean started)
-   {
-      persistentlyStarted = started;
-   }
-
-   @Override
-   AbstractBundleContext createContextInternal()
-   {
-      return new HostBundleContext(this, null);
-   }
-
-   @Override
-   public Class<?> loadClass(String className) throws ClassNotFoundException
-   {
-      assertNotUninstalled();
-      
-      // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      if (checkResolved() == false)
-         throw new ClassNotFoundException("Class '" + className + "' not found in: " + this);
-
-      // Load the class through the module
-      ModuleClassLoader loader = getBundleClassLoader();
-      return loader.loadClass(className);
-   }
-
-   private boolean checkResolved()
+   boolean checkResolved()
    {
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle 
       // [TODO] If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired 
@@ -176,97 +92,19 @@ public class HostBundle extends AbstractBundle
          getResolverPlugin().resolve(Collections.singletonList((AbstractBundle)this));
 
       // If the bundle has a ClassLoader it is in state {@link Bundle#RESOLVED}
-      return getBundleClassLoader() != null;
+      return currentRevision.getBundleClassLoader() != null;
    }
 
    @Override
-   public URL getResource(String path)
+   AbstractBundleContext createContextInternal()
    {
-      assertNotUninstalled();
-      
-      // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      if (checkResolved() == true)
-         return getBundleClassLoader().getResource(path);
-
-      // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
-      return getEntry(path);
+      return new InternalBundleContext(this, null);
    }
 
    @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration getResources(String path) throws IOException
+   public String getLocation()
    {
-      assertNotUninstalled();
-      
-      // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      if (checkResolved() == true)
-      {
-         Enumeration<URL> resources = getBundleClassLoader().getResources(path);
-         return resources.hasMoreElements() ? resources : null;
-      }
-      
-      // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
-      try
-      {
-         VirtualFile child = getRootFile().getChild(path);
-         if (child == null)
-            return null;
-         
-         Vector<URL> vector = new Vector<URL>();
-         vector.add(child.toURL());
-         return vector.elements();
-      }
-      catch (IOException ex)
-      {
-         log.error("Cannot get resources: " + path, ex);
-         return null;
-      }
-   }
-
-   @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration getEntryPaths(String path)
-   {
-      assertNotUninstalled();
-      try
-      {
-         return getRootFile().getEntryPaths(path);
-      }
-      catch (IOException ex)
-      {
-         return null;
-      }
-   }
-
-   @Override
-   public URL getEntry(String path)
-   {
-      assertNotUninstalled();
-      try
-      {
-         VirtualFile child = getRootFile().getChild(path);
-         return child != null ? child.toURL() : null;
-      }
-      catch (IOException ex)
-      {
-         log.error("Cannot get entry: " + path, ex);
-         return null;
-      }
-   }
-
-   @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration findEntries(String path, String pattern, boolean recurse)
-   {
-      assertNotUninstalled();
-      try
-      {
-         return getRootFile().findEntries(path, pattern, recurse);
-      }
-      catch (IOException ex)
-      {
-         return null;
-      }
+      return location;
    }
 
    public int getStartLevel()
@@ -277,6 +115,16 @@ public class HostBundle extends AbstractBundle
    public void setStartLevel(int sl)
    {
       startLevel = sl;
+   }
+
+   public boolean isPersistentlyStarted()
+   {
+      return persistentlyStarted;
+   }
+
+   public void setPersistentlyStarted(boolean started)
+   {
+      persistentlyStarted = started;
    }
 
    @Override
@@ -305,10 +153,10 @@ public class HostBundle extends AbstractBundle
       {
          // Create the bundle context
          createBundleContext();
-         
+
          // This bundle's state is set to STARTING
          changeState(Bundle.STARTING);
-         
+
          // Do we have a bundle activator
          String bundleActivatorClassName = osgiMetaData.getBundleActivator();
          if (bundleActivatorClassName != null)
@@ -323,7 +171,7 @@ public class HostBundle extends AbstractBundle
                Object result = loadClass(bundleActivatorClassName).newInstance();
                if (result instanceof BundleActivator == false)
                   throw new BundleException(bundleActivatorClassName + " is not an implementation of " + BundleActivator.class.getName());
-               
+
                bundleActivator = (BundleActivator)result;
                bundleActivator.start(getBundleContext());
             }
@@ -446,11 +294,13 @@ public class HostBundle extends AbstractBundle
          throw new BundleException("Error during stop of bundle: " + this, rethrow);
    }
 
+   @Override
    void updateInternal(InputStream input)
    {
       throw new NotImplementedException();
    }
 
+   @Override
    void uninstallInternal() throws BundleException
    {
       BundleManager bundleManager = getBundleManager();
@@ -475,5 +325,76 @@ public class HostBundle extends AbstractBundle
       }
 
       bundleManager.removeBundleState(this);
+   }
+
+   // Methods delegated to the current revision.
+   @Override
+   public URL getResource(String name)
+   {
+      return currentRevision.getResource(name);
+   }
+
+   @Override
+   @SuppressWarnings("rawtypes")
+   public Class loadClass(String name) throws ClassNotFoundException
+   {
+      return currentRevision.loadClass(name);
+   }
+
+   @Override
+   @SuppressWarnings("rawtypes")
+   public Enumeration getResources(String name) throws IOException
+   {
+      return currentRevision.getResources(name);
+   }
+
+   @Override
+   @SuppressWarnings("rawtypes")
+   public Enumeration getEntryPaths(String path)
+   {
+      return currentRevision.getEntryPaths(path);
+   }
+
+   @Override
+   public URL getEntry(String path)
+   {
+      return currentRevision.getEntry(path);
+   }
+
+   @Override
+   @SuppressWarnings("rawtypes")
+   public Enumeration findEntries(String path, String filePattern, boolean recurse)
+   {
+      return currentRevision.findEntries(path, filePattern, recurse);
+   }
+
+   @Override
+   URL getLocalizationEntry(String entryPath)
+   {
+      return currentRevision.getLocalizationEntry();
+   }
+
+   @Override
+   public Version getVersion()
+   {
+      return currentRevision.getVersion();
+   }
+
+   @Override
+   OSGiMetaData getOSGiMetaData()
+   {
+      return currentRevision.getOSGiMetaData();
+   }
+
+   @Override
+   public XModule getResolverModule()
+   {
+      return currentRevision.getResolverModule();
+   }
+
+   @Override
+   public VirtualFile getRootFile()
+   {
+      return currentRevision.getRootFile();
    }
 }

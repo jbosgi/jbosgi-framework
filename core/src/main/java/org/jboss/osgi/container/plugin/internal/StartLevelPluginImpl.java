@@ -28,7 +28,7 @@ import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.HostBundle;
+import org.jboss.osgi.container.bundle.InternalBundle;
 import org.jboss.osgi.container.bundle.SystemBundle;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
@@ -127,8 +127,8 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
       AbstractBundle b = AbstractBundle.assertBundleState(bundle);
       if (b instanceof SystemBundle)
          return 0;
-      else if (b instanceof HostBundle)
-         return ((HostBundle)b).getStartLevel();
+      else if (b instanceof InternalBundle)
+         return ((InternalBundle)b).getStartLevel();
 
       return StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
    }
@@ -136,7 +136,10 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
    @Override
    public void setBundleStartLevel(Bundle bundle, int sl)
    {
-      final HostBundle hb = HostBundle.assertBundleState(bundle);
+      if (bundle.getBundleId() == 0)
+         throw new IllegalArgumentException("Cannot set the start level of the System Bundle");
+
+      final InternalBundle hb = InternalBundle.assertBundleState(bundle);
       hb.setStartLevel(sl);
 
       if (sl <= getStartLevel())
@@ -206,7 +209,10 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
    @Override
    public boolean isBundlePersistentlyStarted(Bundle bundle)
    {
-      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      if (bundle.getBundleId() == 0)
+         return true;
+
+      InternalBundle bundleState = InternalBundle.assertBundleState(bundle);
       return bundleState.isPersistentlyStarted();
    }
 
@@ -231,10 +237,10 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
          log.info("Starting bundles for start level " + startLevel);
          for (AbstractBundle b : bundles)
          {
-            if (!(b instanceof HostBundle))
+            if (!(b instanceof InternalBundle))
                continue;
 
-            HostBundle hb = (HostBundle)b;
+            InternalBundle hb = (InternalBundle)b;
             if (hb.getStartLevel() == startLevel && hb.isPersistentlyStarted())
             {
                if (hb.isPersistentlyStarted())
@@ -271,10 +277,10 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
          log.info("Stopping bundles for start level " + startLevel);
          for (AbstractBundle b : bundles)
          {
-            if (!(b instanceof HostBundle))
+            if (!(b instanceof InternalBundle))
                continue;
 
-            HostBundle hb = (HostBundle)b;
+            InternalBundle hb = (InternalBundle)b;
             if (hb.getStartLevel() == startLevel)
             {
                try

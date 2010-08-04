@@ -45,11 +45,11 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
 
-
 /**
  * The system bundle
  * 
  * @author thomas.diesler@jboss.com
+ * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
 public class SystemBundle extends AbstractBundle
@@ -112,7 +112,7 @@ public class SystemBundle extends AbstractBundle
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
       
       if (bundleState instanceof SystemBundle == false)
-         throw new IllegalArgumentException("Not an HostBundle: " + bundleState);
+         throw new IllegalArgumentException("Not a SystemBundle: " + bundleState);
 
       return (SystemBundle)bundleState;
    }
@@ -139,12 +139,6 @@ public class SystemBundle extends AbstractBundle
    public String getLocation()
    {
       return Constants.SYSTEM_BUNDLE_LOCATION;
-   }
-
-   @Override
-   public boolean isPersistentlyStarted()
-   {
-      return false;
    }
 
    @Override
@@ -210,6 +204,12 @@ public class SystemBundle extends AbstractBundle
    }
 
    @Override
+   URL getLocalizationEntry(String entryPath)
+   {
+      return null;
+   }
+
+   @Override
    public URL getResource(String name)
    {
       return getClass().getClassLoader().getResource(name);
@@ -220,5 +220,11 @@ public class SystemBundle extends AbstractBundle
    public Enumeration getResources(String name) throws IOException
    {
       return getClass().getClassLoader().getResources(name);
+   }
+
+   @Override
+   public Version getVersion()
+   {
+      return Version.emptyVersion;
    }
 }

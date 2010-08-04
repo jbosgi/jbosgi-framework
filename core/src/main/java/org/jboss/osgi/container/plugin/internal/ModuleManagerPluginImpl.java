@@ -28,10 +28,10 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.HostBundle;
+import org.jboss.osgi.container.bundle.InternalBundle;
 import org.jboss.osgi.container.bundle.ModuleManager;
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
@@ -102,7 +102,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       {
          // Get the root virtual file
          Bundle bundle = resModule.getAttachment(Bundle.class);
-         AbstractBundle bundleState = HostBundle.assertBundleState(bundle);
+         InternalBundle bundleState = InternalBundle.assertBundleState(bundle);
          VirtualFile rootFile = bundleState.getRootFile();
 
          return moduleManager.createModuleSpec(resModule, rootFile);

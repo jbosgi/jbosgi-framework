@@ -46,7 +46,7 @@ public class BundleValidatorR4 implements BundleValidator
    }
 
    @SuppressWarnings("deprecation")
-   public void validateBundle(AbstractBundle bundleState) throws BundleException
+   public void validateBundle(InternalBundle bundleState) throws BundleException
    {
       OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
       

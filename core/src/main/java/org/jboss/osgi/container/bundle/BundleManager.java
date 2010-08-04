@@ -74,13 +74,11 @@ import org.osgi.framework.FrameworkEvent;
  * OSGiBundleManager.
  * 
  * @author thomas.diesler@jboss.com
+ * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
 public class BundleManager
 {
-   // Provide logging
-   // private static final Logger log = Logger.getLogger(BundleManager.class);
-
    // The BundleId generator 
    private AtomicLong identityGenerator = new AtomicLong();
    // The sytem bundle
@@ -273,7 +271,7 @@ public class BundleManager
    /**
     * Install a bundle from the given location.
     */
-   public AbstractBundle installBundle(URL location) throws BundleException
+   public InternalBundle installBundle(URL location) throws BundleException
    {
       return installBundle(location.toExternalForm(), null);
    }
@@ -281,7 +279,7 @@ public class BundleManager
    /**
     * Install a bundle from the given location.
     */
-   public AbstractBundle installBundle(String location) throws BundleException
+   public InternalBundle installBundle(String location) throws BundleException
    {
       return installBundle(location, null);
    }
@@ -289,7 +287,7 @@ public class BundleManager
    /**
     * Install a bundle from the given location and optional input stream.
     */
-   public AbstractBundle installBundle(String location, InputStream input) throws BundleException
+   public InternalBundle installBundle(String location, InputStream input) throws BundleException
    {
       if (location == null)
          throw new BundleException("Null location");
@@ -344,7 +342,7 @@ public class BundleManager
    /**
     * Install a bundle from the given {@link VirtualFile}
     */
-   private AbstractBundle install(VirtualFile rootFile, String location, boolean autoStart) throws BundleException
+   private InternalBundle install(VirtualFile rootFile, String location, boolean autoStart) throws BundleException
    {
       BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
       Deployment dep = plugin.createDeployment(rootFile, location);
@@ -355,24 +353,23 @@ public class BundleManager
    /**
     * Install a bundle from a {@link Deployment} 
     */
-   private AbstractBundle installBundle(Deployment dep) throws BundleException
+   private InternalBundle installBundle(Deployment dep) throws BundleException
    {
       if (dep == null)
          throw new IllegalArgumentException("Null deployment");
 
       // If a bundle containing the same location identifier is already installed, 
       // the Bundle object for that bundle is returned. 
-      AbstractBundle bundleState = getBundleByLocation(dep.getLocation());
-      if (bundleState != null)
-         return bundleState;
+      AbstractBundle bundle = getBundleByLocation(dep.getLocation());
+      if (bundle instanceof InternalBundle)
+         return (InternalBundle)bundle;
 
-      // Create the bundle state
-      bundleState = createBundle(dep);
+      InternalBundle bundleState = createBundle(dep);
       addBundleState(bundleState);
       return bundleState;
    }
 
-   private AbstractBundle createBundle(Deployment dep) throws BundleException
+   private InternalBundle createBundle(Deployment dep) throws BundleException
    {
       BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
       OSGiMetaData metadata = plugin.createOSGiMetaData(dep);
@@ -381,7 +378,7 @@ public class BundleManager
 
       dep.addAttachment(OSGiMetaData.class, metadata);
 
-      AbstractBundle bundleState = new HostBundle(this, dep);
+      InternalBundle bundleState = new InternalBundle(this, dep);
       
       // Validate every deployed bundle (i.e. the system bundle is not validated)
       validateBundle(bundleState);
@@ -389,7 +386,7 @@ public class BundleManager
       return bundleState;
    }
 
-   private void validateBundle(AbstractBundle bundleState) throws BundleException
+   private void validateBundle(InternalBundle bundleState) throws BundleException
    {
       OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
       if (osgiMetaData == null)

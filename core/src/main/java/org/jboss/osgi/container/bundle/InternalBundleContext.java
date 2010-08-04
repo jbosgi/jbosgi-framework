@@ -31,9 +31,9 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class HostBundleContext extends AbstractBundleContext
+public class InternalBundleContext extends AbstractBundleContext
 {
-   public HostBundleContext(AbstractBundle bundle, Map<String, String> props)
+   public InternalBundleContext(AbstractBundle bundle, Map<String, String> props)
    {
       super(bundle);
    }
