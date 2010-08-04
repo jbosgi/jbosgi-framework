@@ -21,25 +21,38 @@
  */
 package org.jboss.test.osgi.container.bundle;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.lang.reflect.Constructor;
+import java.util.Hashtable;
+
+import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.InternalBundle;
+import org.jboss.osgi.container.plugin.ResolverPlugin;
+import org.jboss.osgi.container.plugin.StartLevelPlugin;
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.junit.Test;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.Version;
 
 /**
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public class HostBundleTestCase extends OSGiFrameworkTest
+public class InternalBundleTestCase extends OSGiFrameworkTest
 {
-   @Test
-   public void testDummy()
-   {
-   }
-   /* Temporarily Disabled 
    @Test
    public void testStartStop() throws Exception
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      AbstractBundle hb = new HostBundle(bm, dep);
+      InternalBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
       assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
@@ -58,7 +71,7 @@ public class HostBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      AbstractBundle hb = new HostBundle(bm, dep);
+      InternalBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
       assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
@@ -77,7 +90,7 @@ public class HostBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      HostBundle hb = new HostBundle(bm, dep);
+      InternalBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
       hb.setStartLevel(15);
 
@@ -96,7 +109,7 @@ public class HostBundleTestCase extends OSGiFrameworkTest
       when(sl.getStartLevel()).thenReturn(20);
 
       Deployment dep = mockDeployment();
-      HostBundle hb = new HostBundle(bm, dep);
+      InternalBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
       hb.setStartLevel(15);
 
@@ -114,7 +127,7 @@ public class HostBundleTestCase extends OSGiFrameworkTest
       when(bm.getOptionalPlugin(StartLevelPlugin.class)).thenReturn(null);
 
       Deployment dep = mockDeployment();
-      HostBundle hb = new HostBundle(bm, dep);
+      InternalBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
       hb.setStartLevel(15);
 
@@ -130,7 +143,7 @@ public class HostBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      AbstractBundle hb = new HostBundle(bm, dep);
+      InternalBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
       assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
@@ -145,7 +158,7 @@ public class HostBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      HostBundle hb = new HostBundle(bm, dep);
+      InternalBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
       assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
@@ -156,6 +169,15 @@ public class HostBundleTestCase extends OSGiFrameworkTest
       hb.stop(Bundle.STOP_TRANSIENT);
       assertTrue(hb.isPersistentlyStarted());
       assertEquals(Bundle.RESOLVED, hb.getState());
+   }
+
+   private InternalBundle createInternalBundle(BundleManager bm, Deployment dep) throws Exception
+   {
+      Constructor<InternalBundle> ctor =
+            InternalBundle.class.getDeclaredConstructor(BundleManager.class, Deployment.class);
+      // Need to do this because this test is not in the same package as InternalBundle
+      ctor.setAccessible(true);
+      return ctor.newInstance(bm, dep);
    }
 
    private BundleManager mockBundleManager()
@@ -185,5 +207,4 @@ public class HostBundleTestCase extends OSGiFrameworkTest
       when(dep.getRoot()).thenReturn(vf);
       return dep;
    }
-   */
 }
