@@ -30,6 +30,7 @@ import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.container.service.support.a.PA;
 import org.jboss.test.osgi.container.service.support.b.Other;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -38,6 +39,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * Test PackageAdmin service.
  *
  * @author thomas.diesler@jboss.com
+ * @author <a href="david@redhat.com">David Bosschaert</a>
  */
 public class PackageAdminTestCase extends OSGiFrameworkTest
 {
@@ -132,6 +134,12 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
    public void testRefreshPackages() throws Exception
    {
       System.out.println("FIXME [JBOSGI-336] Implement PackageAdmin.refreshPackages(Bundle[])");
+   }
+
+   @Test
+   @Ignore
+   public void testRemoveUninstalledBundleOnRefreshPackages()
+   {
    }
 
    @Test

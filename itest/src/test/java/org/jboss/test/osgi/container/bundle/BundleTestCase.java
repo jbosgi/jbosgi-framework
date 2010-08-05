@@ -21,34 +21,44 @@
 */
 package org.jboss.test.osgi.container.bundle;
 
+import static junit.framework.Assert.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.jar.Attributes;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
+
+import junit.framework.Assert;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.osgi.vfs.VFSUtils;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.test.osgi.container.bundle.support.a.ObjectA;
+import org.jboss.test.osgi.container.bundle.support.a.ObjectA2;
+import org.jboss.test.osgi.container.bundle.support.b.ObjectB;
+import org.jboss.test.osgi.container.bundle.support.x.ObjectX;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
+import org.osgi.framework.Version;
+import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * BundleTest.
  *
  * @author thomas.diesler@jboss.com
+ * @author <a href="david@redhat.com">David Bosschaert</a>
  */
 public class BundleTestCase extends OSGiFrameworkTest
 {
@@ -155,16 +165,12 @@ public class BundleTestCase extends OSGiFrameworkTest
       // TODO testStartStop
    }
 
-   @Ignore("bundle update")
+   @Test
    public void testUpdate() throws Exception
    {
-      Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundle1");
-      Archive<?> assembly2 = assembleArchive("bundle2", "/bundles/update/update-bundle2");
-
-      Manifest manifest = VFSUtils.getManifest(toVirtualFile(assembly2));
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      new JarOutputStream(baos, manifest).close();
-      ByteArrayInputStream updateStream = new ByteArrayInputStream(baos.toByteArray());
+      Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundle1", ObjectA.class);
+      Archive<?> assembly2 = assembleArchive("bundle2", "/bundles/update/update-bundle101", ObjectB.class);
+      VirtualFile vf2 = toVirtualFile(assembly2);
 
       Bundle bundle = installBundle(assembly1);
       try
@@ -174,11 +180,17 @@ public class BundleTestCase extends OSGiFrameworkTest
 
          bundle.start();
          assertBundleState(Bundle.ACTIVE, bundle.getState());
-         assertEquals("Bundle-Version", "1.0.0", bundle.getHeaders().get(Constants.BUNDLE_VERSION));
+         assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
+         assertEquals("update-bundle1", bundle.getSymbolicName());
+         assertLoadClass(bundle, ObjectA.class.getName());
+         assertLoadClassFail(bundle, ObjectB.class.getName());
 
-         bundle.update(updateStream);
+         bundle.update(vf2.openStream());
          assertBundleState(Bundle.ACTIVE, bundle.getState());
-         assertEquals("Bundle-Version", "1.0.1", bundle.getHeaders().get(Constants.BUNDLE_VERSION));
+         assertEquals(Version.parseVersion("1.0.1"), bundle.getVersion());
+         // Nobody depends on the packages, so we can update them straight away
+         assertLoadClass(bundle, ObjectB.class.getName());
+         assertLoadClassFail(bundle, ObjectA.class.getName());
 
          int afterCount = systemContext.getBundles().length;
          assertEquals("Bundle count", beforeCount, afterCount);
@@ -187,6 +199,195 @@ public class BundleTestCase extends OSGiFrameworkTest
       {
          bundle.uninstall();
       }
+   }
+
+   @Test
+   public void testUpdateImportedPackagesRemoved() throws Exception
+   {
+      Archive<?> assemblyx = assembleArchive("bundlex", "/bundles/update/update-bundlex", ObjectX.class);
+      Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundle1", ObjectA.class);
+      Archive<?> assembly2 = assembleArchive("bundle2", "/bundles/update/update-bundle101", ObjectB.class);
+      VirtualFile vf2 = toVirtualFile(assembly2);
+
+      Bundle bundleA = installBundle(assembly1);
+      Bundle bundleX = installBundle(assemblyx);
+      try
+      {
+         BundleContext systemContext = getFramework().getBundleContext();
+         int beforeCount = systemContext.getBundles().length;
+
+         bundleA.start();
+         bundleX.start();
+
+         Class<?> cls = bundleX.loadClass(ObjectX.class.getName());
+         cls.newInstance();
+
+         assertBundleState(Bundle.ACTIVE, bundleA.getState());
+         assertBundleState(Bundle.ACTIVE, bundleX.getState());
+         assertEquals(Version.parseVersion("1.0.0"), bundleA.getVersion());
+         assertEquals("update-bundle1", bundleA.getSymbolicName());
+         assertLoadClass(bundleA, ObjectA.class.getName());
+         assertLoadClassFail(bundleA, ObjectB.class.getName());
+
+         bundleA.update(vf2.openStream());
+         assertBundleState(Bundle.ACTIVE, bundleA.getState());
+         assertBundleState(Bundle.ACTIVE, bundleX.getState());
+         assertEquals(Version.parseVersion("1.0.0"), bundleA.getVersion());
+         // Assembly X depends on a package in the bundle, so don't update the packages yet.
+         assertLoadClass(bundleA, ObjectA.class.getName());
+         assertLoadClassFail(bundleA, ObjectB.class.getName());
+
+         PackageAdmin pa = getPackageAdmin();
+         pa.refreshPackages(new Bundle[] { bundleA });
+         assertBundleState(Bundle.ACTIVE, bundleA.getState());
+         assertBundleState(Bundle.INSTALLED, bundleX.getState());
+         assertEquals(Version.parseVersion("1.0.1"), bundleA.getVersion());
+         // Nobody depends on the packages, so we can update them straight away
+         assertLoadClass(bundleA, ObjectB.class.getName());
+         assertLoadClassFail(bundleA, ObjectA.class.getName());
+
+         int afterCount = systemContext.getBundles().length;
+         assertEquals("Bundle count", beforeCount, afterCount);
+      }
+      finally
+      {
+         bundleX.uninstall();
+         bundleA.uninstall();
+      }
+   }
+
+   @Test
+   public void testUpdateImportedPackages() throws Exception
+   {
+      Archive<?> assemblyx = assembleArchive("bundlex", "/bundles/update/update-bundlex", ObjectX.class);
+      Archive<?> assembly1 = assembleArchive("bundle1", new String[] { "/bundles/update/update-bundle1", "/bundles/update/classes1" });
+      Archive<?> assembly2 = assembleArchive("bundle2", new String[] { "/bundles/update/update-bundle102", "/bundles/update/classes2" });
+      VirtualFile vf2 = toVirtualFile(assembly2);
+
+      Bundle bundleA = installBundle(assembly1);
+      Bundle bundleX = installBundle(assemblyx);
+      try
+      {
+         BundleContext systemContext = getFramework().getBundleContext();
+         int beforeCount = systemContext.getBundles().length;
+
+         bundleA.start();
+         bundleX.start();
+
+         assertBundleState(Bundle.ACTIVE, bundleA.getState());
+         assertBundleState(Bundle.ACTIVE, bundleX.getState());
+         assertEquals(Version.parseVersion("1.0.0"), bundleA.getVersion());
+         assertEquals("update-bundle1", bundleA.getSymbolicName());
+         assertLoadClass(bundleA, ObjectA.class.getName());
+         assertLoadClassFail(bundleA, ObjectA2.class.getName());
+
+         Class<?> cls = bundleX.loadClass(ObjectX.class.getName());
+         Object x1 = cls.newInstance();
+         assertEquals("ObjectX contains reference: ObjectA", x1.toString());
+
+         bundleA.update(vf2.openStream());
+         assertBundleState(Bundle.ACTIVE, bundleA.getState());
+         assertBundleState(Bundle.ACTIVE, bundleX.getState());
+         assertEquals(Version.parseVersion("1.0.0"), bundleA.getVersion());
+         // Assembly X depends on a package in the bundle, so don't update the packages yet.
+         assertLoadClass(bundleA, ObjectA.class.getName());
+         assertLoadClassFail(bundleA, ObjectA2.class.getName());
+
+         PackageAdmin pa = getPackageAdmin();
+         pa.refreshPackages(new Bundle[] { bundleA });
+         assertBundleState(Bundle.ACTIVE, bundleA.getState());
+         assertBundleState(Bundle.ACTIVE, bundleX.getState());
+         assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());
+         assertLoadClass(bundleA, ObjectA2.class.getName());
+         assertLoadClassFail(bundleA, ObjectA.class.getName());
+
+         Class<?> cls2 = bundleX.loadClass(ObjectX.class.getName());
+         Assert.assertNotSame("Should have loaded a new class", cls, cls2);
+         Object x2 = cls2.newInstance();
+         assertEquals("ObjectX contains reference: ObjectA2", x2.toString());
+
+         int afterCount = systemContext.getBundles().length;
+         assertEquals("Bundle count", beforeCount, afterCount);
+      }
+      finally
+      {
+         bundleX.uninstall();
+         bundleA.uninstall();
+      }
+   }
+
+   @Test
+   public void testUpdateReadError() throws Exception
+   {
+      Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundle1", ObjectA.class);
+      Bundle bundle = installBundle(assembly1);
+      try
+      {
+         BundleContext systemContext = getFramework().getBundleContext();
+         int beforeCount = systemContext.getBundles().length;
+
+         bundle.start();
+         assertBundleState(Bundle.ACTIVE, bundle.getState());
+         assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
+         assertEquals("update-bundle1", bundle.getSymbolicName());
+         assertLoadClass(bundle, ObjectA.class.getName());
+         assertLoadClassFail(bundle, ObjectB.class.getName());
+
+         InputStream ismock = mock(InputStream.class);
+         when(ismock.read()).thenThrow(new IOException());
+         when(ismock.read((byte[])Mockito.anyObject())).thenThrow(new IOException());
+         when(ismock.read((byte[])Mockito.anyObject(), Mockito.anyInt(), Mockito.anyInt())).thenThrow(new IOException());
+
+         try
+         {
+            bundle.update(ismock);
+            fail("Should have thrown a BundleException as the InputStream is unreadable");
+         }
+         catch (BundleException e)
+         {
+            // good
+         }
+         assertBundleState(Bundle.ACTIVE, bundle.getState());
+         assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
+         assertEquals("update-bundle1", bundle.getSymbolicName());
+         assertLoadClass(bundle, ObjectA.class.getName());
+         assertLoadClassFail(bundle, ObjectB.class.getName());
+
+         int afterCount = systemContext.getBundles().length;
+         assertEquals("Bundle count", beforeCount, afterCount);
+      }
+      finally
+      {
+         bundle.uninstall();
+      }
+   }
+
+   @Test
+   @Ignore
+   public void testUpdateExceptionStart() throws Exception
+   {
+      // TODO
+   }
+
+   @Test
+   @Ignore
+   public void testUpdateExceptionStop()
+   {
+      // TODO
+   }
+
+   @Test
+   @Ignore
+   public void testBundleUpdateLocation()
+   {
+      // TODO
+   }
+
+   @Test
+   @Ignore
+   public void testImportOldPackage()
+   {
+      // TODO
    }
 
    @Test

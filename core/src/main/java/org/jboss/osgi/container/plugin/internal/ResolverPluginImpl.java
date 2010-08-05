@@ -30,8 +30,8 @@ import java.util.Set;
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.AbstractBundle;
+import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
@@ -47,6 +47,7 @@ import org.osgi.framework.BundleException;
  * The resolver plugin.
  * 
  * @author thomas.diesler@jboss.com
+ * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2009
  */
 public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
@@ -83,6 +84,13 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    {
       XModule resolverModule = bundleState.getResolverModule();
       resolver.removeModule(resolverModule);
+   }
+   
+   @Override
+   public void updateBundle(AbstractBundle bundleState)
+   {
+      removeBundle(bundleState);
+      addBundle(bundleState);
    }
 
    @Override

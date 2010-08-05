@@ -21,21 +21,31 @@
 */
 package org.jboss.osgi.container.bundle;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
+import org.jboss.osgi.container.plugin.BundleStoragePlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.spi.NotImplementedException;
+import org.jboss.osgi.resolver.XWire;
+import org.jboss.osgi.vfs.AbstractVFS;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
+import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
 
 /**
@@ -50,9 +60,13 @@ public class InternalBundle extends AbstractBundle
 {
    private BundleActivator bundleActivator;
    private final String location;
+   // The current revision is the bundle revision used by the system. This is what other bundle use if they import packages.
    private AbstractBundleRevision currentRevision;
+   // The latest revision is the newest revision of the bundle, which could be newer than the current revision if updated.
+   private AbstractBundleRevision latestRevision;
    private int startLevel = StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
    private boolean persistentlyStarted;
+   private AtomicInteger revisionCounter = new AtomicInteger(0);
 
    InternalBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {
@@ -61,7 +75,7 @@ public class InternalBundle extends AbstractBundle
       if (location == null)
          throw new IllegalArgumentException("Null location");
 
-      currentRevision = new BundleRevision(this, deployment);
+      latestRevision = currentRevision = new BundleRevision(this, deployment, revisionCounter.getAndIncrement());
 
       StartLevelPlugin sl = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
       if (sl != null)
@@ -125,6 +139,25 @@ public class InternalBundle extends AbstractBundle
    public void setPersistentlyStarted(boolean started)
    {
       persistentlyStarted = started;
+   }
+
+   /** 
+    * This method gets called by Package Admin when the bundle needs to be refreshed.
+    */
+   public void refresh() throws BundleException
+   {
+      if (latestRevision.equals(currentRevision))
+         return;
+
+      if (getState() == Bundle.UNINSTALLED)
+      {
+         getBundleManager().removeBundleState(this);
+         return;
+      }
+
+      getBundleManager().removeBundleState(this);
+      currentRevision = latestRevision;
+      getBundleManager().addBundleState(this);
    }
 
    @Override
@@ -295,9 +328,137 @@ public class InternalBundle extends AbstractBundle
    }
 
    @Override
-   void updateInternal(InputStream input)
+   void updateInternal(InputStream input) throws BundleException
    {
-      throw new NotImplementedException();
+      // Not checking that the bundle is uninstalled as that already happens in super.update()
+      boolean restart = false;
+      int state = getState();
+      if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING)
+      {
+         // If this bundle's state is ACTIVE, STARTING  or STOPPING, this bundle is stopped as described in the Bundle.stop method. 
+         // If Bundle.stop throws an exception, the exception is rethrown terminating the update.
+         stopInternal(Bundle.STOP_TRANSIENT);
+         if (state != Bundle.STOPPING)
+            restart = true;
+      }
+      unresolve();
+
+      try
+      {
+         latestRevision = createNewBundleRevision(input);
+         if (!someoneIsWiredToMe())
+            // If this bundle has exported any packages that are imported by another bundle, these packages must not be updated. 
+            // Instead, the previous package version must remain exported until the PackageAdmin.refreshPackages method has been 
+            // has been called or the Framework is relaunched. 
+            refresh();
+      }
+      catch (Exception e)
+      {
+         // If the Framework is unable to install the updated version of this bundle, the original 
+         // version of this bundle must be restored and a BundleException must be thrown after 
+         // completion of the remaining steps.
+         BundleException be = new BundleException("Problem updating bundle");
+         be.initCause(e);
+         
+         if (restart)
+            startInternal(Bundle.START_TRANSIENT);
+         
+         throw be;
+      }
+
+      getFrameworkEventsPlugin().fireBundleEvent(getBundleWrapper(), BundleEvent.UPDATED);
+      if (restart)
+      {
+         // If this bundle's state was originally ACTIVE or STARTING, the updated bundle is started as described in the Bundle.start method. 
+         // If Bundle.start throws an exception, a Framework event of type FrameworkEvent.ERROR is fired containing the exception
+         try
+         {
+            startInternal(Bundle.START_TRANSIENT);
+         }
+         catch (BundleException e)
+         {
+            getFrameworkEventsPlugin().fireFrameworkEvent(getBundleWrapper(), FrameworkEvent.ERROR, e);
+         }
+      }
+   }
+
+   public void createNewRevision() throws BundleException
+   {
+      try
+      {
+         latestRevision = createNewBundleRevision(null);
+      }
+      catch (Exception e)
+      {
+         throw new BundleException("Problem creating new revision of " + this, e);
+      }
+   }
+
+   private boolean someoneIsWiredToMe()
+   {
+      XModule currentResolverModule = currentRevision.getResolverModule();
+      for(AbstractBundle ab : getBundleManager().getBundles())
+      {
+         XModule module = ab.getResolverModule();
+         if (module != null)
+         {
+            List<XWire> wires = module.getWires();
+            if (wires != null)
+            {
+               for (XWire wire : wires)
+               {
+                  if (wire.getExporter().equals(currentResolverModule))
+                     return true;
+               }
+            }
+         }
+      }
+      return false;
+   }
+
+   /**
+    * Creates a new Bundle Revision when the bundle is updated. Multiple Bundle Revisions 
+    * can co-exist at the same time
+    * @param input The stream to create the bundle revision from or <tt>null</tt>
+    * if the new revision needs to be created from the same location as where the bundle
+    * was initially installed.
+    * @return A new Bundle Revision.
+    * @throws Exception If the bundle cannot be read, or if the update attempt to change the BSN.
+    */
+   private BundleRevision createNewBundleRevision(InputStream input) throws Exception
+   {
+      BundleManager bm = getBundleManager();
+      URL locationURL;
+
+      if (input != null)
+      {
+         // If the specified InputStream is null, the Framework must create the InputStream from 
+         // which to read the updated bundle by interpreting, in an implementation dependent manner, 
+         // this bundle's Bundle-UpdateLocation Manifest header, if present, or this bundle's 
+         // original location.
+         BundleStoragePlugin plugin = bm.getPlugin(BundleStoragePlugin.class);
+         String path = plugin.getStorageDir(bm.getSystemBundle()).getCanonicalPath();
+
+         File file = new File(path + "/bundle-" + System.currentTimeMillis() + ".jar");
+         FileOutputStream fos = new FileOutputStream(file);
+         VFSUtils.copyStream(input, fos);
+         fos.close();
+
+         locationURL = file.toURI().toURL();
+      }
+      else
+         locationURL = currentRevision.getRootFile().getStreamURL();
+
+      BundleDeploymentPlugin plugin = bm.getPlugin(BundleDeploymentPlugin.class);
+      VirtualFile newRootFile = AbstractVFS.getRoot(locationURL);
+      Deployment dep = plugin.createDeployment(newRootFile, getLocation());
+      OSGiMetaData md = plugin.createOSGiMetaData(dep);
+      dep.addAttachment(OSGiMetaData.class, md);
+
+      if (md.getBundleSymbolicName().equals(getSymbolicName()) == false)
+         throw new IllegalArgumentException("Cannot change Symbolic Name when updating bundle");
+
+      return new BundleRevision(this, dep, revisionCounter.getAndIncrement());
    }
 
    @Override
@@ -325,6 +486,13 @@ public class InternalBundle extends AbstractBundle
       }
 
       bundleManager.removeBundleState(this);
+   }
+
+   public void unresolve() throws BundleException
+   {
+      assertNotUninstalled();
+
+      changeState(Bundle.INSTALLED);
    }
 
    // Methods delegated to the current revision.

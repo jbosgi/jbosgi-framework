@@ -52,10 +52,10 @@ public class BundleRevision extends AbstractBundleRevision
    private XModule resolverModule;
    private VirtualFile rootFile;
 
-   public BundleRevision(InternalBundle internalBundle, Deployment dep) throws BundleException
+   public BundleRevision(InternalBundle internalBundle, Deployment dep, int revision) throws BundleException
    {
-      super(internalBundle, dep);
-
+      super(internalBundle, dep, revision);
+      
       rootFile = dep.getRoot();
 
       if (rootFile == null)
@@ -67,12 +67,12 @@ public class BundleRevision extends AbstractBundleRevision
       // Create the resolver module
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
       resolverModule = builder.createModule(internalBundle.getBundleId(), getOSGiMetaData());
+      resolverModule.addAttachment(BundleRevision.class, this);
 
       // In case this bundle is a module.xml deployment, we already have a ModuleSpec
       ModuleSpec moduleSpec = dep.getAttachment(ModuleSpec.class);
       if (moduleSpec != null)
          resolverModule.addAttachment(ModuleSpec.class, moduleSpec);
-
    }
 
    @Override

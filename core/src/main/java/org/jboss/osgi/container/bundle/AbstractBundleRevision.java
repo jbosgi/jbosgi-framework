@@ -47,15 +47,18 @@ public abstract class AbstractBundleRevision
 {
    private final InternalBundle internalBundle;
    private final OSGiMetaData metadata;
+   // The revision increases every time a bundle gets updated
+   private final int revision;
    private final Version version;
 
    // Cache commonly used plugins
    private ModuleManagerPlugin modulePlugin;
 
-   AbstractBundleRevision(InternalBundle internalBundle, Deployment dep)
+   AbstractBundleRevision(InternalBundle internalBundle, Deployment dep, int revision)
    {
       this.internalBundle = internalBundle;
       this.metadata = dep.getAttachment(OSGiMetaData.class);
+      this.revision = revision;
       this.version = metadata.getBundleVersion();
 
       if (metadata == null)
@@ -89,6 +92,11 @@ public abstract class AbstractBundleRevision
    OSGiMetaData getOSGiMetaData()
    {
       return metadata;
+   }
+
+   int getRevision()
+   {
+      return revision;
    }
 
    Version getVersion()

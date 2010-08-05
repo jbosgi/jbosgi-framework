@@ -32,10 +32,11 @@ import java.util.jar.Manifest;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.BundleRevision;
 import org.jboss.osgi.container.bundle.FrameworkState;
 import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.SystemBundle;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
@@ -113,6 +114,7 @@ public class HostModuleClassLoaderTestCase
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
       resModule = builder.createModule(1, manifest);
       resModule.addAttachment(Bundle.class, Mockito.mock(AbstractBundle.class));
+      resModule.addAttachment(BundleRevision.class, Mockito.mock(BundleRevision.class));
       
       // Create the ModuleSpec and the Module
       moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);

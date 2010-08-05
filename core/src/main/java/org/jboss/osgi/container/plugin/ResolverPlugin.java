@@ -33,6 +33,7 @@ import org.osgi.framework.BundleException;
  * The resolver plugin.
  * 
  * @author thomas.diesler@jboss.com
+ * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2009
  */
 public interface ResolverPlugin extends Plugin 
@@ -45,14 +46,12 @@ public interface ResolverPlugin extends Plugin
    /**
     * Add a bundle to the resolver.
     * @param bundle the bundle
-    * @return The resBundle associated with the added bundle.
     */
    void addBundle(AbstractBundle bundle);
-   
+
    /**
     * Remove a bundle from the resolver.
     * @param bundle the bundle
-    * @return The resBundle associated with the removed bundle.
     */
    void removeBundle(AbstractBundle bundle);
    
@@ -69,4 +68,11 @@ public interface ResolverPlugin extends Plugin
     * @return The list of resolved bundles in the resolve order or an empty list
     */
    List<AbstractBundle> resolve(List<AbstractBundle> bundles);
+
+   /** 
+    * Update the given bundle. Call this method when a bundle is updated so that
+    * the associated resolver state is also updated.
+    * @param bundle the Bundle
+    */
+   void updateBundle(AbstractBundle bundleState);
 }

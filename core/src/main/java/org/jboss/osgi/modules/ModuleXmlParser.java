@@ -513,7 +513,6 @@ public final class ModuleXmlParser {
         parseForExports(reader, resourceLoader);
     }
 
-    @SuppressWarnings("rawtypes")
     private static void parseForExports(final XMLStreamReader reader, final ExportFilterable filterable) throws XMLStreamException {
         while (reader.hasNext()) {
             switch (reader.nextTag()) {
@@ -534,7 +533,6 @@ public final class ModuleXmlParser {
         }
     }
 
-    @SuppressWarnings("rawtypes")
     private static void parseExports(final XMLStreamReader reader, final ExportFilterable filterable) throws XMLStreamException {
         // xsd:choice
         while (reader.hasNext()) {
@@ -558,7 +556,6 @@ public final class ModuleXmlParser {
         throw endOfDocument(reader.getLocation());
     }
 
-    @SuppressWarnings("rawtypes")
     private static void parseInclude(final XMLStreamReader reader, final ExportFilterable filterable) throws XMLStreamException {
         String path = null;
         final Set<Attribute> required = EnumSet.of(Attribute.PATH);
@@ -581,7 +578,6 @@ public final class ModuleXmlParser {
         parseNoContent(reader);
     }
 
-    @SuppressWarnings("rawtypes")
     private static void parseExclude(final XMLStreamReader reader, final ExportFilterable filterable) throws XMLStreamException {
         String path = null;
         final Set<Attribute> required = EnumSet.of(Attribute.PATH);

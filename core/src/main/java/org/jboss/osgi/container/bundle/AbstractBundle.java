@@ -75,7 +75,6 @@ public abstract class AbstractBundle implements Bundle
    private final long bundleId;
    private AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
    private BundleWrapper bundleWrapper;
-   private ModuleIdentifier identifier;
    private long lastModified = System.currentTimeMillis();
    private CopyOnWriteArrayList<ServiceState> registeredServices;
    private final String symbolicName;
@@ -180,10 +179,7 @@ public abstract class AbstractBundle implements Bundle
 
    public ModuleIdentifier getModuleIdentifier()
    {
-      if (identifier == null)
-         identifier = ModuleManager.getModuleIdentifier(getResolverModule());
-
-      return identifier;
+      return ModuleManager.getModuleIdentifier(getResolverModule());
    }
 
    @Override

@@ -22,33 +22,45 @@
 package org.jboss.osgi.container.plugin.internal;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.AbstractBundle;
+import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.InternalBundle;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
+import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.PackageAdminPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
+import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XRequireBundleRequirement;
 import org.jboss.osgi.resolver.XRequirement;
+import org.jboss.osgi.resolver.XWire;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
 import org.osgi.service.packageadmin.ExportedPackage;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.packageadmin.RequiredBundle;
+import org.osgi.service.startlevel.StartLevel;
 
 /**
  * A plugin manages the Framework's system packages.
@@ -141,7 +153,120 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public void refreshPackages(Bundle[] bundles)
    {
-      // [TODO] refreshPackages
+      // TODO use a separate thread
+      // TODO if bundles == null
+
+      FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
+
+      Map<InternalBundle, XModule> refreshMap = new HashMap<InternalBundle, XModule>();
+      for (Bundle b : bundles)
+      {
+         InternalBundle ab = InternalBundle.assertBundleState(b);
+         refreshMap.put(ab, ab.getResolverModule());
+      }
+
+      Set<InternalBundle> stopBundles = new HashSet<InternalBundle>();
+      Set<InternalBundle> refreshBundles = new HashSet<InternalBundle>(refreshMap.keySet());
+
+      // Compute all depending bundles that need to be stopped and unresolved.
+      for (AbstractBundle ab : getBundleManager().getBundles())
+      {
+         if (ab instanceof InternalBundle == false)
+            continue;
+         InternalBundle ib = (InternalBundle)ab;
+
+         XModule rm = ib.getResolverModule();
+         List<XWire> wires = rm.getWires();
+         if (wires == null)
+            continue;
+
+         for (XWire wire : wires)
+         {
+            if (refreshMap.containsValue(wire.getExporter()))
+            {
+               // Bundles can be either ACTIVE or RESOLVED
+               int state = ib.getState();
+               if (state == Bundle.ACTIVE || state == Bundle.STARTING)
+               {
+                  stopBundles.add(ib);
+               }
+               refreshBundles.add(ib);
+               break;
+            }
+         }
+      }
+
+      // Add relevant bundles to be refreshed also to the stop list. 
+      for (InternalBundle ib : refreshMap.keySet())
+      {
+         int state = ib.getState();
+         if (state == Bundle.ACTIVE || state == Bundle.STARTING)
+         {
+            stopBundles.add(ib);
+         }
+      }
+
+      List<InternalBundle> stopList = new ArrayList<InternalBundle>(stopBundles);
+      List<InternalBundle> refreshList = new ArrayList<InternalBundle>(refreshBundles);
+
+      StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);
+      BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator(startLevel);
+      Collections.sort(stopList, startLevelComparator);
+      Collections.sort(refreshList, startLevelComparator);
+
+      for (ListIterator<InternalBundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();)
+      {
+         InternalBundle ib = it.previous();
+         try
+         {
+            ib.stop(Bundle.STOP_TRANSIENT);
+         }
+         catch (BundleException e)
+         {
+            eventsPlugin.fireFrameworkEvent(ib, FrameworkEvent.ERROR, e);
+         }
+      }
+
+      for (ListIterator<InternalBundle> it = refreshList.listIterator(refreshList.size()); it.hasPrevious();)
+      {
+         InternalBundle ib = it.previous();
+         try
+         {
+            ib.unresolve();
+            if (!refreshMap.containsKey(ib))
+               ib.createNewRevision();
+         }
+         catch (BundleException e)
+         {
+            eventsPlugin.fireFrameworkEvent(ib, FrameworkEvent.ERROR, e);
+         }
+      }
+
+      for (InternalBundle ib : refreshList)
+      {
+         try
+         {
+            ib.refresh();
+         }
+         catch (BundleException e)
+         {
+            eventsPlugin.fireFrameworkEvent(ib, FrameworkEvent.ERROR, e);
+         }
+      }
+
+      for (InternalBundle b : stopList)
+      {
+         try
+         {
+            b.start(Bundle.START_TRANSIENT);
+         }
+         catch (BundleException e)
+         {
+            eventsPlugin.fireFrameworkEvent(b, FrameworkEvent.ERROR, e);
+         }
+      }
+
+      eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
    }
 
    @Override
@@ -339,6 +464,27 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       public boolean isRemovalPending()
       {
          return false;
+      }
+   }
+
+   private static class BundleStartLevelComparator implements Comparator<InternalBundle>
+   {
+      private final StartLevel startLevel;
+
+      private BundleStartLevelComparator(StartLevel startLevelService)
+      {
+         this.startLevel = startLevelService;
+      }
+
+      @Override
+      public int compare(InternalBundle o1, InternalBundle o2)
+      {
+         if (startLevel == null)
+            return 0;
+
+         int sl1 = o1.getStartLevel();
+         int sl2 = o2.getStartLevel();
+         return sl1 < sl2 ? -1 : (sl1 == sl2 ? 0 : 1);
       }
    }
 }

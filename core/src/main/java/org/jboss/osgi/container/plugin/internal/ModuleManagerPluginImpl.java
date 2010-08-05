@@ -28,10 +28,10 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.InternalBundle;
 import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
@@ -107,5 +107,12 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
          return moduleManager.createModuleSpec(resModule, rootFile);
       }
+   }
+
+   @Override
+   public void unregisterModule(ModuleIdentifier identifier)
+   {
+      moduleManager.removeModule(identifier);
+
    }
 }

@@ -24,11 +24,13 @@ package org.jboss.osgi.container.bundle;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.DependencySpec;
@@ -65,6 +67,10 @@ import org.osgi.framework.Version;
  */
 public class ModuleManager extends ModuleLoader
 {
+   // Multiple revisions of the same bundle can co-exist, when a bundle has been updated but not yet refreshed.
+   // This marker is appended to the version to make each revision unique.
+   private static final String REVISION_MARKER = "-rev";
+
    // Provide logging
    private static final Logger log = Logger.getLogger(ModuleManager.class);
 
@@ -99,14 +105,30 @@ public class ModuleManager extends ModuleLoader
    }
 
    /**
-    * Construct the ModuleIdentifier from a resolver module 
+    * Return the module identifier for a given XModule. The associated revision of the bundle 
+    * is also taken into account.
+    * @param resModule the resolver module to obtain the identifier for
+    * @return the Module Identifier
     */
    public static ModuleIdentifier getModuleIdentifier(XModule resModule)
    {
+      ModuleIdentifier id = resModule.getAttachment(ModuleIdentifier.class);
+      if (id != null)
+         return id;
+
       ModuleSpec moduleSpec = resModule.getAttachment(ModuleSpec.class);
       if (moduleSpec != null)
          return moduleSpec.getIdentifier();
 
+      BundleRevision bundleRevision = resModule.getAttachment(BundleRevision.class);
+      if (bundleRevision == null)
+         return null;
+
+      return getModuleIdentifier(resModule, bundleRevision.getRevision());
+   }
+
+   private static ModuleIdentifier getModuleIdentifier(XModule resModule, int revision)
+   {
       long moduleId = resModule.getModuleId();
       String artifact = resModule.getName();
       Version version = resModule.getVersion();
@@ -121,7 +143,8 @@ public class ModuleManager extends ModuleLoader
       if (moduleId > 0 && artifact.startsWith("xservice") == false)
          group += "[" + moduleId + "]";
 
-      ModuleIdentifier identifier = new ModuleIdentifier(group, artifact, version.toString());
+      ModuleIdentifier identifier = new ModuleIdentifier(group, artifact, version + REVISION_MARKER + revision);
+      resModule.addAttachment(ModuleIdentifier.class, identifier);
       return identifier;
    }
 
@@ -130,8 +153,8 @@ public class ModuleManager extends ModuleLoader
     */
    public AbstractBundle getBundle(ModuleIdentifier identifier)
    {
-      ModuleHolder holder = modules.get(identifier);
-      return holder.getBundle();
+      ModuleHolder holder = getModuleHolder(identifier);
+      return holder != null ? holder.getBundle() : null;
    }
 
    /**
@@ -148,14 +171,14 @@ public class ModuleManager extends ModuleLoader
     */
    public ModuleSpec getModuleSpec(ModuleIdentifier identifier)
    {
-      ModuleHolder holder = modules.get(identifier);
+      ModuleHolder holder = getModuleHolder(identifier);
       return holder != null ? holder.getModuleSpec() : null;
    }
 
    @Override
    public ModuleSpec findModule(ModuleIdentifier identifier) throws ModuleLoadException
    {
-      ModuleHolder holder = modules.get(identifier);
+      ModuleHolder holder = getModuleHolder(identifier);
       return holder != null ? holder.getModuleSpec() : null;
    }
 
@@ -165,14 +188,65 @@ public class ModuleManager extends ModuleLoader
     */
    public Module getModule(ModuleIdentifier identifier)
    {
-      ModuleHolder holder = modules.get(identifier);
+      ModuleHolder holder = getModuleHolder(identifier);
       return holder != null ? holder.getModule() : null;
    }
    
+   private ModuleHolder getModuleHolder(ModuleIdentifier identifier)
+   {
+      ModuleHolder holder = modules.get(identifier);
+      if (holder == null)
+         holder = getModuleFromUnrevisionedIdentifier(identifier);
+      return holder;
+   }
+
+   // In some cases a module is looked up without a revision being specified. An example being a module
+   // dependency declared in a modules.xml file. In that case we need to search for the module
+   private ModuleHolder getModuleFromUnrevisionedIdentifier(ModuleIdentifier identifier)
+   {
+      if (identifier.getVersion() != null && identifier.getVersion().contains(REVISION_MARKER))
+         // There is a revision identifier, so don't search.
+         return null;
+
+      Set<ModuleIdentifier> versions = new TreeSet<ModuleIdentifier>(new Comparator<ModuleIdentifier>()
+      {
+         @Override
+         public int compare(ModuleIdentifier o1, ModuleIdentifier o2)
+         {
+            // Both objects must have a version with a revision marker as
+            // this is the condition for being added to the versions set.
+            int idx1 = o1.getVersion().lastIndexOf(REVISION_MARKER);
+            int idx2 = o2.getVersion().lastIndexOf(REVISION_MARKER);
+            Integer i1 = Integer.parseInt(o1.getVersion().substring(idx1 + REVISION_MARKER.length()));
+            Integer i2 = Integer.parseInt(o2.getVersion().substring(idx2 + REVISION_MARKER.length()));
+            
+            // return the highest number first
+            return -i1.compareTo(i2);
+         }
+      });
+
+      for (ModuleIdentifier id : modules.keySet())
+      {
+         if (id.getGroup().equals(identifier.getGroup()) == false)
+            continue;
+         
+         if (id.getArtifact().equals(identifier.getArtifact()) == false)
+            continue;
+         
+         if (id.getVersion().contains(REVISION_MARKER))
+            versions.add(id);
+      }
+
+      if (versions.size() == 0)
+         return null;
+
+      return modules.get(versions.iterator().next());
+   }
+
    @Override
    public Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException
    {
-      ModuleHolder holder = modules.get(identifier);
+      ModuleHolder holder = getModuleHolder(identifier);
       if (holder == null)
          throw new IllegalStateException("Cannot find module: " + identifier);
       
@@ -281,7 +355,7 @@ public class ModuleManager extends ModuleLoader
       if (frameworkIdentifier != null)
          throw new IllegalStateException("Framework module already created");
 
-      frameworkIdentifier = getModuleIdentifier(resModule);
+      frameworkIdentifier = getModuleIdentifier(resModule, 0);
       ModuleSpec.Builder builder = ModuleSpec.build(frameworkIdentifier);
 
       // The Framework ModuleSpec has no associated {@link ModuleContentLoader}
@@ -308,16 +382,23 @@ public class ModuleManager extends ModuleLoader
       return packageName.replace('.', File.separatorChar);
    }
 
+   public boolean removeModule(ModuleIdentifier identifier)
+   {
+      // The module should remove automatically from the ModuleLoader
+      // through Garbage Collection as it uses weak references.
+      return modules.remove(identifier) != null;
+   }
+
    /**
     * A holder for the {@link ModuleSpec}  @{link Module} tuple
     */
-   class ModuleHolder
+   protected static class ModuleHolder
    {
       private AbstractBundle bundle;
       private ModuleSpec moduleSpec;
       private Module module;
 
-      ModuleHolder(AbstractBundle bundle, ModuleSpec moduleSpec)
+      public ModuleHolder(AbstractBundle bundle, ModuleSpec moduleSpec)
       {
          if (bundle == null)
             throw new IllegalArgumentException("Null bundle");
