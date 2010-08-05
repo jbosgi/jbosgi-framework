@@ -29,6 +29,7 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.modules.ModuleActivator;
+import org.jboss.osgi.modules.ModuleContext;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -39,10 +40,11 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 13-Jul-2010
  */
-public class ModuleActivatorBridge implements BundleActivator, ModuleActivator
+public class ModuleActivatorBridge implements BundleActivator
 {
    private BundleManager bundleManager;
    private ModuleActivator moduleActivator;
+   private ModuleContext moduleContext;
    
    @Override
    public void start(BundleContext context) throws Exception
@@ -67,28 +69,16 @@ public class ModuleActivatorBridge implements BundleActivator, ModuleActivator
       }
 
       ServiceManagerPlugin serviceManager = bundleManager.getPlugin(ServiceManagerPlugin.class);
-      moduleActivator.start(serviceManager.getServiceContainer(), module);
+      ServiceContainer serviceContainer = serviceManager.getServiceContainer();
+      BundleContext systemContext = bundleManager.getSystemContext();
+      
+      moduleContext = new ModuleContextImpl(serviceContainer, module, systemContext, context.getBundle());
+      moduleActivator.start(moduleContext);
    }
 
    @Override
    public void stop(BundleContext context) throws Exception
    {
-      AbstractBundle bundleState = ((AbstractBundleContext)context).getBundleInternal();
-      ModuleIdentifier identifier = bundleState.getModuleIdentifier();
-      ModuleManagerPlugin moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
-      Module module = moduleManager.getModule(identifier);
-      
-      ServiceManagerPlugin serviceManager = bundleManager.getPlugin(ServiceManagerPlugin.class);
-      moduleActivator.stop(serviceManager.getServiceContainer(), module);
-   }
-
-   @Override
-   public void start(ServiceContainer serviceContainer, Module module) throws ModuleLoadException
-   {
-   }
-
-   @Override
-   public void stop(ServiceContainer serviceContainer, Module module)
-   {
+      moduleActivator.stop(moduleContext);
    }
 }

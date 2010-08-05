@@ -21,6 +21,8 @@
  */
 package org.jboss.test.osgi.container.xservice.moduleA;
 
+import org.osgi.framework.Bundle;
+
 /**
  * A SimpleService
  * 
@@ -29,8 +31,15 @@ package org.jboss.test.osgi.container.xservice.moduleA;
  */
 public class ModuleServiceA
 {
+   Bundle owner;
+   
+   ModuleServiceA(Bundle owner)
+   {
+      this.owner = owner;
+   }
+
    public String echo(String msg)
    {
-      return msg;
+      return msg + ":" + owner.getSymbolicName();
    }
 }

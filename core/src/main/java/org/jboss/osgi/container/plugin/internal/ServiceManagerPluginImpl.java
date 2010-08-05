@@ -47,14 +47,17 @@ import org.jboss.msc.service.ServiceRegistryException;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.AbstractBundle;
+import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ServiceReferenceComparator;
 import org.jboss.osgi.container.bundle.ServiceState;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
+import org.jboss.osgi.container.plugin.PackageAdminPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.container.util.NoFilter;
+import org.jboss.osgi.modules.ModuleContext;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
@@ -84,6 +87,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
    // Cache commonly used plugins
    private FrameworkEventsPlugin eventsPlugin;
+   private PackageAdminPlugin packageAdmin;
 
    public ServiceManagerPluginImpl(BundleManager bundleManager)
    {
@@ -95,6 +99,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    {
       serviceContainer = ServiceContainer.Factory.create();
       eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
+      packageAdmin = getPlugin(PackageAdminPlugin.class);
    }
 
    @Override
@@ -125,7 +130,19 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       // A temporary association of the clazz and name
       Map<ServiceName, String> associations = new HashMap<ServiceName, String>();
 
-      final ServiceState serviceState = new ServiceState(bundleState, clazzes, value, properties);
+      // Generate the service names
+      long serviceId = getNextServiceId();
+      ServiceName[] serviceNames = new ServiceName[clazzes.length];
+      for (int i = 0; i < clazzes.length; i++)
+      {
+         if (clazzes[i] == null)
+            throw new IllegalArgumentException("Null service class at index: " + i);
+         
+         String shortName = clazzes[i].substring(clazzes[i].lastIndexOf(".") + 1);
+         serviceNames[i] = ServiceName.of("jbosgi", bundleState.getSymbolicName(), shortName, new Long(serviceId).toString());
+      }
+
+      final ServiceState serviceState = new ServiceState(bundleState, serviceId, serviceNames, clazzes, value, properties);
       BatchBuilder batchBuilder = serviceContainer.batchBuilder();
       Service service = new Service()
       {
@@ -147,21 +164,19 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          }
       };
 
-      List<ServiceName> serviceNames = serviceState.getServiceNames();
       log.debug("Register service: " + serviceNames);
 
-      BatchServiceBuilder serviceBuilder;
-      ServiceName rootServiceName = serviceNames.get(0);
-      serviceBuilder = batchBuilder.addService(rootServiceName, service);
+      ServiceName rootServiceName = serviceNames[0];
+      BatchServiceBuilder serviceBuilder = batchBuilder.addService(rootServiceName, service);
       associations.put(rootServiceName, clazzes[0]);
 
       // Set the startup mode
       serviceBuilder.setInitialMode(Mode.AUTOMATIC);
 
       // Add the service aliases
-      for (int i = 1; i < serviceNames.size(); i++)
+      for (int i = 1; i < serviceNames.length; i++)
       {
-         ServiceName alias = serviceNames.get(i);
+         ServiceName alias = serviceNames[i];
          associations.put(alias, clazzes[1]);
          serviceBuilder.addAliases(alias);
       }
@@ -227,53 +242,79 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       return getServiceReferencesInternal(bundleState, clazz, filter, checkAssignable);
    }
 
-   public List<ServiceState> getServiceReferencesInternal(AbstractBundle bundleState, String clazz, Filter filter, boolean checkAssignable)
+   public List<ServiceState> getServiceReferencesInternal(AbstractBundle bundleState, String clazzes, Filter filter, boolean checkAssignable)
    {
       if (bundleState == null)
          throw new IllegalArgumentException("Null bundleState");
 
-      List<ServiceState> result = new ArrayList<ServiceState>();
-      List<ServiceName> serviceNames = (clazz != null ? serviceNameMap.get(clazz) : new ArrayList<ServiceName>());
-      if (clazz == null)
+      List<ServiceName> serviceNames;
+      if (clazzes != null)
+      {
+         serviceNames = serviceNameMap.get(clazzes);
+         if (serviceNames == null)
+            serviceNames = new ArrayList<ServiceName>();
+
+         // Add potentially registered xservcie
+         ServiceName xserviceName = ServiceName.of(ModuleContext.XSERVICE_PREFIX, clazzes);
+         ServiceController<?> xservice = serviceContainer.getService(xserviceName);
+         if (xservice != null)
+            serviceNames.add(xserviceName);
+      }
+      else
       {
          // [MSC-9] Add ability to query the ServiceContainer
          Set<ServiceName> allServiceNames = new HashSet<ServiceName>();
          for (List<ServiceName> auxList : serviceNameMap.values())
             allServiceNames.addAll(auxList);
 
-         serviceNames.addAll(allServiceNames);
+         serviceNames = new ArrayList<ServiceName>(allServiceNames);
       }
 
-      if (serviceNames == null)
+      if (serviceNames.isEmpty())
          return Collections.emptyList();
 
       if (filter == null)
          filter = NoFilter.INSTANCE;
 
+      List<ServiceState> result = new ArrayList<ServiceState>();
       for (ServiceName serviceName : serviceNames)
       {
          ServiceController<?> controller = serviceContainer.getService(serviceName);
          if (controller == null)
             throw new IllegalStateException("Cannot obtain service for: " + serviceName);
 
-         ServiceState serviceState = (ServiceState)controller.getValue();
+         Object value = controller.getValue();
+         
+         // Create the ServiceState on demand for an XService instance
+         // [TODO] This should be done eagerly to keep the serviceId constant
+         // [TODO] service events for XService lifecycle changes
+         // [MSC-17] Canonical ServiceName string representation
+         if (value instanceof ServiceState == false && serviceName.toString().contains(ModuleContext.XSERVICE_PREFIX))
+         {
+            long serviceId = getNextServiceId();
+            Bundle bundle = packageAdmin.getBundle(value.getClass());
+            AbstractBundle owner = AbstractBundle.assertBundleState(bundle);
+            value = new ServiceState(owner, serviceId, new ServiceName[] { serviceName }, new String[] { clazzes }, value, null);
+         }
+
+         ServiceState serviceState = (ServiceState)value;
          if (filter.match(serviceState) == false)
             continue;
 
          Object rawValue = serviceState.getRawValue();
          if (checkAssignable == true && rawValue instanceof ServiceFactory == false)
          {
-            if (serviceState.isAssignableTo(bundleState, clazz) == false)
+            if (serviceState.isAssignableTo(bundleState, clazzes) == false)
                continue;
          }
-         
+
          result.add(serviceState);
       }
-      
+
       // Sort the result
       Collections.sort(result, ServiceReferenceComparator.getInstance());
       Collections.reverse(result);
-      
+
       return Collections.unmodifiableList(result);
    }
 

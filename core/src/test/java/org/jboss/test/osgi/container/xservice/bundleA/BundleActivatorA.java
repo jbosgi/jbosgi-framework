@@ -37,7 +37,7 @@ public class BundleActivatorA implements BundleActivator
    public void start(BundleContext context)
    {
       // Register a service
-      BundleServiceA service = new BundleServiceA(context);
+      BundleServiceA service = new BundleServiceA(context.getBundle());
       context.registerService(BundleServiceA.class.getName(), service, null);
    }
 

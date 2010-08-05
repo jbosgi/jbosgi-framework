@@ -24,8 +24,6 @@
 
 <module xmlns="urn:jboss:module:1.0" name="moduleB" group="jbosgi" version="1.0">
 
-    <main-class name="org.jboss.test.osgi.container.xservice.moduleB.ModuleActivatorB"/>
-    
     <resources>
       <resource-root path="/"/>
     </resources>

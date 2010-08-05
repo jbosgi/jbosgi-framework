@@ -32,7 +32,6 @@ import javax.transaction.xa.XAResource;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.FrameworkState;
@@ -43,6 +42,7 @@ import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.resolver.XModule;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.kohsuke.args4j.CmdLineParser;
 import org.mockito.Mockito;
 import org.osgi.framework.BundleActivator;
 
@@ -122,7 +122,7 @@ public class FrameworkModuleTestCase
    {
       try
       {
-         classLoader.loadClass(ModuleIdentifier.class.getName());
+         classLoader.loadClass(CmdLineParser.class.getName());
          fail("ClassNotFoundException expected");
       }
       catch (ClassNotFoundException ex)

@@ -23,9 +23,19 @@ package org.jboss.test.osgi.container.xservice.moduleB;
 
 //$Id$
 
-import org.jboss.modules.Module;
-import org.jboss.msc.service.ServiceContainer;
+import org.jboss.modules.ModuleLoadException;
+import org.jboss.msc.service.BatchBuilder;
+import org.jboss.msc.service.BatchServiceBuilder;
+import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceRegistryException;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.modules.ModuleActivator;
+import org.jboss.osgi.modules.ModuleContext;
 
 /**
  * A Service Activator
@@ -35,11 +45,54 @@ import org.jboss.osgi.modules.ModuleActivator;
  */
 public class ModuleActivatorB implements ModuleActivator
 {
-   public void start(ServiceContainer serviceContainer, Module module)
+   private ServiceName serviceName;
+   
+   @Override
+   public void start(final ModuleContext context) throws ModuleLoadException
    {
+      BatchBuilder batchBuilder = context.getServiceContainer().batchBuilder();
+      serviceName = context.getServiceName(ModuleServiceB.class);
+
+      Service<ModuleServiceB> service = new Service<ModuleServiceB>()
+      {
+         ModuleServiceB value = new ModuleServiceB(context.getBundle());
+
+         @Override
+         public ModuleServiceB getValue() throws IllegalStateException
+         {
+            return value;
+         }
+
+         @Override
+         public void start(StartContext context) throws StartException
+         {
+         }
+
+         @Override
+         public void stop(StopContext context)
+         {
+         }
+      };
+
+      BatchServiceBuilder<ModuleServiceB> serviceBuilder = batchBuilder.addService(serviceName, service);
+      serviceBuilder.setInitialMode(Mode.AUTOMATIC);
+      try
+      {
+         batchBuilder.install();
+      }
+      catch (ServiceRegistryException ex)
+      {
+         throw new ModuleLoadException("Cannot register service: " + serviceName);
+      }
    }
 
-   public void stop(ServiceContainer serviceContainer, Module module)
+   @Override
+   public void stop(ModuleContext context)
    {
+      if (serviceName != null)
+      {
+         ServiceController<?> service = context.getServiceContainer().getService(serviceName);
+         service.setMode(Mode.REMOVE);
+      }
    }
 }

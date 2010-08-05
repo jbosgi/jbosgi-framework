@@ -68,7 +68,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    // The bundles that use this service
    private Set<AbstractBundle> usingBundles;
    // The list of service names associated with this service
-   private List<ServiceName> serviceNames = new ArrayList<ServiceName>();
+   private List<ServiceName> serviceNames;
    // The service registration
    private ServiceRegistration registration;
    // The service reference
@@ -87,10 +87,12 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    private FrameworkEventsPlugin eventsPlugin;
 
    @SuppressWarnings("unchecked")
-   public ServiceState(AbstractBundle owner, String[] clazzes, Object value, Dictionary properties)
+   public ServiceState(AbstractBundle owner, long serviceId, ServiceName[] serviceNames, String[] clazzes, Object value, Dictionary properties)
    {
       if (owner == null)
          throw new IllegalArgumentException("Null owner");
+      if (serviceNames == null || serviceNames.length == 0)
+         throw new IllegalArgumentException("Null names");
       if (clazzes == null || clazzes.length == 0)
          throw new IllegalArgumentException("Null clazzes");
       if (value == null)
@@ -99,19 +101,13 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       this.serviceManager = owner.getServiceManagerPlugin();
       this.eventsPlugin = owner.getFrameworkEventsPlugin();
 
-      this.serviceId = serviceManager.getNextServiceId();
+      this.serviceNames = Arrays.asList(serviceNames);
+      this.serviceId = serviceId;
       this.ownerBundle = owner;
       this.value = value;
 
       if (checkValidClassNames(owner, clazzes, value) == false)
          throw new IllegalArgumentException("Invalid object class in: " + Arrays.asList(clazzes));
-
-      // Generate the service names
-      for (String clazz : clazzes)
-      {
-         String shortName = clazz.substring(clazz.lastIndexOf(".") + 1);
-         serviceNames.add(ServiceName.of("jbosgi", owner.getSymbolicName(), shortName, new Long(serviceId).toString()));
-      }
 
       if (properties == null)
          properties = new Hashtable();

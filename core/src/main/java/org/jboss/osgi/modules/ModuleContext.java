@@ -21,18 +21,33 @@
 */
 package org.jboss.osgi.modules;
 
-import org.jboss.modules.ModuleLoadException;
+import org.jboss.modules.Module;
+import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceName;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 
 /**
- * A module activator that is called when the module 
- * gets loaded by the OSGi layer.
+ * A the context for Module/OSGi integration.
  * 
  * @author thomas.diesler@jboss.com
- * @since 13-Jul-2010
+ * @since 05-Aug-2010
  */
-public interface ModuleActivator 
+public interface ModuleContext
 {
-   void start(ModuleContext context) throws ModuleLoadException;
+   /** The prefix that xservices must use to get discovered by the OSGi service registry */
+   String XSERVICE_PREFIX = "jbosgi.xservice";
 
-   void stop(ModuleContext context);
+   /**
+    * Get the ServiceName for the given service interface that an xservice implements.
+    */
+   ServiceName getServiceName(Class<?> service);
+   
+   ServiceContainer getServiceContainer();
+   
+   Module getModule();
+   
+   BundleContext getSystemContext();
+   
+   Bundle getBundle();
 }

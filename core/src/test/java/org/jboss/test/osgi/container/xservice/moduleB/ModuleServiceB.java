@@ -21,6 +21,11 @@
  */
 package org.jboss.test.osgi.container.xservice.moduleB;
 
+import org.jboss.test.osgi.container.xservice.bundleB.BundleServiceB;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+
 /**
  * A SimpleService
  * 
@@ -29,8 +34,18 @@ package org.jboss.test.osgi.container.xservice.moduleB;
  */
 public class ModuleServiceB
 {
+   Bundle owner;
+   
+   ModuleServiceB(Bundle owner)
+   {
+      this.owner = owner;
+   }
+
    public String echo(String msg)
    {
-      return msg;
+      BundleContext context = owner.getBundleContext();
+      ServiceReference sref = context.getServiceReference(BundleServiceB.class.getName());
+      BundleServiceB service = (BundleServiceB)context.getService(sref);
+      return service.echo(msg + ":" + owner.getSymbolicName());
    }
 }
