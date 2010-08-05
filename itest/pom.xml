@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- ====================================================================== -->
-<!-- -->
-<!-- JBoss, the OpenSource J2EE webOS -->
-<!-- -->
-<!-- Distributable under LGPL license. -->
-<!-- See terms of license at http://www.gnu.org. -->
-<!-- -->
+<!--                                                                        -->
+<!-- JBoss, the OpenSource J2EE webOS                                       -->
+<!--                                                                        -->
+<!-- Distributable under LGPL license.                                      -->
+<!-- See terms of license at http://www.gnu.org.                            -->
+<!--                                                                        -->
 <!-- ====================================================================== -->
 
 <!-- 
   Set these VM properties in your IDE debugger 
   
-  -Dtest.archive.directory=${workspace_loc:jbosgi-container-core/target}/test-libs
+  -Dtest.archive.directory=${workspace_loc:jbosgi-container-itest/target}/test-libs
   -Dlog4j.configuration=log4j-console.xml 
 -->
 
@@ -60,24 +60,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.jboss.arquillian</groupId>
-      <artifactId>arquillian-bundle</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.jboss.logging</groupId>
-          <artifactId>jboss-logging-spi</artifactId>
-        </exclusion>
-      </exclusions>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.jboss.arquillian.container</groupId>
       <artifactId>arquillian-osgi-embedded-4.2</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.jboss.osgi.husky</groupId>
-      <artifactId>jboss-osgi-husky</artifactId>
+      <groupId>org.jboss.arquillian.protocol</groupId>
+      <artifactId>arquillian-protocol-jmx-osgi-bundle</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -151,14 +140,9 @@
                   <destFileName>org.apache.felix.log.jar</destFileName>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.jboss.arquillian</groupId>
-                  <artifactId>arquillian-bundle</artifactId>
-                  <destFileName>arquillian-bundle.jar</destFileName>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.jboss.osgi.husky</groupId>
-                  <artifactId>jboss-osgi-husky</artifactId>
-                  <destFileName>jboss-osgi-husky.jar</destFileName>
+                  <groupId>org.jboss.arquillian.protocol</groupId>
+                  <artifactId>arquillian-protocol-jmx-osgi-bundle</artifactId>
+                  <destFileName>arquillian-protocol-jmx-osgi-bundle.jar</destFileName>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.jboss.osgi.jmx</groupId>

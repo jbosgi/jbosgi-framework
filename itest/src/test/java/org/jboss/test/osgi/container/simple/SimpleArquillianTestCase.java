@@ -37,7 +37,6 @@ import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.container.simple.bundleA.SimpleActivator;
 import org.jboss.test.osgi.container.simple.bundleA.SimpleService;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
@@ -50,7 +49,6 @@ import org.osgi.framework.ServiceReference;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-@Ignore("arquillian")
 @RunWith(Arquillian.class)
 public class SimpleArquillianTestCase
 {
@@ -66,10 +64,11 @@ public class SimpleArquillianTestCase
             builder.addBundleSymbolicName(archive.getName());
             builder.addBundleManifestVersion(2);
             builder.addBundleActivator(SimpleActivator.class.getName());
-            // [TODO] generate a separate bundle the contains the test case
             builder.addExportPackages(SimpleArquillianTestCase.class);
-            builder.addImportPackages("org.jboss.arquillian.junit", "org.jboss.shrinkwrap.api", "org.jboss.shrinkwrap.api.spec");
+            builder.addImportPackages("org.jboss.arquillian.junit");
+            builder.addImportPackages("org.jboss.shrinkwrap.api", "org.jboss.shrinkwrap.api.asset", "org.jboss.shrinkwrap.api.spec");
             builder.addImportPackages("javax.inject", "org.junit", "org.junit.runner");
+            builder.addImportPackages("org.osgi.framework");
             return builder.openStream();
          }
       });

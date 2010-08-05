@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- ====================================================================== -->
-<!-- -->
-<!-- JBoss, the OpenSource J2EE webOS -->
-<!-- -->
-<!-- Distributable under LGPL license. -->
-<!-- See terms of license at http://www.gnu.org. -->
-<!-- -->
+<!--                                                                        -->
+<!-- JBoss, the OpenSource J2EE webOS                                       -->
+<!--                                                                        -->
+<!-- Distributable under LGPL license.                                      -->
+<!-- See terms of license at http://www.gnu.org.                            -->
+<!--                                                                        -->
 <!-- ====================================================================== -->
 
 <!-- 
@@ -82,13 +82,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.jboss.arquillian</groupId>
-      <artifactId>arquillian-bundle</artifactId>
+      <groupId>org.jboss.arquillian.container</groupId>
+      <artifactId>arquillian-osgi-embedded-4.2</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.jboss.arquillian.container</groupId>
-      <artifactId>arquillian-osgi-embedded-4.2</artifactId>
+      <groupId>org.jboss.arquillian.protocol</groupId>
+      <artifactId>arquillian-protocol-jmx-osgi-bundle</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -128,9 +128,9 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>org.jboss.arquillian</groupId>
-                  <artifactId>arquillian-bundle</artifactId>
-                  <destFileName>arquillian-bundle.jar</destFileName>
+                  <groupId>org.jboss.arquillian.protocol</groupId>
+                  <artifactId>arquillian-protocol-jmx-osgi-bundle</artifactId>
+                  <destFileName>arquillian-protocol-jmx-osgi-bundle.jar</destFileName>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.osgi</groupId>

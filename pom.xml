@@ -1,19 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- ====================================================================== -->
-<!-- -->
-<!-- JBoss, the OpenSource J2EE webOS -->
-<!-- -->
-<!-- Distributable under LGPL license. -->
-<!-- See terms of license at http://www.gnu.org. -->
-<!-- -->
+<!--                                                                        -->
+<!-- JBoss, the OpenSource J2EE webOS                                       -->
+<!--                                                                        -->
+<!-- Distributable under LGPL license.                                      -->
+<!-- See terms of license at http://www.gnu.org.                            -->
+<!--                                                                        -->
 <!-- ====================================================================== -->
-
-<!-- Set these VM properties in your IDE debugger 
-
-  -Dlog4j.output.dir=${workspace_loc:jboss-osgi-framework/target} 
-  -Dlog4j.configuration=log4j-console.xml 
--->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
@@ -33,9 +27,9 @@
 
   <!-- Source Control -->
   <scm>
-    <connection>scm:git:git://github.com/jbosgi/jbosgi-service-container.git</connection>
-    <developerConnection>scm:git:git@github.com:jbosgi/jbosgi-service-container.git</developerConnection>
-    <url>http://github.com/jbosgi/jbosgi-service-container</url>
+    <connection>scm:git:git://github.com/jbosgi/jbosgi-container.git</connection>
+    <developerConnection>scm:git:git@github.com:jbosgi/jbosgi-container.git</developerConnection>
+    <url>http://github.com/jbosgi/jbosgi-container</url>
   </scm>
 
   <!-- Properties -->
@@ -48,7 +42,6 @@
     <version.jboss.modules>1.0.0.Beta2-SNAPSHOT</version.jboss.modules>
     <version.jboss.osgi.deployment>1.0.4</version.jboss.osgi.deployment>
     <version.jboss.osgi.felix>3.0.1</version.jboss.osgi.felix>
-    <version.jboss.osgi.husky>1.0.6</version.jboss.osgi.husky>
     <version.jboss.osgi.jmx>1.0.7</version.jboss.osgi.jmx>
     <version.jboss.osgi.resolver>1.0.0</version.jboss.osgi.resolver>
     <version.jboss.osgi.resolver.felix>3.0.1</version.jboss.osgi.resolver.felix>
@@ -136,25 +129,14 @@
         <version>${version.apache.felix.log}</version>
       </dependency>
       <dependency>
-        <groupId>org.jboss.arquillian</groupId>
-        <artifactId>arquillian-bundle</artifactId>
-        <version>${version.jboss.arquillian}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.jboss.logging</groupId>
-            <artifactId>jboss-logging-spi</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-      <dependency>
         <groupId>org.jboss.arquillian.container</groupId>
         <artifactId>arquillian-osgi-embedded-4.2</artifactId>
         <version>${version.jboss.arquillian}</version>
       </dependency>
       <dependency>
-        <groupId>org.jboss.osgi.husky</groupId>
-        <artifactId>jboss-osgi-husky</artifactId>
-        <version>${version.jboss.osgi.husky}</version>
+        <groupId>org.jboss.arquillian.protocol</groupId>
+        <artifactId>arquillian-protocol-jmx-osgi-bundle</artifactId>
+        <version>${version.jboss.arquillian}</version>
       </dependency>
       <dependency>
         <groupId>org.jboss.osgi.jmx</groupId>
