@@ -19,7 +19,7 @@
 * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
 */
-package org.jboss.test.osgi.container.servicemix;
+package org.jboss.test.osgi.container.xservice;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -32,26 +32,26 @@ import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.test.osgi.container.servicemix.bundleA.BundleActivatorA;
-import org.jboss.test.osgi.container.servicemix.bundleA.BundleServiceA;
-import org.jboss.test.osgi.container.servicemix.bundleB.BundleActivatorB;
-import org.jboss.test.osgi.container.servicemix.bundleB.BundleServiceB;
-import org.jboss.test.osgi.container.servicemix.moduleA.ModuleActivatorA;
-import org.jboss.test.osgi.container.servicemix.moduleA.ModuleServiceA;
-import org.jboss.test.osgi.container.servicemix.moduleB.ModuleActivatorB;
-import org.jboss.test.osgi.container.servicemix.moduleB.ModuleServiceB;
+import org.jboss.test.osgi.container.xservice.bundleA.BundleActivatorA;
+import org.jboss.test.osgi.container.xservice.bundleA.BundleServiceA;
+import org.jboss.test.osgi.container.xservice.bundleB.BundleActivatorB;
+import org.jboss.test.osgi.container.xservice.bundleB.BundleServiceB;
+import org.jboss.test.osgi.container.xservice.moduleA.ModuleActivatorA;
+import org.jboss.test.osgi.container.xservice.moduleA.ModuleServiceA;
+import org.jboss.test.osgi.container.xservice.moduleB.ModuleActivatorB;
+import org.jboss.test.osgi.container.xservice.moduleB.ModuleServiceB;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 
 /**
- * Test service-mix functionality.
+ * Test that an MSC module can have a dependency on an OSGi bundle and vice versa. 
  *
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jul-2010
  */
-public class ServiceMixTestCase extends OSGiFrameworkTest
+public class ModuleDependencyTestCase extends OSGiFrameworkTest
 {
    @Test
    public void testSimpleModule() throws Exception
@@ -164,7 +164,7 @@ public class ServiceMixTestCase extends OSGiFrameworkTest
    private JavaArchive getBundleA()
    {
       // Bundle-SymbolicName: bundleA
-      // Bundle-Activator: org.jboss.test.osgi.container.servicemix.bundleA.BundleActivatorA
+      // Bundle-Activator: org.jboss.test.osgi.container.xservice.bundleA.BundleActivatorA
       // Require-Bundle: moduleA;bundle-version:=1.0.0
       final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA");
       archive.addClasses(BundleActivatorA.class, BundleServiceA.class);
@@ -187,9 +187,9 @@ public class ServiceMixTestCase extends OSGiFrameworkTest
    private JavaArchive getBundleB()
    {
       // Bundle-Version: 1.0.0
-      // Bundle-SymbolicName: servicemix.bundleB
-      // Bundle-Activator: org.jboss.test.osgi.container.servicemix.bundleB.BundleActivatorB
-      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "servicemix.bundleB");
+      // Bundle-SymbolicName: xservice.bundleB
+      // Bundle-Activator: org.jboss.test.osgi.container.xservice.bundleB.BundleActivatorB
+      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "xservice.bundleB");
       archive.addClasses(BundleActivatorB.class, BundleServiceB.class);
       archive.setManifest(new Asset()
       {
@@ -209,7 +209,7 @@ public class ServiceMixTestCase extends OSGiFrameworkTest
    private JavaArchive getModuleA()
    {
       JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-      archive.addManifestResource(getResourceFile("servicemix/moduleA/META-INF/module.xml"));
+      archive.addManifestResource(getResourceFile("xservice/moduleA/META-INF/module.xml"));
       archive.addClasses(ModuleActivatorA.class, ModuleServiceA.class);
       return archive;
    }
@@ -217,7 +217,7 @@ public class ServiceMixTestCase extends OSGiFrameworkTest
    private JavaArchive getModuleB()
    {
       JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
-      archive.addManifestResource(getResourceFile("servicemix/moduleB/META-INF/module.xml"));
+      archive.addManifestResource(getResourceFile("xservice/moduleB/META-INF/module.xml"));
       archive.addClasses(ModuleActivatorB.class, ModuleServiceB.class);
       return archive;
    }

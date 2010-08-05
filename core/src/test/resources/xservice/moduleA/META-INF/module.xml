@@ -22,16 +22,15 @@
   ~ 02110-1301 USA, or see the FSF site: http://www.fsf.org.
   -->
 
-<module xmlns="urn:jboss:module:1.0" name="moduleB" group="jbosgi" version="1.0">
+<module xmlns="urn:jboss:module:1.0" name="moduleA" group="jbosgi" version="1.0">
 
-    <main-class name="org.jboss.test.osgi.container.servicemix.moduleB.ModuleActivatorB"/>
+    <main-class name="org.jboss.test.osgi.container.xservice.moduleA.ModuleActivatorA"/>
     
     <resources>
       <resource-root path="/"/>
     </resources>
 
     <dependencies>
-        <module group="jbosgi" name="system.bundle" version="0.0.0"/>
-        <module group="jbosgi" name="servicemix.bundleB" version="1.0.0"/>
+      <module group="jbosgi" name="system.bundle" version="0.0.0"/>
     </dependencies>
 </module>

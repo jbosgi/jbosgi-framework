@@ -19,11 +19,13 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.container.servicemix.bundleA;
+package org.jboss.test.osgi.container.xservice.bundleB;
 
 //$Id$
 
+import org.jboss.test.osgi.container.xservice.moduleA.ModuleServiceA;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 
 /**
  * A SimpleService
@@ -31,14 +33,18 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
-public class BundleServiceA
+public class BundleServiceB
 {
-   public BundleServiceA(BundleContext context)
+   private ModuleServiceA moduleService;
+   
+   public BundleServiceB(BundleContext context)
    {
+      ServiceReference sref = context.getServiceReference(ModuleServiceA.class.getName());
+      moduleService = (ModuleServiceA)context.getService(sref);
    }
 
    public String echo(String msg)
    {
-      return msg;
+      return moduleService.echo(msg);
    }
 }

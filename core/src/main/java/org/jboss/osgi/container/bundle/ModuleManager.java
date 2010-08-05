@@ -111,14 +111,14 @@ public class ModuleManager extends ModuleLoader
       String artifact = resModule.getName();
       Version version = resModule.getVersion();
 
-      // Modules can define their dependencies on bundles by prefixing the artifact name with 'servicemix'
+      // Modules can define their dependencies on bundles by prefixing the artifact name with 'xservice'
       // For ordinary modules we encode the bundleId in the group name to make sure the identifier is unique.
       // When the underlying ModuleLoader supports unloading of modules we can hopefully create stable module identifiers
       // that do not contain the bundleId, which is inherently unstable accross framework restarts.
 
       // [TODO] Remove symbolic name prefix hack 
       String group = "jbosgi";
-      if (moduleId > 0 && artifact.startsWith("servicemix") == false)
+      if (moduleId > 0 && artifact.startsWith("xservice") == false)
          group += "[" + moduleId + "]";
 
       ModuleIdentifier identifier = new ModuleIdentifier(group, artifact, version.toString());
