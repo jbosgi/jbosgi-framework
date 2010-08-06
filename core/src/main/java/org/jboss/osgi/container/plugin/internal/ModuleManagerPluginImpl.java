@@ -108,11 +108,4 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          return moduleManager.createModuleSpec(resModule, rootFile);
       }
    }
-
-   @Override
-   public void unregisterModule(ModuleIdentifier identifier)
-   {
-      moduleManager.removeModule(identifier);
-
-   }
 }

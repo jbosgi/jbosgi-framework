@@ -95,12 +95,12 @@ public abstract class AbstractBundleRevision
       return metadata;
    }
 
-   int getRevision()
+   public int getRevision()
    {
       return revision;
    }
 
-   Version getVersion()
+   public Version getVersion()
    {
       return version;
    }

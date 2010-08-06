@@ -73,10 +73,4 @@ public interface ModuleManagerPlugin extends Plugin
     * @throws ModuleLoadException If the module cannot be loaded
     */
    Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException;
-
-   /**
-    * Remove module from the {@link ModuleManager}
-    * @param moduleIdentifier The identifier for the module.
-    */
-   void unregisterModule(ModuleIdentifier moduleIdentifier);
 }

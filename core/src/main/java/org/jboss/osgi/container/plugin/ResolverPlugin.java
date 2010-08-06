@@ -68,11 +68,4 @@ public interface ResolverPlugin extends Plugin
     * @return The list of resolved bundles in the resolve order or an empty list
     */
    List<AbstractBundle> resolve(List<AbstractBundle> bundles);
-
-   /** 
-    * Update the given bundle. Call this method when a bundle is updated so that
-    * the associated resolver state is also updated.
-    * @param bundle the Bundle
-    */
-   void updateBundle(AbstractBundle bundleState);
 }

@@ -87,13 +87,6 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    }
    
    @Override
-   public void updateBundle(AbstractBundle bundleState)
-   {
-      removeBundle(bundleState);
-      addBundle(bundleState);
-   }
-
-   @Override
    public void resolve(AbstractBundle bundleState) throws BundleException
    {
       XModule resModule = bundleState.getResolverModule();
