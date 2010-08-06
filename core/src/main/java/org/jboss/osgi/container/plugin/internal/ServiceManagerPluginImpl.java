@@ -22,6 +22,7 @@
 package org.jboss.osgi.container.plugin.internal;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
@@ -164,7 +165,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          }
       };
 
-      log.debug("Register service: " + serviceNames);
+      log.debug("Register service: " + Arrays.asList(serviceNames));
 
       ServiceName rootServiceName = serviceNames[0];
       BatchServiceBuilder serviceBuilder = batchBuilder.addService(rootServiceName, service);

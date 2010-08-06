@@ -27,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.InputStream;
-import java.util.jar.Manifest;
+import java.util.ArrayList;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
@@ -41,11 +41,9 @@ import org.jboss.osgi.container.bundle.SystemBundle;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XModuleBuilder;
-import org.jboss.osgi.resolver.XResolverFactory;
+import org.jboss.osgi.resolver.XWire;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiTestHelper;
-import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
@@ -57,6 +55,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
+import org.osgi.framework.Version;
 import org.osgi.service.log.LogService;
 
 /**
@@ -65,7 +64,7 @@ import org.osgi.service.log.LogService;
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
-public class HostModuleClassLoaderTestCase 
+public class ModuleClassLoaderTestCase 
 {
    static ModuleClassLoader classLoader;
    
@@ -108,15 +107,19 @@ public class HostModuleClassLoaderTestCase
          }
       });
       
-      // Create the test module 
-      VirtualFile rootFile = OSGiTestHelper.toVirtualFile(archive);
-      Manifest manifest = VFSUtils.getManifest(rootFile);
-      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
-      resModule = builder.createModule(1, manifest);
-      resModule.addAttachment(Bundle.class, Mockito.mock(AbstractBundle.class));
-      resModule.addAttachment(BundleRevision.class, Mockito.mock(BundleRevision.class));
+      // Create the XModule 
+      resModule = Mockito.mock(XModule.class);
+      Mockito.when(resModule.getModuleId()).thenReturn(new Long(1));
+      Mockito.when(resModule.getName()).thenReturn(archive.getName());
+      Mockito.when(resModule.getVersion()).thenReturn(Version.parseVersion("1.0.0"));
+      Mockito.when(resModule.getWires()).thenReturn(new ArrayList<XWire>());
+      AbstractBundle bundleState = Mockito.mock(AbstractBundle.class);
+      Mockito.when(resModule.getAttachment(Bundle.class)).thenReturn(bundleState);
+      BundleRevision bundleRevision = Mockito.mock(BundleRevision.class);
+      Mockito.when(resModule.getAttachment(BundleRevision.class)).thenReturn(bundleRevision);
       
       // Create the ModuleSpec and the Module
+      VirtualFile rootFile = OSGiTestHelper.toVirtualFile(archive);
       moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
       Module module = moduleManager.loadModule(moduleSpec.getIdentifier());
       classLoader = module.getClassLoader();

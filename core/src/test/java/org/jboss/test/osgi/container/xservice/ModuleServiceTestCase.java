@@ -143,7 +143,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest
             BundleContext context = bundleA.getBundleContext();
             ServiceReference sref = context.getServiceReference(BundleServiceA.class.getName());
             String was = invokeService(context.getService(sref), "hello");
-            assertEquals("hello:bundleA:1.0.0", was);
+            assertEquals("hello:bundleA:1.0.0:moduleAS", was);
          }
          finally
          {
@@ -182,7 +182,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest
             builder.addBundleSymbolicName(archive.getName());
             builder.addBundleVersion("1.0.0");
             builder.addBundleActivator(BundleActivatorA.class);
-            builder.addRequireBundle("moduleAS;bundle-version:=1.0.0"); //;visibility:=reexport
+            builder.addRequireBundle("moduleAS;bundle-version:=1.0.0"); 
             return builder.openStream();
          }
       });

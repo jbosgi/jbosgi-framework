@@ -23,7 +23,11 @@ package org.jboss.osgi.container.plugin.internal;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
@@ -141,12 +145,12 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       // First check if the Deployment contains a valid BundleInfo
       BundleInfo info = dep.getAttachment(BundleInfo.class);
       if (info != null)
-         metadata = toOSGiMetaData(info);
+         metadata = toOSGiMetaData(dep, info);
 
       // Secondly, we support deployments that contain ModuleSpec
       ModuleSpec moduleSpec = dep.getAttachment(ModuleSpec.class);
       if (metadata == null && moduleSpec != null)
-         metadata = toOSGiMetaData(moduleSpec);
+         metadata = toOSGiMetaData(dep, moduleSpec);
 
       if (metadata == null)
          throw new BundleException("Cannot construct OSGiMetaData from: " + dep);
@@ -154,13 +158,13 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       return metadata;
    }
 
-   private OSGiMetaData toOSGiMetaData(BundleInfo info)
+   private OSGiMetaData toOSGiMetaData(Deployment dep, BundleInfo info)
    {
       Manifest manifest = info.getManifest();
       return new OSGiManifestMetaData(manifest);
    }
 
-   private OSGiMetaData toOSGiMetaData(ModuleSpec moduleSpec)
+   private OSGiMetaData toOSGiMetaData(Deployment dep, ModuleSpec moduleSpec)
    {
       OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
       ModuleIdentifier identifier = moduleSpec.getIdentifier();
@@ -171,6 +175,34 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       if (moduleSpec.getMainClass() != null)
          builder.addBundleActivator(ModuleActivatorBridge.class);
 
+      // Add Export-Package for every path we can find
+      try
+      {
+         VirtualFile root = dep.getRoot();
+         Set<String> exportedPaths = new HashSet<String>();
+         int urlOffset = root.toURL().toExternalForm().length();
+         Enumeration<URL> entries = root.findEntries("/", null, true);
+         while (entries.hasMoreElements())
+         {
+            String url = entries.nextElement().toExternalForm();
+            String path = url.substring(urlOffset);
+            if (path.startsWith("META-INF"))
+               continue;
+            
+            path = path.substring(0, path.lastIndexOf('/'));
+            if (exportedPaths.contains(path) == false)
+            {
+               exportedPaths.add(path);
+               builder.addExportPackages(path.replace('/', '.'));
+            }
+         }
+      }
+      catch (IOException ex)
+      {
+         log.error("Cannot process module entries", ex);
+      }
+      
+      // Add Require-Bundle for every dependency
       for (DependencySpec depSpec : moduleSpec.getDependencies())
       {
          ModuleIdentifier depid = depSpec.getModuleIdentifier();

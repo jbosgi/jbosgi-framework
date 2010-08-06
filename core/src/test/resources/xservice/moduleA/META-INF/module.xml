@@ -25,7 +25,7 @@
 <module xmlns="urn:jboss:module:1.0" name="moduleA" group="jbosgi" version="1.0">
 
     <resources>
-      <resource-root path="/"/>
+      <resource-root path="org/jboss/test/osgi/container/xservice/moduleA"/>
     </resources>
 
     <dependencies>

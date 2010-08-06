@@ -90,7 +90,7 @@ public class ModuleManager extends ModuleLoader
 
       // Set the {@link ModuleLogger}
       Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
-      
+
       // Make sure this ModuleLoader is used
       // This also registers the URLStreamHandlerFactory
       final ModuleLoader moduleLoader = this;
@@ -127,11 +127,13 @@ public class ModuleManager extends ModuleLoader
       return getModuleIdentifier(resModule, bundleRevision.getRevision());
    }
 
+   // [TODO] Remove the revision parameter. The identity of an XModule is the revision. 
    private static ModuleIdentifier getModuleIdentifier(XModule resModule, int revision)
    {
-      long moduleId = resModule.getModuleId();
+      String group = "jbosgi";
       String artifact = resModule.getName();
       Version version = resModule.getVersion();
+      long moduleId = resModule.getModuleId();
 
       // Modules can define their dependencies on bundles by prefixing the artifact name with 'xservice'
       // For ordinary modules we encode the bundleId in the group name to make sure the identifier is unique.
@@ -139,7 +141,6 @@ public class ModuleManager extends ModuleLoader
       // that do not contain the bundleId, which is inherently unstable accross framework restarts.
 
       // [TODO] Remove symbolic name prefix hack 
-      String group = "jbosgi";
       if (moduleId > 0 && artifact.startsWith("xservice") == false)
          group += "[" + moduleId + "]";
 
@@ -191,7 +192,7 @@ public class ModuleManager extends ModuleLoader
       ModuleHolder holder = getModuleHolder(identifier);
       return holder != null ? holder.getModule() : null;
    }
-   
+
    private ModuleHolder getModuleHolder(ModuleIdentifier identifier)
    {
       ModuleHolder holder = modules.get(identifier);
@@ -219,7 +220,7 @@ public class ModuleManager extends ModuleLoader
             int idx2 = o2.getVersion().lastIndexOf(REVISION_MARKER);
             Integer i1 = Integer.parseInt(o1.getVersion().substring(idx1 + REVISION_MARKER.length()));
             Integer i2 = Integer.parseInt(o2.getVersion().substring(idx2 + REVISION_MARKER.length()));
-            
+
             // return the highest number first
             return -i1.compareTo(i2);
          }
@@ -229,10 +230,10 @@ public class ModuleManager extends ModuleLoader
       {
          if (id.getGroup().equals(identifier.getGroup()) == false)
             continue;
-         
+
          if (id.getArtifact().equals(identifier.getArtifact()) == false)
             continue;
-         
+
          if (id.getVersion().contains(REVISION_MARKER))
             versions.add(id);
       }
@@ -249,7 +250,7 @@ public class ModuleManager extends ModuleLoader
       ModuleHolder holder = getModuleHolder(identifier);
       if (holder == null)
          throw new IllegalStateException("Cannot find module: " + identifier);
-      
+
       Module module = holder.getModule();
       if (module == null)
       {
@@ -285,47 +286,44 @@ public class ModuleManager extends ModuleLoader
          // Map the dependency builder for (the likely) case that the same exporter is choosen for multiple wires
          Map<XModule, DependencySpec.Builder> depBuilders = new HashMap<XModule, DependencySpec.Builder>();
          depBuilders.put(bundleManager.getSystemBundle().getResolverModule(), depBuilder);
-         
+
          // For every {@link XWire} add a dependency on the exporter
          // The resolver module will have wires when this method is 
          // called as a result of the resolver callback
          List<XWire> wires = resModule.getWires();
-         if (wires != null)
+         for (XWire wire : wires)
          {
-            for (XWire wire : wires)
+            XRequirement req = wire.getRequirement();
+            XModule importer = wire.getImporter();
+            XModule exporter = wire.getExporter();
+            if (exporter == importer)
+               continue;
+
+            // Get or create the dependency builder for the exporter
+            ModuleIdentifier exporterId = getModuleIdentifier(exporter);
+            depBuilder = depBuilders.get(exporter);
+            if (depBuilder == null)
             {
-               XRequirement req = wire.getRequirement();
-               XModule importer = wire.getImporter();
-               XModule exporter = wire.getExporter();
-               if (exporter == importer)
-                  continue;
+               depBuilder = specBuilder.addDependency(exporterId);
+               depBuilders.put(exporter, depBuilder);
+            }
 
-               // Get or create the dependency builder for the exporter
-               ModuleIdentifier exporterId = getModuleIdentifier(exporter);
-               depBuilder = depBuilders.get(exporter);
-               if (depBuilder == null)
-               {
-                  depBuilder = specBuilder.addDependency(exporterId);
-                  depBuilders.put(exporter, depBuilder);
-               }
-               
-               // Dependency for Import-Package
-               if (req instanceof XPackageRequirement)
-               {
-                  String path = getPathFromPackageName(req.getName());
-                  depBuilder.addExportInclude(path);
-                  depBuilder.setExport(false); // no re-export
-                  continue;
-               }
+            // Dependency for Import-Package
+            if (req instanceof XPackageRequirement)
+            {
+               String path = getPathFromPackageName(req.getName());
+               depBuilder.addImportInclude(path);
+               depBuilder.setExport(false); // no re-export
+               continue;
+            }
 
-               // Dependency for Require-Bundle
-               if (req instanceof XRequireBundleRequirement)
-               {
-                  XRequireBundleRequirement bndreq = (XRequireBundleRequirement)req;
-                  boolean reexport = Constants.VISIBILITY_REEXPORT.equals(bndreq.getVisibility());
-                  depBuilder.setExport(reexport);
-                  continue;
-               }
+            // Dependency for Require-Bundle
+            if (req instanceof XRequireBundleRequirement)
+            {
+               XRequireBundleRequirement bndreq = (XRequireBundleRequirement)req;
+               boolean reexport = Constants.VISIBILITY_REEXPORT.equals(bndreq.getVisibility());
+               depBuilder.setExport(reexport);
+               continue;
             }
          }
 

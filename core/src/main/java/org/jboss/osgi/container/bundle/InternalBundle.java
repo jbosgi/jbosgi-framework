@@ -46,7 +46,7 @@ import org.osgi.framework.Version;
 
 /**
  * This is the internal implementation of a bundle. The logic related to loading of classes
- * and resources is delegated to the current BundleRevision. As bundles can be updated there
+ * and resources is delegated to the current {@link BundleRevision}. As bundles can be updated there
  * can be multiple bundle revisions. 
  * 
  * @author thomas.diesler@jboss.com

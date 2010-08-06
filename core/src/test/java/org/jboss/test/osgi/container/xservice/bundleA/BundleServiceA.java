@@ -43,16 +43,11 @@ public class BundleServiceA
       this.owner = owner;
    }
 
-   public String _echo(String msg)
+   public String echo(String msg)
    {
       BundleContext context = owner.getBundleContext();
       ServiceReference sref = context.getServiceReference(ModuleServiceA.class.getName());
       ModuleServiceA service = (ModuleServiceA)context.getService(sref);
       return service.echo(msg + ":" + owner);
-   }
-   
-   public String echo(String msg)
-   {
-      return msg + ":" + owner;
    }
 }

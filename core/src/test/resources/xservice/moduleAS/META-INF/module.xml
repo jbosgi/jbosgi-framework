@@ -27,7 +27,7 @@
     <main-class name="org.jboss.test.osgi.container.xservice.moduleA.ModuleActivatorA"/>
     
     <resources>
-      <resource-root path="/"/>
+      <resource-root path="org/jboss/test/osgi/container/xservice/moduleA"/>
     </resources>
 
     <dependencies>

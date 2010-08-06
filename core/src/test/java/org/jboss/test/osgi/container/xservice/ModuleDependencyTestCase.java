@@ -36,6 +36,10 @@ import org.jboss.test.osgi.container.xservice.bundleA.BundleActivatorA;
 import org.jboss.test.osgi.container.xservice.bundleA.BundleServiceA;
 import org.jboss.test.osgi.container.xservice.bundleB.BundleActivatorB;
 import org.jboss.test.osgi.container.xservice.bundleB.BundleServiceB;
+import org.jboss.test.osgi.container.xservice.moduleA.ModuleActivatorA;
+import org.jboss.test.osgi.container.xservice.moduleA.ModuleServiceA;
+import org.jboss.test.osgi.container.xservice.moduleB.ModuleActivatorB;
+import org.jboss.test.osgi.container.xservice.moduleB.ModuleServiceB;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -58,6 +62,10 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
          assertNotNull("Bundle not null", moduleA);
          assertEquals("moduleA", moduleA.getSymbolicName());
          assertEquals(Version.parseVersion("1.0"), moduleA.getVersion());
+         
+         assertLoadClass(moduleA, ModuleServiceA.class.getName());
+         assertLoadClassFail(moduleA, ModuleServiceB.class.getName());
+         assertBundleState(Bundle.RESOLVED, moduleA.getState());
          
          moduleA.start();
          assertBundleState(Bundle.ACTIVE, moduleA.getState());
@@ -96,6 +104,14 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
          try
          {
             assertBundleState(Bundle.INSTALLED, bundleB.getState());
+            
+            assertLoadClass(bundleB, BundleServiceB.class.getName());
+            assertLoadClassFail(bundleB, ModuleServiceB.class.getName());
+            assertBundleState(Bundle.RESOLVED, bundleB.getState());
+            
+            assertLoadClass(moduleB, ModuleServiceB.class.getName());
+            assertLoadClass(moduleB, BundleServiceB.class.getName(), bundleB);
+            assertBundleState(Bundle.RESOLVED, moduleB.getState());
             
             moduleB.start();
             assertBundleState(Bundle.ACTIVE, moduleB.getState());
@@ -140,6 +156,14 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
          {
             assertBundleState(Bundle.INSTALLED, moduleA.getState());
             
+            assertLoadClass(moduleA, ModuleServiceA.class.getName());
+            assertLoadClassFail(moduleA, BundleServiceA.class.getName());
+            assertBundleState(Bundle.RESOLVED, moduleA.getState());
+            
+            assertLoadClass(bundleA, BundleServiceA.class.getName());
+            assertLoadClass(bundleA, ModuleServiceA.class.getName(), moduleA);
+            assertBundleState(Bundle.RESOLVED, bundleA.getState());
+            
             bundleA.start();
             assertBundleState(Bundle.ACTIVE, bundleA.getState());
          }
@@ -161,7 +185,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
    {
       // Bundle-SymbolicName: bundleA
       // Bundle-Activator: org.jboss.test.osgi.container.xservice.bundleA.BundleActivatorA
-      // Require-Bundle: moduleA;bundle-version:=1.0.0
+      // Require-Bundle: moduleA;bundle-version=1.0.0
       final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA");
       archive.addClasses(BundleActivatorA.class, BundleServiceA.class);
       archive.setManifest(new Asset()
@@ -173,7 +197,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
             builder.addBundleSymbolicName(archive.getName());
             builder.addBundleVersion("1.0.0");
             builder.addBundleActivator(BundleActivatorA.class);
-            builder.addRequireBundle("moduleA;bundle-version:=1.0.0");
+            builder.addRequireBundle("moduleA;bundle-version=1.0.0");
             return builder.openStream();
          }
       });
@@ -185,6 +209,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
       // Bundle-Version: 1.0.0
       // Bundle-SymbolicName: xservice.bundleB
       // Bundle-Activator: org.jboss.test.osgi.container.xservice.bundleB.BundleActivatorB
+      // Export-Package: org.jboss.test.osgi.container.xservice.bundleB
       final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "xservice.bundleB");
       archive.addClasses(BundleActivatorB.class, BundleServiceB.class);
       archive.setManifest(new Asset()
@@ -196,6 +221,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
             builder.addBundleSymbolicName(archive.getName());
             builder.addBundleVersion("1.0.0");
             builder.addBundleActivator(BundleActivatorB.class);
+            builder.addExportPackages(BundleServiceB.class);
             return builder.openStream();
          }
       });
@@ -206,6 +232,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
    {
       JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
       archive.addManifestResource(getResourceFile("xservice/moduleA/META-INF/module.xml"));
+      archive.addClasses(ModuleActivatorA.class, ModuleServiceA.class);
       return archive;
    }
 
@@ -213,6 +240,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
    {
       JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
       archive.addManifestResource(getResourceFile("xservice/moduleB/META-INF/module.xml"));
+      archive.addClasses(ModuleActivatorB.class, ModuleServiceB.class);
       return archive;
    }
 }
