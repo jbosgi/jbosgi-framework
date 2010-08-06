@@ -66,6 +66,7 @@ import org.osgi.service.startlevel.StartLevel;
  * A plugin manages the Framework's system packages.
  * 
  * @author thomas.diesler@jboss.com
+ * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2010
  */
 public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdminPlugin
@@ -156,11 +157,17 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       // TODO use a separate thread
       // TODO if bundles == null
 
+
       FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
+      if (bundles == null)
+         bundles = getBundleManager().getSystemContext().getBundles();
 
       Map<InternalBundle, XModule> refreshMap = new HashMap<InternalBundle, XModule>();
       for (Bundle b : bundles)
       {
+         if (b.getBundleId() == 0)
+            continue;
+
          InternalBundle ab = InternalBundle.assertBundleState(b);
          refreshMap.put(ab, ab.getResolverModule());
       }
@@ -232,9 +239,9 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          InternalBundle ib = it.previous();
          try
          {
-            ib.unresolve();
-            if (!refreshMap.containsKey(ib))
-               ib.createNewRevision();
+            if (ib.getState() != Bundle.UNINSTALLED)
+               ib.unresolve();
+            ib.ensureNewRevision();
          }
          catch (BundleException e)
          {

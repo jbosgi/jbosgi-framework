@@ -296,34 +296,9 @@ public class BundleManager
 
       // Get the location URL
       if (input != null)
-      {
-         try
-         {
-            BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
-            String path = plugin.getStorageDir(getSystemBundle()).getCanonicalPath();
-
-            File file = new File(path + "/bundle-" + System.currentTimeMillis() + ".jar");
-            FileOutputStream fos = new FileOutputStream(file);
-            try
-            {
-               VFSUtils.copyStream(input, fos);
-            }
-            finally
-            {
-               input.close();
-               fos.close();
-            }
-            locationURL = file.toURI().toURL();
-         }
-         catch (IOException ex)
-         {
-            throw new BundleException("Cannot store bundle from input stream", ex);
-         }
-      }
+         locationURL = storeBundleStream(input);
       else
-      {
          locationURL = getLocationURL(location);
-      }
 
       // Get the root file
       VirtualFile root;
@@ -337,6 +312,32 @@ public class BundleManager
       }
 
       return install(root, location, false);
+   }
+
+   URL storeBundleStream(InputStream input) throws BundleException
+   {
+      try
+      {
+         BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
+         String path = plugin.getStorageDir(getSystemBundle()).getCanonicalPath();
+
+         File file = new File(path + "/bundle-" + System.currentTimeMillis() + ".jar");
+         FileOutputStream fos = new FileOutputStream(file);
+         try
+         {
+            VFSUtils.copyStream(input, fos);
+         }
+         finally
+         {
+            input.close();
+            fos.close();
+         }
+         return file.toURI().toURL();
+      }
+      catch (IOException ex)
+      {
+         throw new BundleException("Cannot store bundle from input stream", ex);
+      }
    }
 
    /**

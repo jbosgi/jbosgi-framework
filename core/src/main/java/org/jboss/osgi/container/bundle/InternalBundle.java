@@ -21,8 +21,6 @@
 */
 package org.jboss.osgi.container.bundle;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -32,14 +30,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
-import org.jboss.osgi.container.plugin.BundleStoragePlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XWire;
 import org.jboss.osgi.vfs.AbstractVFS;
-import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -151,7 +147,7 @@ public class InternalBundle extends AbstractBundle
 
       if (getState() == Bundle.UNINSTALLED)
       {
-         getBundleManager().removeBundleState(this);
+         // TODO possibly do some cleanup, or is everything properly dereferenced at this stage?
          return;
       }
 
@@ -382,8 +378,11 @@ public class InternalBundle extends AbstractBundle
       }
    }
 
-   public void createNewRevision() throws BundleException
+   public void ensureNewRevision() throws BundleException
    {
+      if (currentRevision.equals(latestRevision) == false)
+         return;
+
       try
       {
          latestRevision = createNewBundleRevision(null);
@@ -418,7 +417,7 @@ public class InternalBundle extends AbstractBundle
 
    /**
     * Creates a new Bundle Revision when the bundle is updated. Multiple Bundle Revisions 
-    * can co-exist at the same time
+    * can co-exist at the same time.
     * @param input The stream to create the bundle revision from or <tt>null</tt>
     * if the new revision needs to be created from the same location as where the bundle
     * was initially installed.
@@ -430,22 +429,12 @@ public class InternalBundle extends AbstractBundle
       BundleManager bm = getBundleManager();
       URL locationURL;
 
+      // If the specified InputStream is null, the Framework must create the InputStream from 
+      // which to read the updated bundle by interpreting, in an implementation dependent manner, 
+      // this bundle's Bundle-UpdateLocation Manifest header, if present, or this bundle's 
+      // original location.
       if (input != null)
-      {
-         // If the specified InputStream is null, the Framework must create the InputStream from 
-         // which to read the updated bundle by interpreting, in an implementation dependent manner, 
-         // this bundle's Bundle-UpdateLocation Manifest header, if present, or this bundle's 
-         // original location.
-         BundleStoragePlugin plugin = bm.getPlugin(BundleStoragePlugin.class);
-         String path = plugin.getStorageDir(bm.getSystemBundle()).getCanonicalPath();
-
-         File file = new File(path + "/bundle-" + System.currentTimeMillis() + ".jar");
-         FileOutputStream fos = new FileOutputStream(file);
-         VFSUtils.copyStream(input, fos);
-         fos.close();
-
-         locationURL = file.toURI().toURL();
-      }
+         locationURL = bm.storeBundleStream(input);
       else
          locationURL = currentRevision.getRootFile().getStreamURL();
 

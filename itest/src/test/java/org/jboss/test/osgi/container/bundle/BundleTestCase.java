@@ -38,7 +38,6 @@ import java.util.Hashtable;
 import java.util.jar.Attributes;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.container.bundle.support.a.ObjectA;
 import org.jboss.test.osgi.container.bundle.support.a.ObjectA2;
@@ -217,7 +216,6 @@ public class BundleTestCase extends OSGiFrameworkTest
       Archive<?> assemblyx = assembleArchive("bundlex", "/bundles/update/update-bundlex", ObjectX.class);
       Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundle1", ObjectA.class);
       Archive<?> assembly2 = assembleArchive("bundle2", "/bundles/update/update-bundle101", ObjectB.class);
-      VirtualFile vf2 = toVirtualFile(assembly2);
 
       Bundle bundleA = installBundle(assembly1);
       Bundle bundleX = installBundle(assemblyx);
@@ -239,7 +237,7 @@ public class BundleTestCase extends OSGiFrameworkTest
          assertLoadClass(bundleA, ObjectA.class.getName());
          assertLoadClassFail(bundleA, ObjectB.class.getName());
 
-         bundleA.update(vf2.openStream());
+         bundleA.update(toVirtualFile(assembly2).openStream());
          assertBundleState(Bundle.ACTIVE, bundleA.getState());
          assertBundleState(Bundle.ACTIVE, bundleX.getState());
          assertEquals(Version.parseVersion("1.0.0"), bundleA.getVersion());
@@ -273,7 +271,6 @@ public class BundleTestCase extends OSGiFrameworkTest
       Archive<?> assemblyx = assembleArchive("bundlex", "/bundles/update/update-bundlex", ObjectX.class);
       Archive<?> assembly1 = assembleArchive("bundle1", new String[] { "/bundles/update/update-bundle1", "/bundles/update/classes1" });
       Archive<?> assembly2 = assembleArchive("bundle2", new String[] { "/bundles/update/update-bundle102", "/bundles/update/classes2" });
-      VirtualFile vf2 = toVirtualFile(assembly2);
 
       Bundle bundleA = installBundle(assembly1);
       Bundle bundleX = installBundle(assemblyx);
@@ -298,7 +295,7 @@ public class BundleTestCase extends OSGiFrameworkTest
          Object x1 = cls.newInstance();
          assertEquals("ObjectX contains reference: ObjectA", x1.toString());
 
-         bundleA.update(vf2.openStream());
+         bundleA.update(toVirtualFile(assembly2).openStream());
          assertBundleState(Bundle.ACTIVE, bundleA.getState());
          assertBundleState(Bundle.ACTIVE, bundleX.getState());
          assertEquals(Version.parseVersion("1.0.0"), bundleA.getVersion());
@@ -338,6 +335,7 @@ public class BundleTestCase extends OSGiFrameworkTest
    public void testUpdateReadError() throws Exception
    {
       Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundle1", ObjectA.class);
+
       Bundle bundle = installBundle(assembly1);
       try
       {

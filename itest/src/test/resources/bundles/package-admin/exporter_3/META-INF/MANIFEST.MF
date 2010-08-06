@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: Exporter
+Export-Package: org.jboss.test.osgi.container.packageadmin.exported;version="3.1.0"
+Bundle-Version: 3.1.5.alpha-4
