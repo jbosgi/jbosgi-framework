@@ -37,7 +37,7 @@ public class Importing
       }
       catch (Exception e)
       {
-         System.out.println("Optional class not found, thats ok...");
+         // Optional class not found, thats ok...
       }
    }
 }

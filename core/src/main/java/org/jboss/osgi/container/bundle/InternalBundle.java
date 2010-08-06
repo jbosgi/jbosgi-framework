@@ -43,12 +43,24 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
+import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
- * This is the internal implementation of a bundle. The logic related to loading of classes
- * and resources is delegated to the current BundleRevision. As bundles can be updated there
- * can be multiple bundle revisions. 
+ * This is the internal implementation of a Bundle. The logic related to loading of classes
+ * and resources is delegated to the current Bundle Revision. As bundles can be updated there
+ * can be multiple bundle revisions.<p/>
  * 
+ * The InternalBundle contains two Bundle Revisions: the current revision and the latest revision.
+ * These concepts relate to updating of bundles. When a bundle is updated a new revision is created
+ * and assigned to the latest revision. However, if the current revision is used by another bundle
+ * (e.g. via a package import) the current revision is kept pointing at the revision before the update
+ * and the updated bundle is not yet made available in the framework. 
+ * In that case, the updated bundle can be enabled by calling 
+ * {@link PackageAdmin#refreshPackages(Bundle[] bundles)} which will update the current revision
+ * to the latest revision.<p/>
+ * 
+ * In addition other bundle-specific functionality is handled here, such as Start Level and the
+ * Bundle Activator and internal implementations of lifecycle management. 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */

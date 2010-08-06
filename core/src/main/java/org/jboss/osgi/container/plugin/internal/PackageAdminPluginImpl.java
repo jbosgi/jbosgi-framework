@@ -22,6 +22,8 @@
 package org.jboss.osgi.container.plugin.internal;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -30,6 +32,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
@@ -49,8 +52,8 @@ import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XRequireBundleRequirement;
 import org.jboss.osgi.resolver.XRequirement;
+import org.jboss.osgi.resolver.XVersionRange;
 import org.jboss.osgi.resolver.XWire;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -101,6 +104,9 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public ExportedPackage[] getExportedPackages(Bundle bundle)
    {
+      if (bundle == null)
+         return getAllExportedPackages();
+
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
       XModule resModule = bundleState.getResolverModule();
       if (resModule.isResolved() == false)
@@ -112,6 +118,23 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          ExportedPackage exp = new ExportedPackageImpl(cap);
          result.add(exp);
       }
+
+      if (result.size() == 0)
+         return null; // a bit ugly, but the spec mandates this
+
+      return result.toArray(new ExportedPackage[result.size()]);
+   }
+
+   private ExportedPackage[] getAllExportedPackages()
+   {
+      List<ExportedPackage> result = new ArrayList<ExportedPackage>();
+      for (AbstractBundle ab : getBundleManager().getBundles())
+      {
+         ExportedPackage[] pkgs = getExportedPackages(ab);
+         if (pkgs != null)
+            result.addAll(Arrays.asList(pkgs));
+      }
+
       return result.toArray(new ExportedPackage[result.size()]);
    }
 
@@ -155,8 +178,6 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    public void refreshPackages(Bundle[] bundles)
    {
       // TODO use a separate thread
-      // TODO if bundles == null
-
 
       FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
       if (bundles == null)
@@ -310,24 +331,85 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public RequiredBundle[] getRequiredBundles(String symbolicName)
    {
-      List<RequiredBundle> result = new ArrayList<RequiredBundle>();
-      for (AbstractBundle aux : getBundleManager().getBundles())
+      Map<AbstractBundle, Collection<AbstractBundle>> matchingBundles =
+            new HashMap<AbstractBundle, Collection<AbstractBundle>>();
+
+      // Make a defensive copy to ensure thread safety as we are running through the list twice
+      List<AbstractBundle> bundles = new ArrayList<AbstractBundle>(getBundleManager().getBundles());
+      for (AbstractBundle aux : bundles)
+      {
+         if (aux.getSymbolicName().equals(symbolicName))
+            matchingBundles.put(aux, new ArrayList<AbstractBundle>());
+      }
+
+      if (matchingBundles.size() == 0)
+         return null;
+
+      for (AbstractBundle aux : bundles)
       {
          XModule resModule = aux.getResolverModule();
          for (XRequireBundleRequirement req : resModule.getBundleRequirements())
          {
-            String name = req.getName();
-            if (symbolicName == null || name.equals(symbolicName))
-               result.add (new RequiredBundleImpl(req));
+            if (req.getName().equals(symbolicName))
+            {
+               for (XWire wire : req.getModule().getWires())
+               {
+                  if (wire.getRequirement().equals(req))
+                  {
+                     XCapability wiredCap = wire.getCapability();
+                     XModule module = wiredCap.getModule();
+                     Bundle bundle = module.getAttachment(Bundle.class);
+                     Collection<AbstractBundle> requiring = matchingBundles.get(bundle);
+                     if (requiring != null)
+                        requiring.add(aux);
+                  }
+               }
+            }
          }
       }
-      return result.toArray(new RequiredBundle[result.size()]);
+
+      List<RequiredBundle> result = new ArrayList<RequiredBundle>(matchingBundles.size());
+      for (Map.Entry<AbstractBundle, Collection<AbstractBundle>> entry : matchingBundles.entrySet())
+         result.add(new RequiredBundleImpl(entry.getKey(), entry.getValue()));
+
+      return result.toArray(new RequiredBundle[matchingBundles.size()]);
    }
 
    @Override
    public Bundle[] getBundles(String symbolicName, String versionRange)
    {
-      throw new NotImplementedException();
+      Set<Bundle> bundles = new TreeSet<Bundle>(new Comparator<Bundle>()
+      {
+         // Makes sure that the bundles are sorted correctly in the returned array
+         // Matching bundles with the highest version should come first.
+         @Override
+         public int compare(Bundle b1, Bundle b2)
+         {
+            // Reverse the version comparison order
+            return b2.getVersion().compareTo(b1.getVersion());
+         }
+      });
+
+      XVersionRange range = null;
+      if (versionRange != null)
+         range = XVersionRange.parse(versionRange);
+
+      for (AbstractBundle ab : getBundleManager().getBundles())
+      {
+         Bundle b = AbstractBundle.assertBundleState(ab).getBundleWrapper();
+         if (b.getSymbolicName().equals(symbolicName))
+         {
+            if (range == null)
+               bundles.add(b);
+            else
+               if (range.isInRange(b.getVersion()))
+                  bundles.add(b);
+         }
+      }
+
+      if (bundles.size() == 0)
+         return null;
+      return bundles.toArray(new Bundle[bundles.size()]);
    }
 
    @Override
@@ -374,34 +456,34 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
 
    static class ExportedPackageImpl implements ExportedPackage
    {
-      private XPackageCapability cap;
+      private final XPackageCapability capability;
 
       ExportedPackageImpl(XPackageCapability cap)
       {
-         this.cap = cap;
+         capability = cap;
       }
 
       @Override
       public String getName()
       {
-         return cap.getName();
+         return capability.getName();
       }
 
       @Override
       public Bundle getExportingBundle()
       {
-         Bundle bundle = cap.getModule().getAttachment(Bundle.class);
-         return bundle;
+         Bundle bundle = capability.getModule().getAttachment(Bundle.class);
+         return AbstractBundle.assertBundleState(bundle).getBundleWrapper();
       }
 
       @Override
       public Bundle[] getImportingBundles()
       {
-         XModule module = cap.getModule();
+         XModule module = capability.getModule();
          if (module.isResolved() == false)
             return null;
          
-         Set<XRequirement> reqset = cap.getWiredRequirements();
+         Set<XRequirement> reqset = capability.getWiredRequirements();
          if (reqset == null || reqset.isEmpty())
             return new Bundle[0];
          
@@ -418,53 +500,62 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       @Override
       public String getSpecificationVersion()
       {
-         return cap.getVersion().toString();
+         return capability.getVersion().toString();
       }
 
       @Override
       public Version getVersion()
       {
-         return cap.getVersion();
+         return capability.getVersion();
       }
 
       @Override
       public boolean isRemovalPending()
       {
+         // TODO
          return false;
       }
    }
 
    static class RequiredBundleImpl implements RequiredBundle
    {
-      private XRequireBundleRequirement bundleRequirement;
+      private final Bundle requiredBundle;
+      private final Bundle[] requiringBundles;
 
-      public RequiredBundleImpl(XRequireBundleRequirement bundleRequirement)
+      public RequiredBundleImpl(AbstractBundle requiredBundle, Collection<AbstractBundle> requiringBundles)
       {
-         this.bundleRequirement = bundleRequirement;
+         this.requiredBundle = AbstractBundle.assertBundleState(requiredBundle).getBundleWrapper();
+
+         List<Bundle> bundles = new ArrayList<Bundle>(requiringBundles.size());
+         for (AbstractBundle ab : requiringBundles)
+         {
+            bundles.add(AbstractBundle.assertBundleState(ab).getBundleWrapper());
+         }
+         this.requiringBundles = bundles.toArray(new Bundle[bundles.size()]);
       }
 
       @Override
       public String getSymbolicName()
       {
-         return bundleRequirement.getName();
+         return requiredBundle.getSymbolicName();
       }
 
       @Override
       public Bundle getBundle()
       {
-         throw new NotImplementedException();
+         return requiredBundle;
       }
 
       @Override
       public Bundle[] getRequiringBundles()
       {
-         throw new NotImplementedException();
+         return requiringBundles;
       }
 
       @Override
       public Version getVersion()
       {
-         throw new NotImplementedException();
+         return requiredBundle.getVersion();
       }
 
       @Override

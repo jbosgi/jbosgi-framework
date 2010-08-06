@@ -33,11 +33,12 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.vfs.VirtualFile;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;
 
 /**
- * The base of all ordinary {@link Bundle} implementations.
+ * The base class for Bundle Revision implementations. Currently the only subclass is 
+ * the {@link BundleRevision} class, but once fragments are supported it is expected that 
+ * there will also be a <tt>FragmentRevision</tt> subclass.<p/>
  * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
