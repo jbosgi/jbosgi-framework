@@ -21,10 +21,12 @@
  */
 package org.jboss.test.osgi.container.service.packageadmin;
 
-import static junit.framework.Assert.assertNotSame;
-import static junit.framework.Assert.assertSame;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -46,11 +48,11 @@ import org.jboss.test.osgi.container.packageadmin.importexport.ImportExport;
 import org.jboss.test.osgi.container.packageadmin.optimporter.Importing;
 import org.jboss.test.osgi.container.service.support.a.PA;
 import org.jboss.test.osgi.container.service.support.b.Other;
-import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
 import org.osgi.service.packageadmin.ExportedPackage;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -435,23 +437,27 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
       {
          bundleI.start();
          assertLoadClass(bundleI, Exported.class.getName());
-         Assert.assertNotNull(getImportedFieldValue(bundleI));
+         assertNotNull(getImportedFieldValue(bundleI));
 
          bundleE.uninstall();
          bundleI.stop();
          bundleI.start();
          assertLoadClass(bundleI, Exported.class.getName());
-         Assert.assertNotNull("The stale bundle E should still be available for classloading so the imported field should have a value",
+         assertNotNull("The stale bundle E should still be available for classloading so the imported field should have a value",
                getImportedFieldValue(bundleI));
 
+         getSystemContext().addFrameworkListener(this);
          pa.refreshPackages(new Bundle[] { bundleE });
-         Assert.assertEquals(Bundle.ACTIVE, bundleI.getState());
+         assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
+
+         assertEquals(Bundle.ACTIVE, bundleI.getState());
          assertLoadClassFail(bundleI, Exported.class.getName());
          assertNull("Now that the packages are refreshed, bundle E should be no longer available for classloading",
                getImportedFieldValue(bundleI));
       }
       finally
       {
+         getSystemContext().removeFrameworkListener(this);
          bundleI.uninstall();
          if (bundleE.getState() != Bundle.UNINSTALLED)
             bundleE.uninstall();
@@ -498,7 +504,10 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
          assertLoadClassFail(bundleX, ObjectA2.class.getName());
          assertSame(cls, bundleX.loadClass(ObjectX.class.getName()));
 
+         getSystemContext().addFrameworkListener(this);
          pa.refreshPackages(null);
+         assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
+
          assertBundleState(Bundle.ACTIVE, bundleA.getState());
          assertBundleState(Bundle.ACTIVE, bundleX.getState());
          assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());
@@ -515,6 +524,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
       }
       finally
       {
+         getSystemContext().removeFrameworkListener(this);
          bundleX.uninstall();
          bundleA.uninstall();
       }
@@ -531,6 +541,81 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
    @Test
    public void testResolveBundles() throws Exception
    {
-      System.out.println("FIXME [JBOSGI-343] Comprehensive PackageAdmin test coverage");
+      PackageAdmin pa = getPackageAdmin();
+      Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+      Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", Importing.class));
+      
+      try 
+      {
+         assertBundleState(Bundle.INSTALLED, bundleE.getState());
+         assertBundleState(Bundle.INSTALLED, bundleI.getState());
+         assertTrue(pa.resolveBundles(new Bundle[] { bundleE }));
+         assertBundleState(Bundle.RESOLVED, bundleE.getState());
+         assertBundleState(Bundle.INSTALLED, bundleI.getState());
+      }
+      finally 
+      {
+         bundleI.uninstall();
+         bundleE.uninstall();
+      }
+   }
+
+   @Test
+   public void testResolveBundlesNull() throws Exception
+   {
+      PackageAdmin pa = getPackageAdmin();
+      Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+      Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", Importing.class));
+
+      try
+      {
+         assertBundleState(Bundle.INSTALLED, bundleE.getState());
+         assertBundleState(Bundle.INSTALLED, bundleI.getState());
+         assertTrue(pa.resolveBundles(null));
+         assertBundleState(Bundle.RESOLVED, bundleE.getState());
+         assertBundleState(Bundle.RESOLVED, bundleI.getState());
+      }
+      finally
+      {
+         bundleI.uninstall();
+         bundleE.uninstall();
+      }
+   }
+
+   @Test
+   public void testCantResolveAllBundles() throws Exception
+   {
+      PackageAdmin pa = getPackageAdmin();
+      Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", Importing.class));
+      Bundle bundleR = installBundle(assembleArchive("requiring", "/bundles/package-admin/requiring"));
+
+      try
+      {
+         assertBundleState(Bundle.INSTALLED, bundleI.getState());
+         assertBundleState(Bundle.INSTALLED, bundleR.getState());
+         assertFalse(pa.resolveBundles(new Bundle[] { bundleR, bundleI }));
+         assertBundleState(Bundle.RESOLVED, bundleI.getState());
+         assertBundleState(Bundle.INSTALLED, bundleR.getState());
+      }
+      finally
+      {
+         bundleI.uninstall();
+         bundleR.uninstall();
+      }
+   }
+
+   @Test
+   public void testResolveUnknownBundle() throws Exception
+   {
+      PackageAdmin pa = getPackageAdmin();
+      try
+      {
+         pa.resolveBundles(new Bundle [] {Mockito.mock(Bundle.class)});
+         fail("Should have thrown an Illegal Argument Exception");
+      }
+      catch (IllegalArgumentException e)
+      {
+         // good
+      }
    }
 }

@@ -51,8 +51,8 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
+import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
-import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * BundleTest.
@@ -245,8 +245,11 @@ public class BundleTestCase extends OSGiFrameworkTest
          assertLoadClass(bundleA, ObjectA.class.getName());
          assertLoadClassFail(bundleA, ObjectB.class.getName());
 
-         PackageAdmin pa = getPackageAdmin();
-         pa.refreshPackages(new Bundle[] { bundleA });
+         getSystemContext().addFrameworkListener(this);
+         getPackageAdmin().refreshPackages(new Bundle[] { bundleA });
+         assertFrameworkEvent(FrameworkEvent.ERROR, bundleX, BundleException.class);
+         assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
+
          assertBundleState(Bundle.ACTIVE, bundleA.getState());
          // Bundle X is installed because it cannot be resolved any more
          assertBundleState(Bundle.INSTALLED, bundleX.getState());
@@ -260,6 +263,7 @@ public class BundleTestCase extends OSGiFrameworkTest
       }
       finally
       {
+         getSystemContext().removeFrameworkListener(this);
          bundleX.uninstall();
          bundleA.uninstall();
       }
@@ -306,8 +310,10 @@ public class BundleTestCase extends OSGiFrameworkTest
          assertLoadClassFail(bundleX, ObjectA2.class.getName());
          assertSame(cls, bundleX.loadClass(ObjectX.class.getName()));
 
-         PackageAdmin pa = getPackageAdmin();
-         pa.refreshPackages(new Bundle[] { bundleA });
+         getSystemContext().addFrameworkListener(this);
+         getPackageAdmin().refreshPackages(new Bundle[] { bundleA });
+         assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
+
          assertBundleState(Bundle.ACTIVE, bundleA.getState());
          assertBundleState(Bundle.ACTIVE, bundleX.getState());
          assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());
@@ -326,6 +332,7 @@ public class BundleTestCase extends OSGiFrameworkTest
       }
       finally
       {
+         getSystemContext().removeFrameworkListener(this);
          bundleX.uninstall();
          bundleA.uninstall();
       }

@@ -33,6 +33,8 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
@@ -77,6 +79,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    // Provide logging
    final Logger log = Logger.getLogger(PackageAdminPluginImpl.class);
 
+   private Executor executor;
    private ServiceRegistration registration;
 
    public PackageAdminPluginImpl(BundleManager bundleManager)
@@ -99,6 +102,13 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          registration.unregister();
          registration = null;
       }
+   }
+
+   private synchronized Executor getExecutor()
+   {
+      if (executor == null)
+         executor = Executors.newSingleThreadExecutor();
+      return executor;
    }
 
    @Override
@@ -175,126 +185,133 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    }
 
    @Override
-   public void refreshPackages(Bundle[] bundles)
+   public void refreshPackages(final Bundle[] bundlesToRefresh)
    {
-      // TODO use a separate thread
-
-      FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
-      if (bundles == null)
-         bundles = getBundleManager().getSystemContext().getBundles();
-
-      Map<InternalBundle, XModule> refreshMap = new HashMap<InternalBundle, XModule>();
-      for (Bundle b : bundles)
+      Runnable r = new Runnable()
       {
-         if (b.getBundleId() == 0)
-            continue;
-
-         InternalBundle ab = InternalBundle.assertBundleState(b);
-         refreshMap.put(ab, ab.getResolverModule());
-      }
-
-      Set<InternalBundle> stopBundles = new HashSet<InternalBundle>();
-      Set<InternalBundle> refreshBundles = new HashSet<InternalBundle>(refreshMap.keySet());
-
-      // Compute all depending bundles that need to be stopped and unresolved.
-      for (AbstractBundle ab : getBundleManager().getBundles())
-      {
-         if (ab instanceof InternalBundle == false)
-            continue;
-         InternalBundle ib = (InternalBundle)ab;
-
-         XModule rm = ib.getResolverModule();
-         List<XWire> wires = rm.getWires();
-         if (wires == null)
-            continue;
-
-         for (XWire wire : wires)
+         @Override
+         public void run()
          {
-            if (refreshMap.containsValue(wire.getExporter()))
+            Bundle[] bundles = bundlesToRefresh;
+            FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
+            if (bundles == null)
+               bundles = getBundleManager().getSystemContext().getBundles();
+
+            Map<InternalBundle, XModule> refreshMap = new HashMap<InternalBundle, XModule>();
+            for (Bundle b : bundles)
             {
-               // Bundles can be either ACTIVE or RESOLVED
+               if (b.getBundleId() == 0)
+                  continue;
+
+               InternalBundle ab = InternalBundle.assertBundleState(b);
+               refreshMap.put(ab, ab.getResolverModule());
+            }
+
+            Set<InternalBundle> stopBundles = new HashSet<InternalBundle>();
+            Set<InternalBundle> refreshBundles = new HashSet<InternalBundle>(refreshMap.keySet());
+
+            // Compute all depending bundles that need to be stopped and unresolved.
+            for (AbstractBundle ab : getBundleManager().getBundles())
+            {
+               if (ab instanceof InternalBundle == false)
+                  continue;
+               InternalBundle ib = (InternalBundle)ab;
+
+               XModule rm = ib.getResolverModule();
+               List<XWire> wires = rm.getWires();
+               if (wires == null)
+                  continue;
+
+               for (XWire wire : wires)
+               {
+                  if (refreshMap.containsValue(wire.getExporter()))
+                  {
+                     // Bundles can be either ACTIVE or RESOLVED
+                     int state = ib.getState();
+                     if (state == Bundle.ACTIVE || state == Bundle.STARTING)
+                     {
+                        stopBundles.add(ib);
+                     }
+                     refreshBundles.add(ib);
+                     break;
+                  }
+               }
+            }
+
+            // Add relevant bundles to be refreshed also to the stop list. 
+            for (InternalBundle ib : refreshMap.keySet())
+            {
                int state = ib.getState();
                if (state == Bundle.ACTIVE || state == Bundle.STARTING)
                {
                   stopBundles.add(ib);
                }
-               refreshBundles.add(ib);
-               break;
             }
-         }
-      }
 
-      // Add relevant bundles to be refreshed also to the stop list. 
-      for (InternalBundle ib : refreshMap.keySet())
-      {
-         int state = ib.getState();
-         if (state == Bundle.ACTIVE || state == Bundle.STARTING)
-         {
-            stopBundles.add(ib);
-         }
-      }
+            List<InternalBundle> stopList = new ArrayList<InternalBundle>(stopBundles);
+            List<InternalBundle> refreshList = new ArrayList<InternalBundle>(refreshBundles);
 
-      List<InternalBundle> stopList = new ArrayList<InternalBundle>(stopBundles);
-      List<InternalBundle> refreshList = new ArrayList<InternalBundle>(refreshBundles);
+            StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);
+            BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator(startLevel);
+            Collections.sort(stopList, startLevelComparator);
+            Collections.sort(refreshList, startLevelComparator);
 
-      StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);
-      BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator(startLevel);
-      Collections.sort(stopList, startLevelComparator);
-      Collections.sort(refreshList, startLevelComparator);
+            for (ListIterator<InternalBundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();)
+            {
+               InternalBundle ib = it.previous();
+               try
+               {
+                  ib.stop(Bundle.STOP_TRANSIENT);
+               }
+               catch (BundleException e)
+               {
+                  eventsPlugin.fireFrameworkEvent(ib, FrameworkEvent.ERROR, e);
+               }
+            }
 
-      for (ListIterator<InternalBundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();)
-      {
-         InternalBundle ib = it.previous();
-         try
-         {
-            ib.stop(Bundle.STOP_TRANSIENT);
-         }
-         catch (BundleException e)
-         {
-            eventsPlugin.fireFrameworkEvent(ib, FrameworkEvent.ERROR, e);
-         }
-      }
+            for (ListIterator<InternalBundle> it = refreshList.listIterator(refreshList.size()); it.hasPrevious();)
+            {
+               InternalBundle ib = it.previous();
+               try
+               {
+                  if (ib.getState() != Bundle.UNINSTALLED)
+                     ib.unresolve();
+                  ib.ensureNewRevision();
+               }
+               catch (BundleException e)
+               {
+                  eventsPlugin.fireFrameworkEvent(ib, FrameworkEvent.ERROR, e);
+               }
+            }
 
-      for (ListIterator<InternalBundle> it = refreshList.listIterator(refreshList.size()); it.hasPrevious();)
-      {
-         InternalBundle ib = it.previous();
-         try
-         {
-            if (ib.getState() != Bundle.UNINSTALLED)
-               ib.unresolve();
-            ib.ensureNewRevision();
-         }
-         catch (BundleException e)
-         {
-            eventsPlugin.fireFrameworkEvent(ib, FrameworkEvent.ERROR, e);
-         }
-      }
+            for (InternalBundle ib : refreshList)
+            {
+               try
+               {
+                  ib.refresh();
+               }
+               catch (BundleException e)
+               {
+                  eventsPlugin.fireFrameworkEvent(ib, FrameworkEvent.ERROR, e);
+               }
+            }
 
-      for (InternalBundle ib : refreshList)
-      {
-         try
-         {
-            ib.refresh();
-         }
-         catch (BundleException e)
-         {
-            eventsPlugin.fireFrameworkEvent(ib, FrameworkEvent.ERROR, e);
-         }
-      }
+            for (InternalBundle b : stopList)
+            {
+               try
+               {
+                  b.start(Bundle.START_TRANSIENT);
+               }
+               catch (BundleException e)
+               {
+                  eventsPlugin.fireFrameworkEvent(b, FrameworkEvent.ERROR, e);
+               }
+            }
 
-      for (InternalBundle b : stopList)
-      {
-         try
-         {
-            b.start(Bundle.START_TRANSIENT);
+            eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
          }
-         catch (BundleException e)
-         {
-            eventsPlugin.fireFrameworkEvent(b, FrameworkEvent.ERROR, e);
-         }
-      }
-
-      eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
+      };
+      getExecutor().execute(r);
    }
 
    @Override
@@ -314,8 +331,9 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       {
          for (Bundle aux : bundles)
          {
-            if (aux.getState() == Bundle.INSTALLED)
-               unresolved.add(AbstractBundle.assertBundleState(aux));
+            AbstractBundle ab = AbstractBundle.assertBundleState(aux);
+            if (ab.getState() == Bundle.INSTALLED)
+               unresolved.add(ab);
          }
       }
       log.debug("resolve bundles: " + unresolved);
