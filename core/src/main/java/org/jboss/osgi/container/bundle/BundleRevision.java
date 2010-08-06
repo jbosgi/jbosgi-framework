@@ -33,12 +33,19 @@ import org.jboss.osgi.container.util.AggregatedVirtualFile;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
+import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
 
 /**
- * A host bundle.
+ * A {@link BundleRevision} is responsible for the classloading and resource loading of a bundle.
+ * It is associated with a resolver module ({@link XResolver}) which holds the wiring information
+ * of the bundle.<p/>
+ *  
+ * Every time a bundle is updated a new {@link BundleRevision} is created and referenced to 
+ * from the {@link InternalBundle} class. 
+ * 
  * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
@@ -46,7 +53,6 @@ import org.osgi.framework.BundleException;
  */
 public class BundleRevision extends AbstractBundleRevision
 {
-   // Provide logging
    private static final Logger log = Logger.getLogger(BundleRevision.class);
    
    private XModule resolverModule;

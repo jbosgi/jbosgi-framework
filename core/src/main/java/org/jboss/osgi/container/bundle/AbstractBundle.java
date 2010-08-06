@@ -62,7 +62,10 @@ import org.osgi.framework.ServiceReference;
 
 /**
  * This is the internal base class for all bundles and fragments, including
- * the System Bundle. 
+ * the System Bundle.<p/> 
+ * 
+ * Common Bundle functionality is implemented in this base class, such as service
+ * reference counting and state management. 
  * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
