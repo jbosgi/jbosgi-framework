@@ -231,7 +231,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
    private JavaArchive getModuleA()
    {
       JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-      archive.addManifestResource(getResourceFile("xservice/moduleA/META-INF/module.xml"));
+      archive.addManifestResource(getResourceFile("xservice/moduleA/META-INF/jbosgi-xservice.properties"));
       archive.addClasses(ModuleActivatorA.class, ModuleServiceA.class);
       return archive;
    }
@@ -239,7 +239,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
    private JavaArchive getModuleB()
    {
       JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
-      archive.addManifestResource(getResourceFile("xservice/moduleB/META-INF/module.xml"));
+      archive.addManifestResource(getResourceFile("xservice/moduleB/META-INF/jbosgi-xservice.properties"));
       archive.addClasses(ModuleActivatorB.class, ModuleServiceB.class);
       return archive;
    }
