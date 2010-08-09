@@ -23,21 +23,19 @@ package org.jboss.osgi.container.plugin.internal;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.modules.ModuleXmlParser;
-import org.jboss.modules.ModuleXmlParser.ResourceLoaderFactory;
-import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ModuleActivatorBridge;
 import org.jboss.osgi.container.loading.VirtualFileResourceLoader;
@@ -47,6 +45,9 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.internal.OSGiManifestMetaData;
+import org.jboss.osgi.modules.ModuleMetaData;
+import org.jboss.osgi.modules.ModuleMetaData.Dependency;
+import org.jboss.osgi.modules.ModuleMetaDataParser;
 import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -99,25 +100,41 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          log.warn("Cannot process as OSGi deployment: " + location);
       }
 
-      // Try module.xml
+      // Try jbosgi-xservice.properties
+      String descriptor = "META-INF/jbosgi-xservice.properties";
       try
       {
-         VirtualFile child = rootFile.getChild("META-INF/module.xml");
+         VirtualFile child = rootFile.getChild(descriptor);
          if (child != null)
          {
             InputStream inputStream = child.openStream();
 
-            ResourceLoaderFactory factory = new ResourceLoaderFactory()
-            {
-               @Override
-               public ResourceLoader getResourceLoader(String path, String name) throws IOException
-               {
-                  return new VirtualFileResourceLoader(rootFile, Collections.singletonList(path));
-               }
-            };
+            ModuleMetaDataParser parser = new ModuleMetaDataParser();
+            ModuleMetaData metadata = parser.parse(new InputStreamReader(inputStream));
             
-            ModuleSpec moduleSpec = ModuleXmlParser.parse(factory, inputStream);
-            ModuleIdentifier identifier = moduleSpec.getIdentifier();
+            // Module-Identifier, Module-Activator
+            ModuleIdentifier identifier = metadata.getIdentifier();
+            ModuleSpec.Builder builder = ModuleSpec.build(identifier);
+            builder.setMainClass(metadata.getModuleActivator());
+            
+            // Module-Export-Paths
+            String[] exportPaths = metadata.getExportPaths();
+            List<String> exports = exportPaths != null ? Arrays.asList(exportPaths) : null;
+            builder.addRoot("/", new VirtualFileResourceLoader(rootFile, exports));
+            
+            // Module-Dependencies
+            Dependency[] dependencies = metadata.getDependencies();
+            if (dependencies != null)
+            {
+               for (Dependency dep : dependencies)
+               {
+                  DependencySpec.Builder depBuilder = builder.addDependency(dep.getIdentifier());
+                  depBuilder.setExport(false);
+                  depBuilder.setOptional(false);
+               }
+            }
+            
+            ModuleSpec moduleSpec = builder.create();
             String symbolicName = identifier.getArtifact();
             String version = identifier.getVersion();
             Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, Version.parseVersion(version));
@@ -127,11 +144,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       }
       catch (IOException ex)
       {
-         log.warn("Cannot process META-INF/module.xml: " + location, ex);
-      }
-      catch (ModuleLoadException ex)
-      {
-         log.warn("Cannot process META-INF/module.xml: " + location, ex);
+         log.warn("Cannot process " + descriptor + " from: " + location, ex);
       }
 
       throw new BundleException("Cannot process as OSGi deployment: " + rootFile);
