@@ -29,6 +29,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.logging.Logger;
 import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -41,6 +42,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -67,6 +69,8 @@ import org.osgi.service.packageadmin.PackageAdmin;
  */
 public class InternalBundle extends AbstractBundle
 {
+   private static final Logger log = Logger.getLogger(InternalBundle.class);
+
    private BundleActivator bundleActivator;
    private final String location;
    // The current revision is the bundle revision used by the system. This is what other bundle use if they import packages.
@@ -164,14 +168,18 @@ public class InternalBundle extends AbstractBundle
          return;
       }
 
-      getBundleManager().removeBundleState(this);
+      getResolverPlugin().removeBundle(this);
       currentRevision = latestRevision;
-      getBundleManager().addBundleState(this);
+      getResolverPlugin().addBundle(this);
    }
 
    @Override
    void startInternal(int options) throws BundleException
    {
+      // If this bundle's state is ACTIVE then this method returns immediately.
+      if (getState() == Bundle.ACTIVE)
+         return;
+
       if ((options & Bundle.START_TRANSIENT) == 0)
          setPersistentlyStarted(true);
 
@@ -446,6 +454,13 @@ public class InternalBundle extends AbstractBundle
       // which to read the updated bundle by interpreting, in an implementation dependent manner, 
       // this bundle's Bundle-UpdateLocation Manifest header, if present, or this bundle's 
       // original location.
+      if (input == null)
+      {
+         String ul = getOSGiMetaData().getHeader(Constants.BUNDLE_UPDATELOCATION);
+         if (ul != null)
+            input = new URL(ul).openStream();
+      }
+
       if (input != null)
          locationURL = bm.storeBundleStream(input);
       else
@@ -458,7 +473,7 @@ public class InternalBundle extends AbstractBundle
       dep.addAttachment(OSGiMetaData.class, md);
 
       if (md.getBundleSymbolicName().equals(getSymbolicName()) == false)
-         throw new IllegalArgumentException("Cannot change Symbolic Name when updating bundle");
+         log.infof("Ignoring update of symbolic name: %s", md.getBundleSymbolicName());
 
       return new BundleRevision(this, dep, revisionCounter.getAndIncrement());
    }
