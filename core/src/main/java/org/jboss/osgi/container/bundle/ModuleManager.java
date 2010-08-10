@@ -285,7 +285,7 @@ public class ModuleManager extends ModuleLoader
    /**
     * Create a {@link ModuleSpec} from the given resolver module definition
     */
-   public ModuleSpec createModuleSpec(final XModule resModule, VirtualFile rootFile)
+   public ModuleSpec createModuleSpec(final XModule resModule, List<VirtualFile> contentRoots)
    {
       ModuleSpec moduleSpec = resModule.getAttachment(ModuleSpec.class);
       if (moduleSpec == null)
@@ -300,7 +300,8 @@ public class ModuleManager extends ModuleLoader
          specBuilder.addModuleDependency(frameworkDependencyBuilder.create());
          
          // Add a local dependency for the local bundle content
-         specBuilder.addResourceRoot(new VirtualFileResourceLoader(rootFile));
+         for (VirtualFile contentRoot : contentRoots)
+            specBuilder.addResourceRoot(new VirtualFileResourceLoader(contentRoot));
          specBuilder.addLocalDependency();
          
          // Map the dependency builder for (the likely) case that the same exporter is choosen for multiple wires

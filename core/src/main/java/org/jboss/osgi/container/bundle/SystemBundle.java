@@ -24,6 +24,7 @@ package org.jboss.osgi.container.bundle;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -129,10 +130,11 @@ public class SystemBundle extends AbstractBundle
       return resolverModule;
    }
 
+
    @Override
-   public VirtualFile getRootFile()
+   public List<VirtualFile> getContentRoots()
    {
-      return null;
+      return Collections.emptyList();
    }
 
    @Override

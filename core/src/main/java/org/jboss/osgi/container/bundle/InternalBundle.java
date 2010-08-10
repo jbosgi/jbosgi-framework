@@ -475,7 +475,7 @@ public class InternalBundle extends AbstractBundle
       if (input != null)
          locationURL = bm.storeBundleStream(input);
       else
-         locationURL = currentRevision.getRootFile().getStreamURL();
+         locationURL = currentRevision.getContentRoots().get(0).getStreamURL();
 
       BundleDeploymentPlugin plugin = bm.getPlugin(BundleDeploymentPlugin.class);
       VirtualFile newRootFile = AbstractVFS.getRoot(locationURL);
@@ -589,8 +589,8 @@ public class InternalBundle extends AbstractBundle
    }
 
    @Override
-   public VirtualFile getRootFile()
+   public List<VirtualFile> getContentRoots()
    {
-      return currentRevision.getRootFile();
+      return currentRevision.getContentRoots();
    }
 }

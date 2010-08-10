@@ -28,6 +28,7 @@ import static org.junit.Assert.fail;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleSpec;
@@ -120,7 +121,7 @@ public class BundleClassLoaderTestCase
       
       // Create the ModuleSpec and the Module
       VirtualFile rootFile = OSGiTestHelper.toVirtualFile(archive);
-      moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
+      moduleSpec = moduleManager.createModuleSpec(resModule, Collections.singletonList(rootFile));
       Module module = moduleManager.loadModule(moduleSpec.getModuleIdentifier());
       classLoader = module.getClassLoader();
    }

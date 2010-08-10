@@ -119,7 +119,7 @@ public abstract class AbstractBundle implements Bundle
 
    public abstract XModule getResolverModule();
 
-   public abstract VirtualFile getRootFile();
+   public abstract List<VirtualFile> getContentRoots();
 
    /**
     * Assert that the given bundle is an instance of AbstractBundle

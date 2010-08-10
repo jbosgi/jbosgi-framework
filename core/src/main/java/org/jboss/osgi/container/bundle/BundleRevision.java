@@ -23,28 +23,31 @@ package org.jboss.osgi.container.bundle;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Vector;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.osgi.container.util.AggregatedVirtualFile;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
-import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResolverFactory;
+import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
 
 /**
  * A {@link BundleRevision} is responsible for the classloading and resource loading of a bundle.
- * It is associated with a resolver module ({@link XResolver}) which holds the wiring information
+ * It is associated with a {@link XModule} which holds the wiring information
  * of the bundle.<p/>
  *  
- * Every time a bundle is updated a new {@link BundleRevision} is created and referenced to 
- * from the {@link InternalBundle} class. 
+ * Every time a bundle is updated a new {@link BundleRevision} is created and referenced 
+ * from the {@link InternalBundle}. 
  * 
  * 
  * @author thomas.diesler@jboss.com
@@ -54,21 +57,16 @@ import org.osgi.framework.BundleException;
 public class BundleRevision extends AbstractBundleRevision
 {
    private static final Logger log = Logger.getLogger(BundleRevision.class);
-   
+
    private XModule resolverModule;
-   private VirtualFile rootFile;
+   private List<VirtualFile> contentRoots;
 
    public BundleRevision(InternalBundle internalBundle, Deployment dep, int revision) throws BundleException
    {
       super(internalBundle, dep, revision);
-      
-      rootFile = dep.getRoot();
-
-      if (rootFile == null)
-         throw new IllegalArgumentException("Null rootFile");
 
       // Set the aggregated root file
-      rootFile = AggregatedVirtualFile.aggregatedBundleClassPath(rootFile, getOSGiMetaData());
+      contentRoots = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
 
       // Create the resolver module
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
@@ -87,17 +85,18 @@ public class BundleRevision extends AbstractBundleRevision
       return resolverModule;
    }
 
+
    @Override
-   public VirtualFile getRootFile()
+   List<VirtualFile> getContentRoots()
    {
-      return rootFile;
+      return contentRoots;
    }
 
    @Override
    public Class<?> loadClass(String className) throws ClassNotFoundException
    {
       getInternalBundle().assertNotUninstalled();
-      
+
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
       if (getInternalBundle().checkResolved() == false)
          throw new ClassNotFoundException("Class '" + className + "' not found in: " + this);
@@ -111,7 +110,7 @@ public class BundleRevision extends AbstractBundleRevision
    public URL getResource(String path)
    {
       getInternalBundle().assertNotUninstalled();
-      
+
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
       if (getInternalBundle().checkResolved() == true)
          return getBundleClassLoader().getResource(path);
@@ -124,7 +123,7 @@ public class BundleRevision extends AbstractBundleRevision
    public Enumeration<URL> getResources(String path) throws IOException
    {
       getInternalBundle().assertNotUninstalled();
-      
+
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
       if (getInternalBundle().checkResolved() == true)
       {
@@ -138,7 +137,7 @@ public class BundleRevision extends AbstractBundleRevision
          VirtualFile child = getRootFile().getChild(path);
          if (child == null)
             return null;
-         
+
          Vector<URL> vector = new Vector<URL>();
          vector.add(child.toURL());
          return vector.elements();
@@ -199,5 +198,52 @@ public class BundleRevision extends AbstractBundleRevision
    {
       // TODO 
       return null;
+   }
+
+   private VirtualFile getRootFile()
+   {
+      return getContentRoots().get(0);
+   }
+
+   private List<VirtualFile> getBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata)
+   {
+      if (rootFile == null)
+         throw new IllegalArgumentException("Null rootFile");
+      
+      List<VirtualFile> rootList;
+
+      // Add the Bundle-ClassPath to the root virtual files
+      if (metadata.getBundleClassPath().size() > 0)
+      {
+         rootList = new ArrayList<VirtualFile>();
+         for (String path : metadata.getBundleClassPath())
+         {
+            if (path.equals("."))
+            {
+               rootList.add(rootFile);
+            }
+            else
+            {
+               try
+               {
+                  VirtualFile child = rootFile.getChild(path);
+                  if (child != null)
+                  {
+                     VirtualFile root = AbstractVFS.getRoot(child.toURL());
+                     rootList.add(root);
+                  }
+               }
+               catch (IOException ex)
+               {
+                  log.error("Cannot get class path element: " + path, ex);
+               }
+            }
+         }
+      }
+      else
+      {
+         rootList = new ArrayList<VirtualFile>(Collections.singleton(rootFile));
+      }
+      return Collections.unmodifiableList(rootList);
    }
 }

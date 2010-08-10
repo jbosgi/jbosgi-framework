@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.jar.Attributes;
@@ -169,40 +170,24 @@ public final class VirtualFileResourceLoader implements ResourceLoader
    private Set<String> getLocalPaths()
    {
       Set<String> result = new HashSet<String>();
-      addVirtualFilePaths(virtualFile, virtualFile, result);
-      return Collections.unmodifiableSet(result);
-   }
-
-   private void addVirtualFilePaths(VirtualFile rootFile, VirtualFile virtualFile, Set<String> result)
-   {
-      int rootPathLength = rootFile.getPathName().length();
       try
       {
-         for (VirtualFile child : virtualFile.getChildren())
+         Enumeration<String> entryPaths = virtualFile.getEntryPaths("/");
+         while (entryPaths.hasMoreElements())
          {
-            if (child.isDirectory())
-            {
-               addVirtualFilePaths(rootFile, child, result);
-            }
-            else if (child.isFile())
-            {
-               String path = child.getPathName().substring(rootPathLength + 1);
-               if (path.endsWith(".jar"))
-               {
-                  addVirtualFilePaths(child, child, result);
-               }
-               else
-               {
-                  int inx = path.lastIndexOf("/");
-                  result.add(inx > 0 ? path.substring(0, inx) : "");
-               }
-            }
+            String entryPath = entryPaths.nextElement();
+            if (entryPath.endsWith("/"))
+               continue;
+            
+            int inx = entryPath.lastIndexOf("/");
+            result.add(inx > 0 ? entryPath.substring(0, inx) : "");
          }
       }
       catch (IOException ex)
       {
          throw new IllegalArgumentException("Cannot obtain entry paths", ex);
       }
+      return Collections.unmodifiableSet(result);
    }
 
    private void safeClose(final Closeable closeable)
