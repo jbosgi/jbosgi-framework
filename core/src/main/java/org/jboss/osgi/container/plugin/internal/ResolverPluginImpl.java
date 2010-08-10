@@ -32,6 +32,8 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.ModuleManager;
+import org.jboss.osgi.container.bundle.Revision;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
@@ -72,36 +74,36 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    }
 
    @Override
-   public void addBundle(AbstractBundle bundleState)
+   public void addRevision(Revision revision)
    {
-      XModule resolverModule = bundleState.getResolverModule();
-      resolverModule.addAttachment(Bundle.class, bundleState);
+      XModule resolverModule = revision.getResolverModule();
+      resolverModule.addAttachment(Revision.class, revision);
       resolver.addModule(resolverModule);
    }
 
    @Override
-   public void removeBundle(AbstractBundle bundleState)
+   public void removeRevision(Revision revision)
    {
-      XModule resolverModule = bundleState.getResolverModule();
+      XModule resolverModule = revision.getResolverModule();
       resolver.removeModule(resolverModule);
    }
    
    @Override
-   public void resolve(AbstractBundle bundleState) throws BundleException
+   public void resolve(Revision revision) throws BundleException
    {
-      XModule resModule = bundleState.getResolverModule();
+      XModule resModule = revision.getResolverModule();
       try
       {
          resolver.resolve(resModule);
       }
       catch (XResolverException ex)
       {
-         throw new BundleException("Cannot resolve bundle: " + bundleState, ex);
+         throw new BundleException("Cannot resolve bundle revision: " + revision, ex);
       }
 
       // Load the resolved module
       ModuleManagerPlugin moduleManger = getPlugin(ModuleManagerPlugin.class);
-      ModuleIdentifier identifier = bundleState.getModuleIdentifier();
+      ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(resModule);
       try
       {
          moduleManger.loadModule(identifier);
@@ -113,11 +115,11 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    }
 
    @Override
-   public List<AbstractBundle> resolve(List<AbstractBundle> bundles)
+   public List<Revision> resolve(List<Revision> revisions)
    {
       // Get the list of unresolved modules
       Set<XModule> unresolved = new LinkedHashSet<XModule>();
-      if (bundles == null)
+      if (revisions == null)
       {
          for (AbstractBundle aux : getBundleManager().getBundles())
          {
@@ -127,13 +129,14 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       }
       else
       {
-         for (AbstractBundle aux : bundles)
+         for (Revision aux : revisions)
          {
-            if (aux.getState() == Bundle.INSTALLED)
-               unresolved.add(aux.getResolverModule());
+            XModule resModule = aux.getResolverModule();
+            if (!resModule.isResolved())
+               unresolved.add(resModule);
          }
       }
-      log.debug("Resolve bundles: " + unresolved);
+      log.debug("Resolve revisions: " + unresolved);
 
       // Resolve the modules and report resolver errors
       Set<XModule> resolved = resolver.resolveAll(unresolved);
@@ -148,17 +151,16 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
 
       ModuleManagerPlugin moduleManger = getPlugin(ModuleManagerPlugin.class);
 
-      // Convert results into bundles
-      List<AbstractBundle> result = new ArrayList<AbstractBundle>();
+      // Convert results into revisions
+      List<Revision> result = new ArrayList<Revision>();
       for (XModule resModule : resolved)
       {
-         Bundle bundle = resModule.getAttachment(Bundle.class);
-         AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-         ModuleIdentifier identifier = bundleState.getModuleIdentifier();
+         Revision rev = resModule.getAttachment(Revision.class);
+         ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(resModule);
          try
          {
             moduleManger.loadModule(identifier);
-            result.add(bundleState);
+            result.add(rev);
          }
          catch (ModuleLoadException ex)
          {

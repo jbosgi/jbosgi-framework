@@ -37,18 +37,16 @@ import org.jboss.modules.Module.Flag;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
-import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XWire;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleException;
 
 /**
  * A {@link ModuleClassLoader} that has OSGi semantics.
@@ -306,25 +304,18 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
          log.trace("Attempt to find class dynamically in unresolved modules ...");
 
       // Iteraterate over all bundles in state INSTALLED
-      ResolverPlugin resolver = bundleManager.getPlugin(ResolverPlugin.class);
       for (Bundle aux : bundleManager.getBundles())
       {
          if (aux.getState() != Bundle.INSTALLED)
             continue;
 
          // Attempt to resolve the bundle
-         AbstractBundle bundleState = AbstractBundle.assertBundleState(aux);
-         try
-         {
-            resolver.resolve(bundleState);
-         }
-         catch (BundleException ex)
-         {
+         AbstractBundle bundle = AbstractBundle.assertBundleState(aux);
+         if (bundle.ensureResolved() == false)
             continue;
-         }
 
          // Create and load the module. This should not fail for resolved bundles.
-         ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(bundleState.getResolverModule());
+         ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(bundle.getResolverModule());
          Module candidate = moduleManager.getModule(identifier);
 
          // Try to load the class from the now resolved module

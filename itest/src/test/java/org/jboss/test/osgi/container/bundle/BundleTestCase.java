@@ -236,14 +236,14 @@ public class BundleTestCase extends OSGiFrameworkTest
          assertEquals("update-bundle1", bundleA.getSymbolicName());
          assertLoadClass(bundleA, ObjectA.class.getName());
          assertLoadClassFail(bundleA, ObjectB.class.getName());
+         assertLoadClass(bundleX, ObjectA.class.getName());
 
          bundleA.update(toVirtualFile(assembly2).openStream());
          assertBundleState(Bundle.ACTIVE, bundleA.getState());
          assertBundleState(Bundle.ACTIVE, bundleX.getState());
-         assertEquals(Version.parseVersion("1.0.0"), bundleA.getVersion());
-         // Assembly X depends on a package in the bundle, so don't update the packages yet.
-         assertLoadClass(bundleA, ObjectA.class.getName());
-         assertLoadClassFail(bundleA, ObjectB.class.getName());
+         assertEquals(Version.parseVersion("1.0.1"), bundleA.getVersion());
+         // Assembly X depends on a package in the bundle, this should still be available 
+         assertLoadClass(bundleX, ObjectA.class.getName());
 
          getSystemContext().addFrameworkListener(this);
          getPackageAdmin().refreshPackages(new Bundle[] { bundleA });
@@ -302,10 +302,11 @@ public class BundleTestCase extends OSGiFrameworkTest
          bundleA.update(toVirtualFile(assembly2).openStream());
          assertBundleState(Bundle.ACTIVE, bundleA.getState());
          assertBundleState(Bundle.ACTIVE, bundleX.getState());
-         assertEquals(Version.parseVersion("1.0.0"), bundleA.getVersion());
-         // Assembly X depends on a package in the bundle, so don't update the packages yet.
-         assertLoadClass(bundleA, ObjectA.class.getName());
-         assertLoadClassFail(bundleA, ObjectA2.class.getName());
+         assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());
+         // Bundle A should see the new version of the packages
+         assertLoadClass(bundleA, ObjectA2.class.getName());
+         assertLoadClassFail(bundleA, ObjectA.class.getName());
+         // Bundle X should still see the old packages of bundle A
          assertLoadClass(bundleX, ObjectA.class.getName());
          assertLoadClassFail(bundleX, ObjectA2.class.getName());
          assertSame(cls, bundleX.loadClass(ObjectX.class.getName()));

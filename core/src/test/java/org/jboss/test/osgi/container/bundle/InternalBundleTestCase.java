@@ -23,21 +23,16 @@ package org.jboss.test.osgi.container.bundle;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Hashtable;
 
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.BundleRevision;
 import org.jboss.osgi.container.bundle.InternalBundle;
-import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -45,7 +40,6 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;
 
@@ -176,41 +170,6 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
       hb.stop(Bundle.STOP_TRANSIENT);
       assertTrue(hb.isPersistentlyStarted());
       assertEquals(Bundle.RESOLVED, hb.getState());
-   }
-
-   @Test
-   public void testRevisions() throws Exception
-   {
-      BundleManager bm = mockBundleManager();
-      Deployment dep = mockDeployment();
-      InternalBundle ib = createInternalBundle(bm, dep);
-      ib.changeState(Bundle.INSTALLED);
-
-      assertSame(getField(ib, "currentRevision"), getField(ib, "latestRevision"));
-      BundleRevision cur = (BundleRevision)getField(ib, "currentRevision");
-      assertEquals(0, cur.getRevision());
-
-      BundleDeploymentPlugin dpMock = mock(BundleDeploymentPlugin.class);
-      when(dpMock.createDeployment(Mockito.any(VirtualFile.class), Mockito.any(String.class))).thenReturn(dep);
-      OSGiMetaData md = dep.getAttachment(OSGiMetaData.class);
-      when(dpMock.createOSGiMetaData(dep)).thenReturn(md);
-      when(bm.getPlugin(BundleDeploymentPlugin.class)).thenReturn(dpMock);
-
-      ib.ensureNewRevision();
-      assertNotSame(getField(ib, "currentRevision"), getField(ib, "latestRevision"));
-      BundleRevision latest = (BundleRevision)getField(ib, "latestRevision");
-      assertEquals(1, latest.getRevision());
-
-      ib.refresh();
-      assertSame(getField(ib, "currentRevision"), getField(ib, "latestRevision"));
-   }
-   
-   private Object getField(Object obj, String name) throws Exception
-   {
-      Class<?> cls = obj.getClass();
-      Field field = cls.getDeclaredField(name);
-      field.setAccessible(true);
-      return field.get(obj);
    }
 
    private InternalBundle createInternalBundle(BundleManager bm, Deployment dep) throws Exception

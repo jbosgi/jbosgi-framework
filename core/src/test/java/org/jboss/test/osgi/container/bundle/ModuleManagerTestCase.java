@@ -14,6 +14,7 @@ import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.BundleRevision;
 import org.jboss.osgi.container.bundle.ModuleManager;
+import org.jboss.osgi.container.bundle.Revision;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.spi.AbstractModuleBuilder;
 import org.junit.Assert;
@@ -70,7 +71,7 @@ public class ModuleManagerTestCase
       Mockito.when(br.getRevision()).thenReturn(42);
 
       XModule xm = new AbstractModuleBuilder().createModule(123, "myModule", Version.emptyVersion);
-      xm.addAttachment(BundleRevision.class, br);
+      xm.addAttachment(Revision.class, br);
 
       ModuleIdentifier id = ModuleManager.getModuleIdentifier(xm);
       assertEquals("module:jbosgi[123]:myModule:0.0.0-rev42", id.toURL().toString());
@@ -81,7 +82,7 @@ public class ModuleManagerTestCase
       Mockito.when(br2.getRevision()).thenReturn(43);
 
       XModule xm2 = new AbstractModuleBuilder().createModule(123, "myModule", Version.emptyVersion);
-      xm2.addAttachment(BundleRevision.class, br2);
+      xm2.addAttachment(Revision.class, br2);
       ModuleIdentifier id3 = ModuleManager.getModuleIdentifier(xm2);
       String a = id.toURL().toString();
       String b = id3.toURL().toString();

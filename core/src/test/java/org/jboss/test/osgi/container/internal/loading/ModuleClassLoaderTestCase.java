@@ -37,6 +37,7 @@ import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.BundleRevision;
 import org.jboss.osgi.container.bundle.FrameworkState;
 import org.jboss.osgi.container.bundle.ModuleManager;
+import org.jboss.osgi.container.bundle.Revision;
 import org.jboss.osgi.container.bundle.SystemBundle;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
@@ -116,7 +117,7 @@ public class ModuleClassLoaderTestCase
       AbstractBundle bundleState = Mockito.mock(AbstractBundle.class);
       Mockito.when(resModule.getAttachment(Bundle.class)).thenReturn(bundleState);
       BundleRevision bundleRevision = Mockito.mock(BundleRevision.class);
-      Mockito.when(resModule.getAttachment(BundleRevision.class)).thenReturn(bundleRevision);
+      Mockito.when(resModule.getAttachment(Revision.class)).thenReturn(bundleRevision);
       
       // Create the ModuleSpec and the Module
       VirtualFile rootFile = OSGiTestHelper.toVirtualFile(archive);

@@ -120,7 +120,7 @@ public class ModuleManager extends ModuleLoader
       if (moduleSpec != null)
          return moduleSpec.getIdentifier();
 
-      BundleRevision bundleRevision = resModule.getAttachment(BundleRevision.class);
+      Revision bundleRevision = resModule.getAttachment(Revision.class);
       if (bundleRevision == null)
          return null;
 

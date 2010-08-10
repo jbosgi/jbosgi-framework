@@ -24,9 +24,11 @@ package org.jboss.osgi.container.bundle;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
@@ -35,7 +37,6 @@ import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XWire;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -52,14 +53,10 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * and resources is delegated to the current {@link BundleRevision}. As bundles can be updated there
  * can be multiple bundle revisions.<p/>
  * 
- * The InternalBundle contains two Bundle Revisions: the current revision and the latest revision.
- * These concepts relate to updating of bundles. When a bundle is updated a new revision is created
- * and assigned to the latest revision. However, if the current revision is used by another bundle
- * (e.g. via a package import) the current revision is kept pointing at the revision before the update
- * and the updated bundle is not yet made available in the framework. 
- * In that case, the updated bundle can be enabled by calling 
- * {@link PackageAdmin#refreshPackages(Bundle[] bundles)} which will update the current revision
- * to the latest revision.<p/>
+ * The InternalBundle can contain multiple revisions: the current revision any number of old revisions.
+ * This relates to updating of bundles. When a bundle is updated a new revision is created
+ * and assigned to the current revision. However, the previous revision is kept available until 
+ * {@link PackageAdmin#refreshPackages(Bundle[])} is called.<p/>
  * 
  * In addition other bundle-specific functionality is handled here, such as Start Level and the
  * Bundle Activator and internal implementations of lifecycle management. 
@@ -73,10 +70,10 @@ public class InternalBundle extends AbstractBundle
 
    private BundleActivator bundleActivator;
    private final String location;
-   // The current revision is the bundle revision used by the system. This is what other bundle use if they import packages.
+   // This list contains any revisions of the bundle that are updated by newer ones, but still available
+   private List<AbstractBundleRevision> oldRevisions = new CopyOnWriteArrayList<AbstractBundleRevision>();
+   // The current revision is the most recent revision of the bundle. 
    private AbstractBundleRevision currentRevision;
-   // The latest revision is the newest revision of the bundle, which could be newer than the current revision if updated.
-   private AbstractBundleRevision latestRevision;
    private int startLevel = StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
    private boolean persistentlyStarted;
    private AtomicInteger revisionCounter = new AtomicInteger(0);
@@ -88,7 +85,7 @@ public class InternalBundle extends AbstractBundle
       if (location == null)
          throw new IllegalArgumentException("Null location");
 
-      latestRevision = currentRevision = new BundleRevision(this, deployment, revisionCounter.getAndIncrement());
+      currentRevision = new BundleRevision(this, deployment, revisionCounter.getAndIncrement());
 
       StartLevelPlugin sl = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
       if (sl != null)
@@ -109,17 +106,37 @@ public class InternalBundle extends AbstractBundle
       return (InternalBundle)bundleState;
    }
 
-   boolean checkResolved()
+   @Override
+   public void addToResolver()
+   {
+      getResolverPlugin().addRevision(currentRevision);
+   }
+
+   @Override
+   public boolean ensureResolved()
    {
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle 
       // [TODO] If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired 
       //        containing a BundleException with details of the reason this bundle could not be resolved. 
       //        This method must then throw a ClassNotFoundException.
       if (getState() == Bundle.INSTALLED)
-         getResolverPlugin().resolve(Collections.singletonList((AbstractBundle)this));
+         getResolverPlugin().resolve(Collections.<Revision> singletonList(currentRevision));
 
       // If the bundle has a ClassLoader it is in state {@link Bundle#RESOLVED}
       return currentRevision.getBundleClassLoader() != null;
+   }
+
+   @Override
+   public void removeFromResolver()
+   {
+      for (AbstractBundleRevision abr : oldRevisions)
+         getResolverPlugin().removeRevision(abr);
+
+      if (currentRevision != null)
+         getResolverPlugin().removeRevision(currentRevision);
+
+      oldRevisions.clear();
+      currentRevision = null;
    }
 
    @Override
@@ -155,22 +172,27 @@ public class InternalBundle extends AbstractBundle
    }
 
    /** 
-    * This method gets called by Package Admin when the bundle needs to be refreshed.
+    * This method gets called by Package Admin when the bundle needs to be refreshed,
+    * this means that all the old revisions are thrown out.
     */
    public void refresh() throws BundleException
    {
-      if (latestRevision.equals(currentRevision))
-         return;
+      List<AbstractBundleRevision> oldRevs = oldRevisions;
+      oldRevisions = new CopyOnWriteArrayList<AbstractBundleRevision>();
 
-      if (getState() == Bundle.UNINSTALLED)
-      {
-         // TODO possibly do some cleanup, or is everything properly dereferenced at this stage?
-         return;
-      }
+      // Remove the old revisions from the resolver
+      for (AbstractBundleRevision abr : oldRevs)
+         getResolverPlugin().removeRevision(abr);
+   }
+   
+   /**
+    * Removes uninstalled bundles, called by Package Admin
+    */
+   public void remove()
+   {
+      getBundleManager().removeBundleState(this);
 
-      getResolverPlugin().removeBundle(this);
-      currentRevision = latestRevision;
-      getResolverPlugin().addBundle(this);
+      removeFromResolver();
    }
 
    @Override
@@ -196,7 +218,7 @@ public class InternalBundle extends AbstractBundle
 
       // Resolve this bundles 
       if (getState() == Bundle.INSTALLED)
-         getResolverPlugin().resolve(this);
+         getResolverPlugin().resolve(currentRevision);
 
       // The BundleActivator.start(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, if one is specified, is called. 
       try
@@ -362,12 +384,7 @@ public class InternalBundle extends AbstractBundle
 
       try
       {
-         latestRevision = createNewBundleRevision(input);
-         if (!someoneIsWiredToMe())
-            // If this bundle has exported any packages that are imported by another bundle, these packages must not be updated. 
-            // Instead, the previous package version must remain exported until the PackageAdmin.refreshPackages method has been 
-            // has been called or the Framework is relaunched. 
-            refresh();
+         createNewBundleRevision(input);
       }
       catch (Exception e)
       {
@@ -399,41 +416,16 @@ public class InternalBundle extends AbstractBundle
       }
    }
 
-   public void ensureNewRevision() throws BundleException
+   public void createNewRevision() throws BundleException
    {
-      if (currentRevision.equals(latestRevision) == false)
-         return;
-
       try
       {
-         latestRevision = createNewBundleRevision(null);
+         createNewBundleRevision(null);
       }
       catch (Exception e)
       {
          throw new BundleException("Problem creating new revision of " + this, e);
       }
-   }
-
-   private boolean someoneIsWiredToMe()
-   {
-      XModule currentResolverModule = currentRevision.getResolverModule();
-      for(AbstractBundle ab : getBundleManager().getBundles())
-      {
-         XModule module = ab.getResolverModule();
-         if (module != null)
-         {
-            List<XWire> wires = module.getWires();
-            if (wires != null)
-            {
-               for (XWire wire : wires)
-               {
-                  if (wire.getExporter().equals(currentResolverModule))
-                     return true;
-               }
-            }
-         }
-      }
-      return false;
    }
 
    /**
@@ -442,10 +434,9 @@ public class InternalBundle extends AbstractBundle
     * @param input The stream to create the bundle revision from or <tt>null</tt>
     * if the new revision needs to be created from the same location as where the bundle
     * was initially installed.
-    * @return A new Bundle Revision.
     * @throws Exception If the bundle cannot be read, or if the update attempt to change the BSN.
     */
-   private BundleRevision createNewBundleRevision(InputStream input) throws Exception
+   private void createNewBundleRevision(InputStream input) throws Exception
    {
       BundleManager bm = getBundleManager();
       URL locationURL;
@@ -475,7 +466,10 @@ public class InternalBundle extends AbstractBundle
       if (md.getBundleSymbolicName().equals(getSymbolicName()) == false)
          log.infof("Ignoring update of symbolic name: %s", md.getBundleSymbolicName());
 
-      return new BundleRevision(this, dep, revisionCounter.getAndIncrement());
+      BundleRevision newRev = new BundleRevision(this, dep, revisionCounter.getAndIncrement());
+      oldRevisions.add(currentRevision);
+      currentRevision = newRev;
+      getResolverPlugin().addRevision(currentRevision);
    }
 
    @Override
@@ -502,7 +496,7 @@ public class InternalBundle extends AbstractBundle
          }
       }
 
-      bundleManager.removeBundleState(this);
+      bundleManager.uninstallBundleState(this);
    }
 
    public void unresolve() throws BundleException
@@ -575,6 +569,17 @@ public class InternalBundle extends AbstractBundle
    public XModule getResolverModule()
    {
       return currentRevision.getResolverModule();
+   }
+
+   @Override
+   public List<XModule> getAllResolverModules()
+   {
+      List<XModule> allModules = new ArrayList<XModule>(oldRevisions.size() + 1);
+      for (Revision rev : oldRevisions)
+         allModules.add(rev.getResolverModule());
+
+      allModules.add(currentRevision.getResolverModule());
+      return allModules;
    }
 
    @Override

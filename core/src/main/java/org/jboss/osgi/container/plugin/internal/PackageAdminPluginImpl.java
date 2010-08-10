@@ -117,16 +117,18 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       if (bundle == null)
          return getAllExportedPackages();
 
-      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      XModule resModule = bundleState.getResolverModule();
-      if (resModule.isResolved() == false)
-         return null;
-
       List<ExportedPackage> result = new ArrayList<ExportedPackage>();
-      for (XPackageCapability cap : resModule.getPackageCapabilities())
+      AbstractBundle ab = AbstractBundle.assertBundleState(bundle);
+      for (XModule resModule : ab.getAllResolverModules())
       {
-         ExportedPackage exp = new ExportedPackageImpl(cap);
-         result.add(exp);
+         if (resModule.isResolved() == false)
+            continue;
+
+         for (XPackageCapability cap : resModule.getPackageCapabilities())
+         {
+            ExportedPackage exp = new ExportedPackageImpl(cap);
+            result.add(exp);
+         }
       }
 
       if (result.size() == 0)
@@ -195,20 +197,40 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             Bundle[] bundles = bundlesToRefresh;
             FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
             if (bundles == null)
-               bundles = getBundleManager().getSystemContext().getBundles();
+            {
+               List<Bundle> allBundles = new ArrayList<Bundle>();
 
-            Map<InternalBundle, XModule> refreshMap = new HashMap<InternalBundle, XModule>();
+               for (AbstractBundle ab : getBundleManager().getBundles())
+                  allBundles.add(ab.getBundleWrapper());
+
+               for (AbstractBundle ab : getBundleManager().getUninstalledBundles())
+                  allBundles.add(ab.getBundleWrapper());
+
+               bundles = allBundles.toArray(new Bundle[allBundles.size()]);
+            }
+
+            Map<XModule, InternalBundle> refreshMap = new HashMap<XModule, InternalBundle>();
             for (Bundle b : bundles)
             {
                if (b.getBundleId() == 0)
                   continue;
 
-               InternalBundle ab = InternalBundle.assertBundleState(b);
-               refreshMap.put(ab, ab.getResolverModule());
+               InternalBundle ib = InternalBundle.assertBundleState(b);
+               for (XModule resModule : ib.getAllResolverModules())
+                  refreshMap.put(resModule, ib);
             }
 
             Set<InternalBundle> stopBundles = new HashSet<InternalBundle>();
-            Set<InternalBundle> refreshBundles = new HashSet<InternalBundle>(refreshMap.keySet());
+            Set<InternalBundle> refreshBundles = new HashSet<InternalBundle>();
+            Set<InternalBundle> uninstallBundles = new HashSet<InternalBundle>();
+            
+            for (InternalBundle ib : refreshMap.values())
+            {
+               if (ib.getState() == Bundle.UNINSTALLED)
+                  uninstallBundles.add(ib);
+               else
+                  refreshBundles.add(ib);
+            }
 
             // Compute all depending bundles that need to be stopped and unresolved.
             for (AbstractBundle ab : getBundleManager().getBundles())
@@ -224,7 +246,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
 
                for (XWire wire : wires)
                {
-                  if (refreshMap.containsValue(wire.getExporter()))
+                  if (refreshMap.containsKey(wire.getExporter()))
                   {
                      // Bundles can be either ACTIVE or RESOLVED
                      int state = ib.getState();
@@ -239,7 +261,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             }
 
             // Add relevant bundles to be refreshed also to the stop list. 
-            for (InternalBundle ib : refreshMap.keySet())
+            for (InternalBundle ib : new HashSet<InternalBundle>(refreshMap.values()))
             {
                int state = ib.getState();
                if (state == Bundle.ACTIVE || state == Bundle.STARTING)
@@ -274,15 +296,17 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                InternalBundle ib = it.previous();
                try
                {
-                  if (ib.getState() != Bundle.UNINSTALLED)
-                     ib.unresolve();
-                  ib.ensureNewRevision();
+                  ib.unresolve();
+                  ib.createNewRevision();
                }
                catch (BundleException e)
                {
                   eventsPlugin.fireFrameworkEvent(ib, FrameworkEvent.ERROR, e);
                }
             }
+
+            for (InternalBundle ib : uninstallBundles)
+               ib.remove();
 
             for (InternalBundle ib : refreshList)
             {
@@ -338,10 +362,10 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       }
       log.debug("resolve bundles: " + unresolved);
 
-      // Resolve the bundles through the resolver plugin
-      ResolverPlugin resolver = getPlugin(ResolverPlugin.class);
-      List<AbstractBundle> resolved = resolver.resolve(unresolved);
-      boolean allResolved = unresolved.size() == resolved.size();
+
+      boolean allResolved = true;
+      for (AbstractBundle ab : unresolved)
+         allResolved &= ab.ensureResolved();
 
       return allResolved;
    }

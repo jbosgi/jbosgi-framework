@@ -45,7 +45,7 @@
     <version.jboss.osgi.jmx>1.0.7</version.jboss.osgi.jmx>
     <version.jboss.osgi.resolver>1.0.0</version.jboss.osgi.resolver>
     <version.jboss.osgi.resolver.felix>3.0.1</version.jboss.osgi.resolver.felix>
-    <version.jboss.osgi.spi>1.0.11</version.jboss.osgi.spi>
+    <version.jboss.osgi.spi>1.0.12-SNAPSHOT</version.jboss.osgi.spi>
     <version.jboss.osgi.vfs>1.0.0</version.jboss.osgi.vfs>
     <version.mockito>1.8.4</version.mockito>
     <version.osgi>4.2.0</version.osgi>

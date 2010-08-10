@@ -28,6 +28,7 @@ import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.container.resolver.support.a.A;
 import org.jboss.test.osgi.container.resolver.support.b.B;
+import org.jboss.test.osgi.container.resolver.support.b.BC;
 import org.jboss.test.osgi.container.resolver.support.c.C;
 import org.junit.After;
 import org.junit.Test;
@@ -171,6 +172,45 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       }
       finally
       {
+         bundleA.uninstall();
+      }
+   }
+
+   @Test
+   public void testSelfImportUsesOtherAfterUpdate() throws Exception
+   {
+      // Bundle-SymbolicName: simpleexport
+      // Export-Package: org.jboss.test.osgi.resolver.support.a
+      Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/resolver/simpleexport", A.class);
+
+      // Bundle-SymbolicName: selfimportuseother
+      // Export-Package: org.jboss.test.osgi.container.resolver.support.b;
+      //  uses:="org.jboss.test.osgi.container.resolver.support.c"
+      // Import-Package: org.jboss.test.osgi.container.resolver.support.c,
+      //  org.jboss.test.osgi.container.resolver.support.b
+      Archive<?> assemblyB = assembleArchive("bundleB", "/bundles/resolver/selfimportusesother", B.class);
+
+      // Bundle-SymbolicName: simpleexportanother
+      // Export-Package: org.jboss.test.osgi.container.resolver.support.c
+      Archive<?> assemblyC = assembleArchive("bundleA", "/bundles/resolver/simpleexportanother", C.class);
+
+      Bundle bundleA = installBundle(assemblyA);
+      Bundle bundleB = null;
+      try
+      {
+         assertLoadClass(bundleA, A.class.getName(), bundleA);
+         
+         bundleA.update(toVirtualFile(assemblyC).openStream());
+         bundleB = installBundle(assemblyB);
+         assertLoadClass(bundleB, BC.class.getName(), bundleB);
+         assertLoadClass(bundleB, C.class.getName(), bundleA);
+
+         assertLoadClass(bundleA, C.class.getName(), bundleA);
+      }
+      finally
+      {
+         if (bundleB != null)
+            bundleB.uninstall();
          bundleA.uninstall();
       }
    }

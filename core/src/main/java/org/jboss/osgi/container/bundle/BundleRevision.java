@@ -36,6 +36,7 @@ import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.vfs.VirtualFile;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -72,8 +73,8 @@ public class BundleRevision extends AbstractBundleRevision
 
       // Create the resolver module
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
-      resolverModule = builder.createModule(internalBundle.getBundleId(), getOSGiMetaData());
-      resolverModule.addAttachment(BundleRevision.class, this);
+      resolverModule = builder.createModule(getRevisionID(), getOSGiMetaData());
+      resolverModule.addAttachment(Bundle.class, internalBundle);
 
       // In case this bundle is a module.xml deployment, we already have a ModuleSpec
       ModuleSpec moduleSpec = dep.getAttachment(ModuleSpec.class);
@@ -99,7 +100,7 @@ public class BundleRevision extends AbstractBundleRevision
       getInternalBundle().assertNotUninstalled();
       
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      if (getInternalBundle().checkResolved() == false)
+      if (getInternalBundle().ensureResolved() == false)
          throw new ClassNotFoundException("Class '" + className + "' not found in: " + this);
 
       // Load the class through the module
@@ -113,7 +114,7 @@ public class BundleRevision extends AbstractBundleRevision
       getInternalBundle().assertNotUninstalled();
       
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      if (getInternalBundle().checkResolved() == true)
+      if (getInternalBundle().ensureResolved() == true)
          return getBundleClassLoader().getResource(path);
 
       // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
@@ -126,7 +127,7 @@ public class BundleRevision extends AbstractBundleRevision
       getInternalBundle().assertNotUninstalled();
       
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      if (getInternalBundle().checkResolved() == true)
+      if (getInternalBundle().ensureResolved() == true)
       {
          Enumeration<URL> resources = getBundleClassLoader().getResources(path);
          return resources.hasMoreElements() ? resources : null;

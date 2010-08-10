@@ -43,7 +43,10 @@ import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.container.bundle.support.a.ObjectA;
 import org.jboss.test.osgi.container.bundle.support.a.ObjectA2;
 import org.jboss.test.osgi.container.bundle.support.x.ObjectX;
+import org.jboss.test.osgi.container.packageadmin.exportA.ExportA;
+import org.jboss.test.osgi.container.packageadmin.exportB.ExportB;
 import org.jboss.test.osgi.container.packageadmin.exported.Exported;
+import org.jboss.test.osgi.container.packageadmin.importA.ImportingA;
 import org.jboss.test.osgi.container.packageadmin.importexport.ImportExport;
 import org.jboss.test.osgi.container.packageadmin.optimporter.Importing;
 import org.jboss.test.osgi.container.service.support.a.PA;
@@ -496,10 +499,12 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
          bundleA.update(toVirtualFile(assembly2).openStream());
          assertBundleState(Bundle.ACTIVE, bundleA.getState());
          assertBundleState(Bundle.ACTIVE, bundleX.getState());
-         assertEquals(Version.parseVersion("1.0.0"), bundleA.getVersion());
-         // Assembly X depends on a package in the bundle, so don't update the packages yet.
-         assertLoadClass(bundleA, ObjectA.class.getName());
-         assertLoadClassFail(bundleA, ObjectA2.class.getName());
+         assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());
+         // Should be able to load the new classes via bundleA
+         assertLoadClass(bundleA, ObjectA2.class.getName());
+         assertLoadClassFail(bundleA, ObjectA.class.getName());
+         // Assembly X depends on a package in the old bundle, 
+         // should be able to reach the old classes through bundle X
          assertLoadClass(bundleX, ObjectA.class.getName());
          assertLoadClassFail(bundleX, ObjectA2.class.getName());
          assertSame(cls, bundleX.loadClass(ObjectX.class.getName()));
@@ -616,6 +621,69 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
       catch (IllegalArgumentException e)
       {
          // good
+      }
+   }
+
+   @Test
+   public void testComplexUpdateScenario() throws Exception
+   {
+      PackageAdmin pa = getPackageAdmin();
+      
+      assertNull(pa.getExportedPackage(ExportA.class.getName()));
+      assertNull(pa.getExportedPackage(ExportB.class.getName()));
+
+      Bundle bundleE = installBundle(assembleArchive("ExportA", "/bundles/package-admin/exportA", ExportA.class));
+      Bundle bundleU = installBundle(assembleArchive("ExportU", "/bundles/package-admin/exporter", Exported.class));
+      Bundle bundleI = null;
+
+      Archive<?> assemblyE = assembleArchive("ExportA2", "/bundles/package-admin/exportB", ExportB.class);
+      try
+      {
+         bundleE.start();
+         bundleU.start();
+
+         ExportedPackage[] eex = pa.getExportedPackages(bundleE);
+         assertEquals(1, eex.length);
+         assertEquals(ExportA.class.getPackage().getName(), eex[0].getName());
+         assertSame(bundleE, eex[0].getExportingBundle());               
+
+         ExportedPackage[] iex = pa.getExportedPackages(bundleU);
+         assertEquals(1, iex.length);
+         assertEquals(Exported.class.getPackage().getName(), iex[0].getName());
+         assertSame(bundleU, iex[0].getExportingBundle());
+
+         bundleE.update(toVirtualFile(assemblyE).openStream());
+
+         // This bundle imports the old version of bundleE, should still be available!
+         bundleI = installBundle(assembleArchive("ImportA", "/bundles/package-admin/importA", ImportingA.class));
+         bundleI.start();
+
+         // PackageAdmin should report both the old and the new package as exported
+         List<String> exported = new ArrayList<String>();
+         for (ExportedPackage ex : pa.getExportedPackages(bundleE))
+            exported.add(ex.getName());
+         assertTrue(exported.contains(ExportA.class.getPackage().getName()));
+         assertTrue(exported.contains(ExportB.class.getPackage().getName()));
+         assertEquals(2, exported.size());
+         
+         packageAdminRefresh(new Bundle [] {bundleE, bundleU, bundleI});
+         
+         assertEquals(Bundle.ACTIVE, bundleE.getState());
+         assertEquals(Bundle.ACTIVE, bundleU.getState());
+         assertTrue(Bundle.ACTIVE != bundleI.getState());
+
+         ExportedPackage[] eex2 = pa.getExportedPackages(bundleE);
+         assertEquals(1, eex2.length);
+         assertEquals(ExportB.class.getPackage().getName(), eex2[0].getName());
+         assertSame(bundleE, eex2[0].getExportingBundle());
+      }
+      finally
+      {
+         if (bundleI != null)
+            bundleI.uninstall();
+
+         bundleU.uninstall();
+         bundleE.uninstall();
       }
    }
 }
