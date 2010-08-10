@@ -59,6 +59,10 @@
       <groupId>org.jboss.osgi.resolver</groupId>
       <artifactId>jbosgi-resolver-api</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.jboss.osgi.vfs</groupId>
+      <artifactId>jboss-osgi-vfs</artifactId>
+    </dependency>
 
     <!-- OSGi Dependencies -->
     <dependency>

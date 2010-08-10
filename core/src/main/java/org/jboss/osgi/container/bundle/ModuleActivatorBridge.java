@@ -23,13 +23,13 @@ package org.jboss.osgi.container.bundle;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
-import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.modules.ModuleActivator;
 import org.jboss.osgi.modules.ModuleContext;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -46,28 +46,21 @@ public class ModuleActivatorBridge implements BundleActivator
    private ModuleActivator moduleActivator;
    private ModuleContext moduleContext;
    
+   public ModuleActivatorBridge(ModuleActivator moduleActivator)
+   {
+      this.moduleActivator = moduleActivator;
+   }
+
    @Override
    public void start(BundleContext context) throws Exception
    {
-      AbstractBundle bundleState = ((AbstractBundleContext)context).getBundleInternal();
+      AbstractBundle bundleState = AbstractBundleContext.assertBundleContext(context).getBundleInternal();
       bundleManager = bundleState.getBundleManager();
       
       ModuleManagerPlugin moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
       ModuleIdentifier identifier = bundleState.getModuleIdentifier();
-      ModuleSpec moduleSpec = moduleManager.getModuleSpec(identifier);
       Module module = moduleManager.getModule(identifier);
       
-      String mainClass = moduleSpec.getMainClass();
-      try
-      {
-         Class<?> activatorClass = Module.loadClass(identifier, mainClass);
-         moduleActivator = (ModuleActivator)activatorClass.newInstance();
-      }
-      catch (Exception ex)
-      {
-         throw new ModuleLoadException("Cannot load activator: " + mainClass);
-      }
-
       ServiceManagerPlugin serviceManager = bundleManager.getPlugin(ServiceManagerPlugin.class);
       ServiceContainer serviceContainer = serviceManager.getServiceContainer();
       BundleContext systemContext = bundleManager.getSystemContext();
@@ -80,5 +73,69 @@ public class ModuleActivatorBridge implements BundleActivator
    public void stop(BundleContext context) throws Exception
    {
       moduleActivator.stop(moduleContext);
+   }
+
+   /**
+    * A the context for Module/OSGi integration.
+    * 
+    * @author thomas.diesler@jboss.com
+    * @since 05-Aug-2010
+    */
+   class ModuleContextImpl implements ModuleContext
+   {
+      private ServiceContainer serviceContainer;
+      private Module module;
+      private BundleContext systemContext;
+      private Bundle bundle;
+      
+      ModuleContextImpl(ServiceContainer serviceContainer, Module module, BundleContext systemContext, Bundle bundle)
+      {
+         if (serviceContainer == null)
+            throw new IllegalArgumentException("Null serviceContainer");
+         if (module == null)
+            throw new IllegalArgumentException("Null module");
+         if (systemContext == null)
+            throw new IllegalArgumentException("Null systemContext");
+         if (bundle == null)
+            throw new IllegalArgumentException("Null bundle");
+         
+         this.serviceContainer = serviceContainer;
+         this.module = module;
+         this.systemContext = systemContext;
+         this.bundle = bundle;
+      }
+
+      @Override
+      public ServiceName getServiceName(Class<?> service)
+      {
+         if (service == null)
+            throw new IllegalArgumentException("Null service");
+         
+         return ServiceName.of(XSERVICE_PREFIX, service.getName());
+      }
+
+      @Override
+      public ServiceContainer getServiceContainer()
+      {
+         return serviceContainer;
+      }
+
+      @Override
+      public Module getModule()
+      {
+         return module;
+      }
+
+      @Override
+      public BundleContext getSystemContext()
+      {
+         return systemContext;
+      }
+
+      @Override
+      public Bundle getBundle()
+      {
+         return bundle;
+      }
    }
 }

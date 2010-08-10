@@ -157,6 +157,17 @@ public final class AggregatedVirtualFile implements VirtualFile
    }
 
    @Override
+   public List<VirtualFile> getChildren() throws IOException
+   {
+      List<VirtualFile> result = new ArrayList<VirtualFile>();
+      for (VirtualFile root : roots)
+      {
+         result.addAll(root.getChildren());
+      }
+      return Collections.unmodifiableList(result);
+   }
+
+   @Override
    public Enumeration<URL> findEntries(String path, String pattern, boolean recurse) throws IOException
    {
       return roots[0].findEntries(path, pattern, recurse);

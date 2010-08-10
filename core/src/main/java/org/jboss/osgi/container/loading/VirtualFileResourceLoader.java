@@ -27,16 +27,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
-import org.jboss.modules.AbstractResourceLoader;
 import org.jboss.modules.ClassSpec;
 import org.jboss.modules.PackageSpec;
+import org.jboss.modules.PathFilter;
+import org.jboss.modules.PathFilters;
 import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -48,21 +49,39 @@ import org.jboss.osgi.vfs.VirtualFile;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class VirtualFileResourceLoader extends AbstractResourceLoader
+public final class VirtualFileResourceLoader implements ResourceLoader
 {
-   private VirtualFile virtualFile;
-   private List<String> filteredPaths;
+   private final VirtualFile virtualFile;
+   private final Set<String> localPaths;
+   private final PathFilter exportFilter;
 
-   public VirtualFileResourceLoader(VirtualFile virtualFile, List<String> paths)
+   public VirtualFileResourceLoader(VirtualFile virtualFile)
+   {
+      this(virtualFile, PathFilters.acceptAll());
+   }
+
+   public VirtualFileResourceLoader(VirtualFile virtualFile, PathFilter exportFilter)
    {
       if (virtualFile == null)
          throw new IllegalArgumentException("Null virtualFile");
-      
+      if (exportFilter == null)
+         throw new IllegalArgumentException("Null exportFilter");
+
       this.virtualFile = virtualFile;
-      
-      filteredPaths = new ArrayList<String>();
-      if (paths != null)
-         filteredPaths.addAll(paths);
+      this.exportFilter = exportFilter;
+      this.localPaths = getLocalPaths();
+   }
+
+   @Override
+   public String getRootName()
+   {
+      return virtualFile.getPathName();
+   }
+
+   @Override
+   public PathFilter getExportFilter()
+   {
+      return exportFilter;
    }
 
    @Override
@@ -126,7 +145,7 @@ public class VirtualFileResourceLoader extends AbstractResourceLoader
          VirtualFile child = virtualFile.getChild(name);
          if (child == null)
             return null;
-         
+
          return new VirtualResource(child);
       }
       catch (IOException ex)
@@ -144,7 +163,46 @@ public class VirtualFileResourceLoader extends AbstractResourceLoader
    @Override
    public Collection<String> getPaths()
    {
-      return Collections.unmodifiableList(filteredPaths);
+      return localPaths;
+   }
+
+   private Set<String> getLocalPaths()
+   {
+      Set<String> result = new HashSet<String>();
+      addVirtualFilePaths(virtualFile, virtualFile, result);
+      return Collections.unmodifiableSet(result);
+   }
+
+   private void addVirtualFilePaths(VirtualFile rootFile, VirtualFile virtualFile, Set<String> result)
+   {
+      int rootPathLength = rootFile.getPathName().length();
+      try
+      {
+         for (VirtualFile child : virtualFile.getChildren())
+         {
+            if (child.isDirectory())
+            {
+               addVirtualFilePaths(rootFile, child, result);
+            }
+            else if (child.isFile())
+            {
+               String path = child.getPathName().substring(rootPathLength + 1);
+               if (path.endsWith(".jar"))
+               {
+                  addVirtualFilePaths(child, child, result);
+               }
+               else
+               {
+                  int inx = path.lastIndexOf("/");
+                  result.add(inx > 0 ? path.substring(0, inx) : "");
+               }
+            }
+         }
+      }
+      catch (IOException ex)
+      {
+         throw new IllegalArgumentException("Cannot obtain entry paths", ex);
+      }
    }
 
    private void safeClose(final Closeable closeable)

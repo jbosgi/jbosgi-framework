@@ -96,7 +96,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       
       if (resModule.getModuleId() == 0)
       {
-         return moduleManager.createFrameworkModule(resModule);
+         return moduleManager.createFrameworkSpec(resModule);
       }
       else
       {

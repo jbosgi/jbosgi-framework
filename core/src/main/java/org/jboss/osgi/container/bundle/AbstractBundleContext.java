@@ -61,6 +61,24 @@ public abstract class AbstractBundleContext implements BundleContext
       this.bundleState = bundleState;
    }
 
+   /**
+    * Assert that the given context is an instance of AbstractBundleContext
+    * @throws IllegalArgumentException if the given context is not an instance of AbstractBundleContext
+    */
+   public static AbstractBundleContext assertBundleContext(BundleContext context)
+   {
+      if (context == null)
+         throw new IllegalArgumentException("Null bundle");
+
+      if (context instanceof BundleContextWrapper)
+         context = ((BundleContextWrapper)context).getInternal();
+
+      if (context instanceof AbstractBundleContext == false)
+         throw new IllegalArgumentException("Not an AbstractBundleContext: " + context);
+
+      return (AbstractBundleContext)context;
+   }
+   
    void destroy()
    {
       bundleState = null;

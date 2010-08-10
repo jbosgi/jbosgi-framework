@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.container.internal.loading;
+package org.jboss.test.osgi.container.loading;
 
 
 import static org.junit.Assert.assertNotNull;
@@ -30,7 +30,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
@@ -48,8 +47,8 @@ import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.test.osgi.container.simple.bundleC.SimpleActivator;
-import org.jboss.test.osgi.container.simple.bundleC.SimpleService;
+import org.jboss.test.osgi.container.loading.subA.SimpleActivator;
+import org.jboss.test.osgi.container.loading.subB.SimpleService;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -64,9 +63,9 @@ import org.osgi.service.log.LogService;
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
-public class ModuleClassLoaderTestCase 
+public class BundleClassLoaderTestCase 
 {
-   static ModuleClassLoader classLoader;
+   static ClassLoader classLoader;
    
    @BeforeClass
    public static void beforeClass() throws Exception
@@ -87,11 +86,12 @@ public class ModuleClassLoaderTestCase
       
       // Create the Framework module
       ModuleManager moduleManager = new ModuleManager(bundleManager);
-      ModuleSpec moduleSpec = moduleManager.createFrameworkModule(resModule);
+      ModuleSpec moduleSpec = moduleManager.createFrameworkSpec(resModule);
       
       // Bundle-Version: 1.0.0
       // Bundle-SymbolicName: simple-bundle
-      // Bundle-Activator: org.jboss.osgi.msc.framework.simple.bundle.SimpleActivator
+      // Bundle-Activator: org.jboss.test.osgi.container.loading.subA.SimpleActivator
+      // Export-Package: org.jboss.test.osgi.container.loading.subB
       final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
       archive.addClasses(SimpleService.class, SimpleActivator.class);
       archive.setManifest(new Asset()
@@ -101,8 +101,8 @@ public class ModuleClassLoaderTestCase
             OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
             builder.addBundleManifestVersion(2);
             builder.addBundleSymbolicName(archive.getName());
-            builder.addBundleVersion("1.0.0");
             builder.addBundleActivator(SimpleActivator.class);
+            builder.addExportPackages(SimpleService.class);
             return builder.openStream();
          }
       });
@@ -121,7 +121,7 @@ public class ModuleClassLoaderTestCase
       // Create the ModuleSpec and the Module
       VirtualFile rootFile = OSGiTestHelper.toVirtualFile(archive);
       moduleSpec = moduleManager.createModuleSpec(resModule, rootFile);
-      Module module = moduleManager.loadModule(moduleSpec.getIdentifier());
+      Module module = moduleManager.loadModule(moduleSpec.getModuleIdentifier());
       classLoader = module.getClassLoader();
    }
    

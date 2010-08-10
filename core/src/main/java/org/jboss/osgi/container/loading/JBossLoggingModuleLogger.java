@@ -43,6 +43,12 @@ public class JBossLoggingModuleLogger implements ModuleLogger
    }
 
    @Override
+   public void greeting()
+   {
+      log.debug("ModuleLogger initialized");
+   }
+
+   @Override
    public void trace(String message)
    {
       if (log.isTraceEnabled())

@@ -31,76 +31,81 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.AssertionSetting;
+import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
-import org.jboss.modules.Module.Flag;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleSpec;
+import org.jboss.modules.Resource;
+import org.jboss.modules.ResourceLoader;
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
-import org.jboss.osgi.resolver.XRequirement;
-import org.jboss.osgi.resolver.XWire;
+import org.jboss.osgi.spi.NotImplementedException;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
- * A {@link ModuleClassLoader} that has OSGi semantics.
+ * A {@link LocalLoader} for the bundle content.
  * 
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class OSGiModuleClassLoader extends ModuleClassLoader
+public class BundleLocalLoader extends AbstractLocalLoader
 {
    // Provide logging
-   private static final Logger log = Logger.getLogger(OSGiModuleClassLoader.class);
+   private static final Logger log = Logger.getLogger(BundleLocalLoader.class);
 
    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
    private BundleManager bundleManager;
    private ModuleManagerPlugin moduleManager;
    private SystemPackagesPlugin systemPackages;
-   private Set<String> importedPaths;
+   private ResourceLoader resourceLoader;
+   private Set<String> loaderPaths;
    private XModule resModule;
 
-   public OSGiModuleClassLoader(BundleManager bundleManager, XModule resModule, Module module, ModuleSpec moduleSpec)
+   public BundleLocalLoader(BundleManager bundleManager, XModule resModule, VirtualFile rootFile)
    {
-      super(module, Collections.<Flag> emptySet(), AssertionSetting.INHERIT, moduleSpec.getContentLoader());
       this.bundleManager = bundleManager;
-      this.moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
-      this.systemPackages = bundleManager.getPlugin(SystemPackagesPlugin.class);
       this.resModule = resModule;
-
-      // Initialize the Module's imported paths
-      List<XWire> wires = resModule.getWires();
-      if (wires != null)
-      {
-         for (XWire wire : wires)
-         {
-            XRequirement req = wire.getRequirement();
-            XModule importer = wire.getImporter();
-            XModule exporter = wire.getExporter();
-            if (exporter == importer)
-               continue;
-
-            // Dependency for Import-Package
-            if (req instanceof XPackageRequirement)
-            {
-               if (importedPaths == null)
-                  importedPaths = new HashSet<String>();
-               
-               String path = getPathFromPackageName(req.getName());
-               importedPaths.add(path);
-            }
-         }
-      }
+      
+      moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
+      systemPackages = bundleManager.getPlugin(SystemPackagesPlugin.class);
+      
+      resourceLoader = new VirtualFileResourceLoader(rootFile);
+      loaderPaths = new HashSet<String>(resourceLoader.getPaths());
+      loaderPaths = Collections.unmodifiableSet(loaderPaths);
    }
 
+   public Set<String> getLoaderPaths()
+   {
+      return loaderPaths;
+   }
+   
+   @Override
+   public Class<?> loadClassLocal(String name, boolean resolve)
+   {
+      throw new NotImplementedException();
+   }
+
+   @Override
+   public List<Resource> loadResourceLocal(String name)
+   {
+      throw new NotImplementedException();
+   }
+
+   @Override
+   public Resource loadResourceLocal(String root, String name)
+   {
+      throw new NotImplementedException();
+   }
+   
+   /* [REARCH]
    @Override
    protected Class<?> findClass(String className, boolean exportsOnly) throws ClassNotFoundException
    {
@@ -174,6 +179,7 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
 
       throw new ClassNotFoundException(className);
    }
+   */
 
    private Class<?> loadClassDynamically(String className) throws ClassNotFoundException
    {
@@ -348,10 +354,5 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       }
 
       return null;
-   }
-
-   private String getPathFromPackageName(String packageName)
-   {
-      return packageName.replace('.', File.separatorChar);
    }
 }

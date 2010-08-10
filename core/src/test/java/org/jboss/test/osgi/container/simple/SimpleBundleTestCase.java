@@ -54,7 +54,7 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest
    {
       // Bundle-Version: 1.0.0
       // Bundle-SymbolicName: simple-bundle
-      // Bundle-Activator: org.jboss.osgi.msc.framework.simple.bundle.SimpleActivator
+      // Bundle-Activator: org.jboss.test.osgi.container.simple.bundleC.SimpleActivator
       final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
       archive.addClasses(SimpleService.class, SimpleActivator.class);
       archive.setManifest(new Asset()

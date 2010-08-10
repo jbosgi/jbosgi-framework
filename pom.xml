@@ -46,7 +46,7 @@
     <version.jboss.osgi.resolver>1.0.0</version.jboss.osgi.resolver>
     <version.jboss.osgi.resolver.felix>3.0.1</version.jboss.osgi.resolver.felix>
     <version.jboss.osgi.spi>1.0.11</version.jboss.osgi.spi>
-    <version.jboss.osgi.vfs>1.0.0</version.jboss.osgi.vfs>
+    <version.jboss.osgi.vfs>1.0.1-SNAPSHOT</version.jboss.osgi.vfs>
     <version.mockito>1.8.4</version.mockito>
     <version.osgi>4.2.0</version.osgi>
   </properties>
@@ -86,6 +86,11 @@
             <artifactId>jboss-logging-spi</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.osgi.vfs</groupId>
+        <artifactId>jboss-osgi-vfs</artifactId>
+        <version>${version.jboss.osgi.vfs}</version>
       </dependency>
       
       <!-- Felix Dependencies -->

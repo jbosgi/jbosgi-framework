@@ -33,30 +33,28 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.DependencySpec;
+import org.jboss.modules.LocalDependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleClassLoaderFactory;
+import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.osgi.container.loading.FrameworkModuleClassLoader;
+import org.jboss.modules.PathFilter;
+import org.jboss.modules.PathFilters;
+import org.jboss.osgi.container.loading.FrameworkLocalLoader;
 import org.jboss.osgi.container.loading.JBossLoggingModuleLogger;
-import org.jboss.osgi.container.loading.OSGiModuleClassLoader;
 import org.jboss.osgi.container.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
-import org.jboss.osgi.resolver.XRequireBundleRequirement;
 import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XWire;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.application.Framework;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
 
 /**
@@ -118,7 +116,7 @@ public class ModuleManager extends ModuleLoader
 
       ModuleSpec moduleSpec = resModule.getAttachment(ModuleSpec.class);
       if (moduleSpec != null)
-         return moduleSpec.getIdentifier();
+         return moduleSpec.getModuleIdentifier();
 
       BundleRevision bundleRevision = resModule.getAttachment(BundleRevision.class);
       if (bundleRevision == null)
@@ -245,7 +243,7 @@ public class ModuleManager extends ModuleLoader
    }
 
    @Override
-   public Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException
+   public Module preloadModule(ModuleIdentifier identifier) throws ModuleLoadException
    {
       ModuleHolder holder = getModuleHolder(identifier);
       if (holder == null)
@@ -254,10 +252,34 @@ public class ModuleManager extends ModuleLoader
       Module module = holder.getModule();
       if (module == null)
       {
-         module = super.loadModule(identifier);
+         module = super.preloadModule(identifier);
          holder.setModule(module);
       }
       return module;
+   }
+
+   /**
+    * Create the {@link Framework} module from the give resolver module definition.
+    */
+   public ModuleSpec createFrameworkSpec(final XModule resModule)
+   {
+      if (frameworkIdentifier != null)
+         throw new IllegalStateException("Framework module already created");
+
+      frameworkIdentifier = getModuleIdentifier(resModule, 0);
+      ModuleSpec.Builder builder = ModuleSpec.build(frameworkIdentifier);
+
+      FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(bundleManager, resModule);
+      LocalDependencySpec.Builder depBuilder = LocalDependencySpec.build(frameworkLoader, frameworkLoader.getExportedPaths());
+      depBuilder.setImportFilter(PathFilters.acceptAll()); // [REARCH] Review why all imports must be accepted
+      depBuilder.setExportFilter(PathFilters.acceptAll());
+      
+      builder.addLocalDependency(depBuilder.create());
+      ModuleSpec frameworkSpec = builder.create();
+
+      AbstractBundle bundleState = (AbstractBundle)resModule.getAttachment(Bundle.class);
+      modules.put(frameworkIdentifier, new ModuleHolder(bundleState, frameworkSpec));
+      return frameworkSpec;
    }
 
    /**
@@ -272,20 +294,22 @@ public class ModuleManager extends ModuleLoader
          ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
 
          // Add the framework module as required dependency
-         DependencySpec.Builder depBuilder = specBuilder.addDependency(frameworkIdentifier);
-         depBuilder.setExport(false); // no re-export
-
-         // Add the exported packages as paths
-         List<String> exportPaths = new ArrayList<String>();
-         for (XPackageCapability cap : resModule.getPackageCapabilities())
-            exportPaths.add(getPathFromPackageName(cap.getName()));
-
-         // Add the bundle's {@link ResourceLoader}
-         specBuilder.addRoot("[TODO] What Value?", new VirtualFileResourceLoader(rootFile, exportPaths));
-
+         ModuleDependencySpec.Builder frameworkDependencyBuilder = ModuleDependencySpec.build(frameworkIdentifier);
+         frameworkDependencyBuilder.setExportFilter(PathFilters.acceptAll()); // [REARCH] Review why all imports must be accepted
+         frameworkDependencyBuilder.setImportFilter(PathFilters.acceptAll());
+         specBuilder.addModuleDependency(frameworkDependencyBuilder.create());
+         
+         // Add a local dependency for the local bundle content
+         specBuilder.addResourceRoot(new VirtualFileResourceLoader(rootFile));
+         specBuilder.addLocalDependency();
+         
          // Map the dependency builder for (the likely) case that the same exporter is choosen for multiple wires
-         Map<XModule, DependencySpec.Builder> depBuilders = new HashMap<XModule, DependencySpec.Builder>();
-         depBuilders.put(bundleManager.getSystemBundle().getResolverModule(), depBuilder);
+         class DependencyHolder
+         {
+            ModuleDependencySpec.Builder builder;
+            List<PathFilter> importFilters;
+         }
+         Map<XModule, DependencyHolder> depHolders = new HashMap<XModule, DependencyHolder>();
 
          // For every {@link XWire} add a dependency on the exporter
          // The resolver module will have wires when this method is 
@@ -301,23 +325,26 @@ public class ModuleManager extends ModuleLoader
 
             // Get or create the dependency builder for the exporter
             ModuleIdentifier exporterId = getModuleIdentifier(exporter);
-            depBuilder = depBuilders.get(exporter);
-            if (depBuilder == null)
+            DependencyHolder depHolder = depHolders.get(exporter);
+            if (depHolder == null)
             {
-               depBuilder = specBuilder.addDependency(exporterId);
-               depBuilders.put(exporter, depBuilder);
+               depHolder = new DependencyHolder();
+               depHolder.builder = ModuleDependencySpec.build(exporterId);
+               depHolders.put(exporter, depHolder);
             }
 
             // Dependency for Import-Package
             if (req instanceof XPackageRequirement)
             {
+               if (depHolder.importFilters == null)
+                  depHolder.importFilters = new ArrayList<PathFilter>();
+               
                String path = getPathFromPackageName(req.getName());
-               depBuilder.addImportInclude(path);
-               depBuilder.setExport(false); // no re-export
+               depHolder.importFilters.add(PathFilters.include(path));
                continue;
             }
 
-            // Dependency for Require-Bundle
+            /* [REARCH] Dependency for Require-Bundle
             if (req instanceof XRequireBundleRequirement)
             {
                XRequireBundleRequirement bndreq = (XRequireBundleRequirement)req;
@@ -325,54 +352,28 @@ public class ModuleManager extends ModuleLoader
                depBuilder.setExport(reexport);
                continue;
             }
+            */
          }
 
-         ModuleClassLoaderFactory loaderFactory = new ModuleClassLoaderFactory()
+         // Add the bundle dependencies
+         for (DependencyHolder depHolder : depHolders.values())
          {
-            @Override
-            public ModuleClassLoader getModuleClassLoader(Module module, ModuleSpec moduleSpec)
-            {
-               return new OSGiModuleClassLoader(bundleManager, resModule, module, moduleSpec);
-            }
-         };
-         specBuilder.setClassLoaderFactory(loaderFactory);
+            ModuleDependencySpec.Builder bundleDependencyBuilder = depHolder.builder;
+            if (depHolder.importFilters != null)
+               bundleDependencyBuilder.setImportFilter(PathFilters.any(depHolder.importFilters));
+            
+            ModuleDependencySpec bundleDependency = bundleDependencyBuilder.create();
+            specBuilder.addModuleDependency(bundleDependency);
+         }
+         
+         
          moduleSpec = specBuilder.create();
       }
 
-      log.debug("Created " + moduleSpec.toLongString(new StringBuffer()));
+      // [REARCH] log.debug("Created " + moduleSpec.toLongString(new StringBuffer()));
       AbstractBundle bundleState = (AbstractBundle)resModule.getAttachment(Bundle.class);
-      modules.put(moduleSpec.getIdentifier(), new ModuleHolder(bundleState, moduleSpec));
+      modules.put(moduleSpec.getModuleIdentifier(), new ModuleHolder(bundleState, moduleSpec));
       return moduleSpec;
-   }
-
-   /**
-    * Create the {@link Framework} module from the give resolver module definition.
-    */
-   public ModuleSpec createFrameworkModule(final XModule resModule)
-   {
-      if (frameworkIdentifier != null)
-         throw new IllegalStateException("Framework module already created");
-
-      frameworkIdentifier = getModuleIdentifier(resModule, 0);
-      ModuleSpec.Builder builder = ModuleSpec.build(frameworkIdentifier);
-
-      // The Framework ModuleSpec has no associated {@link ModuleContentLoader}
-      // Instead, we use a {@link ModuleClassLoaderFactory} that reports the 
-      // exported paths through {@link ModuleClassLoader#getExportedPaths()} 
-      ModuleClassLoaderFactory loaderFactory = new ModuleClassLoaderFactory()
-      {
-         @Override
-         public ModuleClassLoader getModuleClassLoader(Module module, ModuleSpec moduleSpec)
-         {
-            return new FrameworkModuleClassLoader(bundleManager, resModule, module);
-         }
-      };
-      builder.setClassLoaderFactory(loaderFactory);
-      ModuleSpec frameworkSpec = builder.create();
-
-      AbstractBundle bundleState = (AbstractBundle)resModule.getAttachment(Bundle.class);
-      modules.put(frameworkIdentifier, new ModuleHolder(bundleState, frameworkSpec));
-      return frameworkSpec;
    }
 
    private String getPathFromPackageName(String packageName)
