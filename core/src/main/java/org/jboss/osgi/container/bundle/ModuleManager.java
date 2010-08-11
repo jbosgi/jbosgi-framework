@@ -23,6 +23,7 @@ package org.jboss.osgi.container.bundle;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -33,8 +34,10 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.AssertionSetting;
 import org.jboss.modules.LocalDependencySpec;
 import org.jboss.modules.Module;
+import org.jboss.modules.Module.ModuleClassLoaderFactory;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleIdentifier;
@@ -44,8 +47,10 @@ import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.PathFilter;
 import org.jboss.modules.PathFilters;
+import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.container.loading.FrameworkLocalLoader;
 import org.jboss.osgi.container.loading.JBossLoggingModuleLogger;
+import org.jboss.osgi.container.loading.ModuleClassLoaderExt;
 import org.jboss.osgi.container.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
@@ -72,7 +77,7 @@ public class ModuleManager extends ModuleLoader
    // Provide logging
    private static final Logger log = Logger.getLogger(ModuleManager.class);
 
-   // the bundle manager
+   // The bundle manager
    private BundleManager bundleManager;
    // The framework module identifier
    private ModuleIdentifier frameworkIdentifier;
@@ -88,6 +93,16 @@ public class ModuleManager extends ModuleLoader
 
       // Set the {@link ModuleLogger}
       Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
+      
+      // Set the {@link ModuleClassLoaderFactory}
+      Module.setModuleClassLoaderFactory(new ModuleClassLoaderFactory()
+      {
+         @Override
+         public ModuleClassLoader getModuleClassLoader(Module module, AssertionSetting assertionSetting, Collection<ResourceLoader> resourceLoaders)
+         {
+            return new ModuleClassLoaderExt(module, assertionSetting, resourceLoaders);
+         }
+      });
 
       // Make sure this ModuleLoader is used
       // This also registers the URLStreamHandlerFactory
@@ -147,13 +162,19 @@ public class ModuleManager extends ModuleLoader
       return identifier;
    }
 
+   public BundleManager getBundleManager()
+   {
+      return bundleManager;
+   }
+
    /**
-    * Get the bundle from a module identifier 
+    * Get the bundle from a module identifier
+    * [REARCH] why does this not return a revision? 
     */
-   public AbstractBundle getBundle(ModuleIdentifier identifier)
+   public AbstractBundle getBundleState(ModuleIdentifier identifier)
    {
       ModuleHolder holder = getModuleHolder(identifier);
-      return holder != null ? holder.getBundle() : null;
+      return holder != null ? holder.getBundleState() : null;
    }
 
    /**
@@ -273,7 +294,7 @@ public class ModuleManager extends ModuleLoader
       LocalDependencySpec.Builder depBuilder = LocalDependencySpec.build(frameworkLoader, frameworkLoader.getExportedPaths());
       depBuilder.setImportFilter(PathFilters.acceptAll()); // [REARCH] Review why all imports must be accepted
       depBuilder.setExportFilter(PathFilters.acceptAll());
-      
+
       builder.addLocalDependency(depBuilder.create());
       ModuleSpec frameworkSpec = builder.create();
 
@@ -298,12 +319,12 @@ public class ModuleManager extends ModuleLoader
          frameworkDependencyBuilder.setExportFilter(PathFilters.acceptAll()); // [REARCH] Review why all imports must be accepted
          frameworkDependencyBuilder.setImportFilter(PathFilters.acceptAll());
          specBuilder.addModuleDependency(frameworkDependencyBuilder.create());
-         
+
          // Add a local dependency for the local bundle content
          for (VirtualFile contentRoot : contentRoots)
             specBuilder.addResourceRoot(new VirtualFileResourceLoader(contentRoot));
          specBuilder.addLocalDependency();
-         
+
          // Map the dependency builder for (the likely) case that the same exporter is choosen for multiple wires
          class DependencyHolder
          {
@@ -339,7 +360,7 @@ public class ModuleManager extends ModuleLoader
             {
                if (depHolder.importFilters == null)
                   depHolder.importFilters = new ArrayList<PathFilter>();
-               
+
                String path = getPathFromPackageName(req.getName());
                depHolder.importFilters.add(PathFilters.include(path));
                continue;
@@ -362,12 +383,11 @@ public class ModuleManager extends ModuleLoader
             ModuleDependencySpec.Builder bundleDependencyBuilder = depHolder.builder;
             if (depHolder.importFilters != null)
                bundleDependencyBuilder.setImportFilter(PathFilters.any(depHolder.importFilters));
-            
+
             ModuleDependencySpec bundleDependency = bundleDependencyBuilder.create();
             specBuilder.addModuleDependency(bundleDependency);
          }
-         
-         
+
          moduleSpec = specBuilder.create();
       }
 
@@ -394,7 +414,8 @@ public class ModuleManager extends ModuleLoader
     */
    protected static class ModuleHolder
    {
-      private AbstractBundle bundle;
+      // [REARCH] Should this not hold a revision? 
+      private AbstractBundle bundleState;
       private ModuleSpec moduleSpec;
       private Module module;
 
@@ -404,13 +425,13 @@ public class ModuleManager extends ModuleLoader
             throw new IllegalArgumentException("Null bundle");
          if (moduleSpec == null)
             throw new IllegalArgumentException("Null moduleSpec");
-         this.bundle = bundle;
+         this.bundleState = bundle;
          this.moduleSpec = moduleSpec;
       }
 
-      AbstractBundle getBundle()
+      AbstractBundle getBundleState()
       {
-         return bundle;
+         return bundleState;
       }
 
       ModuleSpec getModuleSpec()

@@ -31,7 +31,6 @@ import java.util.Set;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.LocalLoader;
-import org.jboss.modules.Module;
 import org.jboss.modules.Resource;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
@@ -45,7 +44,7 @@ import org.jboss.osgi.spi.NotImplementedException;
  * @author thomas.diesler@jboss.com
  * @since 08-Jul-2010
  */
-public class FrameworkLocalLoader extends AbstractLocalLoader
+public class FrameworkLocalLoader implements LocalLoader
 {
    // Provide logging
    private static final Logger log = Logger.getLogger(FrameworkLocalLoader.class);
@@ -148,5 +147,16 @@ public class FrameworkLocalLoader extends AbstractLocalLoader
    public Resource loadResourceLocal(String root, String name)
    {
       throw new NotImplementedException();
+   }
+
+   private String getPathFromClassName(final String className)
+   {
+      int idx = className.lastIndexOf('.');
+      return idx > -1 ? getPathFromPackageName(className.substring(0, idx)) : "";
+   }
+   
+   private String getPathFromPackageName(String packageName)
+   {
+      return packageName.replace('.', File.separatorChar);
    }
 }

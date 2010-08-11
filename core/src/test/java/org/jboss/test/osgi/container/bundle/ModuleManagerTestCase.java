@@ -56,11 +56,11 @@ public class ModuleManagerTestCase
       Object ex3 = mm.createModule(3);
       
       assertEquals("Should return the module with the highest revision",
-            ex3, mm.getBundle(new ModuleIdentifier("test", "test", "0.0.0")));
+            ex3, mm.getBundleState(new ModuleIdentifier("test", "test", "0.0.0")));
 
-      assertEquals(ex1, mm.getBundle(new ModuleIdentifier("test", "test", "0.0.0-rev0")));
-      assertEquals(ex2, mm.getBundle(new ModuleIdentifier("test", "test", "0.0.0-rev1")));
-      assertNull(mm.getBundle(new ModuleIdentifier("test", "test", "0.0.0-rev2")));
+      assertEquals(ex1, mm.getBundleState(new ModuleIdentifier("test", "test", "0.0.0-rev0")));
+      assertEquals(ex2, mm.getBundleState(new ModuleIdentifier("test", "test", "0.0.0-rev1")));
+      assertNull(mm.getBundleState(new ModuleIdentifier("test", "test", "0.0.0-rev2")));
    }
 
    @Test

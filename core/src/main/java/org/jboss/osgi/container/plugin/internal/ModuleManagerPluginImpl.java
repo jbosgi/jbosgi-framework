@@ -86,7 +86,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    @Override
    public AbstractBundle getBundle(ModuleIdentifier identifier)
    {
-      return moduleManager.getBundle(identifier);
+      return moduleManager.getBundleState(identifier);
    }
 
    @Override

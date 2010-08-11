@@ -22,153 +22,68 @@
 package org.jboss.osgi.container.loading;
 
 import java.io.File;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.LocalLoader;
+import org.jboss.modules.AssertionSetting;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
-import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
-import org.jboss.osgi.spi.NotImplementedException;
-import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
- * A {@link LocalLoader} for the bundle content.
+ * An OSGi extention to the {@link ModuleClassLoader}.
  * 
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class BundleLocalLoader extends AbstractLocalLoader
+public class ModuleClassLoaderExt extends ModuleClassLoader
 {
    // Provide logging
-   private static final Logger log = Logger.getLogger(BundleLocalLoader.class);
+   private static final Logger log = Logger.getLogger(ModuleClassLoaderExt.class);
 
    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
+   private ModuleManager moduleManager;
    private BundleManager bundleManager;
-   private ModuleManagerPlugin moduleManager;
-   private SystemPackagesPlugin systemPackages;
-   private ResourceLoader resourceLoader;
-   private Set<String> loaderPaths;
    private XModule resModule;
-
-   public BundleLocalLoader(BundleManager bundleManager, XModule resModule, VirtualFile rootFile)
-   {
-      this.bundleManager = bundleManager;
-      this.resModule = resModule;
-      
-      moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
-      systemPackages = bundleManager.getPlugin(SystemPackagesPlugin.class);
-      
-      resourceLoader = new VirtualFileResourceLoader(rootFile);
-      loaderPaths = new HashSet<String>(resourceLoader.getPaths());
-      loaderPaths = Collections.unmodifiableSet(loaderPaths);
-   }
-
-   public Set<String> getLoaderPaths()
-   {
-      return loaderPaths;
-   }
    
-   @Override
-   public Class<?> loadClassLocal(String name, boolean resolve)
+   public ModuleClassLoaderExt(Module module, AssertionSetting setting, Collection<ResourceLoader> resourceLoaders)
    {
-      throw new NotImplementedException();
+      super(module, setting, resourceLoaders);
+      moduleManager = (ModuleManager)module.getModuleLoader();
+      bundleManager = moduleManager.getBundleManager();
+      
+      AbstractBundle bundle = moduleManager.getBundleState(module.getIdentifier());
+      resModule = bundle.getResolverModule();
    }
 
    @Override
-   public List<Resource> loadResourceLocal(String name)
+   protected Class<?> findClass(String className, boolean exportsOnly, boolean resolve) throws ClassNotFoundException
    {
-      throw new NotImplementedException();
-   }
-
-   @Override
-   public Resource loadResourceLocal(String root, String name)
-   {
-      throw new NotImplementedException();
-   }
-   
-   /* [REARCH]
-   @Override
-   protected Class<?> findClass(String className, boolean exportsOnly) throws ClassNotFoundException
-   {
-      // Check if we have already loaded it..
-      Class<?> loadedClass = findLoadedClass(className);
-      if (loadedClass != null)
-         return loadedClass;
-
       Class<?> result = null;
-      
-      boolean traceEnabled = log.isTraceEnabled();
-      if (traceEnabled)
-         log.trace("Attempt to find class [" + className + "] in " + getModule() + " ...");
-      
-      String packageName = className.substring(0, className.lastIndexOf('.'));
-      String path = getPathFromPackageName(packageName);
-      
-      // Delegate to framework loader for boot delegation 
-      if (systemPackages.isBootDelegationPackage(packageName))
-      {
-         if (traceEnabled)
-            log.trace("Load class through boot delegation [" + className + "] ...");
-         
-         return getSystemClassLoader().loadClass(className);
-      }
-
-      // Try the Module delegation graph
-      if (importedPaths == null || importedPaths.contains(path))
-      {
-         try
-         {
-            result = super.findClass(className, exportsOnly);
-            if (result != null)
-            {
-               if (traceEnabled)
-                  log.trace("Found class [" + className + "] in imports " + getModule());
-               return result;
-            }
-         }
-         catch (ClassNotFoundException ex)
-         {
-            if (traceEnabled)
-               log.trace("Cannot find class [" + className + "] in imports " + getModule());
-         }
-      }
-
-      // Try the Module local content
       try
       {
-         result = loadClassLocal(className, exportsOnly);
+         result = super.findClass(className, exportsOnly, resolve);
          if (result != null)
-         {
-            if (traceEnabled)
-               log.trace("Found class [" + className + "] local in " + getModule());
             return result;
-         }
       }
       catch (ClassNotFoundException ex)
       {
-         if (traceEnabled)
-            log.trace("Cannot find class [" + className + "] local in " + getModule());
+         // ignore
       }
-
+      
       // Try to load the class dynamically
       if (findMatchingDynamicImportPattern(className) != null)
       {
@@ -176,10 +91,9 @@ public class BundleLocalLoader extends AbstractLocalLoader
          if (result != null)
             return result;
       }
-
-      throw new ClassNotFoundException(className);
+      
+      throw new ClassNotFoundException(className + " from [" + getModule() + "]");
    }
-   */
 
    private Class<?> loadClassDynamically(String className) throws ClassNotFoundException
    {
@@ -354,5 +268,16 @@ public class BundleLocalLoader extends AbstractLocalLoader
       }
 
       return null;
+   }
+
+   private String getPathFromClassName(final String className)
+   {
+      int idx = className.lastIndexOf('.');
+      return idx > -1 ? getPathFromPackageName(className.substring(0, idx)) : "";
+   }
+   
+   private String getPathFromPackageName(String packageName)
+   {
+      return packageName.replace('.', File.separatorChar);
    }
 }
