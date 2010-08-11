@@ -19,33 +19,21 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.container.nativecode;
+package org.jboss.osgi.container.plugin;
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.junit.Test;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
+import org.jboss.osgi.container.bundle.AbstractRevision;
+import org.jboss.osgi.deployment.deployer.Deployment;
+
 
 /**
- * Test NativeCode-Library functionality
+ * The bundle native code plugin
  * 
  * @author thomas.diesler@jboss.com
- * @since 21-Jan-2010
+ * @since 11-Aug-2010
  */
-public class NativeCodeTestCase extends OSGiFrameworkTest
+public interface NativeCodePlugin extends Plugin
 {
-   @Test
-   public void testNativeCode() throws Exception
-   {
-      BundleContext context = getFramework().getBundleContext();
-
-      Bundle bundleA = context.installBundle(getTestArchivePath("simple-nativecode.jar"));
-      assertBundleState(Bundle.INSTALLED, bundleA.getState());
-
-      bundleA.start();
-      assertBundleState(Bundle.ACTIVE, bundleA.getState());
-
-      bundleA.uninstall();
-      assertBundleState(Bundle.UNINSTALLED, bundleA.getState());
-   }
+   void deployNativeCode(Deployment deployment);
+   
+   void resolveNativeCode(AbstractRevision bundleRev);
 }

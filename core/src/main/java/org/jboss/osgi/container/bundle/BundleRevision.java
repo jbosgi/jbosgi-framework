@@ -55,7 +55,7 @@ import org.osgi.framework.BundleException;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-public class BundleRevision extends AbstractBundleRevision
+public class BundleRevision extends AbstractRevision
 {
    private static final Logger log = Logger.getLogger(BundleRevision.class);
 
@@ -72,9 +72,10 @@ public class BundleRevision extends AbstractBundleRevision
       // Create the resolver module
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
       resolverModule = builder.createModule(getRevisionID(), getOSGiMetaData());
+      resolverModule.addAttachment(AbstractRevision.class, this);
       resolverModule.addAttachment(Bundle.class, internalBundle);
 
-      // In case this bundle is a module.xml deployment, we already have a ModuleSpec
+      // In case we already have a ModuleSpec
       ModuleSpec moduleSpec = dep.getAttachment(ModuleSpec.class);
       if (moduleSpec != null)
          resolverModule.addAttachment(ModuleSpec.class, moduleSpec);
@@ -103,7 +104,7 @@ public class BundleRevision extends AbstractBundleRevision
          throw new ClassNotFoundException("Class '" + className + "' not found in: " + this);
 
       // Load the class through the module
-      ModuleClassLoader loader = getBundleClassLoader();
+      ModuleClassLoader loader = getModuleClassLoader();
       return loader.loadClass(className);
    }
 
@@ -114,7 +115,7 @@ public class BundleRevision extends AbstractBundleRevision
 
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
       if (getInternalBundle().ensureResolved() == true)
-         return getBundleClassLoader().getResource(path);
+         return getModuleClassLoader().getResource(path);
 
       // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
       return getEntry(path);
@@ -128,7 +129,7 @@ public class BundleRevision extends AbstractBundleRevision
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
       if (getInternalBundle().ensureResolved() == true)
       {
-         Enumeration<URL> resources = getBundleClassLoader().getResources(path);
+         Enumeration<URL> resources = getModuleClassLoader().getResources(path);
          return resources.hasMoreElements() ? resources : null;
       }
 

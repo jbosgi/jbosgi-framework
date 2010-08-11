@@ -74,40 +74,39 @@ public abstract class AbstractBundle implements Bundle
 {
    private static final Logger log = Logger.getLogger(AbstractBundle.class);
 
-   private AbstractBundleContext bundleContext;
+   private final BundleManager bundleManager;
+   private final String symbolicName;
    private final long bundleId;
-   private AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
+   private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
+
+   private AbstractBundleContext bundleContext;
    private BundleWrapper bundleWrapper;
    private long lastModified = System.currentTimeMillis();
-   private CopyOnWriteArrayList<ServiceState> registeredServices;
-   private final String symbolicName;
-   private ConcurrentHashMap<ServiceState, AtomicInteger> usedServices;
+   private List<ServiceState> registeredServices;
+   private Map<ServiceState, AtomicInteger> usedServices;
 
    // Cache commonly used plugins
-   private final BundleManager bundleManager;
    private FrameworkEventsPlugin eventsPlugin;
    private LifecycleInterceptorPlugin interceptorPlugin;
    private ResolverPlugin resolverPlugin;
    private ServiceManagerPlugin servicePlugin;
 
-   AbstractBundle(BundleManager bundleManager, String bsn)
+   AbstractBundle(BundleManager bundleManager, String symbolicName)
    {
       if (bundleManager == null)
          throw new IllegalArgumentException("Null bundleManager");
-      if (bsn == null)
+      if (symbolicName == null)
          throw new IllegalArgumentException("Null symbolicName");
 
       // strip-off the directives
-      if (bsn.indexOf(';') > 0)
-         bsn = bsn.substring(0, bsn.indexOf(';'));
+      if (symbolicName.indexOf(';') > 0)
+         symbolicName = symbolicName.substring(0, symbolicName.indexOf(';'));
 
       this.bundleManager = bundleManager;
-      this.symbolicName = bsn;
+      this.symbolicName = symbolicName;
 
-      if (bsn.equals(Constants.SYSTEM_BUNDLE_SYMBOLICNAME) == false)
-         bundleId = bundleManager.getNextBundleId();
-      else
-         bundleId = 0;
+      boolean systemBundle = symbolicName.equals(Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+      this.bundleId = (systemBundle ? 0 : bundleManager.getNextBundleId());
    }
 
    public abstract void addToResolver();
@@ -121,7 +120,7 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public abstract String getLocation();
 
-   abstract OSGiMetaData getOSGiMetaData();
+   public abstract OSGiMetaData getOSGiMetaData();
 
    /** 
     * This method returns the current resolver module of the bundle.
@@ -207,6 +206,11 @@ public abstract class AbstractBundle implements Bundle
    public String getSymbolicName()
    {
       return symbolicName;
+   }
+
+   public String getCanonicalName()
+   {
+      return getSymbolicName() + ":" + getVersion();
    }
 
    public void addRegisteredService(ServiceState serviceState)
@@ -606,7 +610,7 @@ public abstract class AbstractBundle implements Bundle
       }
       return entryURL;
    }
-   
+
    /**
     * The framework must search for localization entries using the follow-
     * ing search rules based on the bundle type:
@@ -677,6 +681,6 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public String toString()
    {
-      return symbolicName + ":" + getVersion();
+      return getCanonicalName();
    }
 }

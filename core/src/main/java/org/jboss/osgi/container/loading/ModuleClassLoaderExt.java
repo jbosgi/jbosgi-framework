@@ -22,10 +22,12 @@
 package org.jboss.osgi.container.loading;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
@@ -53,9 +55,12 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
    private static final Logger log = Logger.getLogger(ModuleClassLoaderExt.class);
 
    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
-   private ModuleManager moduleManager;
-   private BundleManager bundleManager;
-   private XModule resModule;
+   private final ModuleManager moduleManager;
+   private final BundleManager bundleManager;
+   private final XModule resModule;
+   
+   // List of native library providers 
+   private volatile List<NativeLibraryProvider> nativeLibraries;
    
    public ModuleClassLoaderExt(Module module, AssertionSetting setting, Collection<ResourceLoader> resourceLoaders)
    {
@@ -65,6 +70,48 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
       
       AbstractBundle bundle = moduleManager.getBundleState(module.getIdentifier());
       resModule = bundle.getResolverModule();
+   }
+
+   public void addNativeLibrary(NativeLibraryProvider libProvider)
+   {
+      if (nativeLibraries == null)
+         nativeLibraries = new CopyOnWriteArrayList<NativeLibraryProvider>();
+      
+      nativeLibraries.add(libProvider);
+   }
+   
+   @Override
+   protected String findLibrary(String libname)
+   {
+      List<NativeLibraryProvider> list = nativeLibraries;
+      if (list == null)
+         return null;
+      
+      NativeLibraryProvider libProvider = null;
+      for (NativeLibraryProvider aux : list)
+      {
+         if (libname.equals(aux.getLibraryName()))
+         {
+            libProvider = aux;
+            break;
+         }
+      }
+      
+      if (libProvider == null)
+         return null;
+      
+      File libfile;
+      try
+      {
+         libfile = libProvider.getLibraryLocation();
+      }
+      catch (IOException ex)
+      {
+         log.error("Cannot privide native library location for: " + libname, ex);
+         return null;
+      }
+      
+      return libfile.getAbsolutePath();
    }
 
    @Override

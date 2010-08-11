@@ -31,12 +31,16 @@ import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.container.bundle.AbstractBundle;
+import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.container.bundle.Revision;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
+import org.jboss.osgi.container.plugin.NativeCodePlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResolverCallback;
@@ -58,13 +62,17 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    final Logger log = Logger.getLogger(ResolverPluginImpl.class);
 
    // The resolver delegate
-   private XResolver resolver;
+   private final XResolver resolver;
+   private final NativeCodePlugin nativeCodePlugin;
+   private final ModuleManagerPlugin moduleManger;
 
    public ResolverPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
       resolver = XResolverFactory.getResolver();
       resolver.setCallbackHandler(new ResolverCallback());
+      nativeCodePlugin = getOptionalPlugin(NativeCodePlugin.class);
+      moduleManger = getPlugin(ModuleManagerPlugin.class);
    }
 
    @Override
@@ -102,16 +110,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       }
 
       // Load the resolved module
-      ModuleManagerPlugin moduleManger = getPlugin(ModuleManagerPlugin.class);
-      ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(resModule);
-      try
-      {
-         moduleManger.loadModule(identifier);
-      }
-      catch (ModuleLoadException ex)
-      {
-         throw new BundleException("Cannot load module: " + identifier, ex);
-      }
+      resolveModuleInFramework(resModule);
    }
 
    @Override
@@ -149,27 +148,41 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
          }
       }
 
-      ModuleManagerPlugin moduleManger = getPlugin(ModuleManagerPlugin.class);
-
       // Convert results into revisions
       List<Revision> result = new ArrayList<Revision>();
       for (XModule resModule : resolved)
       {
          Revision rev = resModule.getAttachment(Revision.class);
-         ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(resModule);
-         try
-         {
-            moduleManger.loadModule(identifier);
-            result.add(rev);
-         }
-         catch (ModuleLoadException ex)
-         {
-            throw new IllegalStateException("Cannot load module: " + identifier, ex);
-         }
+         resolveModuleInFramework(resModule);
+         result.add(rev);
       }
       return Collections.unmodifiableList(result);
    }
 
+   private void resolveModuleInFramework(XModule resModule)
+   {
+      ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(resModule);
+      try
+      {
+         moduleManger.loadModule(identifier);
+      }
+      catch (ModuleLoadException ex)
+      {
+         throw new IllegalStateException("Cannot load module: " + identifier, ex);
+      }
+      
+      if (resModule.getModuleId() != 0)
+      {
+         AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
+         Deployment deployment = bundleRev.getDeployment();
+         
+         // Resolve the native code libraries, if there are any
+         NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
+         if (nativeCodePlugin != null && libMetaData != null)
+            nativeCodePlugin.resolveNativeCode(bundleRev);
+      }
+   }
+   
    class ResolverCallback implements XResolverCallback
    {
       private ModuleManagerPlugin moduleManager;
@@ -192,9 +205,10 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
          if (moduleManager == null)
             moduleManager = getPlugin(ModuleManagerPlugin.class);
 
+         log.debug("Mark resolved: " + resModule);
          moduleManager.createModuleSpec(resModule);
 
-         log.debug("Mark resolved: " + resModule);
+         // Change the bundle state to RESOLVED
          Bundle bundle = resModule.getAttachment(Bundle.class);
          AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
          bundleState.changeState(Bundle.RESOLVED);

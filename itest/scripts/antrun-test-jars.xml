@@ -79,9 +79,8 @@
     <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/fragments-simple-fragC.jar" files="${tests.resources.dir}/fragments/simple-fragC.bnd" />
     -->
   	
-    <!-- nativecode - ->
+    <!-- nativecode -->
     <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/simple-nativecode.jar" files="${tests.resources.dir}/nativecode/simple-nativecode.bnd" />
-    -->
   	
     <!-- simple -->
     <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/simple-husky.jar" files="${tests.resources.dir}/simple/simple-husky.bnd" />

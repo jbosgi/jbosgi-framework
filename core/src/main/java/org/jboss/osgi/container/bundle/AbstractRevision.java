@@ -45,11 +45,12 @@ import org.osgi.framework.Version;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-public abstract class AbstractBundleRevision implements Revision
+public abstract class AbstractRevision implements Revision
 {
    // Ordinary revision IDs start at 1, as 0 is the System Bundle Revision ID.
    private static final AtomicInteger revisionIDCounter = new AtomicInteger(1);
 
+   private Deployment deployment;
    private final InternalBundle internalBundle;
    private final OSGiMetaData metadata;
    private final int id = revisionIDCounter.getAndIncrement();
@@ -60,22 +61,19 @@ public abstract class AbstractBundleRevision implements Revision
    // Cache commonly used plugins
    private ModuleManagerPlugin modulePlugin;
 
-   AbstractBundleRevision(InternalBundle internalBundle, Deployment dep, int revision)
+   AbstractRevision(InternalBundle internalBundle, Deployment deployment, int revision)
    {
       this.internalBundle = internalBundle;
-      this.metadata = dep.getAttachment(OSGiMetaData.class);
+      this.deployment = deployment;
       this.revision = revision;
-      this.version = metadata.getBundleVersion();
-
+      
+      this.metadata = deployment.getAttachment(OSGiMetaData.class);
       if (metadata == null)
          throw new IllegalArgumentException("Null metadata");
-   }
-
-   ModuleClassLoader getBundleClassLoader()
-   {
-      ModuleIdentifier identifier = internalBundle.getModuleIdentifier();
-      Module module = getModuleManagerPlugin().getModule(identifier);
-      return module != null ? module.getClassLoader() : null;
+      
+      this.version = metadata.getBundleVersion();
+      
+      this.modulePlugin = getBundleManager().getPlugin(ModuleManagerPlugin.class);
    }
 
    public BundleManager getBundleManager()
@@ -88,10 +86,20 @@ public abstract class AbstractBundleRevision implements Revision
       return internalBundle;
    }
 
+   public Deployment getDeployment()
+   {
+      return deployment;
+   }
+
+   public ModuleClassLoader getModuleClassLoader()
+   {
+      ModuleIdentifier identifier = internalBundle.getModuleIdentifier();
+      Module module = getModuleManagerPlugin().getModule(identifier);
+      return module != null ? module.getClassLoader() : null;
+   }
+
    ModuleManagerPlugin getModuleManagerPlugin()
    {
-      if (modulePlugin == null)
-         modulePlugin = getBundleManager().getPlugin(ModuleManagerPlugin.class);
       return modulePlugin;
    }
 

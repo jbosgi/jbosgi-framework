@@ -40,6 +40,7 @@ import org.jboss.osgi.container.plugin.DeployerServicePlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.LifecycleInterceptorPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
+import org.jboss.osgi.container.plugin.NativeCodePlugin;
 import org.jboss.osgi.container.plugin.PackageAdminPlugin;
 import org.jboss.osgi.container.plugin.Plugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
@@ -52,6 +53,7 @@ import org.jboss.osgi.container.plugin.internal.DeployerServicePluginImpl;
 import org.jboss.osgi.container.plugin.internal.FrameworkEventsPluginImpl;
 import org.jboss.osgi.container.plugin.internal.LifecycleInterceptorPluginImpl;
 import org.jboss.osgi.container.plugin.internal.ModuleManagerPluginImpl;
+import org.jboss.osgi.container.plugin.internal.NativeCodePluginImpl;
 import org.jboss.osgi.container.plugin.internal.PackageAdminPluginImpl;
 import org.jboss.osgi.container.plugin.internal.ResolverPluginImpl;
 import org.jboss.osgi.container.plugin.internal.ServiceManagerPluginImpl;
@@ -102,6 +104,7 @@ public class BundleManager
       plugins.put(FrameworkEventsPlugin.class, new FrameworkEventsPluginImpl(this));
       plugins.put(LifecycleInterceptorPlugin.class, new LifecycleInterceptorPluginImpl(this));
       plugins.put(ModuleManagerPlugin.class, new ModuleManagerPluginImpl(this));
+      plugins.put(NativeCodePlugin.class, new NativeCodePluginImpl(this));
       plugins.put(PackageAdminPlugin.class, new PackageAdminPluginImpl(this));
       plugins.put(ResolverPlugin.class, new ResolverPluginImpl(this));
       plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
@@ -384,17 +387,28 @@ public class BundleManager
 
    private InternalBundle createBundle(Deployment dep) throws BundleException
    {
-      BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
-      OSGiMetaData metadata = plugin.createOSGiMetaData(dep);
+      BundleDeploymentPlugin deploymentPlugin = getPlugin(BundleDeploymentPlugin.class);
+      OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
       if (metadata.getFragmentHost() != null)
-         throw new NotImplementedException("Fragments not support");
+         throw new NotImplementedException("Fragments not supported");
 
       dep.addAttachment(OSGiMetaData.class, metadata);
 
+      // Create the deployed bundle
       InternalBundle bundleState = new InternalBundle(this, dep);
+      dep.addAttachment(InternalBundle.class, bundleState);
       
-      // Validate every deployed bundle (i.e. the system bundle is not validated)
+      // Validate the deployed bundle
+      // The system bundle is not validated
       validateBundle(bundleState);
+      
+      // Process the Bundle-NativeCode header if there is one
+      if (metadata.getBundleNativeCode() != null)
+      {
+         NativeCodePlugin nativeCodePlugin = getOptionalPlugin(NativeCodePlugin.class);
+         if (nativeCodePlugin != null)
+            nativeCodePlugin.deployNativeCode(dep);
+      }
       
       return bundleState;
    }

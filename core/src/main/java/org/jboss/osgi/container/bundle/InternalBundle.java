@@ -72,9 +72,9 @@ public class InternalBundle extends AbstractBundle
    private BundleActivator bundleActivator;
    private final String location;
    // This list contains any revisions of the bundle that are updated by newer ones, but still available
-   private List<AbstractBundleRevision> oldRevisions = new CopyOnWriteArrayList<AbstractBundleRevision>();
+   private List<AbstractRevision> oldRevisions = new CopyOnWriteArrayList<AbstractRevision>();
    // The current revision is the most recent revision of the bundle. 
-   private AbstractBundleRevision currentRevision;
+   private AbstractRevision currentRevision;
    private int startLevel = StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
    private boolean persistentlyStarted;
    private AtomicInteger revisionCounter = new AtomicInteger(0);
@@ -82,10 +82,8 @@ public class InternalBundle extends AbstractBundle
    InternalBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {
       super(bundleManager, deployment.getSymbolicName());
-      location = deployment.getLocation();
-      if (location == null)
-         throw new IllegalArgumentException("Null location");
-
+      this.location = deployment.getLocation();
+      
       currentRevision = new BundleRevision(this, deployment, revisionCounter.getAndIncrement());
 
       StartLevelPlugin sl = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
@@ -133,13 +131,13 @@ public class InternalBundle extends AbstractBundle
       }
 
       // If the bundle has a ClassLoader it is in state {@link Bundle#RESOLVED}
-      return currentRevision.getBundleClassLoader() != null;
+      return currentRevision.getModuleClassLoader() != null;
    }
 
    @Override
    public void removeFromResolver()
    {
-      for (AbstractBundleRevision abr : oldRevisions)
+      for (AbstractRevision abr : oldRevisions)
          getResolverPlugin().removeRevision(abr);
 
       if (currentRevision != null)
@@ -187,11 +185,11 @@ public class InternalBundle extends AbstractBundle
     */
    public void refresh() throws BundleException
    {
-      List<AbstractBundleRevision> oldRevs = oldRevisions;
-      oldRevisions = new CopyOnWriteArrayList<AbstractBundleRevision>();
+      List<AbstractRevision> oldRevs = oldRevisions;
+      oldRevisions = new CopyOnWriteArrayList<AbstractRevision>();
 
       // Remove the old revisions from the resolver
-      for (AbstractBundleRevision abr : oldRevs)
+      for (AbstractRevision abr : oldRevs)
          getResolverPlugin().removeRevision(abr);
    }
    
@@ -571,7 +569,7 @@ public class InternalBundle extends AbstractBundle
    }
 
    @Override
-   OSGiMetaData getOSGiMetaData()
+   public OSGiMetaData getOSGiMetaData()
    {
       return currentRevision.getOSGiMetaData();
    }

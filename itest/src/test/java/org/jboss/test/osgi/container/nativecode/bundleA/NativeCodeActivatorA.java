@@ -46,31 +46,25 @@ public class NativeCodeActivatorA implements BundleActivator
       osAliases.put("OS/2", "OS2");
       osAliases.put("procnto", "QNX");
       // map any winz stuff to plain windows
-      osAliases.put("Win95", "Windows");
-      osAliases.put("Windows 95", "Windows");
-      osAliases.put("Win32", "Windows");
-      osAliases.put("Win98", "Windows");
-      osAliases.put("Windows 98", "Windows");
-      osAliases.put("Win32", "Windows");
-      osAliases.put("WinNT", "Windows");
-      osAliases.put("Windows NT", "Windows");
-      osAliases.put("Win32", "Windows");
-      osAliases.put("WinCE", "Windows");
-      osAliases.put("Windows CE", "Windows");
       osAliases.put("Win2000", "Windows");
-      osAliases.put("Windows 2000", "Windows");
-      osAliases.put("Win32", "Windows");
       osAliases.put("Win2003", "Windows");
+      osAliases.put("Win32", "Windows");
+      osAliases.put("Win95", "Windows");
+      osAliases.put("Win98", "Windows");
+      osAliases.put("WinCE", "Windows");
+      osAliases.put("Windows 2000", "Windows");
       osAliases.put("Windows 2003", "Windows");
-      osAliases.put("Win32", "Windows");
-      osAliases.put("Windows Server 2003", "Windows");
-      osAliases.put("WinXP", "Windows");
-      osAliases.put("Windows XP", "Windows");
-      osAliases.put("Win32", "Windows");
-      osAliases.put("WinVista", "Windows");
-      osAliases.put("Windows Vista", "Windows");
-      osAliases.put("Win32", "Windows");
       osAliases.put("Windows 7", "Windows");
+      osAliases.put("Windows 95", "Windows");
+      osAliases.put("Windows 98", "Windows");
+      osAliases.put("Windows CE", "Windows");
+      osAliases.put("Windows NT", "Windows");
+      osAliases.put("Windows Server 2003", "Windows");
+      osAliases.put("Windows Vista", "Windows");
+      osAliases.put("Windows XP", "Windows");
+      osAliases.put("WinNT", "Windows");
+      osAliases.put("WinVista", "Windows");
+      osAliases.put("WinXP", "Windows");
    }
 
    public void start(BundleContext context) throws BundleException
