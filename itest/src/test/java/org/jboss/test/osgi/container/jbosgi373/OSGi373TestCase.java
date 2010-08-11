@@ -56,6 +56,8 @@ public class OSGi373TestCase extends OSGiFrameworkTest
    @Test
    public void testServiceLocal() throws Exception
    {
+      // Bundle-SymbolicName: osgi373.bundleA
+      // Export-Package: org.jboss.test.osgi.container.jbosgi373
       Archive<?> archiveA = assembleArchive("bundleA", "/osgi373/bundleA", OSGi373Service.class, OSGi373ServiceImpl.class);
       Bundle bundleA = installBundle(archiveA);
       try
@@ -89,10 +91,14 @@ public class OSGi373TestCase extends OSGiFrameworkTest
    @Test
    public void testServiceDependent() throws Exception
    {
+      // Bundle-SymbolicName: osgi373.bundleA
+      // Export-Package: org.jboss.test.osgi.container.jbosgi373
       Archive<?> archiveA = assembleArchive("bundleA", "/osgi373/bundleA", OSGi373Service.class, OSGi373ServiceImpl.class);
       Bundle bundleA = installBundle(archiveA);
       try
       {
+         // Bundle-SymbolicName: osgi373.bundleB
+         // Import-Package: org.jboss.test.osgi.container.jbosgi373
          Archive<?> archiveB = assembleArchive("bundleB", "/osgi373/bundleB", ObjectB.class);
          Bundle bundleB = installBundle(archiveB);
          try

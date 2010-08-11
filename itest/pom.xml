@@ -174,10 +174,6 @@
               <value>${jboss.osgi.framework.properties}</value>
             </property>
             <property>
-              <name>org.jboss.osgi.husky.Invoker</name>
-              <value>org.jboss.osgi.husky.internal.AbstractInvoker</value>
-            </property>
-            <property>
               <name>test.archive.directory</name>
               <value>${project.build.directory}/test-libs</value>
             </property>
