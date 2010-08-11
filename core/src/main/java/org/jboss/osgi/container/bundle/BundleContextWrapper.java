@@ -54,6 +54,11 @@ public class BundleContextWrapper implements BundleContext
       this.delegate = context;
    }
 
+   BundleContext getInternal()
+   {
+      return delegate;
+   }
+
    public String getProperty(String key)
    {
       return delegate.getProperty(key);

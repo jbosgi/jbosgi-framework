@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.container.internal.loading;
+package org.jboss.test.osgi.container.loading;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -31,7 +31,6 @@ import javax.management.MBeanServer;
 import javax.transaction.xa.XAResource;
 
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.FrameworkState;
@@ -52,9 +51,9 @@ import org.osgi.framework.BundleActivator;
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
-public class FrameworkModuleTestCase
+public class FrameworkClassLoaderTestCase
 {
-   static ModuleClassLoader classLoader;
+   static ClassLoader classLoader;
    
    @BeforeClass
    public static void beforeClass() throws Exception
@@ -74,8 +73,8 @@ public class FrameworkModuleTestCase
       
       // Create the Framework module
       ModuleManager moduleManager = new ModuleManager(bundleManager);
-      ModuleSpec moduleSpec = moduleManager.createFrameworkModule(resModule);
-      Module module = moduleManager.loadModule(moduleSpec.getIdentifier());
+      ModuleSpec moduleSpec = moduleManager.createFrameworkSpec(resModule);
+      Module module = moduleManager.loadModule(moduleSpec.getModuleIdentifier());
       classLoader = module.getClassLoader();
    }
    

@@ -21,6 +21,7 @@
  */
 package org.jboss.osgi.container.plugin.internal;
 
+import java.util.List;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
@@ -85,7 +86,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    @Override
    public AbstractBundle getBundle(ModuleIdentifier identifier)
    {
-      return moduleManager.getBundle(identifier);
+      return moduleManager.getBundleState(identifier);
    }
 
    @Override
@@ -96,16 +97,16 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       
       if (resModule.getModuleId() == 0)
       {
-         return moduleManager.createFrameworkModule(resModule);
+         return moduleManager.createFrameworkSpec(resModule);
       }
       else
       {
          // Get the root virtual file
          Bundle bundle = resModule.getAttachment(Bundle.class);
          InternalBundle bundleState = InternalBundle.assertBundleState(bundle);
-         VirtualFile rootFile = bundleState.getRootFile();
+         List<VirtualFile> contentRoots = bundleState.getContentRoots();
 
-         return moduleManager.createModuleSpec(resModule, rootFile);
+         return moduleManager.createModuleSpec(resModule, contentRoots);
       }
    }
 }

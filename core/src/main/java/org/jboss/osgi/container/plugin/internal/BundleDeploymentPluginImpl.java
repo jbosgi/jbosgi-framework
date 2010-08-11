@@ -25,20 +25,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.DependencySpec;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.ModuleActivatorBridge;
-import org.jboss.osgi.container.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -114,31 +108,11 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
             
             // Module-Identifier, Module-Activator
             ModuleIdentifier identifier = metadata.getIdentifier();
-            ModuleSpec.Builder builder = ModuleSpec.build(identifier);
-            builder.setMainClass(metadata.getModuleActivator());
-            
-            // Module-Export-Paths
-            String[] exportPaths = metadata.getExportPaths();
-            List<String> exports = exportPaths != null ? Arrays.asList(exportPaths) : null;
-            builder.addRoot("/", new VirtualFileResourceLoader(rootFile, exports));
-            
-            // Module-Dependencies
-            Dependency[] dependencies = metadata.getDependencies();
-            if (dependencies != null)
-            {
-               for (Dependency dep : dependencies)
-               {
-                  DependencySpec.Builder depBuilder = builder.addDependency(dep.getIdentifier());
-                  depBuilder.setExport(false);
-                  depBuilder.setOptional(false);
-               }
-            }
-            
-            ModuleSpec moduleSpec = builder.create();
             String symbolicName = identifier.getArtifact();
             String version = identifier.getVersion();
+            
             Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, Version.parseVersion(version));
-            dep.addAttachment(ModuleSpec.class, moduleSpec);
+            dep.addAttachment(ModuleMetaData.class, metadata);
             return dep;
          }
       }
@@ -161,7 +135,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          metadata = toOSGiMetaData(dep, info);
 
       // Secondly, we support deployments that contain ModuleSpec
-      ModuleSpec moduleSpec = dep.getAttachment(ModuleSpec.class);
+      ModuleMetaData moduleSpec = dep.getAttachment(ModuleMetaData.class);
       if (metadata == null && moduleSpec != null)
          metadata = toOSGiMetaData(dep, moduleSpec);
 
@@ -177,7 +151,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       return new OSGiManifestMetaData(manifest);
    }
 
-   private OSGiMetaData toOSGiMetaData(Deployment dep, ModuleSpec moduleSpec)
+   private OSGiMetaData toOSGiMetaData(Deployment dep, ModuleMetaData moduleSpec)
    {
       OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
       ModuleIdentifier identifier = moduleSpec.getIdentifier();
@@ -185,8 +159,8 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       builder.addBundleVersion(identifier.getVersion());
 
       // Set the module activator bridge
-      if (moduleSpec.getMainClass() != null)
-         builder.addBundleActivator(ModuleActivatorBridge.class);
+      if (moduleSpec.getModuleActivator() != null)
+         builder.addBundleActivator(moduleSpec.getModuleActivator());
 
       // Add Export-Package for every path we can find
       try
@@ -216,12 +190,12 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       }
       
       // Add Require-Bundle for every dependency
-      for (DependencySpec depSpec : moduleSpec.getDependencies())
+      for (Dependency depSpec : moduleSpec.getDependencies())
       {
-         ModuleIdentifier depid = depSpec.getModuleIdentifier();
+         ModuleIdentifier depid = depSpec.getIdentifier();
          String name = depid.getArtifact();
          String version = depid.getVersion();
-         boolean optional = depSpec.isOptional();
+         boolean optional = false; //depSpec.isOptional();
 
          // Require-Bundle
          StringBuffer buffer = new StringBuffer(name);

@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -33,9 +32,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
+import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.modules.ModuleActivator;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -116,11 +117,20 @@ public class InternalBundle extends AbstractBundle
    public boolean ensureResolved()
    {
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle 
-      // [TODO] If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired 
-      //        containing a BundleException with details of the reason this bundle could not be resolved. 
-      //        This method must then throw a ClassNotFoundException.
+      // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired 
+      // containing a BundleException with details of the reason this bundle could not be resolved. 
       if (getState() == Bundle.INSTALLED)
-         getResolverPlugin().resolve(Collections.<Revision> singletonList(currentRevision));
+      {
+         try
+         {
+            getResolverPlugin().resolve(currentRevision);
+         }
+         catch (BundleException ex)
+         {
+            FrameworkEventsPlugin plugin = getFrameworkEventsPlugin();
+            plugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, ex);
+         }
+      }
 
       // If the bundle has a ClassLoader it is in state {@link Bundle#RESOLVED}
       return currentRevision.getBundleClassLoader() != null;
@@ -233,19 +243,20 @@ public class InternalBundle extends AbstractBundle
          String bundleActivatorClassName = osgiMetaData.getBundleActivator();
          if (bundleActivatorClassName != null)
          {
-            if (bundleActivatorClassName.equals(ModuleActivatorBridge.class.getName()))
+            Object result = loadClass(bundleActivatorClassName).newInstance();
+            if (result instanceof ModuleActivator)
             {
-               bundleActivator = new ModuleActivatorBridge();
-               bundleActivator.start(getBundleContextInternal());
+               bundleActivator = new ModuleActivatorBridge((ModuleActivator)result);
+               bundleActivator.start(getBundleContext());
+            }
+            else if (result instanceof BundleActivator)
+            {
+               bundleActivator = (BundleActivator)result;
+               bundleActivator.start(getBundleContext());
             }
             else
             {
-               Object result = loadClass(bundleActivatorClassName).newInstance();
-               if (result instanceof BundleActivator == false)
-                  throw new BundleException(bundleActivatorClassName + " is not an implementation of " + BundleActivator.class.getName());
-
-               bundleActivator = (BundleActivator)result;
-               bundleActivator.start(getBundleContext());
+               throw new BundleException(bundleActivatorClassName + " is not an implementation of " + BundleActivator.class.getName());
             }
          }
 
@@ -393,10 +404,10 @@ public class InternalBundle extends AbstractBundle
          // completion of the remaining steps.
          BundleException be = new BundleException("Problem updating bundle");
          be.initCause(e);
-         
+
          if (restart)
             startInternal(Bundle.START_TRANSIENT);
-         
+
          throw be;
       }
 
@@ -428,7 +439,7 @@ public class InternalBundle extends AbstractBundle
       }
    }
 
-   /**
+  /**
     * Creates a new Bundle Revision when the bundle is updated. Multiple Bundle Revisions 
     * can co-exist at the same time.
     * @param input The stream to create the bundle revision from or <tt>null</tt>
@@ -455,7 +466,7 @@ public class InternalBundle extends AbstractBundle
       if (input != null)
          locationURL = bm.storeBundleStream(input);
       else
-         locationURL = currentRevision.getRootFile().getStreamURL();
+         locationURL = currentRevision.getContentRoots().get(0).getStreamURL();
 
       BundleDeploymentPlugin plugin = bm.getPlugin(BundleDeploymentPlugin.class);
       VirtualFile newRootFile = AbstractVFS.getRoot(locationURL);
@@ -582,9 +593,8 @@ public class InternalBundle extends AbstractBundle
       return allModules;
    }
 
-   @Override
-   public VirtualFile getRootFile()
+   public List<VirtualFile> getContentRoots()
    {
-      return currentRevision.getRootFile();
+      return currentRevision.getContentRoots();
    }
 }

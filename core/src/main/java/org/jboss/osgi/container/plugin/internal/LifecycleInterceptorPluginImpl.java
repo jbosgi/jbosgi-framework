@@ -32,6 +32,7 @@ import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
 import org.jboss.osgi.deployment.internal.InvocationContextImpl;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.util.AttachmentSupport;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -74,8 +75,9 @@ public class LifecycleInterceptorPluginImpl extends AbstractPlugin implements Li
             if (inv == null)
             {
                BundleContext context = bundleState.getBundleManager().getSystemContext();
+               VirtualFile rootFile = bundleState.getContentRoots().get(0);
                LifecycleInterceptorAttachments att = new LifecycleInterceptorAttachments();
-               inv = new InvocationContextImpl(context, bundle, bundleState.getRootFile(), att);
+               inv = new InvocationContextImpl(context, bundle, rootFile, att);
                unit.addAttachment(InvocationContext.class, inv);
             }
             return inv;

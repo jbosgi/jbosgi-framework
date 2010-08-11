@@ -18,17 +18,15 @@
   <!-- Limit categories -->
   <!-- ================ -->
 
-  <!-- Show jboss-osgi traces - ->
+  <!-- Show jboss-osgi traces -->
   <category name="org.jboss.osgi">
     <priority value="TRACE" />
   </category>
-  -->
   
-  <!-- Show jboss msc traces - ->
+  <!-- Show jboss msc traces -->
   <category name="org.jboss.modules">
     <priority value="TRACE" />
   </category>
-  -->
 
   <!-- ======================= -->
   <!-- Setup the Root category -->

@@ -46,21 +46,21 @@ import org.osgi.service.log.LogService;
  */
 public class DynamicImportPackageTestCase extends OSGiFrameworkTest
 {
-   private static JavaArchive archiveC;
+   private static JavaArchive archive;
 
    @BeforeClass
    public static void beforeTestCase()
    {
       // Bundle-SymbolicName: dynamic-log-service
       // DynamicImport-Package: org.osgi.service.log
-      archiveC = ShrinkWrap.create(JavaArchive.class, "dynamic-log-service");
-      archiveC.setManifest(new Asset()
+      archive = ShrinkWrap.create(JavaArchive.class, "dynamic-log-service");
+      archive.setManifest(new Asset()
       {
          public InputStream openStream()
          {
             OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
             builder.addBundleManifestVersion(2);
-            builder.addBundleSymbolicName(archiveC.getName());
+            builder.addBundleSymbolicName(archive.getName());
             builder.addDynamicImportPackages("org.osgi.service.log");
             return builder.openStream();
          }
@@ -412,13 +412,13 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   public void testLogServiceAvailableOnInstall() throws Exception
+   public void testPackageAvailableOnInstall() throws Exception
    {
       Bundle cmpd = installBundle("bundles/org.osgi.compendium.jar");
       assertBundleState(Bundle.INSTALLED, cmpd.getState());
       try
       {
-         Bundle bundleC = installBundle(archiveC);
+         Bundle bundleC = installBundle(archive);
          assertBundleState(Bundle.INSTALLED, bundleC.getState());
          try
          {
@@ -438,9 +438,9 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   public void testLogServiceNotAvailableOnInstall() throws Exception
+   public void testPackageNotAvailableOnInstall() throws Exception
    {
-      Bundle bundleC = installBundle(archiveC);
+      Bundle bundleC = installBundle(archive);
       assertBundleState(Bundle.INSTALLED, bundleC.getState());
       try
       {

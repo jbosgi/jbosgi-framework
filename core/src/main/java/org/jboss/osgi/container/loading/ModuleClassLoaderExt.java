@@ -22,146 +22,66 @@
 package org.jboss.osgi.container.loading;
 
 import java.io.File;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.AssertionSetting;
 import org.jboss.modules.Module;
-import org.jboss.modules.Module.Flag;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleSpec;
+import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
-import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
-import org.jboss.osgi.resolver.XRequirement;
-import org.jboss.osgi.resolver.XWire;
 import org.osgi.framework.Bundle;
 
 /**
- * A {@link ModuleClassLoader} that has OSGi semantics.
+ * An OSGi extention to the {@link ModuleClassLoader}.
  * 
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class OSGiModuleClassLoader extends ModuleClassLoader
+public class ModuleClassLoaderExt extends ModuleClassLoader
 {
    // Provide logging
-   private static final Logger log = Logger.getLogger(OSGiModuleClassLoader.class);
+   private static final Logger log = Logger.getLogger(ModuleClassLoaderExt.class);
 
    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
+   private ModuleManager moduleManager;
    private BundleManager bundleManager;
-   private ModuleManagerPlugin moduleManager;
-   private SystemPackagesPlugin systemPackages;
-   private Set<String> importedPaths;
    private XModule resModule;
-
-   public OSGiModuleClassLoader(BundleManager bundleManager, XModule resModule, Module module, ModuleSpec moduleSpec)
+   
+   public ModuleClassLoaderExt(Module module, AssertionSetting setting, Collection<ResourceLoader> resourceLoaders)
    {
-      super(module, Collections.<Flag> emptySet(), AssertionSetting.INHERIT, moduleSpec.getContentLoader());
-      this.bundleManager = bundleManager;
-      this.moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
-      this.systemPackages = bundleManager.getPlugin(SystemPackagesPlugin.class);
-      this.resModule = resModule;
-
-      // Initialize the Module's imported paths
-      List<XWire> wires = resModule.getWires();
-      if (wires != null)
-      {
-         for (XWire wire : wires)
-         {
-            XRequirement req = wire.getRequirement();
-            XModule importer = wire.getImporter();
-            XModule exporter = wire.getExporter();
-            if (exporter == importer)
-               continue;
-
-            // Dependency for Import-Package
-            if (req instanceof XPackageRequirement)
-            {
-               if (importedPaths == null)
-                  importedPaths = new HashSet<String>();
-               
-               String path = getPathFromPackageName(req.getName());
-               importedPaths.add(path);
-            }
-         }
-      }
+      super(module, setting, resourceLoaders);
+      moduleManager = (ModuleManager)module.getModuleLoader();
+      bundleManager = moduleManager.getBundleManager();
+      
+      AbstractBundle bundle = moduleManager.getBundleState(module.getIdentifier());
+      resModule = bundle.getResolverModule();
    }
 
    @Override
-   protected Class<?> findClass(String className, boolean exportsOnly) throws ClassNotFoundException
+   protected Class<?> findClass(String className, boolean exportsOnly, boolean resolve) throws ClassNotFoundException
    {
-      // Check if we have already loaded it..
-      Class<?> loadedClass = findLoadedClass(className);
-      if (loadedClass != null)
-         return loadedClass;
-
       Class<?> result = null;
-      
-      boolean traceEnabled = log.isTraceEnabled();
-      if (traceEnabled)
-         log.trace("Attempt to find class [" + className + "] in " + getModule() + " ...");
-      
-      String packageName = className.substring(0, className.lastIndexOf('.'));
-      String path = getPathFromPackageName(packageName);
-      
-      // Delegate to framework loader for boot delegation 
-      if (systemPackages.isBootDelegationPackage(packageName))
-      {
-         if (traceEnabled)
-            log.trace("Load class through boot delegation [" + className + "] ...");
-         
-         return getSystemClassLoader().loadClass(className);
-      }
-
-      // Try the Module delegation graph
-      if (importedPaths == null || importedPaths.contains(path))
-      {
-         try
-         {
-            result = super.findClass(className, exportsOnly);
-            if (result != null)
-            {
-               if (traceEnabled)
-                  log.trace("Found class [" + className + "] in imports " + getModule());
-               return result;
-            }
-         }
-         catch (ClassNotFoundException ex)
-         {
-            if (traceEnabled)
-               log.trace("Cannot find class [" + className + "] in imports " + getModule());
-         }
-      }
-
-      // Try the Module local content
       try
       {
-         result = loadClassLocal(className, exportsOnly);
+         result = super.findClass(className, exportsOnly, resolve);
          if (result != null)
-         {
-            if (traceEnabled)
-               log.trace("Found class [" + className + "] local in " + getModule());
             return result;
-         }
       }
       catch (ClassNotFoundException ex)
       {
-         if (traceEnabled)
-            log.trace("Cannot find class [" + className + "] local in " + getModule());
+         // ignore
       }
-
+      
       // Try to load the class dynamically
       if (findMatchingDynamicImportPattern(className) != null)
       {
@@ -169,8 +89,8 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
          if (result != null)
             return result;
       }
-
-      throw new ClassNotFoundException(className);
+      
+      throw new ClassNotFoundException(className + " from [" + getModule() + "]");
    }
 
    private Class<?> loadClassDynamically(String className) throws ClassNotFoundException
@@ -341,6 +261,12 @@ public class OSGiModuleClassLoader extends ModuleClassLoader
       return null;
    }
 
+   private String getPathFromClassName(final String className)
+   {
+      int idx = className.lastIndexOf('.');
+      return idx > -1 ? getPathFromPackageName(className.substring(0, idx)) : "";
+   }
+   
    private String getPathFromPackageName(String packageName)
    {
       return packageName.replace('.', File.separatorChar);

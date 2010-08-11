@@ -130,16 +130,16 @@ public class SystemBundle extends AbstractBundle implements Revision
       return resolverModule;
    }
 
+
    @Override
    public List<XModule> getAllResolverModules()
    {
       return Collections.singletonList(resolverModule);
    }
 
-   @Override
-   public VirtualFile getRootFile()
+   public List<VirtualFile> getContentRoots()
    {
-      return null;
+      return Collections.emptyList();
    }
 
    @Override

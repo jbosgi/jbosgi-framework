@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.List;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
@@ -118,7 +119,7 @@ public abstract class AbstractBundleRevision implements Revision
 
    abstract URL getResource(String name);
 
-   public abstract VirtualFile getRootFile();
+   abstract List<VirtualFile> getContentRoots();
 
    abstract Class<?> loadClass(String name) throws ClassNotFoundException;
 
