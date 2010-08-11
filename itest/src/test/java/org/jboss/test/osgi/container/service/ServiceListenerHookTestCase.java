@@ -33,23 +33,19 @@ import java.util.List;
 
 import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
-import org.osgi.framework.hooks.service.EventHook;
-import org.osgi.framework.hooks.service.FindHook;
 import org.osgi.framework.hooks.service.ListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 
 /**
- * Test {@link ListenerHook}, {@link EventHook}, {@link FindHook} functionality.
+ * Test {@link ListenerHook} functionality.
  *
  * @author thomas.diesler@jboss.com
  * @since 20-Mar-2010
  */
-@Ignore("service listener hook")
 public class ServiceListenerHookTestCase extends OSGiFrameworkTest
 {
    @Test

@@ -31,9 +31,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -45,7 +45,6 @@ import org.osgi.framework.hooks.service.FindHook;
  * @author thomas.diesler@jboss.com
  * @since 20-Mar-2010
  */
-@Ignore("service find hook")
 public class ServiceFindHookTestCase extends OSGiFrameworkTest
 {
    @Test
@@ -55,7 +54,7 @@ public class ServiceFindHookTestCase extends OSGiFrameworkTest
       
       final boolean[] allServices = new boolean[4];
       final boolean[] allGood = new boolean[4];
-      final int[] callIndex = new int[1];
+      final AtomicInteger callIndex = new AtomicInteger();
       FindHook hook = new FindHook()
       {
          @Override
@@ -65,15 +64,15 @@ public class ServiceFindHookTestCase extends OSGiFrameworkTest
             assertNotNull("BundleContext not null", context);
             assertNotNull("Service name not null", name);
             assertNull("Filter null", filter);
-            allServices[callIndex[0]] = all;
+            allServices[callIndex.get()] = all;
             assertEquals(2, references.size());
-            if (callIndex[0] == 2)
+            if (callIndex.get() == 2)
             {
                Iterator it = references.iterator();
                it.next();
                it.remove();
             }
-            allGood[callIndex[0]] = true;
+            allGood[callIndex.get()] = true;
          }
       };
 
@@ -90,33 +89,33 @@ public class ServiceFindHookTestCase extends OSGiFrameworkTest
       
       ServiceReference sref = context.getServiceReference(Runnable.class.getName());
       assertNotNull("Reference not null", sref);
-      assertFalse("All services false", allServices[0]);
+      assertFalse("All services false", allServices[callIndex.get()]);
       assertEquals(sref1, sref);
-      assertTrue("All good", allGood[0]);
+      assertTrue("All good", allGood[callIndex.get()]);
       
-      callIndex[0] = 1;
+      callIndex.incrementAndGet();
       ServiceReference[] srefs = context.getServiceReferences(Runnable.class.getName(), null);
       assertNotNull("References not null", srefs);
       assertEquals(2, srefs.length);
-      assertEquals(sref2, srefs[0]);
-      assertEquals(sref1, srefs[1]);
-      assertFalse("All services false", allServices[1]);
-      assertTrue("All good", allGood[1]);
+      assertEquals(sref1, srefs[0]);
+      assertEquals(sref2, srefs[1]);
+      assertFalse("All services false", allServices[callIndex.get()]);
+      assertTrue("All good", allGood[callIndex.get()]);
       
-      callIndex[0] = 2;
+      callIndex.incrementAndGet();
       srefs = context.getServiceReferences(Runnable.class.getName(), null);
       assertNotNull("References not null", srefs);
       assertEquals(1, srefs.length);
-      assertEquals(sref1, srefs[0]);
-      assertFalse("All services false", allServices[2]);
-      assertTrue("All good", allGood[2]);
+      assertEquals(sref2, srefs[0]);
+      assertFalse("All services false", allServices[callIndex.get()]);
+      assertTrue("All good", allGood[callIndex.get()]);
       
-      callIndex[0] = 3;
+      callIndex.incrementAndGet();
       srefs = context.getAllServiceReferences(Runnable.class.getName(), null);
       assertEquals(2, srefs.length);
-      assertEquals(sref2, srefs[0]);
-      assertEquals(sref1, srefs[1]);
-      assertTrue("All services true", allServices[3]);
-      assertTrue("All good", allGood[3]);
+      assertEquals(sref1, srefs[0]);
+      assertEquals(sref2, srefs[1]);
+      assertTrue("All services true", allServices[callIndex.get()]);
+      assertTrue("All good", allGood[callIndex.get()]);
    }
 }

@@ -224,9 +224,8 @@ public abstract class AbstractBundleContext implements BundleContext
    public ServiceReference[] getServiceReferences(String clazz, String filter) throws InvalidSyntaxException
    {
       checkValidBundleContext();
-      boolean checkAssignable = (clazz != null && bundleState.getBundleId() != 0);
       ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
-      List<ServiceState> srefs = servicePlugin.getServiceReferences(bundleState, clazz, filter, checkAssignable);
+      List<ServiceState> srefs = servicePlugin.getServiceReferences(bundleState, clazz, filter, true);
       if (srefs.isEmpty())
          return null;
       
@@ -303,5 +302,11 @@ public abstract class AbstractBundleContext implements BundleContext
    {
       if (bundleState == null)
          throw new IllegalStateException("Invalid bundle context: " + this);
+   }
+
+   @Override
+   public String toString()
+   {
+      return "BundleContext[" + bundleState + "]";
    }
 }

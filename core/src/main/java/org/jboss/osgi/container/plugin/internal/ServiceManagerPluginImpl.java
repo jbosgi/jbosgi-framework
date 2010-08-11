@@ -57,14 +57,18 @@ import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.PackageAdminPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.container.util.NoFilter;
+import org.jboss.osgi.container.util.RemoveOnlyCollection;
 import org.jboss.osgi.modules.ModuleContext;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceFactory;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.hooks.service.FindHook;
 import org.osgi.framework.hooks.service.ListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 
@@ -117,7 +121,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
    @Override
    @SuppressWarnings({ "rawtypes", "unchecked" })
-   public ServiceState registerService(AbstractBundle bundleState, String[] clazzes, Object value, Dictionary properties)
+   public ServiceState registerService(AbstractBundle bundleState, String[] clazzes, Object serviceValue, Dictionary properties)
    {
       if (clazzes == null || clazzes.length == 0)
          throw new IllegalArgumentException("Null service classes");
@@ -125,7 +129,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       // Immediately after registration of a {@link ListenerHook}, the ListenerHook.added() method will be called 
       // to provide the current collection of service listeners which had been added prior to the hook being registered.
       Collection<ListenerInfo> listenerInfos = null;
-      if (value instanceof ListenerHook)
+      if (serviceValue instanceof ListenerHook)
          listenerInfos = eventsPlugin.getServiceListenerInfos(null);
 
       // A temporary association of the clazz and name
@@ -138,12 +142,12 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       {
          if (clazzes[i] == null)
             throw new IllegalArgumentException("Null service class at index: " + i);
-         
+
          String shortName = clazzes[i].substring(clazzes[i].lastIndexOf(".") + 1);
          serviceNames[i] = ServiceName.of("jbosgi", bundleState.getSymbolicName(), shortName, new Long(serviceId).toString());
       }
 
-      final ServiceState serviceState = new ServiceState(bundleState, serviceId, serviceNames, clazzes, value, properties);
+      final ServiceState serviceState = new ServiceState(bundleState, serviceId, serviceNames, clazzes, serviceValue, properties);
       BatchBuilder batchBuilder = serviceContainer.batchBuilder();
       Service service = new Service()
       {
@@ -200,9 +204,9 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       }
 
       // Call the newly added ListenerHook.added() method
-      if (service instanceof ListenerHook)
+      if (serviceValue instanceof ListenerHook)
       {
-         ListenerHook listenerHook = (ListenerHook)service;
+         ListenerHook listenerHook = (ListenerHook)serviceValue;
          listenerHook.added(listenerInfos);
       }
 
@@ -225,11 +229,12 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          throw new IllegalArgumentException("Null clazz");
 
       boolean checkAssignable = (bundleState.getBundleId() != 0);
-      List<ServiceState> srefs = getServiceReferencesInternal(bundleState, clazz, null, checkAssignable);
-      if (srefs == null || srefs.isEmpty())
+      List<ServiceState> result = getServiceReferencesInternal(bundleState, clazz, null, checkAssignable);
+      result = processFindHooks(bundleState, clazz, null, true, result);
+      if (result.isEmpty())
          return null;
 
-      return srefs.get(0);
+      return result.get(0);
    }
 
    @Override
@@ -240,23 +245,25 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       if (filterStr != null)
          filter = FrameworkUtil.createFilter(filterStr);
 
-      return getServiceReferencesInternal(bundleState, clazz, filter, checkAssignable);
+      List<ServiceState> result = getServiceReferencesInternal(bundleState, clazz, filter, checkAssignable);
+      result = processFindHooks(bundleState, clazz, filterStr, checkAssignable, result);
+      return result;
    }
 
-   public List<ServiceState> getServiceReferencesInternal(AbstractBundle bundleState, String clazzes, Filter filter, boolean checkAssignable)
+   public List<ServiceState> getServiceReferencesInternal(AbstractBundle bundleState, String clazz, Filter filter, boolean checkAssignable)
    {
       if (bundleState == null)
          throw new IllegalArgumentException("Null bundleState");
 
       List<ServiceName> serviceNames;
-      if (clazzes != null)
+      if (clazz != null)
       {
-         serviceNames = serviceNameMap.get(clazzes);
+         serviceNames = serviceNameMap.get(clazz);
          if (serviceNames == null)
             serviceNames = new ArrayList<ServiceName>();
 
          // Add potentially registered xservcie
-         ServiceName xserviceName = ServiceName.of(ModuleContext.XSERVICE_PREFIX, clazzes);
+         ServiceName xserviceName = ServiceName.of(ModuleContext.XSERVICE_PREFIX, clazz);
          ServiceController<?> xservice = serviceContainer.getService(xserviceName);
          if (xservice != null)
             serviceNames.add(xserviceName);
@@ -285,7 +292,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
             throw new IllegalStateException("Cannot obtain service for: " + serviceName);
 
          Object value = controller.getValue();
-         
+
          // Create the ServiceState on demand for an XService instance
          // [TODO] This should be done eagerly to keep the serviceId constant
          // [TODO] service events for XService lifecycle changes
@@ -295,7 +302,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
             long serviceId = getNextServiceId();
             Bundle bundle = packageAdmin.getBundle(value.getClass());
             AbstractBundle owner = AbstractBundle.assertBundleState(bundle);
-            value = new ServiceState(owner, serviceId, new ServiceName[] { serviceName }, new String[] { clazzes }, value, null);
+            value = new ServiceState(owner, serviceId, new ServiceName[] { serviceName }, new String[] { clazz }, value, null);
          }
 
          ServiceState serviceState = (ServiceState)value;
@@ -303,13 +310,14 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
             continue;
 
          Object rawValue = serviceState.getRawValue();
-         if (checkAssignable == true && rawValue instanceof ServiceFactory == false)
+         
+         checkAssignable &= (clazz != null);
+         checkAssignable &= (bundleState.getBundleId() != 0);
+         checkAssignable &= !(rawValue instanceof ServiceFactory);
+         if (checkAssignable == false || serviceState.isAssignableTo(bundleState, clazz))
          {
-            if (serviceState.isAssignableTo(bundleState, clazzes) == false)
-               continue;
+            result.add(serviceState);
          }
-
-         result.add(serviceState);
       }
 
       // Sort the result
@@ -433,4 +441,58 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       }
    }
 
+   /*
+    * The FindHook is called when a target bundle searches the service registry
+    * with the getServiceReference or getServiceReferences methods. A registered 
+    * FindHook service gets a chance to inspect the returned set of service
+    * references and can optionally shrink the set of returned services. The order
+    * in which the find hooks are called is the reverse compareTo ordering of
+    * their Service References.
+    */
+   private List<ServiceState> processFindHooks(AbstractBundle bundle, String clazz, String filterStr, boolean checkAssignable, List<ServiceState> serviceStates)
+   {
+      BundleContext context = bundle.getBundleContext();
+      List<ServiceState> hookRefs = getServiceReferencesInternal(bundle, FindHook.class.getName(), null, true);
+      if (hookRefs.isEmpty())
+         return serviceStates;
+
+      // Event and Find Hooks can not be used to hide the services from the framework.
+      if (clazz != null && clazz.startsWith(FindHook.class.getPackage().getName()))
+         return serviceStates;
+
+      // The order in which the find hooks are called is the reverse compareTo ordering of
+      // their ServiceReferences. That is, the service with the highest ranking number must be called first.
+      List<ServiceReference> sortedHookRefs = new ArrayList<ServiceReference>(hookRefs);
+      Collections.reverse(sortedHookRefs);
+
+      List<FindHook> hooks = new ArrayList<FindHook>();
+      for (ServiceReference hookRef : sortedHookRefs)
+         hooks.add((FindHook)context.getService(hookRef));
+
+      Collection<ServiceReference> hookParam = new ArrayList<ServiceReference>();
+      for (ServiceState aux : serviceStates)
+         hookParam.add(aux.getReference());
+
+      hookParam = new RemoveOnlyCollection<ServiceReference>(hookParam);
+      for (FindHook hook : hooks)
+      {
+         try
+         {
+            hook.find(context, clazz, filterStr, !checkAssignable, hookParam);
+         }
+         catch (Exception ex)
+         {
+            log.warn("Error while calling FindHook: " + hook, ex);
+         }
+      }
+
+      List<ServiceState> result = new ArrayList<ServiceState>();
+      for (ServiceReference aux : hookParam)
+      {
+         ServiceState serviceState = ServiceState.assertServiceState(aux);
+         result.add(serviceState);
+      }
+
+      return result;
+   }
 }

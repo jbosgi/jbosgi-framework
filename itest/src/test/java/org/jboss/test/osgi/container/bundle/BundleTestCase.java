@@ -386,38 +386,29 @@ public class BundleTestCase extends OSGiFrameworkTest
       }
    }
 
-   @Test
-   @Ignore
+   @Ignore("testUpdateExceptionStart")
    public void testUpdateExceptionStart() throws Exception
    {
-      // TODO
    }
 
-   @Test
-   @Ignore
+   @Ignore("testUpdateExceptionStop")
    public void testUpdateExceptionStop()
    {
-      // TODO
    }
 
-   @Test
-   @Ignore
+   @Ignore("testBundleUpdateLocation")
    public void testBundleUpdateLocation()
    {
-      // TODO
    }
 
-   @Test
-   @Ignore
+   @Ignore("testImportOldPackage")
    public void testImportOldPackage()
    {
-      // TODO
    }
 
-   @Test
+   @Ignore("testUninstall")
    public void testUninstall() throws Exception
    {
-      // TODO testUninstall
    }
 
    @Test

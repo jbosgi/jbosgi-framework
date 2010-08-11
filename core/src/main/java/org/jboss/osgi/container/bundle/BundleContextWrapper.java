@@ -171,4 +171,25 @@ public class BundleContextWrapper implements BundleContext
       return delegate.createFilter(filter);
    }
 
+   @Override
+   public int hashCode()
+   {
+      return delegate.hashCode();
+   }
+
+   @Override
+   public boolean equals(Object obj)
+   {
+      if (!(obj instanceof BundleContextWrapper))
+         return false;
+      
+      BundleContextWrapper other = (BundleContextWrapper)obj;
+      return delegate.equals(other.delegate);
+   }
+
+   @Override
+   public String toString()
+   {
+      return delegate.toString();
+   }
 }

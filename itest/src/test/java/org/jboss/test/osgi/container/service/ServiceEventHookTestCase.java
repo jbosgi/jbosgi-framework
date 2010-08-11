@@ -35,7 +35,6 @@ import java.util.List;
 
 import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceEvent;
@@ -47,7 +46,6 @@ import org.osgi.framework.hooks.service.EventHook;
  * @author thomas.diesler@jboss.com
  * @since 20-Mar-2010
  */
-@Ignore("service event hook")
 public class ServiceEventHookTestCase extends OSGiFrameworkTest
 {
    @Test
