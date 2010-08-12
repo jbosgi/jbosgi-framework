@@ -43,27 +43,27 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
- * A {@link HostBundleRevision} is responsible for the classloading and resource loading of a bundle.
+ * A {@link HostRevision} is responsible for the classloading and resource loading of a bundle.
  * 
  * It is associated with a {@link XModule} which holds the wiring information of the bundle.<p/>
  *  
- * Every time a bundle is updated a new {@link HostBundleRevision} is created and referenced 
+ * Every time a bundle is updated a new {@link HostRevision} is created and referenced 
  * from the {@link HostBundle}. 
  * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-public class HostBundleRevision extends AbstractRevision
+public class HostRevision extends AbstractRevision
 {
-   private static final Logger log = Logger.getLogger(HostBundleRevision.class);
+   static final Logger log = Logger.getLogger(HostRevision.class);
 
-   private XModule resolverModule;
-   private List<VirtualFile> contentRoots;
+   private final XModule resolverModule;
+   private final List<VirtualFile> contentRoots;
 
-   public HostBundleRevision(HostBundle internalBundle, Deployment dep, int revision) throws BundleException
+   public HostRevision(HostBundle hostBundle, Deployment dep, int revision) throws BundleException
    {
-      super(internalBundle, dep, revision);
+      super(hostBundle, dep, revision);
 
       // Set the aggregated root file
       contentRoots = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
@@ -71,8 +71,7 @@ public class HostBundleRevision extends AbstractRevision
       // Create the resolver module
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
       resolverModule = builder.createModule(getRevisionID(), getOSGiMetaData());
-      resolverModule.addAttachment(AbstractRevision.class, this);
-      resolverModule.addAttachment(Bundle.class, internalBundle);
+      resolverModule.addAttachment(Bundle.class, hostBundle);
 
       // In case we already have a ModuleSpec
       ModuleSpec moduleSpec = dep.getAttachment(ModuleSpec.class);
@@ -94,10 +93,10 @@ public class HostBundleRevision extends AbstractRevision
    @Override
    public Class<?> loadClass(String className) throws ClassNotFoundException
    {
-      getInternalBundle().assertNotUninstalled();
+      getBundleState().assertNotUninstalled();
 
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      if (getInternalBundle().ensureResolved() == false)
+      if (getBundleState().ensureResolved() == false)
          throw new ClassNotFoundException("Class '" + className + "' not found in: " + this);
 
       // Load the class through the module
@@ -108,10 +107,10 @@ public class HostBundleRevision extends AbstractRevision
    @Override
    public URL getResource(String path)
    {
-      getInternalBundle().assertNotUninstalled();
+      getBundleState().assertNotUninstalled();
 
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      if (getInternalBundle().ensureResolved() == true)
+      if (getBundleState().ensureResolved() == true)
          return getModuleClassLoader().getResource(path);
 
       // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
@@ -121,10 +120,10 @@ public class HostBundleRevision extends AbstractRevision
    @Override
    public Enumeration<URL> getResources(String path) throws IOException
    {
-      getInternalBundle().assertNotUninstalled();
+      getBundleState().assertNotUninstalled();
 
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      if (getInternalBundle().ensureResolved() == true)
+      if (getBundleState().ensureResolved() == true)
       {
          Enumeration<URL> resources = getModuleClassLoader().getResources(path);
          return resources.hasMoreElements() ? resources : null;
@@ -133,7 +132,7 @@ public class HostBundleRevision extends AbstractRevision
       // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
       try
       {
-         VirtualFile child = getRootFile().getChild(path);
+         VirtualFile child = getContentRoot().getChild(path);
          if (child == null)
             return null;
 
@@ -146,62 +145,6 @@ public class HostBundleRevision extends AbstractRevision
          log.error("Cannot get resources: " + path, ex);
          return null;
       }
-   }
-
-   @Override
-   public Enumeration<String> getEntryPaths(String path)
-   {
-      getInternalBundle().assertNotUninstalled();
-      try
-      {
-         return getRootFile().getEntryPaths(path);
-      }
-      catch (IOException ex)
-      {
-         return null;
-      }
-   }
-
-   @Override
-   public URL getEntry(String path)
-   {
-      getInternalBundle().assertNotUninstalled();
-      try
-      {
-         VirtualFile child = getRootFile().getChild(path);
-         return child != null ? child.toURL() : null;
-      }
-      catch (IOException ex)
-      {
-         log.error("Cannot get entry: " + path, ex);
-         return null;
-      }
-   }
-
-   @Override
-   public Enumeration<URL> findEntries(String path, String pattern, boolean recurse)
-   {
-      getInternalBundle().assertNotUninstalled();
-      try
-      {
-         return getRootFile().findEntries(path, pattern, recurse);
-      }
-      catch (IOException ex)
-      {
-         return null;
-      }
-   }
-
-   @Override
-   URL getLocalizationEntry()
-   {
-      // TODO 
-      return null;
-   }
-
-   private VirtualFile getRootFile()
-   {
-      return getContentRoots().get(0);
    }
 
    private List<VirtualFile> getBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata)

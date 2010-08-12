@@ -100,7 +100,7 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.UNINSTALLED, hostA.getState());
    }
 
-   @Ignore("testFragmentOnly")
+   @Test
    public void testFragmentOnly() throws Exception
    {
       // Bundle-SymbolicName: simple-fragA
@@ -124,10 +124,10 @@ public class FragmentTestCase extends OSGiFrameworkTest
       Bundle fragA = installBundle(archive);
       assertBundleState(Bundle.INSTALLED, fragA.getState());
 
-      URL entryURL = fragA.getEntry("resources/resource.txt");
+      URL entryURL = fragA.getEntry("resource.txt");
       assertNotNull("Entry URL not null", entryURL);
 
-      URL resourceURL = fragA.getResource("resources/resource.txt");
+      URL resourceURL = fragA.getResource("resource.txt");
       assertNull("Resource URL null", resourceURL);
 
       try
@@ -144,6 +144,7 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.UNINSTALLED, fragA.getState());
    }
 
+   @Test
    @Ignore("testAttachedFragment")
    public void testAttachedFragment() throws Exception
    {
@@ -183,6 +184,7 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.UNINSTALLED, fragA.getState());
    }
 
+   @Test
    @Ignore("testFragmentHidesPrivatePackage")
    public void testFragmentHidesPrivatePackage() throws Exception
    {
@@ -224,6 +226,7 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.UNINSTALLED, fragB.getState());
    }
 
+   @Test
    @Ignore("testFragmentExportsPackage")
    public void testFragmentExportsPackage() throws Exception
    {
@@ -302,6 +305,7 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.UNINSTALLED, fragA.getState());
    }
 
+   @Test
    @Ignore("testFragmentRequireBundle")
    public void testFragmentRequireBundle() throws Exception
    {

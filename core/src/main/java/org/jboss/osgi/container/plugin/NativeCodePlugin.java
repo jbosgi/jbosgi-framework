@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.container.plugin;
 
-import org.jboss.osgi.container.bundle.AbstractRevision;
+import org.jboss.osgi.container.bundle.DeploymentBundle;
 import org.jboss.osgi.deployment.deployer.Deployment;
 
 
@@ -35,5 +35,5 @@ public interface NativeCodePlugin extends Plugin
 {
    void deployNativeCode(Deployment deployment);
    
-   void resolveNativeCode(AbstractRevision bundleRev);
+   void resolveNativeCode(DeploymentBundle depBundle);
 }

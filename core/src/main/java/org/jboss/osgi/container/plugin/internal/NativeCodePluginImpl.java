@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.osgi.container.bundle.AbstractBundle;
-import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.DeploymentBundle;
 import org.jboss.osgi.container.bundle.FrameworkState;
@@ -192,16 +191,16 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
    }
 
    @Override
-   public void resolveNativeCode(AbstractRevision bundleRev)
+   public void resolveNativeCode(DeploymentBundle depBundle)
    {
-      Deployment dep = bundleRev.getDeployment();
+      Deployment dep = depBundle.getDeployment();
       NativeLibraryMetaData libMetaData = dep.getAttachment(NativeLibraryMetaData.class);
       if (libMetaData == null)
          throw new IllegalStateException("Cannot obtain NativeLibraryMetaData from: " + dep);
       
-      ModuleClassLoaderExt moduleClassLoader = (ModuleClassLoaderExt)bundleRev.getModuleClassLoader();
+      ModuleClassLoaderExt moduleClassLoader = (ModuleClassLoaderExt)depBundle.getModuleClassLoader();
       if (moduleClassLoader == null)
-         throw new IllegalStateException("Cannot obtain ModuleClassLoader from: " + bundleRev);
+         throw new IllegalStateException("Cannot obtain ModuleClassLoader from: " + depBundle);
       
       // Add the native library mappings to the OSGiClassLoaderPolicy
       for (NativeLibrary library : libMetaData.getNativeLibraries())
@@ -211,15 +210,14 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
          String libname = libfile.substring(0, libfile.lastIndexOf('.'));
          
          // Add the library provider to the policy
-         DeploymentBundle bundleState = bundleRev.getInternalBundle();
-         NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(bundleState, libname, libpath);
+         NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(depBundle, libname, libpath);
          moduleClassLoader.addNativeLibrary(libProvider);
          
          // [TODO] why does the TCK use 'Native' to mean 'libNative' ? 
          if (libname.startsWith("lib"))
          {
             libname = libname.substring(3);
-            libProvider = new BundleNativeLibraryProvider(bundleState, libname, libpath);
+            libProvider = new BundleNativeLibraryProvider(depBundle, libname, libpath);
             moduleClassLoader.addNativeLibrary(libProvider);
          }
       }

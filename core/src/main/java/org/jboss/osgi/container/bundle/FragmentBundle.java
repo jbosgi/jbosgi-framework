@@ -21,19 +21,15 @@
 */
 package org.jboss.osgi.container.bundle;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.util.Enumeration;
+import java.util.Collections;
 import java.util.List;
 
-import org.jboss.logging.Logger;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.vfs.VirtualFile;
+import org.jboss.osgi.spi.NotImplementedException;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Version;
 
 /**
  * This is the internal implementation of a fragment Bundle. 
@@ -45,8 +41,6 @@ import org.osgi.framework.Version;
  */
 public class FragmentBundle extends DeploymentBundle
 {
-   private static final Logger log = Logger.getLogger(FragmentBundle.class);
-
    FragmentBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {
       super(bundleManager, deployment);
@@ -55,146 +49,61 @@ public class FragmentBundle extends DeploymentBundle
    @Override
    AbstractRevision createRevision(Deployment deployment, int revision) throws BundleException
    {
-      return new FragmentBundleRevision(this, deployment, revision);
-   }
-   
-   @Override
-   public URL getResource(String name)
-   {
-      // TODO Auto-generated method stub
-      return null;
-   }
-
-   @Override
-   public Class loadClass(String name) throws ClassNotFoundException
-   {
-      // TODO Auto-generated method stub
-      return null;
-   }
-
-   @Override
-   public Enumeration getResources(String name) throws IOException
-   {
-      // TODO Auto-generated method stub
-      return null;
-   }
-
-   @Override
-   public Enumeration getEntryPaths(String path)
-   {
-      // TODO Auto-generated method stub
-      return null;
-   }
-
-   @Override
-   public URL getEntry(String path)
-   {
-      // TODO Auto-generated method stub
-      return null;
-   }
-
-   @Override
-   public Enumeration findEntries(String path, String filePattern, boolean recurse)
-   {
-      // TODO Auto-generated method stub
-      return null;
-   }
-
-   @Override
-   public Version getVersion()
-   {
-      // TODO Auto-generated method stub
-      return null;
+      return new FragmentRevision(this, deployment, revision);
    }
 
    @Override
    public void addToResolver()
    {
-      // TODO Auto-generated method stub
-      
-   }
-
-   @Override
-   public boolean ensureResolved()
-   {
-      // TODO Auto-generated method stub
-      return false;
+      // fragments not supported in resolver 
    }
 
    @Override
    public void removeFromResolver()
    {
-      // TODO Auto-generated method stub
-      
-   }
-
-   @Override
-   AbstractBundleContext createContextInternal()
-   {
-      // TODO Auto-generated method stub
-      return null;
-   }
-
-   @Override
-   public String getLocation()
-   {
-      // TODO Auto-generated method stub
-      return null;
-   }
-
-   @Override
-   public OSGiMetaData getOSGiMetaData()
-   {
-      // TODO Auto-generated method stub
-      return null;
-   }
-
-   @Override
-   public XModule getResolverModule()
-   {
-      // TODO Auto-generated method stub
-      return null;
+      // fragments not supported in resolver 
    }
 
    @Override
    public List<XModule> getAllResolverModules()
    {
-      // TODO Auto-generated method stub
-      return null;
+      return Collections.emptyList();
+   }
+
+   @Override
+   public boolean ensureResolved()
+   {
+      throw new NotImplementedException();
+   }
+
+   @Override
+   AbstractBundleContext createContextInternal()
+   {
+      throw new NotImplementedException();
    }
 
    @Override
    void startInternal(int options) throws BundleException
    {
-      // TODO Auto-generated method stub
-      
+      throw new BundleException("Fragments cannot be started");
    }
 
    @Override
    void stopInternal(int options) throws BundleException
    {
-      // TODO Auto-generated method stub
-      
+      throw new BundleException("Fragments cannot be stoped");
    }
 
    @Override
    void updateInternal(InputStream input) throws BundleException
    {
-      // TODO Auto-generated method stub
-      
+      throw new NotImplementedException();
    }
 
    @Override
    void uninstallInternal() throws BundleException
    {
-      // TODO Auto-generated method stub
-      
-   }
-
-   @Override
-   URL getLocalizationEntry(String entryPath)
-   {
-      // TODO Auto-generated method stub
-      return null;
+      BundleManager bundleManager = getBundleManager();
+      bundleManager.uninstallBundleState(this);
    }
 }

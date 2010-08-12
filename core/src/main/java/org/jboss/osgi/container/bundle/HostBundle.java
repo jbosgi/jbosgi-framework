@@ -21,11 +21,9 @@
 */
 package org.jboss.osgi.container.bundle;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 
 import org.jboss.logging.Logger;
@@ -44,7 +42,6 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.Version;
 
 /**
  * This is the internal implementation of a host Bundle. 
@@ -89,13 +86,13 @@ public class HostBundle extends DeploymentBundle
    @Override
    AbstractRevision createRevision(Deployment deployment, int revision) throws BundleException
    {
-      return new HostBundleRevision(this, deployment, revision);
+      return new HostRevision(this, deployment, revision);
    }
 
    @Override
-   HostBundleRevision getCurrentRevision()
+   public HostRevision getCurrentRevision()
    {
-      return (HostBundleRevision)super.getCurrentRevision();
+      return (HostRevision)super.getCurrentRevision();
    }
 
    public List<VirtualFile> getContentRoots()
@@ -472,9 +469,7 @@ public class HostBundle extends DeploymentBundle
    void uninstallInternal() throws BundleException
    {
       BundleManager bundleManager = getBundleManager();
-      if (bundleManager.getBundleById(getBundleId()) == null)
-         throw new BundleException("Not installed: " + this);
-
+      
       // If this bundle's state is ACTIVE, STARTING or STOPPING, this bundle is stopped 
       // as described in the Bundle.stop method.
       int state = getState();
@@ -500,71 +495,6 @@ public class HostBundle extends DeploymentBundle
       assertNotUninstalled();
 
       changeState(Bundle.INSTALLED);
-   }
-
-   // Methods delegated to the current revision.
-   @Override
-   public URL getResource(String name)
-   {
-      return getCurrentRevision().getResource(name);
-   }
-
-   @Override
-   @SuppressWarnings("rawtypes")
-   public Class loadClass(String name) throws ClassNotFoundException
-   {
-      return getCurrentRevision().loadClass(name);
-   }
-
-   @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration getResources(String name) throws IOException
-   {
-      return getCurrentRevision().getResources(name);
-   }
-
-   @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration getEntryPaths(String path)
-   {
-      return getCurrentRevision().getEntryPaths(path);
-   }
-
-   @Override
-   public URL getEntry(String path)
-   {
-      return getCurrentRevision().getEntry(path);
-   }
-
-   @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration findEntries(String path, String filePattern, boolean recurse)
-   {
-      return getCurrentRevision().findEntries(path, filePattern, recurse);
-   }
-
-   @Override
-   URL getLocalizationEntry(String entryPath)
-   {
-      return getCurrentRevision().getLocalizationEntry();
-   }
-
-   @Override
-   public Version getVersion()
-   {
-      return getCurrentRevision().getVersion();
-   }
-
-   @Override
-   public OSGiMetaData getOSGiMetaData()
-   {
-      return getCurrentRevision().getOSGiMetaData();
-   }
-
-   @Override
-   public XModule getResolverModule()
-   {
-      return getCurrentRevision().getResolverModule();
    }
 
    @Override

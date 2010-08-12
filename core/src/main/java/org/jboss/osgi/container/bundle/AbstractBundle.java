@@ -64,7 +64,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * This is the internal base class for all bundles and fragments, including
  * the System Bundle.<p/> 
  * 
- * The logic related to loading of classes and resources is delegated to the current {@link HostBundleRevision}. 
+ * The logic related to loading of classes and resources is delegated to the current {@link HostRevision}. 
  * As bundles can be updated there can be multiple bundle revisions.<p/>
  * 
  * The {@link AbstractBundle} can contain multiple revisions: the current revision and any number of old revisions.
@@ -477,6 +477,10 @@ public abstract class AbstractBundle implements Bundle
    public void uninstall() throws BundleException
    {
       assertNotUninstalled();
+      
+      if (bundleManager.getBundleById(getBundleId()) == null)
+         throw new BundleException("Not installed: " + this);
+
       uninstallInternal();
 
       // A bundle is considered to be modified when it is installed, updated or uninstalled.

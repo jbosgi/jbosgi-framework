@@ -26,6 +26,7 @@ import java.net.URL;
 import java.util.Enumeration;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
@@ -37,7 +38,7 @@ import org.osgi.framework.Version;
 
 /**
  * The base class for Bundle Revision implementations. Currently the only subclass is 
- * the {@link HostBundleRevision} class, but once fragments are supported it is expected that 
+ * the {@link HostRevision} class, but once fragments are supported it is expected that 
  * there will also be a <tt>FragmentRevision</tt> subclass.<p/>
  * 
  * @author thomas.diesler@jboss.com
@@ -46,65 +47,79 @@ import org.osgi.framework.Version;
  */
 public abstract class AbstractRevision implements Revision
 {
-   // Ordinary revision IDs start at 1, as 0 is the System Bundle Revision ID.
-   private static final AtomicInteger revisionIDCounter = new AtomicInteger(1);
+   static final Logger log = Logger.getLogger(AbstractRevision.class);
 
-   private Deployment deployment;
-   private final DeploymentBundle internalBundle;
+   // Ordinary revision IDs start at 1, as 0 is the System Bundle Revision ID.
+   private static final AtomicInteger globalRevisionCounter = new AtomicInteger(1);
+
+   private final int globalRevisionId = globalRevisionCounter.getAndIncrement();
+   
+   private final Deployment deployment;
+   private final DeploymentBundle bundleState;
    private final OSGiMetaData metadata;
-   private final int id = revisionIDCounter.getAndIncrement();
-   // The revision increases every time a bundle gets updated
-   private final int revision;
+   private final int revisionId;
    private final Version version;
 
    // Cache commonly used plugins
-   private ModuleManagerPlugin modulePlugin;
-
-   AbstractRevision(DeploymentBundle internalBundle, Deployment deployment, int revision)
+   private final ModuleManagerPlugin moduleManager;
+   
+   AbstractRevision(DeploymentBundle bundleState, Deployment deployment, int revisionId)
    {
-      this.internalBundle = internalBundle;
+      this.bundleState = bundleState;
       this.deployment = deployment;
-      this.revision = revision;
+      this.revisionId = revisionId;
       
       this.metadata = deployment.getAttachment(OSGiMetaData.class);
       if (metadata == null)
          throw new IllegalArgumentException("Null metadata");
       
       this.version = metadata.getBundleVersion();
-      
-      this.modulePlugin = getBundleManager().getPlugin(ModuleManagerPlugin.class);
+
+      this.moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
    }
 
-   public BundleManager getBundleManager()
+   @Override
+   public int getRevisionID()
    {
-      return internalBundle.getBundleManager();
+      return globalRevisionId;
    }
 
-   public DeploymentBundle getInternalBundle()
+   @Override
+   public int getRevision()
    {
-      return internalBundle;
+      return revisionId;
    }
 
-   public Deployment getDeployment()
+   ModuleClassLoader getModuleClassLoader()
+   {
+      ModuleIdentifier identifier = bundleState.getModuleIdentifier();
+      Module module = moduleManager.getModule(identifier);
+      return module != null ? module.getClassLoader() : null;
+   }
+   
+   BundleManager getBundleManager()
+   {
+      return bundleState.getBundleManager();
+   }
+
+   DeploymentBundle getBundleState()
+   {
+      return bundleState;
+   }
+
+   Deployment getDeployment()
    {
       return deployment;
    }
+   
+   String getLocation()
+   {
+      return deployment.getLocation();
+   }
 
-   public VirtualFile getContentRoot()
+   VirtualFile getContentRoot()
    {
       return deployment.getRoot();
-   }
-
-   public ModuleClassLoader getModuleClassLoader()
-   {
-      ModuleIdentifier identifier = internalBundle.getModuleIdentifier();
-      Module module = getModuleManagerPlugin().getModule(identifier);
-      return module != null ? module.getClassLoader() : null;
-   }
-
-   ModuleManagerPlugin getModuleManagerPlugin()
-   {
-      return modulePlugin;
    }
 
    OSGiMetaData getOSGiMetaData()
@@ -112,34 +127,60 @@ public abstract class AbstractRevision implements Revision
       return metadata;
    }
 
-   @Override
-   public int getRevisionID()
-   {
-      return id;
-   }
-
-   @Override
-   public int getRevision()
-   {
-      return revision;
-   }
-
-   public Version getVersion()
+   Version getVersion()
    {
       return version;
    }
 
-   abstract URL getResource(String name);
-
    abstract Class<?> loadClass(String name) throws ClassNotFoundException;
+
+   abstract URL getResource(String name);
 
    abstract Enumeration<URL> getResources(String name) throws IOException;
 
-   abstract Enumeration<String> getEntryPaths(String path);
+   Enumeration<String> getEntryPaths(String path)
+   {
+      getBundleState().assertNotUninstalled();
+      try
+      {
+         return getContentRoot().getEntryPaths(path);
+      }
+      catch (IOException ex)
+      {
+         return null;
+      }
+   }
 
-   abstract URL getEntry(String path);
+   URL getEntry(String path)
+   {
+      getBundleState().assertNotUninstalled();
+      try
+      {
+         VirtualFile child = getContentRoot().getChild(path);
+         return child != null ? child.toURL() : null;
+      }
+      catch (IOException ex)
+      {
+         log.error("Cannot get entry: " + path, ex);
+         return null;
+      }
+   }
 
-   abstract Enumeration<URL> findEntries(String path, String filePattern, boolean recurse);
+   Enumeration<URL> findEntries(String path, String pattern, boolean recurse)
+   {
+      getBundleState().assertNotUninstalled();
+      try
+      {
+         return getContentRoot().findEntries(path, pattern, recurse);
+      }
+      catch (IOException ex)
+      {
+         return null;
+      }
+   }
 
-   abstract URL getLocalizationEntry();
+   URL getLocalizationEntry()
+   {
+      return null;
+   }
 }

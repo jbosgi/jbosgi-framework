@@ -31,8 +31,8 @@ import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.container.bundle.AbstractBundle;
-import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.DeploymentBundle;
 import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.container.bundle.Revision;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
@@ -173,13 +173,14 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       
       if (resModule.getModuleId() != 0)
       {
-         AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
-         Deployment deployment = bundleRev.getDeployment();
+         Bundle bundle = resModule.getAttachment(Bundle.class);
+         DeploymentBundle bundleState = DeploymentBundle.assertBundleState(bundle);
+         Deployment deployment = bundleState.getDeployment();
          
          // Resolve the native code libraries, if there are any
          NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
          if (nativeCodePlugin != null && libMetaData != null)
-            nativeCodePlugin.resolveNativeCode(bundleRev);
+            nativeCodePlugin.resolveNativeCode(bundleState);
       }
    }
    
