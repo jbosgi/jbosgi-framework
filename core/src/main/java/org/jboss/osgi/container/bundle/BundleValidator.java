@@ -35,5 +35,5 @@ public interface BundleValidator
    /**
     * Validate the bundle
     */
-   void validateBundle(InternalBundle bundleState) throws BundleException;
+   void validateBundle(AbstractBundle bundleState) throws BundleException;
 }

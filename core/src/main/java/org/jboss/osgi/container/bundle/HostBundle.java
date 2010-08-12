@@ -27,8 +27,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
@@ -47,44 +45,27 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
-import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
- * This is the internal implementation of a Bundle. The logic related to loading of classes
- * and resources is delegated to the current {@link BundleRevision}. As bundles can be updated there
- * can be multiple bundle revisions.<p/>
+ * This is the internal implementation of a host Bundle. 
  * 
- * The InternalBundle can contain multiple revisions: the current revision any number of old revisions.
- * This relates to updating of bundles. When a bundle is updated a new revision is created
- * and assigned to the current revision. However, the previous revision is kept available until 
- * {@link PackageAdmin#refreshPackages(Bundle[])} is called.<p/>
- * 
- * In addition other bundle-specific functionality is handled here, such as Start Level and the
- * Bundle Activator and internal implementations of lifecycle management. 
+ * Bundle specific functionality is handled here, such as Start Level, 
+ * the {@link BundleActivator} and internal implementations of lifecycle management. 
  * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public class InternalBundle extends AbstractBundle
+public class HostBundle extends DeploymentBundle
 {
-   private static final Logger log = Logger.getLogger(InternalBundle.class);
+   private static final Logger log = Logger.getLogger(HostBundle.class);
 
    private BundleActivator bundleActivator;
-   private final String location;
-   // This list contains any revisions of the bundle that are updated by newer ones, but still available
-   private List<AbstractRevision> oldRevisions = new CopyOnWriteArrayList<AbstractRevision>();
-   // The current revision is the most recent revision of the bundle. 
-   private AbstractRevision currentRevision;
    private int startLevel = StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
    private boolean persistentlyStarted;
-   private AtomicInteger revisionCounter = new AtomicInteger(0);
 
-   InternalBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
+   HostBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {
-      super(bundleManager, deployment.getSymbolicName());
-      this.location = deployment.getLocation();
-      
-      currentRevision = new BundleRevision(this, deployment, revisionCounter.getAndIncrement());
+      super(bundleManager, deployment);
 
       StartLevelPlugin sl = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
       if (sl != null)
@@ -95,20 +76,37 @@ public class InternalBundle extends AbstractBundle
     * Assert that the given bundle is an instance of InternalBundle
     * @throws IllegalArgumentException if the given bundle is not an instance of InternalBundle
     */
-   public static InternalBundle assertBundleState(Bundle bundle)
+   public static HostBundle assertBundleState(Bundle bundle)
    {
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
 
-      if (bundleState instanceof InternalBundle == false)
+      if (bundleState instanceof HostBundle == false)
          throw new IllegalArgumentException("Not an InternalBundle: " + bundleState);
 
-      return (InternalBundle)bundleState;
+      return (HostBundle)bundleState;
+   }
+
+   @Override
+   AbstractRevision createRevision(Deployment deployment, int revision) throws BundleException
+   {
+      return new HostBundleRevision(this, deployment, revision);
+   }
+
+   @Override
+   HostBundleRevision getCurrentRevision()
+   {
+      return (HostBundleRevision)super.getCurrentRevision();
+   }
+
+   public List<VirtualFile> getContentRoots()
+   {
+      return getCurrentRevision().getContentRoots();
    }
 
    @Override
    public void addToResolver()
    {
-      getResolverPlugin().addRevision(currentRevision);
+      getResolverPlugin().addRevision(getCurrentRevision());
    }
 
    @Override
@@ -121,7 +119,7 @@ public class InternalBundle extends AbstractBundle
       {
          try
          {
-            getResolverPlugin().resolve(currentRevision);
+            getResolverPlugin().resolve(getCurrentRevision());
          }
          catch (BundleException ex)
          {
@@ -131,32 +129,22 @@ public class InternalBundle extends AbstractBundle
       }
 
       // If the bundle has a ClassLoader it is in state {@link Bundle#RESOLVED}
-      return currentRevision.getModuleClassLoader() != null;
+      return getCurrentRevision().getModuleClassLoader() != null;
    }
 
    @Override
    public void removeFromResolver()
    {
-      for (AbstractRevision abr : oldRevisions)
+      for (AbstractRevision abr : getRevisions())
          getResolverPlugin().removeRevision(abr);
 
-      if (currentRevision != null)
-         getResolverPlugin().removeRevision(currentRevision);
-
-      oldRevisions.clear();
-      currentRevision = null;
+      clearRevisions();
    }
 
    @Override
    AbstractBundleContext createContextInternal()
    {
-      return new InternalBundleContext(this, null);
-   }
-
-   @Override
-   public String getLocation()
-   {
-      return location;
+      return new HostBundleContext(this, null);
    }
 
    public int getStartLevel()
@@ -185,14 +173,15 @@ public class InternalBundle extends AbstractBundle
     */
    public void refresh() throws BundleException
    {
-      List<AbstractRevision> oldRevs = oldRevisions;
-      oldRevisions = new CopyOnWriteArrayList<AbstractRevision>();
-
       // Remove the old revisions from the resolver
-      for (AbstractRevision abr : oldRevs)
-         getResolverPlugin().removeRevision(abr);
+      for (AbstractRevision abr : getRevisions())
+      {
+         if (abr != getCurrentRevision())
+            getResolverPlugin().removeRevision(abr);
+      }
+      clearRevisions();
    }
-   
+
    /**
     * Removes uninstalled bundles, called by Package Admin
     */
@@ -226,7 +215,7 @@ public class InternalBundle extends AbstractBundle
 
       // Resolve this bundles 
       if (getState() == Bundle.INSTALLED)
-         getResolverPlugin().resolve(currentRevision);
+         getResolverPlugin().resolve(getCurrentRevision());
 
       // The BundleActivator.start(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, if one is specified, is called. 
       try
@@ -437,14 +426,14 @@ public class InternalBundle extends AbstractBundle
       }
    }
 
-  /**
-    * Creates a new Bundle Revision when the bundle is updated. Multiple Bundle Revisions 
-    * can co-exist at the same time.
-    * @param input The stream to create the bundle revision from or <tt>null</tt>
-    * if the new revision needs to be created from the same location as where the bundle
-    * was initially installed.
-    * @throws Exception If the bundle cannot be read, or if the update attempt to change the BSN.
-    */
+   /**
+     * Creates a new Bundle Revision when the bundle is updated. Multiple Bundle Revisions 
+     * can co-exist at the same time.
+     * @param input The stream to create the bundle revision from or <tt>null</tt>
+     * if the new revision needs to be created from the same location as where the bundle
+     * was initially installed.
+     * @throws Exception If the bundle cannot be read, or if the update attempt to change the BSN.
+     */
    private void createNewBundleRevision(InputStream input) throws Exception
    {
       BundleManager bm = getBundleManager();
@@ -464,7 +453,7 @@ public class InternalBundle extends AbstractBundle
       if (input != null)
          locationURL = bm.storeBundleStream(input);
       else
-         locationURL = currentRevision.getContentRoots().get(0).getStreamURL();
+         locationURL = getCurrentRevision().getContentRoot().getStreamURL();
 
       BundleDeploymentPlugin plugin = bm.getPlugin(BundleDeploymentPlugin.class);
       VirtualFile newRootFile = AbstractVFS.getRoot(locationURL);
@@ -475,10 +464,8 @@ public class InternalBundle extends AbstractBundle
       if (md.getBundleSymbolicName().equals(getSymbolicName()) == false)
          log.infof("Ignoring update of symbolic name: %s", md.getBundleSymbolicName());
 
-      BundleRevision newRev = new BundleRevision(this, dep, revisionCounter.getAndIncrement());
-      oldRevisions.add(currentRevision);
-      currentRevision = newRev;
-      getResolverPlugin().addRevision(currentRevision);
+      createRevision(dep);
+      getResolverPlugin().addRevision(getCurrentRevision());
    }
 
    @Override
@@ -519,80 +506,74 @@ public class InternalBundle extends AbstractBundle
    @Override
    public URL getResource(String name)
    {
-      return currentRevision.getResource(name);
+      return getCurrentRevision().getResource(name);
    }
 
    @Override
    @SuppressWarnings("rawtypes")
    public Class loadClass(String name) throws ClassNotFoundException
    {
-      return currentRevision.loadClass(name);
+      return getCurrentRevision().loadClass(name);
    }
 
    @Override
    @SuppressWarnings("rawtypes")
    public Enumeration getResources(String name) throws IOException
    {
-      return currentRevision.getResources(name);
+      return getCurrentRevision().getResources(name);
    }
 
    @Override
    @SuppressWarnings("rawtypes")
    public Enumeration getEntryPaths(String path)
    {
-      return currentRevision.getEntryPaths(path);
+      return getCurrentRevision().getEntryPaths(path);
    }
 
    @Override
    public URL getEntry(String path)
    {
-      return currentRevision.getEntry(path);
+      return getCurrentRevision().getEntry(path);
    }
 
    @Override
    @SuppressWarnings("rawtypes")
    public Enumeration findEntries(String path, String filePattern, boolean recurse)
    {
-      return currentRevision.findEntries(path, filePattern, recurse);
+      return getCurrentRevision().findEntries(path, filePattern, recurse);
    }
 
    @Override
    URL getLocalizationEntry(String entryPath)
    {
-      return currentRevision.getLocalizationEntry();
+      return getCurrentRevision().getLocalizationEntry();
    }
 
    @Override
    public Version getVersion()
    {
-      return currentRevision.getVersion();
+      return getCurrentRevision().getVersion();
    }
 
    @Override
    public OSGiMetaData getOSGiMetaData()
    {
-      return currentRevision.getOSGiMetaData();
+      return getCurrentRevision().getOSGiMetaData();
    }
 
    @Override
    public XModule getResolverModule()
    {
-      return currentRevision.getResolverModule();
+      return getCurrentRevision().getResolverModule();
    }
 
    @Override
    public List<XModule> getAllResolverModules()
    {
-      List<XModule> allModules = new ArrayList<XModule>(oldRevisions.size() + 1);
-      for (Revision rev : oldRevisions)
+      List<XModule> allModules = new ArrayList<XModule>();
+      for (Revision rev : getRevisions())
          allModules.add(rev.getResolverModule());
 
-      allModules.add(currentRevision.getResolverModule());
       return allModules;
-   }
-
-   public List<VirtualFile> getContentRoots()
-   {
-      return currentRevision.getContentRoots();
    }
 }

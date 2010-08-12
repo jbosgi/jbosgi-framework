@@ -11,7 +11,7 @@ import java.util.Map;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.BundleRevision;
+import org.jboss.osgi.container.bundle.HostBundleRevision;
 import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.container.bundle.Revision;
 import org.jboss.osgi.resolver.XModule;
@@ -67,7 +67,7 @@ public class ModuleManagerTestCase
    @Test
    public void testGetModuleIdentifier() throws Exception
    {
-      BundleRevision br = Mockito.mock(BundleRevision.class);
+      HostBundleRevision br = Mockito.mock(HostBundleRevision.class);
       Mockito.when(br.getRevision()).thenReturn(42);
 
       XModule xm = new AbstractModuleBuilder().createModule(123, "myModule", Version.emptyVersion);
@@ -78,7 +78,7 @@ public class ModuleManagerTestCase
       ModuleIdentifier id2 = ModuleManager.getModuleIdentifier(xm);
       assertSame(id, id2);
 
-      BundleRevision br2 = Mockito.mock(BundleRevision.class);
+      HostBundleRevision br2 = Mockito.mock(HostBundleRevision.class);
       Mockito.when(br2.getRevision()).thenReturn(43);
 
       XModule xm2 = new AbstractModuleBuilder().createModule(123, "myModule", Version.emptyVersion);

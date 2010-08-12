@@ -21,27 +21,21 @@
 */
 package org.jboss.osgi.container.bundle;
 
-import org.jboss.osgi.metadata.OSGiMetaData;
-import org.osgi.framework.BundleException;
+import java.util.Map;
+
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.osgi.framework.BundleContext;
 
 /**
- * A bundle validator for OSGi R3.
+ * A {@link BundleContext} backed up by a {@link Deployment}.
  * 
  * @author thomas.diesler@jboss.com
- * @since 19-Dec-2009
+ * @since 29-Jun-2010
  */
-public class BundleValidatorR3 implements BundleValidator
+abstract class DeploymentBundleContext extends AbstractBundleContext
 {
-   public BundleValidatorR3(BundleManager bundleManager)
+   DeploymentBundleContext(AbstractBundle bundle, Map<String, String> props)
    {
-   }
-
-   @Override
-   public void validateBundle(AbstractBundle bundleState) throws BundleException
-   {
-      OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
-      int manifestVersion = osgiMetaData.getBundleManifestVersion();
-      if (manifestVersion != 1)
-         throw new BundleException("Unsupported manifest version " + manifestVersion + " for " + bundleState);
+      super(bundle);
    }
 }

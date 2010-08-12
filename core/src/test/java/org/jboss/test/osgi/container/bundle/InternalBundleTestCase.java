@@ -32,7 +32,7 @@ import java.net.URL;
 import java.util.Hashtable;
 
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.InternalBundle;
+import org.jboss.osgi.container.bundle.HostBundle;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -53,7 +53,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      InternalBundle hb = createInternalBundle(bm, dep);
+      HostBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
       assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
@@ -72,7 +72,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      InternalBundle hb = createInternalBundle(bm, dep);
+      HostBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
       assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
@@ -91,7 +91,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      InternalBundle hb = createInternalBundle(bm, dep);
+      HostBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
       hb.setStartLevel(15);
 
@@ -110,7 +110,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
       when(sl.getStartLevel()).thenReturn(20);
 
       Deployment dep = mockDeployment();
-      InternalBundle hb = createInternalBundle(bm, dep);
+      HostBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
       hb.setStartLevel(15);
 
@@ -128,7 +128,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
       when(bm.getOptionalPlugin(StartLevelPlugin.class)).thenReturn(null);
 
       Deployment dep = mockDeployment();
-      InternalBundle hb = createInternalBundle(bm, dep);
+      HostBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
       hb.setStartLevel(15);
 
@@ -144,7 +144,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      InternalBundle hb = createInternalBundle(bm, dep);
+      HostBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
       assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
@@ -159,7 +159,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
    {
       BundleManager bm = mockBundleManager();
       Deployment dep = mockDeployment();
-      InternalBundle hb = createInternalBundle(bm, dep);
+      HostBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
       assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
@@ -172,10 +172,10 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
       assertEquals(Bundle.RESOLVED, hb.getState());
    }
 
-   private InternalBundle createInternalBundle(BundleManager bm, Deployment dep) throws Exception
+   private HostBundle createInternalBundle(BundleManager bm, Deployment dep) throws Exception
    {
-      Constructor<InternalBundle> ctor =
-            InternalBundle.class.getDeclaredConstructor(BundleManager.class, Deployment.class);
+      Constructor<HostBundle> ctor =
+            HostBundle.class.getDeclaredConstructor(BundleManager.class, Deployment.class);
       // Need to do this because this test is not in the same package as InternalBundle
       ctor.setAccessible(true);
       return ctor.newInstance(bm, dep);

@@ -27,10 +27,16 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
+import java.io.InputStream;
 import java.net.URL;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.container.fragments.fragA.FragBeanA;
+import org.jboss.test.osgi.container.fragments.hostA.HostAActivator;
 import org.jboss.test.osgi.container.fragments.subA.SubBeanA;
 import org.junit.After;
 import org.junit.Assume;
@@ -48,7 +54,6 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 07-Jan-2010
  */
-@Ignore("fragments")
 public class FragmentTestCase extends OSGiFrameworkTest
 {
    @After
@@ -61,9 +66,22 @@ public class FragmentTestCase extends OSGiFrameworkTest
    @Test
    public void testHostOnly() throws Exception
    {
-      // Bundle-SymbolicName: simple-hostA
-      // Private-Package: org.jboss.test.osgi.fragments.hostA, org.jboss.test.osgi.fragments.subA 
-      Bundle hostA = installBundle(getTestArchivePath("fragments-simple-hostA.jar"));
+      // Bundle-SymbolicName: simple-fragA
+      // Fragment-Host: simple-hostA
+      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostA");
+      archive.addClasses(HostAActivator.class, SubBeanA.class);
+      archive.setManifest(new Asset()
+      {
+         public InputStream openStream()
+         {
+            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+            builder.addBundleManifestVersion(2);
+            builder.addBundleSymbolicName(archive.getName());
+            builder.addBundleActivator(HostAActivator.class);
+            return builder.openStream();
+         }
+      });
+      Bundle hostA = installBundle(archive);
       assertBundleState(Bundle.INSTALLED, hostA.getState());
 
       hostA.start();
@@ -82,14 +100,28 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.UNINSTALLED, hostA.getState());
    }
 
-   @Test
+   @Ignore("testFragmentOnly")
    public void testFragmentOnly() throws Exception
    {
       // Bundle-SymbolicName: simple-fragA
       // Export-Package: org.jboss.test.osgi.fragments.fragA
-      // Include-Resource: resources/resource.txt=resource.txt
       // Fragment-Host: simple-hostA
-      Bundle fragA = installBundle(getTestArchivePath("fragments-simple-fragA.jar"));
+      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-fragA");
+      archive.addClasses(FragBeanA.class);
+      archive.addResource(getResourceFile("fragments/resource.txt"));
+      archive.setManifest(new Asset()
+      {
+         public InputStream openStream()
+         {
+            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+            builder.addBundleManifestVersion(2);
+            builder.addBundleSymbolicName(archive.getName());
+            builder.addExportPackages(FragBeanA.class);
+            builder.addFragmentHost("simple-hostA");
+            return builder.openStream();
+         }
+      });
+      Bundle fragA = installBundle(archive);
       assertBundleState(Bundle.INSTALLED, fragA.getState());
 
       URL entryURL = fragA.getEntry("resources/resource.txt");
@@ -112,7 +144,7 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.UNINSTALLED, fragA.getState());
    }
 
-   @Test
+   @Ignore("testAttachedFragment")
    public void testAttachedFragment() throws Exception
    {
       // Bundle-SymbolicName: simple-hostA
@@ -151,7 +183,7 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.UNINSTALLED, fragA.getState());
    }
 
-   @Test
+   @Ignore("testFragmentHidesPrivatePackage")
    public void testFragmentHidesPrivatePackage() throws Exception
    {
       // Bundle-SymbolicName: simple-hostA
@@ -192,7 +224,7 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.UNINSTALLED, fragB.getState());
    }
 
-   @Test
+   @Ignore("testFragmentExportsPackage")
    public void testFragmentExportsPackage() throws Exception
    {
       // Bundle-SymbolicName: simple-hostA
@@ -270,7 +302,7 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.UNINSTALLED, fragA.getState());
    }
 
-   @Test
+   @Ignore("testFragmentRequireBundle")
    public void testFragmentRequireBundle() throws Exception
    {
       // Bundle-SymbolicName: simple-hostA

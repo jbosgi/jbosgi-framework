@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.List;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
@@ -38,7 +37,7 @@ import org.osgi.framework.Version;
 
 /**
  * The base class for Bundle Revision implementations. Currently the only subclass is 
- * the {@link BundleRevision} class, but once fragments are supported it is expected that 
+ * the {@link HostBundleRevision} class, but once fragments are supported it is expected that 
  * there will also be a <tt>FragmentRevision</tt> subclass.<p/>
  * 
  * @author thomas.diesler@jboss.com
@@ -51,7 +50,7 @@ public abstract class AbstractRevision implements Revision
    private static final AtomicInteger revisionIDCounter = new AtomicInteger(1);
 
    private Deployment deployment;
-   private final InternalBundle internalBundle;
+   private final DeploymentBundle internalBundle;
    private final OSGiMetaData metadata;
    private final int id = revisionIDCounter.getAndIncrement();
    // The revision increases every time a bundle gets updated
@@ -61,7 +60,7 @@ public abstract class AbstractRevision implements Revision
    // Cache commonly used plugins
    private ModuleManagerPlugin modulePlugin;
 
-   AbstractRevision(InternalBundle internalBundle, Deployment deployment, int revision)
+   AbstractRevision(DeploymentBundle internalBundle, Deployment deployment, int revision)
    {
       this.internalBundle = internalBundle;
       this.deployment = deployment;
@@ -81,7 +80,7 @@ public abstract class AbstractRevision implements Revision
       return internalBundle.getBundleManager();
    }
 
-   public InternalBundle getInternalBundle()
+   public DeploymentBundle getInternalBundle()
    {
       return internalBundle;
    }
@@ -89,6 +88,11 @@ public abstract class AbstractRevision implements Revision
    public Deployment getDeployment()
    {
       return deployment;
+   }
+
+   public VirtualFile getContentRoot()
+   {
+      return deployment.getRoot();
    }
 
    public ModuleClassLoader getModuleClassLoader()
@@ -126,8 +130,6 @@ public abstract class AbstractRevision implements Revision
    }
 
    abstract URL getResource(String name);
-
-   abstract List<VirtualFile> getContentRoots();
 
    abstract Class<?> loadClass(String name) throws ClassNotFoundException;
 
