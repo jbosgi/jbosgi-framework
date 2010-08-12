@@ -28,9 +28,11 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleClassLoader;
+import org.jboss.osgi.container.loading.ModuleClassLoaderExt;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
@@ -55,6 +57,7 @@ public class HostRevision extends AbstractRevision
    static final Logger log = Logger.getLogger(HostRevision.class);
 
    private final List<VirtualFile> contentRoots;
+   private List<FragmentRevision> attachedFragments;
 
    public HostRevision(HostBundle hostBundle, Deployment dep, int revision) throws BundleException
    {
@@ -64,9 +67,17 @@ public class HostRevision extends AbstractRevision
       contentRoots = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
    }
 
-   List<VirtualFile> getContentRoots()
+   public List<VirtualFile> getContentRoots()
    {
       return contentRoots;
+   }
+
+   public List<FragmentRevision> getAttachedFragments()
+   {
+      if (attachedFragments == null)
+         return Collections.emptyList();
+      
+      return Collections.unmodifiableList(attachedFragments);
    }
 
    @Override
@@ -166,5 +177,16 @@ public class HostRevision extends AbstractRevision
          rootList = new ArrayList<VirtualFile>(Collections.singleton(rootFile));
       }
       return Collections.unmodifiableList(rootList);
+   }
+
+   public void attachFragment(FragmentRevision fragRev)
+   {
+      if (attachedFragments == null)
+         attachedFragments = new CopyOnWriteArrayList<FragmentRevision>();
+      
+      ModuleClassLoaderExt classLoader = (ModuleClassLoaderExt)getModuleClassLoader();
+      classLoader.attachFragment(fragRev);
+      
+      attachedFragments.add(fragRev);
    }
 }

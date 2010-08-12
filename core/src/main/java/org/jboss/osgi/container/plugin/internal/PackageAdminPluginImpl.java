@@ -43,7 +43,10 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.DeploymentBundle;
+import org.jboss.osgi.container.bundle.FragmentBundle;
+import org.jboss.osgi.container.bundle.FragmentRevision;
 import org.jboss.osgi.container.bundle.HostBundle;
+import org.jboss.osgi.container.bundle.HostRevision;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
@@ -448,15 +451,43 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public Bundle[] getFragments(Bundle bundle)
    {
-      // [TODO] PackageAdmin.getFragments
-      return null;
+      // If the specified bundle is a fragment then null is returned.
+      // If the specified bundle is not resolved then null is returned      
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      if (bundleState.isFragment() || bundleState.isResolved() == false)
+         return null;
+      
+      HostBundle hostBundle = HostBundle.assertBundleState(bundleState);
+      HostRevision curRevision = hostBundle.getCurrentRevision();
+      
+      List<Bundle> result = new ArrayList<Bundle>();
+      for (FragmentRevision aux : curRevision.getAttachedFragments())
+         result.add(aux.getBundleState().getBundleWrapper());
+      
+      if (result.isEmpty())
+         return null;
+      
+      return result.toArray(new Bundle[result.size()]);
    }
 
    @Override
    public Bundle[] getHosts(Bundle bundle)
    {
-      // [TODO] PackageAdmin.getHosts
-      return null;
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      if (bundleState.isFragment() == false)
+         return null;
+      
+      FragmentBundle fragBundle = FragmentBundle.assertBundleState(bundleState);
+      FragmentRevision curRevision = fragBundle.getCurrentRevision();
+      
+      List<Bundle> result = new ArrayList<Bundle>();
+      for (HostRevision aux : curRevision.getAttachedHosts())
+         result.add(aux.getBundleState().getBundleWrapper());
+      
+      if (result.isEmpty())
+         return null;
+      
+      return result.toArray(new Bundle[result.size()]);
    }
 
    @Override
@@ -477,7 +508,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       Module module = moduleCL.getModule();
       ModuleIdentifier identifier = module.getIdentifier();
       ModuleManagerPlugin plugin = getPlugin(ModuleManagerPlugin.class);
-      return plugin.getBundle(identifier).getBundleWrapper();
+      return plugin.getBundleState(identifier).getBundleWrapper();
    }
 
    @Override

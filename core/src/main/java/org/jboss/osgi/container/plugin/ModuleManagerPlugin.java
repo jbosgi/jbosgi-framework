@@ -66,7 +66,7 @@ public interface ModuleManagerPlugin extends Plugin
     * Get the bundle for the given identifier
     * @return The bundle or null
     */
-   AbstractBundle getBundle(ModuleIdentifier identifier);
+   AbstractBundle getBundleState(ModuleIdentifier identifier);
    
    /**
     * Load the module for the given identifier

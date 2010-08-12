@@ -30,8 +30,10 @@ import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.container.bundle.AbstractBundle;
+import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.DeploymentBundle;
+import org.jboss.osgi.container.bundle.FragmentRevision;
 import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
@@ -44,6 +46,7 @@ import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResolverCallback;
 import org.jboss.osgi.resolver.XResolverException;
 import org.jboss.osgi.resolver.XResolverFactory;
+import org.jboss.osgi.resolver.XWire;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -159,30 +162,41 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    private void applyResolverResults(List<XModule> resolved)
    {
       // For every resolved host bundle create the {@link ModuleSpec}
-      for (XModule aux : resolved)
-      {
-         if (aux.isFragment() == false)
-            moduleManager.createModuleSpec(aux);
-      }
+      createModuleSpecs(resolved);
+      
+      // For every resolved host bundle load the module. This creates the {@link ModuleClassLoader}
+      loadModules(resolved);
       
       for (XModule aux : resolved)
       {
-         // For every resolved host bundle load the module
-         // This creates the {@link ModuleClassLoader}
-         if (aux.isFragment() == false)
+         if (aux.isFragment() == true)
          {
-            ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(aux);
-            try
-            {
-               moduleManager.loadModule(identifier);
-            }
-            catch (ModuleLoadException ex)
-            {
-               throw new IllegalStateException("Cannot load module: " + identifier, ex);
-            }
+            FragmentRevision fragRev = (FragmentRevision)aux.getAttachment(AbstractRevision.class);
+            fragRev.attachToHost();
          }
+      }
+      
+      // Resolve native code libraries if there are any
+      resolveNativeCodeLibraries(resolved);
+      
+      // Change the bundle state to RESOLVED
+      setBundleToResolved(resolved);
+   }
 
-         // Resolve native code libraries if there are any
+   private void setBundleToResolved(List<XModule> resolved)
+   {
+      for (XModule aux : resolved)
+      {
+         Bundle bundle = aux.getAttachment(Bundle.class);
+         AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+         bundleState.changeState(Bundle.RESOLVED);
+      }
+   }
+
+   private void resolveNativeCodeLibraries(List<XModule> resolved)
+   {
+      for (XModule aux : resolved)
+      {
          if (aux.getModuleId() != 0)
          {
             Bundle bundle = aux.getAttachment(Bundle.class);
@@ -195,13 +209,33 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
                nativeCodePlugin.resolveNativeCode(bundleState);
          }
       }
-      
-      // Change the bundle state to RESOLVED
+   }
+
+   private void loadModules(List<XModule> resolved)
+   {
       for (XModule aux : resolved)
       {
-         Bundle bundle = aux.getAttachment(Bundle.class);
-         AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-         bundleState.changeState(Bundle.RESOLVED);
+         if (aux.isFragment() == false)
+         {
+            ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(aux);
+            try
+            {
+               moduleManager.loadModule(identifier);
+            }
+            catch (ModuleLoadException ex)
+            {
+               throw new IllegalStateException("Cannot load module: " + identifier, ex);
+            }
+         }
+      }
+   }
+
+   private void createModuleSpecs(List<XModule> resolved)
+   {
+      for (XModule aux : resolved)
+      {
+         if (aux.isFragment() == false)
+            moduleManager.createModuleSpec(aux);
       }
    }
 
@@ -215,22 +249,15 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       }
 
       @Override
-      public boolean acquireGlobalLock()
+      public void markResolved(XModule module)
       {
-         return true;
-      }
-
-      @Override
-      public void releaseGlobalLock()
-      {
-         // do nothing
-      }
-
-      @Override
-      public void markResolved(XModule resModule)
-      {
-         log.debug("Mark resolved: " + resModule);
-         resolved.add(resModule);
+         // Construct debug message
+         StringBuffer buffer = new StringBuffer("Mark resolved: " + module);
+         for (XWire wire : module.getWires())
+            buffer.append("\n " + wire.toString());
+         
+         log.debug(buffer);
+         resolved.add(module);
       }
    }
 }

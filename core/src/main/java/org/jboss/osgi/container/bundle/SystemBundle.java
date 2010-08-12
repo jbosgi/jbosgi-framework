@@ -129,6 +129,11 @@ public class SystemBundle extends AbstractBundle implements Revision
       return resolverModule;
    }
 
+   @Override
+   public boolean isFragment()
+   {
+      return false;
+   }
 
    @Override
    public List<XModule> getAllResolverModules()

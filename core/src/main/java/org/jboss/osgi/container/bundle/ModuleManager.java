@@ -170,7 +170,6 @@ public class ModuleManager extends ModuleLoader
 
    /**
     * Get the bundle from a module identifier
-    * [REVIEW] why does this not return a revision? 
     */
    public AbstractBundle getBundleState(ModuleIdentifier identifier)
    {
@@ -300,7 +299,8 @@ public class ModuleManager extends ModuleLoader
       builder.addLocalDependency(depBuilder.create());
       ModuleSpec frameworkSpec = builder.create();
 
-      AbstractBundle bundleState = (AbstractBundle)resModule.getAttachment(Bundle.class);
+      Bundle bundle = resModule.getAttachment(Bundle.class);
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
       modules.put(frameworkIdentifier, new ModuleHolder(bundleState, frameworkSpec));
       return frameworkSpec;
    }
@@ -404,8 +404,8 @@ public class ModuleManager extends ModuleLoader
          moduleSpec = specBuilder.create();
       }
 
-      // [REVIEW] log.debug("Created " + moduleSpec.toLongString(new StringBuffer()));
-      AbstractBundle bundleState = (AbstractBundle)resModule.getAttachment(Bundle.class);
+      Bundle bundle = resModule.getAttachment(Bundle.class);
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
       modules.put(moduleSpec.getModuleIdentifier(), new ModuleHolder(bundleState, moduleSpec));
       return moduleSpec;
    }
@@ -427,18 +427,17 @@ public class ModuleManager extends ModuleLoader
     */
    protected static class ModuleHolder
    {
-      // [REVIEW] Should this not hold a revision? 
-      private AbstractBundle bundleState;
-      private ModuleSpec moduleSpec;
+      private final AbstractBundle bundleState;
+      private final ModuleSpec moduleSpec;
       private Module module;
 
-      public ModuleHolder(AbstractBundle bundle, ModuleSpec moduleSpec)
+      public ModuleHolder(AbstractBundle bundleState, ModuleSpec moduleSpec)
       {
-         if (bundle == null)
+         if (bundleState == null)
             throw new IllegalArgumentException("Null bundle");
          if (moduleSpec == null)
             throw new IllegalArgumentException("Null moduleSpec");
-         this.bundleState = bundle;
+         this.bundleState = bundleState;
          this.moduleSpec = moduleSpec;
       }
 

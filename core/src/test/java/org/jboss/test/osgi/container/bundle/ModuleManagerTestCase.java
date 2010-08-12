@@ -77,8 +77,7 @@ public class ModuleManagerTestCase
             modules.put(mi, holder);
             return b;
          }
-      }
-      ;
+      };
 
       MyModuleManager mm = new MyModuleManager();
       Object ex1 = mm.createModule(0); // Create a module with revision 0

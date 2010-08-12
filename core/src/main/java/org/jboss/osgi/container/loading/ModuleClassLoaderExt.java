@@ -38,6 +38,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.FragmentRevision;
 import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
@@ -57,7 +58,7 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
    private final ModuleManager moduleManager;
    private final BundleManager bundleManager;
-   private final XModule resModule;
+   private final AbstractBundle bundleState;
    
    // List of native library providers 
    private volatile List<NativeLibraryProvider> nativeLibraries;
@@ -68,8 +69,7 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
       moduleManager = (ModuleManager)module.getModuleLoader();
       bundleManager = moduleManager.getBundleManager();
       
-      AbstractBundle bundle = moduleManager.getBundleState(module.getIdentifier());
-      resModule = bundle.getResolverModule();
+      bundleState = moduleManager.getBundleState(module.getIdentifier());
    }
 
    public void addNativeLibrary(NativeLibraryProvider libProvider)
@@ -78,6 +78,10 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
          nativeLibraries = new CopyOnWriteArrayList<NativeLibraryProvider>();
       
       nativeLibraries.add(libProvider);
+   }
+   
+   public void attachFragment(FragmentRevision fragRev)
+   {
    }
    
    @Override
@@ -130,7 +134,8 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
       }
       
       // Try to load the class dynamically
-      if (findMatchingDynamicImportPattern(className) != null)
+      String matchingPattern = findMatchingDynamicImportPattern(className);
+      if (matchingPattern != null)
       {
          result = loadClassDynamically(className);
          if (result != null)
@@ -192,6 +197,7 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
 
    private String findMatchingDynamicImportPattern(String className)
    {
+      XModule resModule = bundleState.getResolverModule();
       List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
       if (dynamicRequirements.isEmpty())
          return null;

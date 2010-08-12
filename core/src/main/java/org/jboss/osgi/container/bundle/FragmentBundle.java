@@ -28,6 +28,7 @@ import java.util.List;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.NotImplementedException;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -45,6 +46,24 @@ public class FragmentBundle extends DeploymentBundle
       super(bundleManager, deployment);
    }
 
+   /**
+    * Assert that the given bundle is an instance of FragmentBundle
+    * @throws IllegalArgumentException if the given bundle is not an instance of FragmentBundle
+    */
+   public static FragmentBundle assertBundleState(Bundle bundle)
+   {
+      if (bundle == null)
+         throw new IllegalArgumentException("Null bundle");
+
+      if (bundle instanceof BundleWrapper)
+         bundle = ((BundleWrapper)bundle).getBundleState();
+
+      if (bundle instanceof FragmentBundle == false)
+         throw new IllegalArgumentException("Not an FragmentBundle: " + bundle);
+
+      return (FragmentBundle)bundle;
+   }
+   
    @Override
    AbstractRevision createRevision(Deployment deployment, int revision) throws BundleException
    {
@@ -52,9 +71,21 @@ public class FragmentBundle extends DeploymentBundle
    }
 
    @Override
+   public FragmentRevision getCurrentRevision()
+   {
+      return (FragmentRevision)super.getCurrentRevision();
+   }
+
+   @Override
    public List<XModule> getAllResolverModules()
    {
       return Collections.emptyList();
+   }
+
+   @Override
+   public boolean isFragment()
+   {
+      return true;
    }
 
    @Override

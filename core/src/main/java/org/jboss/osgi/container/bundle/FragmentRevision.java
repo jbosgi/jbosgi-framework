@@ -23,9 +23,16 @@ package org.jboss.osgi.container.bundle;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.resolver.XFragmentHostRequirement;
+import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XRequirement;
+import org.jboss.osgi.resolver.XWire;
 import org.osgi.framework.BundleException;
 
 /**
@@ -39,9 +46,16 @@ import org.osgi.framework.BundleException;
  */
 public class FragmentRevision extends AbstractRevision
 {
+   private List<HostRevision> attachedHosts;
+   
    public FragmentRevision(FragmentBundle internalBundle, Deployment dep, int updateCount) throws BundleException
    {
       super(internalBundle, dep, updateCount);
+   }
+
+   public List<HostRevision> getAttachedHosts()
+   {
+      return Collections.unmodifiableList(attachedHosts);
    }
 
    @Override
@@ -62,5 +76,23 @@ public class FragmentRevision extends AbstractRevision
    {
       // Null if the resource could not be found or if this bundle is a fragment bundle
       return null;
+   }
+
+   public void attachToHost()
+   {
+      if (attachedHosts == null)
+         attachedHosts = new CopyOnWriteArrayList<HostRevision>();
+
+      for (XWire wire : getResolverModule().getWires())
+      {
+         XRequirement req = wire.getRequirement();
+         if (req instanceof XFragmentHostRequirement)
+         {
+            XModule hostModule = wire.getExporter();
+            HostRevision hostRev = (HostRevision)hostModule.getAttachment(AbstractRevision.class);
+            hostRev.attachFragment(this);
+            attachedHosts.add(hostRev);
+         }
+      }
    }
 }

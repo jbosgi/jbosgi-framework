@@ -64,7 +64,6 @@ public abstract class AbstractRevision implements Revision
    private final XModule resolverModule;
    private final OSGiMetaData metadata;
    private final int updateCount;
-   private final Version version;
 
    // Cache commonly used plugins
    private final ModuleManagerPlugin moduleManager;
@@ -85,8 +84,6 @@ public abstract class AbstractRevision implements Revision
       resolverModule.addAttachment(AbstractRevision.class, this);
       resolverModule.addAttachment(Bundle.class, bundleState);
       
-      this.version = metadata.getBundleVersion();
-
       this.moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
    }
 
@@ -108,6 +105,11 @@ public abstract class AbstractRevision implements Revision
       return resolverModule;
    }
 
+   public DeploymentBundle getBundleState()
+   {
+      return bundleState;
+   }
+
    ModuleClassLoader getModuleClassLoader()
    {
       ModuleIdentifier identifier = bundleState.getModuleIdentifier();
@@ -118,11 +120,6 @@ public abstract class AbstractRevision implements Revision
    BundleManager getBundleManager()
    {
       return bundleState.getBundleManager();
-   }
-
-   DeploymentBundle getBundleState()
-   {
-      return bundleState;
    }
 
    Deployment getDeployment()
@@ -145,9 +142,14 @@ public abstract class AbstractRevision implements Revision
       return metadata;
    }
 
+   String getSymbolicName()
+   {
+      return bundleState.getSymbolicName();
+   }
+   
    Version getVersion()
    {
-      return version;
+      return metadata.getBundleVersion();
    }
 
    abstract Class<?> loadClass(String name) throws ClassNotFoundException;
@@ -200,5 +202,11 @@ public abstract class AbstractRevision implements Revision
    URL getLocalizationEntry()
    {
       return null;
+   }
+
+   @Override
+   public String toString()
+   {
+      return "Revision[" + getSymbolicName() + ":" + getVersion() + ":rev-" + updateCount + "]";
    }
 }

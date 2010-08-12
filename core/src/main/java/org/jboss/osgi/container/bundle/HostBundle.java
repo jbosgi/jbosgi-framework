@@ -101,6 +101,12 @@ public class HostBundle extends DeploymentBundle
    }
 
    @Override
+   public boolean isFragment()
+   {
+      return false;
+   }
+   
+   @Override
    public boolean ensureResolved()
    {
       boolean result = true;

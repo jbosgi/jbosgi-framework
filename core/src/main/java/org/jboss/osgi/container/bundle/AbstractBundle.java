@@ -116,6 +116,8 @@ public abstract class AbstractBundle implements Bundle
       this.bundleId = (systemBundle ? 0 : bundleManager.getNextBundleId());
    }
 
+   public abstract boolean isFragment();
+
    public abstract void addToResolver();
 
    public abstract boolean ensureResolved();
@@ -124,10 +126,12 @@ public abstract class AbstractBundle implements Bundle
 
    abstract AbstractBundleContext createContextInternal();
 
-   @Override
-   public abstract String getLocation();
-
    public abstract OSGiMetaData getOSGiMetaData();
+
+   public boolean isResolved()
+   {
+      return getResolverModule().isResolved();
+   }
 
    /** 
     * This method returns the current resolver module of the bundle.
@@ -477,7 +481,7 @@ public abstract class AbstractBundle implements Bundle
    public void uninstall() throws BundleException
    {
       assertNotUninstalled();
-      
+
       if (bundleManager.getBundleById(getBundleId()) == null)
          throw new BundleException("Not installed: " + this);
 
