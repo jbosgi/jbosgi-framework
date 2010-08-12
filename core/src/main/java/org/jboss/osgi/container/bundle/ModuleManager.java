@@ -222,7 +222,8 @@ public class ModuleManager extends ModuleLoader
    }
 
    // In some cases a module is looked up without a revision being specified. An example being a module
-   // dependency declared in a modules.xml file. In that case we need to search for the module
+   // dependency declared in a modules.xml file. In that case we need to search for the module and return
+   // the one with the highest revision number.
    private ModuleHolder getModuleFromUnrevisionedIdentifier(ModuleIdentifier identifier)
    {
       if (identifier.getVersion() != null && identifier.getVersion().contains(REVISION_MARKER))
