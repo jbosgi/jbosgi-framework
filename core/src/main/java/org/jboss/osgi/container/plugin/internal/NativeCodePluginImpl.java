@@ -33,10 +33,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.DeploymentBundle;
 import org.jboss.osgi.container.bundle.FrameworkState;
-import org.jboss.osgi.container.bundle.InternalBundle;
 import org.jboss.osgi.container.loading.ModuleClassLoaderExt;
 import org.jboss.osgi.container.loading.NativeLibraryProvider;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
@@ -114,9 +115,9 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
    @SuppressWarnings("unchecked")
    public void deployNativeCode(Deployment dep)
    {
-      InternalBundle bundleState = dep.getAttachment(InternalBundle.class);
+      AbstractBundle bundleState = dep.getAttachment(AbstractBundle.class);
       if (bundleState == null)
-         throw new IllegalStateException("Cannot obtain InternalBundle from: " + dep);
+         throw new IllegalStateException("Cannot obtain Bundle from: " + dep);
       
       OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
       List<ParameterizedAttribute> nativeCodeParams = osgiMetaData.getBundleNativeCode();
@@ -210,7 +211,7 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
          String libname = libfile.substring(0, libfile.lastIndexOf('.'));
          
          // Add the library provider to the policy
-         InternalBundle bundleState = bundleRev.getInternalBundle();
+         DeploymentBundle bundleState = bundleRev.getInternalBundle();
          NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(bundleState, libname, libpath);
          moduleClassLoader.addNativeLibrary(libProvider);
          
@@ -294,12 +295,12 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
 
    class BundleNativeLibraryProvider implements NativeLibraryProvider
    {
-      private InternalBundle bundleState;
+      private DeploymentBundle bundleState;
       private String libpath;
       private String libname;
       private File libraryFile;
       
-      BundleNativeLibraryProvider(InternalBundle bundleState, String libname, String libpath)
+      BundleNativeLibraryProvider(DeploymentBundle bundleState, String libname, String libpath)
       {
          this.bundleState = bundleState;
          this.libpath = libpath;
@@ -330,7 +331,7 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
          if (libraryFile == null)
          {
             // Get the virtual file for entry for the library
-            VirtualFile root = bundleState.getContentRoots().get(0);
+            VirtualFile root = bundleState.getContentRoot();
             VirtualFile fileSource = root.getChild(libpath);
             
             // Create a unique local file location
@@ -345,7 +346,7 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
          return libraryFile;
       }
 
-      private File getUniqueLibraryFile(final InternalBundle bundleState, final String libpath)
+      private File getUniqueLibraryFile(final DeploymentBundle bundleState, final String libpath)
       {
          BundleManager bundleManager = bundleState.getBundleManager();
          String timestamp = new SimpleDateFormat("-yyyyMMdd-HHmmssSSS").format(new Date(bundleState.getLastModified()));

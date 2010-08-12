@@ -43,26 +43,25 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
- * A {@link BundleRevision} is responsible for the classloading and resource loading of a bundle.
- * It is associated with a {@link XModule} which holds the wiring information
- * of the bundle.<p/>
- *  
- * Every time a bundle is updated a new {@link BundleRevision} is created and referenced 
- * from the {@link InternalBundle}. 
+ * A {@link HostBundleRevision} is responsible for the classloading and resource loading of a bundle.
  * 
+ * It is associated with a {@link XModule} which holds the wiring information of the bundle.<p/>
+ *  
+ * Every time a bundle is updated a new {@link HostBundleRevision} is created and referenced 
+ * from the {@link HostBundle}. 
  * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-public class BundleRevision extends AbstractRevision
+public class HostBundleRevision extends AbstractRevision
 {
-   private static final Logger log = Logger.getLogger(BundleRevision.class);
+   private static final Logger log = Logger.getLogger(HostBundleRevision.class);
 
    private XModule resolverModule;
    private List<VirtualFile> contentRoots;
 
-   public BundleRevision(InternalBundle internalBundle, Deployment dep, int revision) throws BundleException
+   public HostBundleRevision(HostBundle internalBundle, Deployment dep, int revision) throws BundleException
    {
       super(internalBundle, dep, revision);
 
@@ -81,17 +80,15 @@ public class BundleRevision extends AbstractRevision
          resolverModule.addAttachment(ModuleSpec.class, moduleSpec);
    }
 
+   List<VirtualFile> getContentRoots()
+   {
+      return contentRoots;
+   }
+
    @Override
    public XModule getResolverModule()
    {
       return resolverModule;
-   }
-
-
-   @Override
-   List<VirtualFile> getContentRoots()
-   {
-      return contentRoots;
    }
 
    @Override

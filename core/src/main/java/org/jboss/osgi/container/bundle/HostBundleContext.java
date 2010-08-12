@@ -31,10 +31,10 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class InternalBundleContext extends AbstractBundleContext
+public class HostBundleContext extends DeploymentBundleContext
 {
-   public InternalBundleContext(AbstractBundle bundle, Map<String, String> props)
+   public HostBundleContext(AbstractBundle bundle, Map<String, String> props)
    {
-      super(bundle);
+      super(bundle, props);
    }
 }

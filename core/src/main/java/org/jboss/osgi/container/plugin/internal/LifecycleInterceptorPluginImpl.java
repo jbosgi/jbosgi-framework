@@ -22,15 +22,16 @@
 package org.jboss.osgi.container.plugin.internal;
 
 import org.jboss.logging.Logger;
-import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.AbstractBundle;
+import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.DeploymentBundle;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.LifecycleInterceptorPlugin;
+import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.AbstractLifecycleInterceptorService;
 import org.jboss.osgi.deployment.interceptor.InvocationContext;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
 import org.jboss.osgi.deployment.internal.InvocationContextImpl;
-import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.util.AttachmentSupport;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -70,15 +71,17 @@ public class LifecycleInterceptorPluginImpl extends AbstractPlugin implements Li
             if (bundleState == null)
                throw new IllegalStateException("Cannot obtain bundleState for: " + bundle);
 
-            XModule unit = bundleState.getResolverModule();
-            InvocationContext inv = unit.getAttachment(InvocationContext.class);
+            DeploymentBundle depBundle = DeploymentBundle.assertBundleState(bundleState);
+            
+            Deployment dep = depBundle.getDeployment();
+            InvocationContext inv = dep.getAttachment(InvocationContext.class);
             if (inv == null)
             {
-               BundleContext context = bundleState.getBundleManager().getSystemContext();
-               VirtualFile rootFile = bundleState.getContentRoots().get(0);
+               BundleContext context = depBundle.getBundleManager().getSystemContext();
+               VirtualFile rootFile = depBundle.getContentRoot();
                LifecycleInterceptorAttachments att = new LifecycleInterceptorAttachments();
                inv = new InvocationContextImpl(context, bundle, rootFile, att);
-               unit.addAttachment(InvocationContext.class, inv);
+               dep.addAttachment(InvocationContext.class, inv);
             }
             return inv;
          }

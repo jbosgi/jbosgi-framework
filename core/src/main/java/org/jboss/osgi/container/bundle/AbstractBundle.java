@@ -52,17 +52,24 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.spi.util.ConstantsHelper;
-import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
+import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * This is the internal base class for all bundles and fragments, including
  * the System Bundle.<p/> 
+ * 
+ * The logic related to loading of classes and resources is delegated to the current {@link HostBundleRevision}. 
+ * As bundles can be updated there can be multiple bundle revisions.<p/>
+ * 
+ * The {@link AbstractBundle} can contain multiple revisions: the current revision and any number of old revisions.
+ * This relates to updating of bundles. When a bundle is updated a new revision is created and assigned to the current revision. 
+ * However, the previous revision is kept available until {@link PackageAdmin#refreshPackages(Bundle[])} is called.<p/>
  * 
  * Common Bundle functionality is implemented in this base class, such as service
  * reference counting and state management. 
@@ -135,8 +142,6 @@ public abstract class AbstractBundle implements Bundle
     * @return A list of all the resolver modules
     */
    public abstract List<XModule> getAllResolverModules();
-
-   public abstract List<VirtualFile> getContentRoots();
 
    /**
     * Assert that the given bundle is an instance of AbstractBundle

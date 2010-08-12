@@ -40,7 +40,6 @@ import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.spi.NotImplementedException;
-import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -135,11 +134,6 @@ public class SystemBundle extends AbstractBundle implements Revision
    public List<XModule> getAllResolverModules()
    {
       return Collections.singletonList(resolverModule);
-   }
-
-   public List<VirtualFile> getContentRoots()
-   {
-      return Collections.emptyList();
    }
 
    @Override

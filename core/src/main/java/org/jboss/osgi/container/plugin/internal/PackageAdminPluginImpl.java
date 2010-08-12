@@ -42,7 +42,8 @@ import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.InternalBundle;
+import org.jboss.osgi.container.bundle.DeploymentBundle;
+import org.jboss.osgi.container.bundle.HostBundle;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
@@ -189,7 +190,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public void refreshPackages(final Bundle[] bundlesToRefresh)
    {
-      Runnable r = new Runnable()
+      Runnable run = new Runnable()
       {
          @Override
          public void run()
@@ -209,22 +210,22 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                bundles = allBundles.toArray(new Bundle[allBundles.size()]);
             }
 
-            Map<XModule, InternalBundle> refreshMap = new HashMap<XModule, InternalBundle>();
+            Map<XModule, HostBundle> refreshMap = new HashMap<XModule, HostBundle>();
             for (Bundle b : bundles)
             {
                if (b.getBundleId() == 0)
                   continue;
 
-               InternalBundle ib = InternalBundle.assertBundleState(b);
+               HostBundle ib = HostBundle.assertBundleState(b);
                for (XModule resModule : ib.getAllResolverModules())
                   refreshMap.put(resModule, ib);
             }
 
-            Set<InternalBundle> stopBundles = new HashSet<InternalBundle>();
-            Set<InternalBundle> refreshBundles = new HashSet<InternalBundle>();
-            Set<InternalBundle> uninstallBundles = new HashSet<InternalBundle>();
+            Set<HostBundle> stopBundles = new HashSet<HostBundle>();
+            Set<HostBundle> refreshBundles = new HashSet<HostBundle>();
+            Set<HostBundle> uninstallBundles = new HashSet<HostBundle>();
             
-            for (InternalBundle ib : refreshMap.values())
+            for (HostBundle ib : refreshMap.values())
             {
                if (ib.getState() == Bundle.UNINSTALLED)
                   uninstallBundles.add(ib);
@@ -235,9 +236,9 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             // Compute all depending bundles that need to be stopped and unresolved.
             for (AbstractBundle ab : getBundleManager().getBundles())
             {
-               if (ab instanceof InternalBundle == false)
+               if (ab instanceof HostBundle == false)
                   continue;
-               InternalBundle ib = (InternalBundle)ab;
+               HostBundle ib = (HostBundle)ab;
 
                XModule rm = ib.getResolverModule();
                List<XWire> wires = rm.getWires();
@@ -261,7 +262,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             }
 
             // Add relevant bundles to be refreshed also to the stop list. 
-            for (InternalBundle ib : new HashSet<InternalBundle>(refreshMap.values()))
+            for (HostBundle ib : new HashSet<HostBundle>(refreshMap.values()))
             {
                int state = ib.getState();
                if (state == Bundle.ACTIVE || state == Bundle.STARTING)
@@ -270,17 +271,17 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                }
             }
 
-            List<InternalBundle> stopList = new ArrayList<InternalBundle>(stopBundles);
-            List<InternalBundle> refreshList = new ArrayList<InternalBundle>(refreshBundles);
+            List<HostBundle> stopList = new ArrayList<HostBundle>(stopBundles);
+            List<HostBundle> refreshList = new ArrayList<HostBundle>(refreshBundles);
 
             StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);
             BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator(startLevel);
             Collections.sort(stopList, startLevelComparator);
             Collections.sort(refreshList, startLevelComparator);
 
-            for (ListIterator<InternalBundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();)
+            for (ListIterator<HostBundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();)
             {
-               InternalBundle ib = it.previous();
+               DeploymentBundle ib = it.previous();
                try
                {
                   ib.stop(Bundle.STOP_TRANSIENT);
@@ -291,9 +292,9 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                }
             }
 
-            for (ListIterator<InternalBundle> it = refreshList.listIterator(refreshList.size()); it.hasPrevious();)
+            for (ListIterator<HostBundle> it = refreshList.listIterator(refreshList.size()); it.hasPrevious();)
             {
-               InternalBundle ib = it.previous();
+               HostBundle ib = it.previous();
                try
                {
                   ib.unresolve();
@@ -305,10 +306,10 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                }
             }
 
-            for (InternalBundle ib : uninstallBundles)
+            for (HostBundle ib : uninstallBundles)
                ib.remove();
 
-            for (InternalBundle ib : refreshList)
+            for (HostBundle ib : refreshList)
             {
                try
                {
@@ -320,7 +321,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                }
             }
 
-            for (InternalBundle b : stopList)
+            for (DeploymentBundle b : stopList)
             {
                try
                {
@@ -335,7 +336,8 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
          }
       };
-      getExecutor().execute(r);
+      run.run();
+      //getExecutor().execute(run);
    }
 
    @Override
@@ -607,7 +609,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       }
    }
 
-   private static class BundleStartLevelComparator implements Comparator<InternalBundle>
+   private static class BundleStartLevelComparator implements Comparator<HostBundle>
    {
       private final StartLevel startLevel;
 
@@ -617,7 +619,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       }
 
       @Override
-      public int compare(InternalBundle o1, InternalBundle o2)
+      public int compare(HostBundle o1, HostBundle o2)
       {
          if (startLevel == null)
             return 0;

@@ -63,7 +63,6 @@ import org.jboss.osgi.container.plugin.internal.WebXMLVerifierInterceptor;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XVersionRange;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -286,7 +285,7 @@ public class BundleManager
    /**
     * Install a bundle from the given location.
     */
-   public InternalBundle installBundle(URL location) throws BundleException
+   public AbstractBundle installBundle(URL location) throws BundleException
    {
       return installBundle(location.toExternalForm(), null);
    }
@@ -294,7 +293,7 @@ public class BundleManager
    /**
     * Install a bundle from the given location.
     */
-   public InternalBundle installBundle(String location) throws BundleException
+   public AbstractBundle installBundle(String location) throws BundleException
    {
       return installBundle(location, null);
    }
@@ -302,7 +301,7 @@ public class BundleManager
    /**
     * Install a bundle from the given location and optional input stream.
     */
-   public InternalBundle installBundle(String location, InputStream input) throws BundleException
+   public AbstractBundle installBundle(String location, InputStream input) throws BundleException
    {
       if (location == null)
          throw new BundleException("Null location");
@@ -358,7 +357,7 @@ public class BundleManager
    /**
     * Install a bundle from the given {@link VirtualFile}
     */
-   private InternalBundle install(VirtualFile rootFile, String location, boolean autoStart) throws BundleException
+   private AbstractBundle install(VirtualFile rootFile, String location, boolean autoStart) throws BundleException
    {
       BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
       Deployment dep = plugin.createDeployment(rootFile, location);
@@ -369,34 +368,33 @@ public class BundleManager
    /**
     * Install a bundle from a {@link Deployment} 
     */
-   private InternalBundle installBundle(Deployment dep) throws BundleException
+   private AbstractBundle installBundle(Deployment dep) throws BundleException
    {
       if (dep == null)
          throw new IllegalArgumentException("Null deployment");
 
       // If a bundle containing the same location identifier is already installed, 
       // the Bundle object for that bundle is returned. 
-      AbstractBundle bundle = getBundleByLocation(dep.getLocation());
-      if (bundle instanceof InternalBundle)
-         return (InternalBundle)bundle;
+      AbstractBundle bundleState = getBundleByLocation(dep.getLocation());
+      if (bundleState != null)
+         return bundleState;
 
-      InternalBundle bundleState = createBundle(dep);
+      bundleState = createBundle(dep);
       addBundleState(bundleState);
       return bundleState;
    }
 
-   private InternalBundle createBundle(Deployment dep) throws BundleException
+   private AbstractBundle createBundle(Deployment dep) throws BundleException
    {
       BundleDeploymentPlugin deploymentPlugin = getPlugin(BundleDeploymentPlugin.class);
       OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
-      if (metadata.getFragmentHost() != null)
-         throw new NotImplementedException("Fragments not supported");
 
       dep.addAttachment(OSGiMetaData.class, metadata);
 
-      // Create the deployed bundle
-      InternalBundle bundleState = new InternalBundle(this, dep);
-      dep.addAttachment(InternalBundle.class, bundleState);
+      // Create the bundle state
+      boolean isFragment = metadata.getFragmentHost() != null;
+      AbstractBundle bundleState = (isFragment ? new FragmentBundle(this, dep) : new HostBundle(this, dep));
+      dep.addAttachment(AbstractBundle.class, bundleState);
       
       // Validate the deployed bundle
       // The system bundle is not validated
@@ -413,7 +411,7 @@ public class BundleManager
       return bundleState;
    }
 
-   private void validateBundle(InternalBundle bundleState) throws BundleException
+   private void validateBundle(AbstractBundle bundleState) throws BundleException
    {
       OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
       if (osgiMetaData == null)
