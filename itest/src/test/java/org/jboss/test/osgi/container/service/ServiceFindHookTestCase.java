@@ -37,6 +37,7 @@ import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.Test;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.hooks.service.FindHook;
 
 /**
@@ -83,39 +84,46 @@ public class ServiceFindHookTestCase extends OSGiFrameworkTest
          }
       };
 
-      context.registerService(FindHook.class.getName(), hook, null);
-      ServiceReference sref1 = context.registerService(Runnable.class.getName(), service, null).getReference();
-      ServiceReference sref2= context.registerService(Runnable.class.getName(), service, null).getReference();
-      
-      ServiceReference sref = context.getServiceReference(Runnable.class.getName());
-      assertNotNull("Reference not null", sref);
-      assertFalse("All services false", allServices[callIndex.get()]);
-      assertEquals(sref1, sref);
-      assertTrue("All good", allGood[callIndex.get()]);
-      
-      callIndex.incrementAndGet();
-      ServiceReference[] srefs = context.getServiceReferences(Runnable.class.getName(), null);
-      assertNotNull("References not null", srefs);
-      assertEquals(2, srefs.length);
-      assertEquals(sref1, srefs[0]);
-      assertEquals(sref2, srefs[1]);
-      assertFalse("All services false", allServices[callIndex.get()]);
-      assertTrue("All good", allGood[callIndex.get()]);
-      
-      callIndex.incrementAndGet();
-      srefs = context.getServiceReferences(Runnable.class.getName(), null);
-      assertNotNull("References not null", srefs);
-      assertEquals(1, srefs.length);
-      assertEquals(sref2, srefs[0]);
-      assertFalse("All services false", allServices[callIndex.get()]);
-      assertTrue("All good", allGood[callIndex.get()]);
-      
-      callIndex.incrementAndGet();
-      srefs = context.getAllServiceReferences(Runnable.class.getName(), null);
-      assertEquals(2, srefs.length);
-      assertEquals(sref1, srefs[0]);
-      assertEquals(sref2, srefs[1]);
-      assertTrue("All services true", allServices[callIndex.get()]);
-      assertTrue("All good", allGood[callIndex.get()]);
+      ServiceRegistration registration = context.registerService(FindHook.class.getName(), hook, null);
+      try
+      {
+         ServiceReference sref1 = context.registerService(Runnable.class.getName(), service, null).getReference();
+         ServiceReference sref2= context.registerService(Runnable.class.getName(), service, null).getReference();
+         
+         ServiceReference sref = context.getServiceReference(Runnable.class.getName());
+         assertNotNull("Reference not null", sref);
+         assertFalse("All services false", allServices[callIndex.get()]);
+         assertEquals(sref1, sref);
+         assertTrue("All good", allGood[callIndex.get()]);
+         
+         callIndex.incrementAndGet();
+         ServiceReference[] srefs = context.getServiceReferences(Runnable.class.getName(), null);
+         assertNotNull("References not null", srefs);
+         assertEquals(2, srefs.length);
+         assertEquals(sref1, srefs[0]);
+         assertEquals(sref2, srefs[1]);
+         assertFalse("All services false", allServices[callIndex.get()]);
+         assertTrue("All good", allGood[callIndex.get()]);
+         
+         callIndex.incrementAndGet();
+         srefs = context.getServiceReferences(Runnable.class.getName(), null);
+         assertNotNull("References not null", srefs);
+         assertEquals(1, srefs.length);
+         assertEquals(sref2, srefs[0]);
+         assertFalse("All services false", allServices[callIndex.get()]);
+         assertTrue("All good", allGood[callIndex.get()]);
+         
+         callIndex.incrementAndGet();
+         srefs = context.getAllServiceReferences(Runnable.class.getName(), null);
+         assertEquals(2, srefs.length);
+         assertEquals(sref1, srefs[0]);
+         assertEquals(sref2, srefs[1]);
+         assertTrue("All services true", allServices[callIndex.get()]);
+         assertTrue("All good", allGood[callIndex.get()]);
+      }
+      finally
+      {
+         registration.unregister();
+      }
    }
 }

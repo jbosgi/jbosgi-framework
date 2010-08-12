@@ -209,7 +209,7 @@ public class HostBundle extends DeploymentBundle
       // Resolve this bundles 
       getResolverPlugin().resolve(getResolverModule());
 
-      // The BundleActivator.start(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, if one is specified, is called. 
+      // The BundleActivator.start(BundleContext) method of this bundle's BundleActivator, if one is specified, is called. 
       try
       {
          // Create the bundle context

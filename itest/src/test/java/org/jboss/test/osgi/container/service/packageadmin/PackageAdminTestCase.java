@@ -666,7 +666,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
          assertTrue(exported.contains(ExportB.class.getPackage().getName()));
          assertEquals(2, exported.size());
          
-         packageAdminRefresh(new Bundle [] {bundleE, bundleU, bundleI});
+         refreshPackages(new Bundle [] {bundleE, bundleU, bundleI});
          
          assertEquals(Bundle.ACTIVE, bundleE.getState());
          assertEquals(Bundle.ACTIVE, bundleU.getState());
