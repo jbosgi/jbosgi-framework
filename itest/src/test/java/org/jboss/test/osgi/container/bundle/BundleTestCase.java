@@ -386,26 +386,31 @@ public class BundleTestCase extends OSGiFrameworkTest
       }
    }
 
+   @Test
    @Ignore("testUpdateExceptionStart")
    public void testUpdateExceptionStart() throws Exception
    {
    }
 
+   @Test
    @Ignore("testUpdateExceptionStop")
    public void testUpdateExceptionStop()
    {
    }
 
+   @Test
    @Ignore("testBundleUpdateLocation")
    public void testBundleUpdateLocation()
    {
    }
 
+   @Test
    @Ignore("testImportOldPackage")
    public void testImportOldPackage()
    {
    }
 
+   @Test
    @Ignore("testUninstall")
    public void testUninstall() throws Exception
    {
@@ -487,36 +492,42 @@ public class BundleTestCase extends OSGiFrameworkTest
    }
 
    @Test
+   @Ignore("testLocation")
    public void testLocation() throws Exception
    {
       // TODO testGetLocation
    }
 
    @Test
+   @Ignore("testGetRegisteredServices")
    public void testGetRegisteredServices() throws Exception
    {
       // TODO testGetRegisteredServices
    }
 
    @Test
+   @Ignore("testServicesInUse")
    public void testServicesInUse() throws Exception
    {
       // TODO testServicesInUse
    }
 
    @Test
+   @Ignore("testHasPermission")
    public void testHasPermission() throws Exception
    {
       // TODO testHasPermission
    }
 
    @Test
+   @Ignore("testGetResources")
    public void testGetResources() throws Exception
    {
       // TODO testGetResource(s)
    }
 
    @Test
+   @Ignore("testLoadClass")
    public void testLoadClass() throws Exception
    {
       // TODO testLoadClass
