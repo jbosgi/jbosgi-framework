@@ -454,7 +454,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       // If the specified bundle is a fragment then null is returned.
       // If the specified bundle is not resolved then null is returned      
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      if (bundleState.isFragment() || bundleState.isResolved() == false)
+      if (bundle.getBundleId() == 0 || bundleState.isFragment() || !bundleState.isResolved())
          return null;
       
       HostBundle hostBundle = HostBundle.assertBundleState(bundleState);
