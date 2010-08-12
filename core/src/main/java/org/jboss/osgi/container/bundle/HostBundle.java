@@ -103,7 +103,8 @@ public class HostBundle extends DeploymentBundle
    @Override
    public void addToResolver()
    {
-      getResolverPlugin().addRevision(getCurrentRevision());
+      XModule resModule = getResolverModule();
+      getResolverPlugin().addRevision(resModule);
    }
 
    @Override
@@ -116,7 +117,8 @@ public class HostBundle extends DeploymentBundle
       {
          try
          {
-            getResolverPlugin().resolve(getCurrentRevision());
+            XModule resModule = getResolverModule();
+            getResolverPlugin().resolve(resModule);
          }
          catch (BundleException ex)
          {
@@ -133,7 +135,10 @@ public class HostBundle extends DeploymentBundle
    public void removeFromResolver()
    {
       for (AbstractRevision abr : getRevisions())
-         getResolverPlugin().removeRevision(abr);
+      {
+         XModule resModule = abr.getResolverModule();
+         getResolverPlugin().removeRevision(resModule);
+      }
 
       clearRevisions();
    }
@@ -174,7 +179,10 @@ public class HostBundle extends DeploymentBundle
       for (AbstractRevision abr : getRevisions())
       {
          if (abr != getCurrentRevision())
-            getResolverPlugin().removeRevision(abr);
+         {
+            XModule resModule = abr.getResolverModule();
+            getResolverPlugin().removeRevision(resModule);
+         }
       }
       clearRevisions();
    }
@@ -212,7 +220,7 @@ public class HostBundle extends DeploymentBundle
 
       // Resolve this bundles 
       if (getState() == Bundle.INSTALLED)
-         getResolverPlugin().resolve(getCurrentRevision());
+         getResolverPlugin().resolve(getResolverModule());
 
       // The BundleActivator.start(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, if one is specified, is called. 
       try
@@ -462,7 +470,7 @@ public class HostBundle extends DeploymentBundle
          log.infof("Ignoring update of symbolic name: %s", md.getBundleSymbolicName());
 
       createRevision(dep);
-      getResolverPlugin().addRevision(getCurrentRevision());
+      getResolverPlugin().addRevision(getResolverModule());
    }
 
    @Override

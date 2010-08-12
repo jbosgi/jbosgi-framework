@@ -70,7 +70,7 @@ public class SystemBundle extends AbstractBundle implements Revision
       // Initialize the system resolver module
       // [TODO] Bring the resolver module in sync with the metadata
       XModuleBuilder builder = XResolverFactory.getModuleBuilder();
-      resolverModule = builder.createModule(getRevisionID(), getSymbolicName(), getVersion());
+      resolverModule = builder.createModule(getGlobalRevisionId(), getSymbolicName(), getVersion());
       resolverModule.addAttachment(Bundle.class, this);
       
       builder.addBundleCapability(getSymbolicName(), getVersion());
@@ -145,7 +145,7 @@ public class SystemBundle extends AbstractBundle implements Revision
    @Override
    public void addToResolver()
    {
-      getResolverPlugin().addRevision(this);
+      getResolverPlugin().addRevision(getResolverModule());
    }
 
    @Override
@@ -158,7 +158,7 @@ public class SystemBundle extends AbstractBundle implements Revision
    @Override
    public void removeFromResolver()
    {
-      getResolverPlugin().removeRevision(this);
+      getResolverPlugin().removeRevision(getResolverModule());
    }
 
    @Override
@@ -243,14 +243,14 @@ public class SystemBundle extends AbstractBundle implements Revision
    }
 
    @Override
-   public int getRevisionID()
+   public int getGlobalRevisionId()
    {
       // The system bundle has revision ID 0
       return 0;
    }
 
    @Override
-   public int getRevision()
+   public int getRevisionId()
    {
       // There is only 1 revision from the system bundle
       return 0;

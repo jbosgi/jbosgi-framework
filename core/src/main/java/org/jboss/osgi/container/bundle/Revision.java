@@ -39,7 +39,7 @@ public interface Revision
     * The System Bundle has only 1 revision which has the number 0
     * @return the unique revision ID.
     */
-   int getRevisionID();
+   int getGlobalRevisionId();
 
    /**
     * The revision number of a bundle or fragment. Since bundles can have multiple revisions
@@ -47,7 +47,7 @@ public interface Revision
     * Every bundle starts with revision number 0. 
     * @return the revision of this bundle or fragment.
     */
-   int getRevision();
+   int getRevisionId();
 
    /**
     * Return the associated {@link XModule} instance.

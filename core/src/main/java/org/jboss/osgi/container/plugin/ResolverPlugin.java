@@ -25,7 +25,7 @@ package org.jboss.osgi.container.plugin;
 
 import java.util.List;
 
-import org.jboss.osgi.container.bundle.Revision;
+import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.BundleException;
 
@@ -44,28 +44,28 @@ public interface ResolverPlugin extends Plugin
    XResolver getResolver();
 
    /**
-    * Add a bundle revision to the resolver.
-    * @param revision the bundle revision
+    * Add a bundle resModule to the resolver.
+    * @param resModule the bundle resModule
     */
-   void addRevision(Revision revision);
+   void addRevision(XModule resModule);
 
    /**
-    * Remove a bundle revision from the resolver.
-    * @param revision the bundle revision
+    * Remove a bundle resModule from the resolver.
+    * @param resModule the bundle resModule
     */
-   void removeRevision(Revision revision);
+   void removeRevision(XModule resModule);
    
    /**
-    * Resolve the given bundle revision.
-    * @param revision the bundle revision to resolve
+    * Resolve the given bundle resModule.
+    * @param resModule the bundle resModule to resolve
     * @throws BundleException If the bundle could not get resolved
     */
-   void resolve(Revision revision) throws BundleException;
+   void resolve(XModule resModule) throws BundleException;
 
    /**
     * Resolve the given list of bundle revisions.
     * @param revisions the bundle revisions to resolve
     * @return The list of resolved revisions in the resolve order or an empty list
     */
-   List<Revision> resolve(List<Revision> revisions);
+   List<XModule> resolve(List<XModule> revisions);
 }

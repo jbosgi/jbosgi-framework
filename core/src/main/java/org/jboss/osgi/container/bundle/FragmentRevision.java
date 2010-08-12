@@ -26,7 +26,6 @@ import java.net.URL;
 import java.util.Enumeration;
 
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.resolver.XModule;
 import org.osgi.framework.BundleException;
 
 /**
@@ -43,13 +42,6 @@ public class FragmentRevision extends AbstractRevision
    public FragmentRevision(FragmentBundle internalBundle, Deployment dep, int revision) throws BundleException
    {
       super(internalBundle, dep, revision);
-   }
-
-   @Override
-   public XModule getResolverModule()
-   {
-      // A Fragment does not have an associated resolver module
-      return null;
    }
 
    @Override

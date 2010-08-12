@@ -63,7 +63,7 @@ public class ModuleManagerTestCase
          {
             super(mock(BundleManager.class));
          }
-         
+
          @SuppressWarnings({ "rawtypes", "unchecked" })
          AbstractBundle createModule(int revision) throws Exception
          {
@@ -78,23 +78,19 @@ public class ModuleManagerTestCase
             modules.put(mi, holder);
             return b;
          }
-      };
+      }
+      ;
 
       MyModuleManager mm = new MyModuleManager();
       Object ex1 = mm.createModule(0); // Create a module with revision 0
       Object ex2 = mm.createModule(1); // Create a module with revision 1
       Object ex3 = mm.createModule(3); // Create a module with revision 3
-      
-      // Obtain a module without specifying the revision, should return revision 3
-      assertEquals("Should return the module with the highest revision",
-            ex3, mm.getBundleState(new ModuleIdentifier("test", "test", "0.0.0")));
 
-      assertEquals("Should have returned the object associated with revision 0",
-            ex1, mm.getBundleState(new ModuleIdentifier("test", "test", "0.0.0-rev0")));
-      assertEquals("Should have returned the object associated with revision 1",
-            ex2, mm.getBundleState(new ModuleIdentifier("test", "test", "0.0.0-rev1")));
-      assertNull("There is no module registered with revision 2",
-            mm.getBundleState(new ModuleIdentifier("test", "test", "0.0.0-rev2")));
+      // Obtain a module without specifying the revision, should return revision 3
+      assertEquals("Should return the module with the highest revision", ex3, mm.getBundleState(new ModuleIdentifier("test", "test", "0.0.0")));
+      assertEquals("Should have returned the object associated with revision 0", ex1, mm.getBundleState(new ModuleIdentifier("test", "test", "0.0.0-rev0")));
+      assertEquals("Should have returned the object associated with revision 1", ex2, mm.getBundleState(new ModuleIdentifier("test", "test", "0.0.0-rev1")));
+      assertNull("There is no module registered with revision 2", mm.getBundleState(new ModuleIdentifier("test", "test", "0.0.0-rev2")));
    }
 
    /** 
@@ -106,11 +102,11 @@ public class ModuleManagerTestCase
    {
       // Create a BundleRevision that has revision number 42.
       AbstractRevision br = Mockito.mock(HostRevision.class);
-      Mockito.when(br.getRevision()).thenReturn(42);
+      Mockito.when(br.getRevisionId()).thenReturn(42);
 
       // Create a Module and attached the BundleRevision.
       XModule xm = new AbstractModuleBuilder().createModule(123, "myModule", Version.emptyVersion);
-      xm.addAttachment(Revision.class, br);
+      xm.addAttachment(AbstractRevision.class, br);
 
       // Obtain the module identifier and check that it contains the revision number
       ModuleIdentifier id = ModuleManager.getModuleIdentifier(xm);
@@ -119,11 +115,11 @@ public class ModuleManagerTestCase
       assertSame("Should have cached the Module Identifier", id, id2);
 
       AbstractRevision br2 = Mockito.mock(HostRevision.class);
-      Mockito.when(br2.getRevision()).thenReturn(43);
+      Mockito.when(br2.getRevisionId()).thenReturn(43);
 
       // Create another module with attached BundleRevision (with rev 43). 
       XModule xm2 = new AbstractModuleBuilder().createModule(123, "myModule", Version.emptyVersion);
-      xm2.addAttachment(Revision.class, br2);
+      xm2.addAttachment(AbstractRevision.class, br2);
       ModuleIdentifier id3 = ModuleManager.getModuleIdentifier(xm2);
       String a = id.toURL().toString();
       String b = id3.toURL().toString();

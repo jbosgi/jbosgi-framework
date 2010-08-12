@@ -33,7 +33,12 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleBuilder;
+import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.vfs.VirtualFile;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 
 /**
@@ -56,6 +61,7 @@ public abstract class AbstractRevision implements Revision
    
    private final Deployment deployment;
    private final DeploymentBundle bundleState;
+   private final XModule resolverModule;
    private final OSGiMetaData metadata;
    private final int revisionId;
    private final Version version;
@@ -63,7 +69,7 @@ public abstract class AbstractRevision implements Revision
    // Cache commonly used plugins
    private final ModuleManagerPlugin moduleManager;
    
-   AbstractRevision(DeploymentBundle bundleState, Deployment deployment, int revisionId)
+   AbstractRevision(DeploymentBundle bundleState, Deployment deployment, int revisionId) throws BundleException
    {
       this.bundleState = bundleState;
       this.deployment = deployment;
@@ -73,21 +79,33 @@ public abstract class AbstractRevision implements Revision
       if (metadata == null)
          throw new IllegalArgumentException("Null metadata");
       
+      // Create the resolver module
+      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
+      resolverModule = builder.createModule(getGlobalRevisionId(), getOSGiMetaData());
+      resolverModule.addAttachment(AbstractRevision.class, this);
+      resolverModule.addAttachment(Bundle.class, bundleState);
+      
       this.version = metadata.getBundleVersion();
 
       this.moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
    }
 
    @Override
-   public int getRevisionID()
+   public int getGlobalRevisionId()
    {
       return globalRevisionId;
    }
 
    @Override
-   public int getRevision()
+   public int getRevisionId()
    {
       return revisionId;
+   }
+
+   @Override
+   public XModule getResolverModule()
+   {
+      return resolverModule;
    }
 
    ModuleClassLoader getModuleClassLoader()

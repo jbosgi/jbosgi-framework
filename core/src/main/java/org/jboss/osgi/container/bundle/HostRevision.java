@@ -31,15 +31,11 @@ import java.util.Vector;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XModuleBuilder;
-import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -58,7 +54,6 @@ public class HostRevision extends AbstractRevision
 {
    static final Logger log = Logger.getLogger(HostRevision.class);
 
-   private final XModule resolverModule;
    private final List<VirtualFile> contentRoots;
 
    public HostRevision(HostBundle hostBundle, Deployment dep, int revision) throws BundleException
@@ -67,27 +62,11 @@ public class HostRevision extends AbstractRevision
 
       // Set the aggregated root file
       contentRoots = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
-
-      // Create the resolver module
-      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
-      resolverModule = builder.createModule(getRevisionID(), getOSGiMetaData());
-      resolverModule.addAttachment(Bundle.class, hostBundle);
-
-      // In case we already have a ModuleSpec
-      ModuleSpec moduleSpec = dep.getAttachment(ModuleSpec.class);
-      if (moduleSpec != null)
-         resolverModule.addAttachment(ModuleSpec.class, moduleSpec);
    }
 
    List<VirtualFile> getContentRoots()
    {
       return contentRoots;
-   }
-
-   @Override
-   public XModule getResolverModule()
-   {
-      return resolverModule;
    }
 
    @Override

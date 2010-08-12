@@ -34,7 +34,6 @@ import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.DeploymentBundle;
 import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.container.bundle.Revision;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.NativeCodePlugin;
@@ -82,31 +81,27 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    }
 
    @Override
-   public void addRevision(Revision revision)
+   public void addRevision(XModule resModule)
    {
-      XModule resolverModule = revision.getResolverModule();
-      resolverModule.addAttachment(Revision.class, revision);
-      resolver.addModule(resolverModule);
+      resolver.addModule(resModule);
    }
 
    @Override
-   public void removeRevision(Revision revision)
+   public void removeRevision(XModule resModule)
    {
-      XModule resolverModule = revision.getResolverModule();
-      resolver.removeModule(resolverModule);
+      resolver.removeModule(resModule);
    }
    
    @Override
-   public void resolve(Revision revision) throws BundleException
+   public void resolve(XModule resModule) throws BundleException
    {
-      XModule resModule = revision.getResolverModule();
       try
       {
          resolver.resolve(resModule);
       }
       catch (XResolverException ex)
       {
-         throw new BundleException("Cannot resolve bundle revision: " + revision, ex);
+         throw new BundleException("Cannot resolve bundle resModule: " + resModule, ex);
       }
 
       // Load the resolved module
@@ -114,11 +109,11 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    }
 
    @Override
-   public List<Revision> resolve(List<Revision> revisions)
+   public List<XModule> resolve(List<XModule> resModules)
    {
       // Get the list of unresolved modules
       Set<XModule> unresolved = new LinkedHashSet<XModule>();
-      if (revisions == null)
+      if (resModules == null)
       {
          for (AbstractBundle aux : getBundleManager().getBundles())
          {
@@ -128,14 +123,13 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       }
       else
       {
-         for (Revision aux : revisions)
+         for (XModule aux : resModules)
          {
-            XModule resModule = aux.getResolverModule();
-            if (!resModule.isResolved())
-               unresolved.add(resModule);
+            if (!aux.isResolved())
+               unresolved.add(aux);
          }
       }
-      log.debug("Resolve revisions: " + unresolved);
+      log.debug("Resolve resModules: " + unresolved);
 
       // Resolve the modules and report resolver errors
       Set<XModule> resolved = resolver.resolveAll(unresolved);
@@ -148,11 +142,11 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
          }
       }
 
-      // Convert results into revisions
-      List<Revision> result = new ArrayList<Revision>();
+      // Convert results into resolver modules
+      List<XModule> result = new ArrayList<XModule>();
       for (XModule resModule : resolved)
       {
-         Revision rev = resModule.getAttachment(Revision.class);
+         XModule rev = resModule.getAttachment(XModule.class);
          resolveModuleInFramework(resModule);
          result.add(rev);
       }

@@ -246,7 +246,7 @@ public class FrameworkState
 
       // Resolve the system bundle
       ResolverPlugin resolver = bundleManager.getPlugin(ResolverPlugin.class);
-      resolver.resolve(getSystemBundle());
+      resolver.resolve(getSystemBundle().getResolverModule());
 
       // This Framework's state is set to ACTIVE
       getSystemBundle().changeState(Bundle.ACTIVE);
