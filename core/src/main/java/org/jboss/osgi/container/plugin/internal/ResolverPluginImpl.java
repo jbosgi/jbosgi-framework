@@ -22,7 +22,6 @@
 package org.jboss.osgi.container.plugin.internal;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -63,15 +62,14 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    // The resolver delegate
    private final XResolver resolver;
    private final NativeCodePlugin nativeCodePlugin;
-   private final ModuleManagerPlugin moduleManger;
+   private final ModuleManagerPlugin moduleManager;
 
    public ResolverPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
       resolver = XResolverFactory.getResolver();
-      resolver.setCallbackHandler(new ResolverCallback());
       nativeCodePlugin = getOptionalPlugin(NativeCodePlugin.class);
-      moduleManger = getPlugin(ModuleManagerPlugin.class);
+      moduleManager = getPlugin(ModuleManagerPlugin.class);
    }
 
    @Override
@@ -81,20 +79,22 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    }
 
    @Override
-   public void addRevision(XModule resModule)
+   public void addModule(XModule resModule)
    {
       resolver.addModule(resModule);
    }
 
    @Override
-   public void removeRevision(XModule resModule)
+   public void removeModule(XModule resModule)
    {
       resolver.removeModule(resModule);
    }
-   
+
    @Override
    public void resolve(XModule resModule) throws BundleException
    {
+      List<XModule> resolved = new ArrayList<XModule>();
+      resolver.setCallbackHandler(new ResolverCallback(resolved));
       try
       {
          resolver.resolve(resModule);
@@ -105,11 +105,11 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       }
 
       // Load the resolved module
-      resolveModuleInFramework(resModule);
+      applyResolverResults(resolved);
    }
 
    @Override
-   public List<XModule> resolve(List<XModule> resModules)
+   public boolean resolveAll(Set<XModule> resModules)
    {
       // Get the list of unresolved modules
       Set<XModule> unresolved = new LinkedHashSet<XModule>();
@@ -129,58 +129,90 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
                unresolved.add(aux);
          }
       }
-      log.debug("Resolve resModules: " + unresolved);
 
-      // Resolve the modules and report resolver errors
-      Set<XModule> resolved = resolver.resolveAll(unresolved);
-      for (XModule resModule : unresolved)
+      List<XModule> resolved = new ArrayList<XModule>();
+      resolver.setCallbackHandler(new ResolverCallback(resolved));
+
+      // Resolve the modules
+      log.debug("Resolve modules: " + unresolved);
+      boolean allResolved = resolver.resolveAll(unresolved);
+      
+      // Report resolver errors
+      if (allResolved == false)
       {
-         if (resModule.isResolved() == false)
+         for (XModule resModule : unresolved)
          {
-            XResolverException ex = resModule.getAttachment(XResolverException.class);
-            log.error("Cannot resolve: " + resModule, ex);
+            if (resModule.isResolved() == false)
+            {
+               XResolverException ex = resModule.getAttachment(XResolverException.class);
+               log.error("Cannot resolve: " + resModule, ex);
+            }
          }
       }
-
-      // Convert results into resolver modules
-      List<XModule> result = new ArrayList<XModule>();
-      for (XModule resModule : resolved)
-      {
-         XModule rev = resModule.getAttachment(XModule.class);
-         resolveModuleInFramework(resModule);
-         result.add(rev);
-      }
-      return Collections.unmodifiableList(result);
+      
+      // Apply resolver results
+      applyResolverResults(resolved);
+      
+      return allResolved;
    }
 
-   private void resolveModuleInFramework(XModule resModule)
+   private void applyResolverResults(List<XModule> resolved)
    {
-      ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(resModule);
-      try
+      // For every resolved host bundle create the {@link ModuleSpec}
+      for (XModule aux : resolved)
       {
-         moduleManger.loadModule(identifier);
-      }
-      catch (ModuleLoadException ex)
-      {
-         throw new IllegalStateException("Cannot load module: " + identifier, ex);
+         if (aux.isFragment() == false)
+            moduleManager.createModuleSpec(aux);
       }
       
-      if (resModule.getModuleId() != 0)
+      for (XModule aux : resolved)
       {
-         Bundle bundle = resModule.getAttachment(Bundle.class);
-         DeploymentBundle bundleState = DeploymentBundle.assertBundleState(bundle);
-         Deployment deployment = bundleState.getDeployment();
-         
-         // Resolve the native code libraries, if there are any
-         NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
-         if (nativeCodePlugin != null && libMetaData != null)
-            nativeCodePlugin.resolveNativeCode(bundleState);
+         // For every resolved host bundle load the module
+         // This creates the {@link ModuleClassLoader}
+         if (aux.isFragment() == false)
+         {
+            ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(aux);
+            try
+            {
+               moduleManager.loadModule(identifier);
+            }
+            catch (ModuleLoadException ex)
+            {
+               throw new IllegalStateException("Cannot load module: " + identifier, ex);
+            }
+         }
+
+         // Resolve native code libraries if there are any
+         if (aux.getModuleId() != 0)
+         {
+            Bundle bundle = aux.getAttachment(Bundle.class);
+            DeploymentBundle bundleState = DeploymentBundle.assertBundleState(bundle);
+            Deployment deployment = bundleState.getDeployment();
+
+            // Resolve the native code libraries, if there are any
+            NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
+            if (nativeCodePlugin != null && libMetaData != null)
+               nativeCodePlugin.resolveNativeCode(bundleState);
+         }
+      }
+      
+      // Change the bundle state to RESOLVED
+      for (XModule aux : resolved)
+      {
+         Bundle bundle = aux.getAttachment(Bundle.class);
+         AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+         bundleState.changeState(Bundle.RESOLVED);
       }
    }
-   
+
    class ResolverCallback implements XResolverCallback
    {
-      private ModuleManagerPlugin moduleManager;
+      private List<XModule> resolved;
+
+      ResolverCallback(List<XModule> resolved)
+      {
+         this.resolved = resolved;
+      }
 
       @Override
       public boolean acquireGlobalLock()
@@ -197,16 +229,8 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       @Override
       public void markResolved(XModule resModule)
       {
-         if (moduleManager == null)
-            moduleManager = getPlugin(ModuleManagerPlugin.class);
-
          log.debug("Mark resolved: " + resModule);
-         moduleManager.createModuleSpec(resModule);
-
-         // Change the bundle state to RESOLVED
-         Bundle bundle = resModule.getAttachment(Bundle.class);
-         AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-         bundleState.changeState(Bundle.RESOLVED);
+         resolved.add(resModule);
       }
    }
 }

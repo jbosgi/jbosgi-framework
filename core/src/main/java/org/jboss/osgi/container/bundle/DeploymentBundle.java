@@ -49,8 +49,8 @@ public abstract class DeploymentBundle extends AbstractBundle
 {
    // This list contains any revisions of the bundle that are updated by newer ones, but still available
    private final List<AbstractRevision> updatedRevisions = new CopyOnWriteArrayList<AbstractRevision>();
-   // The revision counter thats gets incremnted for updates of this bundle
-   private final AtomicInteger revisionCounter = new AtomicInteger(0);
+   // The revision counter thats gets incremented for updates of this bundle
+   private final AtomicInteger updateCounter = new AtomicInteger(0);
    // The current revision is the most recent revision of the bundle. 
    private AbstractRevision currentRevision;
 
@@ -83,11 +83,11 @@ public abstract class DeploymentBundle extends AbstractBundle
       if (currentRevision != null)
          updatedRevisions.add(currentRevision);
 
-      currentRevision = createRevision(deployment, revisionCounter.incrementAndGet());
+      currentRevision = createRevision(deployment, updateCounter.incrementAndGet());
       return currentRevision;
    }
 
-   abstract AbstractRevision createRevision(Deployment deployment, int revision) throws BundleException;
+   abstract AbstractRevision createRevision(Deployment deployment, int updateCount) throws BundleException;
 
    public ModuleClassLoader getModuleClassLoader()
    {
@@ -128,6 +128,25 @@ public abstract class DeploymentBundle extends AbstractBundle
    public void clearRevisions()
    {
       updatedRevisions.clear();
+   }
+
+   @Override
+   public void addToResolver()
+   {
+      XModule resModule = getResolverModule();
+      getResolverPlugin().addModule(resModule);
+   }
+
+   @Override
+   public void removeFromResolver()
+   {
+      for (AbstractRevision abr : getRevisions())
+      {
+         XModule resModule = abr.getResolverModule();
+         getResolverPlugin().removeModule(resModule);
+      }
+
+      clearRevisions();
    }
 
    @Override

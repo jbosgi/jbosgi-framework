@@ -28,7 +28,6 @@ import java.util.List;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.NotImplementedException;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -53,18 +52,6 @@ public class FragmentBundle extends DeploymentBundle
    }
 
    @Override
-   public void addToResolver()
-   {
-      // fragments not supported in resolver 
-   }
-
-   @Override
-   public void removeFromResolver()
-   {
-      // fragments not supported in resolver 
-   }
-
-   @Override
    public List<XModule> getAllResolverModules()
    {
       return Collections.emptyList();
@@ -79,7 +66,9 @@ public class FragmentBundle extends DeploymentBundle
    @Override
    AbstractBundleContext createContextInternal()
    {
-      throw new NotImplementedException();
+      // If this bundle is a fragment bundle, then this bundle has no valid BundleContext. 
+      // This method will return null if this bundle has no valid BundleContext.
+      return null;
    }
 
    @Override

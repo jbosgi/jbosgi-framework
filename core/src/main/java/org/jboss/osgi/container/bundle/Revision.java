@@ -47,7 +47,7 @@ public interface Revision
     * Every bundle starts with revision number 0. 
     * @return the revision of this bundle or fragment.
     */
-   int getRevisionId();
+   int getUpdateCount();
 
    /**
     * Return the associated {@link XModule} instance.

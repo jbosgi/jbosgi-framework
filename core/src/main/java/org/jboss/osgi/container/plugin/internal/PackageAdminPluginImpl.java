@@ -80,7 +80,8 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    // Provide logging
    final Logger log = Logger.getLogger(PackageAdminPluginImpl.class);
 
-   private Executor executor;
+   private final Executor executor = Executors.newSingleThreadExecutor();
+   private ResolverPlugin resolverPlugin;
    private ServiceRegistration registration;
 
    public PackageAdminPluginImpl(BundleManager bundleManager)
@@ -93,6 +94,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    {
       BundleContext sysContext = getBundleManager().getSystemContext();
       registration = sysContext.registerService(PackageAdmin.class.getName(), this, null);
+      resolverPlugin = getPlugin(ResolverPlugin.class);
    }
 
    @Override
@@ -103,13 +105,6 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          registration.unregister();
          registration = null;
       }
-   }
-
-   private synchronized Executor getExecutor()
-   {
-      if (executor == null)
-         executor = Executors.newSingleThreadExecutor();
-      return executor;
    }
 
    @Override
@@ -336,40 +331,34 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
          }
       };
-      run.run();
-      //getExecutor().execute(run);
+      executor.execute(run);
    }
 
    @Override
    public boolean resolveBundles(Bundle[] bundles)
    {
       // Get the list of unresolved bundles
-      List<AbstractBundle> unresolved = new ArrayList<AbstractBundle>();
+      Set<XModule> unresolved = new HashSet<XModule>();
       if (bundles == null)
       {
          for (AbstractBundle aux : getBundleManager().getBundles())
          {
             if (aux.getState() == Bundle.INSTALLED)
-               unresolved.add(aux);
+               unresolved.add(aux.getResolverModule());
          }
       }
       else
       {
          for (Bundle aux : bundles)
          {
-            AbstractBundle ab = AbstractBundle.assertBundleState(aux);
-            if (ab.getState() == Bundle.INSTALLED)
-               unresolved.add(ab);
+            AbstractBundle bundleState = AbstractBundle.assertBundleState(aux);
+            if (bundleState.getState() == Bundle.INSTALLED)
+               unresolved.add(bundleState.getResolverModule());
          }
       }
-      log.debug("resolve bundles: " + unresolved);
-
-
-      boolean allResolved = true;
-      for (AbstractBundle ab : unresolved)
-         allResolved &= ab.ensureResolved();
-
-      return allResolved;
+      
+      log.debug("Resolve bundles: " + unresolved);
+      return resolverPlugin.resolveAll(unresolved);
    }
 
    @Override

@@ -84,9 +84,9 @@ public class HostBundle extends DeploymentBundle
    }
 
    @Override
-   AbstractRevision createRevision(Deployment deployment, int revision) throws BundleException
+   AbstractRevision createRevision(Deployment deployment, int updateCount) throws BundleException
    {
-      return new HostRevision(this, deployment, revision);
+      return new HostRevision(this, deployment, updateCount);
    }
 
    @Override
@@ -101,15 +101,10 @@ public class HostBundle extends DeploymentBundle
    }
 
    @Override
-   public void addToResolver()
-   {
-      XModule resModule = getResolverModule();
-      getResolverPlugin().addRevision(resModule);
-   }
-
-   @Override
    public boolean ensureResolved()
    {
+      boolean result = true;
+      
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle 
       // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired 
       // containing a BundleException with details of the reason this bundle could not be resolved. 
@@ -117,30 +112,17 @@ public class HostBundle extends DeploymentBundle
       {
          try
          {
-            XModule resModule = getResolverModule();
-            getResolverPlugin().resolve(resModule);
+            getResolverPlugin().resolve(getResolverModule());
          }
          catch (BundleException ex)
          {
             FrameworkEventsPlugin plugin = getFrameworkEventsPlugin();
             plugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, ex);
+            result = false;
          }
       }
 
-      // If the bundle has a ClassLoader it is in state {@link Bundle#RESOLVED}
-      return getCurrentRevision().getModuleClassLoader() != null;
-   }
-
-   @Override
-   public void removeFromResolver()
-   {
-      for (AbstractRevision abr : getRevisions())
-      {
-         XModule resModule = abr.getResolverModule();
-         getResolverPlugin().removeRevision(resModule);
-      }
-
-      clearRevisions();
+      return result;
    }
 
    @Override
@@ -181,7 +163,7 @@ public class HostBundle extends DeploymentBundle
          if (abr != getCurrentRevision())
          {
             XModule resModule = abr.getResolverModule();
-            getResolverPlugin().removeRevision(resModule);
+            getResolverPlugin().removeModule(resModule);
          }
       }
       clearRevisions();
@@ -219,8 +201,7 @@ public class HostBundle extends DeploymentBundle
          throw new IllegalStateException("Cannot obtain OSGi meta data");
 
       // Resolve this bundles 
-      if (getState() == Bundle.INSTALLED)
-         getResolverPlugin().resolve(getResolverModule());
+      getResolverPlugin().resolve(getResolverModule());
 
       // The BundleActivator.start(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, if one is specified, is called. 
       try
@@ -470,7 +451,7 @@ public class HostBundle extends DeploymentBundle
          log.infof("Ignoring update of symbolic name: %s", md.getBundleSymbolicName());
 
       createRevision(dep);
-      getResolverPlugin().addRevision(getResolverModule());
+      getResolverPlugin().addModule(getResolverModule());
    }
 
    @Override

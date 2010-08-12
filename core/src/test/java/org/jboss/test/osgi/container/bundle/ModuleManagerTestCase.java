@@ -37,7 +37,6 @@ import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.HostRevision;
 import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.container.bundle.Revision;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.spi.AbstractModuleBuilder;
 import org.junit.Test;
@@ -102,7 +101,7 @@ public class ModuleManagerTestCase
    {
       // Create a BundleRevision that has revision number 42.
       AbstractRevision br = Mockito.mock(HostRevision.class);
-      Mockito.when(br.getRevisionId()).thenReturn(42);
+      Mockito.when(br.getUpdateCount()).thenReturn(42);
 
       // Create a Module and attached the BundleRevision.
       XModule xm = new AbstractModuleBuilder().createModule(123, "myModule", Version.emptyVersion);
@@ -115,7 +114,7 @@ public class ModuleManagerTestCase
       assertSame("Should have cached the Module Identifier", id, id2);
 
       AbstractRevision br2 = Mockito.mock(HostRevision.class);
-      Mockito.when(br2.getRevisionId()).thenReturn(43);
+      Mockito.when(br2.getUpdateCount()).thenReturn(43);
 
       // Create another module with attached BundleRevision (with rev 43). 
       XModule xm2 = new AbstractModuleBuilder().createModule(123, "myModule", Version.emptyVersion);

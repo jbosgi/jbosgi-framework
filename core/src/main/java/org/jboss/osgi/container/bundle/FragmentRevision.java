@@ -39,9 +39,9 @@ import org.osgi.framework.BundleException;
  */
 public class FragmentRevision extends AbstractRevision
 {
-   public FragmentRevision(FragmentBundle internalBundle, Deployment dep, int revision) throws BundleException
+   public FragmentRevision(FragmentBundle internalBundle, Deployment dep, int updateCount) throws BundleException
    {
-      super(internalBundle, dep, revision);
+      super(internalBundle, dep, updateCount);
    }
 
    @Override

@@ -23,7 +23,7 @@ package org.jboss.osgi.container.plugin;
 
 // $Id$
 
-import java.util.List;
+import java.util.Set;
 
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XResolver;
@@ -36,7 +36,7 @@ import org.osgi.framework.BundleException;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2009
  */
-public interface ResolverPlugin extends Plugin 
+public interface ResolverPlugin extends Plugin
 {
    /**
     * Get the resolver instance
@@ -44,28 +44,33 @@ public interface ResolverPlugin extends Plugin
    XResolver getResolver();
 
    /**
-    * Add a bundle resModule to the resolver.
-    * @param resModule the bundle resModule
+    * Add a module to the resolver.
+    * 
+    * @param module the resolver module
     */
-   void addRevision(XModule resModule);
+   void addModule(XModule module);
 
    /**
-    * Remove a bundle resModule from the resolver.
-    * @param resModule the bundle resModule
+    * Remove a module from the resolver.
+    * 
+    * @param module the resolver module
     */
-   void removeRevision(XModule resModule);
-   
-   /**
-    * Resolve the given bundle resModule.
-    * @param resModule the bundle resModule to resolve
-    * @throws BundleException If the bundle could not get resolved
-    */
-   void resolve(XModule resModule) throws BundleException;
+   void removeModule(XModule module);
 
    /**
-    * Resolve the given list of bundle revisions.
-    * @param revisions the bundle revisions to resolve
-    * @return The list of resolved revisions in the resolve order or an empty list
+    * Resolve the given modules.
+    * 
+    * @param module the module to resolve
+    * @return The set of resolved modules or an empty set
+    * @throws BundleException If the resolver could not resolve the module
     */
-   List<XModule> resolve(List<XModule> revisions);
+   void resolve(XModule module) throws BundleException;
+
+   /**
+    * Resolve the given set of modules.
+    * 
+    * @param modules the modules to resolve
+    * @return True if all modules could be resolved
+    */
+   boolean resolveAll(Set<XModule> modules);
 }

@@ -145,7 +145,7 @@ public class SystemBundle extends AbstractBundle implements Revision
    @Override
    public void addToResolver()
    {
-      getResolverPlugin().addRevision(getResolverModule());
+      getResolverPlugin().addModule(getResolverModule());
    }
 
    @Override
@@ -158,7 +158,7 @@ public class SystemBundle extends AbstractBundle implements Revision
    @Override
    public void removeFromResolver()
    {
-      getResolverPlugin().removeRevision(getResolverModule());
+      getResolverPlugin().removeModule(getResolverModule());
    }
 
    @Override
@@ -250,7 +250,7 @@ public class SystemBundle extends AbstractBundle implements Revision
    }
 
    @Override
-   public int getRevisionId()
+   public int getUpdateCount()
    {
       // There is only 1 revision from the system bundle
       return 0;

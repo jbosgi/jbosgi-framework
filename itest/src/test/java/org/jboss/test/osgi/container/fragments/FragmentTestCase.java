@@ -72,10 +72,10 @@ public class FragmentTestCase extends OSGiFrameworkTest
       hostA.start();
       assertBundleState(Bundle.ACTIVE, hostA.getState());
 
-      URL entryURL = hostA.getEntry("resources/resource.txt");
+      URL entryURL = hostA.getEntry("resource.txt");
       assertNull("Entry URL null", entryURL);
 
-      URL resourceURL = hostA.getResource("resources/resource.txt");
+      URL resourceURL = hostA.getResource("resource.txt");
       assertNull("Resource URL null", resourceURL);
 
       // Load a private class
@@ -125,10 +125,10 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.ACTIVE, hostA.getState());
       assertBundleState(Bundle.RESOLVED, fragA.getState());
 
-      URL entryURL = hostA.getEntry("resources/resource.txt");
+      URL entryURL = hostA.getEntry("resource.txt");
       assertNull("Entry URL null", entryURL);
 
-      URL resourceURL = hostA.getResource("resources/resource.txt");
+      URL resourceURL = hostA.getResource("resource.txt");
       assertNotNull("Resource URL not null", resourceURL);
 
       // Load class provided by the fragment

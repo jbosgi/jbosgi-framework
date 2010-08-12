@@ -63,17 +63,17 @@ public abstract class AbstractRevision implements Revision
    private final DeploymentBundle bundleState;
    private final XModule resolverModule;
    private final OSGiMetaData metadata;
-   private final int revisionId;
+   private final int updateCount;
    private final Version version;
 
    // Cache commonly used plugins
    private final ModuleManagerPlugin moduleManager;
    
-   AbstractRevision(DeploymentBundle bundleState, Deployment deployment, int revisionId) throws BundleException
+   AbstractRevision(DeploymentBundle bundleState, Deployment deployment, int updateCount) throws BundleException
    {
       this.bundleState = bundleState;
       this.deployment = deployment;
-      this.revisionId = revisionId;
+      this.updateCount = updateCount;
       
       this.metadata = deployment.getAttachment(OSGiMetaData.class);
       if (metadata == null)
@@ -97,9 +97,9 @@ public abstract class AbstractRevision implements Revision
    }
 
    @Override
-   public int getRevisionId()
+   public int getUpdateCount()
    {
-      return revisionId;
+      return updateCount;
    }
 
    @Override

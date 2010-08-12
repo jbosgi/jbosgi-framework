@@ -75,9 +75,6 @@ public class ModuleManager extends ModuleLoader
    // This marker is appended to the version to make each revision unique.
    private static final String REVISION_MARKER = "-rev";
 
-   // Provide logging
-   private static final Logger log = Logger.getLogger(ModuleManager.class);
-
    // The bundle manager
    private BundleManager bundleManager;
    // The framework module identifier
@@ -126,6 +123,9 @@ public class ModuleManager extends ModuleLoader
     */
    public static ModuleIdentifier getModuleIdentifier(XModule resModule)
    {
+      if (resModule.isFragment())
+         throw new IllegalArgumentException("A fragment is not a module");
+      
       ModuleIdentifier id = resModule.getAttachment(ModuleIdentifier.class);
       if (id != null)
          return id;
@@ -138,7 +138,7 @@ public class ModuleManager extends ModuleLoader
       if (bundleRevision == null)
          throw new IllegalStateException("Cannot obtain revision from: " + resModule);
 
-      return getModuleIdentifier(resModule, bundleRevision.getRevisionId());
+      return getModuleIdentifier(resModule, bundleRevision.getUpdateCount());
    }
 
    // [TODO] Remove the revision parameter. The identity of an XModule is the revision. 
