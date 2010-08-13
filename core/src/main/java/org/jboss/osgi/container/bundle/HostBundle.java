@@ -21,6 +21,7 @@
 */
 package org.jboss.osgi.container.bundle;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import java.util.List;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
+import org.jboss.osgi.container.plugin.BundleStoragePlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -181,8 +183,6 @@ public class HostBundle extends AbstractUserBundle
    public void remove()
    {
       getBundleManager().removeBundleState(this);
-
-      removeFromResolver();
    }
 
    @Override
@@ -428,7 +428,7 @@ public class HostBundle extends AbstractUserBundle
      */
    private void createNewBundleRevision(InputStream input) throws Exception
    {
-      BundleManager bm = getBundleManager();
+      BundleManager bundleManager = getBundleManager();
       URL locationURL;
 
       // If the specified InputStream is null, the Framework must create the InputStream from 
@@ -443,11 +443,23 @@ public class HostBundle extends AbstractUserBundle
       }
 
       if (input != null)
-         locationURL = bm.storeBundleStream(input);
+      {
+         try
+         {
+            BundleStoragePlugin plugin = bundleManager.getPlugin(BundleStoragePlugin.class);
+            locationURL = plugin.storeBundleStream(input);
+         }
+         catch (IOException ex)
+         {
+            throw new BundleException("Cannot store bundle from stream", ex);
+         }
+      }
       else
+      {
          locationURL = getCurrentRevision().getContentRoot().getStreamURL();
+      }
 
-      BundleDeploymentPlugin plugin = bm.getPlugin(BundleDeploymentPlugin.class);
+      BundleDeploymentPlugin plugin = bundleManager.getPlugin(BundleDeploymentPlugin.class);
       VirtualFile newRootFile = AbstractVFS.getRoot(locationURL);
       Deployment dep = plugin.createDeployment(newRootFile, getLocation());
       OSGiMetaData md = plugin.createOSGiMetaData(dep);

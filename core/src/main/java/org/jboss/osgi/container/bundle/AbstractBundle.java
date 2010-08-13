@@ -51,7 +51,6 @@ import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.NotImplementedException;
-import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
@@ -408,7 +407,6 @@ public abstract class AbstractBundle implements Bundle
          getLifecycleInterceptorPlugin().handleStateChange(state, getBundleWrapper());
 
       bundleState.set(state);
-      log.debug(this + " change state=" + ConstantsHelper.bundleState(state));
 
       // Fire the bundle event
       if (getBundleManager().isFrameworkActive())

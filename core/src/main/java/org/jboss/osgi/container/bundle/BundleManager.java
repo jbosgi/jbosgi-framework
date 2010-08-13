@@ -22,7 +22,6 @@
 package org.jboss.osgi.container.bundle;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -64,7 +63,6 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XVersionRange;
 import org.jboss.osgi.vfs.AbstractVFS;
-import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -80,6 +78,9 @@ import org.osgi.framework.FrameworkEvent;
  */
 public class BundleManager
 {
+   // Provide logging
+   //private final Logger log = Logger.getLogger(BundleManager.class);
+   
    // The BundleId generator 
    private AtomicLong identityGenerator = new AtomicLong();
    // The sytem bundle
@@ -160,10 +161,16 @@ public class BundleManager
       bundleState.addToResolver();
    }
 
-   void removeBundleState(AbstractBundle bundleState)
+   void removeBundleState(AbstractUserBundle bundleState)
    {
       bundleState.removeFromResolver();
       bundleMap.remove(bundleState.getBundleId());
+      
+      VirtualFile rootFile = bundleState.getContentRoot();
+      rootFile.close();
+      
+      File file = new File(rootFile.getPathName());
+      file.delete();
    }
 
    void uninstallBundleState(AbstractBundle bundleState)
@@ -334,9 +341,21 @@ public class BundleManager
 
       // Get the location URL
       if (input != null)
-         locationURL = storeBundleStream(input);
+      {
+         try
+         {
+            BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
+            locationURL = plugin.storeBundleStream(input);
+         }
+         catch (IOException ex)
+         {
+            throw new BundleException("Cannot store bundle from stream", ex);
+         }
+      }
       else
+      {
          locationURL = getLocationURL(location);
+      }
 
       // Get the root file
       VirtualFile root;
@@ -350,32 +369,6 @@ public class BundleManager
       }
 
       return install(root, location, false);
-   }
-
-   URL storeBundleStream(InputStream input) throws BundleException
-   {
-      try
-      {
-         BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
-         String path = plugin.getStorageDir(getSystemBundle()).getCanonicalPath();
-
-         File file = new File(path + "/bundle-" + System.currentTimeMillis() + ".jar");
-         FileOutputStream fos = new FileOutputStream(file);
-         try
-         {
-            VFSUtils.copyStream(input, fos);
-         }
-         finally
-         {
-            input.close();
-            fos.close();
-         }
-         return file.toURI().toURL();
-      }
-      catch (IOException ex)
-      {
-         throw new BundleException("Cannot store bundle from input stream", ex);
-      }
    }
 
    /**

@@ -24,6 +24,9 @@ package org.jboss.osgi.container.plugin;
 // $Id$
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 
 import org.osgi.framework.Bundle;
 
@@ -36,6 +39,8 @@ import org.osgi.framework.Bundle;
 public interface BundleStoragePlugin extends Plugin 
 {
    void cleanStorage(String propValue);
+   
+   URL storeBundleStream(InputStream input) throws IOException;
    
    File getStorageDir(Bundle bundle);
    

@@ -79,14 +79,19 @@ public abstract class AbstractBundleContext implements BundleContext
       return (AbstractBundleContext)context;
    }
    
+   public BundleManager getBundleManager()
+   {
+      return bundleManager;
+   }
+
+   public AbstractBundle getBundleInternal()
+   {
+      return bundleState;
+   }
+   
    void destroy()
    {
       bundleState = null;
-   }
-   
-   AbstractBundle getBundleInternal()
-   {
-      return bundleState;
    }
    
    @Override

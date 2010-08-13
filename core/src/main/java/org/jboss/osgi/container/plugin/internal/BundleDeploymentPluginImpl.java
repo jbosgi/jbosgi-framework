@@ -91,7 +91,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       }
       catch (BundleException ex)
       {
-         log.warn("Cannot process as OSGi deployment: " + location);
+         log.debug("Not a valid osgi manifest: " + location);
       }
 
       // Try jbosgi-xservice.properties
@@ -115,13 +115,17 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
             dep.addAttachment(ModuleMetaData.class, metadata);
             return dep;
          }
+         else
+         {
+            log.debug("Cannot obtain " + descriptor + " from: " + location);
+         }
       }
       catch (IOException ex)
       {
          log.warn("Cannot process " + descriptor + " from: " + location, ex);
       }
 
-      throw new BundleException("Cannot process as OSGi deployment: " + rootFile);
+      throw new BundleException("Cannot process as OSGi deployment: " + location);
    }
 
    @Override

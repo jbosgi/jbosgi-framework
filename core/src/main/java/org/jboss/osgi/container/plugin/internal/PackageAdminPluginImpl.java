@@ -82,7 +82,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    // Provide logging
    final Logger log = Logger.getLogger(PackageAdminPluginImpl.class);
 
-   private final Executor executor = Executors.newSingleThreadExecutor();
+   private Executor executor;
    private ResolverPlugin resolverPlugin;
    private ServiceRegistration registration;
 
@@ -328,8 +328,15 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          }
       };
       
-      runer.run();
-      //executor.execute(runer);
+      //runer.run();
+      getExecutor().execute(runer);
+   }
+
+   private Executor getExecutor()
+   {
+      if (executor == null)
+         executor = Executors.newSingleThreadExecutor();
+      return executor;
    }
 
    @Override
