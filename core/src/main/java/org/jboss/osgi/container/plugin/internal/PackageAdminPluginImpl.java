@@ -187,7 +187,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public void refreshPackages(final Bundle[] bundlesToRefresh)
    {
-      Runnable run = new Runnable()
+      Runnable runer = new Runnable()
       {
          FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
 
@@ -233,11 +233,10 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                HostBundle hostBundle = (HostBundle)aux;
 
                XModule resModule = hostBundle.getResolverModule();
-               List<XWire> wires = resModule.getWires();
-               if (wires == null)
+               if (resModule.isResolved() == false)
                   continue;
 
-               for (XWire wire : wires)
+               for (XWire wire : resModule.getWires())
                {
                   if (refreshMap.containsKey(wire.getExporter()))
                   {
@@ -328,7 +327,9 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
          }
       };
-      executor.execute(run);
+      
+      runer.run();
+      //executor.execute(runer);
    }
 
    @Override
