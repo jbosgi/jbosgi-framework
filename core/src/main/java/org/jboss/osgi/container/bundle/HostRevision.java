@@ -78,7 +78,7 @@ public class HostRevision extends AbstractUserRevision
    {
       if (attachedFragments == null)
          return Collections.emptyList();
-      
+
       return Collections.unmodifiableList(attachedFragments);
    }
 
@@ -143,7 +143,7 @@ public class HostRevision extends AbstractUserRevision
    {
       if (rootFile == null)
          throw new IllegalArgumentException("Null rootFile");
-      
+
       List<VirtualFile> rootList;
 
       // Add the Bundle-ClassPath to the root virtual files
@@ -185,7 +185,27 @@ public class HostRevision extends AbstractUserRevision
    {
       if (attachedFragments == null)
          attachedFragments = new CopyOnWriteArrayList<FragmentRevision>();
-      
+
       attachedFragments.add(fragRev);
+   }
+
+   @Override
+   URL getLocalizationEntry(String path)
+   {
+      // The framework must first search in the bundle’s JAR for the localization entry. 
+      URL entry = getEntry(path);
+      if (entry != null)
+         return entry;
+
+      // If the entry is not found and the bundle has fragments, 
+      // then the attached fragment JARs must be searched for the localization entry.
+      for (FragmentRevision fragrev : getAttachedFragments())
+      {
+         entry = fragrev.getEntry(path);
+         if (entry != null)
+            return entry;
+      }
+
+      return null;
    }
 }

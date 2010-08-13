@@ -21,11 +21,8 @@
 */
 package org.jboss.osgi.container.bundle;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,12 +114,6 @@ public class SystemBundle extends AbstractBundle implements Revision
    }
 
    @Override
-   public XModule getResolverModule()
-   {
-      return systemRevision.getResolverModule();
-   }
-
-   @Override
    public boolean isFragment()
    {
       return false;
@@ -190,47 +181,9 @@ public class SystemBundle extends AbstractBundle implements Revision
    }
 
    @Override
-   public Class<?> loadClass(String name) throws ClassNotFoundException
+   AbstractRevision getCurrentRevision()
    {
-      return systemRevision.loadClass(name);
-   }
-
-   @Override
-   public URL getResource(String name)
-   {
-      return systemRevision.getResource(name);
-   }
-
-   @Override
-   @SuppressWarnings({ "rawtypes" })
-   public Enumeration getResources(String name) throws IOException
-   {
-      return systemRevision.getResources(name);
-   }
-
-   @Override
-   public Enumeration<URL> findEntries(String path, String pattern, boolean recurse)
-   {
-      return systemRevision.findEntries(path, pattern, recurse);
-   }
-
-   @Override
-   public URL getEntry(String path)
-   {
-      return systemRevision.getEntry(path);
-   }
-
-   @Override
-   @SuppressWarnings({ "rawtypes" })
-   public Enumeration getEntryPaths(String path)
-   {
-      return systemRevision.getEntryPaths(path);
-   }
-
-   @Override
-   URL getLocalizationEntry(String path)
-   {
-      return systemRevision.getLocalizationEntry(path);
+      return systemRevision;
    }
 
    @Override

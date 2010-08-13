@@ -47,17 +47,20 @@ import org.osgi.framework.BundleException;
 public class FragmentRevision extends AbstractUserRevision
 {
    private List<HostRevision> attachedHosts;
-   
+
    public FragmentRevision(FragmentBundle bundleState, Deployment dep, int updateCount) throws BundleException
    {
       super(bundleState, dep, updateCount);
-      
+
       // Attach the fragment bundle
       getResolverModule().addAttachment(FragmentBundle.class, bundleState);
    }
 
    public List<HostRevision> getAttachedHosts()
    {
+      if (attachedHosts == null)
+         return Collections.emptyList();
+
       return Collections.unmodifiableList(attachedHosts);
    }
 
@@ -96,6 +99,37 @@ public class FragmentRevision extends AbstractUserRevision
             hostRev.attachFragment(this);
             attachedHosts.add(hostRev);
          }
+      }
+   }
+
+   @Override
+   URL getLocalizationEntry(String path)
+   {
+      // If the bundle is a resolved fragment, then the search for localization data must 
+      // delegate to the attached host bundle with the highest version.
+      if (getResolverModule().isResolved())
+      {
+         HostRevision highest = null;
+         for (HostRevision hostrev : getAttachedHosts())
+         {
+            if (highest == null)
+               highest = hostrev;
+            if (highest.getVersion().compareTo(hostrev.getVersion()) < 0)
+               highest = hostrev;
+         }
+         if (highest == null)
+            throw new IllegalStateException("Cannot abtain attached host for: " + this);
+
+         boolean hostUninstalled = highest.getBundleState().isUninstalled();
+         URL entry = (hostUninstalled ? getEntry(path) : highest.getEntry(path));
+         return entry;
+      }
+
+      // If the fragment is not resolved, then the framework must search the fragment's JAR for the localization entry.
+      else
+      {
+         URL entry = getEntry(path);
+         return entry;
       }
    }
 }

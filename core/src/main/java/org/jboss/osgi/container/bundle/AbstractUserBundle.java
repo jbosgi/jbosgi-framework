@@ -21,23 +21,19 @@
 */
 package org.jboss.osgi.container.bundle;
 
-import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Enumeration;
+import java.util.Dictionary;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Version;
 
 /**
  * This is the internal implementation of a Bundle based on a user {@link Deployment}. 
@@ -53,6 +49,8 @@ public abstract class AbstractUserBundle extends AbstractBundle
    private final AtomicInteger updateCounter = new AtomicInteger(0);
    // The current revision is the most recent revision of the bundle. 
    private AbstractUserRevision currentRevision;
+   // The headers localized with the default locale 
+   private Dictionary<String, String> headersOnUninstall;
 
    AbstractUserBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {
@@ -110,6 +108,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
       return currentRevision.getLocation();
    }
 
+   @Override
    public AbstractRevision getCurrentRevision()
    {
       return currentRevision;
@@ -150,66 +149,23 @@ public abstract class AbstractUserBundle extends AbstractBundle
    }
 
    @Override
-   public URL getResource(String name)
+   @SuppressWarnings("unchecked")
+   public Dictionary<String, String> getHeaders(String locale)
    {
-      return getCurrentRevision().getResource(name);
-   }
+      // This method must continue to return Manifest header information while this bundle is in the UNINSTALLED state, 
+      // however the header values must only be available in the raw and default locale values
+      if (getState() == Bundle.UNINSTALLED)
+         return headersOnUninstall;
 
-   @Override
-   @SuppressWarnings("rawtypes")
-   public Class loadClass(String name) throws ClassNotFoundException
-   {
-      return getCurrentRevision().loadClass(name);
+      return super.getHeaders(locale);
    }
-
+   
    @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration getResources(String name) throws IOException
+   public void uninstall() throws BundleException
    {
-      return getCurrentRevision().getResources(name);
-   }
-
-   @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration getEntryPaths(String path)
-   {
-      return getCurrentRevision().getEntryPaths(path);
-   }
-
-   @Override
-   public URL getEntry(String path)
-   {
-      return getCurrentRevision().getEntry(path);
-   }
-
-   @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration findEntries(String path, String filePattern, boolean recurse)
-   {
-      return getCurrentRevision().findEntries(path, filePattern, recurse);
-   }
-
-   @Override
-   URL getLocalizationEntry(String path)
-   {
-      return getCurrentRevision().getLocalizationEntry(path);
-   }
-
-   @Override
-   public Version getVersion()
-   {
-      return getCurrentRevision().getVersion();
-   }
-
-   @Override
-   public OSGiMetaData getOSGiMetaData()
-   {
-      return getCurrentRevision().getOSGiMetaData();
-   }
-
-   @Override
-   public XModule getResolverModule()
-   {
-      return getCurrentRevision().getResolverModule();
+      // Cache the headers in the default locale 
+      headersOnUninstall = getHeaders(null);
+      
+      super.uninstall();
    }
 }

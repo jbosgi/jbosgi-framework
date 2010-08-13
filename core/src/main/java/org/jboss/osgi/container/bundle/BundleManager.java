@@ -152,12 +152,12 @@ public class BundleManager
       if (bundleId == 0)
          systemBundle = (SystemBundle)bundleState;
 
-      // Add the bundle to the resolver
-      bundleState.addToResolver();
-
       // Register the bundle with the manager
       bundleMap.put(bundleId, bundleState);
       bundleState.changeState(Bundle.INSTALLED);
+      
+      // Add the bundle to the resolver
+      bundleState.addToResolver();
    }
 
    void removeBundleState(AbstractBundle bundleState)

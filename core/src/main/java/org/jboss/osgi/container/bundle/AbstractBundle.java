@@ -58,6 +58,7 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.Version;
 import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
@@ -126,8 +127,6 @@ public abstract class AbstractBundle implements Bundle
 
    abstract AbstractBundleContext createContextInternal();
 
-   public abstract OSGiMetaData getOSGiMetaData();
-
    public boolean isResolved()
    {
       return getResolverModule().isResolved();
@@ -137,12 +136,6 @@ public abstract class AbstractBundle implements Bundle
    {
       return getState() == Bundle.UNINSTALLED;
    }
-
-   /** 
-    * This method returns the current resolver module of the bundle.
-    * @return the resolver module
-    */
-   public abstract XModule getResolverModule();
 
    /**
     * This method returns all the resolver modules of the bundle, including
@@ -629,6 +622,8 @@ public abstract class AbstractBundle implements Bundle
       return entryURL;
    }
 
+   abstract AbstractRevision getCurrentRevision();
+
    /**
     * The framework must search for localization entries using the follow-
     * ing search rules based on the bundle type:
@@ -642,7 +637,66 @@ public abstract class AbstractBundle implements Bundle
     *   the localization entry. If the entry is not found and the bundle has fragments, 
     *   then the attached fragment JARs must be searched for the localization entry.
     */
-   abstract URL getLocalizationEntry(String entryPath);
+   URL getLocalizationEntry(String entryPath)
+   {
+      return getCurrentRevision().getLocalizationEntry(entryPath);
+   }
+
+   @Override
+   public URL getResource(String name)
+   {
+      return getCurrentRevision().getResource(name);
+   }
+
+   @Override
+   @SuppressWarnings("rawtypes")
+   public Class loadClass(String name) throws ClassNotFoundException
+   {
+      return getCurrentRevision().loadClass(name);
+   }
+
+   @Override
+   @SuppressWarnings("rawtypes")
+   public Enumeration getResources(String name) throws IOException
+   {
+      return getCurrentRevision().getResources(name);
+   }
+
+   @Override
+   @SuppressWarnings("rawtypes")
+   public Enumeration getEntryPaths(String path)
+   {
+      return getCurrentRevision().getEntryPaths(path);
+   }
+
+   @Override
+   public URL getEntry(String path)
+   {
+      return getCurrentRevision().getEntry(path);
+   }
+
+   @Override
+   @SuppressWarnings("rawtypes")
+   public Enumeration findEntries(String path, String filePattern, boolean recurse)
+   {
+      return getCurrentRevision().findEntries(path, filePattern, recurse);
+   }
+
+   @Override
+   public Version getVersion()
+   {
+      return getCurrentRevision().getVersion();
+   }
+
+   public OSGiMetaData getOSGiMetaData()
+   {
+      return getCurrentRevision().getOSGiMetaData();
+   }
+
+   public XModule getResolverModule()
+   {
+      return getCurrentRevision().getResolverModule();
+   }
 
    @Override
    public long getLastModified()

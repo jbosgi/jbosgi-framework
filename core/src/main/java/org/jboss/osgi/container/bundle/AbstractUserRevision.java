@@ -108,10 +108,4 @@ public abstract class AbstractUserRevision extends AbstractRevision
          return null;
       }
    }
-
-   @Override
-   public URL getLocalizationEntry(String path)
-   {
-      return null;
-   }
 }
