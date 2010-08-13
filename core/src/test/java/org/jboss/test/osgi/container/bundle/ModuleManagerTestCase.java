@@ -71,11 +71,13 @@ public class ModuleManagerTestCase
             mf.setAccessible(true);
             Map modules = (Map)mf.get(this);
 
-            AbstractBundle b = mock(AbstractBundle.class);
-            ModuleSpec ms = ModuleSpec.build(mi).create();
-            ModuleManager.ModuleHolder holder = new ModuleManager.ModuleHolder(b, ms);
+            AbstractBundle bundleState = mock(AbstractBundle.class);
+            AbstractRevision bundleRev = mock(AbstractRevision.class);
+            Mockito.when(bundleRev.getBundleState()).thenReturn(bundleState);
+            ModuleSpec moduleSpec = ModuleSpec.build(mi).create();
+            ModuleManager.ModuleHolder holder = new ModuleManager.ModuleHolder(bundleRev, moduleSpec);
             modules.put(mi, holder);
-            return b;
+            return bundleState;
          }
       };
 

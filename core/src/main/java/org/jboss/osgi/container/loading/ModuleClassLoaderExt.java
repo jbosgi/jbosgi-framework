@@ -37,6 +37,7 @@ import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.container.bundle.AbstractBundle;
+import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.FragmentRevision;
 import org.jboss.osgi.container.bundle.ModuleManager;
@@ -58,7 +59,7 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
    private final ModuleManager moduleManager;
    private final BundleManager bundleManager;
-   private final AbstractBundle bundleState;
+   private final AbstractRevision bundleRev;
    
    // List of native library providers 
    private volatile List<NativeLibraryProvider> nativeLibraries;
@@ -69,7 +70,7 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
       moduleManager = (ModuleManager)module.getModuleLoader();
       bundleManager = moduleManager.getBundleManager();
       
-      bundleState = moduleManager.getBundleState(module.getIdentifier());
+      bundleRev = moduleManager.getBundleRevision(module.getIdentifier());
    }
 
    public void addNativeLibrary(NativeLibraryProvider libProvider)
@@ -197,7 +198,7 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
 
    private String findMatchingDynamicImportPattern(String className)
    {
-      XModule resModule = bundleState.getResolverModule();
+      XModule resModule = bundleRev.getResolverModule();
       List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
       if (dynamicRequirements.isEmpty())
          return null;

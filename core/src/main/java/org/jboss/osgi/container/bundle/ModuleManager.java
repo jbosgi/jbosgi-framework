@@ -59,7 +59,6 @@ import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XWire;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.application.Framework;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
 
@@ -169,12 +168,21 @@ public class ModuleManager extends ModuleLoader
    }
 
    /**
+    * Get the bundle revision from a module identifier
+    */
+   public AbstractRevision getBundleRevision(ModuleIdentifier identifier)
+   {
+      ModuleHolder holder = getModuleHolder(identifier);
+      return holder != null ? holder.getBundleRevision() : null;
+   }
+
+   /**
     * Get the bundle from a module identifier
     */
    public AbstractBundle getBundleState(ModuleIdentifier identifier)
    {
-      ModuleHolder holder = getModuleHolder(identifier);
-      return holder != null ? holder.getBundleState() : null;
+      AbstractRevision bundleRev = getBundleRevision(identifier);
+      return bundleRev != null ? bundleRev.getBundleState() : null;
    }
 
    /**
@@ -299,9 +307,8 @@ public class ModuleManager extends ModuleLoader
       builder.addLocalDependency(depBuilder.create());
       ModuleSpec frameworkSpec = builder.create();
 
-      Bundle bundle = resModule.getAttachment(Bundle.class);
-      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      modules.put(frameworkIdentifier, new ModuleHolder(bundleState, frameworkSpec));
+      AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
+      modules.put(frameworkIdentifier, new ModuleHolder(bundleRev, frameworkSpec));
       return frameworkSpec;
    }
 
@@ -404,9 +411,8 @@ public class ModuleManager extends ModuleLoader
          moduleSpec = specBuilder.create();
       }
 
-      Bundle bundle = resModule.getAttachment(Bundle.class);
-      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      modules.put(moduleSpec.getModuleIdentifier(), new ModuleHolder(bundleState, moduleSpec));
+      AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
+      modules.put(moduleSpec.getModuleIdentifier(), new ModuleHolder(bundleRev, moduleSpec));
       return moduleSpec;
    }
 
@@ -427,11 +433,11 @@ public class ModuleManager extends ModuleLoader
     */
    protected static class ModuleHolder
    {
-      private final AbstractBundle bundleState;
+      private final AbstractRevision bundleState;
       private final ModuleSpec moduleSpec;
       private Module module;
 
-      public ModuleHolder(AbstractBundle bundleState, ModuleSpec moduleSpec)
+      public ModuleHolder(AbstractRevision bundleState, ModuleSpec moduleSpec)
       {
          if (bundleState == null)
             throw new IllegalArgumentException("Null bundle");
@@ -441,7 +447,7 @@ public class ModuleManager extends ModuleLoader
          this.moduleSpec = moduleSpec;
       }
 
-      AbstractBundle getBundleState()
+      AbstractRevision getBundleRevision()
       {
          return bundleState;
       }
