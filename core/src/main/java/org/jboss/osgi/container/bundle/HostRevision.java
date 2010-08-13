@@ -201,9 +201,12 @@ public class HostRevision extends AbstractUserRevision
       // then the attached fragment JARs must be searched for the localization entry.
       for (FragmentRevision fragrev : getAttachedFragments())
       {
-         entry = fragrev.getEntry(path);
-         if (entry != null)
-            return entry;
+         if (fragrev.getBundleState().isUninstalled() == false)
+         {
+            entry = fragrev.getEntry(path);
+            if (entry != null)
+               return entry;
+         }
       }
 
       return null;
