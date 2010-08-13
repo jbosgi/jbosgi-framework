@@ -82,10 +82,14 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
    {
       if (file.isDirectory())
       {
-         for (String name : file.list())
+         String[] files = file.list();
+         if (files != null)
          {
-            File child = new File(file.getCanonicalPath() + File.separator + name);
-            deleteRecursively(child);
+            for (String name : files)
+            {
+               File child = new File(file.getCanonicalPath() + File.separator + name);
+               deleteRecursively(child);
+            }
          }
       }
 
@@ -100,7 +104,17 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       File bundleDir = getStorageDir(bundle);
       File dataFile = new File(bundleDir.getAbsolutePath() + "/" + filename);
       dataFile.getParentFile().mkdirs();
-      return dataFile;
+      
+      String filePath = dataFile.getAbsolutePath();
+      try
+      {
+         filePath = dataFile.getCanonicalPath();
+      }
+      catch (IOException ex)
+      {
+         // ignore
+      }
+      return new File(filePath);
    }
 
    public File getStorageDir(Bundle bundle)
@@ -109,7 +123,16 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       if (bundleDir.exists() == false)
          bundleDir.mkdirs();
 
-      return bundleDir;
+      String filePath = bundleDir.getAbsolutePath();
+      try
+      {
+         filePath = bundleDir.getCanonicalPath();
+      }
+      catch (IOException ex)
+      {
+         // ignore
+      }
+      return new File(filePath);
    }
 
    public URL storeBundleStream(InputStream input) throws IOException
@@ -138,8 +161,8 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
          filename = "generic-bundle";
       }
 
-      String path = getStorageDir(getBundleManager().getSystemBundle()).getCanonicalPath();
-      File streamdir = new File(path + File.separator + "bundle-streams");
+      File storagedir = getStorageDir(getBundleManager().getSystemBundle());
+      File streamdir = new File(storagedir + File.separator + "bundle-streams");
       streamdir.mkdirs();
 
       File file = new File(streamdir + File.separator + filename + "--" + System.currentTimeMillis() + ".jar");

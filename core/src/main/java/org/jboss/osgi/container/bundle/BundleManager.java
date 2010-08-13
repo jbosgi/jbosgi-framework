@@ -161,6 +161,8 @@ public class BundleManager
       bundleState.addToResolver();
    }
 
+   private String bundleStreamDir;
+   
    void removeBundleState(AbstractUserBundle bundleState)
    {
       bundleState.removeFromResolver();
@@ -169,8 +171,20 @@ public class BundleManager
       VirtualFile rootFile = bundleState.getContentRoot();
       rootFile.close();
       
-      File file = new File(rootFile.getPathName());
-      file.delete();
+      if (bundleStreamDir == null)
+      {
+         BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
+         File storagedir = plugin.getStorageDir(getSystemBundle());
+         bundleStreamDir = storagedir + File.separator + "bundle-streams";
+      }
+
+      // Delete the file from the stream dir
+      String pathName = rootFile.getPathName();
+      if (pathName.startsWith(bundleStreamDir))
+      {
+         File file = new File(pathName);
+         file.delete();
+      }
    }
 
    void uninstallBundleState(AbstractBundle bundleState)
