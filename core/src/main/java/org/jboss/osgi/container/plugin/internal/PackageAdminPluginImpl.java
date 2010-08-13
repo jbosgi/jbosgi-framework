@@ -153,7 +153,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    {
       if (name == null)
          throw new IllegalArgumentException("Null name");
-      
+
       Set<ExportedPackage> result = new HashSet<ExportedPackage>();
       ResolverPlugin plugin = getBundleManager().getPlugin(ResolverPlugin.class);
       for (XModule mod : plugin.getResolver().getModules())
@@ -190,7 +190,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       Runnable run = new Runnable()
       {
          FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
-         
+
          @Override
          public void run()
          {
@@ -215,7 +215,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             Set<HostBundle> stopBundles = new HashSet<HostBundle>();
             Set<HostBundle> refreshBundles = new HashSet<HostBundle>();
             Set<HostBundle> uninstallBundles = new HashSet<HostBundle>();
-            
+
             for (HostBundle ib : refreshMap.values())
             {
                if (ib.getState() == Bundle.UNINSTALLED)
@@ -229,7 +229,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             {
                if (aux instanceof HostBundle == false)
                   continue;
-               
+
                HostBundle hostBundle = (HostBundle)aux;
 
                XModule resModule = hostBundle.getResolverModule();
@@ -353,7 +353,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                unresolved.add(bundleState.getResolverModule());
          }
       }
-      
+
       log.debug("Resolve bundles: " + unresolved);
       return resolverPlugin.resolveAll(unresolved);
    }
@@ -361,8 +361,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public RequiredBundle[] getRequiredBundles(String symbolicName)
    {
-      Map<AbstractBundle, Collection<AbstractBundle>> matchingBundles =
-            new HashMap<AbstractBundle, Collection<AbstractBundle>>();
+      Map<AbstractBundle, Collection<AbstractBundle>> matchingBundles = new HashMap<AbstractBundle, Collection<AbstractBundle>>();
 
       // Make a defensive copy to ensure thread safety as we are running through the list twice
       List<AbstractBundle> bundles = new ArrayList<AbstractBundle>(getBundleManager().getBundles());
@@ -389,7 +388,8 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                      XCapability wiredCap = wire.getCapability();
                      XModule module = wiredCap.getModule();
                      Bundle bundle = module.getAttachment(Bundle.class);
-                     Collection<AbstractBundle> requiring = matchingBundles.get(bundle);
+                     AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+                     Collection<AbstractBundle> requiring = matchingBundles.get(bundleState);
                      if (requiring != null)
                         requiring.add(aux);
                   }
@@ -431,9 +431,8 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          {
             if (range == null)
                bundles.add(b);
-            else
-               if (range.isInRange(b.getVersion()))
-                  bundles.add(b);
+            else if (range.isInRange(b.getVersion()))
+               bundles.add(b);
          }
       }
 
@@ -450,17 +449,17 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
       if (bundle.getBundleId() == 0 || bundleState.isFragment() || !bundleState.isResolved())
          return null;
-      
+
       HostBundle hostBundle = HostBundle.assertBundleState(bundleState);
       HostRevision curRevision = hostBundle.getCurrentRevision();
-      
+
       List<Bundle> result = new ArrayList<Bundle>();
       for (FragmentRevision aux : curRevision.getAttachedFragments())
          result.add(aux.getBundleState().getBundleWrapper());
-      
+
       if (result.isEmpty())
          return null;
-      
+
       return result.toArray(new Bundle[result.size()]);
    }
 
@@ -470,17 +469,17 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
       if (bundleState.isFragment() == false)
          return null;
-      
+
       FragmentBundle fragBundle = FragmentBundle.assertBundleState(bundleState);
       FragmentRevision curRevision = fragBundle.getCurrentRevision();
-      
+
       List<Bundle> result = new ArrayList<Bundle>();
       for (HostRevision aux : curRevision.getAttachedHosts())
          result.add(aux.getBundleState().getBundleWrapper());
-      
+
       if (result.isEmpty())
          return null;
-      
+
       return result.toArray(new Bundle[result.size()]);
    }
 
@@ -531,7 +530,8 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       public Bundle getExportingBundle()
       {
          Bundle bundle = capability.getModule().getAttachment(Bundle.class);
-         return AbstractBundle.assertBundleState(bundle).getBundleWrapper();
+         AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+         return bundleState.getBundleWrapper();
       }
 
       @Override
@@ -540,17 +540,18 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          XModule module = capability.getModule();
          if (module.isResolved() == false)
             return null;
-         
+
          Set<XRequirement> reqset = capability.getWiredRequirements();
          if (reqset == null || reqset.isEmpty())
             return new Bundle[0];
-         
+
          Set<Bundle> bundles = new HashSet<Bundle>();
          for (XRequirement req : reqset)
          {
             XModule reqmod = req.getModule();
             Bundle bundle = reqmod.getAttachment(Bundle.class);
-            bundles.add(AbstractBundle.assertBundleState(bundle).getBundleWrapper());
+            AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+            bundles.add(bundleState.getBundleWrapper());
          }
          return bundles.toArray(new Bundle[bundles.size()]);
       }

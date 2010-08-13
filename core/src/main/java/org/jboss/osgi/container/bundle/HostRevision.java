@@ -32,7 +32,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.osgi.container.loading.ModuleClassLoaderExt;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
@@ -62,6 +61,9 @@ public class HostRevision extends AbstractUserRevision
    public HostRevision(HostBundle hostBundle, Deployment dep, int revision) throws BundleException
    {
       super(hostBundle, dep, revision);
+
+      // Attach the host bundle
+      getResolverModule().addAttachment(HostBundle.class, hostBundle);
 
       // Set the aggregated root file
       contentRoots = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
@@ -183,9 +185,6 @@ public class HostRevision extends AbstractUserRevision
    {
       if (attachedFragments == null)
          attachedFragments = new CopyOnWriteArrayList<FragmentRevision>();
-      
-      ModuleClassLoaderExt classLoader = (ModuleClassLoaderExt)getModuleClassLoader();
-      classLoader.attachFragment(fragRev);
       
       attachedFragments.add(fragRev);
    }

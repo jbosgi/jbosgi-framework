@@ -112,7 +112,7 @@ public class FragmentTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   @Ignore("testAttachedFragment")
+   //@Ignore("testAttachedFragment")
    public void testAttachedFragment() throws Exception
    {
       Bundle hostA = installBundle(getHostA());

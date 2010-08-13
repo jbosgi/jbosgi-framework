@@ -25,7 +25,6 @@ import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,6 +46,7 @@ import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.PathFilters;
 import org.jboss.modules.ResourceLoader;
+import org.jboss.osgi.container.loading.FragmentLocalLoader;
 import org.jboss.osgi.container.loading.FrameworkLocalLoader;
 import org.jboss.osgi.container.loading.JBossLoggingModuleLogger;
 import org.jboss.osgi.container.loading.ModuleClassLoaderExt;
@@ -124,7 +124,7 @@ public class ModuleManager extends ModuleLoader
    {
       if (resModule.isFragment())
          throw new IllegalArgumentException("A fragment is not a module");
-      
+
       ModuleIdentifier id = resModule.getAttachment(ModuleIdentifier.class);
       if (id != null)
          return id;
@@ -331,83 +331,43 @@ public class ModuleManager extends ModuleLoader
          specBuilder.addModuleDependency(frameworkDependencyBuilder.create());
 
          // Map the dependency builder for (the likely) case that the same exporter is choosen for multiple wires
-         class DependencyHolder
+         Map<XModule, DependencyBuildlerHolder> depBuilderMap = new LinkedHashMap<XModule, DependencyBuildlerHolder>();
+
+         // In case there are no wires, there may still be dependencies due to attached fragments
+         HostBundle hostBundle = resModule.getAttachment(HostBundle.class);
+         if (resModule.getWires().isEmpty() && hostBundle != null)
          {
-            ModuleDependencySpec.Builder builder;
-            Set<String> importPaths;
-         }
-         Map<XModule, DependencyHolder> depHolders = new HashMap<XModule, DependencyHolder>();
-
-         // For every {@link XWire} add a dependency on the exporter
-         // The resolver module will have wires when this method is 
-         // called as a result of the resolver callback
-         List<XWire> wires = resModule.getWires();
-         for (XWire wire : wires)
-         {
-            XRequirement req = wire.getRequirement();
-            XModule importer = wire.getImporter();
-            XModule exporter = wire.getExporter();
-            if (exporter == importer)
-               continue;
-
-            // Get or create the dependency builder for the exporter
-            ModuleIdentifier exporterId = getModuleIdentifier(exporter);
-            DependencyHolder depHolder = depHolders.get(exporter);
-            if (depHolder == null)
+            List<FragmentRevision> fragRevs = hostBundle.getCurrentRevision().getAttachedFragments();
+            for (FragmentRevision fragRev : fragRevs)
             {
-               depHolder = new DependencyHolder();
-               depHolder.builder = ModuleDependencySpec.build(exporterId);
-               depHolders.put(exporter, depHolder);
-            }
-
-            // Dependency for Import-Package
-            if (req instanceof XPackageRequirement)
-            {
-               if (depHolder.importPaths == null)
-                  depHolder.importPaths = new HashSet<String>();
-
-               String path = getPathFromPackageName(req.getName());
-               depHolder.importPaths.add(path);
-               continue;
-            }
-
-            // Dependency for Require-Bundle
-            if (req instanceof XRequireBundleRequirement)
-            {
-               XRequireBundleRequirement bndreq = (XRequireBundleRequirement)req;
-               boolean reexport = Constants.VISIBILITY_REEXPORT.equals(bndreq.getVisibility());
-               if (reexport == true)
-               {
-                  ModuleDependencySpec.Builder depBuilder = depHolder.builder;
-                  // [REVIEW] dependent filter settings
-                  depBuilder.setImportFilter(PathFilters.acceptAll());
-                  depBuilder.setExportFilter(PathFilters.acceptAll());
-               }
-               continue;
-            }
-         }
-
-         // Add the bundle dependencies
-         for (DependencyHolder depHolder : depHolders.values())
-         {
-            ModuleDependencySpec.Builder depBuilder = depHolder.builder;
-            if (depHolder.importPaths != null)
-            {
+               // Process the fragment wires. This would take care of Package-Imports and Require-Bundle defined on the fragment
+               List<XWire> fragWires = fragRev.getResolverModule().getWires();
+               processModuleWires(fragWires, depBuilderMap);
+               
+               // Create a fragment {@link LocalLoader} and add a dependency on it
+               FragmentLocalLoader localLoader = new FragmentLocalLoader(fragRev);
+               LocalDependencySpec.Builder depBuilder = LocalDependencySpec.build(localLoader, localLoader.getPaths());
                // [REVIEW] dependent filter settings
-               depBuilder.setImportFilter(PathFilters.in(depHolder.importPaths));
-               depBuilder.setExportFilter(PathFilters.in(depHolder.importPaths));
+               depBuilder.setImportFilter(PathFilters.acceptAll());
+               depBuilder.setExportFilter(PathFilters.acceptAll());
+               
+               depBuilderMap.put(fragRev.getResolverModule(), new DependencyBuildlerHolder(depBuilder));
             }
-            ModuleDependencySpec bundleDependency = depBuilder.create();
-            specBuilder.addModuleDependency(bundleDependency);
          }
+         
+         // For every {@link XWire} add a dependency on the exporter
+         processModuleWires(resModule.getWires(), depBuilderMap);
+
+         // Add the dependencies
+         for (DependencyBuildlerHolder aux : depBuilderMap.values())
+            aux.addDependency(specBuilder);
 
          // Add a local dependency for the local bundle content
          for (VirtualFile contentRoot : contentRoots)
-         {
             specBuilder.addResourceRoot(new VirtualFileResourceLoader(contentRoot));
-         }
          specBuilder.addLocalDependency();
 
+         // Build the ModuleSpec
          moduleSpec = specBuilder.create();
       }
 
@@ -416,9 +376,53 @@ public class ModuleManager extends ModuleLoader
       return moduleSpec;
    }
 
-   private String getPathFromPackageName(String packageName)
+   private void processModuleWires(List<XWire> wires, Map<XModule, DependencyBuildlerHolder> depBuilderMap)
    {
-      return packageName.replace('.', File.separatorChar);
+      for (XWire wire : wires)
+      {
+         XRequirement req = wire.getRequirement();
+         XModule importer = wire.getImporter();
+         XModule exporter = wire.getExporter();
+         if (exporter == importer)
+            continue;
+
+         // Dependency for Import-Package
+         if (req instanceof XPackageRequirement)
+         {
+            DependencyBuildlerHolder holder = getDependencyHolder(depBuilderMap, exporter);
+            holder.addImportPath(getPathFromPackageName(req.getName()));
+            continue;
+         }
+
+         // Dependency for Require-Bundle
+         if (req instanceof XRequireBundleRequirement)
+         {
+            DependencyBuildlerHolder holder = getDependencyHolder(depBuilderMap, exporter);
+            XRequireBundleRequirement bndreq = (XRequireBundleRequirement)req;
+            boolean reexport = Constants.VISIBILITY_REEXPORT.equals(bndreq.getVisibility());
+            if (reexport == true)
+            {
+               ModuleDependencySpec.Builder depBuilder = holder.moduleDependencyBuilder;
+               // [REVIEW] dependent filter settings
+               depBuilder.setImportFilter(PathFilters.acceptAll());
+               depBuilder.setExportFilter(PathFilters.acceptAll());
+            }
+            continue;
+         }
+      }
+   }
+
+   // Get or create the dependency builder for the exporter
+   private DependencyBuildlerHolder getDependencyHolder(Map<XModule, DependencyBuildlerHolder> depBuilderMap, XModule exporter)
+   {
+      ModuleIdentifier exporterId = getModuleIdentifier(exporter);
+      DependencyBuildlerHolder holder = depBuilderMap.get(exporter);
+      if (holder == null)
+      {
+         holder = new DependencyBuildlerHolder(ModuleDependencySpec.build(exporterId));
+         depBuilderMap.put(exporter, holder);
+      }
+      return holder;
    }
 
    public boolean removeModule(ModuleIdentifier identifier)
@@ -428,28 +432,81 @@ public class ModuleManager extends ModuleLoader
       return modules.remove(identifier) != null;
    }
 
-   /**
-    * A holder for the {@link ModuleSpec}  @{link Module} tuple
-    */
-   protected static class ModuleHolder
+   public static String getPathFromClassName(final String className)
    {
-      private final AbstractRevision bundleState;
+      int idx = className.lastIndexOf('.');
+      return idx > -1 ? getPathFromPackageName(className.substring(0, idx)) : "";
+   }
+   
+   public static String getPathFromPackageName(String packageName)
+   {
+      return packageName.replace('.', File.separatorChar);
+   }
+   
+   static class DependencyBuildlerHolder
+   {
+      private LocalDependencySpec.Builder localDependencyBuilder;
+      private ModuleDependencySpec.Builder moduleDependencyBuilder;
+      private Set<String> importPaths;
+
+      DependencyBuildlerHolder(LocalDependencySpec.Builder builder)
+      {
+         this.localDependencyBuilder = builder;
+      }
+
+      DependencyBuildlerHolder(ModuleDependencySpec.Builder builder)
+      {
+         this.moduleDependencyBuilder = builder;
+      }
+      
+      void addImportPath(String path)
+      {
+         if (importPaths == null)
+            importPaths = new HashSet<String>();
+         
+         importPaths.add(path);
+      }
+
+      void addDependency(ModuleSpec.Builder specBuilder)
+      {
+         if (moduleDependencyBuilder != null)
+         {
+            if (importPaths != null)
+            {
+               // [REVIEW] dependent filter settings
+               moduleDependencyBuilder.setImportFilter(PathFilters.in(importPaths));
+               moduleDependencyBuilder.setExportFilter(PathFilters.in(importPaths));
+            }
+            specBuilder.addModuleDependency(moduleDependencyBuilder.create());
+         }
+         
+         if (localDependencyBuilder != null)
+         {
+            specBuilder.addLocalDependency(localDependencyBuilder.create());
+         }
+      }
+   }
+
+   // A holder for the {@link ModuleSpec}  @{link Module} tuple
+   public static class ModuleHolder
+   {
+      private final AbstractRevision bundleRev;
       private final ModuleSpec moduleSpec;
       private Module module;
 
-      public ModuleHolder(AbstractRevision bundleState, ModuleSpec moduleSpec)
+      public ModuleHolder(AbstractRevision bundleRev, ModuleSpec moduleSpec)
       {
-         if (bundleState == null)
-            throw new IllegalArgumentException("Null bundle");
+         if (bundleRev == null)
+            throw new IllegalArgumentException("Null bundleRev");
          if (moduleSpec == null)
             throw new IllegalArgumentException("Null moduleSpec");
-         this.bundleState = bundleState;
+         this.bundleRev = bundleRev;
          this.moduleSpec = moduleSpec;
       }
 
       AbstractRevision getBundleRevision()
       {
-         return bundleState;
+         return bundleRev;
       }
 
       ModuleSpec getModuleSpec()

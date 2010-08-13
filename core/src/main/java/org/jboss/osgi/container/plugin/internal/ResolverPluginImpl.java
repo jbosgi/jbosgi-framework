@@ -161,12 +161,24 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
 
    private void applyResolverResults(List<XModule> resolved)
    {
+      // Attach the fragments to host
+      attachFragmentsToHost(resolved);
+      
       // For every resolved host bundle create the {@link ModuleSpec}
       createModuleSpecs(resolved);
       
       // For every resolved host bundle load the module. This creates the {@link ModuleClassLoader}
       loadModules(resolved);
       
+      // Resolve native code libraries if there are any
+      resolveNativeCodeLibraries(resolved);
+      
+      // Change the bundle state to RESOLVED
+      setBundleToResolved(resolved);
+   }
+
+   private void attachFragmentsToHost(List<XModule> resolved)
+   {
       for (XModule aux : resolved)
       {
          if (aux.isFragment() == true)
@@ -175,12 +187,6 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
             fragRev.attachToHost();
          }
       }
-      
-      // Resolve native code libraries if there are any
-      resolveNativeCodeLibraries(resolved);
-      
-      // Change the bundle state to RESOLVED
-      setBundleToResolved(resolved);
    }
 
    private void createModuleSpecs(List<XModule> resolved)

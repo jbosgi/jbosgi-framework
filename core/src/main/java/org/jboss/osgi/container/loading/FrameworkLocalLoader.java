@@ -33,6 +33,7 @@ import org.jboss.logging.Logger;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Resource;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageCapability;
@@ -111,7 +112,7 @@ public class FrameworkLocalLoader implements LocalLoader
          }
       }
 
-      String path = getPathFromClassName(className);
+      String path = ModuleManager.getPathFromClassName(className);
       if (exportedPaths.contains(path))
       {
          Class<?> result = null;
@@ -147,16 +148,5 @@ public class FrameworkLocalLoader implements LocalLoader
    public Resource loadResourceLocal(String root, String name)
    {
       throw new NotImplementedException();
-   }
-
-   private String getPathFromClassName(final String className)
-   {
-      int idx = className.lastIndexOf('.');
-      return idx > -1 ? getPathFromPackageName(className.substring(0, idx)) : "";
-   }
-   
-   private String getPathFromPackageName(String packageName)
-   {
-      return packageName.replace('.', File.separatorChar);
    }
 }

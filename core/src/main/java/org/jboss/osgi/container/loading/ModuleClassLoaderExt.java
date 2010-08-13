@@ -39,7 +39,6 @@ import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.FragmentRevision;
 import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
@@ -79,10 +78,6 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
          nativeLibraries = new CopyOnWriteArrayList<NativeLibraryProvider>();
       
       nativeLibraries.add(libProvider);
-   }
-   
-   public void attachFragment(FragmentRevision fragRev)
-   {
    }
    
    @Override
@@ -218,7 +213,7 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
             pattern = pattern.substring(0, pattern.length() - 2);
 
          pattern = pattern.replace('.', File.separatorChar);
-         String path = getPathFromClassName(className);
+         String path = ModuleManager.getPathFromClassName(className);
          if (path.startsWith(pattern))
          {
             foundMatch = pattern;
@@ -313,16 +308,5 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
       }
 
       return null;
-   }
-
-   private String getPathFromClassName(final String className)
-   {
-      int idx = className.lastIndexOf('.');
-      return idx > -1 ? getPathFromPackageName(className.substring(0, idx)) : "";
-   }
-   
-   private String getPathFromPackageName(String packageName)
-   {
-      return packageName.replace('.', File.separatorChar);
    }
 }

@@ -50,23 +50,23 @@ public abstract class AbstractUserRevision extends AbstractRevision
       this.deployment = deployment;
    }
 
-   Deployment getDeployment()
+   public Deployment getDeployment()
    {
       return deployment;
    }
    
-   String getLocation()
+   public String getLocation()
    {
       return deployment.getLocation();
    }
 
-   VirtualFile getContentRoot()
+   public VirtualFile getContentRoot()
    {
       return deployment.getRoot();
    }
 
    @Override
-   Enumeration<String> getEntryPaths(String path)
+   public Enumeration<String> getEntryPaths(String path)
    {
       getBundleState().assertNotUninstalled();
       try
@@ -80,7 +80,7 @@ public abstract class AbstractUserRevision extends AbstractRevision
    }
 
    @Override
-   URL getEntry(String path)
+   public URL getEntry(String path)
    {
       getBundleState().assertNotUninstalled();
       try
@@ -96,7 +96,7 @@ public abstract class AbstractUserRevision extends AbstractRevision
    }
 
    @Override
-   Enumeration<URL> findEntries(String path, String pattern, boolean recurse)
+   public Enumeration<URL> findEntries(String path, String pattern, boolean recurse)
    {
       getBundleState().assertNotUninstalled();
       try
@@ -110,7 +110,7 @@ public abstract class AbstractUserRevision extends AbstractRevision
    }
 
    @Override
-   URL getLocalizationEntry(String path)
+   public URL getLocalizationEntry(String path)
    {
       return null;
    }

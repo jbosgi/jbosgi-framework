@@ -44,6 +44,9 @@ public class SystemBundleRevision extends AbstractRevision
    SystemBundleRevision(SystemBundle bundleState, OSGiMetaData metadata) throws BundleException
    {
       super(bundleState, metadata, 0);
+      
+      // Attach the system bundle
+      getResolverModule().addAttachment(SystemBundle.class, bundleState);
    }
 
    @Override
