@@ -52,7 +52,7 @@ import org.osgi.framework.BundleException;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-public class HostRevision extends AbstractRevision
+public class HostRevision extends AbstractUserRevision
 {
    static final Logger log = Logger.getLogger(HostRevision.class);
 

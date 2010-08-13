@@ -32,7 +32,7 @@ import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.DeploymentBundle;
+import org.jboss.osgi.container.bundle.AbstractUserBundle;
 import org.jboss.osgi.container.bundle.FragmentRevision;
 import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
@@ -183,31 +183,12 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       setBundleToResolved(resolved);
    }
 
-   private void setBundleToResolved(List<XModule> resolved)
+   private void createModuleSpecs(List<XModule> resolved)
    {
       for (XModule aux : resolved)
       {
-         Bundle bundle = aux.getAttachment(Bundle.class);
-         AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-         bundleState.changeState(Bundle.RESOLVED);
-      }
-   }
-
-   private void resolveNativeCodeLibraries(List<XModule> resolved)
-   {
-      for (XModule aux : resolved)
-      {
-         if (aux.getModuleId() != 0)
-         {
-            Bundle bundle = aux.getAttachment(Bundle.class);
-            DeploymentBundle bundleState = DeploymentBundle.assertBundleState(bundle);
-            Deployment deployment = bundleState.getDeployment();
-
-            // Resolve the native code libraries, if there are any
-            NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
-            if (nativeCodePlugin != null && libMetaData != null)
-               nativeCodePlugin.resolveNativeCode(bundleState);
-         }
+         if (aux.isFragment() == false)
+            moduleManager.createModuleSpec(aux);
       }
    }
 
@@ -230,12 +211,31 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       }
    }
 
-   private void createModuleSpecs(List<XModule> resolved)
+   private void resolveNativeCodeLibraries(List<XModule> resolved)
    {
       for (XModule aux : resolved)
       {
-         if (aux.isFragment() == false)
-            moduleManager.createModuleSpec(aux);
+         if (aux.getModuleId() != 0)
+         {
+            Bundle bundle = aux.getAttachment(Bundle.class);
+            AbstractUserBundle bundleState = AbstractUserBundle.assertBundleState(bundle);
+            Deployment deployment = bundleState.getDeployment();
+
+            // Resolve the native code libraries, if there are any
+            NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
+            if (nativeCodePlugin != null && libMetaData != null)
+               nativeCodePlugin.resolveNativeCode(bundleState);
+         }
+      }
+   }
+   
+   private void setBundleToResolved(List<XModule> resolved)
+   {
+      for (XModule aux : resolved)
+      {
+         Bundle bundle = aux.getAttachment(Bundle.class);
+         AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+         bundleState.changeState(Bundle.RESOLVED);
       }
    }
 

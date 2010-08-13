@@ -35,7 +35,7 @@ import java.util.Map;
 
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.DeploymentBundle;
+import org.jboss.osgi.container.bundle.AbstractUserBundle;
 import org.jboss.osgi.container.bundle.FrameworkState;
 import org.jboss.osgi.container.loading.ModuleClassLoaderExt;
 import org.jboss.osgi.container.loading.NativeLibraryProvider;
@@ -191,7 +191,7 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
    }
 
    @Override
-   public void resolveNativeCode(DeploymentBundle depBundle)
+   public void resolveNativeCode(AbstractUserBundle depBundle)
    {
       Deployment dep = depBundle.getDeployment();
       NativeLibraryMetaData libMetaData = dep.getAttachment(NativeLibraryMetaData.class);
@@ -293,12 +293,12 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
 
    class BundleNativeLibraryProvider implements NativeLibraryProvider
    {
-      private DeploymentBundle bundleState;
+      private AbstractUserBundle bundleState;
       private String libpath;
       private String libname;
       private File libraryFile;
       
-      BundleNativeLibraryProvider(DeploymentBundle bundleState, String libname, String libpath)
+      BundleNativeLibraryProvider(AbstractUserBundle bundleState, String libname, String libpath)
       {
          this.bundleState = bundleState;
          this.libpath = libpath;
@@ -344,7 +344,7 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
          return libraryFile;
       }
 
-      private File getUniqueLibraryFile(final DeploymentBundle bundleState, final String libpath)
+      private File getUniqueLibraryFile(final AbstractUserBundle bundleState, final String libpath)
       {
          BundleManager bundleManager = bundleState.getBundleManager();
          String timestamp = new SimpleDateFormat("-yyyyMMdd-HHmmssSSS").format(new Date(bundleState.getLastModified()));

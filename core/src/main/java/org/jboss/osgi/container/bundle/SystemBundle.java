@@ -29,16 +29,11 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.jar.Attributes;
-import java.util.jar.Attributes.Name;
-import java.util.jar.Manifest;
 
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.metadata.internal.OSGiManifestMetaData;
+import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XModuleBuilder;
-import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -55,26 +50,14 @@ import org.osgi.framework.Version;
 public class SystemBundle extends AbstractBundle implements Revision
 {
    private OSGiMetaData metadata;
-   private XModule resolverModule;
+   private SystemBundleRevision systemRevision;
    
-   public SystemBundle(BundleManager bundleManager)
+   public SystemBundle(BundleManager bundleManager) 
    {
       super(bundleManager, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
 
-      // Initialize basic metadata
-      Manifest manifest = new Manifest();
-      Attributes attributes = manifest.getMainAttributes();
-      attributes.put(new Name(Constants.BUNDLE_SYMBOLICNAME), Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
-      metadata = new OSGiManifestMetaData(manifest);
-      
-      // Initialize the system resolver module
-      // [TODO] Bring the resolver module in sync with the metadata
-      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
-      resolverModule = builder.createModule(getGlobalRevisionId(), getSymbolicName(), getVersion());
-      resolverModule.addAttachment(Bundle.class, this);
-      
-      builder.addBundleCapability(getSymbolicName(), getVersion());
-      
+      // Initialize the OSGiMetaData
+      OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
       SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
       List<String> systemPackages = plugin.getSystemPackages(true);
       if (systemPackages.isEmpty() == true)
@@ -96,7 +79,17 @@ public class SystemBundle extends AbstractBundle implements Revision
          Map<String, Object> attrs = new HashMap<String, Object>();
          attrs.put(Constants.VERSION_ATTRIBUTE, version);
          
-         builder.addPackageCapability(packname, null, attrs);
+         builder.addExportPackages(packname + ";version=" + version);
+      }
+      
+      try
+      {
+         metadata = builder.getOSGiMetaData();
+         systemRevision = new SystemBundleRevision(this, metadata);
+      }
+      catch (BundleException ex)
+      {
+         throw new IllegalStateException("Cannot construct system revision", ex);
       }
 
       // Add the system bundle
@@ -126,7 +119,7 @@ public class SystemBundle extends AbstractBundle implements Revision
    @Override
    public XModule getResolverModule()
    {
-      return resolverModule;
+      return systemRevision.getResolverModule();
    }
 
    @Override
@@ -138,7 +131,7 @@ public class SystemBundle extends AbstractBundle implements Revision
    @Override
    public List<XModule> getAllResolverModules()
    {
-      return Collections.singletonList(resolverModule);
+      return Collections.singletonList(getResolverModule());
    }
 
    @Override
@@ -199,52 +192,45 @@ public class SystemBundle extends AbstractBundle implements Revision
    @Override
    public Class<?> loadClass(String name) throws ClassNotFoundException
    {
-      ClassLoader classLoader = getClass().getClassLoader();
-      return classLoader.loadClass(name);
-   }
-
-   @Override
-   public Enumeration<URL> findEntries(String path, String filePattern, boolean recurse)
-   {
-      // [Bug-1472] Clarify the semantic of resource API when called on the system bundle
-      // https://www.osgi.org/members/bugzilla/show_bug.cgi?id=1472
-      return null;
-   }
-
-   @Override
-   public URL getEntry(String path)
-   {
-      // [Bug-1472] Clarify the semantic of resource API when called on the system bundle
-      // https://www.osgi.org/members/bugzilla/show_bug.cgi?id=1472
-      return null;
-   }
-
-   @Override
-   @SuppressWarnings({ "rawtypes" })
-   public Enumeration getEntryPaths(String path)
-   {
-      // [Bug-1472] Clarify the semantic of resource API when called on the system bundle
-      // https://www.osgi.org/members/bugzilla/show_bug.cgi?id=1472
-      return null;
-   }
-
-   @Override
-   URL getLocalizationEntry(String entryPath)
-   {
-      return null;
+      return systemRevision.loadClass(name);
    }
 
    @Override
    public URL getResource(String name)
    {
-      return getClass().getClassLoader().getResource(name);
+      return systemRevision.getResource(name);
    }
 
    @Override
    @SuppressWarnings({ "rawtypes" })
    public Enumeration getResources(String name) throws IOException
    {
-      return getClass().getClassLoader().getResources(name);
+      return systemRevision.getResources(name);
+   }
+
+   @Override
+   public Enumeration<URL> findEntries(String path, String pattern, boolean recurse)
+   {
+      return systemRevision.findEntries(path, pattern, recurse);
+   }
+
+   @Override
+   public URL getEntry(String path)
+   {
+      return systemRevision.getEntry(path);
+   }
+
+   @Override
+   @SuppressWarnings({ "rawtypes" })
+   public Enumeration getEntryPaths(String path)
+   {
+      return systemRevision.getEntryPaths(path);
+   }
+
+   @Override
+   URL getLocalizationEntry(String path)
+   {
+      return systemRevision.getLocalizationEntry(path);
    }
 
    @Override

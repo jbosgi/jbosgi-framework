@@ -52,7 +52,7 @@ import org.osgi.framework.FrameworkEvent;
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public class HostBundle extends DeploymentBundle
+public class HostBundle extends AbstractUserBundle
 {
    private static final Logger log = Logger.getLogger(HostBundle.class);
 
@@ -84,7 +84,7 @@ public class HostBundle extends DeploymentBundle
    }
 
    @Override
-   AbstractRevision createRevision(Deployment deployment, int updateCount) throws BundleException
+   AbstractUserRevision createRevision(Deployment deployment, int updateCount) throws BundleException
    {
       return new HostRevision(this, deployment, updateCount);
    }

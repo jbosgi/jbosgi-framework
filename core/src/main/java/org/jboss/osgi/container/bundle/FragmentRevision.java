@@ -44,7 +44,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
-public class FragmentRevision extends AbstractRevision
+public class FragmentRevision extends AbstractUserRevision
 {
    private List<HostRevision> attachedHosts;
    

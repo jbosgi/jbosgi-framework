@@ -39,7 +39,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
-public class FragmentBundle extends DeploymentBundle
+public class FragmentBundle extends AbstractUserBundle
 {
    FragmentBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {
@@ -65,7 +65,7 @@ public class FragmentBundle extends DeploymentBundle
    }
    
    @Override
-   AbstractRevision createRevision(Deployment deployment, int revision) throws BundleException
+   AbstractUserRevision createRevision(Deployment deployment, int revision) throws BundleException
    {
       return new FragmentRevision(this, deployment, revision);
    }

@@ -24,7 +24,7 @@ package org.jboss.osgi.container.plugin.internal;
 import org.jboss.logging.Logger;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.DeploymentBundle;
+import org.jboss.osgi.container.bundle.AbstractUserBundle;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.LifecycleInterceptorPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -70,7 +70,7 @@ public class LifecycleInterceptorPluginImpl extends AbstractPlugin implements Li
             if (bundleState == null)
                throw new IllegalStateException("Cannot obtain bundleState for: " + bundle);
 
-            DeploymentBundle depBundle = DeploymentBundle.assertBundleState(bundleState);
+            AbstractUserBundle depBundle = AbstractUserBundle.assertBundleState(bundleState);
             Deployment dep = depBundle.getDeployment();
             
             InvocationContext inv = dep.getAttachment(InvocationContext.class);

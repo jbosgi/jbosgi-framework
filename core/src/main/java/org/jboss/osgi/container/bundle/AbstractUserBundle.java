@@ -45,16 +45,16 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
-public abstract class DeploymentBundle extends AbstractBundle
+public abstract class AbstractUserBundle extends AbstractBundle
 {
    // This list contains any revisions of the bundle that are updated by newer ones, but still available
    private final List<AbstractRevision> updatedRevisions = new CopyOnWriteArrayList<AbstractRevision>();
    // The revision counter thats gets incremented for updates of this bundle
    private final AtomicInteger updateCounter = new AtomicInteger(0);
    // The current revision is the most recent revision of the bundle. 
-   private AbstractRevision currentRevision;
+   private AbstractUserRevision currentRevision;
 
-   DeploymentBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
+   AbstractUserBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {
       super(bundleManager, deployment.getSymbolicName());
       createRevision(deployment);
@@ -64,7 +64,7 @@ public abstract class DeploymentBundle extends AbstractBundle
     * Assert that the given bundle is an instance of DeploymentBundle
     * @throws IllegalArgumentException if the given bundle is not an instance of DeploymentBundle
     */
-   public static DeploymentBundle assertBundleState(Bundle bundle)
+   public static AbstractUserBundle assertBundleState(Bundle bundle)
    {
       if (bundle == null)
          throw new IllegalArgumentException("Null bundle");
@@ -72,13 +72,13 @@ public abstract class DeploymentBundle extends AbstractBundle
       if (bundle instanceof BundleWrapper)
          bundle = ((BundleWrapper)bundle).getBundleState();
 
-      if (bundle instanceof DeploymentBundle == false)
+      if (bundle instanceof AbstractUserBundle == false)
          throw new IllegalArgumentException("Not an DeploymentBundle: " + bundle);
 
-      return (DeploymentBundle)bundle;
+      return (AbstractUserBundle)bundle;
    }
 
-   AbstractRevision createRevision(Deployment deployment) throws BundleException
+   AbstractUserRevision createRevision(Deployment deployment) throws BundleException
    {
       if (currentRevision != null)
          updatedRevisions.add(currentRevision);
@@ -87,7 +87,7 @@ public abstract class DeploymentBundle extends AbstractBundle
       return currentRevision;
    }
 
-   abstract AbstractRevision createRevision(Deployment deployment, int updateCount) throws BundleException;
+   abstract AbstractUserRevision createRevision(Deployment deployment, int updateCount) throws BundleException;
 
    public ModuleClassLoader getModuleClassLoader()
    {
@@ -190,9 +190,9 @@ public abstract class DeploymentBundle extends AbstractBundle
    }
 
    @Override
-   URL getLocalizationEntry(String entryPath)
+   URL getLocalizationEntry(String path)
    {
-      return getCurrentRevision().getLocalizationEntry();
+      return getCurrentRevision().getLocalizationEntry(path);
    }
 
    @Override

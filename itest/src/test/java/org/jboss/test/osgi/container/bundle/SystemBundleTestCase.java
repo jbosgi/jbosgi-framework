@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Dictionary;
 import java.util.Enumeration;
-import java.util.Hashtable;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.Test;
@@ -80,13 +79,11 @@ public class SystemBundleTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   @SuppressWarnings({ "unchecked", "rawtypes" })
+   @SuppressWarnings("rawtypes")
    public void testGetHeaders() throws Exception
    {
-      Dictionary expected = new Hashtable();
-      expected.put(Constants.BUNDLE_SYMBOLICNAME, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
       Dictionary dictionary = getFramework().getHeaders();
-      assertEquals(expected, dictionary);
+      assertEquals(Constants.SYSTEM_BUNDLE_SYMBOLICNAME, dictionary.get(Constants.BUNDLE_SYMBOLICNAME));
    }
 
    @Test
