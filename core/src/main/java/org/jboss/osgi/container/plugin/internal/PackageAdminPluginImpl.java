@@ -42,7 +42,6 @@ import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.DeploymentBundle;
 import org.jboss.osgi.container.bundle.FragmentBundle;
 import org.jboss.osgi.container.bundle.FragmentRevision;
 import org.jboss.osgi.container.bundle.HostBundle;
@@ -190,33 +189,27 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    {
       Runnable run = new Runnable()
       {
+         FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
+         
          @Override
          public void run()
          {
             Bundle[] bundles = bundlesToRefresh;
-            FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
             if (bundles == null)
             {
-               List<Bundle> allBundles = new ArrayList<Bundle>();
-
-               for (AbstractBundle ab : getBundleManager().getBundles())
-                  allBundles.add(ab.getBundleWrapper());
-
-               for (AbstractBundle ab : getBundleManager().getUninstalledBundles())
-                  allBundles.add(ab.getBundleWrapper());
-
-               bundles = allBundles.toArray(new Bundle[allBundles.size()]);
+               List<AbstractBundle> bundleStates = getBundleManager().getBundles(null);
+               bundles = bundleStates.toArray(new Bundle[bundleStates.size()]);
             }
 
             Map<XModule, HostBundle> refreshMap = new HashMap<XModule, HostBundle>();
-            for (Bundle b : bundles)
+            for (Bundle aux : bundles)
             {
-               if (b.getBundleId() == 0)
+               AbstractBundle bundleState = AbstractBundle.assertBundleState(aux);
+               if (bundleState instanceof HostBundle == false)
                   continue;
 
-               HostBundle ib = HostBundle.assertBundleState(b);
-               for (XModule resModule : ib.getAllResolverModules())
-                  refreshMap.put(resModule, ib);
+               for (XModule resModule : bundleState.getAllResolverModules())
+                  refreshMap.put(resModule, (HostBundle)bundleState);
             }
 
             Set<HostBundle> stopBundles = new HashSet<HostBundle>();
@@ -232,14 +225,15 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             }
 
             // Compute all depending bundles that need to be stopped and unresolved.
-            for (AbstractBundle ab : getBundleManager().getBundles())
+            for (AbstractBundle aux : getBundleManager().getBundles())
             {
-               if (ab instanceof HostBundle == false)
+               if (aux instanceof HostBundle == false)
                   continue;
-               HostBundle ib = (HostBundle)ab;
+               
+               HostBundle hostBundle = (HostBundle)aux;
 
-               XModule rm = ib.getResolverModule();
-               List<XWire> wires = rm.getWires();
+               XModule resModule = hostBundle.getResolverModule();
+               List<XWire> wires = resModule.getWires();
                if (wires == null)
                   continue;
 
@@ -248,24 +242,24 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                   if (refreshMap.containsKey(wire.getExporter()))
                   {
                      // Bundles can be either ACTIVE or RESOLVED
-                     int state = ib.getState();
+                     int state = hostBundle.getState();
                      if (state == Bundle.ACTIVE || state == Bundle.STARTING)
                      {
-                        stopBundles.add(ib);
+                        stopBundles.add(hostBundle);
                      }
-                     refreshBundles.add(ib);
+                     refreshBundles.add(hostBundle);
                      break;
                   }
                }
             }
 
             // Add relevant bundles to be refreshed also to the stop list. 
-            for (HostBundle ib : new HashSet<HostBundle>(refreshMap.values()))
+            for (HostBundle hostBundle : new HashSet<HostBundle>(refreshMap.values()))
             {
-               int state = ib.getState();
+               int state = hostBundle.getState();
                if (state == Bundle.ACTIVE || state == Bundle.STARTING)
                {
-                  stopBundles.add(ib);
+                  stopBundles.add(hostBundle);
                }
             }
 
@@ -279,55 +273,55 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
 
             for (ListIterator<HostBundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();)
             {
-               DeploymentBundle ib = it.previous();
+               HostBundle hostBundle = it.previous();
                try
                {
-                  ib.stop(Bundle.STOP_TRANSIENT);
+                  hostBundle.stop(Bundle.STOP_TRANSIENT);
                }
-               catch (BundleException e)
+               catch (BundleException ex)
                {
-                  eventsPlugin.fireFrameworkEvent(ib, FrameworkEvent.ERROR, e);
+                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, ex);
                }
             }
 
             for (ListIterator<HostBundle> it = refreshList.listIterator(refreshList.size()); it.hasPrevious();)
             {
-               HostBundle ib = it.previous();
+               HostBundle hostBundle = it.previous();
                try
                {
-                  ib.unresolve();
-                  ib.createNewRevision();
+                  hostBundle.unresolve();
+                  hostBundle.createNewRevision();
                }
-               catch (BundleException e)
+               catch (BundleException ex)
                {
-                  eventsPlugin.fireFrameworkEvent(ib, FrameworkEvent.ERROR, e);
+                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, ex);
                }
             }
 
-            for (HostBundle ib : uninstallBundles)
-               ib.remove();
+            for (HostBundle hostBundle : uninstallBundles)
+               hostBundle.remove();
 
-            for (HostBundle ib : refreshList)
+            for (HostBundle hostBundle : refreshList)
             {
                try
                {
-                  ib.refresh();
+                  hostBundle.refresh();
                }
                catch (BundleException e)
                {
-                  eventsPlugin.fireFrameworkEvent(ib, FrameworkEvent.ERROR, e);
+                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
                }
             }
 
-            for (DeploymentBundle b : stopList)
+            for (HostBundle hostBundle : stopList)
             {
                try
                {
-                  b.start(Bundle.START_TRANSIENT);
+                  hostBundle.start(Bundle.START_TRANSIENT);
                }
                catch (BundleException e)
                {
-                  eventsPlugin.fireFrameworkEvent(b, FrameworkEvent.ERROR, e);
+                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
                }
             }
 

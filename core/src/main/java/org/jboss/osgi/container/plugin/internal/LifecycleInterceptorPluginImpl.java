@@ -66,14 +66,13 @@ public class LifecycleInterceptorPluginImpl extends AbstractPlugin implements Li
          @Override
          protected InvocationContext getInvocationContext(Bundle bundle)
          {
-            long bundleId = bundle.getBundleId();
-            AbstractBundle bundleState = getBundleManager().getBundleById(bundleId);
+            AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
             if (bundleState == null)
                throw new IllegalStateException("Cannot obtain bundleState for: " + bundle);
 
             DeploymentBundle depBundle = DeploymentBundle.assertBundleState(bundleState);
-            
             Deployment dep = depBundle.getDeployment();
+            
             InvocationContext inv = dep.getAttachment(InvocationContext.class);
             if (inv == null)
             {

@@ -133,6 +133,11 @@ public abstract class AbstractBundle implements Bundle
       return getResolverModule().isResolved();
    }
 
+   public boolean isUninstalled()
+   {
+      return getState() == Bundle.UNINSTALLED;
+   }
+
    /** 
     * This method returns the current resolver module of the bundle.
     * @return the resolver module

@@ -86,8 +86,6 @@ public class BundleManager
    private SystemBundle systemBundle;
    // Maps bundleId to Bundle
    private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
-   // Maps bundleId to uninstalled Bundles. Uninstalled bundles are available in the system until removed by PackageAdmin.
-   private Map<Long, AbstractBundle> uninstalledMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
    /// The registered plugins 
    private Map<Class<? extends Plugin>, Plugin> plugins = new LinkedHashMap<Class<? extends Plugin>, Plugin>();
    // The Framework state
@@ -165,22 +163,22 @@ public class BundleManager
    void removeBundleState(AbstractBundle bundleState)
    {
       bundleState.removeFromResolver();
-      uninstalledMap.remove(bundleState.getBundleId());
+      bundleMap.remove(bundleState.getBundleId());
    }
 
    void uninstallBundleState(AbstractBundle bundleState)
    {
       bundleState.changeState(Bundle.UNINSTALLED);
-      bundleMap.remove(bundleState.getBundleId());
-
-      uninstalledMap.put(bundleState.getBundleId(), bundleState);
    }
 
    /**
     * Get a bundle by id
     * 
+    * Note, this will get the bundle regadless of its state.
+    * i.e. The returned bundle may have been UNINSTALLED 
+    * 
     * @param bundleId The identifier of the bundle
-    * @return the bundle or null if there is no bundle with that id
+    * @return The bundle or null if there is no bundle with that id
     */
    public AbstractBundle getBundleById(long bundleId)
    {
@@ -193,6 +191,9 @@ public class BundleManager
    /**
     * Get a bundle by location
     * 
+    * Note, this will get the bundle regadless of its state.
+    * i.e. The returned bundle may have been UNINSTALLED
+    *  
     * @param location the location of the bundle
     * @return the bundle or null if there is no bundle with that location
     */
@@ -217,6 +218,9 @@ public class BundleManager
    /**
     * Get a bundle by symbolic name and version
     * 
+    * Note, this will get the bundle regadless of its state.
+    * i.e. The returned bundle may have been UNINSTALLED
+    *  
     * @param symbolicName The bundle symbolic name
     * @param versionRange The optional bundle version 
     * @return The bundle or null if there is no bundle with that name and version
@@ -238,16 +242,36 @@ public class BundleManager
       return result;
    }
 
+   /**
+    * Get the list of installed bundles.
+    * i.e. Bundles in state UNINSTALLED are not returned
+    */
    public List<AbstractBundle> getBundles()
    {
-      List<AbstractBundle> bundles = new ArrayList<AbstractBundle>(bundleMap.values());
-      return Collections.unmodifiableList(bundles);
+      List<AbstractBundle> result = new ArrayList<AbstractBundle>();
+      for (AbstractBundle aux : bundleMap.values())
+      {
+         if (aux.getState() != Bundle.UNINSTALLED)
+            result.add(aux);
+      }
+      return Collections.unmodifiableList(result);
    }
 
-   public List<AbstractBundle> getUninstalledBundles()
+   /**
+    * Get the list of bundles that are in one of the given states.
+    * If the states pattern is null, it returns all registered bundles.
+    * 
+    * @param states The binary or combination of states or null 
+    */
+   public List<AbstractBundle> getBundles(Integer states)
    {
-      List<AbstractBundle> bundles = new ArrayList<AbstractBundle>(uninstalledMap.values());
-      return Collections.unmodifiableList(bundles);
+      List<AbstractBundle> result = new ArrayList<AbstractBundle>();
+      for (AbstractBundle aux : bundleMap.values())
+      {
+         if (states == null || (aux.getState() & states.intValue()) != 0)
+            result.add(aux);
+      }
+      return Collections.unmodifiableList(result);
    }
 
    /**

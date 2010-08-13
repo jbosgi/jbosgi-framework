@@ -125,8 +125,12 @@ public abstract class AbstractBundleContext implements BundleContext
    public Bundle getBundle(long id)
    {
       checkValidBundleContext();
+      
       AbstractBundle bundle = bundleManager.getBundleById(id);
-      return bundle != null ? bundle.getBundleWrapper() : null;
+      if (bundle == null || bundle.isUninstalled())
+         return null;
+      
+      return bundle.getBundleWrapper();
    }
 
    @Override
