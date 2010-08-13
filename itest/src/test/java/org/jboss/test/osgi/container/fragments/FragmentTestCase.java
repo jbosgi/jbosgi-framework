@@ -161,9 +161,7 @@ public class FragmentTestCase extends OSGiFrameworkTest
 
       // The fragment contains an overwrites Private-Package with Import-Package
       // The SubBeanA is expected to come from HostB, which exports that package
-
-      System.out.println("FIXME [JBOSGI-346] Attached fragment hides private package in host");
-      //assertLoadClass(hostA, SubBeanA.class.getName(), hostB);
+      assertLoadClass(hostA, SubBeanA.class.getName(), hostB);
 
       hostA.uninstall();
       assertBundleState(Bundle.UNINSTALLED, hostA.getState());
