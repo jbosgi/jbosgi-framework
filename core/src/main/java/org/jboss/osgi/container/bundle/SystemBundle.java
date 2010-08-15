@@ -44,7 +44,7 @@ import org.osgi.framework.Version;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-public class SystemBundle extends AbstractBundle implements Revision
+public class SystemBundle extends AbstractBundle
 {
    private OSGiMetaData metadata;
    private SystemBundleRevision systemRevision;
@@ -184,20 +184,6 @@ public class SystemBundle extends AbstractBundle implements Revision
    AbstractRevision getCurrentRevision()
    {
       return systemRevision;
-   }
-
-   @Override
-   public int getGlobalRevisionId()
-   {
-      // The system bundle has revision ID 0
-      return 0;
-   }
-
-   @Override
-   public int getUpdateCount()
-   {
-      // There is only 1 revision from the system bundle
-      return 0;
    }
 
    @Override

@@ -24,13 +24,13 @@ package org.jboss.osgi.container.bundle;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
+import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
@@ -46,23 +46,20 @@ import org.osgi.framework.Version;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-public abstract class AbstractRevision implements Revision
+public abstract class AbstractRevision
 {
    static final Logger log = Logger.getLogger(AbstractRevision.class);
 
-   // Ordinary revision IDs start at 1, as 0 is the System Bundle Revision ID.
-   private static final AtomicInteger globalRevisionCounter = new AtomicInteger(1);
-
-   private final int globalRevisionId;
+   private final int revisionCount;
    private final AbstractBundle bundleState;
-   private final XModule resolverModule;
    private final OSGiMetaData metadata;
-   private final int updateCount;
+   private XModule resolverModule;
 
    // Cache commonly used plugins
    private final ModuleManagerPlugin moduleManager;
+   private final ResolverPlugin resolverPlugin;
    
-   AbstractRevision(AbstractBundle bundleState, OSGiMetaData metadata, int updateCount) throws BundleException
+   AbstractRevision(AbstractBundle bundleState, OSGiMetaData metadata, int revisionCount) throws BundleException
    {
       if (bundleState == null)
          throw new IllegalArgumentException("Null bundleState");
@@ -71,33 +68,34 @@ public abstract class AbstractRevision implements Revision
       
       this.bundleState = bundleState;
       this.metadata = metadata;
-      this.updateCount = updateCount;
-      
-      boolean systemRev = (bundleState.getBundleId() == 0);
-      this.globalRevisionId = systemRev ? 0 : globalRevisionCounter.getAndIncrement();
-      
-      // Create the resolver module
-      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
-      resolverModule = builder.createModule(getGlobalRevisionId(), metadata);
-      resolverModule.addAttachment(AbstractRevision.class, this);
-      resolverModule.addAttachment(Bundle.class, bundleState);
+      this.revisionCount = revisionCount;
       
       this.moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
+      this.resolverPlugin = getBundleManager().getPlugin(ResolverPlugin.class);
+      
+      // Create the resolver module
+      refreshRevision(bundleState, metadata);
    }
 
-   @Override
-   public int getGlobalRevisionId()
+   void refreshRevision(AbstractBundle bundleState, OSGiMetaData metadata) throws BundleException
    {
-      return globalRevisionId;
+      boolean systemRev = (bundleState.getBundleId() == 0);
+      int moduleId = systemRev ? 0 : resolverPlugin.createModuleId();
+      
+      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
+      resolverModule = builder.createModule(moduleId, metadata);
+      resolverModule.addAttachment(AbstractRevision.class, this);
+      resolverModule.addAttachment(Bundle.class, bundleState);
+      refreshRevisionInternal(resolverModule);
    }
 
-   @Override
-   public int getUpdateCount()
+   abstract void refreshRevisionInternal(XModule resModule);
+
+   public int getRevisionCount()
    {
-      return updateCount;
+      return revisionCount;
    }
 
-   @Override
    public XModule getResolverModule()
    {
       return resolverModule;
@@ -108,9 +106,14 @@ public abstract class AbstractRevision implements Revision
       return bundleState;
    }
 
+   public ModuleIdentifier getModuleIdentifier()
+   {
+      return ModuleManager.getModuleIdentifier(getResolverModule());
+   }
+
    ModuleClassLoader getModuleClassLoader()
    {
-      ModuleIdentifier identifier = bundleState.getModuleIdentifier();
+      ModuleIdentifier identifier = getModuleIdentifier();
       Module module = moduleManager.getModule(identifier);
       return module != null ? module.getClassLoader() : null;
    }
@@ -147,11 +150,13 @@ public abstract class AbstractRevision implements Revision
 
    abstract Enumeration<URL> findEntries(String path, String pattern, boolean recurse);
 
+   abstract String getLocation();
+   
    abstract URL getLocalizationEntry(String path);
 
    @Override
    public String toString()
    {
-      return "Revision[" + getSymbolicName() + ":" + getVersion() + ":rev-" + updateCount + "]";
+      return "Revision[" + getSymbolicName() + ":" + getVersion() + ":rev-" + revisionCount + "]";
    }
 }

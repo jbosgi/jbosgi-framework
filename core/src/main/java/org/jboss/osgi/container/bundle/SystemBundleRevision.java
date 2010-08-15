@@ -28,7 +28,9 @@ import java.util.Enumeration;
 import org.jboss.logging.Logger;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XModule;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
 
 /**
  * An abstract bundle revision that is based on a user {@link Deployment}. 
@@ -44,11 +46,21 @@ public class SystemBundleRevision extends AbstractRevision
    SystemBundleRevision(SystemBundle bundleState, OSGiMetaData metadata) throws BundleException
    {
       super(bundleState, metadata, 0);
-      
-      // Attach the system bundle
-      getResolverModule().addAttachment(SystemBundle.class, bundleState);
    }
 
+   @Override
+   void refreshRevisionInternal(XModule resModule)
+   {
+      // Attach the system bundle
+      resModule.addAttachment(SystemBundle.class, (SystemBundle)getBundleState());
+   }
+
+   @Override
+   public String getLocation()
+   {
+      return Constants.SYSTEM_BUNDLE_LOCATION;
+   }
+   
    @Override
    Enumeration<String> getEntryPaths(String path)
    {

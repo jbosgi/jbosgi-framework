@@ -26,7 +26,6 @@ package org.jboss.osgi.container.plugin;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 
 import org.osgi.framework.Bundle;
 
@@ -38,12 +37,13 @@ import org.osgi.framework.Bundle;
  */
 public interface BundleStoragePlugin extends Plugin 
 {
-   void cleanStorage(String propValue);
-   
-   URL storeBundleStream(InputStream input) throws IOException;
-   
    File getStorageDir(Bundle bundle);
    
+   File getBundleStreamDir();
+   
    File getDataFile(Bundle bundle, String filename);
+   
+   File storeBundleStream(String location, InputStream input, int revisionCount) throws IOException;
 
+   void cleanStorage(String propValue);
 }

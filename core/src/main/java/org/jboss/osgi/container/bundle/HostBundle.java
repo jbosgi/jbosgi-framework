@@ -21,28 +21,17 @@
 */
 package org.jboss.osgi.container.bundle;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.jboss.logging.Logger;
-import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
-import org.jboss.osgi.container.plugin.BundleStoragePlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.modules.ModuleActivator;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
-import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 
 /**
@@ -56,7 +45,7 @@ import org.osgi.framework.FrameworkEvent;
  */
 public class HostBundle extends AbstractUserBundle
 {
-   private static final Logger log = Logger.getLogger(HostBundle.class);
+   //private static final Logger log = Logger.getLogger(HostBundle.class);
 
    private BundleActivator bundleActivator;
    private int startLevel = StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
@@ -86,9 +75,9 @@ public class HostBundle extends AbstractUserBundle
    }
 
    @Override
-   AbstractUserRevision createRevision(Deployment deployment, int updateCount) throws BundleException
+   AbstractUserRevision createRevisionInternal(Deployment deployment, int revisionCount) throws BundleException
    {
-      return new HostRevision(this, deployment, updateCount);
+      return new HostRevision(this, deployment, revisionCount);
    }
 
    @Override
@@ -107,12 +96,12 @@ public class HostBundle extends AbstractUserBundle
    {
       return false;
    }
-   
+
    @Override
    public boolean ensureResolved()
    {
       boolean result = true;
-      
+
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle 
       // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired 
       // containing a BundleException with details of the reason this bundle could not be resolved. 
@@ -157,32 +146,6 @@ public class HostBundle extends AbstractUserBundle
    public void setPersistentlyStarted(boolean started)
    {
       persistentlyStarted = started;
-   }
-
-   /** 
-    * This method gets called by Package Admin when the bundle needs to be refreshed,
-    * this means that all the old revisions are thrown out.
-    */
-   public void refresh() throws BundleException
-   {
-      // Remove the old revisions from the resolver
-      for (AbstractRevision abr : getRevisions())
-      {
-         if (abr != getCurrentRevision())
-         {
-            XModule resModule = abr.getResolverModule();
-            getResolverPlugin().removeModule(resModule);
-         }
-      }
-      clearRevisions();
-   }
-
-   /**
-    * Removes uninstalled bundles, called by Package Admin
-    */
-   public void remove()
-   {
-      getBundleManager().removeBundleState(this);
    }
 
    @Override
@@ -357,126 +320,10 @@ public class HostBundle extends AbstractUserBundle
    }
 
    @Override
-   void updateInternal(InputStream input) throws BundleException
-   {
-      // Not checking that the bundle is uninstalled as that already happens in super.update()
-      boolean restart = false;
-      int state = getState();
-      if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING)
-      {
-         // If this bundle's state is ACTIVE, STARTING  or STOPPING, this bundle is stopped as described in the Bundle.stop method. 
-         // If Bundle.stop throws an exception, the exception is rethrown terminating the update.
-         stopInternal(Bundle.STOP_TRANSIENT);
-         if (state != Bundle.STOPPING)
-            restart = true;
-      }
-      unresolve();
-
-      try
-      {
-         createNewBundleRevision(input);
-      }
-      catch (Exception e)
-      {
-         // If the Framework is unable to install the updated version of this bundle, the original 
-         // version of this bundle must be restored and a BundleException must be thrown after 
-         // completion of the remaining steps.
-         BundleException be = new BundleException("Problem updating bundle");
-         be.initCause(e);
-
-         if (restart)
-            startInternal(Bundle.START_TRANSIENT);
-
-         throw be;
-      }
-
-      getFrameworkEventsPlugin().fireBundleEvent(getBundleWrapper(), BundleEvent.UPDATED);
-      if (restart)
-      {
-         // If this bundle's state was originally ACTIVE or STARTING, the updated bundle is started as described in the Bundle.start method. 
-         // If Bundle.start throws an exception, a Framework event of type FrameworkEvent.ERROR is fired containing the exception
-         try
-         {
-            startInternal(Bundle.START_TRANSIENT);
-         }
-         catch (BundleException e)
-         {
-            getFrameworkEventsPlugin().fireFrameworkEvent(getBundleWrapper(), FrameworkEvent.ERROR, e);
-         }
-      }
-   }
-
-   public void createNewRevision() throws BundleException
-   {
-      try
-      {
-         createNewBundleRevision(null);
-      }
-      catch (Exception e)
-      {
-         throw new BundleException("Problem creating new revision of " + this, e);
-      }
-   }
-
-   /**
-     * Creates a new Bundle Revision when the bundle is updated. Multiple Bundle Revisions 
-     * can co-exist at the same time.
-     * @param input The stream to create the bundle revision from or <tt>null</tt>
-     * if the new revision needs to be created from the same location as where the bundle
-     * was initially installed.
-     * @throws Exception If the bundle cannot be read, or if the update attempt to change the BSN.
-     */
-   private void createNewBundleRevision(InputStream input) throws Exception
-   {
-      BundleManager bundleManager = getBundleManager();
-      URL locationURL;
-
-      // If the specified InputStream is null, the Framework must create the InputStream from 
-      // which to read the updated bundle by interpreting, in an implementation dependent manner, 
-      // this bundle's Bundle-UpdateLocation Manifest header, if present, or this bundle's 
-      // original location.
-      if (input == null)
-      {
-         String ul = getOSGiMetaData().getHeader(Constants.BUNDLE_UPDATELOCATION);
-         if (ul != null)
-            input = new URL(ul).openStream();
-      }
-
-      if (input != null)
-      {
-         try
-         {
-            BundleStoragePlugin plugin = bundleManager.getPlugin(BundleStoragePlugin.class);
-            locationURL = plugin.storeBundleStream(input);
-         }
-         catch (IOException ex)
-         {
-            throw new BundleException("Cannot store bundle from stream", ex);
-         }
-      }
-      else
-      {
-         locationURL = getCurrentRevision().getContentRoot().getStreamURL();
-      }
-
-      BundleDeploymentPlugin plugin = bundleManager.getPlugin(BundleDeploymentPlugin.class);
-      VirtualFile newRootFile = AbstractVFS.getRoot(locationURL);
-      Deployment dep = plugin.createDeployment(newRootFile, getLocation());
-      OSGiMetaData md = plugin.createOSGiMetaData(dep);
-      dep.addAttachment(OSGiMetaData.class, md);
-
-      if (md.getBundleSymbolicName().equals(getSymbolicName()) == false)
-         log.infof("Ignoring update of symbolic name: %s", md.getBundleSymbolicName());
-
-      createRevision(dep);
-      getResolverPlugin().addModule(getResolverModule());
-   }
-
-   @Override
    void uninstallInternal() throws BundleException
    {
       BundleManager bundleManager = getBundleManager();
-      
+
       // If this bundle's state is ACTIVE, STARTING or STOPPING, this bundle is stopped 
       // as described in the Bundle.stop method.
       int state = getState();
@@ -495,22 +342,5 @@ public class HostBundle extends AbstractUserBundle
       }
 
       bundleManager.uninstallBundleState(this);
-   }
-
-   public void unresolve() throws BundleException
-   {
-      assertNotUninstalled();
-
-      changeState(Bundle.INSTALLED);
-   }
-
-   @Override
-   public List<XModule> getAllResolverModules()
-   {
-      List<XModule> allModules = new ArrayList<XModule>();
-      for (Revision rev : getRevisions())
-         allModules.add(rev.getResolverModule());
-
-      return allModules;
    }
 }

@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.container.service.startlevel;
 
-
 import static org.junit.Assert.assertEquals;
 
 import java.io.InputStream;
@@ -57,13 +56,13 @@ public class StartLevelTestCase extends OSGiFrameworkTest
    {
       // prevent framework creation
    }
-   
+
    @Test
    public void testDefaultInitialStartLevel() throws Exception
    {
       Framework framework = createFramework();
       framework.start();
-      
+
       BundleContext bc = framework.getBundleContext();
       ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
       StartLevel sl = (StartLevel)bc.getService(sref);
@@ -95,12 +94,9 @@ public class StartLevelTestCase extends OSGiFrameworkTest
    @Test
    public void testOrderedStop() throws Exception
    {
-      InputStream b1IS = createTestBundle("b1.jar",
-            org.jboss.test.osgi.container.bundle.support.lifecycle1.Activator.class);
-      InputStream b2IS = createTestBundle("b2.jar",
-            org.jboss.test.osgi.container.bundle.support.lifecycle2.Activator.class);
-      InputStream b3IS = createTestBundle("b3.jar",
-            org.jboss.test.osgi.container.bundle.support.lifecycle3.Activator.class);
+      JavaArchive archive1 = createTestBundle("b1.jar", org.jboss.test.osgi.container.bundle.support.lifecycle1.Activator.class);
+      JavaArchive archive2 = createTestBundle("b2.jar", org.jboss.test.osgi.container.bundle.support.lifecycle2.Activator.class);
+      JavaArchive archive3 = createTestBundle("b3.jar", org.jboss.test.osgi.container.bundle.support.lifecycle3.Activator.class);
 
       Framework framework = createFramework();
       framework.start();
@@ -109,22 +105,20 @@ public class StartLevelTestCase extends OSGiFrameworkTest
       ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
       StartLevelPlugin sl = (StartLevelPlugin)bc.getService(sref);
 
-      Bundle b1 = bc.installBundle("b1", b1IS);
+      Bundle b1 = installBundle(archive1);
       assertEquals(Bundle.INSTALLED, b1.getState());
       b1.start();
       assertEquals(Bundle.ACTIVE, b1.getState());
-            
+
       sl.setInitialBundleStartLevel(7);
-      Bundle b2 = bc.installBundle("b2", b2IS);
+      Bundle b2 = installBundle(archive2);
       b2.start();
-      assertEquals("Start level of 7 should have prevented the bundle from starting right now",
-            Bundle.INSTALLED, b2.getState());
-      
+      assertEquals("Start level of 7 should have prevented the bundle from starting right now", Bundle.INSTALLED, b2.getState());
+
       sl.setInitialBundleStartLevel(5);
-      Bundle b3 = bc.installBundle("b3", b3IS);
+      Bundle b3 = installBundle(archive3);
       b3.start();
-      assertEquals("Start level of 5 should have prevented the bundle from starting right now",
-            Bundle.INSTALLED, b3.getState());
+      assertEquals("Start level of 5 should have prevented the bundle from starting right now", Bundle.INSTALLED, b3.getState());
 
       sl.increaseStartLevel(10);
       assertEquals(Bundle.ACTIVE, b1.getState());
@@ -145,7 +139,7 @@ public class StartLevelTestCase extends OSGiFrameworkTest
       }
    }
 
-   private InputStream createTestBundle(String name, final Class<? extends BundleActivator> activator)
+   private JavaArchive createTestBundle(String name, final Class<? extends BundleActivator> activator)
    {
       final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, name);
       archive.setManifest(new Asset()
@@ -162,7 +156,6 @@ public class StartLevelTestCase extends OSGiFrameworkTest
          }
       });
       archive.addClass(activator);
-      InputStream bundleStream = archive.as(ZipExporter.class).exportZip();
-      return bundleStream;
+      return archive;
    }
 }

@@ -70,7 +70,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
     * @param location The bundle location to be associated with the deployment  
     * @throws BundleException If the given root file does not 
     */
-   public Deployment createDeployment(final VirtualFile rootFile, final String location) throws BundleException
+   public Deployment createDeployment(VirtualFile rootFile, String location) throws BundleException
    {
       if (rootFile == null)
          throw new IllegalArgumentException("Null rootFile");
@@ -85,13 +85,13 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          dep.addAttachment(BundleInfo.class, info);
          return dep;
       }
-      catch (NumberFormatException rte)
+      catch (NumberFormatException nfe)
       {
-         throw new BundleException("Invalid OSGi version", rte);
+         throw new BundleException("Invalid OSGi version:", nfe);
       }
       catch (BundleException ex)
       {
-         log.debug("Not a valid osgi manifest: " + location);
+         log.debug("Not a valid osgi manifest: " + ex.getMessage());
       }
 
       // Try jbosgi-xservice.properties

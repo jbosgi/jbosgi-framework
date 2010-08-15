@@ -32,7 +32,6 @@ import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.container.classloader.support.a.A;
 import org.jboss.test.osgi.container.classloader.support.b.B;
-import org.junit.After;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 
@@ -46,14 +45,6 @@ import org.osgi.framework.Bundle;
  */
 public class OSGi323TestCase extends OSGiFrameworkTest
 {
-   @After
-   public void tearDown() throws Exception
-   {
-      // Make sure we have a new framework for every test
-      shutdownFramework();
-      super.tearDown();
-   }
-   
    @Test
    public void testStaticImport() throws Exception
    {
@@ -92,15 +83,22 @@ public class OSGi323TestCase extends OSGiFrameworkTest
 
       Bundle bundleA = installBundle(archiveA);
       Bundle bundleB = installBundle(archiveB);
+      try
+      {
+         assertLoadClass(bundleA, A.class.getName(), bundleB);
+         assertLoadClassFail(bundleA, B.class.getName());
 
-      assertLoadClass(bundleA, A.class.getName(), bundleB);
-      assertLoadClassFail(bundleA, B.class.getName());
+         assertLoadClass(bundleB, A.class.getName(), bundleB);
+         assertLoadClass(bundleB, B.class.getName(), bundleB);
 
-      assertLoadClass(bundleB, A.class.getName(), bundleB);
-      assertLoadClass(bundleB, B.class.getName(), bundleB);
-
-      assertBundleState(Bundle.RESOLVED, bundleA.getState());
-      assertBundleState(Bundle.RESOLVED, bundleB.getState());
+         assertBundleState(Bundle.RESOLVED, bundleA.getState());
+         assertBundleState(Bundle.RESOLVED, bundleB.getState());
+      }
+      finally
+      {
+         bundleA.uninstall();
+         bundleB.uninstall();
+      }
    }
    
    @Test
@@ -141,15 +139,22 @@ public class OSGi323TestCase extends OSGiFrameworkTest
 
       Bundle bundleA = installBundle(archiveA);
       Bundle bundleB = installBundle(archiveB);
+      try
+      {
+         assertLoadClass(bundleA, A.class.getName(), bundleA);
+         assertLoadClassFail(bundleA, B.class.getName());
 
-      assertLoadClass(bundleA, A.class.getName(), bundleA);
-      assertLoadClassFail(bundleA, B.class.getName());
+         assertLoadClass(bundleB, A.class.getName(), bundleB);
+         assertLoadClass(bundleB, B.class.getName(), bundleB);
 
-      assertLoadClass(bundleB, A.class.getName(), bundleB);
-      assertLoadClass(bundleB, B.class.getName(), bundleB);
-
-      assertBundleState(Bundle.RESOLVED, bundleA.getState());
-      assertBundleState(Bundle.RESOLVED, bundleB.getState());
+         assertBundleState(Bundle.RESOLVED, bundleA.getState());
+         assertBundleState(Bundle.RESOLVED, bundleB.getState());
+      }
+      finally
+      {
+         bundleA.uninstall();
+         bundleB.uninstall();
+      }
    }
    
    @Test
@@ -190,14 +195,21 @@ public class OSGi323TestCase extends OSGiFrameworkTest
 
       Bundle bundleA = installBundle(archiveA);
       Bundle bundleB = installBundle(archiveB);
+      try
+      {
+         assertLoadClass(bundleA, A.class.getName(), bundleA);
+         assertLoadClass(bundleA, B.class.getName(), bundleB);
 
-      assertLoadClass(bundleA, A.class.getName(), bundleA);
-      assertLoadClass(bundleA, B.class.getName(), bundleB);
+         assertLoadClass(bundleB, A.class.getName(), bundleB);
+         assertLoadClass(bundleB, B.class.getName(), bundleB);
 
-      assertLoadClass(bundleB, A.class.getName(), bundleB);
-      assertLoadClass(bundleB, B.class.getName(), bundleB);
-
-      assertBundleState(Bundle.RESOLVED, bundleA.getState());
-      assertBundleState(Bundle.RESOLVED, bundleB.getState());
+         assertBundleState(Bundle.RESOLVED, bundleA.getState());
+         assertBundleState(Bundle.RESOLVED, bundleB.getState());
+      }
+      finally
+      {
+         bundleA.uninstall();
+         bundleB.uninstall();
+      }
    }
 }

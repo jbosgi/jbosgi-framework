@@ -137,7 +137,7 @@ public class ModuleManager extends ModuleLoader
       if (bundleRevision == null)
          throw new IllegalStateException("Cannot obtain revision from: " + resModule);
 
-      return getModuleIdentifier(resModule, bundleRevision.getUpdateCount());
+      return getModuleIdentifier(resModule, bundleRevision.getRevisionCount());
    }
 
    // [TODO] Remove the revision parameter. The identity of an XModule is the revision. 
@@ -425,11 +425,12 @@ public class ModuleManager extends ModuleLoader
       return holder;
    }
 
-   public boolean removeModule(ModuleIdentifier identifier)
+   public Module removeModule(ModuleIdentifier identifier)
    {
       // The module should remove automatically from the ModuleLoader
       // through Garbage Collection as it uses weak references.
-      return modules.remove(identifier) != null;
+      ModuleHolder moduleHolder = modules.remove(identifier);
+      return (moduleHolder != null ? moduleHolder.module : null);
    }
 
    public static String getPathFromClassName(final String className)

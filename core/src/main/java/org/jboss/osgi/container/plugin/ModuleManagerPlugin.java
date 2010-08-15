@@ -73,4 +73,10 @@ public interface ModuleManagerPlugin extends Plugin
     * @throws ModuleLoadException If the module cannot be loaded
     */
    Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException;
+
+   /**
+    * Remove the module with the given identifier 
+    * @return The module or null
+    */
+   Module removeModule(ModuleIdentifier identifier);
 }

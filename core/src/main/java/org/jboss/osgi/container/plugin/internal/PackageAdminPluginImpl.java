@@ -41,6 +41,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.container.bundle.AbstractBundle;
+import org.jboss.osgi.container.bundle.AbstractUserBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.FragmentBundle;
 import org.jboss.osgi.container.bundle.FragmentRevision;
@@ -201,27 +202,27 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                bundles = bundleStates.toArray(new Bundle[bundleStates.size()]);
             }
 
-            Map<XModule, HostBundle> refreshMap = new HashMap<XModule, HostBundle>();
+            Map<XModule, AbstractUserBundle> refreshMap = new HashMap<XModule, AbstractUserBundle>();
             for (Bundle aux : bundles)
             {
                AbstractBundle bundleState = AbstractBundle.assertBundleState(aux);
-               if (bundleState instanceof HostBundle == false)
+               if (bundleState instanceof AbstractUserBundle == false)
                   continue;
 
                for (XModule resModule : bundleState.getAllResolverModules())
-                  refreshMap.put(resModule, (HostBundle)bundleState);
+                  refreshMap.put(resModule, (AbstractUserBundle)bundleState);
             }
 
             Set<HostBundle> stopBundles = new HashSet<HostBundle>();
-            Set<HostBundle> refreshBundles = new HashSet<HostBundle>();
-            Set<HostBundle> uninstallBundles = new HashSet<HostBundle>();
+            Set<AbstractUserBundle> refreshBundles = new HashSet<AbstractUserBundle>();
+            Set<AbstractUserBundle> uninstallBundles = new HashSet<AbstractUserBundle>();
 
-            for (HostBundle ib : refreshMap.values())
+            for (AbstractUserBundle aux : refreshMap.values())
             {
-               if (ib.getState() == Bundle.UNINSTALLED)
-                  uninstallBundles.add(ib);
-               else
-                  refreshBundles.add(ib);
+               if (aux.getState() == Bundle.UNINSTALLED)
+                  uninstallBundles.add(aux);
+               else if (aux.isResolved() == true)
+                  refreshBundles.add(aux);
             }
 
             // Compute all depending bundles that need to be stopped and unresolved.
@@ -253,22 +254,25 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             }
 
             // Add relevant bundles to be refreshed also to the stop list. 
-            for (HostBundle hostBundle : new HashSet<HostBundle>(refreshMap.values()))
+            for (AbstractUserBundle aux : new HashSet<AbstractUserBundle>(refreshMap.values()))
             {
-               int state = hostBundle.getState();
-               if (state == Bundle.ACTIVE || state == Bundle.STARTING)
+               if (aux instanceof HostBundle)
                {
-                  stopBundles.add(hostBundle);
+                  int state = aux.getState();
+                  if (state == Bundle.ACTIVE || state == Bundle.STARTING)
+                  {
+                     stopBundles.add((HostBundle)aux);
+                  }
                }
             }
 
             List<HostBundle> stopList = new ArrayList<HostBundle>(stopBundles);
-            List<HostBundle> refreshList = new ArrayList<HostBundle>(refreshBundles);
+            List<AbstractUserBundle> refreshList = new ArrayList<AbstractUserBundle>(refreshBundles);
 
             StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);
             BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator(startLevel);
             Collections.sort(stopList, startLevelComparator);
-            Collections.sort(refreshList, startLevelComparator);
+            //Collections.sort(refreshList, startLevelComparator);
 
             for (ListIterator<HostBundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();)
             {
@@ -283,32 +287,20 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                }
             }
 
-            for (ListIterator<HostBundle> it = refreshList.listIterator(refreshList.size()); it.hasPrevious();)
+            for (AbstractUserBundle userBundle : uninstallBundles)
             {
-               HostBundle hostBundle = it.previous();
-               try
-               {
-                  hostBundle.unresolve();
-                  hostBundle.createNewRevision();
-               }
-               catch (BundleException ex)
-               {
-                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, ex);
-               }
+               userBundle.remove();
             }
 
-            for (HostBundle hostBundle : uninstallBundles)
-               hostBundle.remove();
-
-            for (HostBundle hostBundle : refreshList)
+            for (AbstractUserBundle userBundle : refreshList)
             {
                try
                {
-                  hostBundle.refresh();
+                  userBundle.refresh();
                }
                catch (BundleException e)
                {
-                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
+                  eventsPlugin.fireFrameworkEvent(userBundle, FrameworkEvent.ERROR, e);
                }
             }
 
@@ -328,8 +320,8 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          }
       };
       
-      //runer.run();
-      getExecutor().execute(runer);
+      runer.run();
+      //getExecutor().execute(runer);
    }
 
    private Executor getExecutor()

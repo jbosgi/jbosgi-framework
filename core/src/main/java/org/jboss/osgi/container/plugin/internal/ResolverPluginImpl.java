@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
@@ -62,6 +63,9 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    // Provide logging
    final Logger log = Logger.getLogger(ResolverPluginImpl.class);
 
+   // Ordinary revision IDs start at 1, as 0 is the System Bundle Revision ID.
+   private final AtomicInteger identityGenerator = new AtomicInteger(0);
+
    // The resolver delegate
    private final XResolver resolver;
    private final NativeCodePlugin nativeCodePlugin;
@@ -73,6 +77,12 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       resolver = XResolverFactory.getResolver();
       nativeCodePlugin = getOptionalPlugin(NativeCodePlugin.class);
       moduleManager = getPlugin(ModuleManagerPlugin.class);
+   }
+
+   @Override
+   public int createModuleId()
+   {
+      return identityGenerator.incrementAndGet();
    }
 
    @Override

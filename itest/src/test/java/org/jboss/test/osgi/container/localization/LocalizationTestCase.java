@@ -57,17 +57,17 @@ public class LocalizationTestCase extends OSGiFrameworkTest
       Dictionary<String, String> headers = host.getHeaders();
       String bundleName = headers.get(Constants.BUNDLE_NAME);
       assertEquals("English Bundle Name", bundleName);
-      
+
       // Test explicit default locale
       headers = host.getHeaders(null);
       bundleName = headers.get(Constants.BUNDLE_NAME);
       assertEquals("English Bundle Name", bundleName);
-      
+
       // Test raw headers
       headers = host.getHeaders("");
       bundleName = headers.get(Constants.BUNDLE_NAME);
       assertEquals("%bundle-name", bundleName);
-      
+
       host.uninstall();
       assertBundleState(Bundle.UNINSTALLED, host.getState());
 
@@ -92,10 +92,10 @@ public class LocalizationTestCase extends OSGiFrameworkTest
       Dictionary<String, String> headers = host.getHeaders(Locale.GERMAN.toString());
       String bundleName = headers.get(Constants.BUNDLE_NAME);
       assertEquals("Deutscher Bundle Name", bundleName);
-      
+
       host.uninstall();
       assertBundleState(Bundle.UNINSTALLED, host.getState());
-      
+
       frag.uninstall();
       assertBundleState(Bundle.UNINSTALLED, frag.getState());
 
@@ -125,7 +125,6 @@ public class LocalizationTestCase extends OSGiFrameworkTest
       });
       return archive;
    }
-
 
    private JavaArchive getSimpleFragment()
    {

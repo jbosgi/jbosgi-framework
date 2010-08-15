@@ -80,6 +80,12 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
 
    protected Class<?> findClass(final String className, final boolean exportsOnly, final boolean resolve) throws ClassNotFoundException
    {
+      // Check if we have already loaded it..
+      Class<?> loadedClass = findLoadedClass(className);
+      if (loadedClass != null) {
+          return loadedClass;
+      }
+      
       boolean traceEnabled = log.isTraceEnabled();
       if (traceEnabled)
          log.trace("Attempt to find fragment class [" + className + "] in " + fragmentRev + " ...");

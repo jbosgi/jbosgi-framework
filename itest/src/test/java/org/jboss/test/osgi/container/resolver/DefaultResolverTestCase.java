@@ -30,7 +30,6 @@ import org.jboss.test.osgi.container.resolver.support.a.A;
 import org.jboss.test.osgi.container.resolver.support.b.B;
 import org.jboss.test.osgi.container.resolver.support.b.BC;
 import org.jboss.test.osgi.container.resolver.support.c.C;
-import org.junit.After;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -43,14 +42,6 @@ import org.osgi.service.packageadmin.PackageAdmin;
  */
 public class DefaultResolverTestCase extends OSGiFrameworkTest
 {
-   @After
-   public void tearDown() throws Exception
-   {
-      // Make sure we have a new framework for every test
-      shutdownFramework();
-      super.tearDown();
-   }
-
    @Test
    public void testSimpleImport() throws Exception
    {
@@ -200,7 +191,7 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest
       {
          assertLoadClass(bundleA, A.class.getName(), bundleA);
          
-         bundleA.update(toVirtualFile(assemblyC).openStream());
+         bundleA.update(toInputStream(assemblyC));
          bundleB = installBundle(assemblyB);
          assertLoadClass(bundleB, BC.class.getName(), bundleB);
          assertLoadClass(bundleB, C.class.getName(), bundleA);

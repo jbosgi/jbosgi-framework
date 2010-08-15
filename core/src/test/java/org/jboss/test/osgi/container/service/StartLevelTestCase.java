@@ -32,7 +32,6 @@ import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
-import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
@@ -52,46 +51,63 @@ public class StartLevelTestCase extends OSGiFrameworkTest
       ServiceReference sref = sc.getServiceReference(StartLevel.class.getName());
       StartLevel sls = (StartLevel)sc.getService(sref);
       int orgInitialStartlevel = sls.getInitialBundleStartLevel();
-      try {
+      try
+      {
          setTestExecutor(sls);
-   
+
          assertEquals(1, sls.getInitialBundleStartLevel());
          sls.setInitialBundleStartLevel(5);
          assertEquals(5, sls.getInitialBundleStartLevel());
-         
-         Bundle bundle = installBundle("b1", createTestBundle("bundle1"));
-         assertBundleState(Bundle.INSTALLED, bundle.getState());
-         assertEquals(5, sls.getBundleStartLevel(bundle));
-         bundle.start();
-         assertBundleState(Bundle.INSTALLED, bundle.getState());
-   
-         sls.setStartLevel(5);
-         assertBundleState(Bundle.ACTIVE, bundle.getState());
-         
-         sls.setStartLevel(4);
-         assertBundleState(Bundle.RESOLVED, bundle.getState());
-         
-         sls.setInitialBundleStartLevel(7);
-         assertEquals(7, sls.getInitialBundleStartLevel());
-   
-         sls.setStartLevel(10);
-         assertBundleState(Bundle.ACTIVE, bundle.getState());
-         
-         Bundle bundle2 = installBundle("b2", createTestBundle("bundle2"));
-         assertBundleState(Bundle.INSTALLED, bundle2.getState());
-         assertEquals(7, sls.getBundleStartLevel(bundle2));
-         bundle2.start();
-         assertBundleState(Bundle.ACTIVE, bundle2.getState());
-   
-         sls.setBundleStartLevel(bundle2, 11);
-         assertBundleState(Bundle.RESOLVED, bundle2.getState());
-         sls.setBundleStartLevel(bundle2, 9);
-         assertBundleState(Bundle.ACTIVE, bundle2.getState());
-   
-         sls.setStartLevel(1);
-         assertBundleState(Bundle.RESOLVED, bundle.getState());
-         assertBundleState(Bundle.RESOLVED, bundle2.getState());
-      } finally {
+
+         Bundle bundle = installBundle(createTestBundle("bundle1"));
+         try
+         {
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+            assertEquals(5, sls.getBundleStartLevel(bundle));
+            bundle.start();
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+
+            sls.setStartLevel(5);
+            assertBundleState(Bundle.ACTIVE, bundle.getState());
+
+            sls.setStartLevel(4);
+            assertBundleState(Bundle.RESOLVED, bundle.getState());
+
+            sls.setInitialBundleStartLevel(7);
+            assertEquals(7, sls.getInitialBundleStartLevel());
+
+            sls.setStartLevel(10);
+            assertBundleState(Bundle.ACTIVE, bundle.getState());
+
+            Bundle bundle2 = installBundle(createTestBundle("bundle2"));
+            try
+            {
+               assertBundleState(Bundle.INSTALLED, bundle2.getState());
+               assertEquals(7, sls.getBundleStartLevel(bundle2));
+               bundle2.start();
+               assertBundleState(Bundle.ACTIVE, bundle2.getState());
+
+               sls.setBundleStartLevel(bundle2, 11);
+               assertBundleState(Bundle.RESOLVED, bundle2.getState());
+               sls.setBundleStartLevel(bundle2, 9);
+               assertBundleState(Bundle.ACTIVE, bundle2.getState());
+
+               sls.setStartLevel(1);
+               assertBundleState(Bundle.RESOLVED, bundle.getState());
+               assertBundleState(Bundle.RESOLVED, bundle2.getState());
+            }
+            finally
+            {
+               bundle2.uninstall();
+            }
+         }
+         finally
+         {
+            bundle.uninstall();
+         }
+      }
+      finally
+      {
          sls.setInitialBundleStartLevel(orgInitialStartlevel);
       }
    }
@@ -111,15 +127,22 @@ public class StartLevelTestCase extends OSGiFrameworkTest
          sls.setInitialBundleStartLevel(5);
          assertEquals(5, sls.getInitialBundleStartLevel());
 
-         Bundle bundle = installBundle("b3", createTestBundle("bundle3"));
-         assertBundleState(Bundle.INSTALLED, bundle.getState());
-         assertEquals(5, sls.getBundleStartLevel(bundle));
-         bundle.start(Bundle.START_TRANSIENT);
-         assertBundleState(Bundle.INSTALLED, bundle.getState());
+         Bundle bundle = installBundle(createTestBundle("bundle3"));
+         try
+         {
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+            assertEquals(5, sls.getBundleStartLevel(bundle));
+            bundle.start(Bundle.START_TRANSIENT);
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-         sls.setStartLevel(5);
-         // Increasing the start level should not have started the bundle since it wasn't started persistently
-         assertBundleState(Bundle.INSTALLED, bundle.getState());
+            sls.setStartLevel(5);
+            // Increasing the start level should not have started the bundle since it wasn't started persistently
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+         }
+         finally
+         {
+            bundle.uninstall();
+         }
       }
       finally
       {
@@ -144,7 +167,7 @@ public class StartLevelTestCase extends OSGiFrameworkTest
       ef.set(sls, new CurrentThreadExecutor());
    }
 
-   private InputStream createTestBundle(String name)
+   private JavaArchive createTestBundle(String name)
    {
       final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, name);
       archive.setManifest(new Asset()
@@ -159,8 +182,7 @@ public class StartLevelTestCase extends OSGiFrameworkTest
             return builder.openStream();
          }
       });
-      InputStream bundleStream = archive.as(ZipExporter.class).exportZip();
-      return bundleStream;
+      return archive;
    }
 
    private static class CurrentThreadExecutor implements Executor

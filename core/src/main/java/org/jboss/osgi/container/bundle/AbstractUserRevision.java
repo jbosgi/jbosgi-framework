@@ -44,9 +44,9 @@ public abstract class AbstractUserRevision extends AbstractRevision
 
    private final Deployment deployment;
 
-   AbstractUserRevision(AbstractUserBundle bundleState, Deployment deployment, int updateCount) throws BundleException
+   AbstractUserRevision(AbstractUserBundle bundleState, Deployment deployment, int revisionCount) throws BundleException
    {
-      super(bundleState, deployment.getAttachment(OSGiMetaData.class), updateCount);
+      super(bundleState, deployment.getAttachment(OSGiMetaData.class), revisionCount);
       this.deployment = deployment;
    }
 

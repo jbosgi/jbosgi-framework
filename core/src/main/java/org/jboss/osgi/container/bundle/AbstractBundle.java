@@ -85,7 +85,8 @@ public abstract class AbstractBundle implements Bundle
    private final String symbolicName;
    private final long bundleId;
    private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
-
+   private final List<AbstractRevision> revisions = new CopyOnWriteArrayList<AbstractRevision>();
+   
    private AbstractBundleContext bundleContext;
    private BundleWrapper bundleWrapper;
    private long lastModified = System.currentTimeMillis();
@@ -116,34 +117,6 @@ public abstract class AbstractBundle implements Bundle
       this.bundleId = (systemBundle ? 0 : bundleManager.getNextBundleId());
    }
 
-   public abstract boolean isFragment();
-
-   public abstract void addToResolver();
-
-   public abstract boolean ensureResolved();
-
-   public abstract void removeFromResolver();
-
-   abstract AbstractBundleContext createContextInternal();
-
-   public boolean isResolved()
-   {
-      return getResolverModule().isResolved();
-   }
-
-   public boolean isUninstalled()
-   {
-      return getState() == Bundle.UNINSTALLED;
-   }
-
-   /**
-    * This method returns all the resolver modules of the bundle, including
-    * those of revisions that may since have been updated. These obsolete
-    * resolver modules disappear when PackageAdmin.refreshPackages() is called.
-    * @return A list of all the resolver modules
-    */
-   public abstract List<XModule> getAllResolverModules();
-
    /**
     * Assert that the given bundle is an instance of AbstractBundle
     * @throws IllegalArgumentException if the given bundle is not an instance of AbstractBundle
@@ -161,6 +134,24 @@ public abstract class AbstractBundle implements Bundle
 
       return (AbstractBundle)bundle;
    }
+
+   public abstract boolean isFragment();
+
+   public abstract void addToResolver();
+
+   public abstract boolean ensureResolved();
+
+   public abstract void removeFromResolver();
+
+   abstract AbstractBundleContext createContextInternal();
+
+   /**
+    * This method returns all the resolver modules of the bundle, including
+    * those of revisions that may since have been updated. These obsolete
+    * resolver modules disappear when PackageAdmin.refreshPackages() is called.
+    * @return A list of all the resolver modules
+    */
+   public abstract List<XModule> getAllResolverModules();
 
    @Override
    public BundleContext getBundleContext()
@@ -203,11 +194,6 @@ public abstract class AbstractBundle implements Bundle
       return bundleManager;
    }
 
-   public ModuleIdentifier getModuleIdentifier()
-   {
-      return ModuleManager.getModuleIdentifier(getResolverModule());
-   }
-
    @Override
    public String getSymbolicName()
    {
@@ -219,6 +205,38 @@ public abstract class AbstractBundle implements Bundle
       return getSymbolicName() + ":" + getVersion();
    }
 
+   public boolean isResolved()
+   {
+      return getResolverModule().isResolved();
+   }
+
+   public boolean isUninstalled()
+   {
+      return getState() == Bundle.UNINSTALLED;
+   }
+
+   void addRevision(AbstractRevision rev)
+   {
+      revisions.add(0, rev);
+   }
+   
+   AbstractRevision getCurrentRevision()
+   {
+      return revisions.get(0);
+   }
+
+   List<AbstractRevision> getRevisions()
+   {
+      return Collections.unmodifiableList(revisions);
+   }
+
+   public void clearRevisions()
+   {
+      AbstractRevision rev = getCurrentRevision();
+      revisions.clear();
+      revisions.add(rev);
+   }
+   
    public void addRegisteredService(ServiceState serviceState)
    {
       log.debug("Add registered service [" + serviceState + "] to: " + this);
@@ -620,8 +638,6 @@ public abstract class AbstractBundle implements Bundle
       return entryURL;
    }
 
-   abstract AbstractRevision getCurrentRevision();
-
    /**
     * The framework must search for localization entries using the follow-
     * ing search rules based on the bundle type:
@@ -640,6 +656,11 @@ public abstract class AbstractBundle implements Bundle
       return getCurrentRevision().getLocalizationEntry(entryPath);
    }
 
+   public ModuleIdentifier getModuleIdentifier()
+   {
+      return getCurrentRevision().getModuleIdentifier();
+   }
+   
    @Override
    public URL getResource(String name)
    {

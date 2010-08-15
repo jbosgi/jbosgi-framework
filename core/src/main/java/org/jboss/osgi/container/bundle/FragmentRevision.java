@@ -48,12 +48,17 @@ public class FragmentRevision extends AbstractUserRevision
 {
    private List<HostRevision> attachedHosts;
 
-   public FragmentRevision(FragmentBundle bundleState, Deployment dep, int updateCount) throws BundleException
+   public FragmentRevision(FragmentBundle bundleState, Deployment dep, int revisionCount) throws BundleException
    {
-      super(bundleState, dep, updateCount);
+      super(bundleState, dep, revisionCount);
+   }
 
-      // Attach the fragment bundle
-      getResolverModule().addAttachment(FragmentBundle.class, bundleState);
+   @Override
+   void refreshRevisionInternal(XModule resModule)
+   {
+      // Attach the fragment
+      resModule.addAttachment(FragmentBundle.class, (FragmentBundle)getBundleState());
+      attachedHosts = null;
    }
 
    public List<HostRevision> getAttachedHosts()

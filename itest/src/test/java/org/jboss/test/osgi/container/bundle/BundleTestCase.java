@@ -159,7 +159,7 @@ public class BundleTestCase extends OSGiFrameworkTest
       Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundle1", ObjectA.class);
       Archive<?> assembly2 = assembleArchive("bundle2", "/bundles/update/update-bundle101", ObjectB.class);
       Archive<?> assemblyy = assembleArchive("bundley", "/bundles/update/update-bundley", ObjectY.class);
-      Bundle bundle = installBundle(assembly1);
+      Bundle bundle1 = installBundle(assembly1);
       Bundle bundleY = installBundle(assemblyy);
       try
       {
@@ -169,21 +169,21 @@ public class BundleTestCase extends OSGiFrameworkTest
          bundleY.start();
          assertBundleState(Bundle.ACTIVE, bundleY.getState());
 
-         bundle.start();
-         assertBundleState(Bundle.ACTIVE, bundle.getState());
-         assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
-         assertEquals("update-bundle1", bundle.getSymbolicName());
-         assertLoadClass(bundle, ObjectA.class.getName());
-         assertLoadClassFail(bundle, ObjectB.class.getName());
+         bundle1.start();
+         assertBundleState(Bundle.ACTIVE, bundle1.getState());
+         assertEquals(Version.parseVersion("1.0.0"), bundle1.getVersion());
+         assertEquals("update-bundle1", bundle1.getSymbolicName());
+         assertLoadClass(bundle1, ObjectA.class.getName());
+         assertLoadClassFail(bundle1, ObjectB.class.getName());
 
          Class<?> clsY = bundleY.loadClass(ObjectY.class.getName());
 
-         bundle.update(toVirtualFile(assembly2).openStream());
-         assertBundleState(Bundle.ACTIVE, bundle.getState());
-         assertEquals(Version.parseVersion("1.0.1"), bundle.getVersion());
+         bundle1.update(toInputStream(assembly2));
+         assertBundleState(Bundle.ACTIVE, bundle1.getState());
+         assertEquals(Version.parseVersion("1.0.1"), bundle1.getVersion());
          // Nobody depends on the packages, so we can update them straight away
-         assertLoadClass(bundle, ObjectB.class.getName());
-         assertLoadClassFail(bundle, ObjectA.class.getName());
+         assertLoadClass(bundle1, ObjectB.class.getName());
+         assertLoadClassFail(bundle1, ObjectA.class.getName());
 
          assertSame(clsY, bundleY.loadClass(ObjectY.class.getName()));
          assertBundleState(Bundle.ACTIVE, bundleY.getState());
@@ -194,7 +194,7 @@ public class BundleTestCase extends OSGiFrameworkTest
       finally
       {
          bundleY.uninstall();
-         bundle.uninstall();
+         bundle1.uninstall();
       }
    }
 
@@ -226,7 +226,7 @@ public class BundleTestCase extends OSGiFrameworkTest
          assertLoadClassFail(bundleA, ObjectB.class.getName());
          assertLoadClass(bundleX, ObjectA.class.getName());
 
-         bundleA.update(toVirtualFile(assembly2).openStream());
+         bundleA.update(toInputStream(assembly2));
          assertBundleState(Bundle.ACTIVE, bundleA.getState());
          assertBundleState(Bundle.ACTIVE, bundleX.getState());
          assertEquals(Version.parseVersion("1.0.1"), bundleA.getVersion());
@@ -287,7 +287,7 @@ public class BundleTestCase extends OSGiFrameworkTest
          Object x1 = cls.newInstance();
          assertEquals("ObjectX contains reference: ObjectA", x1.toString());
 
-         bundleA.update(toVirtualFile(assembly2).openStream());
+         bundleA.update(toInputStream(assembly2));
          assertBundleState(Bundle.ACTIVE, bundleA.getState());
          assertBundleState(Bundle.ACTIVE, bundleX.getState());
          assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());

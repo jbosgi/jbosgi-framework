@@ -161,30 +161,10 @@ public class BundleManager
       bundleState.addToResolver();
    }
 
-   private String bundleStreamDir;
-   
    void removeBundleState(AbstractUserBundle bundleState)
    {
       bundleState.removeFromResolver();
       bundleMap.remove(bundleState.getBundleId());
-      
-      VirtualFile rootFile = bundleState.getContentRoot();
-      rootFile.close();
-      
-      if (bundleStreamDir == null)
-      {
-         BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
-         File storagedir = plugin.getStorageDir(getSystemBundle());
-         bundleStreamDir = storagedir + File.separator + "bundle-streams";
-      }
-
-      // Delete the file from the stream dir
-      String pathName = rootFile.getPathName();
-      if (pathName.startsWith(bundleStreamDir))
-      {
-         File file = new File(pathName);
-         file.delete();
-      }
    }
 
    void uninstallBundleState(AbstractBundle bundleState)
@@ -359,7 +339,8 @@ public class BundleManager
          try
          {
             BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
-            locationURL = plugin.storeBundleStream(input);
+            File streamFile = plugin.storeBundleStream(location, input, 0);
+            locationURL = streamFile.toURI().toURL();
          }
          catch (IOException ex)
          {
@@ -390,8 +371,17 @@ public class BundleManager
     */
    private AbstractBundle install(VirtualFile rootFile, String location, boolean autoStart) throws BundleException
    {
-      BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
-      Deployment dep = plugin.createDeployment(rootFile, location);
+      Deployment dep;
+      try
+      {
+         BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
+         dep = plugin.createDeployment(rootFile, location);
+      }
+      catch (BundleException ex)
+      {
+         deleteContentRoot(rootFile);
+         throw ex;
+      }
 
       return installBundle(dep);
    }
@@ -410,8 +400,18 @@ public class BundleManager
       if (bundleState != null)
          return bundleState;
 
-      bundleState = createBundle(dep);
+      try
+      {
+         bundleState = createBundle(dep);
+      }
+      catch (BundleException ex)
+      {
+         deleteContentRoot(dep.getRoot());
+         throw ex;
+      }
+      
       addBundleState(bundleState);
+      
       return bundleState;
    }
 
@@ -519,5 +519,21 @@ public class BundleManager
          plugin.fireFrameworkEvent(bundle, FrameworkEvent.WARNING, new BundleException("Error " + context + " bundle: " + bundle, t));
       else
          plugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.WARNING, new BundleException("Error " + context, t));
+   }
+
+   void deleteContentRoot(VirtualFile rootFile)
+   {
+      if (rootFile == null)
+         throw new IllegalArgumentException("Null rootFile");
+      
+      String contentRootPath = rootFile.getPathName();
+      rootFile.close();
+      
+      File streamDir = getPlugin(BundleStoragePlugin.class).getBundleStreamDir();
+      if (contentRootPath.startsWith(streamDir.getAbsolutePath()))
+      {
+         File file = new File(contentRootPath);
+         file.delete();
+      }
    }
 }

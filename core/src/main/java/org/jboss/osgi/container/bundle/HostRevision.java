@@ -58,20 +58,28 @@ public class HostRevision extends AbstractUserRevision
    private final List<VirtualFile> contentRoots;
    private List<FragmentRevision> attachedFragments;
 
-   public HostRevision(HostBundle hostBundle, Deployment dep, int revision) throws BundleException
+   public HostRevision(HostBundle hostBundle, Deployment dep, int revisionCount) throws BundleException
    {
-      super(hostBundle, dep, revision);
-
-      // Attach the host bundle
-      getResolverModule().addAttachment(HostBundle.class, hostBundle);
+      super(hostBundle, dep, revisionCount);
 
       // Set the aggregated root file
       contentRoots = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
    }
 
-   public List<VirtualFile> getContentRoots()
+   @Override
+   void refreshRevisionInternal(XModule resModule)
    {
-      return contentRoots;
+      // Attach the host bundle
+      resModule.addAttachment(HostBundle.class, (HostBundle)getBundleState());
+      attachedFragments = null;
+   }
+
+   public void attachFragment(FragmentRevision fragRev)
+   {
+      if (attachedFragments == null)
+         attachedFragments = new CopyOnWriteArrayList<FragmentRevision>();
+
+      attachedFragments.add(fragRev);
    }
 
    public List<FragmentRevision> getAttachedFragments()
@@ -80,6 +88,11 @@ public class HostRevision extends AbstractUserRevision
          return Collections.emptyList();
 
       return Collections.unmodifiableList(attachedFragments);
+   }
+
+   public List<VirtualFile> getContentRoots()
+   {
+      return contentRoots;
    }
 
    @Override
@@ -179,14 +192,6 @@ public class HostRevision extends AbstractUserRevision
          rootList = new ArrayList<VirtualFile>(Collections.singleton(rootFile));
       }
       return Collections.unmodifiableList(rootList);
-   }
-
-   public void attachFragment(FragmentRevision fragRev)
-   {
-      if (attachedFragments == null)
-         attachedFragments = new CopyOnWriteArrayList<FragmentRevision>();
-
-      attachedFragments.add(fragRev);
    }
 
    @Override

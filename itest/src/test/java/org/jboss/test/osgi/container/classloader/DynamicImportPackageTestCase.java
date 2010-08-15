@@ -31,9 +31,6 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.container.classloader.support.a.A;
 import org.jboss.test.osgi.container.classloader.support.b.B;
 import org.jboss.test.osgi.container.classloader.support.c.C;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.service.log.LogService;
@@ -46,41 +43,6 @@ import org.osgi.service.log.LogService;
  */
 public class DynamicImportPackageTestCase extends OSGiFrameworkTest
 {
-   private static JavaArchive archive;
-
-   @BeforeClass
-   public static void beforeTestCase()
-   {
-      // Bundle-SymbolicName: dynamic-log-service
-      // DynamicImport-Package: org.osgi.service.log
-      archive = ShrinkWrap.create(JavaArchive.class, "dynamic-log-service");
-      archive.setManifest(new Asset()
-      {
-         public InputStream openStream()
-         {
-            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-            builder.addBundleManifestVersion(2);
-            builder.addBundleSymbolicName(archive.getName());
-            builder.addDynamicImportPackages("org.osgi.service.log");
-            return builder.openStream();
-         }
-      });
-   }
-
-   @Before
-   public void setUp() throws Exception
-   {
-      super.setUp();
-      createFramework().start();
-   }
-
-   @After
-   public void tearDown() throws Exception
-   {
-      shutdownFramework();
-      super.tearDown();
-   }
-
    @Test
    public void testAllPackagesWildcard() throws Exception
    {
@@ -418,7 +380,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.INSTALLED, cmpd.getState());
       try
       {
-         Bundle bundleC = installBundle(archive);
+         Bundle bundleC = installBundle(getLogServiceArchive());
          assertBundleState(Bundle.INSTALLED, bundleC.getState());
          try
          {
@@ -440,7 +402,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest
    @Test
    public void testPackageNotAvailableOnInstall() throws Exception
    {
-      Bundle bundleC = installBundle(archive);
+      Bundle bundleC = installBundle(getLogServiceArchive());
       assertBundleState(Bundle.INSTALLED, bundleC.getState());
       try
       {
@@ -462,5 +424,24 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest
       {
          bundleC.uninstall();
       }
+   }
+
+   private JavaArchive getLogServiceArchive()
+   {
+      // Bundle-SymbolicName: dynamic-log-service
+      // DynamicImport-Package: org.osgi.service.log
+      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "dynamic-log-service");
+      archive.setManifest(new Asset()
+      {
+         public InputStream openStream()
+         {
+            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+            builder.addBundleManifestVersion(2);
+            builder.addBundleSymbolicName(archive.getName());
+            builder.addDynamicImportPackages("org.osgi.service.log");
+            return builder.openStream();
+         }
+      });
+      return archive;
    }
 }

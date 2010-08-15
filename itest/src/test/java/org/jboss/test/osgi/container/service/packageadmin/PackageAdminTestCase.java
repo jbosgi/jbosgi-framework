@@ -496,7 +496,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
 
          Class<?> cls = bundleX.loadClass(ObjectX.class.getName());
 
-         bundleA.update(toVirtualFile(assembly2).openStream());
+         bundleA.update(toInputStream(assembly2));
          assertBundleState(Bundle.ACTIVE, bundleA.getState());
          assertBundleState(Bundle.ACTIVE, bundleX.getState());
          assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());
@@ -652,7 +652,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
          assertEquals(Exported.class.getPackage().getName(), iex[0].getName());
          assertSame(bundleU, iex[0].getExportingBundle());
 
-         bundleE.update(toVirtualFile(assemblyE).openStream());
+         bundleE.update(toInputStream(assemblyE));
 
          // This bundle imports the old version of bundleE, should still be available!
          bundleI = installBundle(assembleArchive("ImportA", "/bundles/package-admin/importA", ImportingA.class));

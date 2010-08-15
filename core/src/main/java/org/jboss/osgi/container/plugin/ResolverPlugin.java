@@ -39,6 +39,11 @@ import org.osgi.framework.BundleException;
 public interface ResolverPlugin extends Plugin
 {
    /**
+    * Create a unique module identifier
+    */
+   int createModuleId();
+   
+   /**
     * Get the resolver instance
     */
    XResolver getResolver();

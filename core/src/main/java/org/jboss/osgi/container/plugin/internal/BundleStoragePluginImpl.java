@@ -23,22 +23,17 @@ package org.jboss.osgi.container.plugin.internal;
 
 //$Id$
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.jar.JarInputStream;
-import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.FrameworkState;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.BundleStoragePlugin;
-import org.jboss.osgi.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
@@ -55,50 +50,14 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
    final Logger log = Logger.getLogger(BundleStoragePluginImpl.class);
 
    private String storageArea;
+   private File bundleStreamDir;
 
    public BundleStoragePluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
    }
 
-   public void cleanStorage(String propValue)
-   {
-      // [TODO] Support values other than 'onFirstInit'
-      if (Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT.equals(propValue))
-      {
-         File storage = new File(getStorageArea());
-         try
-         {
-            deleteRecursively(storage);
-         }
-         catch (IOException ex)
-         {
-            log.error("Cannot delete storage area", ex);
-         }
-      }
-   }
-
-   private void deleteRecursively(File file) throws IOException
-   {
-      if (file.isDirectory())
-      {
-         String[] files = file.list();
-         if (files != null)
-         {
-            for (String name : files)
-            {
-               File child = new File(file.getCanonicalPath() + File.separator + name);
-               deleteRecursively(child);
-            }
-         }
-      }
-
-      if (log.isTraceEnabled())
-         log.trace("Deleting from storage: " + file);
-
-      file.delete();
-   }
-
+   @Override
    public File getDataFile(Bundle bundle, String filename)
    {
       File bundleDir = getStorageDir(bundle);
@@ -117,6 +76,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       return new File(filePath);
    }
 
+   @Override
    public File getStorageDir(Bundle bundle)
    {
       File bundleDir = new File(getStorageArea() + "/bundle-" + bundle.getBundleId());
@@ -135,52 +95,120 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       return new File(filePath);
    }
 
-   public URL storeBundleStream(InputStream input) throws IOException
+   @Override
+   public File storeBundleStream(String location, InputStream input, int revisionCount) throws IOException
    {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      if (location == null)
+         throw new IllegalArgumentException("Null location");
+      if (input == null)
+         throw new IllegalArgumentException("Null input");
+      
+      // Generate the filename from the location
+      String filename;
       try
       {
-         VFSUtils.copyStream(input, baos);
+         URL url = new URL(location);
+         filename = url.getPath();
       }
-      finally
+      catch (IOException ex)
       {
-         input.close();
-         baos.close();
+         filename = location;
       }
+      String testArchiveProp = System.getProperty("test.archive.directory");
+      if (testArchiveProp != null)
+      {
+         String testArchiveDir = new File(testArchiveProp).getCanonicalPath();
+         if (filename.startsWith(testArchiveDir))
+            filename = filename.substring(testArchiveDir.length() + 1);
+      }
+      String currentPath = new File(".").getCanonicalPath();
+      if (filename.startsWith(currentPath))
+         filename = filename.substring(currentPath.length() + 1);
+      if (filename.endsWith("jar"))
+         filename = filename.substring(0, filename.length() - 4);
 
-      String filename;
-      JarInputStream jis = new JarInputStream(new ByteArrayInputStream(baos.toByteArray()));
-      Manifest manifest = jis.getManifest();
-      if (manifest != null)
-      {
-         OSGiManifestMetaData metadata = new OSGiManifestMetaData(manifest);
-         filename = metadata.getBundleSymbolicName() + "-" + metadata.getBundleVersion();
-      }
-      else
-      {
-         filename = "generic-bundle";
-      }
+      filename = filename.replace('/', '.');
+      if (revisionCount > 0)
+         filename += "-rev" + revisionCount;
 
-      File storagedir = getStorageDir(getBundleManager().getSystemBundle());
-      File streamdir = new File(storagedir + File.separator + "bundle-streams");
+      File streamdir = getBundleStreamDir();
       streamdir.mkdirs();
 
-      File file = new File(streamdir + File.separator + filename + "--" + System.currentTimeMillis() + ".jar");
-      if (file.exists())
+      File file = new File(streamdir + File.separator + filename + ".jar");
+      if (file.exists() && revisionCount > 0)
          throw new IllegalStateException("File already exists: " + file);
+      
+      int dupCount = 0;
+      while (file.exists())
+      {
+         filename += "-dup" + (++dupCount);
+         file = new File(streamdir + File.separator + filename + ".jar");
+      }
 
       FileOutputStream fos = new FileOutputStream(file);
       try
       {
          log.debug("Store bundle stream: " + file);
-         VFSUtils.copyStream(new ByteArrayInputStream(baos.toByteArray()), fos);
+         VFSUtils.copyStream(input, fos);
+      }
+      catch(IOException ex)
+      {
+         file.delete();
+         throw ex;
       }
       finally
       {
          fos.close();
       }
 
-      return file.toURI().toURL();
+      return file;
+   }
+
+   @Override
+   public File getBundleStreamDir()
+   {
+      if (bundleStreamDir == null)
+      {
+         String path;
+         try
+         {
+            path = getStorageDir(getBundleManager().getSystemBundle()).getCanonicalPath();
+         }
+         catch (IOException ex)
+         {
+            throw new IllegalStateException("Cannot obtain bundle stream dir", ex);
+         }
+         bundleStreamDir = new File(path + File.separator + "bundle-streams");
+      }
+      return bundleStreamDir;
+   }
+
+   @Override
+   public void cleanStorage(String propValue)
+   {
+      // [TODO] Support values other than 'onFirstInit'
+      if (Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT.equals(propValue))
+      {
+         File storage = new File(getStorageArea());
+         try
+         {
+            deleteRecursively(storage);
+         }
+         catch (IOException ex)
+         {
+            log.error("Cannot delete storage area", ex);
+         }
+      }
+
+      // Always delete the bundle stream dir
+      try
+      {
+         deleteRecursively(getBundleStreamDir());
+      }
+      catch (IOException ex)
+      {
+         log.error("Cannot delete bundle stream dir", ex);
+      }
    }
 
    private String getStorageArea()
@@ -205,5 +233,22 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
          storageArea = dirName;
       }
       return storageArea;
+   }
+
+   private void deleteRecursively(File file) throws IOException
+   {
+      if (file.isDirectory())
+      {
+         for (String name : file.list())
+         {
+            File child = new File(file.getCanonicalPath() + File.separator + name);
+            deleteRecursively(child);
+         }
+      }
+
+      if (log.isTraceEnabled())
+         log.trace("Deleting from storage: " + file);
+
+      file.delete();
    }
 }

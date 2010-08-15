@@ -75,7 +75,7 @@ public class BundleStorageTestCase extends OSGiFrameworkTest
       assertNotNull("stream files not null", files);
       assertEquals("one stream file", 1, files.length);
       
-      String pattern = bundle.getSymbolicName() + "-" + bundle.getVersion();
+      String pattern = bundle.getSymbolicName();
       assertTrue("contains " + pattern + ": " + files[0], files[0].contains(pattern));
 
       File file = new File(streamDir + File.separator + files[0]);
@@ -105,11 +105,9 @@ public class BundleStorageTestCase extends OSGiFrameworkTest
       assertNotNull("stream files not null", streamDir.list());
       assertTrue("stream files empty", streamDir.list().length == 0);
 
-      InputStream vfis = toVirtualFile(getArchive()).openStream();
       File file = new File(storageDir+ File.separator + "testBundleExternalFile.jar");
       FileOutputStream fos = new FileOutputStream(file);
-      VFSUtils.copyStream(vfis, fos);
-      vfis.close();
+      VFSUtils.copyStream(toInputStream(getArchive()), fos);
       fos.close();
       
       Bundle bundle = getSystemContext().installBundle(file.getAbsolutePath());

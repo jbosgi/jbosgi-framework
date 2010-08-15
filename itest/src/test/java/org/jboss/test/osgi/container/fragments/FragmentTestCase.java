@@ -42,7 +42,6 @@ import org.jboss.test.osgi.container.fragments.hostA.HostAActivator;
 import org.jboss.test.osgi.container.fragments.hostB.HostBActivator;
 import org.jboss.test.osgi.container.fragments.hostC.HostCActivator;
 import org.jboss.test.osgi.container.fragments.subA.SubBeanA;
-import org.junit.After;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -55,13 +54,6 @@ import org.osgi.framework.BundleException;
  */
 public class FragmentTestCase extends OSGiFrameworkTest
 {
-   @After
-   public void tearDown() throws Exception
-   {
-      shutdownFramework();
-      super.tearDown();
-   }
-
    @Test
    public void testHostOnly() throws Exception
    {
@@ -215,6 +207,10 @@ public class FragmentTestCase extends OSGiFrameworkTest
       // Refreshing HostA causes the FragA to get attached
       refreshPackages(new Bundle[] { hostA });
 
+      // Load class provided by the fragment
+      assertLoadClass(hostA, FragBeanA.class.getName());
+      assertLoadClass(hostC, FragBeanA.class.getName(), hostA);
+      
       // HostC should now resolve and start
       hostC.start();
       assertBundleState(Bundle.ACTIVE, hostC.getState());

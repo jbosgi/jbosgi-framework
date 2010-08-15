@@ -21,12 +21,7 @@
 */
 package org.jboss.osgi.container.bundle;
 
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.List;
-
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -65,21 +60,15 @@ public class FragmentBundle extends AbstractUserBundle
    }
    
    @Override
-   AbstractUserRevision createRevision(Deployment deployment, int revision) throws BundleException
+   AbstractUserRevision createRevisionInternal(Deployment deployment, int revisionCount) throws BundleException
    {
-      return new FragmentRevision(this, deployment, revision);
+      return new FragmentRevision(this, deployment, revisionCount);
    }
 
    @Override
    public FragmentRevision getCurrentRevision()
    {
       return (FragmentRevision)super.getCurrentRevision();
-   }
-
-   @Override
-   public List<XModule> getAllResolverModules()
-   {
-      return Collections.emptyList();
    }
 
    @Override
@@ -112,12 +101,6 @@ public class FragmentBundle extends AbstractUserBundle
    void stopInternal(int options) throws BundleException
    {
       throw new BundleException("Fragments cannot be stoped");
-   }
-
-   @Override
-   void updateInternal(InputStream input) throws BundleException
-   {
-      throw new NotImplementedException();
    }
 
    @Override
