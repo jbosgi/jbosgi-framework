@@ -239,10 +239,14 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
    {
       if (file.isDirectory())
       {
-         for (String name : file.list())
+         String[] fileList = file.list();
+         if (fileList != null)
          {
-            File child = new File(file.getCanonicalPath() + File.separator + name);
-            deleteRecursively(child);
+            for (String name : fileList)
+            {
+               File child = new File(file.getCanonicalPath() + File.separator + name);
+               deleteRecursively(child);
+            }
          }
       }
 
