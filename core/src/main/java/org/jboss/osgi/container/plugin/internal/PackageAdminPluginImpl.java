@@ -212,7 +212,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                for (XModule resModule : bundleState.getAllResolverModules())
                   refreshMap.put(resModule, (AbstractUserBundle)bundleState);
             }
-
+            
             Set<HostBundle> stopBundles = new HashSet<HostBundle>();
             Set<AbstractUserBundle> refreshBundles = new HashSet<AbstractUserBundle>();
             Set<AbstractUserBundle> uninstallBundles = new HashSet<AbstractUserBundle>();
@@ -272,7 +272,6 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);
             BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator(startLevel);
             Collections.sort(stopList, startLevelComparator);
-            //Collections.sort(refreshList, startLevelComparator);
 
             for (ListIterator<HostBundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();)
             {
@@ -320,8 +319,8 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          }
       };
       
-      runer.run();
-      //getExecutor().execute(runer);
+      //runer.run();
+      getExecutor().execute(runer);
    }
 
    private Executor getExecutor()

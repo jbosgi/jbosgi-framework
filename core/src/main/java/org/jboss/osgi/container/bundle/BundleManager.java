@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.jboss.logging.Logger;
 import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.container.plugin.BundleStoragePlugin;
 import org.jboss.osgi.container.plugin.DeployerServicePlugin;
@@ -79,7 +80,7 @@ import org.osgi.framework.FrameworkEvent;
 public class BundleManager
 {
    // Provide logging
-   //private final Logger log = Logger.getLogger(BundleManager.class);
+   private final Logger log = Logger.getLogger(BundleManager.class);
    
    // The BundleId generator 
    private AtomicLong identityGenerator = new AtomicLong();
@@ -161,15 +162,23 @@ public class BundleManager
       bundleState.addToResolver();
    }
 
-   void removeBundleState(AbstractUserBundle bundleState)
+   void removeBundle(AbstractBundle bundleState)
    {
+      log.debug("Remove bundle: " + bundleState);
       bundleState.removeFromResolver();
       bundleMap.remove(bundleState.getBundleId());
    }
 
-   void uninstallBundleState(AbstractBundle bundleState)
+   void uninstallBundle(AbstractBundle bundleState)
    {
       bundleState.changeState(Bundle.UNINSTALLED);
+      List<AbstractBundle> uninstalled = getBundles(Bundle.UNINSTALLED);
+      for(AbstractBundle aux : uninstalled)
+      {
+         AbstractUserBundle userBundle = AbstractUserBundle.assertBundleState(aux);
+         if (userBundle.hasActiveWires() == false)
+            userBundle.remove();
+      }
    }
 
    /**

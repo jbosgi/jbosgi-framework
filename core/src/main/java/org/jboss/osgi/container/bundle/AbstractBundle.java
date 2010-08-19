@@ -49,7 +49,9 @@ import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -86,7 +88,7 @@ public abstract class AbstractBundle implements Bundle
    private final long bundleId;
    private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
    private final List<AbstractRevision> revisions = new CopyOnWriteArrayList<AbstractRevision>();
-   
+
    private AbstractBundleContext bundleContext;
    private BundleWrapper bundleWrapper;
    private long lastModified = System.currentTimeMillis();
@@ -137,11 +139,7 @@ public abstract class AbstractBundle implements Bundle
 
    public abstract boolean isFragment();
 
-   public abstract void addToResolver();
-
    public abstract boolean ensureResolved();
-
-   public abstract void removeFromResolver();
 
    abstract AbstractBundleContext createContextInternal();
 
@@ -215,11 +213,47 @@ public abstract class AbstractBundle implements Bundle
       return getState() == Bundle.UNINSTALLED;
    }
 
+   public void addToResolver()
+   {
+      XModule resModule = getResolverModule();
+      getResolverPlugin().addModule(resModule);
+   }
+
+   public void removeFromResolver()
+   {
+      for (AbstractRevision abr : getRevisions())
+      {
+         XModule resModule = abr.getResolverModule();
+         getResolverPlugin().removeModule(resModule);
+      }
+      clearRevisions();
+   }
+
+   boolean hasActiveWires()
+   {
+      XModule resModule = getResolverModule();
+      if (resModule.isResolved() == false)
+         return false;
+
+      for (XCapability cap : resModule.getCapabilities())
+      {
+         Set<XRequirement> wiredReqs = cap.getWiredRequirements();
+         for (XRequirement req : wiredReqs)
+         {
+            Bundle bundle = req.getModule().getAttachment(Bundle.class);
+            AbstractBundle importer = AbstractBundle.assertBundleState(bundle);
+            if (importer.getState() != Bundle.UNINSTALLED)
+               return true;
+         }
+      }
+      return false;
+   }
+
    void addRevision(AbstractRevision rev)
    {
       revisions.add(0, rev);
    }
-   
+
    AbstractRevision getCurrentRevision()
    {
       return revisions.get(0);
@@ -236,7 +270,7 @@ public abstract class AbstractBundle implements Bundle
       revisions.clear();
       revisions.add(rev);
    }
-   
+
    public void addRegisteredService(ServiceState serviceState)
    {
       log.debug("Add registered service [" + serviceState + "] to: " + this);
@@ -660,7 +694,7 @@ public abstract class AbstractBundle implements Bundle
    {
       return getCurrentRevision().getModuleIdentifier();
    }
-   
+
    @Override
    public URL getResource(String name)
    {

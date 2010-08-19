@@ -132,12 +132,6 @@ public class SystemBundle extends AbstractBundle
    }
 
    @Override
-   public void addToResolver()
-   {
-      getResolverPlugin().addModule(getResolverModule());
-   }
-
-   @Override
    public boolean ensureResolved()
    {
       // The system bundle is always resolved

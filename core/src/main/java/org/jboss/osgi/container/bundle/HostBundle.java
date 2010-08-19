@@ -341,6 +341,6 @@ public class HostBundle extends AbstractUserBundle
          }
       }
 
-      bundleManager.uninstallBundleState(this);
+      bundleManager.uninstallBundle(this);
    }
 }
