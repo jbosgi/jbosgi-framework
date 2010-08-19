@@ -107,6 +107,6 @@ public class FragmentBundle extends AbstractUserBundle
    void uninstallInternal() throws BundleException
    {
       BundleManager bundleManager = getBundleManager();
-      bundleManager.uninstallBundleState(this);
+      bundleManager.uninstallBundle(this);
    }
 }

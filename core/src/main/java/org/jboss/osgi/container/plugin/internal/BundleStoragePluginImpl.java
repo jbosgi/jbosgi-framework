@@ -63,7 +63,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       File bundleDir = getStorageDir(bundle);
       File dataFile = new File(bundleDir.getAbsolutePath() + "/" + filename);
       dataFile.getParentFile().mkdirs();
-      
+
       String filePath = dataFile.getAbsolutePath();
       try
       {
@@ -102,7 +102,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
          throw new IllegalArgumentException("Null location");
       if (input == null)
          throw new IllegalArgumentException("Null input");
-      
+
       // Generate the filename from the location
       String filename;
       try
@@ -114,13 +114,10 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       {
          filename = location;
       }
-      String testArchiveProp = System.getProperty("test.archive.directory");
-      if (testArchiveProp != null)
-      {
-         String testArchiveDir = new File(testArchiveProp).getCanonicalPath();
-         if (filename.startsWith(testArchiveDir))
-            filename = filename.substring(testArchiveDir.length() + 1);
-      }
+      String testdir = "target" + File.separator + "test-libs";
+      int testlibsIndex = filename.indexOf(testdir);
+      if (testlibsIndex > 0)
+         filename = filename.substring(testlibsIndex + testdir.length() + 1);
       String currentPath = new File(".").getCanonicalPath();
       if (filename.startsWith(currentPath))
          filename = filename.substring(currentPath.length() + 1);
@@ -137,11 +134,15 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       File file = new File(streamdir + File.separator + filename + ".jar");
       if (file.exists() && revisionCount > 0)
          throw new IllegalStateException("File already exists: " + file);
-      
-      int dupCount = 0;
+
+      int dupcount = 0;
       while (file.exists())
       {
-         filename += "-dup" + (++dupCount);
+         int dupindex = filename.lastIndexOf("-dup");
+         if (dupcount > 0 && dupindex > 0)
+            filename = filename.substring(0, dupindex);
+
+         filename += "-dup" + (++dupcount);
          file = new File(streamdir + File.separator + filename + ".jar");
       }
 
@@ -151,7 +152,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
          log.debug("Store bundle stream: " + file);
          VFSUtils.copyStream(input, fos);
       }
-      catch(IOException ex)
+      catch (IOException ex)
       {
          file.delete();
          throw ex;

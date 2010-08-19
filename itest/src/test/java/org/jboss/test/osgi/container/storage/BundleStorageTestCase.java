@@ -83,10 +83,7 @@ public class BundleStorageTestCase extends OSGiFrameworkTest
       
       bundle.uninstall();
       assertBundleState(Bundle.UNINSTALLED, bundle.getState());
-      assertTrue(file + " exists", file.exists());
-      
-      refreshPackages(null);
-      assertFalse(file + " deleted", file.exists());
+      assertFalse(file + " exists", file.exists());
    }
 
    @Test

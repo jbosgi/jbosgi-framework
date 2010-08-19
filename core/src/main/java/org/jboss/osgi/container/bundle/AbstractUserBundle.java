@@ -119,24 +119,6 @@ public abstract class AbstractUserBundle extends AbstractBundle
    }
 
    @Override
-   public void addToResolver()
-   {
-      XModule resModule = getResolverModule();
-      getResolverPlugin().addModule(resModule);
-   }
-
-   @Override
-   public void removeFromResolver()
-   {
-      for (AbstractRevision abr : getRevisions())
-      {
-         XModule resModule = abr.getResolverModule();
-         getResolverPlugin().removeModule(resModule);
-      }
-      clearRevisions();
-   }
-
-   @Override
    public List<XModule> getAllResolverModules()
    {
       List<XModule> allModules = new ArrayList<XModule>();
@@ -334,7 +316,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
    }
 
    /**
-    * Removes uninstalled bundles, called by Package Admin
+    * Removes uninstalled bundles
     */
    public void remove()
    {
@@ -342,7 +324,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
       List<AbstractRevision> revisions = new ArrayList<AbstractRevision>(getRevisions());
 
       BundleManager bundleManager = getBundleManager();
-      bundleManager.removeBundleState(this);
+      bundleManager.removeBundle(this);
       
       ModuleManagerPlugin moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
       for (AbstractRevision rev : revisions)
