@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.container.bundle.AbstractBundle;
+import org.jboss.osgi.container.bundle.AbstractUserBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.HostBundle;
 import org.jboss.osgi.container.bundle.SystemBundle;
@@ -96,8 +97,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
             {
                log.info("Increasing start level from " + getStartLevel() + " to " + sl);
                increaseStartLevel(sl);
-               eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(),
-                     FrameworkEvent.STARTLEVEL_CHANGED, null);
+               eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(), FrameworkEvent.STARTLEVEL_CHANGED, null);
             }
          });
       }
@@ -111,8 +111,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
             {
                log.info("Decreasing start level from " + getStartLevel() + " to " + sl);
                decreaseStartLevel(sl);
-               eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(),
-                     FrameworkEvent.STARTLEVEL_CHANGED, null);
+               eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(), FrameworkEvent.STARTLEVEL_CHANGED, null);
             }
          });
       }
@@ -212,8 +211,11 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
       if (bundle.getBundleId() == 0)
          return true;
 
-      HostBundle bundleState = HostBundle.assertBundleState(bundle);
-      return bundleState.isPersistentlyStarted();
+      AbstractUserBundle userBundle = AbstractUserBundle.assertBundleState(bundle);
+      if (userBundle instanceof HostBundle)
+         return ((HostBundle)userBundle).isPersistentlyStarted();
+
+      return false;
    }
 
    @Override
