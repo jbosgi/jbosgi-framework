@@ -222,13 +222,13 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
          {
             try
             {
-               File tmpFile = File.createTempFile("Constants.FRAMEWORK_STORAGE", null);
-               dirName = tmpFile.getParent();
-               tmpFile.delete();
+               File storageDir = new File("./osgi-store");
+               dirName = storageDir.getCanonicalPath();
             }
             catch (IOException ex)
             {
-               throw new IllegalStateException("Cannot create temp storage file", ex);
+               log.error("Cannot create storage area", ex);
+               throw new IllegalStateException("Cannot create storage area");
             }
          }
          storageArea = dirName;
