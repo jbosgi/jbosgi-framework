@@ -40,6 +40,7 @@ import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ModuleManager;
+import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.osgi.framework.Bundle;
@@ -72,6 +73,13 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
       bundleRev = moduleManager.getBundleRevision(module.getIdentifier());
    }
 
+   public AbstractBundle getBundleState()
+   {
+      ModuleIdentifier identifier = getModule().getIdentifier();
+      AbstractBundle bundleState = moduleManager.getBundleState(identifier);
+      return bundleState;
+   }
+   
    public void addNativeLibrary(NativeLibraryProvider libProvider)
    {
       if (nativeLibraries == null)

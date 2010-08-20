@@ -49,6 +49,12 @@ public class SystemBundleRevision extends AbstractRevision
    }
 
    @Override
+   public SystemBundle getBundleState()
+   {
+      return (SystemBundle)super.getBundleState();
+   }
+
+   @Override
    void refreshRevisionInternal(XModule resModule)
    {
       // Attach the system bundle

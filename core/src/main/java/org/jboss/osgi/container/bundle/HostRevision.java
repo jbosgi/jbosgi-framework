@@ -67,10 +67,16 @@ public class HostRevision extends AbstractUserRevision
    }
 
    @Override
+   public HostBundle getBundleState()
+   {
+      return (HostBundle)super.getBundleState();
+   }
+
+   @Override
    void refreshRevisionInternal(XModule resModule)
    {
       // Attach the host bundle
-      resModule.addAttachment(HostBundle.class, (HostBundle)getBundleState());
+      resModule.addAttachment(HostBundle.class, getBundleState());
       attachedFragments = null;
    }
 

@@ -52,12 +52,18 @@ public class FragmentRevision extends AbstractUserRevision
    {
       super(bundleState, dep, revisionCount);
    }
+   
+   @Override
+   public FragmentBundle getBundleState()
+   {
+      return (FragmentBundle)super.getBundleState();
+   }
 
    @Override
    void refreshRevisionInternal(XModule resModule)
    {
       // Attach the fragment
-      resModule.addAttachment(FragmentBundle.class, (FragmentBundle)getBundleState());
+      resModule.addAttachment(FragmentBundle.class, getBundleState());
       attachedHosts = null;
    }
 

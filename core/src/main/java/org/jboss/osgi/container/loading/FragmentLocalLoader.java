@@ -33,6 +33,7 @@ import org.jboss.modules.ConcurrentClassLoader;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Resource;
 import org.jboss.osgi.container.bundle.FragmentRevision;
+import org.jboss.osgi.container.bundle.HostRevision;
 import org.jboss.osgi.container.bundle.ModuleManager;
 
 /**
@@ -46,20 +47,25 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
    // Provide logging
    private static final Logger log = Logger.getLogger(FragmentLocalLoader.class);
 
-   private final FragmentRevision fragmentRev;
+   private final FragmentRevision fragRevision;
    private final VirtualFileResourceLoader resourceLoader;
    private final Set<String> paths;
 
-   public FragmentLocalLoader(FragmentRevision fragmentRev)
+   public FragmentLocalLoader(FragmentRevision fragRevision)
    {
-      if (fragmentRev == null)
+      if (fragRevision == null)
          throw new IllegalArgumentException("Null fragmentRev");
 
-      this.fragmentRev = fragmentRev;
-      this.resourceLoader = new VirtualFileResourceLoader(fragmentRev.getContentRoot());
+      this.fragRevision = fragRevision;
+      this.resourceLoader = new VirtualFileResourceLoader(fragRevision.getContentRoot());
       this.paths = Collections.unmodifiableSet(new HashSet<String>(resourceLoader.getPaths()));
    }
 
+   public List<HostRevision> getAttachedHosts()
+   {
+      return fragRevision.getAttachedHosts();
+   }
+   
    public Set<String> getPaths()
    {
       return paths;
@@ -88,7 +94,7 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
       
       boolean traceEnabled = log.isTraceEnabled();
       if (traceEnabled)
-         log.trace("Attempt to find fragment class [" + className + "] in " + fragmentRev + " ...");
+         log.trace("Attempt to find fragment class [" + className + "] in " + fragRevision + " ...");
 
       String path = ModuleManager.getPathFromClassName(className);
       if (paths.contains(path) == false)
@@ -112,7 +118,7 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
 
       if (classSpec == null)
       {
-         log.trace("No local specification found for class [" + className + "] in " + fragmentRev);
+         log.trace("No local specification found for class [" + className + "] in " + fragRevision);
          return null;
       }
 
@@ -124,7 +130,7 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
       }
       catch (Throwable th)
       {
-         log.trace("Failed to define class [" + className + "] in " + fragmentRev, th);
+         log.trace("Failed to define class [" + className + "] in " + fragRevision, th);
          return null;
       }
       

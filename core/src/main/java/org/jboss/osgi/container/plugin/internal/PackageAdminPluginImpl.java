@@ -37,9 +37,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.AbstractUserBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
@@ -47,9 +44,10 @@ import org.jboss.osgi.container.bundle.FragmentBundle;
 import org.jboss.osgi.container.bundle.FragmentRevision;
 import org.jboss.osgi.container.bundle.HostBundle;
 import org.jboss.osgi.container.bundle.HostRevision;
+import org.jboss.osgi.container.loading.FragmentLocalLoader;
+import org.jboss.osgi.container.loading.ModuleClassLoaderExt;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
-import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.PackageAdminPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
@@ -490,17 +488,26 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          throw new IllegalArgumentException("Null clazz");
 
       ClassLoader loader = clazz.getClassLoader();
-      if (loader instanceof ModuleClassLoader == false)
+      if (loader instanceof FragmentLocalLoader)
       {
-         log.error("Cannot obtain bundle for: " + loader);
-         return null;
+         FragmentLocalLoader fragLL = (FragmentLocalLoader)loader;
+         List<HostRevision> attachedHosts = fragLL.getAttachedHosts();
+         if (attachedHosts.size() == 1)
+         {
+            HostBundle hostBundle = attachedHosts.get(0).getBundleState();
+            return hostBundle.getBundleWrapper();
+         }
+      }
+      
+      else if (loader instanceof ModuleClassLoaderExt)
+      {
+         ModuleClassLoaderExt moduleCL = (ModuleClassLoaderExt)loader;
+         AbstractBundle bundleState = moduleCL.getBundleState();
+         return bundleState.getBundleWrapper();
       }
 
-      ModuleClassLoader moduleCL = (ModuleClassLoader)loader;
-      Module module = moduleCL.getModule();
-      ModuleIdentifier identifier = module.getIdentifier();
-      ModuleManagerPlugin plugin = getPlugin(ModuleManagerPlugin.class);
-      return plugin.getBundleState(identifier).getBundleWrapper();
+      log.error("Cannot obtain bundle for: " + loader);
+      return null;
    }
 
    @Override
