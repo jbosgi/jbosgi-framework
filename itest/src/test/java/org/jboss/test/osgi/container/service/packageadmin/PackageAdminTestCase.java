@@ -361,18 +361,6 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   public void testGetFragments() throws Exception
-   {
-      System.out.println("FIXME [JBOSGI-369] PackageAdmin Fragment Support");
-   }
-
-   @Test
-   public void testGetHosts() throws Exception
-   {
-      System.out.println("FIXME [JBOSGI-369] PackageAdmin Fragment Support");
-   }
-
-   @Test
    public void testGetRequiredBundles() throws Exception
    {
       PackageAdmin pa = getPackageAdmin();

@@ -393,18 +393,6 @@ public class BundleTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   @Ignore("testImportOldPackage")
-   public void testImportOldPackage()
-   {
-   }
-
-   @Test
-   @Ignore("testUninstall")
-   public void testUninstall() throws Exception
-   {
-   }
-
-   @Test
    public void testSingleton() throws Exception
    {
       Archive<?> assemblyA = assembleArchive("bundle10", "/bundles/singleton/singleton1");

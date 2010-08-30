@@ -23,6 +23,7 @@ package org.jboss.test.osgi.container.fragments;
 
 //$Id$
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
@@ -45,6 +46,7 @@ import org.jboss.test.osgi.container.fragments.subA.SubBeanA;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
+import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * Test Fragment functionality
@@ -127,6 +129,29 @@ public class FragmentTestCase extends OSGiFrameworkTest
       // Load a private class
       assertLoadClass(hostA, SubBeanA.class.getName());
 
+      // PackageAdmin.getBundleType
+      PackageAdmin pa = getPackageAdmin();
+      assertEquals("Bundle type", 0, pa.getBundleType(hostA));
+      assertEquals("Bundle type", PackageAdmin.BUNDLE_TYPE_FRAGMENT, pa.getBundleType(fragA));
+      
+      // PackageAdmin.getHosts
+      Bundle[] hosts = pa.getHosts(hostA);
+      assertNull("Not a fragment", hosts);
+      
+      hosts = pa.getHosts(fragA);
+      assertNotNull("Hosts not null", hosts);
+      assertEquals("Hosts length", 1, hosts.length);
+      assertEquals("Hosts equals", hostA, hosts[0]);
+      
+      // PackageAdmin.getFragments
+      Bundle[] fragments = pa.getFragments(fragA);
+      assertNull("Not a host", fragments);
+      
+      fragments = pa.getFragments(hostA);
+      assertNotNull("Fragments not null", fragments);
+      assertEquals("Fragments length", 1, fragments.length);
+      assertEquals("Fragments equals", fragA, fragments[0]);
+      
       hostA.uninstall();
       assertBundleState(Bundle.UNINSTALLED, hostA.getState());
       assertBundleState(Bundle.RESOLVED, fragA.getState());

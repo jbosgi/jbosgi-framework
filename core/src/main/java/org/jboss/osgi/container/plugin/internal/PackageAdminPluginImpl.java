@@ -513,8 +513,8 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public int getBundleType(Bundle bundle)
    {
-      // TODO support Fragments
-      return 0;
+	   AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      return bundleState.isFragment() ? BUNDLE_TYPE_FRAGMENT : 0;
    }
 
    static class ExportedPackageImpl implements ExportedPackage
