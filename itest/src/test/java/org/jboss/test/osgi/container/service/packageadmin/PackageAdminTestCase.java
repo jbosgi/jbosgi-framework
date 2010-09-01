@@ -43,6 +43,7 @@ import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.container.bundle.support.a.ObjectA;
 import org.jboss.test.osgi.container.bundle.support.a.ObjectA2;
 import org.jboss.test.osgi.container.bundle.support.x.ObjectX;
+import org.jboss.test.osgi.container.bundle.support.y.ObjectY;
 import org.jboss.test.osgi.container.packageadmin.exportA.ExportA;
 import org.jboss.test.osgi.container.packageadmin.exportB.ExportB;
 import org.jboss.test.osgi.container.packageadmin.exported.Exported;
@@ -55,6 +56,8 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleListener;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
 import org.osgi.service.packageadmin.ExportedPackage;
@@ -460,11 +463,14 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
    {
       PackageAdmin pa = getPackageAdmin();
       Archive<?> assemblyx = assembleArchive("bundlex", "/bundles/update/update-bundlex", ObjectX.class);
+      Archive<?> assemblyy = assembleArchive("bundley", "/bundles/update/update-bundley", ObjectY.class);
       Archive<?> assembly1 = assembleArchive("bundle1", new String[] { "/bundles/update/update-bundle1", "/bundles/update/classes1" });
       Archive<?> assembly2 = assembleArchive("bundle2", new String[] { "/bundles/update/update-bundle102", "/bundles/update/classes2" });
 
       Bundle bundleA = installBundle(assembly1);
       Bundle bundleX = installBundle(assemblyx);
+      Bundle bundleY = installBundle(assemblyy);
+      BundleListener bl = null;
       try
       {
          BundleContext systemContext = getFramework().getBundleContext();
@@ -472,6 +478,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
 
          bundleA.start();
          bundleX.start();
+         bundleY.start();
 
          assertBundleState(Bundle.ACTIVE, bundleA.getState());
          assertBundleState(Bundle.ACTIVE, bundleX.getState());
@@ -497,12 +504,25 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
          assertLoadClassFail(bundleX, ObjectA2.class.getName());
          assertSame(cls, bundleX.loadClass(ObjectX.class.getName()));
 
+         final List<BundleEvent> bundleYEvents = new ArrayList<BundleEvent>();
+         bl = new BundleListener()
+         {
+            @Override
+            public void bundleChanged(BundleEvent event)
+            {
+               if (event.getBundle().getSymbolicName().equals("update-bundley"))
+                  bundleYEvents.add(event);
+            }
+         };
+         getSystemContext().addBundleListener(bl);
          getSystemContext().addFrameworkListener(this);
+
          pa.refreshPackages(null);
          assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
 
          assertBundleState(Bundle.ACTIVE, bundleA.getState());
          assertBundleState(Bundle.ACTIVE, bundleX.getState());
+         assertBundleState(Bundle.ACTIVE, bundleY.getState());
          assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());
          assertLoadClass(bundleA, ObjectA2.class.getName());
          assertLoadClassFail(bundleA, ObjectA.class.getName());
@@ -511,6 +531,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
 
          Class<?> cls2 = bundleX.loadClass(ObjectX.class.getName());
          assertNotSame("Should have loaded a new class", cls, cls2);
+         assertEquals("Bundle Y should not have been touched (restarted)", 0, bundleYEvents.size());
 
          int afterCount = systemContext.getBundles().length;
          assertEquals("Bundle count", beforeCount, afterCount);
@@ -518,8 +539,49 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
       finally
       {
          getSystemContext().removeFrameworkListener(this);
+         if (bl != null)
+            getSystemContext().removeBundleListener(bl);
+         bundleY.uninstall();
          bundleX.uninstall();
          bundleA.uninstall();
+      }
+   }
+
+   @Test
+   public void testRefreshPackagesNullUninstall() throws Exception
+   {
+      PackageAdmin pa = getPackageAdmin();
+      Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+      Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", Importing.class));
+
+      try
+      {
+         bundleI.start();
+         assertLoadClass(bundleI, Exported.class.getName());
+         assertNotNull(getImportedFieldValue(bundleI));
+
+         bundleE.uninstall();
+         bundleI.stop();
+         bundleI.start();
+         assertLoadClass(bundleI, Exported.class.getName());
+         assertNotNull("The stale bundle E should still be available for classloading so the imported field should have a value",
+               getImportedFieldValue(bundleI));
+
+         getSystemContext().addFrameworkListener(this);
+         pa.refreshPackages(null);
+         assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
+
+         assertEquals(Bundle.ACTIVE, bundleI.getState());
+         assertLoadClassFail(bundleI, Exported.class.getName());
+         assertNull("Now that the packages are refreshed, bundle E should be no longer available for classloading",
+               getImportedFieldValue(bundleI));
+      }
+      finally
+      {
+         getSystemContext().removeFrameworkListener(this);
+         bundleI.uninstall();
+         if (bundleE.getState() != Bundle.UNINSTALLED)
+            bundleE.uninstall();
       }
    }
 

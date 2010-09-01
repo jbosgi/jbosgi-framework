@@ -259,7 +259,7 @@ public abstract class AbstractBundle implements Bundle
       return revisions.get(0);
    }
 
-   List<AbstractRevision> getRevisions()
+   public List<AbstractRevision> getRevisions()
    {
       return Collections.unmodifiableList(revisions);
    }
