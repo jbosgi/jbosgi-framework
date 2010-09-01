@@ -195,6 +195,9 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             Bundle[] bundles = bundlesToRefresh;
             if (bundles == null)
             {
+               // 4.2 core spec 7.5.3.11 on null:
+               // all bundles updated or uninstalled since the last call to this method.
+
                List<AbstractBundle> bundlesToRefresh = new ArrayList<AbstractBundle>();
                for (AbstractBundle aux : getBundleManager().getBundles(null))
                {
