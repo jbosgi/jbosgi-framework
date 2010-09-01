@@ -60,7 +60,6 @@ import org.jboss.osgi.resolver.XVersionRange;
 import org.jboss.osgi.resolver.XWire;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
@@ -186,7 +185,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public void refreshPackages(final Bundle[] bundlesToRefresh)
    {
-      Runnable runer = new Runnable()
+      Runnable runner = new Runnable()
       {
          FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
 
@@ -278,9 +277,9 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                {
                   hostBundle.stop(Bundle.STOP_TRANSIENT);
                }
-               catch (BundleException ex)
+               catch (Throwable th)
                {
-                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, ex);
+                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
                }
             }
 
@@ -295,9 +294,9 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                {
                   userBundle.refresh();
                }
-               catch (BundleException e)
+               catch (Throwable th)
                {
-                  eventsPlugin.fireFrameworkEvent(userBundle, FrameworkEvent.ERROR, e);
+                  eventsPlugin.fireFrameworkEvent(userBundle, FrameworkEvent.ERROR, th);
                }
             }
 
@@ -307,9 +306,9 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                {
                   hostBundle.start(Bundle.START_TRANSIENT);
                }
-               catch (BundleException e)
+               catch (Throwable th)
                {
-                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
+                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
                }
             }
 
@@ -317,8 +316,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          }
       };
       
-      //runer.run();
-      getExecutor().execute(runer);
+      getExecutor().execute(runner);
    }
 
    private Executor getExecutor()
