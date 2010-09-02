@@ -92,7 +92,7 @@
     </dependency>
     <dependency>
       <groupId>org.jboss.arquillian.protocol</groupId>
-      <artifactId>arquillian-protocol-jmx-osgi-bundle</artifactId>
+      <artifactId>arquillian-osgi-bundle</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -133,8 +133,8 @@
               <artifactItems>
                 <artifactItem>
                   <groupId>org.jboss.arquillian.protocol</groupId>
-                  <artifactId>arquillian-protocol-jmx-osgi-bundle</artifactId>
-                  <destFileName>arquillian-protocol-jmx-osgi-bundle.jar</destFileName>
+                  <artifactId>arquillian-osgi-bundle</artifactId>
+                  <destFileName>arquillian-osgi-bundle.jar</destFileName>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.osgi</groupId>

@@ -139,7 +139,7 @@
       </dependency>
       <dependency>
         <groupId>org.jboss.arquillian.protocol</groupId>
-        <artifactId>arquillian-protocol-jmx-osgi-bundle</artifactId>
+        <artifactId>arquillian-osgi-bundle</artifactId>
         <version>${version.jboss.arquillian}</version>
         <exclusions>
           <exclusion>
