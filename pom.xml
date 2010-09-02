@@ -134,13 +134,19 @@
       </dependency>
       <dependency>
         <groupId>org.jboss.arquillian.container</groupId>
-        <artifactId>arquillian-osgi-embedded-4.2</artifactId>
+        <artifactId>arquillian-osgi-embedded</artifactId>
         <version>${version.jboss.arquillian}</version>
       </dependency>
       <dependency>
         <groupId>org.jboss.arquillian.protocol</groupId>
         <artifactId>arquillian-protocol-jmx-osgi-bundle</artifactId>
         <version>${version.jboss.arquillian}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging-spi</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.jboss.osgi.jmx</groupId>

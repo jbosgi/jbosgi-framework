@@ -87,7 +87,7 @@
     </dependency>
     <dependency>
       <groupId>org.jboss.arquillian.container</groupId>
-      <artifactId>arquillian-osgi-embedded-4.2</artifactId>
+      <artifactId>arquillian-osgi-embedded</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
