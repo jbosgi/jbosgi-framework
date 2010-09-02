@@ -44,7 +44,8 @@ import org.jboss.test.osgi.container.bundle.support.a.ObjectA2;
 import org.jboss.test.osgi.container.bundle.support.b.ObjectB;
 import org.jboss.test.osgi.container.bundle.support.x.ObjectX;
 import org.jboss.test.osgi.container.bundle.support.y.ObjectY;
-import org.junit.Ignore;
+import org.jboss.test.osgi.container.bundle.update.startexc.BundleStartExActivator;
+import org.jboss.test.osgi.container.bundle.update.stopexc.BundleStopExActivator;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
@@ -375,21 +376,55 @@ public class BundleTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   @Ignore("testUpdateExceptionStart")
+   public void testUpdateExceptionStop() throws Exception
+   {
+      Archive<?> assembly1 = assembleArchive("update-bundle-stop-exc1", "/bundles/update/update-bundle-stop-exc1", BundleStopExActivator.class);
+      Archive<?> assembly2 = assembleArchive("update-bundle-stop-exc2", "/bundles/update/update-bundle-stop-exc2");
+      Bundle bundle1 = installBundle(assembly1);
+      try
+      {
+         bundle1.start();
+         
+         assertEquals(Version.parseVersion("1"), bundle1.getVersion());
+         try
+         {
+            bundle1.update(toInputStream(assembly2));
+            fail("Should have thrown a bundle exception.");
+         }
+         catch (BundleException be)
+         {
+            // good
+         }
+         assertEquals("Because bundle.stop() throws an exception the update should not have been applied",
+               Version.parseVersion("1"), bundle1.getVersion());
+      }
+      finally
+      {
+         bundle1.uninstall();
+      }
+   }
+
+   @Test
    public void testUpdateExceptionStart() throws Exception
    {
-   }
+      Archive<?> assembly1 = assembleArchive("update-bundle-start-exc1", "/bundles/update/update-bundle-start-exc1");
+      Archive<?> assembly2 = assembleArchive("update-bundle-start-exc2", "/bundles/update/update-bundle-start-exc2", BundleStartExActivator.class);
+      Bundle bundle1 = installBundle(assembly1);
+      try
+      {
+         bundle1.start();
+         assertEquals(Version.parseVersion("1"), bundle1.getVersion());
 
-   @Test
-   @Ignore("testUpdateExceptionStop")
-   public void testUpdateExceptionStop()
-   {
-   }
-
-   @Test
-   @Ignore("testBundleUpdateLocation")
-   public void testBundleUpdateLocation()
-   {
+         getSystemContext().addFrameworkListener(this);
+         bundle1.update(toInputStream(assembly2));
+         assertFrameworkEvent(FrameworkEvent.ERROR, bundle1, BundleException.class);
+         assertEquals(Version.parseVersion("2"), bundle1.getVersion());
+      }
+      finally
+      {
+         getSystemContext().removeFrameworkListener(this);
+         bundle1.uninstall();
+      }
    }
 
    @Test
