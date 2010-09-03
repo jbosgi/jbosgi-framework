@@ -36,7 +36,7 @@ import org.osgi.framework.BundleContext;
 public interface ModuleContext
 {
    /** The prefix that xservices must use to get discovered by the OSGi service registry */
-   String XSERVICE_PREFIX = "jbosgi.xservice";
+   String XSERVICE_PREFIX = "xservice";
 
    /**
     * Get the ServiceName for the given service interface that an xservice implements.

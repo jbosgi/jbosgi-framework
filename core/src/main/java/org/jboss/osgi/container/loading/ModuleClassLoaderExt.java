@@ -22,36 +22,33 @@
 package org.jboss.osgi.container.loading;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.AssertionSetting;
+import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ResourceLoader;
+import org.jboss.modules.Resource;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.osgi.framework.Bundle;
 
 /**
  * An OSGi extention to the {@link ModuleClassLoader}.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class ModuleClassLoaderExt extends ModuleClassLoader
+public class ModuleClassLoaderExt implements LocalLoader
 {
    // Provide logging
    private static final Logger log = Logger.getLogger(ModuleClassLoaderExt.class);
@@ -59,103 +56,38 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
    private final ModuleManager moduleManager;
    private final BundleManager bundleManager;
-   private final AbstractRevision bundleRev;
-   
-   // List of native library providers 
-   private volatile List<NativeLibraryProvider> nativeLibraries;
-   
-   public ModuleClassLoaderExt(Module module, AssertionSetting setting, Collection<ResourceLoader> resourceLoaders)
+   private final ModuleIdentifier id;
+
+   public ModuleClassLoaderExt(ModuleIdentifier id, ModuleManager manager)
    {
-      super(module, setting, resourceLoaders);
-      moduleManager = (ModuleManager)module.getModuleLoader();
+      moduleManager = manager;
       bundleManager = moduleManager.getBundleManager();
-      
-      bundleRev = moduleManager.getBundleRevision(module.getIdentifier());
-   }
-
-   public AbstractBundle getBundleState()
-   {
-      ModuleIdentifier identifier = getModule().getIdentifier();
-      AbstractBundle bundleState = moduleManager.getBundleState(identifier);
-      return bundleState;
-   }
-   
-   public void addNativeLibrary(NativeLibraryProvider libProvider)
-   {
-      if (nativeLibraries == null)
-         nativeLibraries = new CopyOnWriteArrayList<NativeLibraryProvider>();
-      
-      nativeLibraries.add(libProvider);
-   }
-   
-   @Override
-   protected String findLibrary(String libname)
-   {
-      List<NativeLibraryProvider> list = nativeLibraries;
-      if (list == null)
-         return null;
-      
-      NativeLibraryProvider libProvider = null;
-      for (NativeLibraryProvider aux : list)
-      {
-         if (libname.equals(aux.getLibraryName()))
-         {
-            libProvider = aux;
-            break;
-         }
-      }
-      
-      if (libProvider == null)
-         return null;
-      
-      File libfile;
-      try
-      {
-         libfile = libProvider.getLibraryLocation();
-      }
-      catch (IOException ex)
-      {
-         log.error("Cannot privide native library location for: " + libname, ex);
-         return null;
-      }
-      
-      return libfile.getAbsolutePath();
+      this.id= id;
    }
 
    @Override
-   protected Class<?> findClass(String className, boolean exportsOnly, boolean resolve) throws ClassNotFoundException
+   public Class<?> loadClassLocal(String className, boolean resolve)
    {
-      Class<?> result = null;
-      try
-      {
-         result = super.findClass(className, exportsOnly, resolve);
-         if (result != null)
-            return result;
-      }
-      catch (ClassNotFoundException ex)
-      {
-         // ignore
-      }
-      
+
       // Try to load the class dynamically
       String matchingPattern = findMatchingDynamicImportPattern(className);
       if (matchingPattern != null)
       {
-         result = loadClassDynamically(className);
+         Class<? >result = loadClassDynamically(className);
          if (result != null)
             return result;
       }
-      
-      throw new ClassNotFoundException(className + " from [" + getModule() + "]");
+
+      return null;
    }
 
-   private Class<?> loadClassDynamically(String className) throws ClassNotFoundException
+   private Class<?> loadClassDynamically(String className)
    {
       Class<?> result;
-      
+
       if (dynamicLoadAttempts == null)
          dynamicLoadAttempts  = new ThreadLocal<Map<String, AtomicInteger>>();
-      
+
       Map<String, AtomicInteger> mapping = dynamicLoadAttempts.get();
       boolean removeThreadLocalMapping = false;
       try
@@ -166,17 +98,17 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
             dynamicLoadAttempts.set(mapping);
             removeThreadLocalMapping = true;
          }
-         
+
          AtomicInteger recursiveDepth = mapping.get(className);
          if (recursiveDepth == null)
             mapping.put(className, recursiveDepth = new AtomicInteger());
-         
+
          if (recursiveDepth.incrementAndGet() == 1)
          {
             result = findInResolvedModules(className);
             if (result != null)
                return result;
-            
+
             result = findInUnresolvedModules(className);
             if (result != null)
                return result;
@@ -195,19 +127,20 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
                mapping.remove(className);
          }
       }
-      
-      throw new ClassNotFoundException(className);
+
+      return null;
    }
 
    private String findMatchingDynamicImportPattern(String className)
    {
+      AbstractRevision bundleRev = moduleManager.getBundleRevision(id);
       XModule resModule = bundleRev.getResolverModule();
       List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
       if (dynamicRequirements.isEmpty())
          return null;
-      
+
       String foundMatch = null;
-      
+
       for (XPackageRequirement dynreq : dynamicRequirements)
       {
          String pattern = dynreq.getName();
@@ -315,6 +248,18 @@ public class ModuleClassLoaderExt extends ModuleClassLoader
          }
       }
 
+      return null;
+   }
+
+   @Override
+   public List<Resource> loadResourceLocal(String name) {
+      // TODO Auto-generated method stub
+      return Collections.emptyList();
+   }
+
+   @Override
+   public Resource loadResourceLocal(String root, String name) {
+      // TODO Auto-generated method stub
       return null;
    }
 }

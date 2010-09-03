@@ -50,7 +50,7 @@ import org.osgi.framework.Version;
 
 /**
  * A plugin the handles Bundle deployments.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 12-Jul-2010
  */
@@ -67,8 +67,8 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
    /**
     * Create a {@link Deployment} from the given virtual file.
     * @param rootFile The root file pointing to one of the supported bundle formats
-    * @param location The bundle location to be associated with the deployment  
-    * @throws BundleException If the given root file does not 
+    * @param location The bundle location to be associated with the deployment
+    * @throws BundleException If the given root file does not
     */
    public Deployment createDeployment(VirtualFile rootFile, String location) throws BundleException
    {
@@ -105,12 +105,12 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
 
             ModuleMetaDataParser parser = new ModuleMetaDataParser();
             ModuleMetaData metadata = parser.parse(new InputStreamReader(inputStream));
-            
+
             // Module-Identifier, Module-Activator
             ModuleIdentifier identifier = metadata.getIdentifier();
-            String symbolicName = identifier.getArtifact();
-            String version = identifier.getVersion();
-            
+            String symbolicName = identifier.getName();
+            String version = identifier.getSlot();
+
             Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, Version.parseVersion(version));
             dep.addAttachment(ModuleMetaData.class, metadata);
             return dep;
@@ -159,8 +159,8 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
    {
       OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
       ModuleIdentifier identifier = moduleSpec.getIdentifier();
-      builder.addBundleSymbolicName(identifier.getArtifact());
-      builder.addBundleVersion(identifier.getVersion());
+      builder.addBundleSymbolicName(identifier.getName());
+      builder.addBundleVersion(identifier.getSlot());
 
       // Set the module activator bridge
       if (moduleSpec.getModuleActivator() != null)
@@ -179,7 +179,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
             String path = url.substring(urlOffset);
             if (path.startsWith("META-INF"))
                continue;
-            
+
             path = path.substring(0, path.lastIndexOf('/'));
             if (exportedPaths.contains(path) == false)
             {
@@ -192,19 +192,27 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       {
          log.error("Cannot process module entries", ex);
       }
-      
+
       // Add Require-Bundle for every dependency
       for (Dependency depSpec : moduleSpec.getDependencies())
       {
          ModuleIdentifier depid = depSpec.getIdentifier();
-         String name = depid.getArtifact();
-         String version = depid.getVersion();
+         String name = depid.getName();
+         String version = depid.getSlot();
          boolean optional = false; //depSpec.isOptional();
 
          // Require-Bundle
          StringBuffer buffer = new StringBuffer(name);
-         if (version != null)
-            buffer.append(";bundle-version=" + Version.parseVersion(version));
+         if (version != null) {
+            try {
+                Version parseVersion = Version.parseVersion(null);
+                parseVersion = Version.parseVersion(version);
+                buffer.append(";bundle-version=" + parseVersion);
+            } catch (RuntimeException e) {
+            }
+
+        }
+
          if (optional == true)
             buffer.append(";resolution:=optional");
          builder.addRequireBundle(buffer.toString());

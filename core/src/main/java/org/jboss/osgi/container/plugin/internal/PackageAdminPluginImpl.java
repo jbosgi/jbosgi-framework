@@ -37,6 +37,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.ModuleClassLoader;
 import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.AbstractUserBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
@@ -48,6 +49,7 @@ import org.jboss.osgi.container.loading.FragmentLocalLoader;
 import org.jboss.osgi.container.loading.ModuleClassLoaderExt;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
+import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.PackageAdminPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
@@ -71,7 +73,7 @@ import org.osgi.service.startlevel.StartLevel;
 
 /**
  * A plugin manages the Framework's system packages.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2010
@@ -210,7 +212,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                for (XModule resModule : bundleState.getAllResolverModules())
                   refreshMap.put(resModule, (AbstractUserBundle)bundleState);
             }
-            
+
             Set<HostBundle> stopBundles = new HashSet<HostBundle>();
             Set<AbstractUserBundle> refreshBundles = new HashSet<AbstractUserBundle>();
             Set<AbstractUserBundle> uninstallBundles = new HashSet<AbstractUserBundle>();
@@ -251,7 +253,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                }
             }
 
-            // Add relevant bundles to be refreshed also to the stop list. 
+            // Add relevant bundles to be refreshed also to the stop list.
             for (AbstractUserBundle aux : new HashSet<AbstractUserBundle>(refreshMap.values()))
             {
                if (aux instanceof HostBundle)
@@ -316,7 +318,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
          }
       };
-      
+
       //runer.run();
       getExecutor().execute(runer);
    }
@@ -442,7 +444,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    public Bundle[] getFragments(Bundle bundle)
    {
       // If the specified bundle is a fragment then null is returned.
-      // If the specified bundle is not resolved then null is returned      
+      // If the specified bundle is not resolved then null is returned
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
       if (bundle.getBundleId() == 0 || bundleState.isFragment() || !bundleState.isResolved())
          return null;
@@ -498,12 +500,14 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             return hostBundle.getBundleWrapper();
          }
       }
-      
-      else if (loader instanceof ModuleClassLoaderExt)
+
+      else if (loader instanceof ModuleClassLoader)
       {
-         ModuleClassLoaderExt moduleCL = (ModuleClassLoaderExt)loader;
-         AbstractBundle bundleState = moduleCL.getBundleState();
-         return bundleState.getBundleWrapper();
+          ModuleClassLoader moduleCL = (ModuleClassLoader)loader;
+          ModuleManagerPlugin moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
+
+          AbstractBundle bundleState = moduleManager.getBundleState(moduleCL.getModule().getIdentifier());
+          return bundleState.getBundleWrapper();
       }
 
       log.error("Cannot obtain bundle for: " + loader);

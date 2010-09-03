@@ -54,7 +54,7 @@ import org.osgi.framework.Constants;
 
 /**
  * The bundle native code plugin
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 11-Aug-2010
  */
@@ -73,7 +73,7 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
       processorAlias.put("pentium", "x86");
       processorAlias.put("x86_64", "x86-64");
    }
-   
+
    /** Maps an alias to an OSGi osname */
    private static Map<String, String> osAlias = new HashMap<String, String>();
    static
@@ -117,7 +117,7 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
       AbstractBundle bundleState = dep.getAttachment(AbstractBundle.class);
       if (bundleState == null)
          throw new IllegalStateException("Cannot obtain Bundle from: " + dep);
-      
+
       OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
       List<ParameterizedAttribute> nativeCodeParams = osgiMetaData.getBundleNativeCode();
       if (nativeCodeParams == null)
@@ -150,7 +150,7 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
 
       NativeLibraryMetaData nativeLibraries = new NativeLibraryMetaData();
       dep.addAttachment(NativeLibraryMetaData.class, nativeLibraries);
-      
+
       for (ParameterizedAttribute param : matchedParams)
       {
          Parameter osnameParam = param.getAttribute(Constants.BUNDLE_NATIVECODE_OSNAME);
@@ -167,7 +167,7 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
          String libsource = bundleState.getCanonicalName();
 
          NativeLibrary library = new NativeLibrary(osNames, libpath, libsource);
-         
+
          // Processors
          if (procParam != null)
          {
@@ -176,16 +176,16 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
                processors = (List<String>)procParam.getValue();
             else
                processors = Collections.singletonList((String)procParam.getValue());
-            
+
             library.setProcessors(processors);
          }
-         
+
          // [TODO] osVersions, languages, selectionFilter, optional
          // library.setOsVersions(osVersions);
          // library.setLanguages(languages);
          // library.setSelectionFilter(selectionFilter);
          // library.setOptional(optional);
-         
+
          nativeLibraries.addNativeLibrary(library);
       }
    }
@@ -193,34 +193,34 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
    @Override
    public void resolveNativeCode(AbstractUserBundle depBundle)
    {
-      Deployment dep = depBundle.getDeployment();
-      NativeLibraryMetaData libMetaData = dep.getAttachment(NativeLibraryMetaData.class);
-      if (libMetaData == null)
-         throw new IllegalStateException("Cannot obtain NativeLibraryMetaData from: " + dep);
-      
-      ModuleClassLoaderExt moduleClassLoader = (ModuleClassLoaderExt)depBundle.getModuleClassLoader();
-      if (moduleClassLoader == null)
-         throw new IllegalStateException("Cannot obtain ModuleClassLoader from: " + depBundle);
-      
-      // Add the native library mappings to the OSGiClassLoaderPolicy
-      for (NativeLibrary library : libMetaData.getNativeLibraries())
-      {
-         String libpath = library.getLibraryPath();
-         String libfile = new File(libpath).getName();
-         String libname = libfile.substring(0, libfile.lastIndexOf('.'));
-         
-         // Add the library provider to the policy
-         NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(depBundle, libname, libpath);
-         moduleClassLoader.addNativeLibrary(libProvider);
-         
-         // [TODO] why does the TCK use 'Native' to mean 'libNative' ? 
-         if (libname.startsWith("lib"))
-         {
-            libname = libname.substring(3);
-            libProvider = new BundleNativeLibraryProvider(depBundle, libname, libpath);
-            moduleClassLoader.addNativeLibrary(libProvider);
-         }
-      }
+//      Deployment dep = depBundle.getDeployment();
+//      NativeLibraryMetaData libMetaData = dep.getAttachment(NativeLibraryMetaData.class);
+//      if (libMetaData == null)
+//         throw new IllegalStateException("Cannot obtain NativeLibraryMetaData from: " + dep);
+//
+//      ModuleClassLoaderExt moduleClassLoader = (ModuleClassLoaderExt)depBundle.getModuleClassLoader();
+//      if (moduleClassLoader == null)
+//         throw new IllegalStateException("Cannot obtain ModuleClassLoader from: " + depBundle);
+//
+//      // Add the native library mappings to the OSGiClassLoaderPolicy
+//      for (NativeLibrary library : libMetaData.getNativeLibraries())
+//      {
+//         String libpath = library.getLibraryPath();
+//         String libfile = new File(libpath).getName();
+//         String libname = libfile.substring(0, libfile.lastIndexOf('.'));
+//
+//         // Add the library provider to the policy
+//         NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(depBundle, libname, libpath);
+//         moduleClassLoader.addNativeLibrary(libProvider);
+//
+//         // [TODO] why does the TCK use 'Native' to mean 'libNative' ?
+//         if (libname.startsWith("lib"))
+//         {
+//            libname = libname.substring(3);
+//            libProvider = new BundleNativeLibraryProvider(depBundle, libname, libpath);
+//            moduleClassLoader.addNativeLibrary(libProvider);
+//         }
+//      }
    }
 
    @SuppressWarnings("unchecked")
@@ -291,26 +291,26 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
       return match;
    }
 
-   class BundleNativeLibraryProvider implements NativeLibraryProvider
+   public static class BundleNativeLibraryProvider implements NativeLibraryProvider
    {
       private AbstractUserBundle bundleState;
       private String libpath;
       private String libname;
       private File libraryFile;
-      
-      BundleNativeLibraryProvider(AbstractUserBundle bundleState, String libname, String libpath)
+
+      public BundleNativeLibraryProvider(AbstractUserBundle bundleState, String libname, String libpath)
       {
          this.bundleState = bundleState;
          this.libpath = libpath;
          this.libname = libname;
-         
+
          // If a native code library in a selected native code clause cannot be found
          // within the bundle then the bundle must fail to resolve
          URL entryURL = bundleState.getEntry(libpath);
          if (entryURL == null)
             throw new IllegalStateException("Cannot find native library: " + libpath);
       }
-      
+
       @Override
       public String getLibraryName()
       {
@@ -322,7 +322,7 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
       {
          return libpath;
       }
-      
+
       @Override
       public File getLibraryLocation() throws IOException
       {
@@ -331,11 +331,11 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
             // Get the virtual file for entry for the library
             VirtualFile root = bundleState.getContentRoot();
             VirtualFile fileSource = root.getChild(libpath);
-            
+
             // Create a unique local file location
             libraryFile = getUniqueLibraryFile(bundleState, libpath);
             libraryFile.deleteOnExit();
-            
+
             // Copy the native library to the bundle storage area
             FileOutputStream fos = new FileOutputStream(libraryFile);
             VFSUtils.copyStream(fileSource.openStream(), fos);

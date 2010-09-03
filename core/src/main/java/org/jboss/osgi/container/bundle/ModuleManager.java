@@ -36,7 +36,6 @@ import org.jboss.logging.Logger;
 import org.jboss.modules.AssertionSetting;
 import org.jboss.modules.LocalDependencySpec;
 import org.jboss.modules.Module;
-import org.jboss.modules.Module.ModuleClassLoaderFactory;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleIdentifier;
@@ -50,7 +49,13 @@ import org.jboss.osgi.container.loading.FragmentLocalLoader;
 import org.jboss.osgi.container.loading.FrameworkLocalLoader;
 import org.jboss.osgi.container.loading.JBossLoggingModuleLogger;
 import org.jboss.osgi.container.loading.ModuleClassLoaderExt;
+import org.jboss.osgi.container.loading.NativeLibraryProvider;
+import org.jboss.osgi.container.loading.NativeResourceLoader;
 import org.jboss.osgi.container.loading.VirtualFileResourceLoader;
+import org.jboss.osgi.container.plugin.internal.NativeCodePluginImpl.BundleNativeLibraryProvider;
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.metadata.NativeLibrary;
+import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
@@ -59,12 +64,13 @@ import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XWire;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.application.Framework;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Version;
 
 /**
  * Build the {@link ModuleSpec} from {@link OSGiMetaData}.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
@@ -92,14 +98,14 @@ public class ModuleManager extends ModuleLoader
       Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
 
       // Set the {@link ModuleClassLoaderFactory}
-      Module.setModuleClassLoaderFactory(new ModuleClassLoaderFactory()
-      {
-         @Override
-         public ModuleClassLoader getModuleClassLoader(Module module, AssertionSetting assertionSetting, Collection<ResourceLoader> resourceLoaders)
-         {
-            return new ModuleClassLoaderExt(module, assertionSetting, resourceLoaders);
-         }
-      });
+//      Module.setModuleClassLoaderFactory(new ModuleClassLoaderFactory()
+//      {
+//         @Override
+//         public ModuleClassLoader getModuleClassLoader(Module module, AssertionSetting assertionSetting, Collection<ResourceLoader> resourceLoaders)
+//         {
+//            return new ModuleClassLoaderExt(module, assertionSetting, resourceLoaders);
+//         }
+//      });
 
       // Make sure this ModuleLoader is used
       // This also registers the URLStreamHandlerFactory
@@ -115,7 +121,7 @@ public class ModuleManager extends ModuleLoader
    }
 
    /**
-    * Return the module identifier for a given XModule. The associated revision of the bundle 
+    * Return the module identifier for a given XModule. The associated revision of the bundle
     * is also taken into account.
     * @param resModule the resolver module to obtain the identifier for
     * @return the Module Identifier
@@ -140,11 +146,10 @@ public class ModuleManager extends ModuleLoader
       return getModuleIdentifier(resModule, bundleRevision.getRevisionCount());
    }
 
-   // [TODO] Remove the revision parameter. The identity of an XModule is the revision. 
+   // [TODO] Remove the revision parameter. The identity of an XModule is the revision.
    private static ModuleIdentifier getModuleIdentifier(XModule resModule, int revision)
    {
-      String group = "jbosgi";
-      String artifact = resModule.getName();
+      String name = resModule.getName();
       Version version = resModule.getVersion();
       long moduleId = resModule.getModuleId();
 
@@ -153,11 +158,11 @@ public class ModuleManager extends ModuleLoader
       // When the underlying ModuleLoader supports unloading of modules we can hopefully create stable module identifiers
       // that do not contain the bundleId, which is inherently unstable accross framework restarts.
 
-      // [TODO] Remove symbolic name prefix hack 
-      if (moduleId > 0 && artifact.startsWith("xservice") == false)
-         group += "[" + moduleId + "]";
+      // [TODO] Remove symbolic name prefix hack
+      if (moduleId > 0 && name.startsWith("xservice") == false)
+         name += "[" + moduleId + "]";
 
-      ModuleIdentifier identifier = new ModuleIdentifier(group, artifact, version + REVISION_MARKER + revision);
+      ModuleIdentifier identifier = ModuleIdentifier.create(name, version + REVISION_MARKER + revision);
       resModule.addAttachment(ModuleIdentifier.class, identifier);
       return identifier;
    }
@@ -233,7 +238,7 @@ public class ModuleManager extends ModuleLoader
    // the one with the highest revision number.
    private ModuleHolder getModuleFromUnrevisionedIdentifier(ModuleIdentifier identifier)
    {
-      if (identifier.getVersion() != null && identifier.getVersion().contains(REVISION_MARKER))
+      if (identifier.getSlot() != null && identifier.getSlot().contains(REVISION_MARKER))
          // There is a revision identifier, so don't search.
          return null;
 
@@ -244,10 +249,10 @@ public class ModuleManager extends ModuleLoader
          {
             // Both objects must have a version with a revision marker as
             // this is the condition for being added to the versions set.
-            int idx1 = o1.getVersion().lastIndexOf(REVISION_MARKER);
-            int idx2 = o2.getVersion().lastIndexOf(REVISION_MARKER);
-            Integer i1 = Integer.parseInt(o1.getVersion().substring(idx1 + REVISION_MARKER.length()));
-            Integer i2 = Integer.parseInt(o2.getVersion().substring(idx2 + REVISION_MARKER.length()));
+            int idx1 = o1.getSlot().lastIndexOf(REVISION_MARKER);
+            int idx2 = o2.getSlot().lastIndexOf(REVISION_MARKER);
+            Integer i1 = Integer.parseInt(o1.getSlot().substring(idx1 + REVISION_MARKER.length()));
+            Integer i2 = Integer.parseInt(o2.getSlot().substring(idx2 + REVISION_MARKER.length()));
 
             // return the highest number first
             return -i1.compareTo(i2);
@@ -256,13 +261,11 @@ public class ModuleManager extends ModuleLoader
 
       for (ModuleIdentifier id : modules.keySet())
       {
-         if (id.getGroup().equals(identifier.getGroup()) == false)
+
+         if (id.getName().equals(identifier.getName()) == false)
             continue;
 
-         if (id.getArtifact().equals(identifier.getArtifact()) == false)
-            continue;
-
-         if (id.getVersion().contains(REVISION_MARKER))
+         if (id.getSlot().contains(REVISION_MARKER))
             versions.add(id);
       }
 
@@ -343,18 +346,18 @@ public class ModuleManager extends ModuleLoader
                // Process the fragment wires. This would take care of Package-Imports and Require-Bundle defined on the fragment
                List<XWire> fragWires = fragRev.getResolverModule().getWires();
                processModuleWires(fragWires, depBuilderMap);
-               
+
                // Create a fragment {@link LocalLoader} and add a dependency on it
                FragmentLocalLoader localLoader = new FragmentLocalLoader(fragRev);
                LocalDependencySpec.Builder depBuilder = LocalDependencySpec.build(localLoader, localLoader.getPaths());
                // [REVIEW] dependent filter settings
                depBuilder.setImportFilter(PathFilters.acceptAll());
                depBuilder.setExportFilter(PathFilters.acceptAll());
-               
+
                depBuilderMap.put(fragRev.getResolverModule(), new DependencyBuildlerHolder(depBuilder));
             }
          }
-         
+
          // For every {@link XWire} add a dependency on the exporter
          processModuleWires(resModule.getWires(), depBuilderMap);
 
@@ -366,6 +369,41 @@ public class ModuleManager extends ModuleLoader
          for (VirtualFile contentRoot : contentRoots)
             specBuilder.addResourceRoot(new VirtualFileResourceLoader(contentRoot));
          specBuilder.addLocalDependency();
+
+
+         // Native - Hack
+         Bundle bundle = resModule.getAttachment(Bundle.class);
+         AbstractUserBundle bundleState = AbstractUserBundle.assertBundleState(bundle);
+         Deployment deployment = bundleState.getDeployment();
+
+         NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
+         if (libMetaData != null)
+         {
+             NativeResourceLoader nativeLoader = new NativeResourceLoader();
+             // Add the native library mappings to the OSGiClassLoaderPolicy
+             for (NativeLibrary library : libMetaData.getNativeLibraries())
+             {
+                String libpath = library.getLibraryPath();
+                String libfile = new File(libpath).getName();
+                String libname = libfile.substring(0, libfile.lastIndexOf('.'));
+
+                // Add the library provider to the policy
+                NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(bundleState, libname, libpath);
+                nativeLoader.addNativeLibrary(libProvider);
+
+                // [TODO] why does the TCK use 'Native' to mean 'libNative' ?
+                if (libname.startsWith("lib"))
+                {
+                   libname = libname.substring(3);
+                   libProvider = new BundleNativeLibraryProvider(bundleState, libname, libpath);
+                   nativeLoader.addNativeLibrary(libProvider);
+                }
+             }
+
+             specBuilder.addResourceRoot(nativeLoader);
+         }
+
+         specBuilder.setFallbackLoader(new ModuleClassLoaderExt(identifier, this));
 
          // Build the ModuleSpec
          moduleSpec = specBuilder.create();
@@ -438,12 +476,12 @@ public class ModuleManager extends ModuleLoader
       int idx = className.lastIndexOf('.');
       return idx > -1 ? getPathFromPackageName(className.substring(0, idx)) : "";
    }
-   
+
    public static String getPathFromPackageName(String packageName)
    {
       return packageName.replace('.', File.separatorChar);
    }
-   
+
    static class DependencyBuildlerHolder
    {
       private LocalDependencySpec.Builder localDependencyBuilder;
@@ -459,12 +497,12 @@ public class ModuleManager extends ModuleLoader
       {
          this.moduleDependencyBuilder = builder;
       }
-      
+
       void addImportPath(String path)
       {
          if (importPaths == null)
             importPaths = new HashSet<String>();
-         
+
          importPaths.add(path);
       }
 
@@ -480,7 +518,7 @@ public class ModuleManager extends ModuleLoader
             }
             specBuilder.addModuleDependency(moduleDependencyBuilder.create());
          }
-         
+
          if (localDependencyBuilder != null)
          {
             specBuilder.addLocalDependency(localDependencyBuilder.create());
