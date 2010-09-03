@@ -44,6 +44,8 @@ import org.jboss.test.osgi.container.bundle.support.a.ObjectA2;
 import org.jboss.test.osgi.container.bundle.support.b.ObjectB;
 import org.jboss.test.osgi.container.bundle.support.x.ObjectX;
 import org.jboss.test.osgi.container.bundle.support.y.ObjectY;
+import org.jboss.test.osgi.container.bundle.update.a.ClassA;
+import org.jboss.test.osgi.container.bundle.update.b.ClassB;
 import org.jboss.test.osgi.container.bundle.update.startexc.BundleStartExActivator;
 import org.jboss.test.osgi.container.bundle.update.stopexc.BundleStopExActivator;
 import org.junit.Test;
@@ -423,6 +425,30 @@ public class BundleTestCase extends OSGiFrameworkTest
       finally
       {
          getSystemContext().removeFrameworkListener(this);
+         bundle1.uninstall();
+      }
+   }
+
+   @Test
+   public void testUpdateSameBSNVersion() throws Exception
+   {
+      Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundlea", ClassA.class);
+      Archive<?> assembly2 = assembleArchive("bundle2", "/bundles/update/update-bundleb", ClassB.class);
+      Bundle bundle1 = installBundle(assembly1);
+      try
+      {
+         bundle1.start();
+         assertBundleState(Bundle.ACTIVE, bundle1.getState());
+         assertLoadClass(bundle1, ClassA.class.getName());
+         assertLoadClassFail(bundle1, ClassB.class.getName());
+
+         bundle1.update(toInputStream(assembly2));
+         assertBundleState(Bundle.ACTIVE, bundle1.getState());
+         assertLoadClass(bundle1, ClassB.class.getName());
+         assertLoadClassFail(bundle1, ClassA.class.getName());
+      }
+      finally
+      {
          bundle1.uninstall();
       }
    }

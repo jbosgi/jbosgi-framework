@@ -261,12 +261,6 @@ public abstract class AbstractUserBundle extends AbstractBundle
          OSGiMetaData metadata = plugin.createOSGiMetaData(dep);
          dep.addAttachment(OSGiMetaData.class, metadata);
 
-         String symbolicName = metadata.getBundleSymbolicName();
-         String version = metadata.getBundleVersion().toString();
-         AbstractBundle existingBundle = bundleManager.getBundle(symbolicName, version);
-         if (existingBundle != null)
-            throw new BundleException("Bundle already exists: " + existingBundle);
-
          createRevision(dep, revisionCount);
          getResolverPlugin().addModule(getResolverModule());
       }
