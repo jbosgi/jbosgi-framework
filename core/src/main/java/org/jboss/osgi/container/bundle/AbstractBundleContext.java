@@ -52,6 +52,7 @@ public abstract class AbstractBundleContext implements BundleContext
 {
    private BundleManager bundleManager;
    private AbstractBundle bundleState;
+   private boolean destroyed;
 
    AbstractBundleContext(AbstractBundle bundleState)
    {
@@ -91,7 +92,7 @@ public abstract class AbstractBundleContext implements BundleContext
    
    void destroy()
    {
-      bundleState = null;
+      destroyed = true;
    }
    
    @Override
@@ -309,7 +310,7 @@ public abstract class AbstractBundleContext implements BundleContext
 
    void checkValidBundleContext()
    {
-      if (bundleState == null)
+      if (destroyed == true)
          throw new IllegalStateException("Invalid bundle context: " + this);
    }
 
