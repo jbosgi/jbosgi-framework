@@ -115,11 +115,10 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       if (bundle == null)
          return getAllExportedPackages();
 
-      // If the bundle has previsously been removed, return null
-      if (getBundleManager().getBundleById(bundle.getBundleId()) == null)
+      AbstractBundle ab = AbstractBundle.assertBundleState(bundle);
+      if (ab instanceof HostBundle && ((HostBundle)ab).isDestroyed())
          return null;
 
-      AbstractBundle ab = AbstractBundle.assertBundleState(bundle);
       List<ExportedPackage> result = new ArrayList<ExportedPackage>();
       for (XModule resModule : ab.getAllResolverModules())
       {

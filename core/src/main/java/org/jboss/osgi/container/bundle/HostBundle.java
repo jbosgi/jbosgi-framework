@@ -33,6 +33,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
+import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * This is the internal implementation of a host Bundle. 
@@ -89,6 +90,18 @@ public class HostBundle extends AbstractUserBundle
    public List<VirtualFile> getContentRoots()
    {
       return getCurrentRevision().getContentRoots();
+   }
+
+   /**
+    * A bundle is destroyed if it is no longer known to the system.
+    * An uninstalled bundle can potentially live on 
+    * if there are other bundles depending on it. Only after a call to 
+    * {@link PackageAdmin#refreshPackages(Bundle[])} the bundle gets destroyed. 
+    * @return whether or not the bundle is destroyed.
+    */
+   public boolean isDestroyed()
+   {
+      return getBundleManager().getBundleById(getBundleId()) == null;
    }
 
    @Override
