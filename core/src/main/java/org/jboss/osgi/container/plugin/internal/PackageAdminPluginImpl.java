@@ -39,6 +39,7 @@ import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.osgi.container.bundle.AbstractBundle;
+import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.AbstractUserBundle;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.FragmentBundle;
@@ -114,18 +115,19 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       if (bundle == null)
          return getAllExportedPackages();
 
-      List<ExportedPackage> result = new ArrayList<ExportedPackage>();
+      // If the bundle has previsously been removed, return null
+      if (getBundleManager().getBundleById(bundle.getBundleId()) == null)
+         return null;
+
       AbstractBundle ab = AbstractBundle.assertBundleState(bundle);
+      List<ExportedPackage> result = new ArrayList<ExportedPackage>();
       for (XModule resModule : ab.getAllResolverModules())
       {
          if (resModule.isResolved() == false)
             continue;
 
          for (XPackageCapability cap : resModule.getPackageCapabilities())
-         {
-            ExportedPackage exp = new ExportedPackageImpl(cap);
-            result.add(exp);
-         }
+            result.add(new ExportedPackageImpl(cap));
       }
 
       if (result.size() == 0)
@@ -161,8 +163,10 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          {
             if (cap instanceof XPackageCapability)
             {
-               if (name.equals(cap.getName()))
-                  result.add(new ExportedPackageImpl((XPackageCapability)cap));
+               AbstractRevision ar = cap.getModule().getAttachment(AbstractRevision.class);
+               if (ar != null && ar.getModuleClassLoader() != null)
+                  if (name.equals(cap.getName()))
+                     result.add(new ExportedPackageImpl((XPackageCapability)cap));
             }
          }
       }
@@ -529,10 +533,17 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    static class ExportedPackageImpl implements ExportedPackage
    {
       private final XPackageCapability capability;
+      private final boolean removalPending;
 
       ExportedPackageImpl(XPackageCapability cap)
       {
          capability = cap;
+
+         XModule module = cap.getModule();
+         AbstractRevision rev = module.getAttachment(AbstractRevision.class);
+         Bundle b = module.getAttachment(Bundle.class);
+         AbstractBundle ab = AbstractBundle.assertBundleState(b);
+         removalPending = !ab.getCurrentRevision().equals(rev) || ab.getState() == Bundle.UNINSTALLED;
       }
 
       @Override
@@ -586,8 +597,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       @Override
       public boolean isRemovalPending()
       {
-         // TODO
-         return false;
+         return removalPending;
       }
    }
 

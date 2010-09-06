@@ -175,7 +175,7 @@ public class SystemBundle extends AbstractBundle
    }
 
    @Override
-   AbstractRevision getCurrentRevision()
+   public AbstractRevision getCurrentRevision()
    {
       return systemRevision;
    }

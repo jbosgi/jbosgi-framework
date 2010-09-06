@@ -40,6 +40,7 @@ import java.util.Set;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.container.bundle.support.a.ObjectA;
 import org.jboss.test.osgi.container.bundle.support.a.ObjectA2;
 import org.jboss.test.osgi.container.bundle.support.x.ObjectX;
@@ -57,6 +58,7 @@ import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
@@ -314,6 +316,92 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
       finally
       {
          bundleA.uninstall();
+      }
+   }
+
+   @Test
+   public void testUpdateExportedPackageRemovalPending() throws Exception
+   {     
+      JavaArchive archive1 = assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class);
+      JavaArchive archive2 = assembleArchive("exporter_2", "/bundles/package-admin/exporter_2", Exported.class);
+      Bundle bundle = installBundle(archive1);
+      try
+      {
+         bundle.start();
+         bundle.update(toInputStream(archive2));
+         
+         PackageAdmin pa = getPackageAdmin();
+         List<Version> versions = new ArrayList<Version>();
+         for (ExportedPackage ep : pa.getExportedPackages(bundle)) 
+         {
+            Version ver = ep.getVersion();
+            versions.add(ver);
+            if (ver.equals(Version.parseVersion("1.7")))
+            {
+               assertTrue(ep.isRemovalPending());
+            }
+            else if (ver.equals(Version.parseVersion("2")))
+            {
+               assertFalse(ep.isRemovalPending());
+            }
+            else
+            {
+               fail("Unexpected version: " + ver);
+            }
+         }
+         assertEquals(2, versions.size());
+         assertTrue(versions.contains(Version.parseVersion("1.7")));
+         assertTrue(versions.contains(Version.parseVersion("2")));
+      }
+      finally
+      {
+         bundle.uninstall();
+      }
+   }
+
+   @Test
+   public void testUninstallExportedPackageRemovalPending() throws Exception
+   {
+      Bundle bundleEx = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+      Bundle bundleImp = installBundle(assembleArchive("import-export", "/bundles/package-admin/import-export", ImportExport.class));
+      try
+      {
+         assertNull(getPackageAdmin().getExportedPackage("org.jboss.test.osgi.container.packageadmin.importexport"));
+
+         bundleEx.start();
+         // Adding this importer is important to force packages to stick around after uninstall
+         bundleImp.start();
+
+         PackageAdmin pa = getPackageAdmin();
+         ExportedPackage[] eps = pa.getExportedPackages(bundleEx);
+         assertEquals(1, eps.length);
+         assertFalse(eps[0].isRemovalPending());
+
+         bundleEx.uninstall();
+         ExportedPackage[] eps2 = pa.getExportedPackages(bundleEx);
+         assertEquals(1, eps2.length);
+         assertTrue(eps2[0].isRemovalPending());
+
+         assertBundleState(Bundle.ACTIVE, bundleImp.getState());
+         ExportedPackage[] epx = pa.getExportedPackages(bundleImp);
+         assertEquals(1, epx.length);
+         String packageName = epx[0].getName();
+
+         getSystemContext().addFrameworkListener(this);
+         pa.refreshPackages(new Bundle[] { bundleEx });
+         assertFrameworkEvent(FrameworkEvent.ERROR, bundleImp, BundleException.class);
+         assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
+
+         // Packages are refreshed, so the bundle should not export the package any more
+         assertNull(pa.getExportedPackages(bundleEx));
+
+         assertBundleState(Bundle.INSTALLED, bundleImp.getState());
+         assertNull(pa.getExportedPackage(packageName));
+      }
+      finally
+      {
+         getSystemContext().removeFrameworkListener(this);
+         bundleImp.uninstall();
       }
    }
 

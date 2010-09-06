@@ -111,7 +111,7 @@ public abstract class AbstractRevision
       return ModuleManager.getModuleIdentifier(getResolverModule());
    }
 
-   ModuleClassLoader getModuleClassLoader()
+   public ModuleClassLoader getModuleClassLoader()
    {
       ModuleIdentifier identifier = getModuleIdentifier();
       Module module = moduleManager.getModule(identifier);

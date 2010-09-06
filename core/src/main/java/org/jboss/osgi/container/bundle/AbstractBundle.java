@@ -254,7 +254,7 @@ public abstract class AbstractBundle implements Bundle
       revisions.add(0, rev);
    }
 
-   AbstractRevision getCurrentRevision()
+   public AbstractRevision getCurrentRevision()
    {
       return revisions.get(0);
    }
