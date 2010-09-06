@@ -54,9 +54,8 @@ public class ModuleMetaDataParserTestCase extends OSGiTest
       assertNotNull("ModuleMetaData exists", metadata);
 
       ModuleIdentifier identifier = metadata.getIdentifier();
-      assertEquals("jbosgi", identifier.getGroup());
-      assertEquals("moduleA", identifier.getArtifact());
-      assertEquals("1.0", identifier.getVersion());
+      assertEquals("moduleA", identifier.getName());
+      assertEquals("1.0", identifier.getSlot());
 
       Dependency[] dependencies = metadata.getDependencies();
       assertNotNull("Dependencies not null", dependencies);
@@ -64,10 +63,9 @@ public class ModuleMetaDataParserTestCase extends OSGiTest
 
       Dependency dependency = dependencies[0];
       identifier = dependency.getIdentifier();
-      assertEquals("jbosgi", identifier.getGroup());
-      assertEquals("system.bundle", identifier.getArtifact());
-      assertNull(identifier.getVersion());
-      
+      assertEquals("system.bundle", identifier.getName());
+      assertEquals("main", identifier.getSlot());
+
       String[] exportPaths = metadata.getExportPaths();
       assertNotNull("EportPaths not null", exportPaths);
       assertEquals(1, exportPaths.length);
