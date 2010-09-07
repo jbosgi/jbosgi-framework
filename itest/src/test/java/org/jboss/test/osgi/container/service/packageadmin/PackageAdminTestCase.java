@@ -477,6 +477,8 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
 
          assertEquals(Collections.singleton("Exporter"), bsns);
 
+         bundleB.uninstall();
+
          Set<Bundle> expectedBundles = new HashSet<Bundle>();
          expectedBundles.add(bundleA);
          expectedBundles.add(bundleB);
@@ -488,11 +490,13 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
                assertEquals(Version.parseVersion("1"), b.getVersion());
                assertEquals(1, b.getRequiringBundles().length);
                assertEquals(bundleR, b.getRequiringBundles()[0]);
+               assertFalse(b.isRemovalPending());
             }
             else if (b.getBundle().equals(bundleB))
             {
                assertEquals(Version.parseVersion("2"), b.getVersion());
                assertEquals(0, b.getRequiringBundles().length);
+               assertTrue(b.isRemovalPending());
             }
             else
                fail("Unexpected bundle");
@@ -503,7 +507,6 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
       finally
       {
          bundleR.uninstall();
-         bundleB.uninstall();
          bundleA.uninstall();
       }
    }

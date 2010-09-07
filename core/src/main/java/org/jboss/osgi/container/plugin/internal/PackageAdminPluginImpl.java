@@ -151,6 +151,15 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public ExportedPackage[] getExportedPackages(String name)
    {
+      ExportedPackage[] pkgs = getExportedPackagesInternal(name);
+      if (pkgs.length == 0)
+         return null; // a bit ugly, but the spec mandates this
+
+      return pkgs;
+   }
+
+   private ExportedPackage[] getExportedPackagesInternal(String name)
+   {
       if (name == null)
          throw new IllegalArgumentException("Null name");
 
@@ -176,7 +185,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    public ExportedPackage getExportedPackage(String name)
    {
       ExportedPackage bestMatch = null;
-      for (ExportedPackage aux : getExportedPackages(name))
+      for (ExportedPackage aux : getExportedPackagesInternal(name))
       {
          if (bestMatch == null)
             bestMatch = aux;
@@ -290,7 +299,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                {
                   hostBundle.stop(Bundle.STOP_TRANSIENT);
                }
-               catch (Throwable th)
+               catch (Exception th)
                {
                   eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
                }
@@ -307,7 +316,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                {
                   userBundle.refresh();
                }
-               catch (Throwable th)
+               catch (Exception th)
                {
                   eventsPlugin.fireFrameworkEvent(userBundle, FrameworkEvent.ERROR, th);
                }
@@ -319,7 +328,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                {
                   hostBundle.start(Bundle.START_TRANSIENT);
                }
-               catch (Throwable th)
+               catch (Exception th)
                {
                   eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
                }
@@ -604,10 +613,12 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    {
       private final Bundle requiredBundle;
       private final Bundle[] requiringBundles;
+      private final AbstractRevision bundleRevision;
 
       public RequiredBundleImpl(AbstractBundle requiredBundle, Collection<AbstractBundle> requiringBundles)
       {
          this.requiredBundle = AbstractBundle.assertBundleState(requiredBundle).getBundleWrapper();
+         this.bundleRevision = requiredBundle.getCurrentRevision();
 
          List<Bundle> bundles = new ArrayList<Bundle>(requiringBundles.size());
          for (AbstractBundle ab : requiringBundles)
@@ -644,7 +655,10 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       @Override
       public boolean isRemovalPending()
       {
-         return false;
+         if (requiredBundle.getState() == Bundle.UNINSTALLED)
+            return true;
+
+         return !bundleRevision.equals(bundleRevision.getBundleState().getCurrentRevision());
       }
    }
 
