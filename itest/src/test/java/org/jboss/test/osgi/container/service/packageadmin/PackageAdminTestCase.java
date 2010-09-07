@@ -485,17 +485,21 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
          assertEquals(expectedBundles, actualBundles);
          for (RequiredBundle b : rqbs)
          {
-            if (b.getBundle().equals(bundleA))
+            if (b.getSymbolicName().equals(bundleA.getSymbolicName()) &&
+                  b.getVersion().equals(bundleA.getVersion()))
             {
                assertEquals(Version.parseVersion("1"), b.getVersion());
+               assertEquals(b.getBundle(), bundleA);
                assertEquals(1, b.getRequiringBundles().length);
                assertEquals(bundleR, b.getRequiringBundles()[0]);
                assertFalse(b.isRemovalPending());
             }
-            else if (b.getBundle().equals(bundleB))
+            else if (b.getSymbolicName().equals(bundleB.getSymbolicName()) &&
+                     b.getVersion().equals(bundleB.getVersion()))
             {
                assertEquals(Version.parseVersion("2"), b.getVersion());
-               assertEquals(0, b.getRequiringBundles().length);
+               assertNull(b.getBundle());
+               assertNull(b.getRequiringBundles());
                assertTrue(b.isRemovalPending());
             }
             else
@@ -507,6 +511,36 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
       finally
       {
          bundleR.uninstall();
+         bundleA.uninstall();
+      }
+   }
+
+   @Test
+   public void testGetRequiredBundlesNull() throws Exception
+   {
+      PackageAdmin pa = getPackageAdmin();
+      Bundle bundleA = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+      try
+      {
+         bundleA.start();
+
+         RequiredBundle[] rqbs = pa.getRequiredBundles(null);
+         assertTrue(rqbs.length > 1);
+         boolean exporterFound = false;
+
+         for (RequiredBundle rb : rqbs)
+         {
+            if (rb.getSymbolicName().equals("Exporter"))
+            {
+               exporterFound = true;
+               break;
+            }
+         }
+
+         assertTrue(exporterFound);
+      }
+      finally
+      {
          bundleA.uninstall();
       }
    }

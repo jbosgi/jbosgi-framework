@@ -381,10 +381,21 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
 
       // Make a defensive copy to ensure thread safety as we are running through the list twice
       List<AbstractBundle> bundles = new ArrayList<AbstractBundle>(getBundleManager().getBundles());
-      for (AbstractBundle aux : bundles)
+      if (symbolicName != null)
       {
-         if (aux.getSymbolicName().equals(symbolicName))
-            matchingBundles.put(aux, new ArrayList<AbstractBundle>());
+         for (AbstractBundle aux : bundles)
+         {
+            if (aux.getSymbolicName().equals(symbolicName))
+               matchingBundles.put(aux, new ArrayList<AbstractBundle>());
+         }
+      }
+      else
+      {
+         for (AbstractBundle aux : bundles)
+         {
+            if (!aux.isFragment())
+               matchingBundles.put(aux, new ArrayList<AbstractBundle>());
+         }
       }
 
       if (matchingBundles.size() == 0)
@@ -637,12 +648,18 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       @Override
       public Bundle getBundle()
       {
+         if (isRemovalPending())
+            return null;
+
          return requiredBundle;
       }
 
       @Override
       public Bundle[] getRequiringBundles()
       {
+         if (isRemovalPending())
+            return null;
+
          return requiringBundles;
       }
 
