@@ -53,6 +53,7 @@ import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.container.plugin.PackageAdminPlugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
+import org.jboss.osgi.resolver.XBundleCapability;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageCapability;
@@ -552,17 +553,10 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    static class ExportedPackageImpl implements ExportedPackage
    {
       private final XPackageCapability capability;
-      private final boolean removalPending;
 
       ExportedPackageImpl(XPackageCapability cap)
       {
          capability = cap;
-
-         XModule module = cap.getModule();
-         AbstractRevision rev = module.getAttachment(AbstractRevision.class);
-         Bundle b = module.getAttachment(Bundle.class);
-         AbstractBundle ab = AbstractBundle.assertBundleState(b);
-         removalPending = !ab.getCurrentRevision().equals(rev) || ab.getState() == Bundle.UNINSTALLED;
       }
 
       @Override
@@ -574,6 +568,9 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       @Override
       public Bundle getExportingBundle()
       {
+         if (isRemovalPending())
+            return null;
+
          Bundle bundle = capability.getModule().getAttachment(Bundle.class);
          AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
          return bundleState.getBundleWrapper();
@@ -582,13 +579,25 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       @Override
       public Bundle[] getImportingBundles()
       {
+         if (isRemovalPending())
+            return null;
+
          XModule module = capability.getModule();
          if (module.isResolved() == false)
             return null;
 
-         Set<XRequirement> reqset = capability.getWiredRequirements();
-         if (reqset == null || reqset.isEmpty())
-            return new Bundle[0];
+         Set<XRequirement> reqset = new HashSet<XRequirement>();
+         Set<XRequirement> pkgReqSet = capability.getWiredRequirements();
+         if (pkgReqSet != null)
+            reqset.addAll(pkgReqSet);
+
+         // Bundles which require the exporting bundle associated with this exported
+         // package are considered to be wired to this exported package are included in
+         // the returned array.
+         XBundleCapability bundleCap = module.getBundleCapability();
+         Set<XRequirement> bundleReqSet = bundleCap.getWiredRequirements();
+         if (bundleReqSet != null)
+            reqset.addAll(bundleReqSet);
 
          Set<Bundle> bundles = new HashSet<Bundle>();
          for (XRequirement req : reqset)
@@ -598,6 +607,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
             bundles.add(bundleState.getBundleWrapper());
          }
+
          return bundles.toArray(new Bundle[bundles.size()]);
       }
 
@@ -616,7 +626,11 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       @Override
       public boolean isRemovalPending()
       {
-         return removalPending;
+         XModule module = capability.getModule();
+         AbstractRevision rev = module.getAttachment(AbstractRevision.class);
+         Bundle b = module.getAttachment(Bundle.class);
+         AbstractBundle ab = AbstractBundle.assertBundleState(b);
+         return !ab.getCurrentRevision().equals(rev) || ab.getState() == Bundle.UNINSTALLED;
       }
    }
 

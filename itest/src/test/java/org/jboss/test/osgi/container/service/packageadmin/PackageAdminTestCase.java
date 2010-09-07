@@ -452,6 +452,30 @@ public class PackageAdminTestCase extends OSGiFrameworkTest
    }
 
    @Test
+   public void testGetExportedPackagesViaRequiredBundle() throws Exception
+   {
+      PackageAdmin pa = getPackageAdmin();
+      Bundle bundleA = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+      Bundle bundleR = installBundle(assembleArchive("requiring", "/bundles/package-admin/requiring"));
+      try
+      {
+         bundleA.start();
+         bundleR.start();
+
+         ExportedPackage ep = pa.getExportedPackage("org.jboss.test.osgi.container.packageadmin.exported");
+         assertEquals(bundleA, ep.getExportingBundle());
+         Bundle[] ibs = ep.getImportingBundles();
+         assertEquals(1, ibs.length);
+         assertEquals(bundleR, ibs[0]);
+      }
+      finally
+      {
+         bundleR.uninstall();
+         bundleA.uninstall();
+      }
+   }
+
+   @Test
    public void testGetRequiredBundles() throws Exception
    {
       PackageAdmin pa = getPackageAdmin();
