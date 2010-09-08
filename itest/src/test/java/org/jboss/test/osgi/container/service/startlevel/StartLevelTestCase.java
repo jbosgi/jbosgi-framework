@@ -31,7 +31,6 @@ import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
-import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,6 +38,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
+import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
 import org.osgi.service.startlevel.StartLevel;
@@ -51,6 +51,8 @@ import org.osgi.service.startlevel.StartLevel;
  */
 public class StartLevelTestCase extends OSGiFrameworkTest
 {
+   private static final int BUNDLE_START_LEVEL_CHANGE_SLEEP = 500;
+
    @BeforeClass
    public static void beforeClass()
    {
@@ -137,6 +139,105 @@ public class StartLevelTestCase extends OSGiFrameworkTest
       {
          assertEquals("start1start3start2stop2stop3stop1", System.getProperty("LifecycleOrdering"));
       }
+   }
+
+   @Test
+   public void testChangingStartLevel() throws Exception
+   {
+      JavaArchive archive1 = createTestBundle("b1.jar", org.jboss.test.osgi.container.bundle.support.lifecycle1.Activator.class);
+
+      Framework framework = createFramework();
+      framework.start();
+
+      BundleContext bc = framework.getBundleContext();
+      ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
+      StartLevelPlugin sl = (StartLevelPlugin)bc.getService(sref);
+
+      sl.setInitialBundleStartLevel(10);
+      
+      bc.addFrameworkListener(this);      
+      sl.setStartLevel(5);
+      assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
+      assertEquals(5, sl.getStartLevel());
+      
+      Bundle b1 = installBundle(archive1);
+      assertEquals(Bundle.INSTALLED, b1.getState());
+      assertEquals(10, sl.getBundleStartLevel(b1));
+
+      sl.setStartLevel(15);
+      assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
+      assertEquals(15, sl.getStartLevel());
+      assertEquals("The bundle should not yet be started as bundle.start() was never called in the first place.",
+            Bundle.INSTALLED, b1.getState());
+      
+      sl.setStartLevel(5);
+      assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
+      assertEquals(5, sl.getStartLevel());
+      
+      b1.start();
+      assertEquals("The bundle should not yet be started since the start level is too low.",
+            Bundle.INSTALLED, b1.getState());
+      
+      sl.setStartLevel(15);
+      assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
+      assertEquals(15, sl.getStartLevel());
+      assertEquals(Bundle.ACTIVE, b1.getState());
+
+      b1.uninstall();
+   }
+
+   @Test
+   public void testChangingBundleStartLevel() throws Exception
+   {
+      JavaArchive archive1 = createTestBundle("b1.jar", org.jboss.test.osgi.container.bundle.support.lifecycle1.Activator.class);
+
+      Framework framework = createFramework();
+      framework.start();
+
+      BundleContext bc = framework.getBundleContext();
+      ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
+      StartLevelPlugin sl = (StartLevelPlugin)bc.getService(sref);
+
+      sl.setInitialBundleStartLevel(10);
+
+      bc.addFrameworkListener(this);
+      sl.setStartLevel(5);
+      assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
+      assertEquals(5, sl.getStartLevel());
+
+      Bundle b1 = installBundle(archive1);
+      assertEquals(Bundle.INSTALLED, b1.getState());
+      assertEquals(10, sl.getBundleStartLevel(b1));
+
+      sl.setBundleStartLevel(b1, 3);
+      // Unfortunately this test has to use sleeps as there are no events sent here
+      Thread.sleep(BUNDLE_START_LEVEL_CHANGE_SLEEP);
+      assertEquals(3, sl.getBundleStartLevel(b1));
+      assertEquals("The bundle should not yet be started as bundle.start() was never called in the first place.",
+            Bundle.INSTALLED, b1.getState());
+
+      sl.setBundleStartLevel(b1, 8);
+      Thread.sleep(BUNDLE_START_LEVEL_CHANGE_SLEEP);
+      assertEquals(8, sl.getBundleStartLevel(b1));
+      assertEquals("The bundle should not yet be started as bundle.start() was never called in the first place.",
+            Bundle.INSTALLED, b1.getState());
+
+      b1.start();
+      assertEquals("The bundle should not yet be started since the start level is too low.",
+            Bundle.INSTALLED, b1.getState());
+
+      sl.setBundleStartLevel(b1, 3);
+      Thread.sleep(BUNDLE_START_LEVEL_CHANGE_SLEEP);
+      assertEquals(3, sl.getBundleStartLevel(b1));
+      assertEquals(Bundle.ACTIVE, b1.getState());
+
+      sl.setBundleStartLevel(b1, 8);
+      Thread.sleep(BUNDLE_START_LEVEL_CHANGE_SLEEP);
+      assertEquals(8, sl.getBundleStartLevel(b1));
+      assertEquals("The bundle should have been stopped as its start level was set to a higher one than the current.",
+            Bundle.RESOLVED, b1.getState());
+
+      b1.uninstall();
    }
 
    private JavaArchive createTestBundle(String name, final Class<? extends BundleActivator> activator)

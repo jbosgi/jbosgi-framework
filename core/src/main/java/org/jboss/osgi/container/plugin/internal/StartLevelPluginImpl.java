@@ -141,7 +141,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
       final HostBundle hb = HostBundle.assertBundleState(bundle);
       hb.setStartLevel(sl);
 
-      if (sl <= getStartLevel())
+      if (sl <= getStartLevel() && hb.isPersistentlyStarted())
       {
          if (bundle.getState() == Bundle.ACTIVE)
             return;
