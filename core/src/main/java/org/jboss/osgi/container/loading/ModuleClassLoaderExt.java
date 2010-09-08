@@ -41,6 +41,7 @@ import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleReference;
 
 /**
  * An OSGi extention to the {@link ModuleClassLoader}.
@@ -48,7 +49,7 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class ModuleClassLoaderExt implements LocalLoader
+public class ModuleClassLoaderExt implements LocalLoader, BundleReference
 {
    // Provide logging
    private static final Logger log = Logger.getLogger(ModuleClassLoaderExt.class);
@@ -63,6 +64,13 @@ public class ModuleClassLoaderExt implements LocalLoader
       moduleManager = manager;
       bundleManager = moduleManager.getBundleManager();
       this.id= id;
+   }
+
+   @Override
+   public Bundle getBundle()
+   {
+      AbstractBundle bundleState = moduleManager.getBundleState(id);
+      return bundleState.getBundleWrapper();
    }
 
    @Override

@@ -48,13 +48,16 @@ import org.jboss.test.osgi.container.bundle.update.a.ClassA;
 import org.jboss.test.osgi.container.bundle.update.b.ClassB;
 import org.jboss.test.osgi.container.bundle.update.startexc.BundleStartExActivator;
 import org.jboss.test.osgi.container.bundle.update.stopexc.BundleStopExActivator;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.BundleReference;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.Version;
 
 /**
@@ -521,6 +524,26 @@ public class BundleTestCase extends OSGiFrameworkTest
 
          Dictionary dictionary = bundle.getHeaders();
          assertEquals(expected, dictionary);
+      }
+      finally
+      {
+         bundle.uninstall();
+      }
+   }
+   
+   @Test
+   @Ignore("[JBOSGI-389] Bundle classloader does not implement BundleReference")
+   public void testBundleReference() throws Exception
+   {
+      Archive<?> assembly = assembleArchive("bundle1", "/bundles/update/update-bundle1", ObjectA.class);
+      Bundle bundle = installBundle(assembly);
+      try
+      {
+         Class<?> clazz = bundle.loadClass(ObjectA.class.getName());
+         ClassLoader classLoader = clazz.getClassLoader();
+         assertTrue("Instance of BundleReference", classLoader instanceof BundleReference);
+         Bundle result = FrameworkUtil.getBundle(clazz);
+         assertEquals(bundle, result);
       }
       finally
       {
