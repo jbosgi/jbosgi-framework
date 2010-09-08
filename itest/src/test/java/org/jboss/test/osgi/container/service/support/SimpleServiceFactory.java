@@ -33,7 +33,8 @@ import org.osgi.framework.ServiceRegistration;
  */
 public class SimpleServiceFactory implements ServiceFactory
 {
-   Object service;
+   private Object service;
+   private Throwable throwOnGetService;
 
    public Bundle getBundle;
    public int getCount;
@@ -43,13 +44,19 @@ public class SimpleServiceFactory implements ServiceFactory
    public Object ungetService;
    public int ungetCount;
 
-   public SimpleServiceFactory(Object service)
+   public SimpleServiceFactory(Object service, Throwable throwOnGetService)
    {
       this.service = service;
+      this.throwOnGetService = throwOnGetService;
    }
 
    public Object getService(Bundle bundle, ServiceRegistration registration)
    {
+      if (throwOnGetService instanceof RuntimeException)
+         throw (RuntimeException)throwOnGetService;
+      if (throwOnGetService instanceof Error)
+         throw (Error)throwOnGetService;
+
       getBundle = bundle;
       getCount++;
       return service;

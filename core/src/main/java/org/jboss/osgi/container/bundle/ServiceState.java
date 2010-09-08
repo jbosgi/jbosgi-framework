@@ -413,28 +413,35 @@ public class ServiceState implements ServiceRegistration, ServiceReference
          throw new IllegalStateException("Service is unregistered: " + this);
    }
 
-   private boolean checkValidClassNames(AbstractBundle bundleState, String[] clazzeNames, Object value)
+   private boolean checkValidClassNames(AbstractBundle bundleState, String[] classNames, Object value)
    {
+      if (bundleState == null)
+         throw new IllegalArgumentException("Null bundleState");
+      if (classNames == null || classNames.length == 0)
+         throw new IllegalArgumentException("Null classNames");
+      if (value == null)
+         throw new IllegalArgumentException("Null value");
+      
       if (value instanceof ServiceFactory)
          return true;
 
-      for (String clazzName : clazzeNames)
+      for (String className : classNames)
       {
-         if (clazzName == null)
-            throw new IllegalArgumentException("Null clazz");
+         if (className == null)
+            throw new IllegalArgumentException("Null className");
 
          try
          {
-            Class<?> clazz = bundleState.loadClass(clazzName);
+            Class<?> clazz = bundleState.loadClass(className);
             if (clazz.isAssignableFrom(value.getClass()) == false)
             {
-               log.error("Service interface [" + clazzName + "] is not assignable from [" + value.getClass().getName() + "]");
+               log.error("Service interface [" + className + "] is not assignable from [" + value.getClass().getName() + "]");
                return false;
             }
          }
          catch (ClassNotFoundException ex)
          {
-            log.error("Cannot load [" + clazzName + "] from: " + bundleState);
+            log.error("Cannot load [" + className + "] from: " + bundleState);
             return false;
          }
       }
@@ -474,6 +481,8 @@ public class ServiceState implements ServiceRegistration, ServiceReference
             synchronized (bundleState)
             {
                Object retValue = factory.getService(bundleState.getBundleWrapper(), getRegistration());
+               if (retValue == null)
+                  return null;
 
                // The Framework will check if the returned service object is an instance of all the 
                // classes named when the service was registered. If not, then null is returned to the bundle.

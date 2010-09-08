@@ -383,14 +383,17 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       }
    }
 
-   private void unregisterNameAssociation(String className, ServiceName serviceName)
+   private boolean unregisterNameAssociation(String className, ServiceName serviceName)
    {
+      boolean removed = false;
       List<ServiceName> names = serviceNameMap.get(className);
-      if (names == null)
-         throw new IllegalStateException("Cannot obtain service names for: " + className);
-
-      if (names.remove(serviceName) == false)
-         throw new IllegalStateException("Cannot remove [" + serviceName + "] from: " + names);
+      if (names != null)
+      {
+         removed = names.remove(serviceName);
+         if (names.isEmpty())
+            serviceNameMap.remove(className);
+      }
+      return removed;
    }
 
    @Override
@@ -421,11 +424,13 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       serviceOwner.removeRegisteredService(serviceState);
 
       // Unregister name associations
+      String[] clazzes = (String[])serviceState.getProperty(Constants.OBJECTCLASS);
       for (ServiceName serviceName : serviceNames)
       {
-         String[] clazzes = (String[])serviceState.getProperty(Constants.OBJECTCLASS);
          for (String clazz : clazzes)
+         {
             unregisterNameAssociation(clazz, serviceName);
+         }
       }
 
       // Remove from controller

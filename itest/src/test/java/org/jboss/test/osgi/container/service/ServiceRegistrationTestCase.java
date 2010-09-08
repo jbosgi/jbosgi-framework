@@ -265,7 +265,7 @@ public class ServiceRegistrationTestCase extends OSGiFrameworkTest
          BundleContext context1 = bundle1.getBundleContext();
          assertNotNull(context1);
 
-         SimpleServiceFactory factory = new SimpleServiceFactory(context1);
+         SimpleServiceFactory factory = new SimpleServiceFactory(context1, null);
          ServiceRegistration sreg1 = context1.registerService(BundleContext.class.getName(), factory, null);
          assertNotNull(sreg1);
 

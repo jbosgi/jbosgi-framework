@@ -65,7 +65,7 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest
          BundleContext contextA = bundleA.getBundleContext();
          assertNotNull(contextA);
 
-         SimpleServiceFactory serviceFactory = new SimpleServiceFactory(contextA);
+         SimpleServiceFactory serviceFactory = new SimpleServiceFactory(contextA, null);
          ServiceRegistration sregA = contextA.registerService(OBJCLASS, serviceFactory, null);
 
          ServiceReference srefA = sregA.getReference();
@@ -120,7 +120,7 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest
          BundleContext context = bundle.getBundleContext();
          assertNotNull(context);
 
-         ServiceRegistration sreg = context.registerService(OBJCLASS, new SimpleServiceFactory(context), null);
+         ServiceRegistration sreg = context.registerService(OBJCLASS, new SimpleServiceFactory(context, null), null);
          ServiceReference sref = sreg.getReference();
 
          Object actual = context.getService(sref);
@@ -144,6 +144,44 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest
    }
 
    @Test
+   public void testGetServiceException() throws Exception
+   {
+      Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
+      Bundle bundle = installBundle(assembly);
+      try
+      {
+         bundle.start();
+         BundleContext context = bundle.getBundleContext();
+         assertNotNull(context);
+
+         context.addFrameworkListener(this);
+         
+         Throwable rte = new RuntimeException();
+         ServiceRegistration sreg = context.registerService(OBJCLASS, new SimpleServiceFactory(context, rte), null);
+         ServiceReference sref = sreg.getReference();
+
+         Object actual = context.getService(sref);
+         assertNull("service null", actual);
+         sreg.unregister();
+
+         assertFrameworkEvent(FrameworkEvent.ERROR, bundle, ServiceException.class);
+
+         sreg = context.registerService(OBJCLASS, new SimpleServiceFactory(null, null), null);
+         sref = sreg.getReference();
+
+         actual = context.getService(sref);
+         assertNull("service null", actual);
+         sreg.unregister();
+
+         assertFrameworkEvent(FrameworkEvent.ERROR, bundle, ServiceException.class);
+      }
+      finally
+      {
+         bundle.uninstall();
+      }
+   }
+
+   @Test
    public void testGetServiceFactoryAfterStop() throws Exception
    {
       String OBJCLASS = BundleContext.class.getName();
@@ -156,7 +194,7 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest
          BundleContext context = bundle.getBundleContext();
          assertNotNull(context);
 
-         ServiceRegistration sreg = context.registerService(OBJCLASS, new SimpleServiceFactory(context), null);
+         ServiceRegistration sreg = context.registerService(OBJCLASS, new SimpleServiceFactory(context, null), null);
          ServiceReference sref = sreg.getReference();
 
          Object actual = context.getService(sref);
@@ -195,7 +233,7 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest
 
          context.addFrameworkListener(this);
 
-         SimpleServiceFactory factory = new SimpleServiceFactory(context);
+         SimpleServiceFactory factory = new SimpleServiceFactory(context, null);
          ServiceRegistration sreg = context.registerService(OBJCLASS, factory, null);
          ServiceReference sref = sreg.getReference();
          Object actual = context.getService(sref);
@@ -205,7 +243,7 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest
 
          assertFrameworkEvent(FrameworkEvent.ERROR, bundle, ServiceException.class);
 
-         factory = new SimpleServiceFactory(context);
+         factory = new SimpleServiceFactory(context, null);
          sreg = context.registerService(OBJCLASSES, factory, null);
          sref = sreg.getReference();
          actual = context.getService(sref);

@@ -367,9 +367,9 @@ public class BundleManager
       {
          root = AbstractVFS.getRoot(locationURL);
       }
-      catch (IOException e)
+      catch (Exception ex)
       {
-         throw new BundleException("Invalid bundle location=" + locationURL, e);
+         throw new BundleException("Invalid bundle location=" + locationURL, ex);
       }
 
       return install(root, location, false);
