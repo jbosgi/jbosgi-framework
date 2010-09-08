@@ -179,9 +179,9 @@ public class ServiceState implements ServiceRegistration, ServiceReference
             eventsPlugin.fireFrameworkEvent(bundleState, FrameworkEvent.ERROR, sex);
          }
       }
-      catch (RuntimeException rte)
+      catch (Throwable th)
       {
-         ServiceException sex = new ServiceException("Cannot get factory value", ServiceException.FACTORY_EXCEPTION, rte);
+         ServiceException sex = new ServiceException("Cannot get factory value", ServiceException.FACTORY_EXCEPTION, th);
          eventsPlugin.fireFrameworkEvent(bundleState, FrameworkEvent.ERROR, sex);
       }
       return result;
