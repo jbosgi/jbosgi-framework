@@ -143,8 +143,9 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          if (clazzes[i] == null)
             throw new IllegalArgumentException("Null service class at index: " + i);
 
+         String prefix = (i == 0 ? "root-service" : "alias-service");
          String shortName = clazzes[i].substring(clazzes[i].lastIndexOf(".") + 1);
-         serviceNames[i] = ServiceName.of("jbosgi", bundleState.getSymbolicName(), shortName, new Long(serviceId).toString());
+         serviceNames[i] = ServiceName.of(prefix, bundleState.getSymbolicName(), shortName, new Long(serviceId).toString());
       }
 
       final ServiceState serviceState = new ServiceState(bundleState, serviceId, serviceNames, clazzes, serviceValue, properties);
@@ -273,8 +274,13 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          // [MSC-9] Add ability to query the ServiceContainer
          Set<ServiceName> allServiceNames = new HashSet<ServiceName>();
          for (List<ServiceName> auxList : serviceNameMap.values())
-            allServiceNames.addAll(auxList);
-
+         {
+            for (ServiceName auxName : auxList)
+            {
+               if (auxName.toString().startsWith("root-service"))
+                  allServiceNames.add(auxName);
+            }
+         }
          serviceNames = new ArrayList<ServiceName>(allServiceNames);
       }
 
