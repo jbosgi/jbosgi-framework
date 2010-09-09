@@ -651,10 +651,10 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest
       
       ServiceReference[] srefs = context.getServiceReferences(Runnable.class.getName(), null);
       assertEquals(4, srefs.length);
-      assertEquals(sref2, srefs[0]);
-      assertEquals(sref3, srefs[1]);
-      assertEquals(sref4, srefs[2]);
-      assertEquals(sref1, srefs[3]);
+      assertEquals(sref1, srefs[0]);
+      assertEquals(sref4, srefs[1]);
+      assertEquals(sref3, srefs[2]);
+      assertEquals(sref2, srefs[3]);
       
       ServiceReference sref = context.getServiceReference(Runnable.class.getName());
       assertEquals(sref2, sref);

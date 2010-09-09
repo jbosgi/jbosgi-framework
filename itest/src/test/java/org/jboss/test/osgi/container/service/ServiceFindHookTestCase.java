@@ -100,8 +100,8 @@ public class ServiceFindHookTestCase extends OSGiFrameworkTest
          ServiceReference[] srefs = context.getServiceReferences(Runnable.class.getName(), null);
          assertNotNull("References not null", srefs);
          assertEquals(2, srefs.length);
-         assertEquals(sref1, srefs[0]);
-         assertEquals(sref2, srefs[1]);
+         assertEquals(sref2, srefs[0]);
+         assertEquals(sref1, srefs[1]);
          assertFalse("All services false", allServices[callIndex.get()]);
          assertTrue("All good", allGood[callIndex.get()]);
          
@@ -109,15 +109,15 @@ public class ServiceFindHookTestCase extends OSGiFrameworkTest
          srefs = context.getServiceReferences(Runnable.class.getName(), null);
          assertNotNull("References not null", srefs);
          assertEquals(1, srefs.length);
-         assertEquals(sref2, srefs[0]);
+         assertEquals(sref1, srefs[0]);
          assertFalse("All services false", allServices[callIndex.get()]);
          assertTrue("All good", allGood[callIndex.get()]);
          
          callIndex.incrementAndGet();
          srefs = context.getAllServiceReferences(Runnable.class.getName(), null);
          assertEquals(2, srefs.length);
-         assertEquals(sref1, srefs[0]);
-         assertEquals(sref2, srefs[1]);
+         assertEquals(sref2, srefs[0]);
+         assertEquals(sref1, srefs[1]);
          assertTrue("All services true", allServices[callIndex.get()]);
          assertTrue("All good", allGood[callIndex.get()]);
       }

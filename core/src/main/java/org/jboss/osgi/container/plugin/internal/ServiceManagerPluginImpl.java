@@ -235,7 +235,8 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       if (result.isEmpty())
          return null;
 
-      return result.get(0);
+      int lastIndex = result.size() - 1;
+      return result.get(lastIndex);
    }
 
    @Override
@@ -316,7 +317,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
             continue;
 
          Object rawValue = serviceState.getRawValue();
-         
+
          checkAssignable &= (clazz != null);
          checkAssignable &= (bundleState.getBundleId() != 0);
          checkAssignable &= !(rawValue instanceof ServiceFactory);
@@ -328,8 +329,6 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
       // Sort the result
       Collections.sort(result, ServiceReferenceComparator.getInstance());
-      Collections.reverse(result);
-
       return Collections.unmodifiableList(result);
    }
 
