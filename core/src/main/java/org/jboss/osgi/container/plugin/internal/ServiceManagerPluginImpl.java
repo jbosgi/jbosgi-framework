@@ -443,7 +443,8 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       try
       {
          ServiceController<?> controller = serviceContainer.getService(rootServiceName);
-         controller.setMode(Mode.REMOVE);
+         if (controller != null)
+            controller.setMode(Mode.REMOVE);
       }
       catch (RuntimeException ex)
       {

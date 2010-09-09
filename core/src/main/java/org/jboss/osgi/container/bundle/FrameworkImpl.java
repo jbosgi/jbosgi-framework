@@ -88,7 +88,7 @@ public final class FrameworkImpl extends SystemBundle implements Framework
    @Override
    public void update() throws BundleException
    {
-      frameworkState.restartFramework();
+      frameworkState.updateFramework();
    }
 
    /**
@@ -108,10 +108,7 @@ public final class FrameworkImpl extends SystemBundle implements Framework
             // ignore
          }
       }
-
-      // [TODO] The method returns immediately to the caller after initiating the following steps
-
-      frameworkState.restartFramework();
+      frameworkState.updateFramework();
    }
 
    /**

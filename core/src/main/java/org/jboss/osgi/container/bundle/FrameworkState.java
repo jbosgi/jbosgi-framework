@@ -31,7 +31,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.container.plugin.AutoInstallPlugin;
@@ -41,7 +41,6 @@ import org.jboss.osgi.container.plugin.Plugin;
 import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.container.util.Java;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -79,9 +78,11 @@ public class FrameworkState
    // The framework properties
    private Map<String, String> properties;
    // The framework stop monitor
-   private AtomicInteger stopMonitor = new AtomicInteger(0);
-   // The framework stop executor 
-   private Executor stopExecutor = Executors.newFixedThreadPool(10);
+   private AtomicBoolean stopMonitor = new AtomicBoolean(false);
+   // The framework stopped event
+   private int stoppedEvent = FrameworkEvent.STOPPED;
+   // The framework executor 
+   private Executor executor = Executors.newFixedThreadPool(10);
 
    static
    {
@@ -206,16 +207,18 @@ public class FrameworkState
     */
    public void initFramework() throws BundleException
    {
+      // This method does nothing if called when this Framework is in the STARTING, ACTIVE or STOPPING state
+      int state = getSystemBundle().getState();
+      if (state == Bundle.STARTING || state == Bundle.ACTIVE || state == Bundle.STOPPING)
+      {
+         getSystemBundle().changeState(Bundle.STARTING);
+         return;
+      }
+
       // Log INFO about this implementation
       String implTitle = getClass().getPackage().getImplementationTitle();
       String implVersion = getClass().getPackage().getImplementationVersion();
       log.info(implTitle + " - " + implVersion);
-
-      int state = getSystemBundle().getState();
-
-      // This method does nothing if called when this Framework is in the STARTING, ACTIVE or STOPPING state
-      if (state == Bundle.STARTING || state == Bundle.ACTIVE || state == Bundle.STOPPING)
-         return;
 
       // Put into the STARTING state
       getSystemBundle().changeState(Bundle.STARTING);
@@ -307,13 +310,13 @@ public class FrameworkState
     */
    public void stopFramework()
    {
-      Runnable stopcmd = new Runnable()
+      Runnable cmd = new Runnable()
       {
          public void run()
          {
             try
             {
-               stopInternal();
+               stopInternal(false);
             }
             catch (Exception ex)
             {
@@ -321,96 +324,117 @@ public class FrameworkState
             }
          }
       };
-      stopExecutor.execute(stopcmd);
+      executor.execute(cmd);
    }
 
-   private void stopInternal()
+   public void updateFramework()
    {
-      synchronized (stopMonitor)
+      Runnable cmd = new Runnable()
       {
-         // Do nothing if the framework is not active
-         if (getSystemBundle().getState() != Bundle.ACTIVE)
+         public void run()
+         {
+            try
+            {
+               stopInternal(true);
+               startFramework();
+            }
+            catch (Exception ex)
+            {
+               log.error("Error stopping framework", ex);
+            }
+         }
+      };
+      executor.execute(cmd);
+   }
+
+   private void stopInternal(boolean stopForUpdate)
+   {
+      try
+      {
+         // If the Framework is not Bundle.STARTING and not Bundle.ACTIVE there is nothing to do
+         int state = getSystemBundle().getState();
+         if (state != Bundle.STARTING && state != Bundle.ACTIVE)
             return;
 
-         // This Framework's state is set to Bundle.STOPPING
+         stopMonitor.set(true);
+         stoppedEvent = stopForUpdate ? FrameworkEvent.STOPPED_UPDATE : FrameworkEvent.STOPPED;
+         
          getSystemBundle().changeState(Bundle.STOPPING);
-      }
 
-      // Move to start level 0 in the current thread
-      StartLevelPlugin startLevel = bundleManager.getOptionalPlugin(StartLevelPlugin.class);
-      if (startLevel != null)
-         startLevel.decreaseStartLevel(0);
-      else
-      {
-         // No Start Level Service available, stop all bundles individually...
-         // All installed bundles must be stopped without changing each bundle's persistent autostart setting
-         for (AbstractBundle bundleState : bundleManager.getBundles())
+         // Move to start level 0 in the current thread
+         StartLevelPlugin startLevel = bundleManager.getOptionalPlugin(StartLevelPlugin.class);
+         if (startLevel != null)
          {
-            if (bundleState != getSystemBundle())
+            startLevel.decreaseStartLevel(0);
+         }
+         else
+         {
+            // No Start Level Service available, stop all bundles individually...
+            // All installed bundles must be stopped without changing each bundle's persistent autostart setting
+            for (AbstractBundle bundleState : bundleManager.getBundles())
             {
-               try
+               if (bundleState != getSystemBundle())
                {
-                  // [TODO] don't change the  persistent state
-                  bundleState.stop();
-               }
-               catch (Exception ex)
-               {
-                  // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then 
-                  // published as a framework event of type FrameworkEvent.ERROR
-                  bundleManager.fireError(bundleState, "stopping bundle", ex);
+                  try
+                  {
+                     // [TODO] don't change the  persistent state
+                     bundleState.stop();
+                  }
+                  catch (Exception ex)
+                  {
+                     // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then 
+                     // published as a framework event of type FrameworkEvent.ERROR
+                     bundleManager.fireError(bundleState, "stopping bundle", ex);
+                  }
                }
             }
          }
-      }
 
-      // Stop Plugins Lifecycle
-      List<Plugin> reversePlugins = new ArrayList<Plugin>(bundleManager.getPlugins());
-      Collections.reverse(reversePlugins);
-      for (Plugin plugin : reversePlugins)
+         // Stop Plugins Lifecycle
+         List<Plugin> reversePlugins = new ArrayList<Plugin>(bundleManager.getPlugins());
+         Collections.reverse(reversePlugins);
+         for (Plugin plugin : reversePlugins)
+         {
+            try
+            {
+               plugin.stopPlugin();
+            }
+            catch (RuntimeException ex)
+            {
+               log.error("Cannot stop service: " + plugin, ex);
+            }
+         }
+
+         // Event handling is disabled
+         FrameworkEventsPlugin eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
+         eventsPlugin.setActive(false);
+
+         // This Framework's state is set to Bundle.RESOLVED
+         getSystemBundle().changeState(Bundle.RESOLVED);
+
+         // Destroy Plugins Lifecycle
+         for (Plugin plugin : reversePlugins)
+         {
+            try
+            {
+               plugin.destroyPlugin();
+            }
+            catch (RuntimeException ex)
+            {
+               log.error("Cannot destroy service: " + plugin, ex);
+            }
+         }
+
+         // All resources held by this Framework are released
+         getSystemBundle().destroyBundleContext();
+      }
+      finally
       {
-         try
+         synchronized (stopMonitor)
          {
-            plugin.stopPlugin();
-         }
-         catch (RuntimeException ex)
-         {
-            log.error("Cannot stop service: " + plugin, ex);
+            stopMonitor.notifyAll();
          }
       }
-
-      // Event handling is disabled
-      FrameworkEventsPlugin eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
-      eventsPlugin.setActive(false);
-
-      // This Framework's state is set to Bundle.RESOLVED
-      getSystemBundle().changeState(Bundle.RESOLVED);
-
-      // Destroy Plugins Lifecycle
-      for (Plugin plugin : reversePlugins)
-      {
-         try
-         {
-            plugin.destroyPlugin();
-         }
-         catch (RuntimeException ex)
-         {
-            log.error("Cannot destroy service: " + plugin, ex);
-         }
-      }
-
-      // All resources held by this Framework are released
-      getSystemBundle().destroyBundleContext();
-
-      // Notify all threads that are waiting at waitForStop that the stop operation has completed
-      synchronized (stopMonitor)
-      {
-         stopMonitor.notifyAll();
-      }
-   }
-
-   public void restartFramework()
-   {
-      throw new NotImplementedException();
    }
 
    /**
@@ -429,15 +453,23 @@ public class FrameworkState
       {
          // Only wait when this Framework is in Bundle.STARTING, Bundle.ACTIVE, or Bundle.STOPPING state
          int state = getSystemBundle().getState();
-         if (state != Bundle.STARTING && state != Bundle.ACTIVE && state != Bundle.STOPPING)
-            return new FrameworkEvent(FrameworkEvent.STOPPED, getSystemBundle(), null);
-
-         stopMonitor.wait(timeout);
+         if (state == Bundle.STARTING || state == Bundle.ACTIVE || state == Bundle.STOPPING)
+         {
+            if (stopMonitor.get() == true)
+            {
+               stopMonitor.set(false);
+               stopMonitor.wait(timeout);
+            }
+         }
+         else
+         {
+            return new FrameworkEvent(stoppedEvent, getSystemBundle(), null);
+         }
       }
 
       if (getSystemBundle().getState() != Bundle.RESOLVED)
          return new FrameworkEvent(FrameworkEvent.WAIT_TIMEDOUT, getSystemBundle(), null);
 
-      return new FrameworkEvent(FrameworkEvent.STOPPED, getSystemBundle(), null);
+      return new FrameworkEvent(stoppedEvent, getSystemBundle(), null);
    }
 }
