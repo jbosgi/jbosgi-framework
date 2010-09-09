@@ -90,8 +90,6 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
 
    /** The executor service */
    private ExecutorService executorService;
-   /** True for synchronous event delivery */
-   private boolean synchronous;
    /** The set of bundle events that are delivered to an (asynchronous) BundleListener */
    private Set<Integer> asyncBundleEvents = new HashSet<Integer>();
    /** The set of events that are logged at INFO level */
@@ -113,11 +111,6 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.STARTED));
       infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.STOPPED));
       infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.UNINSTALLED));
-   }
-
-   public void setSynchronous(boolean synchronous)
-   {
-      this.synchronous = synchronous;
    }
 
    @Override
@@ -416,24 +409,24 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       if (getBundleManager().isFrameworkActive() == false)
          return;
 
+      // Synchronous listeners first
+      for (BundleListener listener : listeners)
+      {
+         try
+         {
+            if (listener instanceof SynchronousBundleListener)
+               listener.bundleChanged(event);
+         }
+         catch (Throwable t)
+         {
+            log.warn("Error while firing " + typeName + " for bundle " + bundle, t);
+         }
+      }
+
       Runnable runnable = new Runnable()
       {
          public void run()
          {
-            // Synchronous listeners first
-            for (BundleListener listener : listeners)
-            {
-               try
-               {
-                  if (listener instanceof SynchronousBundleListener)
-                     listener.bundleChanged(event);
-               }
-               catch (Throwable t)
-               {
-                  log.warn("Error while firing " + typeName + " for bundle " + bundle, t);
-               }
-            }
-
             // BundleListeners are called with a BundleEvent object when a bundle has been 
             // installed, resolved, started, stopped, updated, unresolved, or uninstalled
             if (asyncBundleEvents.contains(type))
@@ -455,7 +448,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       };
 
       // Fire the event in a runnable
-      fireEvent(runnable, synchronous);
+      fireEvent(runnable);
    }
 
    @Override
@@ -531,7 +524,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       };
 
       // Fire the event in a runnable
-      fireEvent(runnable, synchronous);
+      fireEvent(runnable);
    }
 
    @Override
@@ -681,16 +674,9 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       return bundle;
    }
 
-   private void fireEvent(Runnable runnable, boolean synchronous)
+   private void fireEvent(Runnable runnable)
    {
-      if (synchronous)
-      {
-         runnable.run();
-      }
-      else
-      {
-         executorService.execute(runnable);
-      }
+      executorService.execute(runnable);
    }
 
    /**

@@ -32,8 +32,10 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Locale;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
@@ -41,10 +43,12 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.SynchronousBundleListener;
 
 /**
  * BundleContextTest.
@@ -399,6 +403,44 @@ public class BundleContextTestCase extends OSGiFrameworkTest
       assertBundleEvent(BundleEvent.UNINSTALLED, bundle);
    }
 
+   @Test
+   public void testSynchronousBundleListener() throws Exception
+   {
+      final List<BundleEvent> events = new ArrayList<BundleEvent>();
+      BundleListener listener = new SynchronousBundleListener()
+      {
+         @Override
+         public void bundleChanged(BundleEvent event)
+         {
+            events.add(event);
+         }
+      };
+      getSystemContext().addBundleListener(listener);
+      
+      Bundle bundle = installBundle(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
+      try
+      {
+         bundle.start();
+         bundle.stop();
+         bundle.update();
+      }
+      finally
+      {
+         bundle.uninstall();
+      }
+      
+      assertEquals("Event count in: " + events, 9, events.size());
+      assertEquals(BundleEvent.INSTALLED, events.get(0).getType());
+      assertEquals(BundleEvent.RESOLVED, events.get(1).getType());
+      assertEquals(BundleEvent.STARTING, events.get(2).getType());
+      assertEquals(BundleEvent.STARTED, events.get(3).getType());
+      assertEquals(BundleEvent.STOPPING, events.get(4).getType());
+      assertEquals(BundleEvent.STOPPED, events.get(5).getType());
+      assertEquals(BundleEvent.UNRESOLVED, events.get(6).getType());
+      assertEquals(BundleEvent.UPDATED, events.get(7).getType());
+      assertEquals(BundleEvent.UNINSTALLED, events.get(8).getType());
+   }
+   
    @Test
    public void testFrameworkListener() throws Exception
    {
