@@ -52,6 +52,7 @@ public abstract class AbstractBundleContext implements BundleContext
 {
    private BundleManager bundleManager;
    private AbstractBundle bundleState;
+   private BundleContext contextWrapper;
    private boolean destroyed;
 
    AbstractBundleContext(AbstractBundle bundleState)
@@ -90,6 +91,14 @@ public abstract class AbstractBundleContext implements BundleContext
       return bundleState;
    }
    
+   public BundleContext getContextWrapper()
+   {
+      checkValidBundleContext();
+      if (contextWrapper == null)
+         contextWrapper = new BundleContextWrapper(this);
+      return contextWrapper;
+   }
+
    void destroy()
    {
       destroyed = true;

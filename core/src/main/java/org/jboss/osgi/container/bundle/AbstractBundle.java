@@ -154,9 +154,7 @@ public abstract class AbstractBundle implements Bundle
    @Override
    public BundleContext getBundleContext()
    {
-      if (bundleContext == null)
-         return null;
-      return new BundleContextWrapper(bundleContext);
+      return bundleContext != null ? bundleContext.getContextWrapper() : null;
    }
 
    BundleContext getBundleContextInternal()
