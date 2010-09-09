@@ -168,14 +168,15 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       ResolverPlugin plugin = getBundleManager().getPlugin(ResolverPlugin.class);
       for (XModule mod : plugin.getResolver().getModules())
       {
-         for (XCapability cap : mod.getCapabilities())
+         if (mod.isResolved() && mod.isFragment() == false)
          {
-            if (cap instanceof XPackageCapability)
+            for (XCapability cap : mod.getCapabilities())
             {
-               AbstractRevision ar = cap.getModule().getAttachment(AbstractRevision.class);
-               if (ar != null && ar.getModuleClassLoader() != null)
+               if (cap instanceof XPackageCapability)
+               {
                   if (name.equals(cap.getName()))
                      result.add(new ExportedPackageImpl((XPackageCapability)cap));
+               }
             }
          }
       }
@@ -532,11 +533,11 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
 
       else if (loader instanceof ModuleClassLoader)
       {
-          ModuleClassLoader moduleCL = (ModuleClassLoader)loader;
-          ModuleManagerPlugin moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
+         ModuleClassLoader moduleCL = (ModuleClassLoader)loader;
+         ModuleManagerPlugin moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
 
-          AbstractBundle bundleState = moduleManager.getBundleState(moduleCL.getModule().getIdentifier());
-          return bundleState.getBundleWrapper();
+         AbstractBundle bundleState = moduleManager.getBundleState(moduleCL.getModule().getIdentifier());
+         return bundleState.getBundleWrapper();
       }
 
       log.error("Cannot obtain bundle for: " + loader);
@@ -546,7 +547,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public int getBundleType(Bundle bundle)
    {
-	   AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
       return bundleState.isFragment() ? BUNDLE_TYPE_FRAGMENT : 0;
    }
 
