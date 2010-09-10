@@ -89,11 +89,6 @@ public class WebXMLVerifierInterceptor extends AbstractPlugin implements Lifecyc
       sysContext.registerService(LifecycleInterceptor.class.getName(), delegate, null);
    }
 
-   public void stopService()
-   {
-      // do nothing
-   }
-
    public Set<Class<?>> getInput()
    {
       return delegate.getInput();

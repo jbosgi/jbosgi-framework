@@ -210,10 +210,7 @@ public class FrameworkState
       // This method does nothing if called when this Framework is in the STARTING, ACTIVE or STOPPING state
       int state = getSystemBundle().getState();
       if (state == Bundle.STARTING || state == Bundle.ACTIVE || state == Bundle.STOPPING)
-      {
-         getSystemBundle().changeState(Bundle.STARTING);
          return;
-      }
 
       // Log INFO about this implementation
       String implTitle = getClass().getPackage().getImplementationTitle();
@@ -310,6 +307,10 @@ public class FrameworkState
     */
    public void stopFramework()
    {
+      int state = getSystemBundle().getState();
+      if (state != Bundle.STARTING && state != Bundle.ACTIVE)
+         return;
+      
       Runnable cmd = new Runnable()
       {
          public void run()
@@ -329,6 +330,11 @@ public class FrameworkState
 
    public void updateFramework()
    {
+      int state = getSystemBundle().getState();
+      if (state != Bundle.STARTING && state != Bundle.ACTIVE)
+         return;
+      
+      final int targetState = getSystemBundle().getState();
       Runnable cmd = new Runnable()
       {
          public void run()
@@ -336,7 +342,10 @@ public class FrameworkState
             try
             {
                stopInternal(true);
-               startFramework();
+               if (targetState == Bundle.STARTING)
+                  initFramework();
+               if (targetState == Bundle.ACTIVE)
+                  startFramework();
             }
             catch (Exception ex)
             {
@@ -351,15 +360,16 @@ public class FrameworkState
    {
       try
       {
-         // If the Framework is not Bundle.STARTING and not Bundle.ACTIVE there is nothing to do
-         int state = getSystemBundle().getState();
-         if (state != Bundle.STARTING && state != Bundle.ACTIVE)
-            return;
+         synchronized (stopMonitor)
+         {
+            // If the Framework is not STARTING and not ACTIVE there is nothing to do
+            int state = getSystemBundle().getState();
+            if (state != Bundle.STARTING && state != Bundle.ACTIVE)
+               return;
 
-         stopMonitor.set(true);
-         stoppedEvent = stopForUpdate ? FrameworkEvent.STOPPED_UPDATE : FrameworkEvent.STOPPED;
-         
-         getSystemBundle().changeState(Bundle.STOPPING);
+            stoppedEvent = stopForUpdate ? FrameworkEvent.STOPPED_UPDATE : FrameworkEvent.STOPPED;
+            getSystemBundle().changeState(Bundle.STOPPING);
+         }
 
          // Move to start level 0 in the current thread
          StartLevelPlugin startLevel = bundleManager.getOptionalPlugin(StartLevelPlugin.class);
@@ -401,7 +411,7 @@ public class FrameworkState
             }
             catch (RuntimeException ex)
             {
-               log.error("Cannot stop service: " + plugin, ex);
+               log.error("Cannot stop plugin: " + plugin, ex);
             }
          }
 
@@ -421,7 +431,7 @@ public class FrameworkState
             }
             catch (RuntimeException ex)
             {
-               log.error("Cannot destroy service: " + plugin, ex);
+               log.error("Cannot destroy plugin: " + plugin, ex);
             }
          }
 
@@ -451,15 +461,11 @@ public class FrameworkState
    {
       synchronized (stopMonitor)
       {
-         // Only wait when this Framework is in Bundle.STARTING, Bundle.ACTIVE, or Bundle.STOPPING state
+         // Only wait when this Framework is STARTING, ACTIVE, or STOPPING
          int state = getSystemBundle().getState();
          if (state == Bundle.STARTING || state == Bundle.ACTIVE || state == Bundle.STOPPING)
          {
-            if (stopMonitor.get() == true)
-            {
-               stopMonitor.set(false);
-               stopMonitor.wait(timeout);
-            }
+            stopMonitor.wait(timeout);
          }
          else
          {

@@ -36,23 +36,22 @@ import org.osgi.framework.launch.Framework;
  */
 public class FrameworkWrapper extends BundleWrapper implements Framework
 {
-   private Framework framework;
-
    public FrameworkWrapper(FrameworkImpl framework)
    {
       super(framework);
-      this.framework = framework;
    }
 
    @Override
    public void init() throws BundleException
    {
+      Framework framework = (Framework)getBundleState();
       framework.init();
    }
 
    @Override
    public FrameworkEvent waitForStop(long timeout) throws InterruptedException
    {
+      Framework framework = (Framework)getBundleState();
       return framework.waitForStop(timeout);
    }
 }

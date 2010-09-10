@@ -93,7 +93,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    }
 
    @Override
-   public void startPlugin()
+   public void initPlugin()
    {
       BundleContext sysContext = getBundleManager().getSystemContext();
       registration = sysContext.registerService(PackageAdmin.class.getName(), this, null);

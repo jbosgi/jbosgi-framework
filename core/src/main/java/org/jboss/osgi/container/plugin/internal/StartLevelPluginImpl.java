@@ -62,7 +62,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
    }
 
    @Override
-   public void startPlugin()
+   public void initPlugin()
    {
       BundleContext sc = getBundleManager().getSystemContext();
       registration = sc.registerService(StartLevel.class.getName(), this, null);

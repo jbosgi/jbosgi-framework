@@ -58,7 +58,7 @@ public class LifecycleInterceptorPluginImpl extends AbstractPlugin implements Li
    }
 
    @Override
-   public void startPlugin()
+   public void initPlugin()
    {
       BundleContext sysContext = getBundleManager().getSystemContext();
       delegate = new AbstractLifecycleInterceptorService(sysContext)

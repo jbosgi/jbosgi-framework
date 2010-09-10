@@ -56,7 +56,7 @@ public class DeployerServicePluginImpl extends AbstractPlugin implements Deploye
    }
 
    @Override
-   public void startPlugin()
+   public void initPlugin()
    {
       BundleContext context = getBundleManager().getSystemContext();
       delegate = new SystemDeployerService(context);

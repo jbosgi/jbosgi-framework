@@ -99,17 +99,19 @@ public class BundleManager
       // [TODO] Externalize plugin registration
       plugins.put(BundleDeploymentPlugin.class, new BundleDeploymentPluginImpl(this));
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
-      plugins.put(DeployerServicePlugin.class, new DeployerServicePluginImpl(this));
       plugins.put(FrameworkEventsPlugin.class, new FrameworkEventsPluginImpl(this));
-      plugins.put(LifecycleInterceptorPlugin.class, new LifecycleInterceptorPluginImpl(this));
       plugins.put(ModuleManagerPlugin.class, new ModuleManagerPluginImpl(this));
       plugins.put(NativeCodePlugin.class, new NativeCodePluginImpl(this));
-      plugins.put(PackageAdminPlugin.class, new PackageAdminPluginImpl(this));
       plugins.put(ResolverPlugin.class, new ResolverPluginImpl(this));
       plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
-      plugins.put(StartLevelPlugin.class, new StartLevelPluginImpl(this));
       plugins.put(SystemPackagesPlugin.class, new SystemPackagesPluginImpl(this));
+      
+      // Register system service plugins
+      plugins.put(DeployerServicePlugin.class, new DeployerServicePluginImpl(this));
+      plugins.put(LifecycleInterceptorPlugin.class, new LifecycleInterceptorPluginImpl(this));
       plugins.put(WebXMLVerifierInterceptor.class, new WebXMLVerifierInterceptor(this));
+      plugins.put(PackageAdminPlugin.class, new PackageAdminPluginImpl(this));
+      plugins.put(StartLevelPlugin.class, new StartLevelPluginImpl(this));
 
       frameworkState = new FrameworkState(this, props);
    }
