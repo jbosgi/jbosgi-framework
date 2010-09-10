@@ -22,7 +22,7 @@
   <name>JBossOSGi Container Aggregated</name>
   <groupId>org.jboss.osgi.container</groupId>
   <artifactId>jbosgi-container-aggregated</artifactId>
-  <packaging>jar</packaging>
+  <packaging>pom</packaging>
 
   <parent>
     <groupId>org.jboss.osgi.container</groupId>
@@ -57,12 +57,6 @@
 
   <!-- Build -->
   <build>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-        <filtering>true</filtering>
-      </resource>
-    </resources>
     <plugins>
       <plugin>
         <artifactId>maven-assembly-plugin</artifactId>
@@ -73,11 +67,12 @@
               <goal>single</goal>
             </goals>
             <configuration>
+              <appendAssemblyId>false</appendAssemblyId>
               <descriptors>
-                <descriptor>scripts/assembly-all.xml</descriptor>
+                <descriptor>scripts/assembly.xml</descriptor>
               </descriptors>
               <archive>
-                <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                <manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
               </archive>
             </configuration>
           </execution>
