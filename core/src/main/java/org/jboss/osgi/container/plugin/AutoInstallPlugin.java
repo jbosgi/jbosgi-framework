@@ -25,12 +25,15 @@ import org.osgi.framework.BundleException;
 
 /**
  * A plugin that installs/starts bundles on framework startup.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
 public interface AutoInstallPlugin extends Plugin
 {
+   String PROP_JBOSS_OSGI_AUTO_INSTALL = "org.jboss.osgi.auto.install";
+   String PROP_JBOSS_OSGI_AUTO_START = "org.jboss.osgi.auto.start";
+
    void installBundles() throws BundleException;
 
    void startBundles() throws BundleException;

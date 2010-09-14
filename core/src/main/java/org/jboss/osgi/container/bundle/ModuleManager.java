@@ -22,29 +22,24 @@
 package org.jboss.osgi.container.bundle;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.AssertionSetting;
+import org.jboss.modules.ClassifyingModuleLoader;
 import org.jboss.modules.LocalDependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.PathFilters;
-import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.container.loading.FragmentLocalLoader;
 import org.jboss.osgi.container.loading.FrameworkLocalLoader;
 import org.jboss.osgi.container.loading.JBossLoggingModuleLogger;
@@ -74,8 +69,10 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class ModuleManager extends ModuleLoader
+public class ModuleManager
 {
+   // The module prefix for modules managed by the OSGi layer
+   private static final String MODULE_PREFIX = "jbosgi";
    // Multiple revisions of the same bundle can co-exist, when a bundle has been updated but not yet refreshed.
    // This marker is appended to the version to make each revision unique.
    private static final String REVISION_MARKER = "-rev";
@@ -84,8 +81,8 @@ public class ModuleManager extends ModuleLoader
    private BundleManager bundleManager;
    // The framework module identifier
    private ModuleIdentifier frameworkIdentifier;
-   // The modules that are registered with this {@link ModuleLoader}
-   private Map<ModuleIdentifier, ModuleHolder> modules = Collections.synchronizedMap(new LinkedHashMap<ModuleIdentifier, ModuleHolder>());
+   // The module loader for the OSGi layer
+   private OSGiModuleLoader moduleLoader;
 
    public ModuleManager(BundleManager bundleManager)
    {
@@ -93,36 +90,29 @@ public class ModuleManager extends ModuleLoader
          throw new IllegalArgumentException("Null bundleManager");
 
       this.bundleManager = bundleManager;
+      this.moduleLoader = new OSGiModuleLoader();
 
       // Set the {@link ModuleLogger}
       Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
 
-      // Set the {@link ModuleClassLoaderFactory}
-//      Module.setModuleClassLoaderFactory(new ModuleClassLoaderFactory()
-//      {
-//         @Override
-//         public ModuleClassLoader getModuleClassLoader(Module module, AssertionSetting assertionSetting, Collection<ResourceLoader> resourceLoaders)
-//         {
-//            return new ModuleClassLoaderExt(module, assertionSetting, resourceLoaders);
-//         }
-//      });
-
-      // Make sure this ModuleLoader is used
-      // This also registers the URLStreamHandlerFactory
-      final ModuleLoader moduleLoader = this;
+      // Set the ModuleLoaderSelector to a {@link ClassifyingModuleLoader} that delegates
+      // all indetifiers the start with 'jbosgi' to the {@link OSGiModuleLoader}
+      final ModuleLoader defaultLoader = Module.getCurrentLoader();
       Module.setModuleLoaderSelector(new ModuleLoaderSelector()
       {
          @Override
          public ModuleLoader getCurrentLoader()
          {
-            return moduleLoader;
+            Map<String, ModuleLoader> delegates = new HashMap<String, ModuleLoader>();
+            delegates.put(MODULE_PREFIX, moduleLoader);
+            return new ClassifyingModuleLoader(delegates, defaultLoader);
          }
       });
    }
 
    /**
-    * Return the module identifier for a given XModule. The associated revision of the bundle
-    * is also taken into account.
+    * Return the module identifier for a given XModule.
+    * The associated revision of the bundle is also taken into account.
     * @param resModule the resolver module to obtain the identifier for
     * @return the Module Identifier
     */
@@ -149,7 +139,7 @@ public class ModuleManager extends ModuleLoader
    // [TODO] Remove the revision parameter. The identity of an XModule is the revision.
    private static ModuleIdentifier getModuleIdentifier(XModule resModule, int revision)
    {
-      String name = resModule.getName();
+      String name = MODULE_PREFIX + "." + resModule.getName();
       Version version = resModule.getVersion();
       long moduleId = resModule.getModuleId();
 
@@ -172,22 +162,19 @@ public class ModuleManager extends ModuleLoader
       return bundleManager;
    }
 
-   /**
-    * Get the bundle revision from a module identifier
-    */
-   public AbstractRevision getBundleRevision(ModuleIdentifier identifier)
+   public ModuleLoader getModuleLoader()
    {
-      ModuleHolder holder = getModuleHolder(identifier);
-      return holder != null ? holder.getBundleRevision() : null;
+      return moduleLoader;
    }
 
-   /**
-    * Get the bundle from a module identifier
-    */
+   public AbstractRevision getBundleRevision(ModuleIdentifier identifier)
+   {
+      return moduleLoader.getBundleRevision(identifier);
+   }
+
    public AbstractBundle getBundleState(ModuleIdentifier identifier)
    {
-      AbstractRevision bundleRev = getBundleRevision(identifier);
-      return bundleRev != null ? bundleRev.getBundleState() : null;
+      return moduleLoader.getBundleState(identifier);
    }
 
    /**
@@ -195,24 +182,7 @@ public class ModuleManager extends ModuleLoader
     */
    public Set<ModuleIdentifier> getModuleIdentifiers()
    {
-      return Collections.unmodifiableSet(modules.keySet());
-   }
-
-   /**
-    * Get the module spec for a given identifier
-    * @return The module spec or null
-    */
-   public ModuleSpec getModuleSpec(ModuleIdentifier identifier)
-   {
-      ModuleHolder holder = getModuleHolder(identifier);
-      return holder != null ? holder.getModuleSpec() : null;
-   }
-
-   @Override
-   public ModuleSpec findModule(ModuleIdentifier identifier) throws ModuleLoadException
-   {
-      ModuleHolder holder = getModuleHolder(identifier);
-      return holder != null ? holder.getModuleSpec() : null;
+      return moduleLoader.getModuleIdentifiers();
    }
 
    /**
@@ -221,74 +191,7 @@ public class ModuleManager extends ModuleLoader
     */
    public Module getModule(ModuleIdentifier identifier)
    {
-      ModuleHolder holder = getModuleHolder(identifier);
-      return holder != null ? holder.getModule() : null;
-   }
-
-   private ModuleHolder getModuleHolder(ModuleIdentifier identifier)
-   {
-      ModuleHolder holder = modules.get(identifier);
-      if (holder == null)
-         holder = getModuleFromUnrevisionedIdentifier(identifier);
-      return holder;
-   }
-
-   // In some cases a module is looked up without a revision being specified. An example being a module
-   // dependency declared in a modules.xml file. In that case we need to search for the module and return
-   // the one with the highest revision number.
-   private ModuleHolder getModuleFromUnrevisionedIdentifier(ModuleIdentifier identifier)
-   {
-      if (identifier.getSlot() != null && identifier.getSlot().contains(REVISION_MARKER))
-         // There is a revision identifier, so don't search.
-         return null;
-
-      Set<ModuleIdentifier> versions = new TreeSet<ModuleIdentifier>(new Comparator<ModuleIdentifier>()
-      {
-         @Override
-         public int compare(ModuleIdentifier o1, ModuleIdentifier o2)
-         {
-            // Both objects must have a version with a revision marker as
-            // this is the condition for being added to the versions set.
-            int idx1 = o1.getSlot().lastIndexOf(REVISION_MARKER);
-            int idx2 = o2.getSlot().lastIndexOf(REVISION_MARKER);
-            Integer i1 = Integer.parseInt(o1.getSlot().substring(idx1 + REVISION_MARKER.length()));
-            Integer i2 = Integer.parseInt(o2.getSlot().substring(idx2 + REVISION_MARKER.length()));
-
-            // return the highest number first
-            return -i1.compareTo(i2);
-         }
-      });
-
-      for (ModuleIdentifier id : modules.keySet())
-      {
-
-         if (id.getName().equals(identifier.getName()) == false)
-            continue;
-
-         if (id.getSlot().contains(REVISION_MARKER))
-            versions.add(id);
-      }
-
-      if (versions.size() == 0)
-         return null;
-
-      return modules.get(versions.iterator().next());
-   }
-
-   @Override
-   public Module preloadModule(ModuleIdentifier identifier) throws ModuleLoadException
-   {
-      ModuleHolder holder = getModuleHolder(identifier);
-      if (holder == null)
-         throw new IllegalStateException("Cannot find module: " + identifier);
-
-      Module module = holder.getModule();
-      if (module == null)
-      {
-         module = super.preloadModule(identifier);
-         holder.setModule(module);
-      }
-      return module;
+      return moduleLoader.getModule(identifier);
    }
 
    /**
@@ -311,7 +214,7 @@ public class ModuleManager extends ModuleLoader
       ModuleSpec frameworkSpec = builder.create();
 
       AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
-      modules.put(frameworkIdentifier, new ModuleHolder(bundleRev, frameworkSpec));
+      moduleLoader.addModule(bundleRev, frameworkSpec);
       return frameworkSpec;
    }
 
@@ -370,7 +273,6 @@ public class ModuleManager extends ModuleLoader
             specBuilder.addResourceRoot(new VirtualFileResourceLoader(contentRoot));
          specBuilder.addLocalDependency();
 
-
          // Native - Hack
          Bundle bundle = resModule.getAttachment(Bundle.class);
          AbstractUserBundle bundleState = AbstractUserBundle.assertBundleState(bundle);
@@ -379,38 +281,38 @@ public class ModuleManager extends ModuleLoader
          NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
          if (libMetaData != null)
          {
-             NativeResourceLoader nativeLoader = new NativeResourceLoader();
-             // Add the native library mappings to the OSGiClassLoaderPolicy
-             for (NativeLibrary library : libMetaData.getNativeLibraries())
-             {
-                String libpath = library.getLibraryPath();
-                String libfile = new File(libpath).getName();
-                String libname = libfile.substring(0, libfile.lastIndexOf('.'));
+            NativeResourceLoader nativeLoader = new NativeResourceLoader();
+            // Add the native library mappings to the OSGiClassLoaderPolicy
+            for (NativeLibrary library : libMetaData.getNativeLibraries())
+            {
+               String libpath = library.getLibraryPath();
+               String libfile = new File(libpath).getName();
+               String libname = libfile.substring(0, libfile.lastIndexOf('.'));
 
-                // Add the library provider to the policy
-                NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(bundleState, libname, libpath);
-                nativeLoader.addNativeLibrary(libProvider);
+               // Add the library provider to the policy
+               NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(bundleState, libname, libpath);
+               nativeLoader.addNativeLibrary(libProvider);
 
-                // [TODO] why does the TCK use 'Native' to mean 'libNative' ?
-                if (libname.startsWith("lib"))
-                {
-                   libname = libname.substring(3);
-                   libProvider = new BundleNativeLibraryProvider(bundleState, libname, libpath);
-                   nativeLoader.addNativeLibrary(libProvider);
-                }
-             }
+               // [TODO] why does the TCK use 'Native' to mean 'libNative' ?
+               if (libname.startsWith("lib"))
+               {
+                  libname = libname.substring(3);
+                  libProvider = new BundleNativeLibraryProvider(bundleState, libname, libpath);
+                  nativeLoader.addNativeLibrary(libProvider);
+               }
+            }
 
-             specBuilder.addResourceRoot(nativeLoader);
+            specBuilder.addResourceRoot(nativeLoader);
          }
 
-         specBuilder.setFallbackLoader(new ModuleClassLoaderExt(identifier, this));
+         specBuilder.setFallbackLoader(new ModuleClassLoaderExt(bundleManager, identifier));
 
          // Build the ModuleSpec
          moduleSpec = specBuilder.create();
       }
 
       AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
-      modules.put(moduleSpec.getModuleIdentifier(), new ModuleHolder(bundleRev, moduleSpec));
+      moduleLoader.addModule(bundleRev, moduleSpec);
       return moduleSpec;
    }
 
@@ -465,10 +367,7 @@ public class ModuleManager extends ModuleLoader
 
    public Module removeModule(ModuleIdentifier identifier)
    {
-      // The module should remove automatically from the ModuleLoader
-      // through Garbage Collection as it uses weak references.
-      ModuleHolder moduleHolder = modules.remove(identifier);
-      return (moduleHolder != null ? moduleHolder.module : null);
+      return moduleLoader.removeModule(identifier);
    }
 
    public static String getPathFromClassName(final String className)
@@ -523,44 +422,6 @@ public class ModuleManager extends ModuleLoader
          {
             specBuilder.addLocalDependency(localDependencyBuilder.create());
          }
-      }
-   }
-
-   // A holder for the {@link ModuleSpec}  @{link Module} tuple
-   public static class ModuleHolder
-   {
-      private final AbstractRevision bundleRev;
-      private final ModuleSpec moduleSpec;
-      private Module module;
-
-      public ModuleHolder(AbstractRevision bundleRev, ModuleSpec moduleSpec)
-      {
-         if (bundleRev == null)
-            throw new IllegalArgumentException("Null bundleRev");
-         if (moduleSpec == null)
-            throw new IllegalArgumentException("Null moduleSpec");
-         this.bundleRev = bundleRev;
-         this.moduleSpec = moduleSpec;
-      }
-
-      AbstractRevision getBundleRevision()
-      {
-         return bundleRev;
-      }
-
-      ModuleSpec getModuleSpec()
-      {
-         return moduleSpec;
-      }
-
-      Module getModule()
-      {
-         return module;
-      }
-
-      void setModule(Module module)
-      {
-         this.module = module;
       }
    }
 }

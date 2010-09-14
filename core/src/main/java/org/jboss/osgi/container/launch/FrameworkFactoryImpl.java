@@ -26,6 +26,7 @@ package org.jboss.osgi.container.launch;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.FrameworkImpl;
 import org.osgi.framework.launch.Framework;
@@ -33,7 +34,7 @@ import org.osgi.framework.launch.FrameworkFactory;
 
 /**
  * An impementation of an OSGi FrameworkFactory
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 21-Aug-2009
  */
@@ -41,7 +42,7 @@ public class FrameworkFactoryImpl implements FrameworkFactory
 {
    // Provide logging
    final Logger log = Logger.getLogger(FrameworkFactoryImpl.class);
-   
+
    // Main entry point used by FrameworkLaunchTestCase
    public static void main(String[] args) throws Exception
    {
@@ -53,6 +54,7 @@ public class FrameworkFactoryImpl implements FrameworkFactory
    @SuppressWarnings({ "rawtypes", "unchecked" })
    public Framework newFramework(Map props)
    {
+      ServiceController controller = (ServiceController)props.get(ServiceController.class.getName());
       BundleManager bundleManager = new BundleManager(props);
       FrameworkImpl framework = new FrameworkImpl(bundleManager);
       return (Framework)framework.getBundleWrapper();

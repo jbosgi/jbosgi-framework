@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.container.plugin.internal;
 
+import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,13 +35,13 @@ import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.FrameworkState;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.AutoInstallPlugin;
-import org.jboss.osgi.container.util.URLHelper;
+import org.jboss.osgi.spi.internal.StringPropertyReplacer;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
  * A plugin that installs/starts bundles on framework startup.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
@@ -67,39 +69,49 @@ public class AutoInstallPluginImpl extends AbstractPlugin implements AutoInstall
       this.autoStart = autoStart;
    }
 
-   private void initializePlugin()
+   @Override
+   public void initPlugin()
    {
-      if (autoInstall == null && autoStart == null)
+      FrameworkState frameworkState = getBundleManager().getFrameworkState();
+      for (Entry<String, Object> entry : frameworkState.getProperties().entrySet())
       {
-         FrameworkState frameworkState = getBundleManager().getFrameworkState();
-         for (Entry<String, String> entry : frameworkState.getProperties().entrySet())
+         String key = entry.getKey();
+         if (key.startsWith(PROP_JBOSS_OSGI_AUTO_INSTALL))
          {
-            String key = entry.getKey();
-            if (key.startsWith("org.jboss.osgi.auto.install"))
+            URL url = toURL(entry.getValue().toString());
+            if (url != null)
             {
-               URL url = URLHelper.toURL(entry.getValue());
-               if (url != null)
-               {
-                  addAutoInstall(url);
-               }
+               addAutoInstall(url);
             }
-            if (key.startsWith("org.jboss.osgi.auto.start"))
+         }
+         if (key.startsWith(PROP_JBOSS_OSGI_AUTO_START))
+         {
+            URL url = toURL(entry.getValue().toString());
+            if (url != null)
             {
-               URL url = URLHelper.toURL(entry.getValue());
-               if (url != null)
-               {
-                  addAutoStart(url);
-               }
+               addAutoStart(url);
             }
          }
       }
    }
 
+   @Override
+   public void startPlugin()
+   {
+      try
+      {
+         installBundles();
+         startBundles();
+      }
+      catch (BundleException ex)
+      {
+         throw new IllegalStateException("Cannot start auto install bundles", ex);
+      }
+   }
+
+   @Override
    public void installBundles() throws BundleException
    {
-      // Initialize the plugin
-      initializePlugin();
-
       // Add the autoStart bundles to autoInstall
       if (autoStart != null)
       {
@@ -121,6 +133,7 @@ public class AutoInstallPluginImpl extends AbstractPlugin implements AutoInstall
       }
    }
 
+   @Override
    public void startBundles() throws BundleException
    {
       // Start autoStart bundles
@@ -156,5 +169,38 @@ public class AutoInstallPluginImpl extends AbstractPlugin implements AutoInstall
       if (autoBundles == null)
          autoBundles = new HashMap<URL, Bundle>();
       autoBundles.put(bundleURL, bundle);
+   }
+
+   private URL toURL(String path)
+   {
+      URL pathURL = null;
+      String realPath = StringPropertyReplacer.replaceProperties(path);
+      try
+      {
+         pathURL = new URL(realPath);
+      }
+      catch (MalformedURLException ex)
+      {
+         // ignore
+      }
+
+      if (pathURL == null)
+      {
+         try
+         {
+            File file = new File(realPath);
+            if (file.exists())
+               pathURL = file.toURI().toURL();
+         }
+         catch (MalformedURLException ex)
+         {
+            throw new IllegalArgumentException("Invalid path: " + realPath, ex);
+         }
+      }
+
+      if (pathURL == null)
+         throw new IllegalArgumentException("Invalid path: " + realPath);
+
+      return pathURL;
    }
 }

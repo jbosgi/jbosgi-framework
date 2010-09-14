@@ -74,7 +74,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 
 /**
  * A plugin that manages OSGi services
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
@@ -83,7 +83,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    // Provide logging
    private final Logger log = Logger.getLogger(ServiceManagerPluginImpl.class);
 
-   // The ServiceId generator 
+   // The ServiceId generator
    private AtomicLong identityGenerator = new AtomicLong();
    // The ServiceContainer
    private ServiceContainer serviceContainer;
@@ -94,15 +94,15 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    private FrameworkEventsPlugin eventsPlugin;
    private PackageAdminPlugin packageAdmin;
 
-   public ServiceManagerPluginImpl(BundleManager bundleManager)
+   public ServiceManagerPluginImpl(BundleManager bundleManager, ServiceContainer serviceContainer)
    {
       super(bundleManager);
+      this.serviceContainer = serviceContainer;
    }
 
    @Override
    public void initPlugin()
    {
-      serviceContainer = ServiceContainer.Factory.create();
       eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
       packageAdmin = getPlugin(PackageAdminPlugin.class);
    }
@@ -126,7 +126,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       if (clazzes == null || clazzes.length == 0)
          throw new IllegalArgumentException("Null service classes");
 
-      // Immediately after registration of a {@link ListenerHook}, the ListenerHook.added() method will be called 
+      // Immediately after registration of a {@link ListenerHook}, the ListenerHook.added() method will be called
       // to provide the current collection of service listeners which had been added prior to the hook being registered.
       Collection<ListenerInfo> listenerInfos = null;
       if (serviceValue instanceof ListenerHook)
@@ -143,7 +143,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          if (clazzes[i] == null)
             throw new IllegalArgumentException("Null service class at index: " + i);
 
-         String prefix = (i == 0 ? "root-service" : "alias-service");
+         String prefix = (i == 0 ? "jbosgi-service" : "jbosgi-alias");
          String shortName = clazzes[i].substring(clazzes[i].lastIndexOf(".") + 1);
          serviceNames[i] = ServiceName.of(prefix, bundleState.getSymbolicName(), shortName, new Long(serviceId).toString());
       }
@@ -191,7 +191,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       {
          batchBuilder.install();
 
-         // Register the name association. We do this here 
+         // Register the name association. We do this here
          // in case anything went wrong during the install
          for (Entry<ServiceName, String> aux : associations.entrySet())
          {
@@ -211,7 +211,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          listenerHook.added(listenerInfos);
       }
 
-      // This event is synchronously delivered after the service has been registered with the Framework. 
+      // This event is synchronously delivered after the service has been registered with the Framework.
       eventsPlugin.fireServiceEvent(bundleState, ServiceEvent.REGISTERED, serviceState);
 
       return serviceState;
@@ -278,7 +278,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          {
             for (ServiceName auxName : auxList)
             {
-               if (auxName.toString().startsWith("root-service"))
+               if (auxName.toString().startsWith("jbosgi-service"))
                   allServiceNames.add(auxName);
             }
          }
@@ -345,7 +345,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
       Object value = serviceState.getScopedValue(bundleState);
 
-      // If the factory returned an invalid value 
+      // If the factory returned an invalid value
       // restore the service usage counts
       if (value == null)
       {
@@ -415,7 +415,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
       AbstractBundle serviceOwner = serviceState.getServiceOwner();
 
-      // This event is synchronously delivered before the service has completed unregistering. 
+      // This event is synchronously delivered before the service has completed unregistering.
       eventsPlugin.fireServiceEvent(serviceOwner, ServiceEvent.UNREGISTERING, serviceState);
 
       // Remove from using bundles
@@ -454,7 +454,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
    /*
     * The FindHook is called when a target bundle searches the service registry
-    * with the getServiceReference or getServiceReferences methods. A registered 
+    * with the getServiceReference or getServiceReferences methods. A registered
     * FindHook service gets a chance to inspect the returned set of service
     * references and can optionally shrink the set of returned services. The order
     * in which the find hooks are called is the reverse compareTo ordering of

@@ -47,14 +47,14 @@ import org.osgi.framework.BundleActivator;
 
 /**
  * Test the bundle content loader.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
 public class FrameworkClassLoaderTestCase
 {
    static ClassLoader classLoader;
-   
+
    @BeforeClass
    public static void beforeClass() throws Exception
    {
@@ -62,7 +62,7 @@ public class FrameworkClassLoaderTestCase
       BundleManager bundleManager = Mockito.mock(BundleManager.class);
       FrameworkState frameworkState = Mockito.mock(FrameworkState.class);
       Mockito.when(bundleManager.getFrameworkState()).thenReturn(frameworkState);
-      
+
       // Mock the BundleManager to return an instance of the {@link SystemPackagesPlugin}
       SystemPackagesPluginImpl sysPackagesPlugin = new SystemPackagesPluginImpl(bundleManager);
       Mockito.when(bundleManager.getPlugin(SystemPackagesPlugin.class)).thenReturn(sysPackagesPlugin);
@@ -70,14 +70,14 @@ public class FrameworkClassLoaderTestCase
       // Get the resolver module for the SystemBundle
       SystemBundle systemBundle = new SystemBundle(bundleManager);
       XModule resModule = systemBundle.getResolverModule();
-      
+
       // Create the Framework module
       ModuleManager moduleManager = new ModuleManager(bundleManager);
       ModuleSpec moduleSpec = moduleManager.createFrameworkSpec(resModule);
-      Module module = moduleManager.loadModule(moduleSpec.getModuleIdentifier());
+      Module module = moduleManager.getModuleLoader().loadModule(moduleSpec.getModuleIdentifier());
       classLoader = module.getClassLoader();
    }
-   
+
    @Test
    public void testLoadJavaClass() throws Exception
    {
@@ -85,7 +85,7 @@ public class FrameworkClassLoaderTestCase
       assertNotNull("HashMap loaded", result);
       assertTrue("Is assignable", HashMap.class.isAssignableFrom(result));
    }
-   
+
    @Test
    public void testLoadJavaXSuccess() throws Exception
    {
@@ -93,7 +93,7 @@ public class FrameworkClassLoaderTestCase
       assertNotNull("MBeanServer loaded", result);
       assertTrue("Is assignable", MBeanServer.class.isAssignableFrom(result));
    }
-   
+
    @Test
    public void testLoadJavaXFail() throws Exception
    {
@@ -107,7 +107,7 @@ public class FrameworkClassLoaderTestCase
          //expected
       }
    }
-   
+
    @Test
    public void testLoadClassSuccess() throws Exception
    {
@@ -115,7 +115,7 @@ public class FrameworkClassLoaderTestCase
       assertNotNull("BundleActivator loaded", result);
       assertTrue("Is assignable", BundleActivator.class.isAssignableFrom(result));
    }
-   
+
    @Test
    public void testLoadClassFail() throws Exception
    {

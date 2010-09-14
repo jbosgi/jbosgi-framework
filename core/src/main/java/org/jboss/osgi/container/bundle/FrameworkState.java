@@ -34,7 +34,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
-import org.jboss.osgi.container.plugin.AutoInstallPlugin;
 import org.jboss.osgi.container.plugin.BundleStoragePlugin;
 import org.jboss.osgi.container.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.container.plugin.Plugin;
@@ -49,7 +48,7 @@ import org.osgi.framework.FrameworkEvent;
 
 /**
  * The Framework state.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 21-Aug-2009
  */
@@ -58,30 +57,30 @@ public class FrameworkState
    // Provide logging
    final Logger log = Logger.getLogger(FrameworkState.class);
 
-   // The framework execution environment 
+   // The framework execution environment
    private static String OSGi_FRAMEWORK_EXECUTIONENVIRONMENT;
-   // The framework language 
+   // The framework language
    private static String OSGi_FRAMEWORK_LANGUAGE = Locale.getDefault().getISO3Language(); // REVIEW correct?
-   // The os name 
+   // The os name
    private static String OSGi_FRAMEWORK_OS_NAME;
-   // The os version 
+   // The os version
    private static String OSGi_FRAMEWORK_OS_VERSION;
-   // The os version 
+   // The os version
    private static String OSGi_FRAMEWORK_PROCESSOR;
-   // The framework vendor 
+   // The framework vendor
    private static String OSGi_FRAMEWORK_VENDOR = "jboss.org";
-   // The framework version. This is the version of the org.osgi.framework package in r4v42 
+   // The framework version. This is the version of the org.osgi.framework package in r4v42
    private static String OSGi_FRAMEWORK_VERSION = "1.5";
 
    // The bundle manager
    private BundleManager bundleManager;
    // The framework properties
-   private Map<String, String> properties;
+   private Map<String, Object> properties;
    // The framework stop monitor
    private AtomicBoolean stopMonitor = new AtomicBoolean(false);
    // The framework stopped event
    private int stoppedEvent = FrameworkEvent.STOPPED;
-   // The framework executor 
+   // The framework executor
    private Executor executor = Executors.newFixedThreadPool(10);
 
    static
@@ -110,7 +109,7 @@ public class FrameworkState
       });
    }
 
-   FrameworkState(BundleManager bundleManager, Map<String, String> props)
+   FrameworkState(BundleManager bundleManager, Map<String, Object> props)
    {
       if (bundleManager == null)
          throw new IllegalArgumentException("Null bundleManager");
@@ -118,7 +117,7 @@ public class FrameworkState
       this.bundleManager = bundleManager;
 
       // Initialize the framework properties
-      properties = new HashMap<String, String>();
+      properties = new HashMap<String, Object>();
       if (props != null)
          properties.putAll(props);
 
@@ -144,24 +143,27 @@ public class FrameworkState
       return bundleManager.getSystemBundle();
    }
 
-   public Map<String, String> getProperties()
+   public Map<String, Object> getProperties()
    {
       return Collections.unmodifiableMap(properties);
    }
 
-   public String getProperty(String key)
+   public Object getRawProperty(String key)
    {
       Object value = properties.get(key);
       if (value == null)
          value = System.getProperty(key);
 
-      if (value instanceof String == false)
-         return null;
-
-      return (String)value;
+      return value;
    }
 
-   public void setProperty(String key, String value)
+   public String getProperty(String key)
+   {
+      Object value = getRawProperty(key);
+      return (value instanceof String ? (String)value : null);
+   }
+
+   public void setProperty(String key, Object value)
    {
       SystemBundle sysBundle = getSystemBundle();
       if (sysBundle != null && sysBundle.getState() != Bundle.INSTALLED)
@@ -191,8 +193,8 @@ public class FrameworkState
    }
 
    /**
-    * Initialize this Framework. 
-    * 
+    * Initialize this Framework.
+    *
     * After calling this method, this Framework must:
     * - Be in the Bundle.STARTING state.
     * - Have a valid Bundle Context.
@@ -200,10 +202,10 @@ public class FrameworkState
     * - Have event handling enabled.
     * - Have reified Bundle objects for all installed bundles.
     * - Have registered any framework services. For example, PackageAdmin, ConditionalPermissionAdmin, StartLevel.
-    * 
+    *
     * This Framework will not actually be started until start is called.
-    * 
-    * This method does nothing if called when this Framework is in the Bundle.STARTING, Bundle.ACTIVE or Bundle.STOPPING states. 
+    *
+    * This method does nothing if called when this Framework is in the Bundle.STARTING, Bundle.ACTIVE or Bundle.STOPPING states.
     */
    public void initFramework() throws BundleException
    {
@@ -255,14 +257,6 @@ public class FrameworkState
       for (Plugin plugin : bundleManager.getPlugins())
          plugin.startPlugin();
 
-      // All installed bundles must be started
-      AutoInstallPlugin autoInstall = bundleManager.getOptionalPlugin(AutoInstallPlugin.class);
-      if (autoInstall != null)
-      {
-         autoInstall.installBundles();
-         autoInstall.startBundles();
-      }
-
       // Increase to initial start level
       StartLevelPlugin startLevel = bundleManager.getOptionalPlugin(StartLevelPlugin.class);
       if (startLevel != null)
@@ -292,25 +286,25 @@ public class FrameworkState
 
    /**
     * Stop this Framework.
-    * 
+    *
     * The method returns immediately to the caller after initiating the following steps to be taken on another thread.
-    * 
+    *
     * 1. This Framework's state is set to Bundle.STOPPING.
-    * 2. All installed bundles must be stopped without changing each bundle's persistent autostart setting. 
+    * 2. All installed bundles must be stopped without changing each bundle's persistent autostart setting.
     * 3. Unregister all services registered by this Framework.
     * 4. Event handling is disabled.
     * 5. This Framework's state is set to Bundle.RESOLVED.
     * 6. All resources held by this Framework are released. This includes threads, bundle class loaders, open files, etc.
     * 7. Notify all threads that are waiting at waitForStop that the stop operation has completed.
-    * 
-    * After being stopped, this Framework may be discarded, initialized or started. 
+    *
+    * After being stopped, this Framework may be discarded, initialized or started.
     */
    public void stopFramework()
    {
       int state = getSystemBundle().getState();
       if (state != Bundle.STARTING && state != Bundle.ACTIVE)
          return;
-      
+
       Runnable cmd = new Runnable()
       {
          public void run()
@@ -333,7 +327,7 @@ public class FrameworkState
       int state = getSystemBundle().getState();
       if (state != Bundle.STARTING && state != Bundle.ACTIVE)
          return;
-      
+
       final int targetState = getSystemBundle().getState();
       Runnable cmd = new Runnable()
       {
@@ -392,7 +386,7 @@ public class FrameworkState
                   }
                   catch (Exception ex)
                   {
-                     // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then 
+                     // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then
                      // published as a framework event of type FrameworkEvent.ERROR
                      bundleManager.fireError(bundleState, "stopping bundle", ex);
                   }
@@ -448,13 +442,13 @@ public class FrameworkState
    }
 
    /**
-    * Wait until this Framework has completely stopped. 
-    * 
-    * The stop and update methods on a Framework performs an asynchronous stop of the Framework. 
-    * This method can be used to wait until the asynchronous stop of this Framework has completed. 
-    * This method will only wait if called when this Framework is in the Bundle.STARTING, Bundle.ACTIVE, or Bundle.STOPPING states. 
+    * Wait until this Framework has completely stopped.
+    *
+    * The stop and update methods on a Framework performs an asynchronous stop of the Framework.
+    * This method can be used to wait until the asynchronous stop of this Framework has completed.
+    * This method will only wait if called when this Framework is in the Bundle.STARTING, Bundle.ACTIVE, or Bundle.STOPPING states.
     * Otherwise it will return immediately.
-    * 
+    *
     * A Framework Event is returned to indicate why this Framework has stopped.
     */
    public FrameworkEvent waitForStop(long timeout) throws InterruptedException

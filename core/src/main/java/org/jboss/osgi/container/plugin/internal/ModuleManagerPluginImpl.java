@@ -30,6 +30,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.container.bundle.AbstractBundle;
+import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.HostBundle;
 import org.jboss.osgi.container.bundle.ModuleManager;
@@ -41,7 +42,7 @@ import org.osgi.framework.Bundle;
 
 /**
  * The module manager plugin.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 06-Jul-2009
  */
@@ -66,15 +67,15 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    }
 
    @Override
-   public ModuleSpec getModuleSpec(ModuleIdentifier identifier)
-   {
-      return moduleManager.getModuleSpec(identifier);
-   }
-
-   @Override
    public Module getModule(ModuleIdentifier identifier)
    {
       return moduleManager.getModule(identifier);
+   }
+
+   @Override
+   public AbstractRevision getBundleRevision(ModuleIdentifier identifier)
+   {
+      return moduleManager.getBundleRevision(identifier);
    }
 
    @Override
@@ -88,7 +89,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    {
       if (resModule == null)
          throw new IllegalArgumentException("Null module");
-      
+
       if (resModule.getModuleId() == 0)
       {
          return moduleManager.createFrameworkSpec(resModule);
@@ -107,7 +108,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    @Override
    public Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException
    {
-      return moduleManager.loadModule(identifier);
+      return moduleManager.getModuleLoader().loadModule(identifier);
    }
 
    @Override

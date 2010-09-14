@@ -34,6 +34,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
+import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.osgi.container.plugin.AutoInstallPlugin;
 import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.container.plugin.BundleStoragePlugin;
 import org.jboss.osgi.container.plugin.DeployerServicePlugin;
@@ -47,6 +50,7 @@ import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
+import org.jboss.osgi.container.plugin.internal.AutoInstallPluginImpl;
 import org.jboss.osgi.container.plugin.internal.BundleDeploymentPluginImpl;
 import org.jboss.osgi.container.plugin.internal.BundleStoragePluginImpl;
 import org.jboss.osgi.container.plugin.internal.DeployerServicePluginImpl;
@@ -72,7 +76,7 @@ import org.osgi.framework.FrameworkEvent;
 
 /**
  * OSGiBundleManager.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
@@ -81,31 +85,36 @@ public class BundleManager
 {
    // Provide logging
    private final Logger log = Logger.getLogger(BundleManager.class);
-   
-   // The BundleId generator 
+
+   // The BundleId generator
    private AtomicLong identityGenerator = new AtomicLong();
    // The sytem bundle
    private SystemBundle systemBundle;
    // Maps bundleId to Bundle
    private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
-   /// The registered plugins 
+   /// The registered plugins
    private Map<Class<? extends Plugin>, Plugin> plugins = new LinkedHashMap<Class<? extends Plugin>, Plugin>();
    // The Framework state
    private FrameworkState frameworkState;
 
-   public BundleManager(Map<String, String> props)
+   public BundleManager(Map<String, Object> props)
    {
+      // Get/Create the {@link ServiceContainer}
+      ServiceController<?> serviceController = (ServiceController<?>)props.get(ServiceController.class.getName());
+      ServiceContainer serviceContainer = serviceController != null ? serviceController.getServiceContainer() : ServiceContainer.Factory.create();
+
       // Register the framework plugins
       // [TODO] Externalize plugin registration
+      plugins.put(AutoInstallPlugin.class, new AutoInstallPluginImpl(this));
       plugins.put(BundleDeploymentPlugin.class, new BundleDeploymentPluginImpl(this));
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
       plugins.put(FrameworkEventsPlugin.class, new FrameworkEventsPluginImpl(this));
       plugins.put(ModuleManagerPlugin.class, new ModuleManagerPluginImpl(this));
       plugins.put(NativeCodePlugin.class, new NativeCodePluginImpl(this));
       plugins.put(ResolverPlugin.class, new ResolverPluginImpl(this));
-      plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
+      plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this, serviceContainer));
       plugins.put(SystemPackagesPlugin.class, new SystemPackagesPluginImpl(this));
-      
+
       // Register system service plugins
       plugins.put(DeployerServicePlugin.class, new DeployerServicePluginImpl(this));
       plugins.put(LifecycleInterceptorPlugin.class, new LifecycleInterceptorPluginImpl(this));
@@ -159,7 +168,7 @@ public class BundleManager
       // Register the bundle with the manager
       bundleMap.put(bundleId, bundleState);
       bundleState.changeState(Bundle.INSTALLED);
-      
+
       // Add the bundle to the resolver
       bundleState.addToResolver();
    }
@@ -185,10 +194,10 @@ public class BundleManager
 
    /**
     * Get a bundle by id
-    * 
+    *
     * Note, this will get the bundle regadless of its state.
-    * i.e. The returned bundle may have been UNINSTALLED 
-    * 
+    * i.e. The returned bundle may have been UNINSTALLED
+    *
     * @param bundleId The identifier of the bundle
     * @return The bundle or null if there is no bundle with that id
     */
@@ -202,10 +211,10 @@ public class BundleManager
 
    /**
     * Get a bundle by location
-    * 
+    *
     * Note, this will get the bundle regadless of its state.
     * i.e. The returned bundle may have been UNINSTALLED
-    *  
+    *
     * @param location the location of the bundle
     * @return the bundle or null if there is no bundle with that location
     */
@@ -229,12 +238,12 @@ public class BundleManager
 
    /**
     * Get a bundle by symbolic name and version
-    * 
+    *
     * Note, this will get the bundle regadless of its state.
     * i.e. The returned bundle may have been UNINSTALLED
-    *  
+    *
     * @param symbolicName The bundle symbolic name
-    * @param versionRange The optional bundle version 
+    * @param versionRange The optional bundle version
     * @return The bundle or null if there is no bundle with that name and version
     */
    public AbstractBundle getBundle(String symbolicName, String versionRange)
@@ -272,8 +281,8 @@ public class BundleManager
    /**
     * Get the list of bundles that are in one of the given states.
     * If the states pattern is null, it returns all registered bundles.
-    * 
-    * @param states The binary or combination of states or null 
+    *
+    * @param states The binary or combination of states or null
     */
    public List<AbstractBundle> getBundles(Integer states)
    {
@@ -398,15 +407,15 @@ public class BundleManager
    }
 
    /**
-    * Install a bundle from a {@link Deployment} 
+    * Install a bundle from a {@link Deployment}
     */
    private AbstractBundle installBundle(Deployment dep) throws BundleException
    {
       if (dep == null)
          throw new IllegalArgumentException("Null deployment");
 
-      // If a bundle containing the same location identifier is already installed, 
-      // the Bundle object for that bundle is returned. 
+      // If a bundle containing the same location identifier is already installed,
+      // the Bundle object for that bundle is returned.
       AbstractBundle bundleState = getBundleByLocation(dep.getLocation());
       if (bundleState != null)
          return bundleState;
@@ -420,9 +429,9 @@ public class BundleManager
          deleteContentRoot(dep.getRoot());
          throw ex;
       }
-      
+
       addBundleState(bundleState);
-      
+
       return bundleState;
    }
 
@@ -437,11 +446,11 @@ public class BundleManager
       boolean isFragment = metadata.getFragmentHost() != null;
       AbstractBundle bundleState = (isFragment ? new FragmentBundle(this, dep) : new HostBundle(this, dep));
       dep.addAttachment(AbstractBundle.class, bundleState);
-      
+
       // Validate the deployed bundle
       // The system bundle is not validated
       validateBundle(bundleState);
-      
+
       // Process the Bundle-NativeCode header if there is one
       if (metadata.getBundleNativeCode() != null)
       {
@@ -449,7 +458,7 @@ public class BundleManager
          if (nativeCodePlugin != null)
             nativeCodePlugin.deployNativeCode(dep);
       }
-      
+
       return bundleState;
    }
 
@@ -536,10 +545,10 @@ public class BundleManager
    {
       if (rootFile == null)
          throw new IllegalArgumentException("Null rootFile");
-      
+
       String contentRootPath = rootFile.getPathName();
       rootFile.close();
-      
+
       File streamDir = getPlugin(BundleStoragePlugin.class).getBundleStreamDir();
       if (contentRootPath.startsWith(streamDir.getAbsolutePath()))
       {

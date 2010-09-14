@@ -38,6 +38,7 @@ import org.jboss.osgi.container.bundle.AbstractBundle;
 import org.jboss.osgi.container.bundle.AbstractRevision;
 import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ModuleManager;
+import org.jboss.osgi.container.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.osgi.framework.Bundle;
@@ -55,15 +56,17 @@ public class ModuleClassLoaderExt implements LocalLoader, BundleReference
    private static final Logger log = Logger.getLogger(ModuleClassLoaderExt.class);
 
    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
-   private final ModuleManager moduleManager;
+   private final ModuleManagerPlugin moduleManager;
    private final BundleManager bundleManager;
    private final ModuleIdentifier id;
 
-   public ModuleClassLoaderExt(ModuleIdentifier id, ModuleManager manager)
+
+   public ModuleClassLoaderExt(BundleManager bundleManager, ModuleIdentifier id)
    {
-      moduleManager = manager;
-      bundleManager = moduleManager.getBundleManager();
+      this.bundleManager = bundleManager;
       this.id= id;
+
+      moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
    }
 
    @Override
