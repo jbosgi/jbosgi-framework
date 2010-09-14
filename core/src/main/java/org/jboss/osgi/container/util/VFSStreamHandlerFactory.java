@@ -23,12 +23,17 @@ package org.jboss.osgi.container.util;
 
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
+import java.util.ServiceLoader;
 
 /**
- * A helper for URL convertions that does not throw checked exceptions.
+ * A URLStreamHandlerFactory that can be loaded from a {@link ServiceLoader}
+ *
+ * [JBVFS-164] Add a URLStreamHandlerFactory service
+ *
+ * [TODO] Remove when this is supported by jboss-vfs
  *
  * @author thomas.diesler@jboss.com
- * @since 19-Dec-2009
+ * @since 14-Sep-2010
  */
 public final class VFSStreamHandlerFactory implements URLStreamHandlerFactory
 {
