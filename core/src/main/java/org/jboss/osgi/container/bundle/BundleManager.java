@@ -105,7 +105,6 @@ public class BundleManager
 
       // Register the framework plugins
       // [TODO] Externalize plugin registration
-      plugins.put(AutoInstallPlugin.class, new AutoInstallPluginImpl(this));
       plugins.put(BundleDeploymentPlugin.class, new BundleDeploymentPluginImpl(this));
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
       plugins.put(FrameworkEventsPlugin.class, new FrameworkEventsPluginImpl(this));
@@ -121,6 +120,9 @@ public class BundleManager
       plugins.put(WebXMLVerifierInterceptor.class, new WebXMLVerifierInterceptor(this));
       plugins.put(PackageAdminPlugin.class, new PackageAdminPluginImpl(this));
       plugins.put(StartLevelPlugin.class, new StartLevelPluginImpl(this));
+
+      // Finally add the AutoInstallPlugin
+      plugins.put(AutoInstallPlugin.class, new AutoInstallPluginImpl(this));
 
       frameworkState = new FrameworkState(this, props);
    }

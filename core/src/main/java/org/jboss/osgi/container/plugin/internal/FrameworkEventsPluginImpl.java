@@ -68,9 +68,9 @@ import org.osgi.framework.hooks.service.ListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 
 /**
- * A plugin that manages {@link FrameworkListener}, {@link BundleListener}, {@link ServiceListener} and their 
+ * A plugin that manages {@link FrameworkListener}, {@link BundleListener}, {@link ServiceListener} and their
  * associated {@link FrameworkEvent}, {@link BundleEvent}, {@link ServiceEvent}.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
@@ -107,6 +107,9 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       asyncBundleEvents.add(new Integer(BundleEvent.UNRESOLVED));
       asyncBundleEvents.add(new Integer(BundleEvent.UNINSTALLED));
       infoEvents.add(ConstantsHelper.frameworkEvent(FrameworkEvent.PACKAGES_REFRESHED));
+      infoEvents.add(ConstantsHelper.frameworkEvent(FrameworkEvent.ERROR));
+      infoEvents.add(ConstantsHelper.frameworkEvent(FrameworkEvent.WARNING));
+      infoEvents.add(ConstantsHelper.frameworkEvent(FrameworkEvent.INFO));
       infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.INSTALLED));
       infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.STARTED));
       infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.STOPPED));
@@ -246,15 +249,15 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
             serviceListeners.put(bundle, listeners);
          }
 
-         // If the context bundle's list of listeners already contains a listener l such that (l==listener), 
-         // then this method replaces that listener's filter (which may be null) with the specified one (which may be null). 
+         // If the context bundle's list of listeners already contains a listener l such that (l==listener),
+         // then this method replaces that listener's filter (which may be null) with the specified one (which may be null).
          removeServiceListener(bundle, listener);
 
          // Create the new listener registration
          Filter filter = (filterstr != null ? FrameworkUtil.createFilter(filterstr) : NoFilter.INSTANCE);
          ServiceListenerRegistration slreg = new ServiceListenerRegistration(bundle, listener, filter);
 
-         // The {@link ListenerHook} added method is called to provide the hook implementation with information on newly added service listeners. 
+         // The {@link ListenerHook} added method is called to provide the hook implementation with information on newly added service listeners.
          // This method will be called as service listeners are added while this hook is registered
          for (ListenerHook hook : getServiceListenerHooks())
          {
@@ -310,8 +313,8 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
             {
                slreg = listeners.remove(index);
 
-               // The {@link ListenerHook} 'removed' method is called to provide the hook implementation with information on newly removed service listeners. 
-               // This method will be called as service listeners are removed while this hook is registered. 
+               // The {@link ListenerHook} 'removed' method is called to provide the hook implementation with information on newly removed service listeners.
+               // This method will be called as service listeners are removed while this hook is registered.
                for (ListenerHook hook : getServiceListenerHooks())
                {
                   try
@@ -338,8 +341,8 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
          Collection<ListenerInfo> listenerInfos = getServiceListenerInfos(bundle);
          serviceListeners.remove(assertBundle(bundle));
 
-         // The {@link ListenerHook} 'removed' method is called to provide the hook implementation with information on newly removed service listeners. 
-         // This method will be called as service listeners are removed while this hook is registered. 
+         // The {@link ListenerHook} 'removed' method is called to provide the hook implementation with information on newly removed service listeners.
+         // This method will be called as service listeners are removed while this hook is registered.
          for (ListenerHook hook : getServiceListenerHooks())
          {
             try
@@ -392,21 +395,21 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
          }
       }
 
-      // Expose the bundl wrapper not the state itself
+      // Expose the bundle wrapper not the state itself
       final BundleEvent event = new BundleEventImpl(type, assertBundle(bundle));
       final String typeName = ConstantsHelper.bundleEvent(event.getType());
 
-      if (infoEvents.contains(ConstantsHelper.bundleEvent(event.getType())))
+      if (infoEvents.contains(typeName))
          log.info("Bundle " + typeName + ": " + bundle);
       else
          log.debug("Bundle " + typeName + ": " + bundle);
 
-      // Nobody is interested
-      if (listeners.isEmpty())
-         return;
-
       // Are we active?
       if (getBundleManager().isFrameworkActive() == false)
+         return;
+
+      // Nobody is interested
+      if (listeners.isEmpty())
          return;
 
       // Synchronous listeners first
@@ -427,7 +430,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       {
          public void run()
          {
-            // BundleListeners are called with a BundleEvent object when a bundle has been 
+            // BundleListeners are called with a BundleEvent object when a bundle has been
             // installed, resolved, started, stopped, updated, unresolved, or uninstalled
             if (asyncBundleEvents.contains(type))
             {
@@ -467,35 +470,37 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
          }
       }
 
-      // Nobody is interested
-      if (listeners.isEmpty())
-         return;
+      // Expose the wrapper not the state itself
+      final FrameworkEvent event = new FrameworkEventImpl(type, assertBundle(bundle), throwable);
+      final String typeName = ConstantsHelper.frameworkEvent(event.getType());
+
+      switch (event.getType())
+      {
+         case FrameworkEvent.ERROR:
+            log.error("Framwork " + typeName, throwable);
+            break;
+         case FrameworkEvent.WARNING:
+            log.warn("Framwork " + typeName, throwable);
+            break;
+         default:
+            if (infoEvents.contains(typeName))
+               log.info("Framwork " + typeName, throwable);
+            else
+               log.debug("Framwork " + typeName, throwable);
+      }
 
       // Are we active?
       if (getBundleManager().isFrameworkActive() == false)
+         return;
+
+      // Nobody is interested
+      if (listeners.isEmpty())
          return;
 
       Runnable runnable = new Runnable()
       {
          public void run()
          {
-            // Expose the wrapper not the state itself
-            FrameworkEvent event = new FrameworkEventImpl(type, assertBundle(bundle), throwable);
-            String typeName = ConstantsHelper.frameworkEvent(event.getType());
-
-            if (infoEvents.contains(ConstantsHelper.frameworkEvent(event.getType())))
-               log.info("Framwork " + typeName);
-            else
-               log.debug("Framwork " + typeName);
-
-            // Nobody is interested
-            if (frameworkListeners.isEmpty())
-               return;
-
-            // Are we active?
-            if (getBundleManager().isFrameworkActive() == false)
-               return;
-
             // Call the listeners
             for (FrameworkListener listener : listeners)
             {
@@ -549,7 +554,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       ServiceEvent event = new ServiceEventImpl(type, new ServiceReferenceWrapper(serviceState));
       String typeName = ConstantsHelper.serviceEvent(event.getType());
 
-      if (infoEvents.contains(ConstantsHelper.serviceEvent(event.getType())))
+      if (infoEvents.contains(typeName))
          log.info("Service " + typeName + ": " + serviceState);
       else
          log.debug("Service " + typeName + ": " + serviceState);
@@ -576,10 +581,10 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
                listener.listener.serviceChanged(event);
             }
 
-            // The MODIFIED_ENDMATCH event is synchronously delivered after the service properties have been modified. 
-            // This event is only delivered to listeners which were added with a non-null filter where 
-            // the filter matched the service properties prior to the modification but the filter does 
-            // not match the modified service properties. 
+            // The MODIFIED_ENDMATCH event is synchronously delivered after the service properties have been modified.
+            // This event is only delivered to listeners which were added with a non-null filter where
+            // the filter matched the service properties prior to the modification but the filter does
+            // not match the modified service properties.
             else if (filterstr != null && ServiceEvent.MODIFIED == event.getType())
             {
                if (listener.filter.match(serviceState.getPreviousProperties()))
@@ -652,7 +657,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       if (srefs != null)
       {
          // The calling order of the hooks is defined by the reversed compareTo ordering of their Service
-         // Reference objects. That is, the service with the highest ranking number is called first. 
+         // Reference objects. That is, the service with the highest ranking number is called first.
          List<ServiceReference> sortedRefs = new ArrayList<ServiceReference>(Arrays.asList(srefs));
          Collections.reverse(sortedRefs);
 
@@ -791,8 +796,8 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       @Override
       public boolean equals(Object obj)
       {
-         // Two ListenerInfos are equals if they refer to the same listener for a given addition and removal life cycle. 
-         // If the same listener is added again, it must have a different ListenerInfo which is not equal to this ListenerInfo. 
+         // Two ListenerInfos are equals if they refer to the same listener for a given addition and removal life cycle.
+         // If the same listener is added again, it must have a different ListenerInfo which is not equal to this ListenerInfo.
          return super.equals(obj);
       }
 
