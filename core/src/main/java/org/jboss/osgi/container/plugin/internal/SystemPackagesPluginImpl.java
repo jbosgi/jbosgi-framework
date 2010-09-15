@@ -29,14 +29,13 @@ import java.util.List;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.FrameworkState;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.osgi.framework.Constants;
 
 /**
  * A plugin manages the Framework's system packages.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
@@ -45,23 +44,18 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
    // Provide logging
    final Logger log = Logger.getLogger(SystemPackagesPluginImpl.class);
 
-   // The derived combination of all system packages 
+   // The derived combination of all system packages
    private List<String> allPackages = new ArrayList<String>();
-   // The derived combination of all system packages without version specifier 
+   // The derived combination of all system packages without version specifier
    private List<String> allPackageNames = new ArrayList<String>();
-   // The boot delegation packages 
+   // The boot delegation packages
    private List<String> bootDelegationPackages = new ArrayList<String>();
 
    public SystemPackagesPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
-   }
 
-   private void initSystemPackages()
-   {
-      FrameworkState frameworkState = getBundleManager().getFrameworkState();
-      String systemPackages = frameworkState.getProperty(Constants.FRAMEWORK_SYSTEMPACKAGES);
-
+      String systemPackages = (String)bundleManager.getProperty(Constants.FRAMEWORK_SYSTEMPACKAGES);
       if (systemPackages != null)
       {
          allPackages.addAll(packagesAsList(systemPackages));
@@ -128,13 +122,13 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
          allPackages.add("org.xml.sax");
          allPackages.add("org.xml.sax.ext");
          allPackages.add("org.xml.sax.helpers");
-         
+
          String asString = packagesAsString(allPackages);
-         frameworkState.setProperty(Constants.FRAMEWORK_SYSTEMPACKAGES, asString);
+         bundleManager.setProperty(Constants.FRAMEWORK_SYSTEMPACKAGES, asString);
       }
 
       // Add the extra system packages
-      String extraPackages = frameworkState.getProperty(Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA);
+      String extraPackages = (String)bundleManager.getProperty(Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA);
       if (extraPackages != null)
       {
          allPackages.addAll(packagesAsList(extraPackages));
@@ -152,9 +146,9 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
 
          allPackageNames.add(name);
       }
-      
+
       // Initialize the boot delegation package names
-      String bootDelegationProp = frameworkState.getProperty(Constants.FRAMEWORK_BOOTDELEGATION);
+      String bootDelegationProp = (String)bundleManager.getProperty(Constants.FRAMEWORK_BOOTDELEGATION);
       if (bootDelegationProp != null)
       {
          String[] packageNames = bootDelegationProp.split(",");
@@ -172,54 +166,46 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
    @Override
    public List<String> getBootDelegationPackages()
    {
-      if (allPackages.isEmpty())
-         initSystemPackages();
-      
+      assertInitialized();
       return Collections.unmodifiableList(bootDelegationPackages);
    }
 
    @Override
    public boolean isBootDelegationPackage(String name)
    {
+      assertInitialized();
       if (name == null)
          throw new IllegalArgumentException("Null package name");
 
-      if (allPackages.isEmpty())
-         initSystemPackages();
-
       if (name.startsWith("java."))
          return true;
-      
+
       if (bootDelegationPackages.contains(name))
          return true;
-      
+
       // Match foo with foo.*
       for (String aux : bootDelegationPackages)
       {
          if (aux.endsWith(".*") && name.startsWith(aux.substring(0, aux.length() -2 )))
             return true;
       }
-      
+
       return false;
    }
 
    @Override
    public List<String> getSystemPackages(boolean version)
    {
-      if (allPackages.isEmpty())
-         initSystemPackages();
-
+      assertInitialized();
       return Collections.unmodifiableList(version ? allPackages : allPackageNames);
    }
 
    @Override
    public boolean isSystemPackage(String name)
    {
+      assertInitialized();
       if (name == null)
          throw new IllegalArgumentException("Null package name");
-      
-      if (allPackages.isEmpty())
-         initSystemPackages();
 
       // [TODO] version specifier for system packages
       int semiIndex = name.indexOf(';');
@@ -251,5 +237,11 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
             result.add(name);
       }
       return result;
+   }
+
+   private void assertInitialized()
+   {
+      if (allPackages.isEmpty())
+         throw new IllegalStateException("SystemPackagesPlugin not initialized");
    }
 }

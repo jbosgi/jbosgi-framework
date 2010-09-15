@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.container.bundle.BundleManager;
@@ -72,21 +71,25 @@ public class AutoInstallPluginImpl extends AbstractPlugin implements AutoInstall
    @Override
    public void initPlugin()
    {
-      FrameworkState frameworkState = getBundleManager().getFrameworkState();
-      for (Entry<String, Object> entry : frameworkState.getProperties().entrySet())
+      FrameworkState framework = getBundleManager().getFrameworkState();
+      String propValue = framework.getProperty(PROP_JBOSS_OSGI_AUTO_INSTALL);
+      if (propValue != null)
       {
-         String key = entry.getKey();
-         if (key.startsWith(PROP_JBOSS_OSGI_AUTO_INSTALL))
+         for (String path : propValue.split(","))
          {
-            URL url = toURL(entry.getValue().toString());
+            URL url = toURL(path.trim());
             if (url != null)
             {
                addAutoInstall(url);
             }
          }
-         if (key.startsWith(PROP_JBOSS_OSGI_AUTO_START))
+      }
+      propValue = framework.getProperty(PROP_JBOSS_OSGI_AUTO_START);
+      if (propValue != null)
+      {
+         for (String path : propValue.split(","))
          {
-            URL url = toURL(entry.getValue().toString());
+            URL url = toURL(path.trim());
             if (url != null)
             {
                addAutoStart(url);

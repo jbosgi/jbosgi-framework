@@ -21,11 +21,12 @@
  */
 package org.jboss.osgi.container.bundle;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -45,6 +46,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.launch.Framework;
 
 /**
  * The Framework state.
@@ -52,7 +54,7 @@ import org.osgi.framework.FrameworkEvent;
  * @author thomas.diesler@jboss.com
  * @since 21-Aug-2009
  */
-public class FrameworkState
+public class FrameworkState extends SystemBundle implements Framework
 {
    // Provide logging
    final Logger log = Logger.getLogger(FrameworkState.class);
@@ -72,10 +74,8 @@ public class FrameworkState
    // The framework version. This is the version of the org.osgi.framework package in r4v42
    private static String OSGi_FRAMEWORK_VERSION = "1.5";
 
-   // The bundle manager
-   private BundleManager bundleManager;
-   // The framework properties
-   private Map<String, Object> properties;
+   // The Framework wrapper
+   private FrameworkWrapper frameworkWrapper;
    // The framework stop monitor
    private AtomicBoolean stopMonitor = new AtomicBoolean(false);
    // The framework stopped event
@@ -109,87 +109,72 @@ public class FrameworkState
       });
    }
 
-   FrameworkState(BundleManager bundleManager, Map<String, Object> props)
+   FrameworkState(BundleManager bundleManager)
    {
-      if (bundleManager == null)
-         throw new IllegalArgumentException("Null bundleManager");
-
-      this.bundleManager = bundleManager;
-
-      // Initialize the framework properties
-      properties = new HashMap<String, Object>();
-      if (props != null)
-         properties.putAll(props);
+      super(bundleManager);
 
       // Init default framework properties
-      if (getProperty(Constants.FRAMEWORK_EXECUTIONENVIRONMENT) == null)
-         setProperty(Constants.FRAMEWORK_EXECUTIONENVIRONMENT, OSGi_FRAMEWORK_EXECUTIONENVIRONMENT);
-      if (getProperty(Constants.FRAMEWORK_LANGUAGE) == null)
-         setProperty(Constants.FRAMEWORK_LANGUAGE, OSGi_FRAMEWORK_LANGUAGE);
-      if (getProperty(Constants.FRAMEWORK_OS_NAME) == null)
-         setProperty(Constants.FRAMEWORK_OS_NAME, OSGi_FRAMEWORK_OS_NAME);
-      if (getProperty(Constants.FRAMEWORK_OS_VERSION) == null)
-         setProperty(Constants.FRAMEWORK_OS_VERSION, OSGi_FRAMEWORK_OS_VERSION);
-      if (getProperty(Constants.FRAMEWORK_PROCESSOR) == null)
-         setProperty(Constants.FRAMEWORK_PROCESSOR, OSGi_FRAMEWORK_PROCESSOR);
-      if (getProperty(Constants.FRAMEWORK_VENDOR) == null)
-         setProperty(Constants.FRAMEWORK_VENDOR, OSGi_FRAMEWORK_VENDOR);
-      if (getProperty(Constants.FRAMEWORK_VERSION) == null)
-         setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
+      if (bundleManager.getProperty(Constants.FRAMEWORK_EXECUTIONENVIRONMENT) == null)
+         bundleManager.setProperty(Constants.FRAMEWORK_EXECUTIONENVIRONMENT, OSGi_FRAMEWORK_EXECUTIONENVIRONMENT);
+      if (bundleManager.getProperty(Constants.FRAMEWORK_LANGUAGE) == null)
+         bundleManager.setProperty(Constants.FRAMEWORK_LANGUAGE, OSGi_FRAMEWORK_LANGUAGE);
+      if (bundleManager.getProperty(Constants.FRAMEWORK_OS_NAME) == null)
+         bundleManager.setProperty(Constants.FRAMEWORK_OS_NAME, OSGi_FRAMEWORK_OS_NAME);
+      if (bundleManager.getProperty(Constants.FRAMEWORK_OS_VERSION) == null)
+         bundleManager.setProperty(Constants.FRAMEWORK_OS_VERSION, OSGi_FRAMEWORK_OS_VERSION);
+      if (bundleManager.getProperty(Constants.FRAMEWORK_PROCESSOR) == null)
+         bundleManager.setProperty(Constants.FRAMEWORK_PROCESSOR, OSGi_FRAMEWORK_PROCESSOR);
+      if (bundleManager.getProperty(Constants.FRAMEWORK_VENDOR) == null)
+         bundleManager.setProperty(Constants.FRAMEWORK_VENDOR, OSGi_FRAMEWORK_VENDOR);
+      if (bundleManager.getProperty(Constants.FRAMEWORK_VERSION) == null)
+         bundleManager.setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
    }
 
-   public SystemBundle getSystemBundle()
+   public Framework getBundleWrapper()
    {
-      return bundleManager.getSystemBundle();
+      if (frameworkWrapper == null)
+         frameworkWrapper = new FrameworkWrapper(this);
+      return frameworkWrapper;
    }
 
    public Map<String, Object> getProperties()
    {
+      Map<String, Object> properties = getBundleManager().getProperties();
       return Collections.unmodifiableMap(properties);
-   }
-
-   public Object getRawProperty(String key)
-   {
-      Object value = properties.get(key);
-      if (value == null)
-         value = System.getProperty(key);
-
-      return value;
    }
 
    public String getProperty(String key)
    {
-      Object value = getRawProperty(key);
+      Object value = getBundleManager().getProperty(key);
+      if (value == null)
+         value = System.getProperty(key);
+
       return (value instanceof String ? (String)value : null);
    }
 
    public void setProperty(String key, Object value)
    {
-      SystemBundle sysBundle = getSystemBundle();
-      if (sysBundle != null && sysBundle.getState() != Bundle.INSTALLED)
-         throw new IllegalStateException("Cannot add property to ACTIVE framwork");
-
-      properties.put(key, value);
+      getBundleManager().setProperty(key, value);
    }
 
    /**
-    * True when the {@link getSystemBundle()} is active.
+    * True when the {@link this} is active.
     */
    boolean isFrameworkActive()
    {
       // We are active if the system bundle is ACTIVE
-      return getSystemBundle().getState() == Bundle.ACTIVE;
+      return getState() == Bundle.ACTIVE;
    }
 
    /**
-    * Assert that the {@link getSystemBundle()} is active.
+    * Assert that the {@link this} is active.
     * @throws IllegalStateException if not
     */
    void assertFrameworkActive()
    {
-      int systemState = getSystemBundle().getState();
+      int systemState = getState();
       if (systemState != Bundle.ACTIVE)
-         throw new IllegalStateException("getSystemBundle() not ACTIVE, it is: " + ConstantsHelper.bundleState(systemState));
+         throw new IllegalStateException("this not ACTIVE, it is: " + ConstantsHelper.bundleState(systemState));
    }
 
    /**
@@ -207,10 +192,11 @@ public class FrameworkState
     *
     * This method does nothing if called when this Framework is in the Bundle.STARTING, Bundle.ACTIVE or Bundle.STOPPING states.
     */
-   public void initFramework() throws BundleException
+   @Override
+   public void init() throws BundleException
    {
       // This method does nothing if called when this Framework is in the STARTING, ACTIVE or STOPPING state
-      int state = getSystemBundle().getState();
+      int state = getState();
       if (state == Bundle.STARTING || state == Bundle.ACTIVE || state == Bundle.STOPPING)
          return;
 
@@ -220,56 +206,63 @@ public class FrameworkState
       log.info(implTitle + " - " + implVersion);
 
       // Put into the STARTING state
-      getSystemBundle().changeState(Bundle.STARTING);
+      changeState(Bundle.STARTING);
 
       // Create the system bundle context
-      getSystemBundle().createBundleContext();
+      createBundleContext();
 
       // Have event handling enabled
-      FrameworkEventsPlugin eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
+      FrameworkEventsPlugin eventsPlugin = getBundleManager().getPlugin(FrameworkEventsPlugin.class);
       eventsPlugin.setActive(true);
 
       // Init Plugins Lifecycle
-      for (Plugin plugin : bundleManager.getPlugins())
+      for (Plugin plugin : getBundleManager().getPlugins())
          plugin.initPlugin();
 
       // Cleanup the storage area
       String storageClean = getProperty(Constants.FRAMEWORK_STORAGE_CLEAN);
-      BundleStoragePlugin storagePlugin = bundleManager.getOptionalPlugin(BundleStoragePlugin.class);
+      BundleStoragePlugin storagePlugin = getBundleManager().getOptionalPlugin(BundleStoragePlugin.class);
       if (storagePlugin != null)
          storagePlugin.cleanStorage(storageClean);
    }
 
-   public void startFramework() throws BundleException
+   @Override
+   public void start() throws BundleException
+   {
+      start(0);
+   }
+
+   @Override
+   public void start(int options) throws BundleException
    {
       // If this Framework is not in the STARTING state, initialize this Framework
-      if (getSystemBundle().getState() != Bundle.STARTING)
-         initFramework();
+      if (getState() != Bundle.STARTING)
+         init();
 
       // Resolve the system bundle
-      ResolverPlugin resolver = bundleManager.getPlugin(ResolverPlugin.class);
-      resolver.resolve(getSystemBundle().getResolverModule());
+      ResolverPlugin resolver = getBundleManager().getPlugin(ResolverPlugin.class);
+      resolver.resolve(getResolverModule());
 
       // This Framework's state is set to ACTIVE
-      getSystemBundle().changeState(Bundle.ACTIVE);
+      changeState(Bundle.ACTIVE);
 
       // Start Plugins Lifecycle
-      for (Plugin plugin : bundleManager.getPlugins())
+      for (Plugin plugin : getBundleManager().getPlugins())
          plugin.startPlugin();
 
       // Increase to initial start level
-      StartLevelPlugin startLevel = bundleManager.getOptionalPlugin(StartLevelPlugin.class);
+      StartLevelPlugin startLevel = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
       if (startLevel != null)
          startLevel.increaseStartLevel(getBeginningStartLevel());
 
       // A framework event of type STARTED is fired
-      FrameworkEventsPlugin plugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
-      plugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
+      FrameworkEventsPlugin plugin = getBundleManager().getPlugin(FrameworkEventsPlugin.class);
+      plugin.fireFrameworkEvent(this, FrameworkEvent.STARTED, null);
    }
 
    private int getBeginningStartLevel()
    {
-      String beginning = bundleManager.getSystemContext().getProperty(Constants.FRAMEWORK_BEGINNING_STARTLEVEL);
+      String beginning = getBundleManager().getSystemContext().getProperty(Constants.FRAMEWORK_BEGINNING_STARTLEVEL);
       if (beginning == null)
          return 1;
 
@@ -282,6 +275,12 @@ public class FrameworkState
          log.error("Could not set beginning start level to: '" + beginning + "'");
          return 1;
       }
+   }
+
+   @Override
+   public void stop() throws BundleException
+   {
+      stop(0);
    }
 
    /**
@@ -299,9 +298,10 @@ public class FrameworkState
     *
     * After being stopped, this Framework may be discarded, initialized or started.
     */
-   public void stopFramework()
+   @Override
+   public void stop(int options)
    {
-      int state = getSystemBundle().getState();
+      int state = getState();
       if (state != Bundle.STARTING && state != Bundle.ACTIVE)
          return;
 
@@ -322,13 +322,31 @@ public class FrameworkState
       executor.execute(cmd);
    }
 
-   public void updateFramework()
+   @Override
+   public void update(InputStream input) throws BundleException
    {
-      int state = getSystemBundle().getState();
+      if (input != null)
+      {
+         try
+         {
+            input.close();
+         }
+         catch (IOException ex)
+         {
+            // ignore
+         }
+      }
+      update();
+   }
+
+   @Override
+   public void update()
+   {
+      int state = getState();
       if (state != Bundle.STARTING && state != Bundle.ACTIVE)
          return;
 
-      final int targetState = getSystemBundle().getState();
+      final int targetState = getState();
       Runnable cmd = new Runnable()
       {
          public void run()
@@ -337,9 +355,9 @@ public class FrameworkState
             {
                stopInternal(true);
                if (targetState == Bundle.STARTING)
-                  initFramework();
+                  init();
                if (targetState == Bundle.ACTIVE)
-                  startFramework();
+                  start();
             }
             catch (Exception ex)
             {
@@ -357,16 +375,16 @@ public class FrameworkState
          synchronized (stopMonitor)
          {
             // If the Framework is not STARTING and not ACTIVE there is nothing to do
-            int state = getSystemBundle().getState();
+            int state = getState();
             if (state != Bundle.STARTING && state != Bundle.ACTIVE)
                return;
 
             stoppedEvent = stopForUpdate ? FrameworkEvent.STOPPED_UPDATE : FrameworkEvent.STOPPED;
-            getSystemBundle().changeState(Bundle.STOPPING);
+            changeState(Bundle.STOPPING);
          }
 
          // Move to start level 0 in the current thread
-         StartLevelPlugin startLevel = bundleManager.getOptionalPlugin(StartLevelPlugin.class);
+         StartLevelPlugin startLevel = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
          if (startLevel != null)
          {
             startLevel.decreaseStartLevel(0);
@@ -375,9 +393,9 @@ public class FrameworkState
          {
             // No Start Level Service available, stop all bundles individually...
             // All installed bundles must be stopped without changing each bundle's persistent autostart setting
-            for (AbstractBundle bundleState : bundleManager.getBundles())
+            for (AbstractBundle bundleState : getBundleManager().getBundles())
             {
-               if (bundleState != getSystemBundle())
+               if (bundleState != this)
                {
                   try
                   {
@@ -388,14 +406,14 @@ public class FrameworkState
                   {
                      // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then
                      // published as a framework event of type FrameworkEvent.ERROR
-                     bundleManager.fireError(bundleState, "stopping bundle", ex);
+                     getBundleManager().fireError(bundleState, "stopping bundle", ex);
                   }
                }
             }
          }
 
          // Stop Plugins Lifecycle
-         List<Plugin> reversePlugins = new ArrayList<Plugin>(bundleManager.getPlugins());
+         List<Plugin> reversePlugins = new ArrayList<Plugin>(getBundleManager().getPlugins());
          Collections.reverse(reversePlugins);
          for (Plugin plugin : reversePlugins)
          {
@@ -410,11 +428,11 @@ public class FrameworkState
          }
 
          // Event handling is disabled
-         FrameworkEventsPlugin eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
+         FrameworkEventsPlugin eventsPlugin = getBundleManager().getPlugin(FrameworkEventsPlugin.class);
          eventsPlugin.setActive(false);
 
          // This Framework's state is set to Bundle.RESOLVED
-         getSystemBundle().changeState(Bundle.RESOLVED);
+         changeState(Bundle.RESOLVED);
 
          // Destroy Plugins Lifecycle
          for (Plugin plugin : reversePlugins)
@@ -430,7 +448,7 @@ public class FrameworkState
          }
 
          // All resources held by this Framework are released
-         getSystemBundle().destroyBundleContext();
+         destroyBundleContext();
       }
       finally
       {
@@ -451,25 +469,37 @@ public class FrameworkState
     *
     * A Framework Event is returned to indicate why this Framework has stopped.
     */
+   @Override
    public FrameworkEvent waitForStop(long timeout) throws InterruptedException
    {
       synchronized (stopMonitor)
       {
          // Only wait when this Framework is STARTING, ACTIVE, or STOPPING
-         int state = getSystemBundle().getState();
+         int state = getState();
          if (state == Bundle.STARTING || state == Bundle.ACTIVE || state == Bundle.STOPPING)
          {
             stopMonitor.wait(timeout);
          }
          else
          {
-            return new FrameworkEvent(stoppedEvent, getSystemBundle(), null);
+            return new FrameworkEvent(stoppedEvent, this, null);
          }
       }
 
-      if (getSystemBundle().getState() != Bundle.RESOLVED)
-         return new FrameworkEvent(FrameworkEvent.WAIT_TIMEDOUT, getSystemBundle(), null);
+      if (getState() != Bundle.RESOLVED)
+         return new FrameworkEvent(FrameworkEvent.WAIT_TIMEDOUT, this, null);
 
-      return new FrameworkEvent(stoppedEvent, getSystemBundle(), null);
+      return new FrameworkEvent(stoppedEvent, this, null);
+   }
+
+   /**
+    * The Framework cannot be uninstalled.
+    * <p>
+    * This method always throws a BundleException.
+    */
+   @Override
+   public void uninstall() throws BundleException
+   {
+      throw new BundleException("The system bundle cannot be uninstalled");
    }
 }

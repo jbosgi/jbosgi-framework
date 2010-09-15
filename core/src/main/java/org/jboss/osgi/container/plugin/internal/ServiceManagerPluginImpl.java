@@ -94,10 +94,13 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    private FrameworkEventsPlugin eventsPlugin;
    private PackageAdminPlugin packageAdmin;
 
-   public ServiceManagerPluginImpl(BundleManager bundleManager, ServiceContainer serviceContainer)
+   public ServiceManagerPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
-      this.serviceContainer = serviceContainer;
+
+      // Get/Create the {@link ServiceContainer}
+      ServiceController<?> serviceController = (ServiceController<?>)bundleManager.getProperty(ServiceController.class.getName());
+      serviceContainer = serviceController != null ? serviceController.getServiceContainer() : ServiceContainer.Factory.create();
    }
 
    @Override

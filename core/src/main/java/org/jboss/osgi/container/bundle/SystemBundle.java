@@ -39,7 +39,7 @@ import org.osgi.framework.Version;
 
 /**
  * The system bundle
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
@@ -48,8 +48,8 @@ public class SystemBundle extends AbstractBundle
 {
    private OSGiMetaData metadata;
    private SystemBundleRevision systemRevision;
-   
-   public SystemBundle(BundleManager bundleManager) 
+
+   public SystemBundle(BundleManager bundleManager)
    {
       super(bundleManager, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
 
@@ -59,7 +59,7 @@ public class SystemBundle extends AbstractBundle
       List<String> systemPackages = plugin.getSystemPackages(true);
       if (systemPackages.isEmpty() == true)
          throw new IllegalStateException("Framework system packages not available");
-      
+
       // Construct framework capabilities from system packages
       for (String packageSpec : systemPackages)
       {
@@ -75,10 +75,10 @@ public class SystemBundle extends AbstractBundle
 
          Map<String, Object> attrs = new HashMap<String, Object>();
          attrs.put(Constants.VERSION_ATTRIBUTE, version);
-         
+
          builder.addExportPackages(packname + ";version=" + version);
       }
-      
+
       try
       {
          metadata = builder.getOSGiMetaData();
@@ -90,7 +90,7 @@ public class SystemBundle extends AbstractBundle
       }
 
       // Add the system bundle
-      bundleManager.addBundleState(this);
+      getBundleManager().addBundleState(this);
    }
 
    /**
@@ -100,7 +100,7 @@ public class SystemBundle extends AbstractBundle
    public static SystemBundle assertBundleState(Bundle bundle)
    {
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      
+
       if (bundleState instanceof SystemBundle == false)
          throw new IllegalArgumentException("Not a SystemBundle: " + bundleState);
 

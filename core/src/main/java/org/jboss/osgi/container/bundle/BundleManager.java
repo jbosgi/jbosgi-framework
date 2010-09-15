@@ -28,14 +28,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
-import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.container.plugin.AutoInstallPlugin;
 import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.container.plugin.BundleStoragePlugin;
@@ -75,7 +74,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 
 /**
- * OSGiBundleManager.
+ * The BundleManager is the central managing entity for OSGi bundles.
  *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
@@ -86,6 +85,8 @@ public class BundleManager
    // Provide logging
    private final Logger log = Logger.getLogger(BundleManager.class);
 
+   // The raw properties
+   private Map<String, Object> properties = new HashMap<String, Object>();
    // The BundleId generator
    private AtomicLong identityGenerator = new AtomicLong();
    // The sytem bundle
@@ -97,21 +98,21 @@ public class BundleManager
    // The Framework state
    private FrameworkState frameworkState;
 
-   public BundleManager(Map<String, Object> props)
+   public BundleManager(Map<String, Object> initialProperties)
    {
-      // Get/Create the {@link ServiceContainer}
-      ServiceController<?> serviceController = (ServiceController<?>)props.get(ServiceController.class.getName());
-      ServiceContainer serviceContainer = serviceController != null ? serviceController.getServiceContainer() : ServiceContainer.Factory.create();
+      // The properties on the BundleManager are mutable as long the framework is not created
+      // Plugins may modify these properties in their respective constructor
+      if (initialProperties != null)
+         properties.putAll(initialProperties);
 
       // Register the framework plugins
-      // [TODO] Externalize plugin registration
       plugins.put(BundleDeploymentPlugin.class, new BundleDeploymentPluginImpl(this));
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
       plugins.put(FrameworkEventsPlugin.class, new FrameworkEventsPluginImpl(this));
       plugins.put(ModuleManagerPlugin.class, new ModuleManagerPluginImpl(this));
       plugins.put(NativeCodePlugin.class, new NativeCodePluginImpl(this));
       plugins.put(ResolverPlugin.class, new ResolverPluginImpl(this));
-      plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this, serviceContainer));
+      plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
       plugins.put(SystemPackagesPlugin.class, new SystemPackagesPluginImpl(this));
 
       // Register system service plugins
@@ -124,7 +125,8 @@ public class BundleManager
       // Finally add the AutoInstallPlugin
       plugins.put(AutoInstallPlugin.class, new AutoInstallPluginImpl(this));
 
-      frameworkState = new FrameworkState(this, props);
+      // Create the Framework state
+      frameworkState = new FrameworkState(this);
    }
 
    public FrameworkState getFrameworkState()
@@ -144,24 +146,31 @@ public class BundleManager
 
    public BundleContext getSystemContext()
    {
-      return getSystemBundle().getBundleContext();
+      return systemBundle.getBundleContext();
    }
 
    public Object getProperty(String key)
    {
-      return frameworkState.getProperties().get(key);
+      return properties.get(key);
    }
 
    public Map<String,Object> getProperties()
    {
-      return frameworkState.getProperties();
+      return Collections.unmodifiableMap(properties);
+   }
+
+   public void setProperty(String key, Object value)
+   {
+      if (frameworkState != null)
+         throw new IllegalStateException("Cannot add property to ACTIVE framwork");
+
+      properties.put(key, value);
    }
 
    public boolean isFrameworkActive()
    {
       // We are active if the system bundle is ACTIVE
-      SystemBundle bundleState = getSystemBundle();
-      return bundleState.getState() == Bundle.ACTIVE;
+      return systemBundle.getState() == Bundle.ACTIVE;
    }
 
    void addBundleState(AbstractBundle bundleState)

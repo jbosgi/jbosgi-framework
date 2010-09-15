@@ -28,15 +28,15 @@ import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.launch.Framework;
 
 /**
- * A generic Framework wrapper that delegates all method calls to the underlying 
+ * A generic Framework wrapper that delegates all method calls to the underlying
  * Framework implementation.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 16-Oct-2009
  */
 public class FrameworkWrapper extends BundleWrapper implements Framework
 {
-   public FrameworkWrapper(FrameworkImpl framework)
+   public FrameworkWrapper(FrameworkState framework)
    {
       super(framework);
    }
