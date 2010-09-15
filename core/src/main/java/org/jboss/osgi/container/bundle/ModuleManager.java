@@ -36,6 +36,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
@@ -71,6 +72,9 @@ import org.osgi.framework.Version;
  */
 public class ModuleManager
 {
+   // The property that defines a comma seperated list of system module identifiers
+   public static final String PROP_JBOSS_OSGI_SYSTEM_MODULES = "org.jboss.osgi.system.modules";
+
    // The module prefix for modules managed by the OSGi layer
    private static final String MODULE_PREFIX = "jbosgi";
    // Multiple revisions of the same bundle can co-exist, when a bundle has been updated but not yet refreshed.
@@ -209,6 +213,31 @@ public class ModuleManager
       LocalDependencySpec.Builder depBuilder = LocalDependencySpec.build(frameworkLoader, frameworkLoader.getExportedPaths());
       depBuilder.setImportFilter(PathFilters.acceptAll()); // [REVIEW] Review why all imports must be accepted
       depBuilder.setExportFilter(PathFilters.acceptAll());
+
+      // When running in AS there are no jars on the system classpath except jboss-modules.jar
+      // The framework module needs to have a few dependencies to system modules added
+      String systemModules = (String)bundleManager.getProperty(PROP_JBOSS_OSGI_SYSTEM_MODULES);
+      if (systemModules != null)
+      {
+         for (String moduleid : systemModules.split(","))
+         {
+            moduleid = moduleid.trim();
+            try
+            {
+               // Try to load the system module, which should only succeed in AS
+               ModuleIdentifier identifier = ModuleIdentifier.create(moduleid);
+               ModuleLoader currentLoader = Module.getCurrentLoader();
+               currentLoader.loadModule(identifier);
+
+               ModuleDependencySpec.Builder specBuilder = ModuleDependencySpec.build(identifier);
+               builder.addModuleDependency(specBuilder.create());
+            }
+            catch (ModuleLoadException e)
+            {
+               throw new IllegalStateException("Cannot load system module: " + moduleid);
+            }
+         }
+      }
 
       builder.addLocalDependency(depBuilder.create());
       ModuleSpec frameworkSpec = builder.create();

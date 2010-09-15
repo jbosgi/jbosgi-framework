@@ -147,6 +147,16 @@ public class BundleManager
       return getSystemBundle().getBundleContext();
    }
 
+   public Object getProperty(String key)
+   {
+      return frameworkState.getProperties().get(key);
+   }
+
+   public Map<String,Object> getProperties()
+   {
+      return frameworkState.getProperties();
+   }
+
    public boolean isFrameworkActive()
    {
       // We are active if the system bundle is ACTIVE
