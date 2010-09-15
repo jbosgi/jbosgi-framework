@@ -22,11 +22,11 @@
 package org.jboss.osgi.container.bundle;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+import org.jboss.osgi.container.bundle.BundleManager.IntegrationMode;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
@@ -56,12 +56,16 @@ public class SystemBundle extends AbstractBundle
       // Initialize the OSGiMetaData
       OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
       SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
-      List<String> systemPackages = plugin.getSystemPackages(true);
-      if (systemPackages.isEmpty() == true)
+
+      List<String> exportedPackages = new ArrayList<String>(plugin.getSystemPackages());
+      if (bundleManager.getIntegrationMode() == IntegrationMode.CONTAINER)
+         exportedPackages.addAll(plugin.getFrameworkPackages());
+
+      if (exportedPackages.isEmpty() == true)
          throw new IllegalStateException("Framework system packages not available");
 
       // Construct framework capabilities from system packages
-      for (String packageSpec : systemPackages)
+      for (String packageSpec : exportedPackages)
       {
          String packname = packageSpec;
          Version version = Version.emptyVersion;
@@ -72,9 +76,6 @@ public class SystemBundle extends AbstractBundle
             packname = packageSpec.substring(0, versionIndex);
             version = Version.parseVersion(packageSpec.substring(versionIndex + 9));
          }
-
-         Map<String, Object> attrs = new HashMap<String, Object>();
-         attrs.put(Constants.VERSION_ATTRIBUTE, version);
 
          builder.addExportPackages(packname + ";version=" + version);
       }

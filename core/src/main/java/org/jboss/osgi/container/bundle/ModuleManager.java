@@ -36,11 +36,11 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.PathFilters;
+import org.jboss.osgi.container.bundle.BundleManager.IntegrationMode;
 import org.jboss.osgi.container.loading.FragmentLocalLoader;
 import org.jboss.osgi.container.loading.FrameworkLocalLoader;
 import org.jboss.osgi.container.loading.JBossLoggingModuleLogger;
@@ -209,39 +209,30 @@ public class ModuleManager
       frameworkIdentifier = getModuleIdentifier(resModule, 0);
       ModuleSpec.Builder builder = ModuleSpec.build(frameworkIdentifier);
 
-      FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(bundleManager, resModule);
-      LocalDependencySpec.Builder depBuilder = LocalDependencySpec.build(frameworkLoader, frameworkLoader.getExportedPaths());
-      depBuilder.setImportFilter(PathFilters.acceptAll()); // [REVIEW] Review why all imports must be accepted
-      depBuilder.setExportFilter(PathFilters.acceptAll());
-
       // When running in AS there are no jars on the system classpath except jboss-modules.jar
-      // The framework module needs to have a few dependencies to system modules added
-      String systemModules = (String)bundleManager.getProperty(PROP_JBOSS_OSGI_SYSTEM_MODULES);
-      if (systemModules != null)
+      if (bundleManager.getIntegrationMode() == IntegrationMode.CONTAINER)
       {
-         for (String moduleid : systemModules.split(","))
+         String systemModules = (String)bundleManager.getProperty(PROP_JBOSS_OSGI_SYSTEM_MODULES);
+         if (systemModules != null)
          {
-            moduleid = moduleid.trim();
-            try
+            for (String moduleid : systemModules.split(","))
             {
-               // Try to load the system module, which should only succeed in AS
-               ModuleIdentifier identifier = ModuleIdentifier.create(moduleid);
-               ModuleLoader currentLoader = Module.getCurrentLoader();
-               currentLoader.loadModule(identifier);
-
+               ModuleIdentifier identifier = ModuleIdentifier.create(moduleid.trim());
                ModuleDependencySpec.Builder specBuilder = ModuleDependencySpec.build(identifier);
+               specBuilder.setExportFilter(PathFilters.acceptAll());
+               specBuilder.setImportFilter(PathFilters.acceptAll());
                builder.addModuleDependency(specBuilder.create());
-            }
-            catch (ModuleLoadException e)
-            {
-               throw new IllegalStateException("Cannot load system module: " + moduleid);
             }
          }
       }
 
+      FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(bundleManager, resModule);
+      LocalDependencySpec.Builder depBuilder = LocalDependencySpec.build(frameworkLoader, frameworkLoader.getExportedPaths());
+      depBuilder.setImportFilter(PathFilters.acceptAll()); // [REVIEW] Review why all imports must be accepted
+      depBuilder.setExportFilter(PathFilters.acceptAll());
       builder.addLocalDependency(depBuilder.create());
-      ModuleSpec frameworkSpec = builder.create();
 
+      ModuleSpec frameworkSpec = builder.create();
       AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
       moduleLoader.addModule(bundleRev, frameworkSpec);
       return frameworkSpec;

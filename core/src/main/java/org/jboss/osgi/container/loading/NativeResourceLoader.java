@@ -25,30 +25,15 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.AssertionSetting;
 import org.jboss.modules.ClassSpec;
-import org.jboss.modules.LocalLoader;
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.PackageSpec;
 import org.jboss.modules.PathFilter;
 import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoader;
-import org.jboss.osgi.container.bundle.AbstractBundle;
-import org.jboss.osgi.container.bundle.AbstractRevision;
-import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.ModuleManager;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XPackageRequirement;
-import org.osgi.framework.Bundle;
 
 /**
  * @author thomas.diesler@jboss.com

@@ -36,12 +36,11 @@ import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.spi.NotImplementedException;
 
 /**
  * A {@link LocalLoader} that only loads framework defined classes/resources.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 08-Jul-2010
  */
@@ -57,7 +56,7 @@ public class FrameworkLocalLoader implements LocalLoader
    public FrameworkLocalLoader(BundleManager bundleManager, XModule resModule)
    {
       this.systemPackages = bundleManager.getPlugin(SystemPackagesPlugin.class);
-      
+
       this.systemClassLoader = AccessController.doPrivileged(new PrivilegedAction<ClassLoader>()
       {
          public ClassLoader run()
@@ -77,9 +76,16 @@ public class FrameworkLocalLoader implements LocalLoader
          exportedPaths.add(packageName.replace('.', File.separatorChar));
       }
 
-      // Add package capabilities exported by the framework
-      for (XPackageCapability cap : resModule.getPackageCapabilities())
-         exportedPaths.add(cap.getName().replace('.', File.separatorChar));
+      // Add system packages exported by the framework
+      List<String> systemPackages = plugin.getSystemPackages();
+      for (String packageSpec : systemPackages)
+      {
+         int index = packageSpec.indexOf(';');
+         if (index > 0)
+            packageSpec = packageSpec.substring(0, index);
+
+         exportedPaths.add(packageSpec.replace('.', File.separatorChar));
+      }
    }
 
    public Set<String> getExportedPaths()
@@ -94,7 +100,7 @@ public class FrameworkLocalLoader implements LocalLoader
       if (traceEnabled)
          log.trace("Attempt to find framework class [" + className + "] ...");
 
-      // Delegate to framework loader for boot delegation 
+      // Delegate to framework loader for boot delegation
       String packageName = className.substring(0, className.lastIndexOf('.'));
       if (systemPackages.isBootDelegationPackage(packageName))
       {

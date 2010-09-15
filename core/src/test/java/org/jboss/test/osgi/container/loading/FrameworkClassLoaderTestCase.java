@@ -36,6 +36,7 @@ import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.FrameworkState;
 import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.container.bundle.SystemBundle;
+import org.jboss.osgi.container.bundle.BundleManager.IntegrationMode;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.container.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.resolver.XModule;
@@ -62,6 +63,7 @@ public class FrameworkClassLoaderTestCase
       BundleManager bundleManager = Mockito.mock(BundleManager.class);
       FrameworkState frameworkState = Mockito.mock(FrameworkState.class);
       Mockito.when(bundleManager.getFrameworkState()).thenReturn(frameworkState);
+      Mockito.when(bundleManager.getIntegrationMode()).thenReturn(IntegrationMode.STANDALONE);
 
       // Mock the BundleManager to return an instance of the {@link SystemPackagesPlugin}
       SystemPackagesPluginImpl sysPackagesPlugin = new SystemPackagesPluginImpl(bundleManager);

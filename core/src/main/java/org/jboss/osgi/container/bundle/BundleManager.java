@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.container.plugin.AutoInstallPlugin;
 import org.jboss.osgi.container.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.container.plugin.BundleStoragePlugin;
@@ -89,14 +90,19 @@ public class BundleManager
    private Map<String, Object> properties = new HashMap<String, Object>();
    // The BundleId generator
    private AtomicLong identityGenerator = new AtomicLong();
-   // The sytem bundle
-   private SystemBundle systemBundle;
    // Maps bundleId to Bundle
    private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
    /// The registered plugins
    private Map<Class<? extends Plugin>, Plugin> plugins = new LinkedHashMap<Class<? extends Plugin>, Plugin>();
    // The Framework state
    private FrameworkState frameworkState;
+
+   // The Framework integration mode
+   public enum IntegrationMode
+   {
+      STANDALONE,
+      CONTAINER
+   }
 
    public BundleManager(Map<String, Object> initialProperties)
    {
@@ -134,19 +140,26 @@ public class BundleManager
       return frameworkState;
    }
 
+   public SystemBundle getSystemBundle()
+   {
+      return frameworkState;
+   }
+
+   public IntegrationMode getIntegrationMode()
+   {
+      // The AS integration layer provides the ServiceController
+      Object controller = getProperty(ServiceController.class.getName());
+      return controller != null ? IntegrationMode.CONTAINER : IntegrationMode.STANDALONE;
+   }
+
    long getNextBundleId()
    {
       return identityGenerator.incrementAndGet();
    }
 
-   public SystemBundle getSystemBundle()
-   {
-      return systemBundle;
-   }
-
    public BundleContext getSystemContext()
    {
-      return systemBundle.getBundleContext();
+      return frameworkState.getBundleContext();
    }
 
    public Object getProperty(String key)
@@ -161,7 +174,7 @@ public class BundleManager
 
    public void setProperty(String key, Object value)
    {
-      if (frameworkState != null)
+      if (isFrameworkActive())
          throw new IllegalStateException("Cannot add property to ACTIVE framwork");
 
       properties.put(key, value);
@@ -170,7 +183,7 @@ public class BundleManager
    public boolean isFrameworkActive()
    {
       // We are active if the system bundle is ACTIVE
-      return systemBundle.getState() == Bundle.ACTIVE;
+      return frameworkState != null && frameworkState.getState() == Bundle.ACTIVE;
    }
 
    void addBundleState(AbstractBundle bundleState)
@@ -181,10 +194,6 @@ public class BundleManager
       long bundleId = bundleState.getBundleId();
       if (bundleMap.containsKey(bundleId) == true)
          throw new IllegalStateException("Bundle already added: " + bundleState);
-
-      // Cache the frequently accessed system bundle
-      if (bundleId == 0)
-         systemBundle = (SystemBundle)bundleState;
 
       // Register the bundle with the manager
       bundleMap.put(bundleId, bundleState);
@@ -225,7 +234,7 @@ public class BundleManager
    public AbstractBundle getBundleById(long bundleId)
    {
       if (bundleId == 0)
-         return systemBundle;
+         return frameworkState;
 
       return bundleMap.get(bundleId);
    }

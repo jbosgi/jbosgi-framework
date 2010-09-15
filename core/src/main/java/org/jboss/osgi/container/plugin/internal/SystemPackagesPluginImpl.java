@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.container.bundle.BundleManager;
+import org.jboss.osgi.container.bundle.BundleManager.IntegrationMode;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
 import org.osgi.framework.Constants;
@@ -46,8 +47,6 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
 
    // The derived combination of all system packages
    private List<String> allPackages = new ArrayList<String>();
-   // The derived combination of all system packages without version specifier
-   private List<String> allPackageNames = new ArrayList<String>();
    // The boot delegation packages
    private List<String> bootDelegationPackages = new ArrayList<String>();
 
@@ -95,21 +94,6 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
          allPackages.add("javax.xml.transform.stream");
 
          allPackages.add("org.jboss.modules");
-         allPackages.add("org.jboss.msc.service");
-         allPackages.add("org.jboss.osgi.deployment.deployer");
-         allPackages.add("org.jboss.osgi.deployment.interceptor");
-         allPackages.add("org.jboss.osgi.modules");
-
-         allPackages.add("org.osgi.framework;version=1.5");
-         allPackages.add("org.osgi.framework.hooks;version=1.0");
-         allPackages.add("org.osgi.framework.hooks.service;version=1.0");
-         allPackages.add("org.osgi.framework.launch;version=1.0");
-         allPackages.add("org.osgi.service.condpermadmin;version=1.1");
-         allPackages.add("org.osgi.service.packageadmin;version=1.2");
-         allPackages.add("org.osgi.service.permissionadmin;version=1.2");
-         allPackages.add("org.osgi.service.startlevel;version=1.1");
-         allPackages.add("org.osgi.service.url;version=1.0");
-         allPackages.add("org.osgi.util.tracker;version=1.4");
 
          allPackages.add("org.w3c.dom");
          allPackages.add("org.w3c.dom.bootstrap");
@@ -123,6 +107,10 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
          allPackages.add("org.xml.sax.ext");
          allPackages.add("org.xml.sax.helpers");
 
+         // Only add non-jdk packages when running STANDALONE
+         if (bundleManager.getIntegrationMode() == IntegrationMode.STANDALONE)
+            allPackages.addAll(getFrameworkPackages());
+
          String asString = packagesAsString(allPackages);
          bundleManager.setProperty(Constants.FRAMEWORK_SYSTEMPACKAGES, asString);
       }
@@ -130,22 +118,9 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
       // Add the extra system packages
       String extraPackages = (String)bundleManager.getProperty(Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA);
       if (extraPackages != null)
-      {
          allPackages.addAll(packagesAsList(extraPackages));
-      }
 
       Collections.sort(allPackages);
-
-      // Initialize the package names (without the version)
-      for (String name : allPackages)
-      {
-         log.debug("   " + name);
-         int semiIndex = name.indexOf(';');
-         if (semiIndex > 0)
-            name = name.substring(0, semiIndex);
-
-         allPackageNames.add(name);
-      }
 
       // Initialize the boot delegation package names
       String bootDelegationProp = (String)bundleManager.getProperty(Constants.FRAMEWORK_BOOTDELEGATION);
@@ -161,6 +136,35 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
       {
          bootDelegationPackages.add("sun.reflect");
       }
+   }
+
+   @Override
+   public List<String> getFrameworkPackages()
+   {
+      List<String> packages = new ArrayList<String>();
+      packages.add("org.jboss.msc.service");
+      packages.add("org.jboss.osgi.deployment.deployer");
+      packages.add("org.jboss.osgi.deployment.interceptor");
+      packages.add("org.jboss.osgi.modules");
+
+      packages.add("org.osgi.framework;version=1.5");
+      packages.add("org.osgi.framework.hooks;version=1.0");
+      packages.add("org.osgi.framework.hooks.service;version=1.0");
+      packages.add("org.osgi.framework.launch;version=1.0");
+      packages.add("org.osgi.service.condpermadmin;version=1.1");
+      packages.add("org.osgi.service.packageadmin;version=1.2");
+      packages.add("org.osgi.service.permissionadmin;version=1.2");
+      packages.add("org.osgi.service.startlevel;version=1.1");
+      packages.add("org.osgi.service.url;version=1.0");
+      packages.add("org.osgi.util.tracker;version=1.4");
+      return packages;
+   }
+
+   @Override
+   public boolean isFrameworkPackage(String name)
+   {
+      assertInitialized();
+      return isPackageNameInList(getFrameworkPackages(), name);
    }
 
    @Override
@@ -194,25 +198,38 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
    }
 
    @Override
-   public List<String> getSystemPackages(boolean version)
+   public List<String> getSystemPackages()
    {
       assertInitialized();
-      return Collections.unmodifiableList(version ? allPackages : allPackageNames);
+      return Collections.unmodifiableList(allPackages);
    }
 
    @Override
    public boolean isSystemPackage(String name)
    {
       assertInitialized();
+      return isPackageNameInList(allPackages, name);
+   }
+
+   private boolean isPackageNameInList(List<String> packages, String name)
+   {
       if (name == null)
          throw new IllegalArgumentException("Null package name");
 
-      // [TODO] version specifier for system packages
-      int semiIndex = name.indexOf(';');
-      if (semiIndex > 0)
-         name = name.substring(0, semiIndex);
+      int index = name.indexOf(';');
+      if (index > 0)
+         name = name.substring(0, index);
 
-      return allPackageNames.contains(name);
+      if (packages.contains(name))
+         return true;
+
+      for (String aux : packages)
+      {
+         if (aux.startsWith(name + ";"))
+            return true;
+      }
+
+      return false;
    }
 
    private String packagesAsString(List<String> sysPackages)
