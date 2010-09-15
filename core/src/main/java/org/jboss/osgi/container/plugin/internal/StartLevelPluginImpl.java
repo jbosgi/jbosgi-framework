@@ -143,7 +143,8 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
 
       if (sl <= getStartLevel() && hb.isPersistentlyStarted())
       {
-         if (bundle.getState() == Bundle.ACTIVE)
+         // If the bundle is active or starting, we don't need to start it again
+         if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) > 0)
             return;
 
          log.info("Start Level Service about to start: " + hb);
@@ -170,7 +171,8 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
       }
       else
       {
-         if (bundle.getState() != Bundle.ACTIVE)
+         // If the bundle is not active we don't need to stop it
+         if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) == 0)
             return;
 
          log.info("Start Level Service about to stop: " + hb);

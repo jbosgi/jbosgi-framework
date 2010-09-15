@@ -214,10 +214,6 @@ public class HostBundle extends AbstractUserBundle
                throw new BundleException(bundleActivatorClassName + " is not an implementation of " + BundleActivator.class.getName());
             }
          }
-
-         if (getState() != STARTING)
-            throw new BundleException("Bundle has been uninstalled: " + this);
-
          changeState(ACTIVE);
       }
 
