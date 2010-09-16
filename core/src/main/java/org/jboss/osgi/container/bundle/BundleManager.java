@@ -67,6 +67,7 @@ import org.jboss.osgi.container.plugin.internal.WebXMLVerifierInterceptor;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XVersionRange;
+import org.jboss.osgi.spi.util.SysPropertyActions;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -164,7 +165,10 @@ public class BundleManager
 
    public Object getProperty(String key)
    {
-      return properties.get(key);
+      Object value = properties.get(key);
+      if (value == null)
+         value = SysPropertyActions.getProperty(key, null);
+      return value;
    }
 
    public Map<String,Object> getProperties()

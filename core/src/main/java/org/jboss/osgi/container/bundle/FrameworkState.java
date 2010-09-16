@@ -42,6 +42,7 @@ import org.jboss.osgi.container.plugin.ResolverPlugin;
 import org.jboss.osgi.container.plugin.StartLevelPlugin;
 import org.jboss.osgi.container.util.Java;
 import org.jboss.osgi.spi.util.ConstantsHelper;
+import org.jboss.osgi.spi.util.SysPropertyActions;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -99,9 +100,9 @@ public class FrameworkState extends SystemBundle implements Framework
             envlist = envlist.substring(1, envlist.length() - 1);
             OSGi_FRAMEWORK_EXECUTIONENVIRONMENT = envlist;
 
-            OSGi_FRAMEWORK_OS_NAME = System.getProperty("os.name");
-            OSGi_FRAMEWORK_OS_VERSION = System.getProperty("os.version");
-            OSGi_FRAMEWORK_PROCESSOR = System.getProperty("os.arch");
+            OSGi_FRAMEWORK_OS_NAME = SysPropertyActions.getProperty("os.name", null);
+            OSGi_FRAMEWORK_OS_VERSION = SysPropertyActions.getProperty("os.version", null);
+            OSGi_FRAMEWORK_PROCESSOR = SysPropertyActions.getProperty("os.arch", null);
 
             System.setProperty("org.osgi.vendor.framework", "org.jboss.osgi.framework");
             return null;
@@ -146,9 +147,6 @@ public class FrameworkState extends SystemBundle implements Framework
    public String getProperty(String key)
    {
       Object value = getBundleManager().getProperty(key);
-      if (value == null)
-         value = System.getProperty(key);
-
       return (value instanceof String ? (String)value : null);
    }
 

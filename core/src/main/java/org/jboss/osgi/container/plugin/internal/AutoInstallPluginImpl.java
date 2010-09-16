@@ -34,7 +34,8 @@ import org.jboss.osgi.container.bundle.BundleManager;
 import org.jboss.osgi.container.bundle.FrameworkState;
 import org.jboss.osgi.container.plugin.AbstractPlugin;
 import org.jboss.osgi.container.plugin.AutoInstallPlugin;
-import org.jboss.osgi.spi.internal.StringPropertyReplacer;
+import org.jboss.osgi.spi.util.StringPropertyReplacer;
+import org.jboss.osgi.spi.util.StringPropertyReplacer.PropertyProvider;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -177,7 +178,15 @@ public class AutoInstallPluginImpl extends AbstractPlugin implements AutoInstall
    private URL toURL(String path)
    {
       URL pathURL = null;
-      String realPath = StringPropertyReplacer.replaceProperties(path);
+      PropertyProvider provider = new PropertyProvider()
+      {
+         @Override
+         public String getProperty(String key)
+         {
+            return getBundleManager().getFrameworkState().getProperty(key);
+         }
+      };
+      String realPath = StringPropertyReplacer.replaceProperties(path, provider);
       try
       {
          pathURL = new URL(realPath);
