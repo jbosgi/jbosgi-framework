@@ -45,14 +45,14 @@ public class SystemLocalLoader implements LocalLoader
    private static final Logger log = Logger.getLogger(SystemLocalLoader.class);
 
    private final ClassLoader systemClassLoader;
-   private final Set<String> loaderPaths;
+   private final Set<String> exportedPaths;
 
-   public SystemLocalLoader(Set<String> loaderPaths)
+   public SystemLocalLoader(Set<String> exportedPaths)
    {
-      if (loaderPaths == null)
+      if (exportedPaths == null)
          throw new IllegalArgumentException("Null loaderPaths");
 
-      this.loaderPaths = loaderPaths;
+      this.exportedPaths = exportedPaths;
       this.systemClassLoader = AccessController.doPrivileged(new PrivilegedAction<ClassLoader>()
       {
          public ClassLoader run()
@@ -62,9 +62,9 @@ public class SystemLocalLoader implements LocalLoader
       });
    }
 
-   public Set<String> getLoaderPaths()
+   public Set<String> getExportedPaths()
    {
-      return Collections.unmodifiableSet(loaderPaths);
+      return Collections.unmodifiableSet(exportedPaths);
    }
 
    @Override
@@ -75,7 +75,7 @@ public class SystemLocalLoader implements LocalLoader
          log.trace("Attempt to find system class [" + className + "] ...");
 
       String path = ModuleManager.getPathFromClassName(className);
-      if (loaderPaths.contains(path))
+      if (exportedPaths.contains(path))
       {
          Class<?> result = null;
          try

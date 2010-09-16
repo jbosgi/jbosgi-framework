@@ -207,7 +207,13 @@ public class ModuleManager
          throw new IllegalStateException("Framework module already created");
 
       frameworkIdentifier = getModuleIdentifier(resModule, 0);
-      ModuleSpec.Builder builder = ModuleSpec.build(frameworkIdentifier);
+      ModuleSpec.Builder specBuilder = ModuleSpec.build(frameworkIdentifier);
+
+      FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(bundleManager);
+      LocalDependencySpec.Builder localDependency = LocalDependencySpec.build(frameworkLoader, frameworkLoader.getExportedPaths());
+      localDependency.setImportFilter(PathFilters.acceptAll()); // [TODO] Remove when this becomes the default
+      localDependency.setExportFilter(PathFilters.acceptAll());
+      specBuilder.addLocalDependency(localDependency.create());
 
       // When running in AS there are no jars on the system classpath except jboss-modules.jar
       if (bundleManager.getIntegrationMode() == IntegrationMode.CONTAINER)
@@ -218,23 +224,17 @@ public class ModuleManager
             for (String moduleid : systemModules.split(","))
             {
                ModuleIdentifier identifier = ModuleIdentifier.create(moduleid.trim());
-               ModuleDependencySpec.Builder specBuilder = ModuleDependencySpec.build(identifier);
-               specBuilder.setExportFilter(PathFilters.acceptAll());
-               specBuilder.setImportFilter(PathFilters.acceptAll());
-               builder.addModuleDependency(specBuilder.create());
+               ModuleDependencySpec.Builder moduleDependency = ModuleDependencySpec.build(identifier);
+               moduleDependency.setExportFilter(PathFilters.acceptAll()); // re-export everything
+               specBuilder.addModuleDependency(moduleDependency.create());
             }
          }
       }
 
-      FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(bundleManager, resModule);
-      LocalDependencySpec.Builder depBuilder = LocalDependencySpec.build(frameworkLoader, frameworkLoader.getExportedPaths());
-      depBuilder.setImportFilter(PathFilters.acceptAll()); // [REVIEW] Review why all imports must be accepted
-      depBuilder.setExportFilter(PathFilters.acceptAll());
-      builder.addLocalDependency(depBuilder.create());
-
-      ModuleSpec frameworkSpec = builder.create();
+      ModuleSpec frameworkSpec = specBuilder.create();
       AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
       moduleLoader.addModule(bundleRev, frameworkSpec);
+
       return frameworkSpec;
    }
 
@@ -249,12 +249,9 @@ public class ModuleManager
          ModuleIdentifier identifier = getModuleIdentifier(resModule);
          ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
 
-         // Add the framework module as required dependency
-         ModuleDependencySpec.Builder frameworkDependencyBuilder = ModuleDependencySpec.build(frameworkIdentifier);
-         // [REVIEW] Review why all imports must be accepted
-         frameworkDependencyBuilder.setExportFilter(PathFilters.acceptAll());
-         frameworkDependencyBuilder.setImportFilter(PathFilters.acceptAll());
-         specBuilder.addModuleDependency(frameworkDependencyBuilder.create());
+         // Add the framework module as the first required dependency
+         ModuleDependencySpec.Builder frameworkDependency = ModuleDependencySpec.build(frameworkIdentifier);
+         specBuilder.addModuleDependency(frameworkDependency.create());
 
          // Map the dependency builder for (the likely) case that the same exporter is choosen for multiple wires
          Map<XModule, DependencyBuildlerHolder> depBuilderMap = new LinkedHashMap<XModule, DependencyBuildlerHolder>();
@@ -272,12 +269,11 @@ public class ModuleManager
 
                // Create a fragment {@link LocalLoader} and add a dependency on it
                FragmentLocalLoader localLoader = new FragmentLocalLoader(fragRev);
-               LocalDependencySpec.Builder depBuilder = LocalDependencySpec.build(localLoader, localLoader.getPaths());
-               // [REVIEW] dependent filter settings
-               depBuilder.setImportFilter(PathFilters.acceptAll());
-               depBuilder.setExportFilter(PathFilters.acceptAll());
+               LocalDependencySpec.Builder localDependency = LocalDependencySpec.build(localLoader, localLoader.getPaths());
+               localDependency.setImportFilter(PathFilters.acceptAll()); // [TODO] Remove when this becomes the default
+               localDependency.setExportFilter(PathFilters.acceptAll());
 
-               depBuilderMap.put(fragRev.getResolverModule(), new DependencyBuildlerHolder(depBuilder));
+               depBuilderMap.put(fragRev.getResolverModule(), new DependencyBuildlerHolder(localDependency));
             }
          }
 
@@ -343,7 +339,15 @@ public class ModuleManager
          XRequirement req = wire.getRequirement();
          XModule importer = wire.getImporter();
          XModule exporter = wire.getExporter();
+
+         // Skip dependencies on the module itself
          if (exporter == importer)
+            continue;
+
+         // Skip dependencies on the system module. This is always added as the first module dependency anyway
+         // [TODO] Check if the bundle still fails to resolve when it fails to declare an import on 'org.osgi.framework'
+         ModuleIdentifier exporterId = getModuleIdentifier(exporter);
+         if (exporterId.equals(frameworkIdentifier))
             continue;
 
          // Dependency for Import-Package
@@ -362,10 +366,8 @@ public class ModuleManager
             boolean reexport = Constants.VISIBILITY_REEXPORT.equals(bndreq.getVisibility());
             if (reexport == true)
             {
-               ModuleDependencySpec.Builder depBuilder = holder.moduleDependencyBuilder;
-               // [REVIEW] dependent filter settings
-               depBuilder.setImportFilter(PathFilters.acceptAll());
-               depBuilder.setExportFilter(PathFilters.acceptAll());
+               ModuleDependencySpec.Builder moduleDependency = holder.moduleDependencyBuilder;
+               moduleDependency.setExportFilter(PathFilters.acceptAll());
             }
             continue;
          }
@@ -431,9 +433,7 @@ public class ModuleManager
          {
             if (importPaths != null)
             {
-               // [REVIEW] dependent filter settings
                moduleDependencyBuilder.setImportFilter(PathFilters.in(importPaths));
-               moduleDependencyBuilder.setExportFilter(PathFilters.in(importPaths));
             }
             specBuilder.addModuleDependency(moduleDependencyBuilder.create());
          }

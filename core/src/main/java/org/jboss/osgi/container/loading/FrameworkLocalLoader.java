@@ -22,21 +22,13 @@
 package org.jboss.osgi.container.loading;
 
 import java.io.File;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.jboss.logging.Logger;
 import org.jboss.modules.LocalLoader;
-import org.jboss.modules.Resource;
 import org.jboss.osgi.container.bundle.BundleManager;
-import org.jboss.osgi.container.bundle.ModuleManager;
 import org.jboss.osgi.container.plugin.SystemPackagesPlugin;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.spi.NotImplementedException;
 
 /**
  * A {@link LocalLoader} that only loads framework defined classes/resources.
@@ -44,26 +36,16 @@ import org.jboss.osgi.spi.NotImplementedException;
  * @author thomas.diesler@jboss.com
  * @since 08-Jul-2010
  */
-public class FrameworkLocalLoader implements LocalLoader
+public class FrameworkLocalLoader extends SystemLocalLoader
 {
-   // Provide logging
-   private static final Logger log = Logger.getLogger(FrameworkLocalLoader.class);
-
-   private ClassLoader systemClassLoader;
-   private Set<String> exportedPaths = new HashSet<String>();
-   private SystemPackagesPlugin systemPackages;
-
-   public FrameworkLocalLoader(BundleManager bundleManager, XModule resModule)
+   public FrameworkLocalLoader(BundleManager bundleManager)
    {
-      this.systemPackages = bundleManager.getPlugin(SystemPackagesPlugin.class);
+      super(getExportedPaths(bundleManager));
+   }
 
-      this.systemClassLoader = AccessController.doPrivileged(new PrivilegedAction<ClassLoader>()
-      {
-         public ClassLoader run()
-         {
-            return ClassLoader.getSystemClassLoader();
-         }
-      });
+   private static Set<String> getExportedPaths(BundleManager bundleManager)
+   {
+      Set<String> result = new LinkedHashSet<String>();
 
       // Add bootdelegation paths
       SystemPackagesPlugin plugin = bundleManager.getPlugin(SystemPackagesPlugin.class);
@@ -73,7 +55,7 @@ public class FrameworkLocalLoader implements LocalLoader
          if (packageName.endsWith(".*"))
             packageName = packageName.substring(0, packageName.length() - 2);
 
-         exportedPaths.add(packageName.replace('.', File.separatorChar));
+         result.add(packageName.replace('.', File.separatorChar));
       }
 
       // Add system packages exported by the framework
@@ -84,75 +66,8 @@ public class FrameworkLocalLoader implements LocalLoader
          if (index > 0)
             packageSpec = packageSpec.substring(0, index);
 
-         exportedPaths.add(packageSpec.replace('.', File.separatorChar));
+         result.add(packageSpec.replace('.', File.separatorChar));
       }
-   }
-
-   public Set<String> getExportedPaths()
-   {
-      return Collections.unmodifiableSet(exportedPaths);
-   }
-
-   @Override
-   public Class<?> loadClassLocal(String className, boolean exportOnly)
-   {
-      boolean traceEnabled = log.isTraceEnabled();
-      if (traceEnabled)
-         log.trace("Attempt to find framework class [" + className + "] ...");
-
-      // Delegate to framework loader for boot delegation
-      String packageName = className.substring(0, className.lastIndexOf('.'));
-      if (systemPackages.isBootDelegationPackage(packageName))
-      {
-         if (traceEnabled)
-            log.trace("Load class through boot delegation [" + className + "] ...");
-
-         try
-         {
-            return systemClassLoader.loadClass(className);
-         }
-         catch (ClassNotFoundException ex)
-         {
-            log.error("Cannot load class through boot delegation: " + className);
-            return null;
-         }
-      }
-
-      String path = ModuleManager.getPathFromClassName(className);
-      if (exportedPaths.contains(path))
-      {
-         Class<?> result = null;
-         try
-         {
-            result = systemClassLoader.loadClass(className);
-            if (traceEnabled)
-               log.trace("Found framework class [" + className + "]");
-            return result;
-         }
-         catch (ClassNotFoundException ex)
-         {
-            if (traceEnabled)
-               log.trace("Cannot find framework class [" + className + "]");
-         }
-      }
-      else
-      {
-         if (traceEnabled)
-            log.trace("Cannot find filtered class [" + className + "]");
-      }
-
-      return null;
-   }
-
-   @Override
-   public List<Resource> loadResourceLocal(String name)
-   {
-      throw new NotImplementedException();
-   }
-
-   @Override
-   public Resource loadResourceLocal(String root, String name)
-   {
-      throw new NotImplementedException();
+      return result;
    }
 }
