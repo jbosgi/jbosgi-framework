@@ -17,7 +17,7 @@
   <artifactId>jbosgi-framework-parent</artifactId>
   <packaging>pom</packaging>
 
-  <version>1.0.0.Alpha7</version>
+  <version>1.0.0.Alpha8-SNAPSHOT</version>
 
   <parent>
     <groupId>org.jboss.osgi</groupId>
