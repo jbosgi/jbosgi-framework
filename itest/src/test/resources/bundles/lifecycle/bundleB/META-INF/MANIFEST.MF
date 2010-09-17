@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: lifecycle-bundleB
-Export-Package: org.jboss.test.osgi.container.bundle.support.b
-Import-Package: org.jboss.test.osgi.container.bundle.support.x
+Export-Package: org.jboss.test.osgi.framework.bundle.support.b
+Import-Package: org.jboss.test.osgi.framework.bundle.support.x
 

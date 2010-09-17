@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: Exporter
-Export-Package: org.jboss.test.osgi.container.packageadmin.exported;version="1.7.0"
+Export-Package: org.jboss.test.osgi.framework.packageadmin.exported;version="1.7.0"
 Bundle-Version: 1.0.0

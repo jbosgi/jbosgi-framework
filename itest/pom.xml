@@ -12,21 +12,21 @@
 <!-- 
   Set these VM properties in your IDE debugger 
   
-  -Dtest.archive.directory=${workspace_loc:jbosgi-container-itest/target}/test-libs
+  -Dtest.archive.directory=${workspace_loc:jbosgi-framework-itest/target}/test-libs
   -Dlog4j.configuration=log4j-console.xml 
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <name>JBossOSGi Container iTest</name>
-  <groupId>org.jboss.osgi.container</groupId>
-  <artifactId>jbosgi-container-itest</artifactId>
+  <name>JBossOSGi Framework iTest</name>
+  <groupId>org.jboss.osgi.framework</groupId>
+  <artifactId>jbosgi-framework-itest</artifactId>
   <packaging>jar</packaging>
 
   <parent>
-    <groupId>org.jboss.osgi.container</groupId>
-    <artifactId>jbosgi-container-parent</artifactId>
+    <groupId>org.jboss.osgi.framework</groupId>
+    <artifactId>jbosgi-framework-parent</artifactId>
     <version>1.0.0.Alpha7-SNAPSHOT</version>
   </parent>
   
@@ -216,8 +216,8 @@
       </properties>
       <dependencies>
         <dependency>
-          <groupId>org.jboss.osgi.container</groupId>
-          <artifactId>jbosgi-container-core</artifactId>
+          <groupId>org.jboss.osgi.framework</groupId>
+          <artifactId>jbosgi-framework-core</artifactId>
           <version>${project.version}</version>
           <scope>provided</scope>
         </dependency>

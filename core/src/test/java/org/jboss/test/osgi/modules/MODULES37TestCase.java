@@ -25,7 +25,7 @@ import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.PathFilters;
-import org.jboss.osgi.container.loading.VirtualFileResourceLoader;
+import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.modules.a.A;

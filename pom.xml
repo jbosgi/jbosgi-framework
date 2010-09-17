@@ -12,9 +12,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <name>JBossOSGi Container</name>
-  <groupId>org.jboss.osgi.container</groupId>
-  <artifactId>jbosgi-container-parent</artifactId>
+  <name>JBossOSGi Framework</name>
+  <groupId>org.jboss.osgi.framework</groupId>
+  <artifactId>jbosgi-framework-parent</artifactId>
   <packaging>pom</packaging>
 
   <version>1.0.0.Alpha7-SNAPSHOT</version>
@@ -27,9 +27,9 @@
 
   <!-- Source Control -->
   <scm>
-    <connection>scm:git:git://github.com/jbosgi/jbosgi-container.git</connection>
-    <developerConnection>scm:git:git@github.com:jbosgi/jbosgi-container.git</developerConnection>
-    <url>http://github.com/jbosgi/jbosgi-container</url>
+    <connection>scm:git:git://github.com/jbosgi/jbosgi-framework.git</connection>
+    <developerConnection>scm:git:git@github.com:jbosgi/jbosgi-framework.git</developerConnection>
+    <url>http://github.com/jbosgi/jbosgi-framework</url>
   </scm>
 
   <!-- Properties -->

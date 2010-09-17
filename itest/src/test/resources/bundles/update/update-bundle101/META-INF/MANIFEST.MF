@@ -2,4 +2,4 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: update-bundle101
 Bundle-Version: 1.0.1
-Export-Package: org.jboss.test.osgi.container.bundle.support.b
+Export-Package: org.jboss.test.osgi.framework.bundle.support.b

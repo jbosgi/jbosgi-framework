@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: OptImporter
-Import-Package: org.jboss.test.osgi.container.packageadmin.exported;resolution:=optional
+Import-Package: org.jboss.test.osgi.framework.packageadmin.exported;resolution:=optional
 Bundle-Version: 1.0.0

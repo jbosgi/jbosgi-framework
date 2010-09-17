@@ -2,5 +2,5 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: update-bundle1
 Bundle-Version: 1.0.0
-Export-Package: org.jboss.test.osgi.container.bundle.support.a
+Export-Package: org.jboss.test.osgi.framework.bundle.support.a
 

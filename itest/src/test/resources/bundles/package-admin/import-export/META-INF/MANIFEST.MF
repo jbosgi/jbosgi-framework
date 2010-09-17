@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: ImportExport
-Import-Package: org.jboss.test.osgi.container.packageadmin.exported
+Import-Package: org.jboss.test.osgi.framework.packageadmin.exported
 Bundle-Version: 1.0.0
-Export-Package: org.jboss.test.osgi.container.packageadmin.importexport
+Export-Package: org.jboss.test.osgi.framework.packageadmin.importexport

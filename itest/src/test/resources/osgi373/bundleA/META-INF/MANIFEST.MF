@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: osgi373.bundleA
-Export-Package: org.jboss.test.osgi.container.jbosgi373
+Export-Package: org.jboss.test.osgi.framework.jbosgi373

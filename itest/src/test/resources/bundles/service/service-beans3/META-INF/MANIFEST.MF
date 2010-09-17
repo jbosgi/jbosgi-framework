@@ -4,4 +4,4 @@ Implementation-Version: test
 Implementation-Vendor: jboss.org
 Bundle-Name: Beans3
 Bundle-SymbolicName: beans3
-Export-Package: org.jboss.test.osgi.container.service.support.a
+Export-Package: org.jboss.test.osgi.framework.service.support.a

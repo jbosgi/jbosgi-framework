@@ -1,5 +1,5 @@
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: selfimportusesother
-Export-Package: org.jboss.test.osgi.container.resolver.support.b;uses:="org.jboss.test.osgi.container.resolver.support.c"
-Import-Package: org.jboss.test.osgi.container.resolver.support.b,
- org.jboss.test.osgi.container.resolver.support.c
+Export-Package: org.jboss.test.osgi.framework.resolver.support.b;uses:="org.jboss.test.osgi.container.resolver.support.c"
+Import-Package: org.jboss.test.osgi.framework.resolver.support.b,
+ org.jboss.test.osgi.framework.resolver.support.c

@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: service4
-Import-Package: org.jboss.test.osgi.container.service.support.a,org.jboss.test.osgi.container.service.support.c,org.jboss.test.osgi.container.service.support.d,org.osgi.framework
+Import-Package: org.jboss.test.osgi.framework.service.support.a,org.jboss.test.osgi.container.service.support.c,org.jboss.test.osgi.container.service.support.d,org.osgi.framework

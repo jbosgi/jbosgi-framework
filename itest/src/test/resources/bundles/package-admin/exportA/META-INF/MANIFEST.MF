@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: ExportA
-Export-Package: org.jboss.test.osgi.container.packageadmin.exportA
+Export-Package: org.jboss.test.osgi.framework.packageadmin.exportA
 
