@@ -27,12 +27,12 @@
   <parent>
     <groupId>org.jboss.osgi.framework</groupId>
     <artifactId>jbosgi-framework-parent</artifactId>
-    <version>1.0.0.Alpha7-SNAPSHOT</version>
+    <version>1.0.0.Alpha7</version>
   </parent>
   
   <!-- Properties -->
   <properties>
-    <surefire.jpda.args/>
+    <surefire.jpda.args />
     <surefire.system.args>-da ${surefire.jpda.args}</surefire.system.args>
   </properties>
 
