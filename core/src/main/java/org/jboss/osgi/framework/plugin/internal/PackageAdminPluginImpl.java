@@ -186,15 +186,47 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
    @Override
    public ExportedPackage getExportedPackage(String name)
    {
-      ExportedPackage bestMatch = null;
-      for (ExportedPackage aux : getExportedPackagesInternal(name))
+      // This implementation is flawed but the design of this API is PackageAdmin
+      // is also flawed and from 4.3 deprecated so we're doing a best effort to
+      // return a best effort result.
+      ExportedPackage[] exported = getExportedPackagesInternal(name);
+      List<ExportedPackage> wired = new ArrayList<ExportedPackage>();
+      List<ExportedPackage> notWired = new ArrayList<ExportedPackage>();
+      
+      for (ExportedPackage ep : exported) 
       {
-         if (bestMatch == null)
-            bestMatch = aux;
-         if (aux.getVersion().compareTo(bestMatch.getVersion()) > 0)
-            bestMatch = aux;
+         XPackageCapability capability = ((ExportedPackageImpl) ep).getCapability();
+         if (isWired(capability))
+            wired.add(ep);
+         else
+            notWired.add(ep);
       }
-      return bestMatch;
+      ExportedPackageComparator comparator = new ExportedPackageComparator();
+      Collections.sort(wired, comparator);
+      Collections.sort(notWired, comparator);
+      
+      if (wired.size() > 0)
+         return wired.get(0);
+      else if (notWired.size() > 0)
+         return notWired.get(0);
+      else
+         return null;
+   }
+
+   private boolean isWired(XPackageCapability capability)
+   {
+      for (AbstractBundle ab : getBundleManager().getBundles())
+      {
+         for (XModule module : ab.getAllResolverModules())
+         {
+            for (XWire wire : module.getWires())
+            {
+               if (wire.getCapability().equals(capability))
+                  return true;
+            }
+         }
+      }
+      return false;
    }
 
    @Override
@@ -569,9 +601,6 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       @Override
       public Bundle getExportingBundle()
       {
-         if (isRemovalPending())
-            return null;
-
          Bundle bundle = capability.getModule().getAttachment(Bundle.class);
          AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
          return bundleState.getBundleWrapper();
@@ -583,8 +612,8 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          if (isRemovalPending())
             return null;
 
-         XModule module = capability.getModule();
-         if (module.isResolved() == false)
+         XModule capModule = capability.getModule();
+         if (capModule.isResolved() == false)
             return null;
 
          Set<XRequirement> reqset = new HashSet<XRequirement>();
@@ -595,7 +624,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          // Bundles which require the exporting bundle associated with this exported
          // package are considered to be wired to this exported package are included in
          // the returned array.
-         XBundleCapability bundleCap = module.getBundleCapability();
+         XBundleCapability bundleCap = capModule.getBundleCapability();
          Set<XRequirement> bundleReqSet = bundleCap.getWiredRequirements();
          if (bundleReqSet != null)
             reqset.addAll(bundleReqSet);
@@ -608,6 +637,11 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
             AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
             bundles.add(bundleState.getBundleWrapper());
          }
+
+         // Remove the exporting bundle from the result
+         Bundle capBundle = capModule.getAttachment(Bundle.class);
+         AbstractBundle capAbstractBundle = AbstractBundle.assertBundleState(capBundle);
+         bundles.remove(capAbstractBundle.getBundleWrapper());
 
          return bundles.toArray(new Bundle[bundles.size()]);
       }
@@ -632,6 +666,11 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          Bundle b = module.getAttachment(Bundle.class);
          AbstractBundle ab = AbstractBundle.assertBundleState(b);
          return !ab.getCurrentRevision().equals(rev) || ab.getState() == Bundle.UNINSTALLED;
+      }
+
+      private XPackageCapability getCapability()
+      {
+         return capability;
       }
    }
 
@@ -712,6 +751,15 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          int sl1 = o1.getStartLevel();
          int sl2 = o2.getStartLevel();
          return sl1 < sl2 ? -1 : (sl1 == sl2 ? 0 : 1);
+      }
+   }
+   
+   private static class ExportedPackageComparator implements Comparator<ExportedPackage>
+   {
+      @Override
+      public int compare(ExportedPackage ep1, ExportedPackage ep2)
+      {
+         return ep2.getVersion().compareTo(ep1.getVersion());
       }
    }
 }
