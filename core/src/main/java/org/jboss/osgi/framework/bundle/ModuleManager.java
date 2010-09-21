@@ -54,6 +54,7 @@ import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleIdentity;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XRequireBundleRequirement;
 import org.jboss.osgi.resolver.XRequirement;
@@ -62,7 +63,6 @@ import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.application.Framework;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
-import org.osgi.framework.Version;
 
 /**
  * Build the {@link ModuleSpec} from {@link OSGiMetaData}.
@@ -77,9 +77,6 @@ public class ModuleManager
 
    // The module prefix for modules managed by the OSGi layer
    private static final String MODULE_PREFIX = "jbosgi";
-   // Multiple revisions of the same bundle can co-exist, when a bundle has been updated but not yet refreshed.
-   // This marker is appended to the version to make each revision unique.
-   private static final String REVISION_MARKER = "-rev";
 
    // The bundle manager
    private BundleManager bundleManager;
@@ -116,7 +113,6 @@ public class ModuleManager
 
    /**
     * Return the module identifier for a given XModule.
-    * The associated revision of the bundle is also taken into account.
     * @param resModule the resolver module to obtain the identifier for
     * @return the Module Identifier
     */
@@ -137,26 +133,9 @@ public class ModuleManager
       if (bundleRevision == null)
          throw new IllegalStateException("Cannot obtain revision from: " + resModule);
 
-      return getModuleIdentifier(resModule, bundleRevision.getRevisionCount());
-   }
-
-   // [TODO] Remove the revision parameter. The identity of an XModule is the revision.
-   private static ModuleIdentifier getModuleIdentifier(XModule resModule, int revision)
-   {
-      String name = MODULE_PREFIX + "." + resModule.getName();
-      Version version = resModule.getVersion();
-      long moduleId = resModule.getModuleId();
-
-      // Modules can define their dependencies on bundles by prefixing the artifact name with 'xservice'
-      // For ordinary modules we encode the bundleId in the group name to make sure the identifier is unique.
-      // When the underlying ModuleLoader supports unloading of modules we can hopefully create stable module identifiers
-      // that do not contain the bundleId, which is inherently unstable accross framework restarts.
-
-      // [TODO] Remove symbolic name prefix hack
-      if (moduleId > 0 && name.startsWith("xservice") == false)
-         name += "[" + moduleId + "]";
-
-      ModuleIdentifier identifier = ModuleIdentifier.create(name, version + REVISION_MARKER + revision);
+      XModuleIdentity moduleId = resModule.getModuleId();
+      String name = MODULE_PREFIX + "." + moduleId.getName() + "-" + moduleId.getVersion();
+      ModuleIdentifier identifier = ModuleIdentifier.create(name, moduleId.getRevision());
       resModule.addAttachment(ModuleIdentifier.class, identifier);
       return identifier;
    }
@@ -206,7 +185,7 @@ public class ModuleManager
       if (frameworkIdentifier != null)
          throw new IllegalStateException("Framework module already created");
 
-      frameworkIdentifier = getModuleIdentifier(resModule, 0);
+      frameworkIdentifier = getModuleIdentifier(resModule);
       ModuleSpec.Builder specBuilder = ModuleSpec.build(frameworkIdentifier);
 
       FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(bundleManager);

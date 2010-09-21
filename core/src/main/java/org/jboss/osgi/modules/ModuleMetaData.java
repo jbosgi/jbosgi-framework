@@ -24,14 +24,14 @@ package org.jboss.osgi.modules;
 import org.jboss.modules.ModuleIdentifier;
 
 /**
- * The metadata that can be defined for a module to take part 
+ * The metadata that can be defined for a module to take part
  * on xservice integration, which is the ability for
- * 
+ *
  * <ul>
  * <li>an OSGi Bundle to depend on a Module (and vice versa)</li>
  * <li>an OSGi Service to access a MSC Service (and vice versa)</li>
  * </ul>
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 09-Aug-2010
  */
@@ -46,7 +46,7 @@ public interface ModuleMetaData
     * The optional {@link ModuleActivator}.
     */
    String getModuleActivator();
-   
+
    /**
     * The optional module dependencies.
     */

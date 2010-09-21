@@ -90,7 +90,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       if (resModule == null)
          throw new IllegalArgumentException("Null module");
 
-      if (resModule.getModuleId() == 0)
+      if (resModule == getBundleManager().getSystemBundle().getResolverModule())
       {
          return moduleManager.createFrameworkSpec(resModule);
       }

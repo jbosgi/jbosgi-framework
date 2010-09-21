@@ -47,14 +47,14 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 
 /**
- * This is the internal implementation of a Bundle based on a user {@link Deployment}. 
- * 
+ * This is the internal implementation of a Bundle based on a user {@link Deployment}.
+ *
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
 public abstract class AbstractUserBundle extends AbstractBundle
 {
-   // The headers localized with the default locale 
+   // The headers localized with the default locale
    private Dictionary<String, String> headersOnUninstall;
    private final AtomicInteger revisionCounter = new AtomicInteger(0);
 
@@ -132,7 +132,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
    @SuppressWarnings("unchecked")
    public Dictionary<String, String> getHeaders(String locale)
    {
-      // This method must continue to return Manifest header information while this bundle is in the UNINSTALLED state, 
+      // This method must continue to return Manifest header information while this bundle is in the UNINSTALLED state,
       // however the header values must only be available in the raw and default locale values
       if (getState() == Bundle.UNINSTALLED)
          return headersOnUninstall;
@@ -151,7 +151,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
          int state = getState();
          if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING)
          {
-            // If this bundle's state is ACTIVE, STARTING  or STOPPING, this bundle is stopped as described in the Bundle.stop method. 
+            // If this bundle's state is ACTIVE, STARTING  or STOPPING, this bundle is stopped as described in the Bundle.stop method.
             // If Bundle.stop throws an exception, the exception is rethrown terminating the update.
             stopInternal(Bundle.STOP_TRANSIENT);
             if (state != Bundle.STOPPING)
@@ -163,8 +163,8 @@ public abstract class AbstractUserBundle extends AbstractBundle
 
       try
       {
-         // If the Framework is unable to install the updated version of this bundle, the original 
-         // version of this bundle must be restored and a BundleException must be thrown after 
+         // If the Framework is unable to install the updated version of this bundle, the original
+         // version of this bundle must be restored and a BundleException must be thrown after
          // completion of the remaining steps.
          createRevision(input);
       }
@@ -189,7 +189,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
       getFrameworkEventsPlugin().fireBundleEvent(getBundleWrapper(), BundleEvent.UPDATED);
       if (restart)
       {
-         // If this bundle's state was originally ACTIVE or STARTING, the updated bundle is started as described in the Bundle.start method. 
+         // If this bundle's state was originally ACTIVE or STARTING, the updated bundle is started as described in the Bundle.start method.
          // If Bundle.start throws an exception, a Framework event of type FrameworkEvent.ERROR is fired containing the exception
          try
          {
@@ -203,7 +203,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
    }
 
    /**
-    * Creates a new Bundle Revision when the bundle is updated. Multiple Bundle Revisions 
+    * Creates a new Bundle Revision when the bundle is updated. Multiple Bundle Revisions
     * can co-exist at the same time.
     * @param input The stream to create the bundle revision from or <tt>null</tt>
     * if the new revision needs to be created from the same location as where the bundle
@@ -217,10 +217,10 @@ public abstract class AbstractUserBundle extends AbstractBundle
       VirtualFile internalRoot = null;
 
       int revisionCount = revisionCounter.incrementAndGet();
-      
-      // If the specified InputStream is null, the Framework must create the InputStream from 
-      // which to read the updated bundle by interpreting, in an implementation dependent manner, 
-      // this bundle's Bundle-UpdateLocation Manifest header, if present, or this bundle's 
+
+      // If the specified InputStream is null, the Framework must create the InputStream from
+      // which to read the updated bundle by interpreting, in an implementation dependent manner,
+      // this bundle's Bundle-UpdateLocation Manifest header, if present, or this bundle's
       // original location.
       if (input == null)
       {
@@ -250,7 +250,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
       {
          if (internalRoot != null)
             bundleManager.deleteContentRoot(internalRoot);
-         
+
          throw new BundleException("Cannot store bundle from stream", ex);
       }
 
@@ -268,12 +268,12 @@ public abstract class AbstractUserBundle extends AbstractBundle
       {
          if (internalRoot != null)
             bundleManager.deleteContentRoot(internalRoot);
-         
+
          throw ex;
       }
    }
 
-   /** 
+   /**
     * This method gets called by Package Admin when the bundle needs to be refreshed,
     * this means that all the old revisions are thrown out.
     */
@@ -282,7 +282,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
       assertNotUninstalled();
       if (isResolved() == false)
          throw new IllegalStateException("Attempt to refresh an unresolved bundle: " + this);
-      
+
       changeState(Bundle.INSTALLED);
 
       BundleManager bundleManager = getBundleManager();
@@ -293,6 +293,9 @@ public abstract class AbstractUserBundle extends AbstractBundle
       {
          XModule resModule = rev.getResolverModule();
          getResolverPlugin().removeModule(resModule);
+
+         ModuleIdentifier identifier = rev.getModuleIdentifier();
+         getModuleManagerPlugin().removeModule(identifier);
 
          // Delete the content root file
          if (rev != currentRev)
@@ -319,7 +322,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
 
       BundleManager bundleManager = getBundleManager();
       bundleManager.removeBundle(this);
-      
+
       ModuleManagerPlugin moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
       for (AbstractRevision rev : revisions)
       {
@@ -336,7 +339,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
    @Override
    public void uninstall() throws BundleException
    {
-      // Cache the headers in the default locale 
+      // Cache the headers in the default locale
       headersOnUninstall = getHeaders(null);
       super.uninstall();
    }

@@ -45,6 +45,7 @@ import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.framework.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.framework.plugin.LifecycleInterceptorPlugin;
+import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.framework.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
@@ -64,18 +65,18 @@ import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * This is the internal base class for all bundles and fragments, including
- * the System Bundle.<p/> 
- * 
- * The logic related to loading of classes and resources is delegated to the current {@link HostRevision}. 
+ * the System Bundle.<p/>
+ *
+ * The logic related to loading of classes and resources is delegated to the current {@link HostRevision}.
  * As bundles can be updated there can be multiple bundle revisions.<p/>
- * 
+ *
  * The {@link AbstractBundle} can contain multiple revisions: the current revision and any number of old revisions.
- * This relates to updating of bundles. When a bundle is updated a new revision is created and assigned to the current revision. 
+ * This relates to updating of bundles. When a bundle is updated a new revision is created and assigned to the current revision.
  * However, the previous revision is kept available until {@link PackageAdmin#refreshPackages(Bundle[])} is called.<p/>
- * 
+ *
  * Common Bundle functionality is implemented in this base class, such as service
- * reference counting and state management. 
- * 
+ * reference counting and state management.
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
@@ -101,6 +102,7 @@ public abstract class AbstractBundle implements Bundle
    private FrameworkEventsPlugin eventsPlugin;
    private LifecycleInterceptorPlugin interceptorPlugin;
    private ResolverPlugin resolverPlugin;
+   private ModuleManagerPlugin moduleManager;
    private ServiceManagerPlugin servicePlugin;
 
    AbstractBundle(BundleManager bundleManager, String symbolicName)
@@ -173,9 +175,9 @@ public abstract class AbstractBundle implements Bundle
 
    void destroyBundleContext()
    {
-      // The BundleContext object is only valid during the execution of its context bundle; 
-      // that is, during the period from when the context bundle is in the STARTING, STOPPING, and ACTIVE bundle states. 
-      // If the BundleContext  object is used subsequently, an IllegalStateException must be thrown. 
+      // The BundleContext object is only valid during the execution of its context bundle;
+      // that is, during the period from when the context bundle is in the STARTING, STOPPING, and ACTIVE bundle states.
+      // If the BundleContext  object is used subsequently, an IllegalStateException must be thrown.
       // The BundleContext object must never be reused after its context bundle is stopped.
       bundleContext.destroy();
       bundleContext = null;
@@ -363,6 +365,13 @@ public abstract class AbstractBundle implements Bundle
       return interceptorPlugin;
    }
 
+   ModuleManagerPlugin getModuleManagerPlugin()
+   {
+      if (moduleManager == null)
+         moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
+      return moduleManager;
+   }
+
    ResolverPlugin getResolverPlugin()
    {
       if (resolverPlugin == null)
@@ -535,7 +544,7 @@ public abstract class AbstractBundle implements Bundle
    @SuppressWarnings("rawtypes")
    public Dictionary getHeaders()
    {
-      // If the specified locale is null then the locale returned 
+      // If the specified locale is null then the locale returned
       // by java.util.Locale.getDefault is used.
       return getHeaders(null);
    }
@@ -547,12 +556,12 @@ public abstract class AbstractBundle implements Bundle
       // Get the raw (unlocalized) manifest headers
       Dictionary<String, String> rawHeaders = getOSGiMetaData().getHeaders();
 
-      // If the specified locale is the empty string, this method will return the 
+      // If the specified locale is the empty string, this method will return the
       // raw (unlocalized) manifest headers including any leading "%"
       if ("".equals(locale))
          return rawHeaders;
 
-      // If the specified locale is null then the locale 
+      // If the specified locale is null then the locale
       // returned by java.util.Locale.getDefault is used
       if (locale == null)
          locale = Locale.getDefault().toString();
@@ -657,7 +666,7 @@ public abstract class AbstractBundle implements Bundle
     *   must search the fragment's JAR for the localization entry.
     *
     * other bundle - The framework must first search in the bundle’s JAR for
-    *   the localization entry. If the entry is not found and the bundle has fragments, 
+    *   the localization entry. If the entry is not found and the bundle has fragments,
     *   then the attached fragment JARs must be searched for the localization entry.
     */
    URL getLocalizationEntry(String entryPath)

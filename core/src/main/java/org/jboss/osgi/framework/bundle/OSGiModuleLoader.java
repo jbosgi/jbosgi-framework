@@ -50,7 +50,12 @@ final class OSGiModuleLoader extends ModuleLoader
    Module removeModule(ModuleIdentifier identifier)
    {
       OSGiModuleLoader.ModuleHolder moduleHolder = modules.remove(identifier);
-      return (moduleHolder != null ? moduleHolder.module : null);
+      if (moduleHolder == null)
+         return null;
+
+      Module module = moduleHolder.module;
+      unloadModuleLocal(module);
+      return module;
    }
 
    Set<ModuleIdentifier> getModuleIdentifiers()

@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
@@ -53,7 +52,7 @@ import org.osgi.framework.BundleException;
 
 /**
  * The resolver plugin.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2009
@@ -62,9 +61,6 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
 {
    // Provide logging
    final Logger log = Logger.getLogger(ResolverPluginImpl.class);
-
-   // Ordinary revision IDs start at 1, as 0 is the System Bundle Revision ID.
-   private final AtomicInteger identityGenerator = new AtomicInteger(0);
 
    // The resolver delegate
    private final XResolver resolver;
@@ -77,12 +73,6 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       resolver = XResolverFactory.getResolver();
       nativeCodePlugin = getOptionalPlugin(NativeCodePlugin.class);
       moduleManager = getPlugin(ModuleManagerPlugin.class);
-   }
-
-   @Override
-   public int createModuleId()
-   {
-      return identityGenerator.incrementAndGet();
    }
 
    @Override
@@ -149,7 +139,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       // Resolve the modules
       log.debug("Resolve modules: " + unresolved);
       boolean allResolved = resolver.resolveAll(unresolved);
-      
+
       // Report resolver errors
       if (allResolved == false)
       {
@@ -162,10 +152,10 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
             }
          }
       }
-      
+
       // Apply resolver results
       applyResolverResults(resolved);
-      
+
       return allResolved;
    }
 
@@ -173,16 +163,16 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    {
       // Attach the fragments to host
       attachFragmentsToHost(resolved);
-      
+
       // For every resolved host bundle create the {@link ModuleSpec}
       createModuleSpecs(resolved);
-      
+
       // For every resolved host bundle load the module. This creates the {@link ModuleClassLoader}
       loadModules(resolved);
-      
+
       // Resolve native code libraries if there are any
       resolveNativeCodeLibraries(resolved);
-      
+
       // Change the bundle state to RESOLVED
       setBundleToResolved(resolved);
    }
@@ -229,9 +219,10 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
 
    private void resolveNativeCodeLibraries(List<XModule> resolved)
    {
+      XModule systemModule = getBundleManager().getSystemBundle().getResolverModule();
       for (XModule aux : resolved)
       {
-         if (aux.getModuleId() != 0)
+         if (aux != systemModule)
          {
             Bundle bundle = aux.getAttachment(Bundle.class);
             AbstractUserBundle bundleState = AbstractUserBundle.assertBundleState(bundle);
@@ -244,7 +235,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
          }
       }
    }
-   
+
    private void setBundleToResolved(List<XModule> resolved)
    {
       for (XModule aux : resolved)
@@ -271,7 +262,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
          StringBuffer buffer = new StringBuffer("Mark resolved: " + module);
          for (XWire wire : module.getWires())
             buffer.append("\n " + wire.toString());
-         
+
          log.debug(buffer);
          resolved.add(module);
       }

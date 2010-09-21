@@ -38,7 +38,6 @@ import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractUserBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.FrameworkState;
-import org.jboss.osgi.framework.loading.ModuleClassLoaderExt;
 import org.jboss.osgi.framework.loading.NativeLibraryProvider;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.BundleStoragePlugin;

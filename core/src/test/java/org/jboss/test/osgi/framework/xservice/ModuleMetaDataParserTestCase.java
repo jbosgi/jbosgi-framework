@@ -23,15 +23,14 @@ package org.jboss.test.osgi.framework.xservice;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 
 import java.io.File;
 import java.io.FileReader;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.modules.ModuleMetaData;
-import org.jboss.osgi.modules.ModuleMetaDataParser;
 import org.jboss.osgi.modules.ModuleMetaData.Dependency;
+import org.jboss.osgi.modules.ModuleMetaDataParser;
 import org.jboss.osgi.testing.OSGiTest;
 import org.junit.Test;
 

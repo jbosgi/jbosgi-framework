@@ -31,7 +31,7 @@ import org.osgi.framework.BundleException;
 
 /**
  * The resolver plugin.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2009
@@ -39,32 +39,27 @@ import org.osgi.framework.BundleException;
 public interface ResolverPlugin extends Plugin
 {
    /**
-    * Create a unique module identifier
-    */
-   int createModuleId();
-   
-   /**
     * Get the resolver instance
     */
    XResolver getResolver();
 
    /**
     * Add a module to the resolver.
-    * 
+    *
     * @param module the resolver module
     */
    void addModule(XModule module);
 
    /**
     * Remove a module from the resolver.
-    * 
+    *
     * @param module the resolver module
     */
    void removeModule(XModule module);
 
    /**
     * Resolve the given modules.
-    * 
+    *
     * @param module the module to resolve
     * @return The set of resolved modules or an empty set
     * @throws BundleException If the resolver could not resolve the module
@@ -73,7 +68,7 @@ public interface ResolverPlugin extends Plugin
 
    /**
     * Resolve the given set of modules.
-    * 
+    *
     * @param modules the modules to resolve
     * @return True if all modules could be resolved
     */

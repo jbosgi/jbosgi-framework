@@ -248,7 +248,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                List<AbstractBundle> bundlesToRefresh = new ArrayList<AbstractBundle>();
                for (AbstractBundle aux : getBundleManager().getBundles(null))
                {
-                  // a bundle with more than 1 revision has been updated since the last refresh packages call 
+                  // a bundle with more than 1 revision has been updated since the last refresh packages call
                   if (aux.getRevisions().size() > 1 || aux.getState() == Bundle.UNINSTALLED)
                      bundlesToRefresh.add(aux);
                }

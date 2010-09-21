@@ -23,7 +23,6 @@ package org.jboss.test.osgi.framework.loading;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.InputStream;
@@ -48,7 +47,7 @@ import org.junit.Test;
 
 /**
  * Test the bundle content loader.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
@@ -86,7 +85,7 @@ public class VirtualFileResourceLoaderTestCase
    {
       rootFile.close();
    }
-   
+
    @Test
    public void testClassSpec() throws Exception
    {
