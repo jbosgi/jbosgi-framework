@@ -389,7 +389,7 @@ public class BundleTestCase extends OSGiFrameworkTest
       try
       {
          bundle1.start();
-         
+
          assertEquals(Version.parseVersion("1"), bundle1.getVersion());
          try
          {
@@ -400,8 +400,7 @@ public class BundleTestCase extends OSGiFrameworkTest
          {
             // good
          }
-         assertEquals("Because bundle.stop() throws an exception the update should not have been applied",
-               Version.parseVersion("1"), bundle1.getVersion());
+         assertEquals("Because bundle.stop() throws an exception the update should not have been applied", Version.parseVersion("1"), bundle1.getVersion());
       }
       finally
       {
@@ -433,7 +432,7 @@ public class BundleTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   public void testUpdateSameBSNVersion() throws Exception
+   public void testUpdateSameSymbolicNameAndVersion() throws Exception
    {
       Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundlea", ClassA.class);
       Archive<?> assembly2 = assembleArchive("bundle2", "/bundles/update/update-bundleb", ClassB.class);
@@ -454,6 +453,12 @@ public class BundleTestCase extends OSGiFrameworkTest
       {
          bundle1.uninstall();
       }
+   }
+
+   @Test
+   public void testInstallAfterUninstall()
+   {
+      
    }
 
    @Test
@@ -530,7 +535,7 @@ public class BundleTestCase extends OSGiFrameworkTest
          bundle.uninstall();
       }
    }
-   
+
    @Test
    @Ignore("[JBOSGI-389] Bundle classloader does not implement BundleReference")
    public void testBundleReference() throws Exception

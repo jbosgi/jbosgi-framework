@@ -96,7 +96,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
    }
 
    @Override
-   public File storeBundleStream(String location, InputStream input, int revisionCount) throws IOException
+   public File storeBundleStream(String location, InputStream input, int revCount) throws IOException
    {
       if (location == null)
          throw new IllegalArgumentException("Null location");
@@ -125,14 +125,14 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
          filename = filename.substring(0, filename.length() - 4);
 
       filename = filename.replace('/', '.');
-      if (revisionCount > 0)
-         filename += "-rev" + revisionCount;
+      if (revCount > 0)
+         filename += "-rev" + revCount;
 
       File streamdir = getBundleStreamDir();
       streamdir.mkdirs();
 
       File file = new File(streamdir + File.separator + filename + ".jar");
-      if (file.exists() && revisionCount > 0)
+      if (file.exists() && revCount > 0)
          throw new IllegalStateException("File already exists: " + file);
 
       int dupcount = 0;

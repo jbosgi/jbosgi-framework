@@ -34,7 +34,7 @@ import org.jboss.test.osgi.framework.bundle.support.a.ServiceA;
 import org.jboss.test.osgi.framework.bundle.support.b.ActivatorB;
 import org.jboss.test.osgi.framework.bundle.support.b.LifecycleService;
 import org.jboss.test.osgi.framework.bundle.support.b.ServiceB;
-import org.jboss.test.osgi.framework.bundle.support.x.X;
+import org.jboss.test.osgi.framework.bundle.support.x.ServiceX;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -264,7 +264,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest
    @Test
    public void testInstallStartX() throws Exception
    {
-      Bundle bundleX = installBundle(assembleArchive("lifecycle-bundleX", "/bundles/lifecycle/bundleX", X.class));
+      Bundle bundleX = installBundle(assembleArchive("lifecycle-bundleX", "/bundles/lifecycle/bundleX", ServiceX.class));
       try
       {
          assertBundleState(Bundle.INSTALLED, bundleX.getState());
@@ -284,7 +284,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest
    {
       // Install X, B
 
-      Bundle bundleX = installBundle(assembleArchive("lifecycle-bundleX", "/bundles/lifecycle/bundleX", X.class));
+      Bundle bundleX = installBundle(assembleArchive("lifecycle-bundleX", "/bundles/lifecycle/bundleX", ServiceX.class));
       try
       {
          assertBundleState(Bundle.INSTALLED, bundleX.getState());
@@ -314,7 +314,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest
    {
       // Install X, B, A
 
-      Bundle bundleX = installBundle(assembleArchive("lifecycle-bundleX", "/bundles/lifecycle/bundleX", X.class));
+      Bundle bundleX = installBundle(assembleArchive("lifecycle-bundleX", "/bundles/lifecycle/bundleX", ServiceX.class));
       try
       {
          assertBundleState(Bundle.INSTALLED, bundleX.getState());
@@ -370,7 +370,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest
             // expected
          }
 
-         Bundle bundleX = installBundle(assembleArchive("lifecycle-bundleX", "/bundles/lifecycle/bundleX", X.class));
+         Bundle bundleX = installBundle(assembleArchive("lifecycle-bundleX", "/bundles/lifecycle/bundleX", ServiceX.class));
          try
          {
             assertBundleState(Bundle.INSTALLED, bundleX.getState());
@@ -415,7 +415,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest
                // expected
             }
 
-            Bundle bundleX = installBundle(assembleArchive("lifecycle-bundleX", "/bundles/lifecycle/bundleX", X.class));
+            Bundle bundleX = installBundle(assembleArchive("lifecycle-bundleX", "/bundles/lifecycle/bundleX", ServiceX.class));
             try
             {
                assertBundleState(Bundle.INSTALLED, bundleX.getState());
@@ -448,7 +448,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest
    {
       // Uninstall X, B stays active
 
-      Bundle bundleX = installBundle(assembleArchive("lifecycle-bundleX", "/bundles/lifecycle/bundleX", X.class));
+      Bundle bundleX = installBundle(assembleArchive("lifecycle-bundleX", "/bundles/lifecycle/bundleX", ServiceX.class));
       try
       {
          assertBundleState(Bundle.INSTALLED, bundleX.getState());

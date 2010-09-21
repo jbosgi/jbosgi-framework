@@ -60,9 +60,9 @@ public class FragmentBundle extends AbstractUserBundle
    }
    
    @Override
-   AbstractUserRevision createRevisionInternal(Deployment deployment, int revisionCount) throws BundleException
+   AbstractUserRevision createRevisionInternal(Deployment deployment, int revCount) throws BundleException
    {
-      return new FragmentRevision(this, deployment, revisionCount);
+      return new FragmentRevision(this, deployment, revCount);
    }
 
    @Override

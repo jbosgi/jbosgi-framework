@@ -23,17 +23,17 @@ package org.jboss.test.osgi.framework.bundle.support.b;
 
 //$Id: ServiceB.java 85016 2009-03-02 12:12:31Z thomas.diesler@jboss.com $
 
-import org.jboss.test.osgi.framework.bundle.support.x.X;
+import org.jboss.test.osgi.framework.bundle.support.x.ServiceX;
 
 /**
- * ServiceA has a dependency on ServiceB, both have a dependency on SomePojo
+ * ServiceB has a dependency on SomePojo
  * 
  * @author thomas.diesler@jboss.com
  * @since 02-Mar-2009
  */
 public class ServiceB 
 {
-  public String doStuffInB(X obj)
+  public String doStuffInB(ServiceX obj)
   {
      return obj.toString();
   }

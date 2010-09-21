@@ -26,6 +26,7 @@ package org.jboss.osgi.framework.plugin;
 import java.util.Set;
 
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleIdentity;
 import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.BundleException;
 
@@ -57,6 +58,12 @@ public interface ResolverPlugin extends Plugin
     */
    void removeModule(XModule module);
 
+   /**
+    * Get the module for the given id
+    * @return The module or null
+    */
+   XModule getModuleById(XModuleIdentity moduleId);
+   
    /**
     * Resolve the given modules.
     *

@@ -24,7 +24,7 @@ package org.jboss.test.osgi.framework.bundle.support.a;
 //$Id: ServiceA.java 85293 2009-03-05 13:45:47Z thomas.diesler@jboss.com $
 
 import org.jboss.test.osgi.framework.bundle.support.b.ServiceB;
-import org.jboss.test.osgi.framework.bundle.support.x.X;
+import org.jboss.test.osgi.framework.bundle.support.x.ServiceX;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
@@ -45,7 +45,7 @@ public class ServiceA
          public Object addingService(ServiceReference sref)
          {
             ServiceB serviceB = (ServiceB)super.addingService(sref);
-            serviceB.doStuffInB(new X("hello"));
+            serviceB.doStuffInB(new ServiceX("hello"));
             return serviceB;
          }
       };

@@ -24,11 +24,11 @@ package org.jboss.test.osgi.framework.bundle.support.x;
 
 //$Id: SomePojo.java 85016 2009-03-02 12:12:31Z thomas.diesler@jboss.com $
 
-public class X
+public class ServiceX
 {
    private String message;
    
-   public X(String message)
+   public ServiceX(String message)
    {
       this.message = message;
    }

@@ -58,9 +58,9 @@ public class HostRevision extends AbstractUserRevision
    private final List<VirtualFile> contentRoots;
    private List<FragmentRevision> attachedFragments;
 
-   public HostRevision(HostBundle hostBundle, Deployment dep, int revisionCount) throws BundleException
+   public HostRevision(HostBundle hostBundle, Deployment dep, int revCount) throws BundleException
    {
-      super(hostBundle, dep, revisionCount);
+      super(hostBundle, dep, revCount);
 
       // Set the aggregated root file
       contentRoots = getBundleClassPath(dep.getRoot(), getOSGiMetaData());

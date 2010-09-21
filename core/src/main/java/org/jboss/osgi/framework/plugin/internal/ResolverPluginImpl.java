@@ -42,6 +42,7 @@ import org.jboss.osgi.framework.plugin.NativeCodePlugin;
 import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleIdentity;
 import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResolverCallback;
 import org.jboss.osgi.resolver.XResolverException;
@@ -91,6 +92,12 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    public void removeModule(XModule resModule)
    {
       resolver.removeModule(resModule);
+   }
+
+   @Override
+   public XModule getModuleById(XModuleIdentity moduleId)
+   {
+      return resolver.getModuleById(moduleId);
    }
 
    @Override

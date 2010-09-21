@@ -43,7 +43,7 @@ public interface BundleStoragePlugin extends Plugin
    
    File getDataFile(Bundle bundle, String filename);
    
-   File storeBundleStream(String location, InputStream input, int revisionCount) throws IOException;
+   File storeBundleStream(String location, InputStream input, int revCount) throws IOException;
 
    void cleanStorage(String propValue);
 }

@@ -76,9 +76,9 @@ public class HostBundle extends AbstractUserBundle
    }
 
    @Override
-   AbstractUserRevision createRevisionInternal(Deployment deployment, int revisionCount) throws BundleException
+   AbstractUserRevision createRevisionInternal(Deployment deployment, int revCount) throws BundleException
    {
-      return new HostRevision(this, deployment, revisionCount);
+      return new HostRevision(this, deployment, revCount);
    }
 
    @Override

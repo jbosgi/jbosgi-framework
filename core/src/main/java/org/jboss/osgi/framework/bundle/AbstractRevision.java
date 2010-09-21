@@ -59,7 +59,7 @@ public abstract class AbstractRevision
    // Cache commonly used plugins
    private final ModuleManagerPlugin moduleManager;
 
-   AbstractRevision(AbstractBundle bundleState, OSGiMetaData metadata, XModule resModule, int revisionCount) throws BundleException
+   AbstractRevision(AbstractBundle bundleState, OSGiMetaData metadata, XModule resModule, int revCount) throws BundleException
    {
       if (bundleState == null)
          throw new IllegalArgumentException("Null bundleState");
@@ -68,7 +68,7 @@ public abstract class AbstractRevision
 
       this.bundleState = bundleState;
       this.metadata = metadata;
-      this.revisionCount = revisionCount;
+      this.revisionCount = revCount;
 
       this.moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
 
@@ -100,12 +100,17 @@ public abstract class AbstractRevision
 
    XModule createResolverModule(OSGiMetaData metadata) throws BundleException
    {
-      XModuleIdentity moduleId = XModuleIdentity.create(metadata, "rev" + revisionCount);
+      XModuleIdentity moduleId = getModuleIdentity(metadata, revisionCount);
       XModuleBuilder builder = XResolverFactory.loadModuleBuilder(getClass().getClassLoader());
       XModule resModule = builder.createModule(moduleId, metadata);
       resModule.addAttachment(AbstractRevision.class, this);
       resModule.addAttachment(Bundle.class, bundleState);
       return resModule;
+   }
+
+   static XModuleIdentity getModuleIdentity(OSGiMetaData metadata, int revCount)
+   {
+      return XModuleIdentity.create(metadata, "rev" + revCount);
    }
 
    abstract void refreshRevisionInternal(XModule resModule);

@@ -36,8 +36,10 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
+import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleIdentity;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -56,12 +58,30 @@ public abstract class AbstractUserBundle extends AbstractBundle
 {
    // The headers localized with the default locale
    private Dictionary<String, String> headersOnUninstall;
-   private final AtomicInteger revisionCounter = new AtomicInteger(0);
+   private final AtomicInteger revCounter = new AtomicInteger(0);
 
-   AbstractUserBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
+   AbstractUserBundle(BundleManager bundleManager, Deployment dep) throws BundleException
    {
-      super(bundleManager, deployment.getSymbolicName());
-      createRevision(deployment, revisionCounter.incrementAndGet());
+      super(bundleManager, dep.getSymbolicName());
+      createRevision(dep, incrementRevisionCount(dep.getAttachment(OSGiMetaData.class)));
+   }
+
+   // The initial revision count is greater than 1 if the framework 
+   // still retains UNISTALLED bundles with the same symbolic name and version
+   private int incrementRevisionCount(OSGiMetaData metadata)
+   {
+      ResolverPlugin plugin = getResolverPlugin();
+      
+      int revCount = revCounter.incrementAndGet();
+      XModuleIdentity moduleId = AbstractRevision.getModuleIdentity(metadata, revCount);
+      XModule resModule = plugin.getModuleById(moduleId);
+      if (resModule != null)
+      {
+         Bundle resBundle = resModule.getAttachment(Bundle.class);
+         if (resBundle.getState() == Bundle.UNINSTALLED)
+            return incrementRevisionCount(metadata);
+      }
+      return revCount;
    }
 
    /**
@@ -82,14 +102,14 @@ public abstract class AbstractUserBundle extends AbstractBundle
       return (AbstractUserBundle)bundle;
    }
 
-   AbstractUserRevision createRevision(Deployment deployment, int revisionCount) throws BundleException
+   AbstractUserRevision createRevision(Deployment deployment, int revCount) throws BundleException
    {
-      AbstractUserRevision revision = createRevisionInternal(deployment, revisionCount);
+      AbstractUserRevision revision = createRevisionInternal(deployment, revCount);
       addRevision(revision);
       return revision;
    }
 
-   abstract AbstractUserRevision createRevisionInternal(Deployment deployment, int revisionCount) throws BundleException;
+   abstract AbstractUserRevision createRevisionInternal(Deployment deployment, int revCount) throws BundleException;
 
    public ModuleClassLoader getModuleClassLoader()
    {
@@ -216,7 +236,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
       InputStream internalInput = null;
       VirtualFile internalRoot = null;
 
-      int revisionCount = revisionCounter.incrementAndGet();
+      int revCount = revCounter.incrementAndGet();
 
       // If the specified InputStream is null, the Framework must create the InputStream from
       // which to read the updated bundle by interpreting, in an implementation dependent manner,
@@ -243,7 +263,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
       {
          BundleStoragePlugin plugin = bundleManager.getPlugin(BundleStoragePlugin.class);
          InputStream newInput = (input != null ? input : internalInput);
-         File newFile = plugin.storeBundleStream(getLocation(), newInput, revisionCount);
+         File newFile = plugin.storeBundleStream(getLocation(), newInput, revCount);
          newRoot = AbstractVFS.getRoot(newFile.toURI().toURL());
       }
       catch (IOException ex)
@@ -261,7 +281,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
          OSGiMetaData metadata = plugin.createOSGiMetaData(dep);
          dep.addAttachment(OSGiMetaData.class, metadata);
 
-         createRevision(dep, revisionCount);
+         createRevision(dep, revCount);
          getResolverPlugin().addModule(getResolverModule());
       }
       catch (BundleException ex)
