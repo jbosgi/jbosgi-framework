@@ -29,7 +29,7 @@ import org.osgi.framework.BundleContext;
 
 /**
  * A the context for Module/OSGi integration.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 05-Aug-2010
  */
@@ -42,12 +42,12 @@ public interface ModuleContext
     * Get the ServiceName for the given service interface that an xservice implements.
     */
    ServiceName getServiceName(Class<?> service);
-   
+
    ServiceContainer getServiceContainer();
-   
+
    Module getModule();
-   
+
    BundleContext getSystemContext();
-   
+
    Bundle getBundle();
 }

@@ -26,8 +26,8 @@ import java.util.List;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.framework.plugin.StartLevelPlugin;
-import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.modules.ModuleActivator;
+import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -36,11 +36,11 @@ import org.osgi.framework.FrameworkEvent;
 import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
- * This is the internal implementation of a host Bundle. 
- * 
- * Bundle specific functionality is handled here, such as Start Level, 
- * the {@link BundleActivator} and internal implementations of lifecycle management. 
- * 
+ * This is the internal implementation of a host Bundle.
+ *
+ * Bundle specific functionality is handled here, such as Start Level,
+ * the {@link BundleActivator} and internal implementations of lifecycle management.
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
@@ -94,9 +94,9 @@ public class HostBundle extends AbstractUserBundle
 
    /**
     * A bundle is destroyed if it is no longer known to the system.
-    * An uninstalled bundle can potentially live on 
-    * if there are other bundles depending on it. Only after a call to 
-    * {@link PackageAdmin#refreshPackages(Bundle[])} the bundle gets destroyed. 
+    * An uninstalled bundle can potentially live on
+    * if there are other bundles depending on it. Only after a call to
+    * {@link PackageAdmin#refreshPackages(Bundle[])} the bundle gets destroyed.
     * @return whether or not the bundle is destroyed.
     */
    public boolean isDestroyed()
@@ -115,9 +115,9 @@ public class HostBundle extends AbstractUserBundle
    {
       boolean result = true;
 
-      // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle 
-      // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired 
-      // containing a BundleException with details of the reason this bundle could not be resolved. 
+      // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
+      // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired
+      // containing a BundleException with details of the reason this bundle could not be resolved.
       if (getState() == Bundle.INSTALLED)
       {
          try
@@ -175,17 +175,14 @@ public class HostBundle extends AbstractUserBundle
       if (plugin != null && plugin.getStartLevel() < getStartLevel())
          // Not at the required start level yet. This bundle will be started later once
          // the required start level has been reached.
-         // TODO the spec says that we need to throw a BundleException here... 
+         // TODO the spec says that we need to throw a BundleException here...
          return;
 
-      OSGiMetaData osgiMetaData = getOSGiMetaData();
-      if (osgiMetaData == null)
-         throw new IllegalStateException("Cannot obtain OSGi meta data");
+      // Resolve this bundles
+      XModule resModule = getResolverModule();
+      getResolverPlugin().resolve(resModule);
 
-      // Resolve this bundles 
-      getResolverPlugin().resolve(getResolverModule());
-
-      // The BundleActivator.start(BundleContext) method of this bundle's BundleActivator, if one is specified, is called. 
+      // The BundleActivator.start(BundleContext) method of this bundle's BundleActivator, if one is specified, is called.
       try
       {
          // Create the bundle context
@@ -195,7 +192,7 @@ public class HostBundle extends AbstractUserBundle
          changeState(Bundle.STARTING);
 
          // Do we have a bundle activator
-         String bundleActivatorClassName = osgiMetaData.getBundleActivator();
+         String bundleActivatorClassName = resModule.getModuleActivator();
          if (bundleActivatorClassName != null)
          {
             Object result = loadClass(bundleActivatorClassName).newInstance();
@@ -261,16 +258,16 @@ public class HostBundle extends AbstractUserBundle
    @Override
    void stopInternal(int options) throws BundleException
    {
-      // If this bundle's state is UNINSTALLED then an IllegalStateException is thrown. 
+      // If this bundle's state is UNINSTALLED then an IllegalStateException is thrown.
       if (getState() == Bundle.UNINSTALLED)
          throw new IllegalStateException("Bundle already uninstalled: " + this);
 
-      // [TODO] If this bundle is in the process of being activated or deactivated then this method must wait for activation or deactivation 
-      // to complete before continuing. If this does not occur in a reasonable time, a BundleException is thrown to indicate this bundle 
+      // [TODO] If this bundle is in the process of being activated or deactivated then this method must wait for activation or deactivation
+      // to complete before continuing. If this does not occur in a reasonable time, a BundleException is thrown to indicate this bundle
       // was unable to be stopped.
 
-      // [TODO] If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to to Stopped. 
-      // When the Framework is restarted and this bundle's autostart setting is Stopped, this bundle must not be automatically started. 
+      // [TODO] If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to to Stopped.
+      // When the Framework is restarted and this bundle's autostart setting is Stopped, this bundle must not be automatically started.
 
       // If this bundle's state is not STARTING or ACTIVE then this method returns immediately
       if (getState() != Bundle.STARTING && getState() != Bundle.ACTIVE)
@@ -281,9 +278,9 @@ public class HostBundle extends AbstractUserBundle
       int priorState = getState();
       changeState(STOPPING);
 
-      // If this bundle's state was ACTIVE prior to setting the state to STOPPING, 
-      // the BundleActivator.stop(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, if one is specified, is called. 
-      // If that method throws an exception, this method must continue to stop this bundle and a BundleException must be thrown after completion 
+      // If this bundle's state was ACTIVE prior to setting the state to STOPPING,
+      // the BundleActivator.stop(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, if one is specified, is called.
+      // If that method throws an exception, this method must continue to stop this bundle and a BundleException must be thrown after completion
       // of the remaining steps.
       Throwable rethrow = null;
       if (priorState == Bundle.ACTIVE)
@@ -314,7 +311,7 @@ public class HostBundle extends AbstractUserBundle
 
       // [TODO] Any listeners registered by this bundle must be removed
 
-      // If this bundle's state is UNINSTALLED, because this bundle was uninstalled while the 
+      // If this bundle's state is UNINSTALLED, because this bundle was uninstalled while the
       // BundleActivator.stop method was running, a BundleException must be thrown
       if (getState() == Bundle.UNINSTALLED)
          throw new BundleException("Bundle uninstalled during activator stop: " + this);
@@ -333,7 +330,7 @@ public class HostBundle extends AbstractUserBundle
    {
       BundleManager bundleManager = getBundleManager();
 
-      // If this bundle's state is ACTIVE, STARTING or STOPPING, this bundle is stopped 
+      // If this bundle's state is ACTIVE, STARTING or STOPPING, this bundle is stopped
       // as described in the Bundle.stop method.
       int state = getState();
       if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING)

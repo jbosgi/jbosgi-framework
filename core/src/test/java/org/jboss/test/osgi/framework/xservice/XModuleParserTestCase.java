@@ -26,21 +26,23 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.io.FileReader;
+import java.util.List;
 
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.osgi.modules.ModuleMetaData;
-import org.jboss.osgi.modules.ModuleMetaData.Dependency;
-import org.jboss.osgi.modules.ModuleMetaDataParser;
+import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleParser;
+import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.testing.OSGiTest;
+import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
 import org.junit.Test;
+import org.osgi.framework.Version;
 
 /**
- * Test the {@link ModuleMetaDataParser}
+ * Test the {@link XModuleParser}
  *
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jul-2010
  */
-public class ModuleMetaDataParserTestCase extends OSGiTest
+public class XModuleParserTestCase extends OSGiTest
 {
    @Test
    public void testModuleA() throws Exception
@@ -48,27 +50,17 @@ public class ModuleMetaDataParserTestCase extends OSGiTest
       File resFile = getResourceFile("xservice/moduleA/META-INF/jbosgi-xservice.properties");
       assertNotNull("File exists", resFile);
 
-      ModuleMetaDataParser parser = new ModuleMetaDataParser();
-      ModuleMetaData metadata = parser.parse(new FileReader(resFile));
-      assertNotNull("ModuleMetaData exists", metadata);
+      XModuleParser parser = XModuleParser.newInstance();
+      XModule resModule = parser.parse(new FileReader(resFile));
+      assertNotNull("XModule exists", resModule);
 
-      ModuleIdentifier identifier = metadata.getIdentifier();
-      assertEquals("moduleA", identifier.getName());
-      assertEquals("1.0", identifier.getSlot());
+      assertEquals("moduleA", resModule.getName());
+      assertEquals(Version.parseVersion("1.0"), resModule.getVersion());
 
-      Dependency[] dependencies = metadata.getDependencies();
-      assertNotNull("Dependencies not null", dependencies);
-      assertEquals(1, dependencies.length);
-
-      Dependency dependency = dependencies[0];
-      identifier = dependency.getIdentifier();
-      assertEquals("system.bundle", identifier.getName());
-      assertEquals("main", identifier.getSlot());
-
-      String[] exportPaths = metadata.getExportPaths();
-      assertNotNull("EportPaths not null", exportPaths);
-      assertEquals(1, exportPaths.length);
-
-      assertEquals("org/jboss/test/osgi/framework/xservice/moduleA", exportPaths[0]);
+      List<XPackageCapability> packageCaps = resModule.getPackageCapabilities();
+      assertNotNull("Export-Package not null", packageCaps);
+      assertEquals(1, packageCaps.size());
+      XPackageCapability packageCap = packageCaps.get(0);
+      assertEquals(ModuleServiceA.class.getPackage().getName(), packageCap.getName());
    }
 }

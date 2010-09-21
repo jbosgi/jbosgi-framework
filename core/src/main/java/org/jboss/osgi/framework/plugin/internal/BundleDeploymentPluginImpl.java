@@ -24,14 +24,9 @@ package org.jboss.osgi.framework.plugin.internal;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URL;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.bundle.BundleManager;
@@ -40,12 +35,9 @@ import org.jboss.osgi.framework.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.metadata.internal.OSGiManifestMetaData;
-import org.jboss.osgi.modules.ModuleMetaData;
-import org.jboss.osgi.modules.ModuleMetaData.Dependency;
-import org.jboss.osgi.modules.ModuleMetaDataParser;
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleParser;
 import org.jboss.osgi.spi.util.BundleInfo;
-import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
@@ -105,16 +97,15 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          {
             InputStream inputStream = child.openStream();
 
-            ModuleMetaDataParser parser = new ModuleMetaDataParser();
-            ModuleMetaData metadata = parser.parse(new InputStreamReader(inputStream));
+            XModuleParser parser = XModuleParser.newInstance();
+            XModule resModule = parser.parse(new InputStreamReader(inputStream));
 
             // Module-Identifier, Module-Activator
-            ModuleIdentifier identifier = metadata.getIdentifier();
-            String symbolicName = identifier.getName();
-            String version = identifier.getSlot();
+            String symbolicName = resModule.getName();
+            Version version = resModule.getVersion();
 
-            Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, Version.parseVersion(version));
-            dep.addAttachment(ModuleMetaData.class, metadata);
+            Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, version);
+            dep.addAttachment(XModule.class, resModule);
             return dep;
          }
          else
@@ -147,11 +138,6 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       if (metadata == null && resModule != null)
          metadata = toOSGiMetaData(dep, resModule);
 
-      // Secondly, we support deployments that contain ModuleSpec
-      ModuleMetaData moduleSpec = dep.getAttachment(ModuleMetaData.class);
-      if (metadata == null && moduleSpec != null)
-         metadata = toOSGiMetaData(dep, moduleSpec);
-
       if (metadata == null)
          throw new BundleException("Cannot construct OSGiMetaData from: " + dep);
 
@@ -175,72 +161,5 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       // Create dummy OSGiMetaData from the user provided XModule
       OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(symbolicName, version);
       return builder.getOSGiMetaData();
-   }
-
-   private OSGiMetaData toOSGiMetaData(Deployment dep, ModuleMetaData moduleSpec)
-   {
-      OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-      ModuleIdentifier identifier = moduleSpec.getIdentifier();
-      builder.addBundleSymbolicName(identifier.getName());
-      builder.addBundleVersion(identifier.getSlot());
-
-      // Set the module activator bridge
-      if (moduleSpec.getModuleActivator() != null)
-         builder.addBundleActivator(moduleSpec.getModuleActivator());
-
-      // Add Export-Package for every path we can find
-      try
-      {
-         VirtualFile root = dep.getRoot();
-         Set<String> exportedPaths = new HashSet<String>();
-         int urlOffset = root.toURL().toExternalForm().length();
-         Enumeration<URL> entries = root.findEntries("/", null, true);
-         while (entries.hasMoreElements())
-         {
-            String url = entries.nextElement().toExternalForm();
-            String path = url.substring(urlOffset);
-            if (path.startsWith("META-INF"))
-               continue;
-
-            path = path.substring(0, path.lastIndexOf('/'));
-            if (exportedPaths.contains(path) == false)
-            {
-               exportedPaths.add(path);
-               builder.addExportPackages(path.replace('/', '.'));
-            }
-         }
-      }
-      catch (IOException ex)
-      {
-         log.error("Cannot process module entries", ex);
-      }
-
-      // Add Require-Bundle for every dependency
-      for (Dependency depSpec : moduleSpec.getDependencies())
-      {
-         ModuleIdentifier depid = depSpec.getIdentifier();
-         String name = depid.getName();
-         String version = depid.getSlot();
-         boolean optional = false; //depSpec.isOptional();
-
-         // Require-Bundle
-         StringBuffer buffer = new StringBuffer(name);
-         if (version != null) {
-            try {
-                Version parseVersion = Version.parseVersion(null);
-                parseVersion = Version.parseVersion(version);
-                buffer.append(";bundle-version=" + parseVersion);
-            } catch (RuntimeException e) {
-            }
-
-        }
-
-         if (optional == true)
-            buffer.append(";resolution:=optional");
-         builder.addRequireBundle(buffer.toString());
-      }
-
-      Manifest manifest = builder.getManifest();
-      return new OSGiManifestMetaData(manifest);
    }
 }

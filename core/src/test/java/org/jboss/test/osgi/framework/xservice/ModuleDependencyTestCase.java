@@ -36,9 +36,7 @@ import org.jboss.test.osgi.framework.xservice.bundleA.BundleActivatorA;
 import org.jboss.test.osgi.framework.xservice.bundleA.BundleServiceA;
 import org.jboss.test.osgi.framework.xservice.bundleB.BundleActivatorB;
 import org.jboss.test.osgi.framework.xservice.bundleB.BundleServiceB;
-import org.jboss.test.osgi.framework.xservice.moduleA.ModuleActivatorA;
 import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
-import org.jboss.test.osgi.framework.xservice.moduleB.ModuleActivatorB;
 import org.jboss.test.osgi.framework.xservice.moduleB.ModuleServiceB;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
@@ -232,7 +230,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
    {
       JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
       archive.addManifestResource(getResourceFile("xservice/moduleA/META-INF/jbosgi-xservice.properties"));
-      archive.addClasses(ModuleActivatorA.class, ModuleServiceA.class);
+      archive.addClasses(ModuleServiceA.class);
       return archive;
    }
 
@@ -240,7 +238,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
    {
       JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
       archive.addManifestResource(getResourceFile("xservice/moduleB/META-INF/jbosgi-xservice.properties"));
-      archive.addClasses(ModuleActivatorB.class, ModuleServiceB.class);
+      archive.addClasses(ModuleServiceB.class);
       return archive;
    }
 }

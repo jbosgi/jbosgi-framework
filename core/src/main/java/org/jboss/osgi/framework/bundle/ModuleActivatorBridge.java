@@ -34,9 +34,9 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
 /**
- * A module activator that is called when the module 
+ * A module activator that is called when the module
  * gets loaded by the OSGi layer.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 13-Jul-2010
  */
@@ -45,7 +45,7 @@ public class ModuleActivatorBridge implements BundleActivator
    private BundleManager bundleManager;
    private ModuleActivator moduleActivator;
    private ModuleContext moduleContext;
-   
+
    public ModuleActivatorBridge(ModuleActivator moduleActivator)
    {
       this.moduleActivator = moduleActivator;
@@ -56,15 +56,15 @@ public class ModuleActivatorBridge implements BundleActivator
    {
       AbstractBundle bundleState = AbstractBundleContext.assertBundleContext(context).getBundleInternal();
       bundleManager = bundleState.getBundleManager();
-      
+
       ModuleManagerPlugin moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
       ModuleIdentifier identifier = bundleState.getModuleIdentifier();
       Module module = moduleManager.getModule(identifier);
-      
+
       ServiceManagerPlugin serviceManager = bundleManager.getPlugin(ServiceManagerPlugin.class);
       ServiceContainer serviceContainer = serviceManager.getServiceContainer();
       BundleContext systemContext = bundleManager.getSystemContext();
-      
+
       moduleContext = new ModuleContextImpl(serviceContainer, module, systemContext, context.getBundle());
       moduleActivator.start(moduleContext);
    }
@@ -77,7 +77,7 @@ public class ModuleActivatorBridge implements BundleActivator
 
    /**
     * A the context for Module/OSGi integration.
-    * 
+    *
     * @author thomas.diesler@jboss.com
     * @since 05-Aug-2010
     */
@@ -87,7 +87,7 @@ public class ModuleActivatorBridge implements BundleActivator
       private Module module;
       private BundleContext systemContext;
       private Bundle bundle;
-      
+
       ModuleContextImpl(ServiceContainer serviceContainer, Module module, BundleContext systemContext, Bundle bundle)
       {
          if (serviceContainer == null)
@@ -98,7 +98,7 @@ public class ModuleActivatorBridge implements BundleActivator
             throw new IllegalArgumentException("Null systemContext");
          if (bundle == null)
             throw new IllegalArgumentException("Null bundle");
-         
+
          this.serviceContainer = serviceContainer;
          this.module = module;
          this.systemContext = systemContext;
@@ -110,7 +110,7 @@ public class ModuleActivatorBridge implements BundleActivator
       {
          if (service == null)
             throw new IllegalArgumentException("Null service");
-         
+
          return ServiceName.of(XSERVICE_PREFIX, service.getName());
       }
 

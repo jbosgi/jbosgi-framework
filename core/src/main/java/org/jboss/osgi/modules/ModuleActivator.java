@@ -24,13 +24,13 @@ package org.jboss.osgi.modules;
 import org.jboss.modules.ModuleLoadException;
 
 /**
- * A module activator that is called when the module 
+ * A module activator that is called when the module
  * gets loaded by the OSGi layer.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 13-Jul-2010
  */
-public interface ModuleActivator 
+public interface ModuleActivator
 {
    void start(ModuleContext context) throws ModuleLoadException;
 

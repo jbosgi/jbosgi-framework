@@ -39,14 +39,14 @@ import org.jboss.osgi.modules.ModuleContext;
 
 /**
  * A Service Activator
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
 public class ModuleActivatorA implements ModuleActivator
 {
    private ServiceName serviceName;
-   
+
    @Override
    public void start(final ModuleContext context) throws ModuleLoadException
    {
