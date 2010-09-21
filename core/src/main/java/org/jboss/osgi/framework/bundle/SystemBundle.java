@@ -54,7 +54,7 @@ public class SystemBundle extends AbstractBundle
       super(bundleManager, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
 
       // Initialize the OSGiMetaData
-      OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+      OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(getSymbolicName(), getVersion());
       SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
 
       List<String> exportedPackages = new ArrayList<String>(plugin.getSystemPackages());

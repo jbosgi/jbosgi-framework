@@ -33,8 +33,8 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 
 /**
- * An abstract bundle revision that is based on a user {@link Deployment}. 
- * 
+ * An abstract bundle revision that is based on a user {@link Deployment}.
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
@@ -45,7 +45,7 @@ public class SystemBundleRevision extends AbstractRevision
 
    SystemBundleRevision(SystemBundle bundleState, OSGiMetaData metadata) throws BundleException
    {
-      super(bundleState, metadata, 0);
+      super(bundleState, metadata, null, 0);
    }
 
    @Override
@@ -66,7 +66,7 @@ public class SystemBundleRevision extends AbstractRevision
    {
       return Constants.SYSTEM_BUNDLE_LOCATION;
    }
-   
+
    @Override
    Enumeration<String> getEntryPaths(String path)
    {

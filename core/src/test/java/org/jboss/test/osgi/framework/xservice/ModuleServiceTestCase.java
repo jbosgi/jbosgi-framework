@@ -48,7 +48,7 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
 
 /**
- * Test that an MSC module can have a dependency on an OSGi bundle and vice versa. 
+ * Test that an MSC module can have a dependency on an OSGi bundle and vice versa.
  *
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jul-2010
@@ -79,7 +79,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest
 
          String was = invokeService(service, "hello");
          assertEquals("hello:moduleAS", was);
-         
+
          moduleAS.stop();
          assertBundleState(Bundle.RESOLVED, moduleAS.getState());
       }
@@ -101,7 +101,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest
          {
             bundleB.start();
             assertBundleState(Bundle.ACTIVE, bundleB.getState());
-            
+
             moduleBS.start();
             assertBundleState(Bundle.ACTIVE, moduleBS.getState());
 
@@ -114,7 +114,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest
          {
             bundleB.uninstall();
          }
-         
+
          moduleBS.stop();
          assertBundleState(Bundle.RESOLVED, moduleBS.getState());
       }
@@ -123,7 +123,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest
          moduleBS.uninstall();
       }
    }
-   
+
    @Test
    public void testBundleDependsOnModule() throws Exception
    {
@@ -136,7 +136,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest
          {
             moduleAS.start();
             assertBundleState(Bundle.ACTIVE, moduleAS.getState());
-            
+
             bundleA.start();
             assertBundleState(Bundle.ACTIVE, bundleA.getState());
 
@@ -149,7 +149,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest
          {
             moduleAS.uninstall();
          }
-         
+
          bundleA.stop();
          assertBundleState(Bundle.RESOLVED, bundleA.getState());
       }
@@ -158,7 +158,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest
          bundleA.uninstall();
       }
    }
-   
+
    private String invokeService(Object service, String exp) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
    {
       Method method = service.getClass().getMethod("echo", new Class<?>[] { String.class });
@@ -182,13 +182,13 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest
             builder.addBundleSymbolicName(archive.getName());
             builder.addBundleVersion("1.0.0");
             builder.addBundleActivator(BundleActivatorA.class);
-            builder.addRequireBundle("moduleAS;bundle-version:=1.0.0"); 
+            builder.addRequireBundle("moduleAS;bundle-version:=1.0.0");
             return builder.openStream();
          }
       });
       return archive;
    }
-   
+
    private JavaArchive getBundleB()
    {
       // Bundle-Version: 1.0.0
@@ -212,7 +212,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest
       });
       return archive;
    }
-   
+
    private JavaArchive getModuleAS()
    {
       JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleAS");

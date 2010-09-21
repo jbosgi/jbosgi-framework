@@ -308,7 +308,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
       clearRevisions();
 
       // Update the resolver module for the current revision
-      currentRev.refreshRevision(this, getOSGiMetaData());
+      currentRev.refreshRevision(getOSGiMetaData());
       getResolverPlugin().addModule(currentRev.getResolverModule());
    }
 

@@ -37,10 +37,10 @@ import org.osgi.framework.BundleException;
 
 /**
  * A {@link FragmentRevision} is responsible for the classloading and resource loading of a fragment.
- * 
- * Every time a fragment is updated a new {@link FragmentRevision} is created and referenced 
- * from the {@link FragmentBundle}. 
- * 
+ *
+ * Every time a fragment is updated a new {@link FragmentRevision} is created and referenced
+ * from the {@link FragmentBundle}.
+ *
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
@@ -52,7 +52,7 @@ public class FragmentRevision extends AbstractUserRevision
    {
       super(bundleState, dep, revisionCount);
    }
-   
+
    @Override
    public FragmentBundle getBundleState()
    {
@@ -116,7 +116,7 @@ public class FragmentRevision extends AbstractUserRevision
    @Override
    URL getLocalizationEntry(String path)
    {
-      // If the bundle is a resolved fragment, then the search for localization data must 
+      // If the bundle is a resolved fragment, then the search for localization data must
       // delegate to the attached host bundle with the highest version.
       if (getResolverModule().isResolved())
       {

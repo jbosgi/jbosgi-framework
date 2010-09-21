@@ -28,12 +28,13 @@ import java.util.Enumeration;
 import org.jboss.logging.Logger;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
 
 /**
- * An abstract bundle revision that is based on a user {@link Deployment}. 
- * 
+ * An abstract bundle revision that is based on a user {@link Deployment}.
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
@@ -44,17 +45,17 @@ public abstract class AbstractUserRevision extends AbstractRevision
 
    private final Deployment deployment;
 
-   AbstractUserRevision(AbstractUserBundle bundleState, Deployment deployment, int revisionCount) throws BundleException
+   AbstractUserRevision(AbstractUserBundle bundleState, Deployment dep, int revCount) throws BundleException
    {
-      super(bundleState, deployment.getAttachment(OSGiMetaData.class), revisionCount);
-      this.deployment = deployment;
+      super(bundleState, dep.getAttachment(OSGiMetaData.class), dep.getAttachment(XModule.class), revCount);
+      this.deployment = dep;
    }
 
    public Deployment getDeployment()
    {
       return deployment;
    }
-   
+
    public String getLocation()
    {
       return deployment.getLocation();

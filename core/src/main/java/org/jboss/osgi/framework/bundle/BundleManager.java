@@ -101,8 +101,7 @@ public class BundleManager
    // The Framework integration mode
    public enum IntegrationMode
    {
-      STANDALONE,
-      CONTAINER
+      STANDALONE, CONTAINER
    }
 
    public BundleManager(Map<String, Object> initialProperties)
@@ -171,7 +170,7 @@ public class BundleManager
       return value;
    }
 
-   public Map<String,Object> getProperties()
+   public Map<String, Object> getProperties()
    {
       return Collections.unmodifiableMap(properties);
    }
@@ -218,7 +217,7 @@ public class BundleManager
    {
       bundleState.changeState(Bundle.UNINSTALLED);
       List<AbstractBundle> uninstalled = getBundles(Bundle.UNINSTALLED);
-      for(AbstractBundle aux : uninstalled)
+      for (AbstractBundle aux : uninstalled)
       {
          AbstractUserBundle userBundle = AbstractUserBundle.assertBundleState(aux);
          if (userBundle.hasActiveWires() == false)
@@ -443,7 +442,7 @@ public class BundleManager
    /**
     * Install a bundle from a {@link Deployment}
     */
-   private AbstractBundle installBundle(Deployment dep) throws BundleException
+   public AbstractBundle installBundle(Deployment dep) throws BundleException
    {
       if (dep == null)
          throw new IllegalArgumentException("Null deployment");
@@ -473,8 +472,6 @@ public class BundleManager
    {
       BundleDeploymentPlugin deploymentPlugin = getPlugin(BundleDeploymentPlugin.class);
       OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
-
-      dep.addAttachment(OSGiMetaData.class, metadata);
 
       // Create the bundle state
       boolean isFragment = metadata.getFragmentHost() != null;

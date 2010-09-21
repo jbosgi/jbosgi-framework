@@ -125,10 +125,6 @@ public class ModuleManager
       if (id != null)
          return id;
 
-      ModuleSpec moduleSpec = resModule.getAttachment(ModuleSpec.class);
-      if (moduleSpec != null)
-         return moduleSpec.getModuleIdentifier();
-
       AbstractRevision bundleRevision = resModule.getAttachment(AbstractRevision.class);
       if (bundleRevision == null)
          throw new IllegalStateException("Cannot obtain revision from: " + resModule);

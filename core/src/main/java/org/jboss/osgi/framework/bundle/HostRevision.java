@@ -41,12 +41,12 @@ import org.osgi.framework.BundleException;
 
 /**
  * A {@link HostRevision} is responsible for the classloading and resource loading of a bundle.
- * 
+ *
  * It is associated with a {@link XModule} which holds the wiring information of the bundle.<p/>
- *  
- * Every time a bundle is updated a new {@link HostRevision} is created and referenced 
- * from the {@link HostBundle}. 
- * 
+ *
+ * Every time a bundle is updated a new {@link HostRevision} is created and referenced
+ * from the {@link HostBundle}.
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
@@ -203,12 +203,12 @@ public class HostRevision extends AbstractUserRevision
    @Override
    URL getLocalizationEntry(String path)
    {
-      // The framework must first search in the bundle’s JAR for the localization entry. 
+      // The framework must first search in the bundle’s JAR for the localization entry.
       URL entry = getEntry(path);
       if (entry != null)
          return entry;
 
-      // If the entry is not found and the bundle has fragments, 
+      // If the entry is not found and the bundle has fragments,
       // then the attached fragment JARs must be searched for the localization entry.
       for (FragmentRevision fragrev : getAttachedFragments())
       {

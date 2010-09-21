@@ -38,10 +38,12 @@ import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.modules.ModuleMetaData;
 import org.jboss.osgi.modules.ModuleMetaData.Dependency;
 import org.jboss.osgi.modules.ModuleMetaDataParser;
+import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -131,12 +133,19 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
    @Override
    public OSGiMetaData createOSGiMetaData(Deployment dep) throws BundleException
    {
-      OSGiMetaData metadata = null;
+      OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
+      if (metadata != null)
+         return metadata;
 
       // First check if the Deployment contains a valid BundleInfo
       BundleInfo info = dep.getAttachment(BundleInfo.class);
       if (info != null)
          metadata = toOSGiMetaData(dep, info);
+
+      // Secondly, we support deployments that contain ModuleSpec
+      XModule resModule = dep.getAttachment(XModule.class);
+      if (metadata == null && resModule != null)
+         metadata = toOSGiMetaData(dep, resModule);
 
       // Secondly, we support deployments that contain ModuleSpec
       ModuleMetaData moduleSpec = dep.getAttachment(ModuleMetaData.class);
@@ -146,6 +155,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       if (metadata == null)
          throw new BundleException("Cannot construct OSGiMetaData from: " + dep);
 
+      dep.addAttachment(OSGiMetaData.class, metadata);
       return metadata;
    }
 
@@ -153,6 +163,18 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
    {
       Manifest manifest = info.getManifest();
       return new OSGiManifestMetaData(manifest);
+   }
+
+   private OSGiMetaData toOSGiMetaData(final Deployment dep, final XModule resModule)
+   {
+      String symbolicName = dep.getSymbolicName();
+      Version version = Version.parseVersion(dep.getVersion());
+      if (symbolicName.equals(resModule.getName()) == false || version.equals(resModule.getVersion()) == false)
+         throw new IllegalArgumentException("Inconsistent bundle metadata: " + resModule);
+
+      // Create dummy OSGiMetaData from the user provided XModule
+      OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(symbolicName, version);
+      return builder.getOSGiMetaData();
    }
 
    private OSGiMetaData toOSGiMetaData(Deployment dep, ModuleMetaData moduleSpec)

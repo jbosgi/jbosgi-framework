@@ -31,15 +31,17 @@ import org.jboss.osgi.deployment.deployer.DeployerService;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentRegistryService;
 import org.jboss.osgi.deployment.deployer.SystemDeployerService;
+import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.DeployerServicePlugin;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
 /**
  * A plugin that manages bundle deployments.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
@@ -58,24 +60,54 @@ public class DeployerServicePluginImpl extends AbstractPlugin implements Deploye
    @Override
    public void initPlugin()
    {
-      BundleContext context = getBundleManager().getSystemContext();
-      delegate = new SystemDeployerService(context);
+      delegate = new DeployerServiceImpl();
 
-      DeploymentRegistryService registry = new DefaultDeploymentRegistryService(context);
-      context.registerService(DeploymentRegistryService.class.getName(), registry, null);
+      BundleContext sysContext = getBundleManager().getSystemContext();
+      DeploymentRegistryService registry = new DefaultDeploymentRegistryService(sysContext);
+      sysContext.registerService(DeploymentRegistryService.class.getName(), registry, null);
 
       Properties props = new Properties();
       props.put("provider", "system");
-      context.registerService(DeployerService.class.getName(), this, props);
+      sysContext.registerService(DeployerService.class.getName(), this, props);
    }
 
+
+   @Override
+   public Bundle deploy(Deployment bundleDep) throws BundleException
+   {
+      return delegate.deploy(bundleDep);
+   }
+
+   @Override
+   public Bundle undeploy(Deployment bundleDep) throws BundleException
+   {
+      return delegate.undeploy(bundleDep);
+   }
+
+   @Override
    public void deploy(Deployment[] bundleDeps) throws BundleException
    {
       delegate.deploy(bundleDeps);
    }
 
+   @Override
    public void undeploy(Deployment[] bundleDeps) throws BundleException
    {
       delegate.undeploy(bundleDeps);
+   }
+
+   private class DeployerServiceImpl extends SystemDeployerService
+   {
+      public DeployerServiceImpl()
+      {
+         super(getBundleManager().getSystemContext());
+      }
+
+      @Override
+      protected Bundle installBundleInternal(Deployment dep) throws BundleException
+      {
+         AbstractBundle bundleState = getBundleManager().installBundle(dep);
+         return bundleState.getBundleWrapper();
+      }
    }
 }

@@ -70,7 +70,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    public ResolverPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
-      resolver = XResolverFactory.getResolver();
+      resolver = XResolverFactory.loadResolver(getClass().getClassLoader());
       nativeCodePlugin = getOptionalPlugin(NativeCodePlugin.class);
       moduleManager = getPlugin(ModuleManagerPlugin.class);
    }

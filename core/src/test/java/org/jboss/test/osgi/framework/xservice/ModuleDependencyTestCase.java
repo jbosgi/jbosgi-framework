@@ -46,7 +46,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 
 /**
- * Test that an MSC module can have a dependency on an OSGi bundle and vice versa. 
+ * Test that an MSC module can have a dependency on an OSGi bundle and vice versa.
  *
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jul-2010
@@ -62,14 +62,14 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
          assertNotNull("Bundle not null", moduleA);
          assertEquals("moduleA", moduleA.getSymbolicName());
          assertEquals(Version.parseVersion("1.0"), moduleA.getVersion());
-         
+
          assertLoadClass(moduleA, ModuleServiceA.class.getName());
          assertLoadClassFail(moduleA, ModuleServiceB.class.getName());
          assertBundleState(Bundle.RESOLVED, moduleA.getState());
-         
+
          moduleA.start();
          assertBundleState(Bundle.ACTIVE, moduleA.getState());
-         
+
          moduleA.stop();
          assertBundleState(Bundle.RESOLVED, moduleA.getState());
       }
@@ -88,7 +88,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
          assertNotNull("Bundle not null", moduleB);
          assertEquals("moduleB", moduleB.getSymbolicName());
          assertEquals(Version.parseVersion("1.0"), moduleB.getVersion());
-         
+
          try
          {
             moduleB.start();
@@ -98,21 +98,21 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
          {
             // ignore
          }
-         
+
          // Install the dependent bundle
          Bundle bundleB = installBundle(getBundleB());
          try
          {
             assertBundleState(Bundle.INSTALLED, bundleB.getState());
-            
+
             assertLoadClass(bundleB, BundleServiceB.class.getName());
             assertLoadClassFail(bundleB, ModuleServiceB.class.getName());
             assertBundleState(Bundle.RESOLVED, bundleB.getState());
-            
+
             assertLoadClass(moduleB, ModuleServiceB.class.getName());
             assertLoadClass(moduleB, BundleServiceB.class.getName(), bundleB);
             assertBundleState(Bundle.RESOLVED, moduleB.getState());
-            
+
             moduleB.start();
             assertBundleState(Bundle.ACTIVE, moduleB.getState());
          }
@@ -120,7 +120,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
          {
             bundleB.uninstall();
          }
-         
+
          moduleB.stop();
          assertBundleState(Bundle.RESOLVED, moduleB.getState());
       }
@@ -139,7 +139,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
          assertNotNull("Bundle not null", bundleA);
          assertEquals("bundleA", bundleA.getSymbolicName());
          assertEquals(Version.parseVersion("1.0"), bundleA.getVersion());
-         
+
          try
          {
             bundleA.start();
@@ -149,21 +149,21 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
          {
             // ignore
          }
-         
+
          // Install the dependent module
          Bundle moduleA = installBundle(getModuleA());
          try
          {
             assertBundleState(Bundle.INSTALLED, moduleA.getState());
-            
+
             assertLoadClass(moduleA, ModuleServiceA.class.getName());
             assertLoadClassFail(moduleA, BundleServiceA.class.getName());
             assertBundleState(Bundle.RESOLVED, moduleA.getState());
-            
+
             assertLoadClass(bundleA, BundleServiceA.class.getName());
             assertLoadClass(bundleA, ModuleServiceA.class.getName(), moduleA);
             assertBundleState(Bundle.RESOLVED, bundleA.getState());
-            
+
             bundleA.start();
             assertBundleState(Bundle.ACTIVE, bundleA.getState());
          }
@@ -171,7 +171,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
          {
             moduleA.uninstall();
          }
-         
+
          bundleA.stop();
          assertBundleState(Bundle.RESOLVED, bundleA.getState());
       }
@@ -180,7 +180,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
          bundleA.uninstall();
       }
    }
-   
+
    private JavaArchive getBundleA()
    {
       // Bundle-SymbolicName: bundleA
@@ -203,7 +203,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
       });
       return archive;
    }
-   
+
    private JavaArchive getBundleB()
    {
       // Bundle-Version: 1.0.0
@@ -227,7 +227,7 @@ public class ModuleDependencyTestCase extends OSGiFrameworkTest
       });
       return archive;
    }
-   
+
    private JavaArchive getModuleA()
    {
       JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");

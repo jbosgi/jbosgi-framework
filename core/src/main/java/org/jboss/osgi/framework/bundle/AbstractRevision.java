@@ -54,11 +54,12 @@ public abstract class AbstractRevision
    private final AbstractBundle bundleState;
    private final OSGiMetaData metadata;
    private XModule resolverModule;
+   private boolean refreshAllowed;
 
    // Cache commonly used plugins
    private final ModuleManagerPlugin moduleManager;
 
-   AbstractRevision(AbstractBundle bundleState, OSGiMetaData metadata, int revisionCount) throws BundleException
+   AbstractRevision(AbstractBundle bundleState, OSGiMetaData metadata, XModule resModule, int revisionCount) throws BundleException
    {
       if (bundleState == null)
          throw new IllegalArgumentException("Null bundleState");
@@ -72,17 +73,39 @@ public abstract class AbstractRevision
       this.moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
 
       // Create the resolver module
-      refreshRevision(bundleState, metadata);
+      if (resModule == null)
+      {
+         resModule = createResolverModule(metadata);
+         refreshAllowed = true;
+      }
+
+      resModule.addAttachment(AbstractRevision.class, this);
+      resModule.addAttachment(Bundle.class, bundleState);
+      refreshRevisionInternal(resModule);
+      resolverModule = resModule;
    }
 
-   void refreshRevision(AbstractBundle bundleState, OSGiMetaData metadata) throws BundleException
+   void refreshRevision(OSGiMetaData metadata) throws BundleException
+   {
+      // In case of an externally provided XModule, we generate dummy OSGiMetaData
+      // with considerable data loss. A new XModule cannot get created from that
+      // OSGiMetaData. An acceptable fix would be to allow refresh on the XModule
+      // or otherwise create a clone of the original XModule.
+      if (refreshAllowed == false)
+         throw new IllegalStateException("External XModule, refresh not allowed");
+
+      resolverModule = createResolverModule(metadata);
+      refreshRevisionInternal(resolverModule);
+   }
+
+   XModule createResolverModule(OSGiMetaData metadata) throws BundleException
    {
       XModuleIdentity moduleId = XModuleIdentity.create(metadata, "rev" + revisionCount);
-      XModuleBuilder builder = XResolverFactory.getModuleBuilder();
-      resolverModule = builder.createModule(moduleId, metadata);
-      resolverModule.addAttachment(AbstractRevision.class, this);
-      resolverModule.addAttachment(Bundle.class, bundleState);
-      refreshRevisionInternal(resolverModule);
+      XModuleBuilder builder = XResolverFactory.loadModuleBuilder(getClass().getClassLoader());
+      XModule resModule = builder.createModule(moduleId, metadata);
+      resModule.addAttachment(AbstractRevision.class, this);
+      resModule.addAttachment(Bundle.class, bundleState);
+      return resModule;
    }
 
    abstract void refreshRevisionInternal(XModule resModule);
