@@ -70,7 +70,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
 
    // The initial revision count is greater than 1 if the framework
    // still retains UNISTALLED bundles with the same symbolic name and version
-   private int incrementRevisionCount(OSGiMetaData metadata)
+   private int incrementRevisionCount(OSGiMetaData metadata) throws BundleException
    {
       ResolverPlugin plugin = getResolverPlugin();
 
