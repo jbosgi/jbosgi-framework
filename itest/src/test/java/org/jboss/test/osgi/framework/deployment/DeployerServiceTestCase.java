@@ -32,7 +32,6 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
-import org.jboss.osgi.resolver.XModuleIdentity;
 import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -107,8 +106,7 @@ public class DeployerServiceTestCase extends OSGiFrameworkTest
 
       Deployment dep = createDeployment(archive, Version.emptyVersion);
       XModuleBuilder builder = XResolverFactory.loadModuleBuilder(null);
-      builder.createModule(XModuleIdentity.create(archive.getName(), "0.0.0", null));
-      builder.addBundleCapability(archive.getName(), Version.emptyVersion);
+      builder.create(archive.getName(), null, 0).addBundleCapability(archive.getName(), null);
       dep.addAttachment(XModule.class, builder.getModule());
 
       Bundle bundle = getDeployerService().deploy(dep);

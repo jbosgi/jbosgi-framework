@@ -39,7 +39,9 @@ import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XModuleIdentity;
+import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -66,14 +68,15 @@ public abstract class AbstractUserBundle extends AbstractBundle
       createRevision(dep, incrementRevisionCount(dep.getAttachment(OSGiMetaData.class)));
    }
 
-   // The initial revision count is greater than 1 if the framework 
+   // The initial revision count is greater than 1 if the framework
    // still retains UNISTALLED bundles with the same symbolic name and version
    private int incrementRevisionCount(OSGiMetaData metadata)
    {
       ResolverPlugin plugin = getResolverPlugin();
-      
+
       int revCount = revCounter.incrementAndGet();
-      XModuleIdentity moduleId = AbstractRevision.getModuleIdentity(metadata, revCount);
+      XModuleBuilder builder = XResolverFactory.loadModuleBuilder(getClass().getClassLoader());
+      XModuleIdentity moduleId = builder.create(metadata, revCount).getModuleIdentity();
       XModule resModule = plugin.getModuleById(moduleId);
       if (resModule != null)
       {

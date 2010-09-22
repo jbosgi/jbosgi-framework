@@ -33,7 +33,6 @@ import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
-import org.jboss.osgi.resolver.XModuleIdentity;
 import org.jboss.osgi.resolver.XResolverFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -100,17 +99,11 @@ public abstract class AbstractRevision
 
    XModule createResolverModule(OSGiMetaData metadata) throws BundleException
    {
-      XModuleIdentity moduleId = getModuleIdentity(metadata, revisionCount);
       XModuleBuilder builder = XResolverFactory.loadModuleBuilder(getClass().getClassLoader());
-      XModule resModule = builder.createModule(moduleId, metadata);
+      XModule resModule = builder.create(metadata, revisionCount).getModule();
       resModule.addAttachment(AbstractRevision.class, this);
       resModule.addAttachment(Bundle.class, bundleState);
       return resModule;
-   }
-
-   static XModuleIdentity getModuleIdentity(OSGiMetaData metadata, int revCount)
-   {
-      return XModuleIdentity.create(metadata, "rev" + revCount);
    }
 
    abstract void refreshRevisionInternal(XModule resModule);

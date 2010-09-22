@@ -131,7 +131,7 @@ public class ModuleManager
 
       XModuleIdentity moduleId = resModule.getModuleId();
       String name = MODULE_PREFIX + "." + moduleId.getName() + "-" + moduleId.getVersion();
-      ModuleIdentifier identifier = ModuleIdentifier.create(name, moduleId.getRevision());
+      ModuleIdentifier identifier = ModuleIdentifier.create(name, "rev" + moduleId.getRevision());
       resModule.addAttachment(ModuleIdentifier.class, identifier);
       return identifier;
    }

@@ -25,12 +25,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
 import java.util.List;
 
+import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
+import org.jboss.osgi.resolver.XBundleCapability;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XModuleParser;
+import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XPackageCapability;
+import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.testing.OSGiTest;
 import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
 import org.junit.Test;
@@ -50,12 +54,18 @@ public class XModuleParserTestCase extends OSGiTest
       File resFile = getResourceFile("xservice/moduleA/META-INF/jbosgi-xservice.properties");
       assertNotNull("File exists", resFile);
 
-      XModuleParser parser = XModuleParser.newInstance();
-      XModule resModule = parser.parse(new FileReader(resFile));
+      OSGiMetaData metadata = OSGiMetaDataBuilder.load(new FileInputStream(resFile));
+      XModuleBuilder builder = XResolverFactory.loadModuleBuilder(getClass().getClassLoader());
+      XModule resModule = builder.create(metadata, 0).getModule();
       assertNotNull("XModule exists", resModule);
 
       assertEquals("moduleA", resModule.getName());
       assertEquals(Version.parseVersion("1.0"), resModule.getVersion());
+
+      XBundleCapability bundleCap = resModule.getBundleCapability();
+      assertNotNull("XBundleCapability not null", bundleCap);
+      assertEquals("moduleA", bundleCap.getName());
+      assertEquals(Version.parseVersion("1.0"), bundleCap.getVersion());
 
       List<XPackageCapability> packageCaps = resModule.getPackageCapabilities();
       assertNotNull("Export-Package not null", packageCaps);
