@@ -22,8 +22,6 @@
 package org.jboss.osgi.framework.plugin.internal;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
@@ -34,9 +32,7 @@ import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
-import org.jboss.osgi.metadata.internal.OSGiManifestMetaData;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XModuleParser;
 import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
@@ -69,7 +65,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       if (rootFile == null)
          throw new IllegalArgumentException("Null rootFile");
 
-      // Try valid OSGi Manifest
+      // Check if we have a valid OSGi Manifest
       try
       {
          BundleInfo info = BundleInfo.createBundleInfo(rootFile, location);
@@ -88,34 +84,15 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          log.debug("Not a valid osgi manifest: " + ex.getMessage());
       }
 
-      // Try jbosgi-xservice.properties
-      String descriptor = "META-INF/jbosgi-xservice.properties";
-      try
+      // Check if we have META-INF/jbosgi-xservice.properties
+      OSGiMetaData metadata = getXServiceMetaData(rootFile);
+      if (metadata != null)
       {
-         VirtualFile child = rootFile.getChild(descriptor);
-         if (child != null)
-         {
-            InputStream inputStream = child.openStream();
-
-            XModuleParser parser = XModuleParser.newInstance();
-            XModule resModule = parser.parse(new InputStreamReader(inputStream));
-
-            // Module-Identifier, Module-Activator
-            String symbolicName = resModule.getName();
-            Version version = resModule.getVersion();
-
-            Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, version);
-            dep.addAttachment(XModule.class, resModule);
-            return dep;
-         }
-         else
-         {
-            log.debug("Cannot obtain " + descriptor + " from: " + location);
-         }
-      }
-      catch (IOException ex)
-      {
-         log.warn("Cannot process " + descriptor + " from: " + location, ex);
+         String symbolicName = metadata.getBundleSymbolicName();
+         Version version = metadata.getBundleVersion();
+         Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, version);
+         dep.addAttachment(OSGiMetaData.class, metadata);
+         return dep;
       }
 
       throw new BundleException("Cannot process as OSGi deployment: " + location);
@@ -124,38 +101,75 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
    @Override
    public OSGiMetaData createOSGiMetaData(Deployment dep) throws BundleException
    {
-       // First check if the Deployment already contains a OSGiMetaData
+      // #1 check if the Deployment already contains a OSGiMetaData
       OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
       if (metadata != null)
          return metadata;
 
-      // Secondly check if the Deployment contains valid BundleInfo
+      // #2 check if the Deployment contains valid BundleInfo
       BundleInfo info = dep.getAttachment(BundleInfo.class);
       if (info != null)
          metadata = toOSGiMetaData(dep, info);
 
-      // Thirdly, we support deployments that contain XModule
+      // #3 we support deployments that contain XModule
       XModule resModule = dep.getAttachment(XModule.class);
       if (metadata == null && resModule != null)
          metadata = toOSGiMetaData(dep, resModule);
 
-      // Treat this is a valid OSGi deployment and get the metadata from the manifest
+      // #4 check if we have a valid OSGi manifest
       if (metadata == null)
       {
-          VirtualFile rootFile = dep.getRoot();
-          String location = dep.getLocation();
-          info = BundleInfo.createBundleInfo(rootFile, location);
-          metadata = toOSGiMetaData(dep, info);
+         VirtualFile rootFile = dep.getRoot();
+         String location = dep.getLocation();
+         try
+         {
+            info = BundleInfo.createBundleInfo(rootFile, location);
+            metadata = toOSGiMetaData(dep, info);
+         }
+         catch (BundleException ex)
+         {
+            // ignore
+         }
       }
+
+      // #5 check if we have META-INF/jbosgi-xservice.properties
+      if (metadata == null)
+      {
+         VirtualFile rootFile = dep.getRoot();
+         metadata = getXServiceMetaData(rootFile);
+      }
+
+      if (metadata == null)
+         throw new BundleException("Not a valid OSGi deployment: " + dep);
 
       dep.addAttachment(OSGiMetaData.class, metadata);
       return metadata;
    }
 
+   private OSGiMetaData getXServiceMetaData(VirtualFile rootFile)
+   {
+      // Try jbosgi-xservice.properties
+      String descriptor = "META-INF/jbosgi-xservice.properties";
+      try
+      {
+         VirtualFile child = rootFile.getChild(descriptor);
+         if (child != null)
+         {
+            OSGiMetaData metadata = OSGiMetaDataBuilder.load(child.openStream());
+            return metadata;
+         }
+      }
+      catch (IOException ex)
+      {
+         log.warn("Cannot process XService metadata: " + rootFile, ex);
+      }
+      return null;
+   }
+
    private OSGiMetaData toOSGiMetaData(Deployment dep, BundleInfo info)
    {
       Manifest manifest = info.getManifest();
-      return new OSGiManifestMetaData(manifest);
+      return OSGiMetaDataBuilder.load(manifest);
    }
 
    private OSGiMetaData toOSGiMetaData(final Deployment dep, final XModule resModule)

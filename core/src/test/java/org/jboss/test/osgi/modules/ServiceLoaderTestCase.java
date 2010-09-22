@@ -33,6 +33,8 @@ import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.modules.PathFilter;
+import org.jboss.modules.PathFilters;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -81,7 +83,8 @@ public class ServiceLoaderTestCase extends ModulesTestBase
 
       ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
       ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+      PathFilter exportFilter = PathFilters.all(PathFilters.include("META-INF"));
+      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA), exportFilter));
       addModuleSpec(specBuilderA.create());
 
       ModuleIdentifier identifierB = ModuleIdentifier.create("moduleB");
