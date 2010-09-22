@@ -124,22 +124,29 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
    @Override
    public OSGiMetaData createOSGiMetaData(Deployment dep) throws BundleException
    {
+       // First check if the Deployment already contains a OSGiMetaData
       OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
       if (metadata != null)
          return metadata;
 
-      // First check if the Deployment contains a valid BundleInfo
+      // Secondly check if the Deployment contains valid BundleInfo
       BundleInfo info = dep.getAttachment(BundleInfo.class);
       if (info != null)
          metadata = toOSGiMetaData(dep, info);
 
-      // Secondly, we support deployments that contain ModuleSpec
+      // Thirdly, we support deployments that contain XModule
       XModule resModule = dep.getAttachment(XModule.class);
       if (metadata == null && resModule != null)
          metadata = toOSGiMetaData(dep, resModule);
 
+      // Treat this is a valid OSGi deployment and get the metadata from the manifest
       if (metadata == null)
-         throw new BundleException("Cannot construct OSGiMetaData from: " + dep);
+      {
+          VirtualFile rootFile = dep.getRoot();
+          String location = dep.getLocation();
+          info = BundleInfo.createBundleInfo(rootFile, location);
+          metadata = toOSGiMetaData(dep, info);
+      }
 
       dep.addAttachment(OSGiMetaData.class, metadata);
       return metadata;
