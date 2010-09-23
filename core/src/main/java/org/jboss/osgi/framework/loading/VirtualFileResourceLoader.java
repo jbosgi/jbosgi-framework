@@ -46,7 +46,7 @@ import org.jboss.osgi.vfs.VirtualFile;
 
 /**
  * An {@link ResourceLoader} that is backed by a {@link VirtualFile} pointing to an archive.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
@@ -178,15 +178,17 @@ public final class VirtualFileResourceLoader implements ResourceLoader
             String entryPath = entryPaths.nextElement();
             if (entryPath.endsWith("/"))
                continue;
-            
+
             int inx = entryPath.lastIndexOf("/");
             result.add(inx > 0 ? entryPath.substring(0, inx) : "");
          }
       }
       catch (IOException ex)
       {
-         throw new IllegalArgumentException("Cannot obtain entry paths", ex);
+         throw new IllegalArgumentException("Cannot obtain paths from: " + virtualFile, ex);
       }
+      if (result.size() == 0)
+         throw new IllegalArgumentException("Cannot obtain paths from: " + virtualFile);
       return Collections.unmodifiableSet(result);
    }
 
