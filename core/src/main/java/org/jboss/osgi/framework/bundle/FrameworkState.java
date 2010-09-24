@@ -317,7 +317,8 @@ public class FrameworkState extends SystemBundle implements Framework
             }
          }
       };
-      executor.execute(cmd);
+      cmd.run();
+      //executor.execute(cmd);
    }
 
    @Override

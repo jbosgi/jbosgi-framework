@@ -30,12 +30,6 @@
     <version>1.0.0.Alpha9-SNAPSHOT</version>
   </parent>
   
-  <!-- Properties -->
-  <properties>
-    <surefire.jpda.args />
-    <surefire.system.args>-da ${surefire.jpda.args}</surefire.system.args>
-  </properties>
-
   <!-- Dependencies -->
   <dependencies>
     <dependency>
@@ -228,22 +222,5 @@
         </dependency>
       </dependencies>
     </profile>
-
-    <!--
-      Name: jpda
-      Descr: Enable JPDA remote debuging
-    -->
-    <profile>
-      <id>jpda</id>
-      <activation>
-        <property>
-          <name>jpda</name>
-        </property>
-      </activation>
-      <properties>
-        <surefire.jpda.args>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</surefire.jpda.args>
-      </properties>
-    </profile>
   </profiles>
-  
 </project>

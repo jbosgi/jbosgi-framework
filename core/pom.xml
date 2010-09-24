@@ -30,11 +30,6 @@
     <version>1.0.0.Alpha9-SNAPSHOT</version>
   </parent>
   
-  <!-- Properties -->
-  <properties>
-    <surefire.system.args>-disableassertions</surefire.system.args>
-  </properties>
-
   <!-- Dependencies -->
   <dependencies>
     <dependency>
