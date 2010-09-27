@@ -179,6 +179,24 @@
   
   <profiles>
     <!--
+      Name: equinox
+      Descr: Setup for Equinox framework integration testing
+    -->
+    <profile>
+      <id>equinox</id>
+      <properties>
+        <jboss.osgi.framework.properties>jboss-osgi-equinox.properties</jboss.osgi.framework.properties>
+      </properties>
+      <dependencies>
+        <dependency>
+          <groupId>org.jboss.osgi.equinox</groupId>
+          <artifactId>jboss-osgi-equinox</artifactId>
+          <scope>provided</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+
+    <!--
       Name: felix 
       Descr: Setup for Felix framework integration testing
     -->
