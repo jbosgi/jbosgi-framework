@@ -38,83 +38,73 @@ public class JBossLoggingModuleLogger implements ModuleLogger
    {
       if (log == null)
          throw new IllegalArgumentException("Null logger");
-      
+
       this.log = log;
    }
 
    @Override
    public void greeting()
    {
-      log.debug("ModuleLogger initialized");
+      log.debugv("ModuleLogger initialized");
    }
 
    @Override
    public void trace(String message)
    {
-      if (log.isTraceEnabled())
-         log.trace(message);
+      log.tracev(message);
    }
 
    @Override
    public void trace(final String format, final Object arg1)
    {
-      if (log.isTraceEnabled())
-         log.trace(String.format(format, arg1));
+      log.tracev(format, arg1);
    }
 
    @Override
    public void trace(final String format, final Object arg1, final Object arg2)
    {
-      if (log.isTraceEnabled())
-         log.trace(String.format(format, arg1, arg2));
+      log.tracev(format, arg1, arg2);
    }
 
    @Override
    public void trace(final String format, final Object arg1, final Object arg2, final Object arg3)
    {
-      if (log.isTraceEnabled())
-         log.trace(String.format(format, arg1, arg2, arg3));
+      log.tracev(format, arg1, arg2, arg3);
    }
 
    @Override
    public void trace(final String format, final Object... args)
    {
-      if (log.isTraceEnabled())
-         log.trace(String.format(format, (Object[])args));
+      log.tracev(format, args);
    }
 
    @Override
-   public void trace(final Throwable t, final String message)
+   public void trace(final Throwable th, final String message)
    {
-      if (log.isTraceEnabled())
-         log.trace(message, t);
+      log.tracev(th, message);
    }
 
    @Override
-   public void trace(final Throwable t, final String format, final Object arg1)
+   public void trace(final Throwable th, final String format, final Object arg1)
    {
-      if (log.isTraceEnabled())
-         log.trace(String.format(format, arg1), t);
+      log.tracev(th, format, arg1);
    }
 
    @Override
-   public void trace(final Throwable t, final String format, final Object arg1, final Object arg2)
+   public void trace(final Throwable th, final String format, final Object arg1, final Object arg2)
    {
-      if (log.isTraceEnabled())
-         log.trace(String.format(format, arg1, arg2), t);
+      log.tracev(th, format, arg1, arg2);
    }
 
    @Override
-   public void trace(final Throwable t, final String format, final Object arg1, final Object arg2, final Object arg3)
+   public void trace(final Throwable th, final String format, final Object arg1, final Object arg2, final Object arg3)
    {
-      if (log.isTraceEnabled())
-         log.trace(String.format(format, arg1, arg2, arg3), t);
+      log.tracev(th, format, arg1, arg2, arg3);
    }
 
    @Override
-   public void trace(final Throwable t, final String format, final Object... args)
+   public void trace(final Throwable th, final String format, final Object... args)
    {
-      if (log.isTraceEnabled())
-         log.trace(String.format(format, (Object[])args), t);
+      log.tracev(th, format, args);
    }
 }

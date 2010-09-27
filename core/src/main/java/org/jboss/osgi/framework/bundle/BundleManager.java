@@ -198,6 +198,8 @@ public class BundleManager
       if (bundleMap.containsKey(bundleId) == true)
          throw new IllegalStateException("Bundle already added: " + bundleState);
 
+      log.tracev("Add bundle: {0}", bundleState);
+      
       // Register the bundle with the manager
       bundleMap.put(bundleId, bundleState);
       bundleState.changeState(Bundle.INSTALLED);
@@ -208,7 +210,7 @@ public class BundleManager
 
    void removeBundle(AbstractBundle bundleState)
    {
-      log.debug("Remove bundle: " + bundleState);
+      log.tracev("Remove bundle: {0}", bundleState);
       bundleState.removeFromResolver();
       bundleMap.remove(bundleState.getBundleId());
    }

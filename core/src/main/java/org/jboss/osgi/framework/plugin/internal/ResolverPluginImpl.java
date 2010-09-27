@@ -144,7 +144,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       resolver.setCallbackHandler(new ResolverCallback(resolved));
 
       // Resolve the modules
-      log.debug("Resolve modules: " + unresolved);
+      log.debugv("Resolve modules: {0}", unresolved);
       boolean allResolved = resolver.resolveAll(unresolved);
 
       // Report resolver errors
@@ -155,7 +155,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
             if (resModule.isResolved() == false)
             {
                XResolverException ex = resModule.getAttachment(XResolverException.class);
-               log.error("Cannot resolve: " + resModule, ex);
+               log.errorv(ex, "Cannot resolve: {0}", resModule);
             }
          }
       }
@@ -266,11 +266,14 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       public void markResolved(XModule module)
       {
          // Construct debug message
-         StringBuffer buffer = new StringBuffer("Mark resolved: " + module);
-         for (XWire wire : module.getWires())
-            buffer.append("\n " + wire.toString());
+         if (log.isDebugEnabled())
+         {
+            StringBuffer buffer = new StringBuffer("Mark resolved: " + module);
+            for (XWire wire : module.getWires())
+               buffer.append("\n " + wire.toString());
 
-         log.debug(buffer);
+            log.debugv(buffer.toString());
+         }
          resolved.add(module);
       }
    }

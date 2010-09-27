@@ -404,7 +404,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          }
       }
 
-      log.debug("Resolve bundles: " + unresolved);
+      log.debugv("Resolve bundles: {0}", unresolved);
       return resolverPlugin.resolveAll(unresolved);
    }
 
@@ -572,7 +572,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          return bundleState.getBundleWrapper();
       }
 
-      log.error("Cannot obtain bundle for: " + loader);
+      log.errorv("Cannot obtain bundle for: {0}", loader);
       return null;
    }
 

@@ -84,7 +84,7 @@ public class NativeResourceLoader implements ResourceLoader
       }
       catch (IOException ex)
       {
-         log.error("Cannot privide native library location for: " + libname, ex);
+         log.errorv(ex, "Cannot privide native library location for: {0}", libname);
          return null;
       }
 

@@ -65,7 +65,7 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
    {
       return fragRevision.getAttachedHosts();
    }
-   
+
    public Set<String> getPaths()
    {
       return paths;
@@ -88,19 +88,17 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
    {
       // Check if we have already loaded it..
       Class<?> loadedClass = findLoadedClass(className);
-      if (loadedClass != null) {
-          return loadedClass;
+      if (loadedClass != null)
+      {
+         return loadedClass;
       }
-      
-      boolean traceEnabled = log.isTraceEnabled();
-      if (traceEnabled)
-         log.trace("Attempt to find fragment class [" + className + "] in " + fragRevision + " ...");
+
+      log.tracev("Attempt to find fragment class [{0}] in {1} ...", className, fragRevision);
 
       String path = ModuleManager.getPathFromClassName(className);
       if (paths.contains(path) == false)
       {
-         if (traceEnabled)
-            log.trace("Not found in fragment [" + className + "]");
+         log.tracev("Not found in fragment [{0}]", className);
          return null;
       }
 
@@ -112,13 +110,13 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
       }
       catch (Throwable th)
       {
-         log.trace("Unexpected exception in module loader", th);
+         log.tracev(th, "Unexpected exception in module loader");
          return null;
       }
 
       if (classSpec == null)
       {
-         log.trace("No local specification found for class [" + className + "] in " + fragRevision);
+         log.tracev("No local specification found for class [{0}] in {1}", className, fragRevision);
          return null;
       }
 
@@ -130,10 +128,10 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
       }
       catch (Throwable th)
       {
-         log.trace("Failed to define class [" + className + "] in " + fragRevision, th);
+         log.tracev(th, "Failed to define class [{0}] in {1}", className, fragRevision);
          return null;
       }
-      
+
       if (resolve)
       {
          resolveClass(result);
@@ -148,7 +146,7 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
       Resource result = resourceLoader.getResource(name);
       if (result == null)
          return Collections.emptyList();
-      
+
       return Collections.singletonList(result);
    }
 

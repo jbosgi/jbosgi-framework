@@ -247,15 +247,6 @@ public class HostBundle extends AbstractUserBundle
    }
 
    @Override
-   public void stop(int options) throws BundleException
-   {
-      if ((options & Bundle.STOP_TRANSIENT) == 0)
-         setPersistentlyStarted(false);
-
-      super.stop(options);
-   }
-
-   @Override
    void stopInternal(int options) throws BundleException
    {
       // If this bundle's state is UNINSTALLED then an IllegalStateException is thrown.
@@ -268,6 +259,8 @@ public class HostBundle extends AbstractUserBundle
 
       // [TODO] If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to to Stopped.
       // When the Framework is restarted and this bundle's autostart setting is Stopped, this bundle must not be automatically started.
+      if ((options & Bundle.STOP_TRANSIENT) == 0)
+         setPersistentlyStarted(false);
 
       // If this bundle's state is not STARTING or ACTIVE then this method returns immediately
       if (getState() != Bundle.STARTING && getState() != Bundle.ACTIVE)

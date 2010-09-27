@@ -267,7 +267,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
             }
             catch (RuntimeException ex)
             {
-               log.error("Error processing ListenerHook: " + hook, ex);
+               log.errorv(ex, "Error processing ListenerHook: {0}", hook);
             }
          }
 
@@ -325,7 +325,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
                   }
                   catch (RuntimeException ex)
                   {
-                     log.error("Error processing ListenerHook: " + hook, ex);
+                     log.errorv(ex, "Error processing ListenerHook: {0}", hook);
                   }
                }
             }
@@ -351,7 +351,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
             }
             catch (RuntimeException ex)
             {
-               log.error("Error processing ListenerHook: " + hook, ex);
+               log.errorv(ex, "Error processing ListenerHook: {0}", hook);
             }
          }
       }
@@ -399,10 +399,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       final BundleEvent event = new BundleEventImpl(type, assertBundle(bundle));
       final String typeName = ConstantsHelper.bundleEvent(event.getType());
 
-      if (infoEvents.contains(typeName))
-         log.info("Bundle " + typeName + ": " + bundle);
-      else
-         log.debug("Bundle " + typeName + ": " + bundle);
+      log.tracev("Bundle {0}: {1}", typeName, bundle);
 
       // Are we active?
       if (getBundleManager().isFrameworkActive() == false)
@@ -420,9 +417,9 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
             if (listener instanceof SynchronousBundleListener)
                listener.bundleChanged(event);
          }
-         catch (Throwable t)
+         catch (Throwable th)
          {
-            log.warn("Error while firing " + typeName + " for bundle " + bundle, t);
+            log.warnv(th, "Error while firing {0} for bundle: {1}", typeName, bundle);
          }
       }
 
@@ -441,9 +438,9 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
                      if (listener instanceof SynchronousBundleListener == false)
                         listener.bundleChanged(event);
                   }
-                  catch (Throwable t)
+                  catch (Throwable th)
                   {
-                     log.warn("Error while firing " + typeName + " for bundle " + this, t);
+                     log.warnv(th, "Error while firing {0} for bundle: ", typeName, bundle);
                   }
                }
             }
@@ -455,7 +452,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
    }
 
    @Override
-   public void fireFrameworkEvent(final Bundle bundle, final int type, final Throwable throwable)
+   public void fireFrameworkEvent(final Bundle bundle, final int type, final Throwable th)
    {
       // Get a snapshot of the current listeners
       final ArrayList<FrameworkListener> listeners = new ArrayList<FrameworkListener>();
@@ -471,22 +468,19 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       }
 
       // Expose the wrapper not the state itself
-      final FrameworkEvent event = new FrameworkEventImpl(type, assertBundle(bundle), throwable);
+      final FrameworkEvent event = new FrameworkEventImpl(type, assertBundle(bundle), th);
       final String typeName = ConstantsHelper.frameworkEvent(event.getType());
 
       switch (event.getType())
       {
          case FrameworkEvent.ERROR:
-            log.error("Framwork " + typeName, throwable);
+            log.errorv(th, "Framwork {0}", typeName);
             break;
          case FrameworkEvent.WARNING:
-            log.warn("Framwork " + typeName, throwable);
+            log.warnv(th, "Framwork {0}", typeName);
             break;
          default:
-            if (infoEvents.contains(typeName))
-               log.info("Framwork " + typeName, throwable);
-            else
-               log.debug("Framwork " + typeName, throwable);
+            log.tracev(th, "Framwork {0}", typeName);
       }
 
       // Are we active?
@@ -510,7 +504,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
                }
                catch (RuntimeException ex)
                {
-                  log.warn("Error while firing " + typeName + " for framework", ex);
+                  log.warnv(ex, "Error while firing {0} for framework", typeName);
 
                   // The Framework must publish a FrameworkEvent.ERROR if a callback to an
                   // event listener generates an unchecked exception - except when the callback
@@ -520,9 +514,9 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
                      fireFrameworkEvent(bundle, FrameworkEvent.ERROR, ex);
                   }
                }
-               catch (Throwable t)
+               catch (Throwable th)
                {
-                  log.warn("Error while firing " + typeName + " for framework", t);
+                  log.warnv(th, "Error while firing {0} for framework", typeName);
                }
             }
          }
@@ -554,10 +548,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
       ServiceEvent event = new ServiceEventImpl(type, new ServiceReferenceWrapper(serviceState));
       String typeName = ConstantsHelper.serviceEvent(event.getType());
 
-      if (infoEvents.contains(typeName))
-         log.info("Service " + typeName + ": " + serviceState);
-      else
-         log.debug("Service " + typeName + ": " + serviceState);
+      log.tracev("Service {0}: {1}", typeName, serviceState);
 
       // Do nothing if the Framework is not active
       if (getBundleManager().isFrameworkActive() == false)
@@ -594,9 +585,9 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
                }
             }
          }
-         catch (Throwable t)
+         catch (Throwable th)
          {
-            log.warn("Error while firing " + typeName + " for service " + serviceState, t);
+            log.warnv(th, "Error while firing {0} for service: {1}", typeName, serviceState);
          }
       }
    }
@@ -623,7 +614,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
          }
          catch (Exception ex)
          {
-            log.warn("Error while calling EventHook: " + hook, ex);
+            log.warnv(ex, "Error while calling EventHook: {0}", hook);
          }
       }
 

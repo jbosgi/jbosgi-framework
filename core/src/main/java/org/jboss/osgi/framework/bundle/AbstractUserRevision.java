@@ -91,7 +91,7 @@ public abstract class AbstractUserRevision extends AbstractRevision
       }
       catch (IOException ex)
       {
-         log.error("Cannot get entry: " + path, ex);
+         log.errorv(ex, "Cannot get entry: {0}", path);
          return null;
       }
    }

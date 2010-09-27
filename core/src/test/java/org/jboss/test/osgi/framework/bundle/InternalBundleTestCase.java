@@ -56,7 +56,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
       HostBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
-      assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
+      assertBundleState(Bundle.INSTALLED, hb.getState());
       assertFalse(hb.isPersistentlyStarted());
       hb.start(0);
       assertTrue(hb.isPersistentlyStarted());
@@ -75,7 +75,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
       HostBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
-      assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
+      assertBundleState(Bundle.INSTALLED, hb.getState());
       assertFalse(hb.isPersistentlyStarted());
       hb.start();
       assertTrue(hb.isPersistentlyStarted());
@@ -95,7 +95,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
       hb.changeState(Bundle.INSTALLED);
       hb.setStartLevel(15);
 
-      assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
+      assertBundleState(Bundle.INSTALLED, hb.getState());
       assertFalse(hb.isPersistentlyStarted());
       hb.start();
       assertTrue(hb.isPersistentlyStarted());
@@ -114,7 +114,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
       hb.changeState(Bundle.INSTALLED);
       hb.setStartLevel(15);
 
-      assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
+      assertBundleState(Bundle.INSTALLED, hb.getState());
       assertFalse(hb.isPersistentlyStarted());
       hb.start();
       assertTrue(hb.isPersistentlyStarted());
@@ -132,7 +132,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
       hb.changeState(Bundle.INSTALLED);
       hb.setStartLevel(15);
 
-      assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
+      assertBundleState(Bundle.INSTALLED, hb.getState());
       assertFalse(hb.isPersistentlyStarted());
       hb.start();
       assertTrue(hb.isPersistentlyStarted());
@@ -147,7 +147,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
       HostBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
-      assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
+      assertBundleState(Bundle.INSTALLED, hb.getState());
       assertFalse(hb.isPersistentlyStarted());
       hb.start(Bundle.START_TRANSIENT);
       assertFalse(hb.isPersistentlyStarted());
@@ -162,7 +162,7 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
       HostBundle hb = createInternalBundle(bm, dep);
       hb.changeState(Bundle.INSTALLED);
 
-      assertEquals("Precondition failed", Bundle.INSTALLED, hb.getState());
+      assertBundleState(Bundle.INSTALLED, hb.getState());
       hb.setPersistentlyStarted(true);
       hb.start(Bundle.START_TRANSIENT);
       assertEquals(Bundle.ACTIVE, hb.getState());

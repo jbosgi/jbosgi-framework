@@ -89,13 +89,13 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
    {
       if (sl > getStartLevel())
       {
-         log.info("About to increase start level from " + getStartLevel() + " to " + sl);
+         log.infov("About to increase start level from {0} to {1}", getStartLevel(), sl);
          executor.execute(new Runnable()
          {
             @Override
             public void run()
             {
-               log.info("Increasing start level from " + getStartLevel() + " to " + sl);
+               log.infov("Increasing start level from {0} to {1}", getStartLevel(), sl);
                increaseStartLevel(sl);
                eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(), FrameworkEvent.STARTLEVEL_CHANGED, null);
             }
@@ -103,13 +103,13 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
       }
       else if (sl < getStartLevel())
       {
-         log.info("About to decrease start level from " + getStartLevel() + " to " + sl);
+         log.infov("About to decrease start level from {0} to {1}", getStartLevel(), sl);
          executor.execute(new Runnable()
          {
             @Override
             public void run()
             {
-               log.info("Decreasing start level from " + getStartLevel() + " to " + sl);
+               log.infov("Decreasing start level from {0} to {1}", getStartLevel(), sl);
                decreaseStartLevel(sl);
                eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(), FrameworkEvent.STARTLEVEL_CHANGED, null);
             }
@@ -138,33 +138,33 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
       if (bundle.getBundleId() == 0)
          throw new IllegalArgumentException("Cannot set the start level of the System Bundle");
 
-      final HostBundle hb = HostBundle.assertBundleState(bundle);
-      hb.setStartLevel(sl);
+      final HostBundle hostBundle = HostBundle.assertBundleState(bundle);
+      hostBundle.setStartLevel(sl);
 
-      if (sl <= getStartLevel() && hb.isPersistentlyStarted())
+      if (sl <= getStartLevel() && hostBundle.isPersistentlyStarted())
       {
          // If the bundle is active or starting, we don't need to start it again
          if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) > 0)
             return;
 
-         log.info("Start Level Service about to start: " + hb);
+         log.infov("Start Level Service about to start: {0}", hostBundle);
          executor.execute(new Runnable()
          {
             @Override
             public void run()
             {
-               log.info("Start Level Service starting: " + hb);
+               log.infov("Start Level Service starting: {0}", hostBundle);
                try
                {
                   int opts = Bundle.START_TRANSIENT;
-                  if (isBundleActivationPolicyUsed(hb))
+                  if (isBundleActivationPolicyUsed(hostBundle))
                      opts |= Bundle.START_ACTIVATION_POLICY;
 
-                  hb.start(opts);
+                  hostBundle.start(opts);
                }
                catch (BundleException e)
                {
-                  eventsPlugin.fireFrameworkEvent(hb, FrameworkEvent.ERROR, e);
+                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
                }
             }
          });
@@ -175,20 +175,20 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
          if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) == 0)
             return;
 
-         log.info("Start Level Service about to stop: " + hb);
+         log.infov("Start Level Service about to stop: {0}", hostBundle);
          executor.execute(new Runnable()
          {
             @Override
             public void run()
             {
-               log.info("Start Level Service stopping: " + hb);
+               log.infov("Start Level Service stopping: {0}", hostBundle);
                try
                {
-                  hb.stop(Bundle.STOP_TRANSIENT);
+                  hostBundle.stop(Bundle.STOP_TRANSIENT);
                }
                catch (BundleException e)
                {
-                  eventsPlugin.fireFrameworkEvent(hb, FrameworkEvent.ERROR, e);
+                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
                }
             }
          });
@@ -238,7 +238,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
       while (startLevel < sl)
       {
          startLevel++;
-         log.info("Starting bundles for start level " + startLevel);
+         log.infov("Starting bundles for start level: {0}",  startLevel);
          for (AbstractBundle b : bundles)
          {
             if (!(b instanceof HostBundle))
@@ -278,7 +278,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
       Collection<AbstractBundle> bundles = getBundleManager().getBundles();
       while (startLevel > sl)
       {
-         log.info("Stopping bundles for start level " + startLevel);
+         log.infov("Stopping bundles for start level: {0}", startLevel);
          for (AbstractBundle b : bundles)
          {
             if (!(b instanceof HostBundle))

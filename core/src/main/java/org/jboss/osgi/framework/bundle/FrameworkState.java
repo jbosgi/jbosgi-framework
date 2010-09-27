@@ -201,7 +201,7 @@ public class FrameworkState extends SystemBundle implements Framework
       // Log INFO about this implementation
       String implTitle = getClass().getPackage().getImplementationTitle();
       String implVersion = getClass().getPackage().getImplementationVersion();
-      log.info(implTitle + " - " + implVersion);
+      log.infov(implTitle + " - " + implVersion);
 
       // Put into the STARTING state
       changeState(Bundle.STARTING);
@@ -222,6 +222,8 @@ public class FrameworkState extends SystemBundle implements Framework
       BundleStoragePlugin storagePlugin = getBundleManager().getOptionalPlugin(BundleStoragePlugin.class);
       if (storagePlugin != null)
          storagePlugin.cleanStorage(storageClean);
+      
+      log.debug("Framework initialized");
    }
 
    @Override
@@ -256,6 +258,8 @@ public class FrameworkState extends SystemBundle implements Framework
       // A framework event of type STARTED is fired
       FrameworkEventsPlugin plugin = getBundleManager().getPlugin(FrameworkEventsPlugin.class);
       plugin.fireFrameworkEvent(this, FrameworkEvent.STARTED, null);
+      
+      log.info("Framework started");
    }
 
    private int getBeginningStartLevel()
@@ -270,7 +274,7 @@ public class FrameworkState extends SystemBundle implements Framework
       }
       catch (NumberFormatException nfe)
       {
-         log.error("Could not set beginning start level to: '" + beginning + "'");
+         log.errorv("Could not set beginning start level to: {0}", beginning);
          return 1;
       }
    }
@@ -313,7 +317,7 @@ public class FrameworkState extends SystemBundle implements Framework
             }
             catch (Exception ex)
             {
-               log.error("Error stopping framework", ex);
+               log.errorv(ex, "Error stopping framework");
             }
          }
       };
@@ -359,7 +363,7 @@ public class FrameworkState extends SystemBundle implements Framework
             }
             catch (Exception ex)
             {
-               log.error("Error stopping framework", ex);
+               log.errorv(ex, "Error stopping framework");
             }
          }
       };
@@ -421,7 +425,7 @@ public class FrameworkState extends SystemBundle implements Framework
             }
             catch (RuntimeException ex)
             {
-               log.error("Cannot stop plugin: " + plugin, ex);
+               log.errorv(ex, "Cannot stop plugin: {0}", plugin);
             }
          }
 
@@ -441,12 +445,14 @@ public class FrameworkState extends SystemBundle implements Framework
             }
             catch (RuntimeException ex)
             {
-               log.error("Cannot destroy plugin: " + plugin, ex);
+               log.errorv(ex, "Cannot destroy plugin: {0}", plugin);
             }
          }
 
          // All resources held by this Framework are released
          destroyBundleContext();
+         
+         log.info("Framework stopped");
       }
       finally
       {
