@@ -71,26 +71,6 @@
 
     <!-- Test Dependencies -->
     <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.eventadmin</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.log</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.container</groupId>
-      <artifactId>arquillian-osgi-embedded</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.protocol</groupId>
-      <artifactId>arquillian-osgi-bundle</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.jboss.osgi.resolver</groupId>
       <artifactId>jbosgi-resolver-felix</artifactId>
       <scope>test</scope>
@@ -116,28 +96,21 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
+        <artifactId>maven-assembly-plugin</artifactId>
         <executions>
           <execution>
-            <id>copy</id>
-            <phase>compile</phase>
+            <id>modules</id>
+            <phase>test-compile</phase>
             <goals>
-              <goal>copy</goal>
+              <goal>directory-single</goal>
             </goals>
             <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.jboss.arquillian.protocol</groupId>
-                  <artifactId>arquillian-osgi-bundle</artifactId>
-                  <destFileName>arquillian-osgi-bundle.jar</destFileName>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.osgi</groupId>
-                  <artifactId>org.osgi.compendium</artifactId>
-                  <destFileName>org.osgi.compendium.jar</destFileName>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${project.build.directory}/test-libs/bundles</outputDirectory>
+              <finalName>test-modules</finalName>
+              <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
+              <appendAssemblyId>false</appendAssemblyId>
+              <descriptors>
+                <descriptor>scripts/assembly-modules.xml</descriptor>
+              </descriptors>
             </configuration>
           </execution>
         </executions>
@@ -150,6 +123,10 @@
             <property>
               <name>log4j.output.dir</name>
               <value>${project.build.directory}</value>
+            </property>
+            <property>
+              <name>module.path</name>
+              <value>${project.build.directory}/test-modules</value>
             </property>
             <property>
               <name>test.archive.directory</name>

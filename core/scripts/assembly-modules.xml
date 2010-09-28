@@ -1,0 +1,42 @@
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
+
+  <id>modules</id>
+  <formats>
+    <format>dir</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+
+  <!-- Dependency Sets -->
+  <dependencySets>
+    <dependencySet>
+      <outputDirectory>org/osgi/compendium/main</outputDirectory>
+      <includes>
+        <include>org.osgi:org.osgi.compendium:jar</include>
+      </includes>
+      <useStrictFiltering>true</useStrictFiltering>
+      <scope>compile</scope>
+      <unpack>false</unpack>
+    </dependencySet>
+    <dependencySet>
+      <outputDirectory>org/osgi/core/main</outputDirectory>
+      <includes>
+        <include>org.osgi:org.osgi.core:jar</include>
+      </includes>
+      <useStrictFiltering>true</useStrictFiltering>
+      <scope>compile</scope>
+      <unpack>false</unpack>
+    </dependencySet>
+  </dependencySets>
+  
+  <fileSets>
+    <!-- etc -->
+    <fileSet>
+      <directory>src/test/resources/modules</directory>
+      <outputDirectory>/</outputDirectory>
+      <excludes>
+        <exclude>/META-INF/**</exclude>
+      </excludes>
+    </fileSet>
+  </fileSets>
+</assembly>

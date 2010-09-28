@@ -43,6 +43,7 @@ import org.jboss.modules.PathFilters;
 import org.jboss.osgi.testing.OSGiTestHelper;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.After;
 import org.junit.Before;
 
 /**
@@ -54,11 +55,34 @@ import org.junit.Before;
 public abstract class ModulesTestBase
 {
    private ModuleLoaderSupport moduleLoader;
+   private ModuleLoader currentLoader;
 
    @Before
    public void setUp()
    {
+      currentLoader = Module.getCurrentLoader();
       moduleLoader = new ModuleLoaderSupport();
+      Module.setModuleLoaderSelector(new ModuleLoaderSelector()
+      {
+         @Override
+         public ModuleLoader getCurrentLoader()
+         {
+            return moduleLoader;
+         }
+      });
+   }
+
+   @After
+   public void tearDown()
+   {
+      Module.setModuleLoaderSelector(new ModuleLoaderSelector()
+      {
+         @Override
+         public ModuleLoader getCurrentLoader()
+         {
+            return currentLoader;
+         }
+      });
    }
 
    protected void addModuleSpec(ModuleSpec moduleSpec)
@@ -121,19 +145,6 @@ public abstract class ModulesTestBase
    {
       private Map<ModuleIdentifier, ModuleSpec> modules = new HashMap<ModuleIdentifier, ModuleSpec>();
 
-      ModuleLoaderSupport()
-      {
-         final ModuleLoader thisLoader = this;
-         Module.setModuleLoaderSelector(new ModuleLoaderSelector()
-         {
-            @Override
-            public ModuleLoader getCurrentLoader()
-            {
-               return thisLoader;
-            }
-         });
-      }
-
       void addModuleSpec(ModuleSpec moduleSpec)
       {
          modules.put(moduleSpec.getModuleIdentifier(), moduleSpec);
@@ -142,7 +153,8 @@ public abstract class ModulesTestBase
       @Override
       protected ModuleSpec findModule(ModuleIdentifier identifier) throws ModuleLoadException
       {
-         return modules.get(identifier);
+         ModuleSpec moduleSpec = modules.get(identifier);
+         return moduleSpec;
       }
    }
 }
