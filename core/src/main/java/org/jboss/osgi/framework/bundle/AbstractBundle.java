@@ -93,17 +93,15 @@ public abstract class AbstractBundle implements Bundle
    private AbstractBundleContext bundleContext;
    private BundleWrapper bundleWrapper;
    private long lastModified = System.currentTimeMillis();
-   private final CopyOnWriteArrayList<ServiceState> registeredServices =
-         new CopyOnWriteArrayList<ServiceState>();
-   private final ConcurrentHashMap<ServiceState, AtomicInteger> usedServices =
-         new ConcurrentHashMap<ServiceState, AtomicInteger>();
+   private final CopyOnWriteArrayList<ServiceState> registeredServices = new CopyOnWriteArrayList<ServiceState>();
+   private final ConcurrentHashMap<ServiceState, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
 
    // Cache commonly used plugins
-   private FrameworkEventsPlugin eventsPlugin;
-   private LifecycleInterceptorPlugin interceptorPlugin;
-   private ResolverPlugin resolverPlugin;
-   private ModuleManagerPlugin moduleManager;
-   private ServiceManagerPlugin servicePlugin;
+   private final FrameworkEventsPlugin eventsPlugin;
+   private final LifecycleInterceptorPlugin interceptorPlugin;
+   private final ResolverPlugin resolverPlugin;
+   private final ModuleManagerPlugin moduleManager;
+   private final ServiceManagerPlugin serviceManager;
 
    AbstractBundle(BundleManager bundleManager, String symbolicName)
    {
@@ -121,6 +119,12 @@ public abstract class AbstractBundle implements Bundle
 
       boolean systemBundle = symbolicName.equals(Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
       this.bundleId = (systemBundle ? 0 : bundleManager.getNextBundleId());
+
+      this.eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
+      this.interceptorPlugin = bundleManager.getPlugin(LifecycleInterceptorPlugin.class);
+      this.moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
+      this.resolverPlugin = bundleManager.getPlugin(ResolverPlugin.class);
+      this.serviceManager = bundleManager.getPlugin(ServiceManagerPlugin.class);
    }
 
    /**
@@ -218,7 +222,7 @@ public abstract class AbstractBundle implements Bundle
    public void addToResolver()
    {
       XModule resModule = getResolverModule();
-      getResolverPlugin().addModule(resModule);
+      resolverPlugin.addModule(resModule);
    }
 
    public void removeFromResolver()
@@ -226,7 +230,7 @@ public abstract class AbstractBundle implements Bundle
       for (AbstractRevision abr : getRevisions())
       {
          XModule resModule = abr.getResolverModule();
-         getResolverPlugin().removeModule(resModule);
+         resolverPlugin.removeModule(resModule);
       }
       clearRevisions();
    }
@@ -347,41 +351,6 @@ public abstract class AbstractBundle implements Bundle
       return srefs.toArray(new ServiceReference[srefs.size()]);
    }
 
-   public FrameworkEventsPlugin getFrameworkEventsPlugin()
-   {
-      if (eventsPlugin == null)
-         eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
-      return eventsPlugin;
-   }
-
-   public LifecycleInterceptorPlugin getLifecycleInterceptorPlugin()
-   {
-      if (interceptorPlugin == null)
-         interceptorPlugin = bundleManager.getPlugin(LifecycleInterceptorPlugin.class);
-      return interceptorPlugin;
-   }
-
-   ModuleManagerPlugin getModuleManagerPlugin()
-   {
-      if (moduleManager == null)
-         moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
-      return moduleManager;
-   }
-
-   ResolverPlugin getResolverPlugin()
-   {
-      if (resolverPlugin == null)
-         resolverPlugin = getBundleManager().getPlugin(ResolverPlugin.class);
-      return resolverPlugin;
-   }
-
-   ServiceManagerPlugin getServiceManagerPlugin()
-   {
-      if (servicePlugin == null)
-         servicePlugin = bundleManager.getPlugin(ServiceManagerPlugin.class);
-      return servicePlugin;
-   }
-
    public Bundle getBundleWrapper()
    {
       if (bundleWrapper == null)
@@ -436,13 +405,13 @@ public abstract class AbstractBundle implements Bundle
 
       // Invoke the bundle lifecycle interceptors
       if (getBundleManager().isFrameworkActive() && getBundleId() != 0)
-         getLifecycleInterceptorPlugin().handleStateChange(state, getBundleWrapper());
+         interceptorPlugin.handleStateChange(state, getBundleWrapper());
 
       bundleState.set(state);
 
       // Fire the bundle event
       if (getBundleManager().isFrameworkActive())
-         getFrameworkEventsPlugin().fireBundleEvent(this, bundleEventType);
+         eventsPlugin.fireBundleEvent(this, bundleEventType);
    }
 
    @Override
@@ -748,6 +717,31 @@ public abstract class AbstractBundle implements Bundle
    public Map getSignerCertificates(int signersType)
    {
       throw new NotImplementedException();
+   }
+
+   FrameworkEventsPlugin getFrameworkEventsPlugin()
+   {
+      return eventsPlugin;
+   }
+
+   LifecycleInterceptorPlugin getInterceptorPlugin()
+   {
+      return interceptorPlugin;
+   }
+
+   ResolverPlugin getResolverPlugin()
+   {
+      return resolverPlugin;
+   }
+
+   ModuleManagerPlugin getModuleManagerPlugin()
+   {
+      return moduleManager;
+   }
+
+   ServiceManagerPlugin getServiceManagerPlugin()
+   {
+      return serviceManager;
    }
 
    /**

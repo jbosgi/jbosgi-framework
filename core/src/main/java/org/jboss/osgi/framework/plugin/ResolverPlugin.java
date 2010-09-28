@@ -26,6 +26,7 @@ package org.jboss.osgi.framework.plugin;
 import java.util.Set;
 
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XModuleIdentity;
 import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.BundleException;
@@ -43,6 +44,11 @@ public interface ResolverPlugin extends Plugin
     * Get the resolver instance
     */
    XResolver getResolver();
+
+   /**
+    * Get a new module builder instance
+    */
+   XModuleBuilder getModuleBuilder();
 
    /**
     * Add a module to the resolver.

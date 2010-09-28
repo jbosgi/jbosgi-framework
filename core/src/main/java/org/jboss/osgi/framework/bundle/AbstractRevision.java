@@ -30,10 +30,10 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
+import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
-import org.jboss.osgi.resolver.XResolverFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
@@ -57,6 +57,7 @@ public abstract class AbstractRevision
 
    // Cache commonly used plugins
    private final ModuleManagerPlugin moduleManager;
+   private final ResolverPlugin resolverPlugin;
 
    AbstractRevision(AbstractBundle bundleState, OSGiMetaData metadata, XModule resModule, int revCount) throws BundleException
    {
@@ -69,7 +70,9 @@ public abstract class AbstractRevision
       this.metadata = metadata;
       this.revisionCount = revCount;
 
-      this.moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
+      BundleManager bundleManager = getBundleManager();
+      this.moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
+      this.resolverPlugin = bundleManager.getPlugin(ResolverPlugin.class);
 
       // Create the resolver module
       if (resModule == null)
@@ -99,8 +102,8 @@ public abstract class AbstractRevision
 
    XModule createResolverModule(OSGiMetaData metadata) throws BundleException
    {
-      XModuleBuilder builder = XResolverFactory.loadModuleBuilder(getClass().getClassLoader());
-      XModule resModule = builder.create(metadata, revisionCount).getModule();
+      XModuleBuilder builder = resolverPlugin.getModuleBuilder();
+      XModule resModule = builder.createModule(metadata, revisionCount).getModule();
       resModule.addAttachment(AbstractRevision.class, this);
       resModule.addAttachment(Bundle.class, bundleState);
       return resModule;

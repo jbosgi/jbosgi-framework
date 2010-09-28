@@ -33,10 +33,18 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleLoadException;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.plugin.AutoInstallPlugin;
 import org.jboss.osgi.framework.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
@@ -66,7 +74,11 @@ import org.jboss.osgi.framework.plugin.internal.StartLevelPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.WebXMLVerifierInterceptor;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
+import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XVersionRange;
+import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.spi.util.SysPropertyActions;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -74,6 +86,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.Version;
 
 /**
  * The BundleManager is the central managing entity for OSGi bundles.
@@ -442,6 +455,65 @@ public class BundleManager
    }
 
    /**
+    * Install a bundle from a {@link ModuleIdentifier}
+    */
+   public Bundle installBundle(ModuleIdentifier identifier) throws BundleException
+   {
+      if (identifier == null)
+         throw new IllegalArgumentException("Null identifier");
+      
+      Module module;
+      try
+      {
+         ModuleLoader loader = Module.getCurrentLoader();
+         module = loader.loadModule(identifier);
+      }
+      catch (ModuleLoadException ex)
+      {
+         throw new BundleException("Cannot load module: " + identifier, ex);
+      }
+      
+      Deployment dep = null;
+      
+      // Check if the module has a valid OSGi manifest
+      ModuleClassLoader classLoader = module.getClassLoader();
+      InputStream inStream = classLoader.getResourceAsStream(JarFile.MANIFEST_NAME);
+      if (inStream != null)
+      {
+         try
+         {
+            Manifest manifest = new Manifest();
+            manifest.read(inStream);
+            
+            if (BundleInfo.isValidateBundleManifest(manifest))
+            {
+               OSGiMetaData metadata = OSGiMetaDataBuilder.load(manifest);
+               XModuleBuilder builder = getPlugin(ResolverPlugin.class).getModuleBuilder();
+               XModule resModule = builder.createModule(metadata, 0).getModule();
+               resModule.addAttachment(Module.class, module);
+               
+               String location = identifier.toURL().toExternalForm();
+               String symbolicName = metadata.getBundleSymbolicName();
+               Version version = metadata.getBundleVersion();
+               dep = DeploymentFactory.createDeployment(location, symbolicName, version);
+               dep.addAttachment(OSGiMetaData.class, metadata);
+               dep.addAttachment(XModule.class, resModule);
+               dep.addAttachment(Module.class, module);
+            }
+         }
+         catch (IOException ex)
+         {
+            throw new BundleException("Cannot read mainfest from: " + identifier, ex);
+         }
+      }
+      
+      if (dep == null)
+         throw new BundleException("Cannot create deployment for: " + identifier);
+      
+      return installBundle(dep);
+   }
+   
+   /**
     * Install a bundle from a {@link Deployment}
     */
    public AbstractBundle installBundle(Deployment dep) throws BundleException
@@ -576,17 +648,17 @@ public class BundleManager
 
    void deleteContentRoot(VirtualFile rootFile)
    {
-      if (rootFile == null)
-         throw new IllegalArgumentException("Null rootFile");
-
-      String contentRootPath = rootFile.getPathName();
-      rootFile.close();
-
-      File streamDir = getPlugin(BundleStoragePlugin.class).getBundleStreamDir();
-      if (contentRootPath.startsWith(streamDir.getAbsolutePath()))
+      if (rootFile != null)
       {
-         File file = new File(contentRootPath);
-         file.delete();
+         String contentRootPath = rootFile.getPathName();
+         rootFile.close();
+
+         File streamDir = getPlugin(BundleStoragePlugin.class).getBundleStreamDir();
+         if (contentRootPath.startsWith(streamDir.getAbsolutePath()))
+         {
+            File file = new File(contentRootPath);
+            file.delete();
+         }
       }
    }
 }

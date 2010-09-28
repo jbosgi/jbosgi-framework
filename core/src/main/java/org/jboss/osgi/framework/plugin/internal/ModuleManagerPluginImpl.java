@@ -21,24 +21,19 @@
  */
 package org.jboss.osgi.framework.plugin.internal;
 
-import java.util.List;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.framework.bundle.BundleManager;
-import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.ModuleManager;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.vfs.VirtualFile;
-import org.osgi.framework.Bundle;
 
 /**
  * The module manager plugin.
@@ -85,24 +80,9 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    }
 
    @Override
-   public ModuleSpec createModuleSpec(XModule resModule)
+   public ModuleIdentifier addModule(XModule resModule)
    {
-      if (resModule == null)
-         throw new IllegalArgumentException("Null module");
-
-      if (resModule == getBundleManager().getSystemBundle().getResolverModule())
-      {
-         return moduleManager.createFrameworkSpec(resModule);
-      }
-      else
-      {
-         // Get the root virtual file
-         Bundle bundle = resModule.getAttachment(Bundle.class);
-         HostBundle bundleState = HostBundle.assertBundleState(bundle);
-         List<VirtualFile> contentRoots = bundleState.getContentRoots();
-
-         return moduleManager.createModuleSpec(resModule, contentRoots);
-      }
+      return moduleManager.addModule(resModule);
    }
 
    @Override

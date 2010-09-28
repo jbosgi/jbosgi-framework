@@ -70,14 +70,14 @@ public class LifecycleInterceptorPluginImpl extends AbstractPlugin implements Li
             if (bundleState == null)
                throw new IllegalStateException("Cannot obtain bundleState for: " + bundle);
 
-            AbstractUserBundle depBundle = AbstractUserBundle.assertBundleState(bundleState);
-            Deployment dep = depBundle.getDeployment();
+            AbstractUserBundle userBundle = AbstractUserBundle.assertBundleState(bundleState);
+            Deployment dep = userBundle.getDeployment();
             
             InvocationContext inv = dep.getAttachment(InvocationContext.class);
             if (inv == null)
             {
-               BundleContext context = depBundle.getBundleManager().getSystemContext();
-               VirtualFile rootFile = depBundle.getContentRoot();
+               BundleContext context = userBundle.getBundleManager().getSystemContext();
+               VirtualFile rootFile = userBundle.getContentRoot();
                LifecycleInterceptorAttachments att = new LifecycleInterceptorAttachments();
                inv = new InvocationContextImpl(context, bundle, rootFile, att);
                dep.addAttachment(InvocationContext.class, inv);

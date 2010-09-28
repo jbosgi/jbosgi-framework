@@ -105,8 +105,8 @@ public class DeployerServiceTestCase extends OSGiFrameworkTest
       archive.addClasses(SimpleService.class);
 
       Deployment dep = createDeployment(archive, Version.emptyVersion);
-      XModuleBuilder builder = XResolverFactory.loadModuleBuilder(null);
-      builder.create(archive.getName(), null, 0).addBundleCapability(archive.getName(), null);
+      XModuleBuilder builder = XResolverFactory.getInstance().newModuleBuilder();
+      builder.createModule(archive.getName(), null, 0).addBundleCapability(archive.getName(), null);
       dep.addAttachment(XModule.class, builder.getModule());
 
       Bundle bundle = getDeployerService().deploy(dep);

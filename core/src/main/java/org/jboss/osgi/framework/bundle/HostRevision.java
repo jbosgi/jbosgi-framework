@@ -55,7 +55,7 @@ public class HostRevision extends AbstractUserRevision
 {
    static final Logger log = Logger.getLogger(HostRevision.class);
 
-   private final List<VirtualFile> contentRoots;
+   private List<VirtualFile> contentRoots;
    private List<FragmentRevision> attachedFragments;
 
    public HostRevision(HostBundle hostBundle, Deployment dep, int revCount) throws BundleException
@@ -63,7 +63,8 @@ public class HostRevision extends AbstractUserRevision
       super(hostBundle, dep, revCount);
 
       // Set the aggregated root file
-      contentRoots = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
+      if (dep.getRoot() != null)
+         contentRoots = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
    }
 
    @Override
@@ -141,21 +142,26 @@ public class HostRevision extends AbstractUserRevision
       }
 
       // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
-      try
+      if (getContentRoot() != null)
       {
-         VirtualFile child = getContentRoot().getChild(path);
-         if (child == null)
-            return null;
+         try
+         {
+            VirtualFile child = getContentRoot().getChild(path);
+            if (child == null)
+               return null;
 
-         Vector<URL> vector = new Vector<URL>();
-         vector.add(child.toURL());
-         return vector.elements();
+            Vector<URL> vector = new Vector<URL>();
+            vector.add(child.toURL());
+            return vector.elements();
+         }
+         catch (IOException ex)
+         {
+            log.errorv(ex, "Cannot get resources: {0}", path);
+            return null;
+         }
       }
-      catch (IOException ex)
-      {
-         log.errorv(ex, "Cannot get resources: {0}", path);
-         return null;
-      }
+      
+      return null;
    }
 
    private List<VirtualFile> getBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata)

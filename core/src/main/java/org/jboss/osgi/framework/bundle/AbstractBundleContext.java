@@ -162,8 +162,7 @@ public abstract class AbstractBundleContext implements BundleContext
    public void addServiceListener(ServiceListener listener, String filter) throws InvalidSyntaxException
    {
       checkValidBundleContext();
-      FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
-      eventsPlugin.addServiceListener(bundleState, listener, filter);
+      getFrameworkEventsPlugin().addServiceListener(bundleState, listener, filter);
    }
 
    @Override
@@ -172,8 +171,7 @@ public abstract class AbstractBundleContext implements BundleContext
       checkValidBundleContext();
       try
       {
-         FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
-         eventsPlugin.addServiceListener(bundleState, listener, null);
+         getFrameworkEventsPlugin().addServiceListener(bundleState, listener, null);
       }
       catch (InvalidSyntaxException ex)
       {
@@ -185,40 +183,35 @@ public abstract class AbstractBundleContext implements BundleContext
    public void removeServiceListener(ServiceListener listener)
    {
       checkValidBundleContext();
-      FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
-      eventsPlugin.removeServiceListener(bundleState, listener);
+      getFrameworkEventsPlugin().removeServiceListener(bundleState, listener);
    }
 
    @Override
    public void addBundleListener(BundleListener listener)
    {
       checkValidBundleContext();
-      FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
-      eventsPlugin.addBundleListener(bundleState, listener);
+      getFrameworkEventsPlugin().addBundleListener(bundleState, listener);
    }
 
    @Override
    public void removeBundleListener(BundleListener listener)
    {
       checkValidBundleContext();
-      FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
-      eventsPlugin.removeBundleListener(bundleState, listener);
+      getFrameworkEventsPlugin().removeBundleListener(bundleState, listener);
    }
 
    @Override
    public void addFrameworkListener(FrameworkListener listener)
    {
       checkValidBundleContext();
-      FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
-      eventsPlugin.addFrameworkListener(bundleState, listener);
+      getFrameworkEventsPlugin().addFrameworkListener(bundleState, listener);
    }
 
    @Override
    public void removeFrameworkListener(FrameworkListener listener)
    {
       checkValidBundleContext();
-      FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkEventsPlugin();
-      eventsPlugin.removeFrameworkListener(bundleState, listener);
+      getFrameworkEventsPlugin().removeFrameworkListener(bundleState, listener);
    }
 
    @Override
@@ -234,8 +227,7 @@ public abstract class AbstractBundleContext implements BundleContext
    public ServiceRegistration registerService(String[] clazzes, Object service, Dictionary properties)
    {
       checkValidBundleContext();
-      ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
-      ServiceState serviceState = servicePlugin.registerService(bundleState, clazzes, service, properties);
+      ServiceState serviceState = getServiceManager().registerService(bundleState, clazzes, service, properties);
       return serviceState.getRegistration();
    }
 
@@ -243,8 +235,7 @@ public abstract class AbstractBundleContext implements BundleContext
    public ServiceReference[] getServiceReferences(String clazz, String filter) throws InvalidSyntaxException
    {
       checkValidBundleContext();
-      ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
-      List<ServiceState> srefs = servicePlugin.getServiceReferences(bundleState, clazz, filter, true);
+      List<ServiceState> srefs = getServiceManager().getServiceReferences(bundleState, clazz, filter, true);
       if (srefs.isEmpty())
          return null;
       
@@ -260,8 +251,7 @@ public abstract class AbstractBundleContext implements BundleContext
    {
       checkValidBundleContext();
       List<ServiceReference> result = new ArrayList<ServiceReference>();
-      ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
-      List<ServiceState> srefs = servicePlugin.getServiceReferences(bundleState, clazz, filter, false);
+      List<ServiceState> srefs = getServiceManager().getServiceReferences(bundleState, clazz, filter, false);
       if (srefs.isEmpty())
          return null;
       
@@ -275,8 +265,7 @@ public abstract class AbstractBundleContext implements BundleContext
    public ServiceReference getServiceReference(String clazz)
    {
       checkValidBundleContext();
-      ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
-      ServiceState serviceState = servicePlugin.getServiceReference(bundleState, clazz);
+      ServiceState serviceState = getServiceManager().getServiceReference(bundleState, clazz);
       if (serviceState == null)
          return null;
       
@@ -288,8 +277,7 @@ public abstract class AbstractBundleContext implements BundleContext
    {
       checkValidBundleContext();
       ServiceState serviceState = ServiceState.assertServiceState(sref);
-      ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
-      Object service = servicePlugin.getService(bundleState, serviceState);
+      Object service = getServiceManager().getService(bundleState, serviceState);
       return service;
    }
 
@@ -298,8 +286,7 @@ public abstract class AbstractBundleContext implements BundleContext
    {
       checkValidBundleContext();
       ServiceState serviceState = ServiceState.assertServiceState(sref);
-      ServiceManagerPlugin servicePlugin = bundleState.getServiceManagerPlugin();
-      return servicePlugin.ungetService(bundleState, serviceState);
+      return getServiceManager().ungetService(bundleState, serviceState);
    }
 
    @Override
@@ -321,6 +308,16 @@ public abstract class AbstractBundleContext implements BundleContext
    {
       if (destroyed == true)
          throw new IllegalStateException("Invalid bundle context: " + this);
+   }
+
+   private ServiceManagerPlugin getServiceManager()
+   {
+      return bundleState.getServiceManagerPlugin();
+   }
+
+   private FrameworkEventsPlugin getFrameworkEventsPlugin()
+   {
+      return bundleState.getFrameworkEventsPlugin();
    }
 
    @Override

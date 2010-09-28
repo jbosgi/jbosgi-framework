@@ -55,8 +55,8 @@ public class XModuleParserTestCase extends OSGiTest
       assertNotNull("File exists", resFile);
 
       OSGiMetaData metadata = OSGiMetaDataBuilder.load(new FileInputStream(resFile));
-      XModuleBuilder builder = XResolverFactory.loadModuleBuilder(getClass().getClassLoader());
-      XModule resModule = builder.create(metadata, 0).getModule();
+      XModuleBuilder builder = XResolverFactory.getInstance().newModuleBuilder();
+      XModule resModule = builder.createModule(metadata, 0).getModule();
       assertNotNull("XModule exists", resModule);
 
       assertEquals("moduleA", resModule.getName());

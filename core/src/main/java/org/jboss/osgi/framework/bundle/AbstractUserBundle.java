@@ -36,12 +36,10 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
-import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XModuleIdentity;
-import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -49,6 +47,7 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.Version;
 
 /**
  * This is the internal implementation of a Bundle based on a user {@link Deployment}.
@@ -65,24 +64,32 @@ public abstract class AbstractUserBundle extends AbstractBundle
    AbstractUserBundle(BundleManager bundleManager, Deployment dep) throws BundleException
    {
       super(bundleManager, dep.getSymbolicName());
-      createRevision(dep, incrementRevisionCount(dep.getAttachment(OSGiMetaData.class)));
+      createRevision(dep, incrementRevisionCount(dep));
    }
 
    // The initial revision count is greater than 1 if the framework
    // still retains UNISTALLED bundles with the same symbolic name and version
-   private int incrementRevisionCount(OSGiMetaData metadata) throws BundleException
+   private int incrementRevisionCount(Deployment dep) throws BundleException
    {
-      ResolverPlugin plugin = getResolverPlugin();
-
       int revCount = revCounter.incrementAndGet();
-      XModuleBuilder builder = XResolverFactory.loadModuleBuilder(getClass().getClassLoader());
-      XModuleIdentity moduleId = builder.create(metadata, revCount).getModuleIdentity();
-      XModule resModule = plugin.getModuleById(moduleId);
+      XModule resModule = dep.getAttachment(XModule.class);
+      XModuleIdentity moduleId = (resModule != null ? resModule.getModuleId() : null);
+      if (moduleId == null)
+      {
+         OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
+         String name = metadata.getBundleSymbolicName();
+         Version version = metadata.getBundleVersion();
+
+         XModuleBuilder builder = getResolverPlugin().getModuleBuilder();
+         builder.createModule(name, version, revCount);
+         moduleId = builder.getModuleIdentity();
+      }
+      resModule = getResolverPlugin().getModuleById(moduleId);
       if (resModule != null)
       {
          Bundle resBundle = resModule.getAttachment(Bundle.class);
          if (resBundle.getState() == Bundle.UNINSTALLED)
-            return incrementRevisionCount(metadata);
+            return incrementRevisionCount(dep);
       }
       return revCount;
    }
@@ -354,6 +361,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
             ModuleIdentifier identifier = rev.getModuleIdentifier();
             moduleManager.removeModule(identifier);
          }
+
          AbstractUserRevision userRev = (AbstractUserRevision)rev;
          bundleManager.deleteContentRoot(userRev.getContentRoot());
       }

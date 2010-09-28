@@ -21,11 +21,11 @@
 */
 package org.jboss.osgi.framework.bundle;
 
-import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
@@ -44,11 +44,17 @@ public abstract class AbstractUserRevision extends AbstractRevision
    static final Logger log = Logger.getLogger(AbstractUserRevision.class);
 
    private final Deployment deployment;
+   private final EntriesProvider entriesProvider;
 
    AbstractUserRevision(AbstractUserBundle bundleState, Deployment dep, int revCount) throws BundleException
    {
       super(bundleState, dep.getAttachment(OSGiMetaData.class), dep.getAttachment(XModule.class), revCount);
       this.deployment = dep;
+
+      if (dep.getRoot() != null)
+         entriesProvider = new VirtualFileEntriesProvider(dep.getRoot());
+      else
+         entriesProvider = new ModuleEntriesProvider(dep.getAttachment(Module.class));
    }
 
    public Deployment getDeployment()
@@ -70,43 +76,20 @@ public abstract class AbstractUserRevision extends AbstractRevision
    public Enumeration<String> getEntryPaths(String path)
    {
       getBundleState().assertNotUninstalled();
-      try
-      {
-         return getContentRoot().getEntryPaths(path);
-      }
-      catch (IOException ex)
-      {
-         return null;
-      }
+      return entriesProvider.getEntryPaths(path);
    }
 
    @Override
    public URL getEntry(String path)
    {
       getBundleState().assertNotUninstalled();
-      try
-      {
-         VirtualFile child = getContentRoot().getChild(path);
-         return child != null ? child.toURL() : null;
-      }
-      catch (IOException ex)
-      {
-         log.errorv(ex, "Cannot get entry: {0}", path);
-         return null;
-      }
+      return entriesProvider.getEntry(path);
    }
 
    @Override
    public Enumeration<URL> findEntries(String path, String pattern, boolean recurse)
    {
       getBundleState().assertNotUninstalled();
-      try
-      {
-         return getContentRoot().findEntries(path, pattern, recurse);
-      }
-      catch (IOException ex)
-      {
-         return null;
-      }
+      return entriesProvider.findEntries(path, pattern, recurse);
    }
 }

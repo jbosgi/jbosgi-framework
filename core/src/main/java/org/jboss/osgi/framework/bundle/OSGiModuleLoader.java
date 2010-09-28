@@ -14,7 +14,8 @@ import org.jboss.modules.ModuleSpec;
 final class OSGiModuleLoader extends ModuleLoader
 {
    // The modules that are registered with this {@link ModuleLoader}
-   private Map<ModuleIdentifier, OSGiModuleLoader.ModuleHolder> modules = Collections.synchronizedMap(new LinkedHashMap<ModuleIdentifier, OSGiModuleLoader.ModuleHolder>());
+   private Map<ModuleIdentifier, OSGiModuleLoader.ModuleHolder> modules = Collections
+         .synchronizedMap(new LinkedHashMap<ModuleIdentifier, OSGiModuleLoader.ModuleHolder>());
 
    @Override
    public ModuleSpec findModule(ModuleIdentifier identifier) throws ModuleLoadException
@@ -47,6 +48,15 @@ final class OSGiModuleLoader extends ModuleLoader
       modules.put(identifier, new ModuleHolder(bundleRev, moduleSpec));
    }
 
+   void addModule(AbstractRevision bundleRev, Module module)
+   {
+      ModuleIdentifier identifier = module.getIdentifier();
+      if (modules.get(identifier) != null)
+         throw new IllegalStateException("Module already exists: " + identifier);
+
+      modules.put(identifier, new ModuleHolder(bundleRev, module));
+   }
+
    Module removeModule(ModuleIdentifier identifier)
    {
       OSGiModuleLoader.ModuleHolder moduleHolder = modules.remove(identifier);
@@ -54,7 +64,9 @@ final class OSGiModuleLoader extends ModuleLoader
          return null;
 
       Module module = moduleHolder.module;
-      unloadModuleLocal(module);
+      if (module.getModuleLoader() == this)
+         unloadModuleLocal(module);
+      
       return module;
    }
 
@@ -91,7 +103,7 @@ final class OSGiModuleLoader extends ModuleLoader
    static class ModuleHolder
    {
       private final AbstractRevision bundleRev;
-      private final ModuleSpec moduleSpec;
+      private ModuleSpec moduleSpec;
       private Module module;
 
       public ModuleHolder(AbstractRevision bundleRev, ModuleSpec moduleSpec)
@@ -102,6 +114,16 @@ final class OSGiModuleLoader extends ModuleLoader
             throw new IllegalArgumentException("Null moduleSpec");
          this.bundleRev = bundleRev;
          this.moduleSpec = moduleSpec;
+      }
+
+      ModuleHolder(AbstractRevision bundleRev, Module module)
+      {
+         if (bundleRev == null)
+            throw new IllegalArgumentException("Null bundleRev");
+         if (module == null)
+            throw new IllegalArgumentException("Null module");
+         this.bundleRev = bundleRev;
+         this.module = module;
       }
 
       AbstractRevision getBundleRevision()

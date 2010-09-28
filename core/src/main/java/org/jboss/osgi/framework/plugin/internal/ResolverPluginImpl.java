@@ -42,6 +42,7 @@ import org.jboss.osgi.framework.plugin.NativeCodePlugin;
 import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XModuleIdentity;
 import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResolverCallback;
@@ -63,7 +64,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    // Provide logging
    final Logger log = Logger.getLogger(ResolverPluginImpl.class);
 
-   // The resolver delegate
+   private final XResolverFactory factory;
    private final XResolver resolver;
    private final NativeCodePlugin nativeCodePlugin;
    private final ModuleManagerPlugin moduleManager;
@@ -71,7 +72,8 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    public ResolverPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
-      resolver = XResolverFactory.loadResolver(getClass().getClassLoader());
+      factory = XResolverFactory.getInstance(getClass().getClassLoader());
+      resolver = factory.newResolver();
       nativeCodePlugin = getOptionalPlugin(NativeCodePlugin.class);
       moduleManager = getPlugin(ModuleManagerPlugin.class);
    }
@@ -80,6 +82,12 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    public XResolver getResolver()
    {
       return resolver;
+   }
+
+   @Override
+   public XModuleBuilder getModuleBuilder()
+   {
+      return factory.newModuleBuilder();
    }
 
    @Override
@@ -172,7 +180,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       attachFragmentsToHost(resolved);
 
       // For every resolved host bundle create the {@link ModuleSpec}
-      createModuleSpecs(resolved);
+      addModules(resolved);
 
       // For every resolved host bundle load the module. This creates the {@link ModuleClassLoader}
       loadModules(resolved);
@@ -196,12 +204,14 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       }
    }
 
-   private void createModuleSpecs(List<XModule> resolved)
+   private void addModules(List<XModule> resolved)
    {
       for (XModule aux : resolved)
       {
          if (aux.isFragment() == false)
-            moduleManager.createModuleSpec(aux);
+         {
+            moduleManager.addModule(aux);
+         }
       }
    }
 

@@ -63,11 +63,14 @@ public class WebXMLVerifierInterceptor extends AbstractPlugin implements Lifecyc
                try
                {
                   VirtualFile root = context.getRoot();
-                  VirtualFile webXML = root.getChild("/WEB-INF/web.xml");
-                  String contextPath = (String)context.getBundle().getHeaders().get("Web-ContextPath");
-                  boolean isWebApp = contextPath != null || root.getName().endsWith(".war");
-                  if (isWebApp == true && webXML == null)
-                     throw new LifecycleInterceptorException("Cannot obtain web.xml from: " + root.toURL());
+                  if (root != null)
+                  {
+                     VirtualFile webXML = root.getChild("/WEB-INF/web.xml");
+                     String contextPath = (String)context.getBundle().getHeaders().get("Web-ContextPath");
+                     boolean isWebApp = contextPath != null || root.getName().endsWith(".war");
+                     if (isWebApp == true && webXML == null)
+                        throw new LifecycleInterceptorException("Cannot obtain web.xml from: " + root.toURL());
+                  }
                }
                catch (RuntimeException rte)
                {

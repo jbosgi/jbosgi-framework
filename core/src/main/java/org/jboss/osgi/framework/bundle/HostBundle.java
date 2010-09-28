@@ -24,7 +24,6 @@ package org.jboss.osgi.framework.bundle;
 import java.util.List;
 
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.framework.plugin.StartLevelPlugin;
 import org.jboss.osgi.modules.ModuleActivator;
 import org.jboss.osgi.resolver.XModule;
@@ -76,9 +75,9 @@ public class HostBundle extends AbstractUserBundle
    }
 
    @Override
-   AbstractUserRevision createRevisionInternal(Deployment deployment, int revCount) throws BundleException
+   AbstractUserRevision createRevisionInternal(Deployment dep, int revCount) throws BundleException
    {
-      return new HostRevision(this, deployment, revCount);
+      return new HostRevision(this, dep, revCount);
    }
 
    @Override
@@ -126,8 +125,7 @@ public class HostBundle extends AbstractUserBundle
          }
          catch (BundleException ex)
          {
-            FrameworkEventsPlugin plugin = getFrameworkEventsPlugin();
-            plugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, ex);
+            getFrameworkEventsPlugin().fireFrameworkEvent(this, FrameworkEvent.ERROR, ex);
             result = false;
          }
       }

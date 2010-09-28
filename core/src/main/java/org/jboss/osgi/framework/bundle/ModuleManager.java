@@ -125,13 +125,19 @@ public class ModuleManager
       if (id != null)
          return id;
 
-      AbstractRevision bundleRevision = resModule.getAttachment(AbstractRevision.class);
-      if (bundleRevision == null)
-         throw new IllegalStateException("Cannot obtain revision from: " + resModule);
+      Module module = resModule.getAttachment(Module.class);
+      ModuleIdentifier identifier = (module != null ? module.getIdentifier() : null);
+      if (identifier == null)
+      {
+         AbstractRevision bundleRevision = resModule.getAttachment(AbstractRevision.class);
+         if (bundleRevision == null)
+            throw new IllegalStateException("Cannot obtain revision from: " + resModule);
 
-      XModuleIdentity moduleId = resModule.getModuleId();
-      String name = MODULE_PREFIX + "." + moduleId.getName() + "-" + moduleId.getVersion();
-      ModuleIdentifier identifier = ModuleIdentifier.create(name, "rev" + moduleId.getRevision());
+         XModuleIdentity moduleId = resModule.getModuleId();
+         String name = MODULE_PREFIX + "." + moduleId.getName() + "-" + moduleId.getVersion();
+         identifier = ModuleIdentifier.create(name, "rev" + moduleId.getRevision());
+      }
+      
       resModule.addAttachment(ModuleIdentifier.class, identifier);
       return identifier;
    }
@@ -173,10 +179,44 @@ public class ModuleManager
       return moduleLoader.getModule(identifier);
    }
 
+   public ModuleIdentifier addModule(final XModule resModule)
+   {
+      if (resModule == null)
+         throw new IllegalArgumentException("Null module");
+
+      ModuleIdentifier identifier;
+      Module module = resModule.getAttachment(Module.class);
+      if (module == null)
+      {
+         if (resModule == getBundleManager().getSystemBundle().getResolverModule())
+         {
+            ModuleSpec moduleSpec = createFrameworkSpec(resModule);
+            identifier = moduleSpec.getModuleIdentifier();
+         }
+         else
+         {
+            // Get the root virtual file
+            Bundle bundle = resModule.getAttachment(Bundle.class);
+            HostBundle bundleState = HostBundle.assertBundleState(bundle);
+            List<VirtualFile> contentRoots = bundleState.getContentRoots();
+
+            ModuleSpec moduleSpec = createModuleSpec(resModule, contentRoots);
+            identifier = moduleSpec.getModuleIdentifier();
+         }
+      }
+      else
+      {
+         AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
+         moduleLoader.addModule(bundleRev, module);
+         identifier = module.getIdentifier();
+      }
+      return identifier;
+   }
+   
    /**
     * Create the {@link Framework} module from the give resolver module definition.
     */
-   public ModuleSpec createFrameworkSpec(final XModule resModule)
+   private ModuleSpec createFrameworkSpec(final XModule resModule)
    {
       if (frameworkIdentifier != null)
          throw new IllegalStateException("Framework module already created");

@@ -13,6 +13,7 @@
   Set these VM properties in your IDE debugger 
   
   -Dtest.archive.directory=${workspace_loc:jbosgi-framework-core/target}/test-libs
+  -Dmodule.path=${workspace_loc:jbosgi-framework-core/target}/test-modules
   -Dlog4j.configuration=log4j-console.xml 
 -->
 

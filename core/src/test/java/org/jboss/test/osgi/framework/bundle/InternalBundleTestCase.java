@@ -37,6 +37,7 @@ import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.framework.plugin.StartLevelPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.junit.Test;
@@ -183,7 +184,10 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
 
    private BundleManager mockBundleManager()
    {
+      XResolverFactory factory = XResolverFactory.getInstance();
       ResolverPlugin rp = mock(ResolverPlugin.class);
+      when(rp.getModuleBuilder()).thenReturn(factory.newModuleBuilder());
+      
       StartLevelPlugin sl = mock(StartLevelPlugin.class);
 
       BundleManager bm = mock(BundleManager.class);
