@@ -281,7 +281,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          {
             for (ServiceName auxName : auxList)
             {
-               if (auxName.toString().startsWith("jbosgi-service"))
+               if (auxName.getCanonicalName().startsWith("jbosgi-service"))
                   allServiceNames.add(auxName);
             }
          }
