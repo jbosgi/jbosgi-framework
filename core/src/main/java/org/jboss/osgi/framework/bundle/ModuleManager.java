@@ -22,29 +22,23 @@
 package org.jboss.osgi.framework.bundle;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.jboss.logging.Logger;
-import org.jboss.modules.ClassifyingModuleLoader;
 import org.jboss.modules.LocalDependencySpec;
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoader;
-import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.PathFilters;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.bundle.BundleManager.IntegrationMode;
 import org.jboss.osgi.framework.loading.FragmentLocalLoader;
 import org.jboss.osgi.framework.loading.FrameworkLocalLoader;
-import org.jboss.osgi.framework.loading.JBossLoggingModuleLogger;
 import org.jboss.osgi.framework.loading.ModuleClassLoaderExt;
 import org.jboss.osgi.framework.loading.NativeLibraryProvider;
 import org.jboss.osgi.framework.loading.NativeResourceLoader;
@@ -75,9 +69,6 @@ public class ModuleManager
    // The property that defines a comma seperated list of system module identifiers
    public static final String PROP_JBOSS_OSGI_SYSTEM_MODULES = "org.jboss.osgi.system.modules";
 
-   // The module prefix for modules managed by the OSGi layer
-   private static final String MODULE_PREFIX = "jbosgi";
-
    // The bundle manager
    private BundleManager bundleManager;
    // The framework module identifier
@@ -91,24 +82,7 @@ public class ModuleManager
          throw new IllegalArgumentException("Null bundleManager");
 
       this.bundleManager = bundleManager;
-      this.moduleLoader = new OSGiModuleLoader();
-
-      // Set the {@link ModuleLogger}
-      Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
-
-      // Set the ModuleLoaderSelector to a {@link ClassifyingModuleLoader} that delegates
-      // all indetifiers the start with 'jbosgi' to the {@link OSGiModuleLoader}
-      final ModuleLoader defaultLoader = Module.getCurrentLoader();
-      Module.setModuleLoaderSelector(new ModuleLoaderSelector()
-      {
-         @Override
-         public ModuleLoader getCurrentLoader()
-         {
-            Map<String, ModuleLoader> delegates = new HashMap<String, ModuleLoader>();
-            delegates.put(MODULE_PREFIX, moduleLoader);
-            return new ClassifyingModuleLoader(delegates, defaultLoader);
-         }
-      });
+      this.moduleLoader = new OSGiModuleLoader(bundleManager);
    }
 
    /**
@@ -134,7 +108,7 @@ public class ModuleManager
             throw new IllegalStateException("Cannot obtain revision from: " + resModule);
 
          XModuleIdentity moduleId = resModule.getModuleId();
-         String name = MODULE_PREFIX + "." + moduleId.getName() + "-" + moduleId.getVersion();
+         String name = moduleId.getName() + "-" + moduleId.getVersion();
          identifier = ModuleIdentifier.create(name, "rev" + moduleId.getRevision());
       }
       

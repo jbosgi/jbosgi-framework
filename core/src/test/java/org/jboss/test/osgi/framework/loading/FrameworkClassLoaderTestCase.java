@@ -86,7 +86,7 @@ public class FrameworkClassLoaderTestCase
       // Create the Framework module
       ModuleManager moduleManager = new ModuleManager(bundleManager);
       ModuleIdentifier identifier = moduleManager.addModule(resModule);
-      Module module = Module.getCurrentLoader().loadModule(identifier);
+      Module module = moduleManager.getModuleLoader().loadModule(identifier);
       classLoader = module.getClassLoader();
    }
 

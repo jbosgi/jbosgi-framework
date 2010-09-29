@@ -5,17 +5,26 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.osgi.framework.loading.JBossLoggingModuleLogger;
 
 final class OSGiModuleLoader extends ModuleLoader
 {
    // The modules that are registered with this {@link ModuleLoader}
    private Map<ModuleIdentifier, OSGiModuleLoader.ModuleHolder> modules = Collections
          .synchronizedMap(new LinkedHashMap<ModuleIdentifier, OSGiModuleLoader.ModuleHolder>());
+
+   OSGiModuleLoader(BundleManager bundleManager)
+   {
+      // Set the {@link ModuleLogger}
+      Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
+   }
 
    @Override
    public ModuleSpec findModule(ModuleIdentifier identifier) throws ModuleLoadException
