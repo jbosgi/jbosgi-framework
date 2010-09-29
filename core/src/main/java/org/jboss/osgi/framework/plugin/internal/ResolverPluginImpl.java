@@ -35,7 +35,6 @@ import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.framework.bundle.AbstractUserBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.FragmentRevision;
-import org.jboss.osgi.framework.bundle.ModuleManager;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.framework.plugin.NativeCodePlugin;
@@ -221,7 +220,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
       {
          if (aux.isFragment() == false)
          {
-            ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(aux);
+            ModuleIdentifier identifier = moduleManager.getModuleIdentifier(aux);
             try
             {
                moduleManager.loadModule(identifier);

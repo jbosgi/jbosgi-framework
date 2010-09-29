@@ -37,10 +37,11 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.BundleManager.IntegrationMode;
 import org.jboss.osgi.framework.bundle.FrameworkState;
-import org.jboss.osgi.framework.bundle.ModuleManager;
 import org.jboss.osgi.framework.bundle.SystemBundle;
+import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.framework.plugin.SystemPackagesPlugin;
+import org.jboss.osgi.framework.plugin.internal.ModuleManagerPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XResolverFactory;
@@ -68,6 +69,10 @@ public class FrameworkClassLoaderTestCase
       when(bundleManager.getFrameworkState()).thenReturn(frameworkState);
       when(bundleManager.getIntegrationMode()).thenReturn(IntegrationMode.STANDALONE);
 
+      // Mock the BundleManager to return an instance of the {@link ModuleManagerPlugin}
+      ModuleManagerPlugin moduleManager = new ModuleManagerPluginImpl(bundleManager);
+      when(bundleManager.getPlugin(ModuleManagerPlugin.class)).thenReturn(moduleManager);
+      
       // Mock the BundleManager to return an instance of the {@link SystemPackagesPlugin}
       SystemPackagesPluginImpl sysPackagesPlugin = new SystemPackagesPluginImpl(bundleManager);
       when(bundleManager.getPlugin(SystemPackagesPlugin.class)).thenReturn(sysPackagesPlugin);
@@ -84,9 +89,8 @@ public class FrameworkClassLoaderTestCase
       XModule resModule = systemBundle.getResolverModule();
 
       // Create the Framework module
-      ModuleManager moduleManager = new ModuleManager(bundleManager);
       ModuleIdentifier identifier = moduleManager.addModule(resModule);
-      Module module = moduleManager.getModuleLoader().loadModule(identifier);
+      Module module = moduleManager.loadModule(identifier);
       classLoader = module.getClassLoader();
    }
 

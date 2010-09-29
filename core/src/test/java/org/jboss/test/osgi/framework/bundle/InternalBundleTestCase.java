@@ -34,8 +34,10 @@ import java.util.Hashtable;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.HostBundle;
+import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.framework.plugin.StartLevelPlugin;
+import org.jboss.osgi.framework.plugin.internal.ModuleManagerPluginImpl;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
@@ -185,15 +187,19 @@ public class InternalBundleTestCase extends OSGiFrameworkTest
    private BundleManager mockBundleManager()
    {
       XResolverFactory factory = XResolverFactory.getInstance();
-      ResolverPlugin rp = mock(ResolverPlugin.class);
-      when(rp.getModuleBuilder()).thenReturn(factory.newModuleBuilder());
+      ResolverPlugin resolverPlugin = mock(ResolverPlugin.class);
+      when(resolverPlugin.getModuleBuilder()).thenReturn(factory.newModuleBuilder());
       
-      StartLevelPlugin sl = mock(StartLevelPlugin.class);
-
-      BundleManager bm = mock(BundleManager.class);
-      when(bm.getPlugin(ResolverPlugin.class)).thenReturn(rp);
-      when(bm.getOptionalPlugin(StartLevelPlugin.class)).thenReturn(sl);
-      return bm;
+      BundleManager bundleManager = mock(BundleManager.class);
+      when(bundleManager.getPlugin(ResolverPlugin.class)).thenReturn(resolverPlugin);
+      
+      StartLevelPlugin startLevelPlugin = mock(StartLevelPlugin.class);
+      when(bundleManager.getOptionalPlugin(StartLevelPlugin.class)).thenReturn(startLevelPlugin);
+      
+      ModuleManagerPlugin moduleManager = new ModuleManagerPluginImpl(bundleManager);
+      when(bundleManager.getPlugin(ModuleManagerPlugin.class)).thenReturn(moduleManager);
+      
+      return bundleManager;
    }
 
    private Deployment mockDeployment() throws Exception

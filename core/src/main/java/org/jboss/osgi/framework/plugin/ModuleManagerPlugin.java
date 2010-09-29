@@ -28,7 +28,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
-import org.jboss.osgi.framework.bundle.ModuleManager;
+import org.jboss.osgi.framework.util.PathUtils;
 import org.jboss.osgi.resolver.XModule;
 
 /**
@@ -39,13 +39,21 @@ import org.jboss.osgi.resolver.XModule;
  */
 public interface ModuleManagerPlugin extends Plugin
 {
+   /** The property that defines a comma seperated list of system module identifiers */
+   String PROP_JBOSS_OSGI_SYSTEM_MODULES = "org.jboss.osgi.system.modules";
+   
+   /**
+    * Return the module identifier for a given XModule.
+    */
+   ModuleIdentifier getModuleIdentifier(XModule resModule);
+   
    /**
     * Get the set of registered module idetifiers
     */
    Set<ModuleIdentifier> getModuleIdentifiers();
 
    /**
-    * Create the module with the {@link ModuleManager}
+    * Create the module with the {@link PathUtils}
     * @return The module identifier
     */
    ModuleIdentifier addModule(XModule resModule);

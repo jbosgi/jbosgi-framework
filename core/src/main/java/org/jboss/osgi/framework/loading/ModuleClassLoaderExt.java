@@ -37,8 +37,8 @@ import org.jboss.modules.Resource;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.framework.bundle.BundleManager;
-import org.jboss.osgi.framework.bundle.ModuleManager;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
+import org.jboss.osgi.framework.util.PathUtils;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.osgi.framework.Bundle;
@@ -164,7 +164,7 @@ public class ModuleClassLoaderExt implements LocalLoader, BundleReference
             pattern = pattern.substring(0, pattern.length() - 2);
 
          pattern = pattern.replace('.', File.separatorChar);
-         String path = ModuleManager.getPathFromClassName(className);
+         String path = PathUtils.getPathFromClassName(className);
          if (path.startsWith(pattern))
          {
             foundMatch = pattern;
@@ -226,7 +226,7 @@ public class ModuleClassLoaderExt implements LocalLoader, BundleReference
             continue;
 
          // Create and load the module. This should not fail for resolved bundles.
-         ModuleIdentifier identifier = ModuleManager.getModuleIdentifier(bundle.getResolverModule());
+         ModuleIdentifier identifier = bundle.getModuleIdentifier();
          Module candidate = moduleManager.getModule(identifier);
 
          // Try to load the class from the now resolved module

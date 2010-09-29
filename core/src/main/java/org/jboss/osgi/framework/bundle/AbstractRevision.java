@@ -84,6 +84,7 @@ public abstract class AbstractRevision
       resModule.addAttachment(AbstractRevision.class, this);
       resModule.addAttachment(Bundle.class, bundleState);
       refreshRevisionInternal(resModule);
+      
       resolverModule = resModule;
    }
 
@@ -128,7 +129,7 @@ public abstract class AbstractRevision
 
    public ModuleIdentifier getModuleIdentifier()
    {
-      return ModuleManager.getModuleIdentifier(getResolverModule());
+      return moduleManager.getModuleIdentifier(resolverModule);
    }
 
    public ModuleClassLoader getModuleClassLoader()

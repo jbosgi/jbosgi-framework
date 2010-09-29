@@ -14,13 +14,13 @@ import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.framework.loading.JBossLoggingModuleLogger;
 
-final class OSGiModuleLoader extends ModuleLoader
+public final class OSGiModuleLoader extends ModuleLoader
 {
    // The modules that are registered with this {@link ModuleLoader}
    private Map<ModuleIdentifier, OSGiModuleLoader.ModuleHolder> modules = Collections
          .synchronizedMap(new LinkedHashMap<ModuleIdentifier, OSGiModuleLoader.ModuleHolder>());
 
-   OSGiModuleLoader(BundleManager bundleManager)
+   public OSGiModuleLoader(BundleManager bundleManager)
    {
       // Set the {@link ModuleLogger}
       Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
@@ -49,7 +49,7 @@ final class OSGiModuleLoader extends ModuleLoader
       return module;
    }
 
-   void addModule(AbstractRevision bundleRev, ModuleSpec moduleSpec)
+   public void addModule(AbstractRevision bundleRev, ModuleSpec moduleSpec)
    {
       ModuleIdentifier identifier = moduleSpec.getModuleIdentifier();
       if (modules.get(identifier) != null)
@@ -57,7 +57,7 @@ final class OSGiModuleLoader extends ModuleLoader
       modules.put(identifier, new ModuleHolder(bundleRev, moduleSpec));
    }
 
-   void addModule(AbstractRevision bundleRev, Module module)
+   public void addModule(AbstractRevision bundleRev, Module module)
    {
       ModuleIdentifier identifier = module.getIdentifier();
       if (modules.get(identifier) != null)
@@ -66,7 +66,7 @@ final class OSGiModuleLoader extends ModuleLoader
       modules.put(identifier, new ModuleHolder(bundleRev, module));
    }
 
-   Module removeModule(ModuleIdentifier identifier)
+   public Module removeModule(ModuleIdentifier identifier)
    {
       OSGiModuleLoader.ModuleHolder moduleHolder = modules.remove(identifier);
       if (moduleHolder == null)
@@ -79,24 +79,24 @@ final class OSGiModuleLoader extends ModuleLoader
       return module;
    }
 
-   Set<ModuleIdentifier> getModuleIdentifiers()
+   public Set<ModuleIdentifier> getModuleIdentifiers()
    {
       return Collections.unmodifiableSet(modules.keySet());
    }
 
-   AbstractRevision getBundleRevision(ModuleIdentifier identifier)
+   public AbstractRevision getBundleRevision(ModuleIdentifier identifier)
    {
       OSGiModuleLoader.ModuleHolder holder = getModuleHolder(identifier);
       return holder != null ? holder.getBundleRevision() : null;
    }
 
-   AbstractBundle getBundleState(ModuleIdentifier identifier)
+   public AbstractBundle getBundleState(ModuleIdentifier identifier)
    {
       AbstractRevision bundleRev = getBundleRevision(identifier);
       return bundleRev != null ? bundleRev.getBundleState() : null;
    }
 
-   Module getModule(ModuleIdentifier identifier)
+   public Module getModule(ModuleIdentifier identifier)
    {
       OSGiModuleLoader.ModuleHolder holder = getModuleHolder(identifier);
       return holder != null ? holder.getModule() : null;
