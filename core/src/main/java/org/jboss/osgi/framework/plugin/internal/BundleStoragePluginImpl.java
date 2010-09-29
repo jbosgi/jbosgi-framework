@@ -149,7 +149,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       FileOutputStream fos = new FileOutputStream(file);
       try
       {
-         log.tracev("Store bundle stream: {0}", file);
+         log.tracef("Store bundle stream: %s", file);
          VFSUtils.copyStream(input, fos);
       }
       catch (IOException ex)
@@ -197,7 +197,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
          }
          catch (IOException ex)
          {
-            log.errorv(ex, "Cannot delete storage area");
+            log.errorf(ex, "Cannot delete storage area");
          }
       }
 
@@ -208,7 +208,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       }
       catch (IOException ex)
       {
-         log.errorv(ex, "Cannot delete bundle stream dir");
+         log.errorf(ex, "Cannot delete bundle stream dir");
       }
    }
 
@@ -227,7 +227,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
             }
             catch (IOException ex)
             {
-               log.errorv(ex, "Cannot create storage area");
+               log.errorf(ex, "Cannot create storage area");
                throw new IllegalStateException("Cannot create storage area");
             }
          }
@@ -252,7 +252,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       }
 
       if (log.isTraceEnabled())
-         log.tracev("Deleting from storage: {0}", file);
+         log.tracef("Deleting from storage: %s", file);
 
       file.delete();
    }

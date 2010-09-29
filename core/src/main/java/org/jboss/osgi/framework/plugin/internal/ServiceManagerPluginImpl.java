@@ -173,7 +173,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          }
       };
 
-      log.debugv("Register service: {0}", serviceState);
+      log.debugf("Register service: %s", serviceState);
 
       ServiceName rootServiceName = serviceNames[0];
       BatchServiceBuilder serviceBuilder = batchBuilder.addService(rootServiceName, service);
@@ -204,7 +204,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       }
       catch (ServiceRegistryException ex)
       {
-         log.errorv(ex, "Cannot register services: {0}", Arrays.asList(serviceNames));
+         log.errorf(ex, "Cannot register services: %s", Arrays.asList(serviceNames));
       }
 
       // Call the newly added ListenerHook.added() method
@@ -414,7 +414,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    public void unregisterService(ServiceState serviceState)
    {
       List<ServiceName> serviceNames = serviceState.getServiceNames();
-      log.debugv("Unregister service: {0}", serviceNames);
+      log.debugf("Unregister service: %s", serviceNames);
 
       AbstractBundle serviceOwner = serviceState.getServiceOwner();
 
@@ -451,7 +451,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       }
       catch (RuntimeException ex)
       {
-         log.errorv(ex, "Cannot remove service: {0}", rootServiceName);
+         log.errorf(ex, "Cannot remove service: %s", rootServiceName);
       }
    }
 
@@ -496,7 +496,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          }
          catch (Exception ex)
          {
-            log.warnv(ex, "Error while calling FindHook: {0}", hook);
+            log.warnf(ex, "Error while calling FindHook: %s", hook);
          }
       }
 

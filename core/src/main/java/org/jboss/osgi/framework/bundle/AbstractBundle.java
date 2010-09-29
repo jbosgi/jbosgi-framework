@@ -279,13 +279,13 @@ public abstract class AbstractBundle implements Bundle
 
    public void addRegisteredService(ServiceState serviceState)
    {
-      log.tracev("Add registered service {0} to: {1}", serviceState, this);
+      log.tracef("Add registered service %s to: %s", serviceState, this);
       registeredServices.add(serviceState);
    }
 
    public void removeRegisteredService(ServiceState serviceState)
    {
-      log.tracev("Remove registered service {0} from: {1}", serviceState, this);
+      log.tracef("Remove registered service %s from: %s", serviceState, this);
       registeredServices.remove(serviceState);
    }
 
@@ -311,7 +311,7 @@ public abstract class AbstractBundle implements Bundle
 
    public void addServiceInUse(ServiceState serviceState)
    {
-      log.tracev("Add service in use {0} to: {1}", serviceState, this);
+      log.tracef("Add service in use %s to: %s", serviceState, this);
       usedServices.putIfAbsent(serviceState, new AtomicInteger());
       AtomicInteger count = usedServices.get(serviceState);
       count.incrementAndGet();
@@ -319,7 +319,7 @@ public abstract class AbstractBundle implements Bundle
 
    public int removeServiceInUse(ServiceState serviceState)
    {
-      log.tracev("Remove service in use {0} from: {1}", serviceState, this);
+      log.tracef("Remove service in use %s from: %s", serviceState, this);
       AtomicInteger count = usedServices.get(serviceState);
       if (count == null)
          return -1;
@@ -425,7 +425,7 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       startInternal(options);
-      log.debugv("Bundle started: {0}", this);
+      log.debugf("Bundle started: %s", this);
    }
 
    @Override
@@ -433,7 +433,7 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       startInternal(0);
-      log.debugv("Bundle started: {0}", this);
+      log.debugf("Bundle started: %s", this);
    }
 
    abstract void startInternal(int options) throws BundleException;
@@ -443,7 +443,7 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       stopInternal(options);
-      log.debugv("Bundle stopped: {0}", this);
+      log.debugf("Bundle stopped: %s", this);
    }
 
    @Override
@@ -451,7 +451,7 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       stopInternal(0);
-      log.debugv("Bundle stopped: {0}", this);
+      log.debugf("Bundle stopped: %s", this);
    }
 
    abstract void stopInternal(int options) throws BundleException;
@@ -463,7 +463,7 @@ public abstract class AbstractBundle implements Bundle
       updateInternal(input);
       // A bundle is considered to be modified when it is installed, updated or uninstalled.
       lastModified = System.currentTimeMillis();
-      log.debugv("Bundle updated: {0}", this);
+      log.debugf("Bundle updated: %s", this);
    }
 
    @Override
@@ -473,7 +473,7 @@ public abstract class AbstractBundle implements Bundle
       updateInternal(null);
       // A bundle is considered to be modified when it is installed, updated or uninstalled.
       lastModified = System.currentTimeMillis();
-      log.debugv("Bundle updated: {0}", this);
+      log.debugf("Bundle updated: %s", this);
    }
 
    abstract void updateInternal(InputStream input) throws BundleException;
@@ -490,7 +490,7 @@ public abstract class AbstractBundle implements Bundle
 
       // A bundle is considered to be modified when it is installed, updated or uninstalled.
       lastModified = System.currentTimeMillis();
-      log.debugv("Bundle uninstalled: {0}", this);
+      log.debugf("Bundle uninstalled: %s", this);
    }
 
    abstract void uninstallInternal() throws BundleException;

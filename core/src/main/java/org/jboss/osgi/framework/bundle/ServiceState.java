@@ -359,7 +359,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       {
          // If the requesting bundle does not have a wire to the 
          // service package it cannot be constraint on that package. 
-         log.warnv("Requesting bundle cannot load class: {0}", className);
+         log.warnf("Requesting bundle cannot load class: %s", className);
          return true;
       }
       
@@ -370,13 +370,13 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       }
       catch (ClassNotFoundException ex)
       {
-         log.warnv("Owner bundle cannot load class: {0}", className);
+         log.warnf("Owner bundle cannot load class: %s", className);
          return false;
       }
       
       if (targetClass != ownerClass)
       {
-         log.debugv("Not assignable: {0}", value.getClass().getName());
+         log.debugf("Not assignable: %s", value.getClass().getName());
          return false;
       }
       
@@ -435,13 +435,13 @@ public class ServiceState implements ServiceRegistration, ServiceReference
             Class<?> clazz = bundleState.loadClass(className);
             if (clazz.isAssignableFrom(value.getClass()) == false)
             {
-               log.errorv("Service interface [{0}] is not assignable from [{1}]", className, value.getClass().getName());
+               log.errorf("Service interface [%s] is not assignable from [%s]", className, value.getClass().getName());
                return false;
             }
          }
          catch (ClassNotFoundException ex)
          {
-            log.errorv("Cannot load [{0}] from: {1}", className, bundleState);
+            log.errorf("Cannot load [%s] from: %s", className, bundleState);
             return false;
          }
       }

@@ -70,7 +70,7 @@ public class SystemLocalLoader implements LocalLoader
    @Override
    public Class<?> loadClassLocal(String className, boolean exportOnly)
    {
-      log.tracev("Attempt to find system class [{0}] ...", className);
+      log.tracef("Attempt to find system class [%s] ...", className);
 
       String path = PathUtils.getPathFromClassName(className);
       if (exportedPaths.contains(path))
@@ -79,17 +79,17 @@ public class SystemLocalLoader implements LocalLoader
          try
          {
             result = loadSystemClass(className);
-            log.tracev("Found system class [{0}]", className);
+            log.tracef("Found system class [%s]", className);
             return result;
          }
          catch (ClassNotFoundException ex)
          {
-            log.tracev("Cannot find system class [{0}]", className);
+            log.tracef("Cannot find system class [%s]", className);
          }
       }
       else
       {
-         log.tracev("Cannot find filtered class [{0}]", className);
+         log.tracef("Cannot find filtered class [%s]", className);
       }
 
       return null;

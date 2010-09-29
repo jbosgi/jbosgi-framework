@@ -93,12 +93,12 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
          return loadedClass;
       }
 
-      log.tracev("Attempt to find fragment class [{0}] in {1} ...", className, fragRevision);
+      log.tracef("Attempt to find fragment class [%s] in %s ...", className, fragRevision);
 
       String path = PathUtils.getPathFromClassName(className);
       if (paths.contains(path) == false)
       {
-         log.tracev("Not found in fragment [{0}]", className);
+         log.tracef("Not found in fragment [%s]", className);
          return null;
       }
 
@@ -110,13 +110,13 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
       }
       catch (Throwable th)
       {
-         log.tracev(th, "Unexpected exception in module loader");
+         log.tracef(th, "Unexpected exception in module loader");
          return null;
       }
 
       if (classSpec == null)
       {
-         log.tracev("No local specification found for class [{0}] in {1}", className, fragRevision);
+         log.tracef("No local specification found for class [%s] in %s", className, fragRevision);
          return null;
       }
 
@@ -128,7 +128,7 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
       }
       catch (Throwable th)
       {
-         log.tracev(th, "Failed to define class [{0}] in {1}", className, fragRevision);
+         log.tracef(th, "Failed to define class [%s] in %s", className, fragRevision);
          return null;
       }
 

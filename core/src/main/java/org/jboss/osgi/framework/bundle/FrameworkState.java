@@ -201,7 +201,7 @@ public class FrameworkState extends SystemBundle implements Framework
       // Log INFO about this implementation
       String implTitle = getClass().getPackage().getImplementationTitle();
       String implVersion = getClass().getPackage().getImplementationVersion();
-      log.infov(implTitle + " - " + implVersion);
+      log.infof(implTitle + " - " + implVersion);
 
       // Put into the STARTING state
       changeState(Bundle.STARTING);
@@ -274,7 +274,7 @@ public class FrameworkState extends SystemBundle implements Framework
       }
       catch (NumberFormatException nfe)
       {
-         log.errorv("Could not set beginning start level to: {0}", beginning);
+         log.errorf("Could not set beginning start level to: %s", beginning);
          return 1;
       }
    }
@@ -317,7 +317,7 @@ public class FrameworkState extends SystemBundle implements Framework
             }
             catch (Exception ex)
             {
-               log.errorv(ex, "Error stopping framework");
+               log.errorf(ex, "Error stopping framework");
             }
          }
       };
@@ -363,7 +363,7 @@ public class FrameworkState extends SystemBundle implements Framework
             }
             catch (Exception ex)
             {
-               log.errorv(ex, "Error stopping framework");
+               log.errorf(ex, "Error stopping framework");
             }
          }
       };
@@ -425,7 +425,7 @@ public class FrameworkState extends SystemBundle implements Framework
             }
             catch (RuntimeException ex)
             {
-               log.errorv(ex, "Cannot stop plugin: {0}", plugin);
+               log.errorf(ex, "Cannot stop plugin: %s", plugin);
             }
          }
 
@@ -445,7 +445,7 @@ public class FrameworkState extends SystemBundle implements Framework
             }
             catch (RuntimeException ex)
             {
-               log.errorv(ex, "Cannot destroy plugin: {0}", plugin);
+               log.errorf(ex, "Cannot destroy plugin: %s", plugin);
             }
          }
 

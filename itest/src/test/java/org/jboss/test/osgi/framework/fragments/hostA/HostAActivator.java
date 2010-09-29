@@ -36,7 +36,7 @@ public class HostAActivator implements BundleActivator
    public void start(BundleContext context)
    {
       SubBeanA subBean = new SubBeanA();
-      log.infov("SubBeanA provider: {0}", subBean.getProvider(context));
+      log.infof("SubBeanA provider: %s", subBean.getProvider(context));
    }
 
    public void stop(BundleContext context)

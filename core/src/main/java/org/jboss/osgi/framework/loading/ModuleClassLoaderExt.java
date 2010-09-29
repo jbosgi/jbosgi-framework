@@ -173,16 +173,16 @@ public class ModuleClassLoaderExt implements LocalLoader, BundleReference
       }
 
       if (foundMatch != null)
-         log.tracev("Found match for class [{0}] with Dynamic-ImportPackage pattern: {1}", className, foundMatch);
+         log.tracef("Found match for class [%s] with Dynamic-ImportPackage pattern: %s", className, foundMatch);
       else
-         log.tracev("Class [{0}] does not match Dynamic-ImportPackage patterns", className);
+         log.tracef("Class [%s] does not match Dynamic-ImportPackage patterns", className);
 
       return foundMatch;
    }
 
    private Class<?> findInResolvedModules(String className)
    {
-      log.tracev("Attempt to find class dynamically in resolved modules ...");
+      log.tracef("Attempt to find class dynamically in resolved modules ...");
 
       // Iterate over all registered modules
       for (ModuleIdentifier aux : moduleManager.getModuleIdentifiers())
@@ -192,12 +192,12 @@ public class ModuleClassLoaderExt implements LocalLoader, BundleReference
          {
             Module candidate = moduleManager.getModule(aux);
 
-            log.tracev("Attempt to find class dynamically [{0}] in {1} ...", className, candidate);
+            log.tracef("Attempt to find class dynamically [%s] in %s ...", className, candidate);
 
             ModuleClassLoader classLoader = candidate.getClassLoader();
             Class<?> result = classLoader.loadClass(className);
 
-            log.tracev("Found class [{0}] in {1}", className, candidate);
+            log.tracef("Found class [%s] in %s", className, candidate);
 
             return result;
          }
@@ -212,7 +212,7 @@ public class ModuleClassLoaderExt implements LocalLoader, BundleReference
 
    private Class<?> findInUnresolvedModules(String className)
    {
-      log.tracev("Attempt to find class dynamically in unresolved modules ...");
+      log.tracef("Attempt to find class dynamically in unresolved modules ...");
 
       // Iteraterate over all bundles in state INSTALLED
       for (Bundle aux : bundleManager.getBundles())
@@ -232,12 +232,12 @@ public class ModuleClassLoaderExt implements LocalLoader, BundleReference
          // Try to load the class from the now resolved module
          try
          {
-            log.tracev("Attempt to find class dynamically [{0}] in {1} ...", className, candidate);
+            log.tracef("Attempt to find class dynamically [%s] in %s ...", className, candidate);
 
             ModuleClassLoader classLoader = candidate.getClassLoader();
             Class<?> result = classLoader.loadClass(className);
 
-            log.tracev("Found class [{0}] in {1}", className, candidate);
+            log.tracef("Found class [%s] in %s", className, candidate);
 
             return result;
          }

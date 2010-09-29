@@ -156,7 +156,7 @@ public class HostRevision extends AbstractUserRevision
          }
          catch (IOException ex)
          {
-            log.errorv(ex, "Cannot get resources: {0}", path);
+            log.errorf(ex, "Cannot get resources: %s", path);
             return null;
          }
       }
@@ -194,7 +194,7 @@ public class HostRevision extends AbstractUserRevision
                }
                catch (IOException ex)
                {
-                  log.errorv(ex, "Cannot get class path element: {0}", path);
+                  log.errorf(ex, "Cannot get class path element: %s", path);
                }
             }
          }

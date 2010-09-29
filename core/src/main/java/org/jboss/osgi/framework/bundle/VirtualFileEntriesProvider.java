@@ -70,7 +70,7 @@ public class VirtualFileEntriesProvider implements EntriesProvider
       }
       catch (IOException ex)
       {
-         log.errorv(ex, "Cannot get entry: {0}", path);
+         log.errorf(ex, "Cannot get entry: %s", path);
          return null;
       }
    }

@@ -49,7 +49,7 @@ public class BootstrapProviderImpl extends PropertiesBootstrapProvider
       // Log INFO about this implementation
       String implTitle = getClass().getPackage().getImplementationTitle();
       String impVersion = getClass().getPackage().getImplementationVersion();
-      log.infov(implTitle + " - " + impVersion);
+      log.infof(implTitle + " - " + impVersion);
       
       // Load the framework instance
       FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);

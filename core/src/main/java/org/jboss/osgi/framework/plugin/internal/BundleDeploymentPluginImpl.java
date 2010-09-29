@@ -81,7 +81,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       }
       catch (BundleException ex)
       {
-         log.debugv("Not a valid OSGi manifest: {0}", ex.getMessage());
+         log.debugf("Not a valid OSGi manifest: %s", ex.getMessage());
       }
 
       // Check if we have META-INF/jbosgi-xservice.properties
@@ -161,7 +161,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       }
       catch (IOException ex)
       {
-         log.warnv(ex, "Cannot process XService metadata: {0}", rootFile);
+         log.warnf(ex, "Cannot process XService metadata: %s", rootFile);
       }
       return null;
    }

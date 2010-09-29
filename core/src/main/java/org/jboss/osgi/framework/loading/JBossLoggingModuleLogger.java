@@ -45,66 +45,66 @@ public class JBossLoggingModuleLogger implements ModuleLogger
    @Override
    public void greeting()
    {
-      log.debugv("ModuleLogger initialized");
+      log.debugf("ModuleLogger initialized");
    }
 
    @Override
    public void trace(String message)
    {
-      log.tracev(message);
+      log.tracef(message);
    }
 
    @Override
    public void trace(final String format, final Object arg1)
    {
-      log.tracev(format, arg1);
+      log.tracef(format, arg1);
    }
 
    @Override
    public void trace(final String format, final Object arg1, final Object arg2)
    {
-      log.tracev(format, arg1, arg2);
+      log.tracef(format, arg1, arg2);
    }
 
    @Override
    public void trace(final String format, final Object arg1, final Object arg2, final Object arg3)
    {
-      log.tracev(format, arg1, arg2, arg3);
+      log.tracef(format, arg1, arg2, arg3);
    }
 
    @Override
    public void trace(final String format, final Object... args)
    {
-      log.tracev(format, args);
+      log.tracef(format, args);
    }
 
    @Override
    public void trace(final Throwable th, final String message)
    {
-      log.tracev(th, message);
+      log.tracef(th, message);
    }
 
    @Override
    public void trace(final Throwable th, final String format, final Object arg1)
    {
-      log.tracev(th, format, arg1);
+      log.tracef(th, format, arg1);
    }
 
    @Override
    public void trace(final Throwable th, final String format, final Object arg1, final Object arg2)
    {
-      log.tracev(th, format, arg1, arg2);
+      log.tracef(th, format, arg1, arg2);
    }
 
    @Override
    public void trace(final Throwable th, final String format, final Object arg1, final Object arg2, final Object arg3)
    {
-      log.tracev(th, format, arg1, arg2, arg3);
+      log.tracef(th, format, arg1, arg2, arg3);
    }
 
    @Override
    public void trace(final Throwable th, final String format, final Object... args)
    {
-      log.tracev(th, format, args);
+      log.tracef(th, format, args);
    }
 }
