@@ -41,7 +41,7 @@ import org.junit.Test;
  * @author Thomas.Diesler@jboss.com
  * @since 15-Sep-2010
  */
-public class MODULES37TestCase extends ModulesTestBase
+public class MOD37TestCase extends ModulesTestBase
 {
    @Test
    public void testDirectDependencyFirst() throws Exception

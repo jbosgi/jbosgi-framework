@@ -72,6 +72,11 @@
 
     <!-- Test Dependencies -->
     <dependency>
+      <groupId>javax.inject</groupId>
+      <artifactId>javax.inject</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.jboss.osgi.resolver</groupId>
       <artifactId>jbosgi-resolver-felix</artifactId>
       <scope>test</scope>

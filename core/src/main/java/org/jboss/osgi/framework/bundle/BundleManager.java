@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.bundle;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -74,7 +75,6 @@ import org.jboss.osgi.framework.plugin.internal.StartLevelPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.WebXMLVerifierInterceptor;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XVersionRange;
@@ -212,7 +212,7 @@ public class BundleManager
          throw new IllegalStateException("Bundle already added: " + bundleState);
 
       log.tracev("Add bundle: {0}", bundleState);
-      
+
       // Register the bundle with the manager
       bundleMap.put(bundleId, bundleState);
       bundleState.changeState(Bundle.INSTALLED);
@@ -455,13 +455,43 @@ public class BundleManager
    }
 
    /**
-    * Install a bundle from a {@link ModuleIdentifier}
+    * Install a bundle from a {@link ModuleIdentifier}.
+    * 
+    * This method can be used to install plain modules or bundles to the {@link BundleManager}. 
+    * A plain module is one that does not have a valid OSGi manifest. 
+    * 
+    * When installing a plain module:
+    * 
+    *    - module dependencies are not installed automatically
+    *    - module may or may not have been loaded previously
+    *    - module cannot be installed multiple times 
     */
    public Bundle installBundle(ModuleIdentifier identifier) throws BundleException
    {
       if (identifier == null)
          throw new IllegalArgumentException("Null identifier");
-      
+
+      // First check if this is a valid OSGi bundle
+      BundleInfo info = null;
+      try
+      {
+         VirtualFile rootFile = getRootFile(identifier);
+         if (rootFile != null)
+            info = BundleInfo.createBundleInfo(rootFile);
+      }
+      catch (BundleException ex)
+      {
+         // ignore
+      }
+
+      // If we have a valid bundle, install normally without loading the module
+      if (info != null)
+      {
+         Deployment dep = DeploymentFactory.createDeployment(info);
+         return installBundle(dep);
+      }
+
+      // Load the module
       Module module;
       try
       {
@@ -472,10 +502,8 @@ public class BundleManager
       {
          throw new BundleException("Cannot load module: " + identifier, ex);
       }
-      
-      Deployment dep = null;
-      
-      // Check if the module has a valid OSGi manifest
+
+      // Do a sanity check that this is not an OSGi bundle
       ModuleClassLoader classLoader = module.getClassLoader();
       InputStream inStream = classLoader.getResourceAsStream(JarFile.MANIFEST_NAME);
       if (inStream != null)
@@ -484,35 +512,105 @@ public class BundleManager
          {
             Manifest manifest = new Manifest();
             manifest.read(inStream);
-            
             if (BundleInfo.isValidateBundleManifest(manifest))
-            {
-               OSGiMetaData metadata = OSGiMetaDataBuilder.load(manifest);
-               XModuleBuilder builder = getPlugin(ResolverPlugin.class).getModuleBuilder();
-               XModule resModule = builder.createModule(metadata, 0).getModule();
-               resModule.addAttachment(Module.class, module);
-               
-               String location = identifier.toURL().toExternalForm();
-               String symbolicName = metadata.getBundleSymbolicName();
-               Version version = metadata.getBundleVersion();
-               dep = DeploymentFactory.createDeployment(location, symbolicName, version);
-               dep.addAttachment(OSGiMetaData.class, metadata);
-               dep.addAttachment(XModule.class, resModule);
-               dep.addAttachment(Module.class, module);
-            }
+               throw new BundleException("Cannot install bundle from loaded module: " + identifier);
          }
          catch (IOException ex)
          {
             throw new BundleException("Cannot read mainfest from: " + identifier, ex);
          }
       }
+
+      String location = identifier.getName() + ":" + identifier.getSlot();
+      String symbolicName = identifier.getName();
+      Version version;
+      try
+      {
+         version = Version.parseVersion(identifier.getSlot());
+      }
+      catch (IllegalArgumentException ex)
+      {
+         version = Version.emptyVersion;
+      }
+
+      // Build the resolver capabilities, which exports every package
+      ResolverPlugin resolverPlugin = getPlugin(ResolverPlugin.class);
+      XModuleBuilder builder = resolverPlugin.getModuleBuilder();
+      builder.createModule(symbolicName, version, 0);
+      builder.addBundleCapability(symbolicName, version);
+      for (String path : module.getExportedPaths())
+      {
+         if (path.startsWith("/"))
+            path = path.substring(1);
+         if (path.endsWith("/"))
+            path = path.substring(0, path.length() - 1);
+         if (path.startsWith("META-INF"))
+            continue;
+
+         String packageName = path.replace('/', '.');
+         builder.addPackageCapability(packageName, null, null);
+      }
+      XModule resModule = builder.getModule();
+      resModule.addAttachment(Module.class, module);
       
-      if (dep == null)
-         throw new BundleException("Cannot create deployment for: " + identifier);
-      
+      Deployment dep = DeploymentFactory.createDeployment(location, symbolicName, version);
+      dep.addAttachment(XModule.class, resModule);
+      dep.addAttachment(Module.class, module);
       return installBundle(dep);
    }
-   
+
+   /**
+    * Get virtual file for the singe jar that corresponds to the given identifier
+    * @return The root virtual or null 
+    */
+   private VirtualFile getRootFile(ModuleIdentifier identifier)
+   {
+      File rootPath = new File(getProperty("module.path").toString());
+      String identifierPath = identifier.getName().replace('.', File.separatorChar) + File.separator + identifier.getSlot();
+      File moduleDir = new File(rootPath + File.separator + identifierPath);
+      if (moduleDir.isDirectory() == false)
+      {
+         log.warnf("Cannot obtain module directory: %s", moduleDir);
+         return null;
+      }
+
+      String[] files = moduleDir.list(new FilenameFilter()
+      {
+         @Override
+         public boolean accept(File dir, String name)
+         {
+            return name.endsWith(".jar");
+         }
+      });
+      if (files.length == 0)
+      {
+         log.warnf("Cannot find module jar in: %s", moduleDir);
+         return null;
+      }
+      if (files.length > 1)
+      {
+         log.warnf("Multiple module jars in: %s", moduleDir);
+         return null;
+      }
+
+      File moduleFile = new File(moduleDir + File.separator + files[0]);
+      if (moduleFile.exists() == false)
+      {
+         log.warnf("Module file does not exist: %s", moduleFile);
+         return null;
+      }
+
+      try
+      {
+         return AbstractVFS.getRoot(moduleFile.toURI().toURL());
+      }
+      catch (IOException ex)
+      {
+         log.errorf(ex, "Cannot obtain root file: %s", moduleFile);
+         return null;
+      }
+   }
+
    /**
     * Install a bundle from a {@link Deployment}
     */
