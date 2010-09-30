@@ -34,7 +34,7 @@ import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Resource;
 import org.jboss.osgi.framework.bundle.FragmentRevision;
 import org.jboss.osgi.framework.bundle.HostRevision;
-import org.jboss.osgi.framework.util.PathUtils;
+import org.jboss.osgi.vfs.VFSUtils;
 
 /**
  * A {@link LocalLoader} that loads fragment defined classes/resources.
@@ -95,7 +95,7 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
 
       log.tracef("Attempt to find fragment class [%s] in %s ...", className, fragRevision);
 
-      String path = PathUtils.getPathFromClassName(className);
+      String path = VFSUtils.getPathFromClassName(className);
       if (paths.contains(path) == false)
       {
          log.tracef("Not found in fragment [%s]", className);

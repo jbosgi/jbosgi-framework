@@ -30,8 +30,8 @@ import java.util.Set;
 import org.jboss.logging.Logger;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Resource;
-import org.jboss.osgi.framework.util.PathUtils;
 import org.jboss.osgi.spi.NotImplementedException;
+import org.jboss.osgi.vfs.VFSUtils;
 
 /**
  * A {@link LocalLoader} that delegates to the system class loader.
@@ -72,7 +72,7 @@ public class SystemLocalLoader implements LocalLoader
    {
       log.tracef("Attempt to find system class [%s] ...", className);
 
-      String path = PathUtils.getPathFromClassName(className);
+      String path = VFSUtils.getPathFromClassName(className);
       if (exportedPaths.contains(path))
       {
          Class<?> result = null;

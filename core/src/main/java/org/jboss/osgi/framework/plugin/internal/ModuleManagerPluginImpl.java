@@ -54,7 +54,6 @@ import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.framework.plugin.internal.NativeCodePluginImpl.BundleNativeLibraryProvider;
-import org.jboss.osgi.framework.util.PathUtils;
 import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XModule;
@@ -63,6 +62,7 @@ import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XRequireBundleRequirement;
 import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XWire;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.application.Framework;
 import org.osgi.framework.Bundle;
@@ -333,7 +333,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          if (req instanceof XPackageRequirement)
          {
             DependencyBuildlerHolder holder = getDependencyHolder(depBuilderMap, exporter);
-            holder.addImportPath(PathUtils.getPathFromPackageName(req.getName()));
+            holder.addImportPath(VFSUtils.getPathFromPackageName(req.getName()));
             continue;
          }
 

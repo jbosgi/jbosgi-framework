@@ -38,9 +38,9 @@ import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
-import org.jboss.osgi.framework.util.PathUtils;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
 
@@ -164,7 +164,7 @@ public class ModuleClassLoaderExt implements LocalLoader, BundleReference
             pattern = pattern.substring(0, pattern.length() - 2);
 
          pattern = pattern.replace('.', File.separatorChar);
-         String path = PathUtils.getPathFromClassName(className);
+         String path = VFSUtils.getPathFromClassName(className);
          if (path.startsWith(pattern))
          {
             foundMatch = pattern;

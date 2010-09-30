@@ -421,17 +421,27 @@ public class BundleManager
       }
 
       // Get the root file
-      VirtualFile root;
+      VirtualFile rootFile;
       try
       {
-         root = AbstractVFS.getRoot(locationURL);
+         rootFile = AbstractVFS.getRoot(locationURL);
       }
       catch (Exception ex)
       {
          throw new BundleException("Invalid bundle location=" + locationURL, ex);
       }
 
-      return install(root, location, false);
+      AbstractBundle bundle;
+      try
+      {
+         bundle = install(rootFile, location, false);
+      }
+      catch (BundleException ex)
+      {
+         deleteContentRoot(rootFile);
+         throw ex;
+      }
+      return bundle;
    }
 
    /**
@@ -439,18 +449,8 @@ public class BundleManager
     */
    private AbstractBundle install(VirtualFile rootFile, String location, boolean autoStart) throws BundleException
    {
-      Deployment dep;
-      try
-      {
-         BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
-         dep = plugin.createDeployment(rootFile, location);
-      }
-      catch (BundleException ex)
-      {
-         deleteContentRoot(rootFile);
-         throw ex;
-      }
-
+      BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
+      Deployment dep = plugin.createDeployment(rootFile, location);
       return installBundle(dep);
    }
 
@@ -471,27 +471,30 @@ public class BundleManager
       if (identifier == null)
          throw new IllegalArgumentException("Null identifier");
 
-      // First check if this is a valid OSGi bundle
-      BundleInfo info = null;
-      try
+      Deployment dep = null;
+      String location = identifier.getName() + ":" + identifier.getSlot();
+      
+      // Check if we have a single root file
+      VirtualFile rootFile = getModuleRepositoryEntry(identifier);
+      if (rootFile != null)
       {
-         VirtualFile rootFile = getRootFile(identifier);
-         if (rootFile != null)
-            info = BundleInfo.createBundleInfo(rootFile);
-      }
-      catch (BundleException ex)
-      {
-         // ignore
+         try
+         {
+            // Check if this is a valid OSGi deployment
+            BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
+            dep = plugin.createDeployment(rootFile, location);
+         }
+         catch (BundleException ex)
+         {
+            // Ignore, the rootFile is not a valid deployment 
+         }
       }
 
-      // If we have a valid bundle, install normally without loading the module
-      if (info != null)
-      {
-         Deployment dep = DeploymentFactory.createDeployment(info);
+      // Install, if we have a valid deployment
+      if (dep != null)
          return installBundle(dep);
-      }
-
-      // Load the module
+      
+      // Check if the module can be loaded
       Module module;
       try
       {
@@ -521,7 +524,6 @@ public class BundleManager
          }
       }
 
-      String location = identifier.getName() + ":" + identifier.getSlot();
       String symbolicName = identifier.getName();
       Version version;
       try
@@ -552,8 +554,8 @@ public class BundleManager
       }
       XModule resModule = builder.getModule();
       resModule.addAttachment(Module.class, module);
-      
-      Deployment dep = DeploymentFactory.createDeployment(location, symbolicName, version);
+
+      dep = DeploymentFactory.createDeployment(location, symbolicName, version);
       dep.addAttachment(XModule.class, resModule);
       dep.addAttachment(Module.class, module);
       return installBundle(dep);
@@ -563,7 +565,7 @@ public class BundleManager
     * Get virtual file for the singe jar that corresponds to the given identifier
     * @return The root virtual or null 
     */
-   private VirtualFile getRootFile(ModuleIdentifier identifier)
+   private VirtualFile getModuleRepositoryEntry(ModuleIdentifier identifier)
    {
       File rootPath = new File(getProperty("module.path").toString());
       String identifierPath = identifier.getName().replace('.', File.separatorChar) + File.separator + identifier.getSlot();
@@ -636,7 +638,6 @@ public class BundleManager
       }
 
       addBundleState(bundleState);
-
       return bundleState;
    }
 

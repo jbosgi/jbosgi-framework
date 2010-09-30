@@ -36,8 +36,8 @@ public interface BundleDeploymentPlugin extends Plugin
 {
    /**
     * Create a {@link Deployment} from the given virtual file.
-    * @param The root file pointing to one of the supported bundle formats
-    * @param The bundle location to be associated with the deployment  
+    * @param rootFile The root file pointing to one of the supported bundle formats
+    * @param location The bundle location to be associated with the deployment  
     * @throws BundleException If the given root file does not 
     */
    Deployment createDeployment(VirtualFile rootFile, String location) throws BundleException;

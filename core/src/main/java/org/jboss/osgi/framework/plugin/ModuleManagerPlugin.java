@@ -26,9 +26,9 @@ import java.util.Set;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
-import org.jboss.osgi.framework.util.PathUtils;
 import org.jboss.osgi.resolver.XModule;
 
 /**
@@ -53,7 +53,7 @@ public interface ModuleManagerPlugin extends Plugin
    Set<ModuleIdentifier> getModuleIdentifiers();
 
    /**
-    * Create the module with the {@link PathUtils}
+    * Create the module in the {@link ModuleLoader}
     * @return The module identifier
     */
    ModuleIdentifier addModule(XModule resModule);

@@ -69,9 +69,9 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       try
       {
          BundleInfo info = BundleInfo.createBundleInfo(rootFile, location);
-         String symbolicName = info.getSymbolicName();
-         Version version = info.getVersion();
-         Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, version);
+         Deployment dep = DeploymentFactory.createDeployment(info);
+         OSGiMetaData metadata = toOSGiMetaData(dep, info);
+         dep.addAttachment(OSGiMetaData.class, metadata);
          dep.addAttachment(BundleInfo.class, info);
          return dep;
       }
@@ -95,7 +95,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          return dep;
       }
 
-      throw new BundleException("Cannot process as OSGi deployment: " + location);
+      throw new BundleException("Cannot create deployment from: " + rootFile);
    }
 
    @Override
@@ -149,14 +149,24 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
    private OSGiMetaData getXServiceMetaData(VirtualFile rootFile)
    {
       // Try jbosgi-xservice.properties
-      String descriptor = "META-INF/jbosgi-xservice.properties";
       try
       {
-         VirtualFile child = rootFile.getChild(descriptor);
+         VirtualFile child = rootFile.getChild("META-INF/jbosgi-xservice.properties");
          if (child != null)
          {
             OSGiMetaData metadata = OSGiMetaDataBuilder.load(child.openStream());
             return metadata;
+         }
+         
+         VirtualFile parentFile = rootFile.getParent();
+         if (parentFile != null)
+         {
+            child = parentFile.getChild("jbosgi-xservice.properties");
+            if (child != null)
+            {
+               OSGiMetaData metadata = OSGiMetaDataBuilder.load(child.openStream());
+               return metadata;
+            }
          }
       }
       catch (IOException ex)
@@ -166,7 +176,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       return null;
    }
 
-   private OSGiMetaData toOSGiMetaData(Deployment dep, BundleInfo info)
+   private OSGiMetaData toOSGiMetaData(final Deployment dep, final BundleInfo info)
    {
       Manifest manifest = info.getManifest();
       return OSGiMetaDataBuilder.load(manifest);
