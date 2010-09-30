@@ -61,7 +61,7 @@ public abstract class ModulesTestBase
    public void setUp()
    {
       currentLoader = Module.getCurrentLoader();
-      moduleLoader = new ModuleLoaderSupport();
+      moduleLoader = new ModuleLoaderSupport("default");
       Module.setModuleLoaderSelector(new ModuleLoaderSelector()
       {
          @Override
@@ -143,7 +143,13 @@ public abstract class ModulesTestBase
 
    static class ModuleLoaderSupport extends ModuleLoader
    {
+      private String loaderName;
       private Map<ModuleIdentifier, ModuleSpec> modules = new HashMap<ModuleIdentifier, ModuleSpec>();
+
+      ModuleLoaderSupport(String loaderName)
+      {
+         this.loaderName = loaderName;
+      }
 
       void addModuleSpec(ModuleSpec moduleSpec)
       {
@@ -155,6 +161,12 @@ public abstract class ModulesTestBase
       {
          ModuleSpec moduleSpec = modules.get(identifier);
          return moduleSpec;
+      }
+
+      @Override
+      public String toString()
+      {
+         return "ModuleLoader[" + loaderName + "]";
       }
    }
 }

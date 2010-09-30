@@ -1,42 +1,36 @@
 package org.jboss.osgi.framework.bundle;
 
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
-import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.osgi.framework.loading.JBossLoggingModuleLogger;
 
 public final class OSGiModuleLoader extends ModuleLoader
 {
    // The modules that are registered with this {@link ModuleLoader}
-   private Map<ModuleIdentifier, OSGiModuleLoader.ModuleHolder> modules = Collections
-         .synchronizedMap(new LinkedHashMap<ModuleIdentifier, OSGiModuleLoader.ModuleHolder>());
+   private Map<ModuleIdentifier, ModuleHolder> modules = new ConcurrentHashMap<ModuleIdentifier, ModuleHolder>();
 
    public OSGiModuleLoader(BundleManager bundleManager)
    {
-      // Set the {@link ModuleLogger}
-      Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
    }
 
    @Override
    public ModuleSpec findModule(ModuleIdentifier identifier) throws ModuleLoadException
    {
-      OSGiModuleLoader.ModuleHolder holder = getModuleHolder(identifier);
+      ModuleHolder holder = getModuleHolder(identifier);
       return holder != null ? holder.getModuleSpec() : null;
    }
 
    @Override
    public Module preloadModule(ModuleIdentifier identifier) throws ModuleLoadException
    {
-      OSGiModuleLoader.ModuleHolder holder = getModuleHolder(identifier);
+      ModuleHolder holder = getModuleHolder(identifier);
       if (holder == null)
          throw new IllegalStateException("Cannot find module: " + identifier);
 
@@ -68,14 +62,14 @@ public final class OSGiModuleLoader extends ModuleLoader
 
    public Module removeModule(ModuleIdentifier identifier)
    {
-      OSGiModuleLoader.ModuleHolder moduleHolder = modules.remove(identifier);
+      ModuleHolder moduleHolder = modules.remove(identifier);
       if (moduleHolder == null)
          return null;
 
       Module module = moduleHolder.module;
       if (module.getModuleLoader() == this)
          unloadModuleLocal(module);
-      
+
       return module;
    }
 
@@ -86,7 +80,7 @@ public final class OSGiModuleLoader extends ModuleLoader
 
    public AbstractRevision getBundleRevision(ModuleIdentifier identifier)
    {
-      OSGiModuleLoader.ModuleHolder holder = getModuleHolder(identifier);
+      ModuleHolder holder = getModuleHolder(identifier);
       return holder != null ? holder.getBundleRevision() : null;
    }
 
@@ -98,13 +92,13 @@ public final class OSGiModuleLoader extends ModuleLoader
 
    public Module getModule(ModuleIdentifier identifier)
    {
-      OSGiModuleLoader.ModuleHolder holder = getModuleHolder(identifier);
+      ModuleHolder holder = getModuleHolder(identifier);
       return holder != null ? holder.getModule() : null;
    }
 
-   private OSGiModuleLoader.ModuleHolder getModuleHolder(ModuleIdentifier identifier)
+   private ModuleHolder getModuleHolder(ModuleIdentifier identifier)
    {
-      OSGiModuleLoader.ModuleHolder holder = modules.get(identifier);
+      ModuleHolder holder = modules.get(identifier);
       return holder;
    }
 
