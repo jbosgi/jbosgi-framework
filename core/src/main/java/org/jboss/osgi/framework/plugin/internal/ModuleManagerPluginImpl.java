@@ -22,7 +22,7 @@
 package org.jboss.osgi.framework.plugin.internal;
 
 import java.io.File;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,9 +38,9 @@ import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
-import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.PathFilters;
+import org.jboss.modules.SimpleModuleLoaderSelector;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
@@ -99,24 +99,16 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    @Override
    public void initPlugin()
    {
-      // Set the {@link ModuleLogger}
-      Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
-
-      // Setup the {@link ClassifyingModuleLoader} if not donfigured externally
-      ModuleLoader externalLoader = (ModuleLoader)getBundleManager().getProperty(ModuleLoader.class.getName());
-      if (externalLoader == null)
+      // Setup the Module system when running STANDALONE
+      if (getBundleManager().getIntegrationMode() == IntegrationMode.STANDALONE)
       {
-         final ModuleLoader defaultLoader = Module.getCurrentLoader();
-         Module.setModuleLoaderSelector(new ModuleLoaderSelector()
-         {
-            @Override
-            public ModuleLoader getCurrentLoader()
-            {
-               Map<String, ModuleLoader> delegates = new HashMap<String, ModuleLoader>();
-               delegates.put(MODULE_PREFIX, moduleLoader);
-               return new ClassifyingModuleLoader(delegates, defaultLoader);
-            }
-         });
+         // Set the {@link ModuleLogger}
+         Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
+
+         // Setup the {@link ClassifyingModuleLoader}
+         Map<String, ModuleLoader> delegates = Collections.singletonMap(MODULE_PREFIX, (ModuleLoader)moduleLoader);
+         ModuleLoader classifyingLoader = new ClassifyingModuleLoader(delegates, Module.getCurrentLoader());
+         Module.setModuleLoaderSelector(new SimpleModuleLoaderSelector(classifyingLoader));
       }
    }
 
@@ -145,7 +137,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          String slot = moduleId.getVersion() + "-rev" + moduleId.getRevision();
          identifier = ModuleIdentifier.create(name, slot);
       }
-      
+
       resModule.addAttachment(ModuleIdentifier.class, identifier);
       return identifier;
    }
@@ -208,7 +200,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       }
       return identifier;
    }
-   
+
    /**
     * Create the {@link Framework} module from the give resolver module definition.
     */

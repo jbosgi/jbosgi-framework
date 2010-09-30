@@ -99,8 +99,8 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       super(bundleManager);
 
       // Get/Create the {@link ServiceContainer}
-      ServiceController<?> serviceController = (ServiceController<?>)bundleManager.getProperty(ServiceController.class.getName());
-      serviceContainer = serviceController != null ? serviceController.getServiceContainer() : ServiceContainer.Factory.create();
+      ServiceContainer value = (ServiceContainer)bundleManager.getProperty(ServiceContainer.class.getName());
+      serviceContainer = value != null ? value : ServiceContainer.Factory.create();
    }
 
    @Override

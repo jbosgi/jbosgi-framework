@@ -43,7 +43,7 @@ import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
-import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceContainer;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.plugin.AutoInstallPlugin;
@@ -160,9 +160,9 @@ public class BundleManager
 
    public IntegrationMode getIntegrationMode()
    {
-      // The AS integration layer provides the ServiceController
-      Object controller = getProperty(ServiceController.class.getName());
-      return controller != null ? IntegrationMode.CONTAINER : IntegrationMode.STANDALONE;
+      // The AS integration layer provides the ServiceContainer
+      Object value = getProperty(ServiceContainer.class.getName());
+      return value != null ? IntegrationMode.CONTAINER : IntegrationMode.STANDALONE;
    }
 
    long getNextBundleId()
@@ -456,15 +456,15 @@ public class BundleManager
 
    /**
     * Install a bundle from a {@link ModuleIdentifier}.
-    * 
-    * This method can be used to install plain modules or bundles to the {@link BundleManager}. 
-    * A plain module is one that does not have a valid OSGi manifest. 
-    * 
+    *
+    * This method can be used to install plain modules or bundles to the {@link BundleManager}.
+    * A plain module is one that does not have a valid OSGi manifest.
+    *
     * When installing a plain module:
-    * 
+    *
     *    - module dependencies are not installed automatically
     *    - module may or may not have been loaded previously
-    *    - module cannot be installed multiple times 
+    *    - module cannot be installed multiple times
     */
    public Bundle installBundle(ModuleIdentifier identifier) throws BundleException
    {
@@ -473,7 +473,7 @@ public class BundleManager
 
       Deployment dep = null;
       String location = identifier.getName() + ":" + identifier.getSlot();
-      
+
       // Check if we have a single root file
       VirtualFile rootFile = getModuleRepositoryEntry(identifier);
       if (rootFile != null)
@@ -486,14 +486,14 @@ public class BundleManager
          }
          catch (BundleException ex)
          {
-            // Ignore, the rootFile is not a valid deployment 
+            // Ignore, the rootFile is not a valid deployment
          }
       }
 
       // Install, if we have a valid deployment
       if (dep != null)
          return installBundle(dep);
-      
+
       // Check if the module can be loaded
       Module module;
       try
@@ -563,7 +563,7 @@ public class BundleManager
 
    /**
     * Get virtual file for the singe jar that corresponds to the given identifier
-    * @return The root virtual or null 
+    * @return The root virtual or null
     */
    private VirtualFile getModuleRepositoryEntry(ModuleIdentifier identifier)
    {
