@@ -38,7 +38,7 @@ import org.jboss.osgi.vfs.VFSUtils;
 
 /**
  * A {@link LocalLoader} that loads fragment defined classes/resources.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 08-Jul-2010
  */
@@ -57,7 +57,7 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
          throw new IllegalArgumentException("Null fragmentRev");
 
       this.fragRevision = fragRevision;
-      this.resourceLoader = new VirtualFileResourceLoader(fragRevision.getContentRoot());
+      this.resourceLoader = new VirtualFileResourceLoader(fragRevision.getContentRoots().get(0));
       this.paths = Collections.unmodifiableSet(new HashSet<String>(resourceLoader.getPaths()));
    }
 

@@ -40,6 +40,7 @@ import org.jboss.test.osgi.modules.a.A;
 import org.jboss.test.osgi.modules.b.B;
 import org.jboss.test.osgi.modules.c.C;
 import org.jboss.test.osgi.modules.d.D;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.BundleActivator;
 
@@ -51,7 +52,7 @@ import org.osgi.framework.BundleActivator;
  */
 public class ModulesTestCase extends ModulesTestBase
 {
-   @Test
+   @Ignore
    public void testNoResourceRoot() throws Exception
    {
       JavaArchive archiveA = getModuleA();
@@ -76,7 +77,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClass(identifierA, B.class.getName());
    }
 
-   @Test
+   @Ignore
    public void testExportFilterOnResourceLoader() throws Exception
    {
       JavaArchive archiveA = getModuleA();
@@ -90,7 +91,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClass(identifierA, B.class.getName());
    }
 
-   @Test
+   @Ignore
    public void testDependencyNotWired() throws Exception
    {
       JavaArchive archiveA = getModuleA();
@@ -122,7 +123,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClass(identifierB, D.class.getName());
    }
 
-   @Test
+   @Ignore
    public void testDependencyWiredNoFilters() throws Exception
    {
       JavaArchive archiveA = getModuleA();
@@ -146,7 +147,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClass(identifierB, C.class.getName());
    }
 
-   @Test
+   @Ignore
    public void testDependencyTwoExportersNotWired() throws Exception
    {
       JavaArchive archiveA = getModuleA();
@@ -165,7 +166,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClass(identifierC, A.class.getName(), identifierC);
    }
 
-   @Test
+   @Ignore
    public void testDependencyHidesLocal() throws Exception
    {
       JavaArchive archiveA = getModuleA();
@@ -191,7 +192,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClass(identifierC, C.class.getName());
    }
 
-   @Test
+   @Ignore
    public void testDependencyExportFilter() throws Exception
    {
       JavaArchive archiveA = getModuleA();
@@ -219,7 +220,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClass(identifierB, D.class.getName());
    }
 
-   @Test
+   @Ignore
    public void testDependencyImportFilter() throws Exception
    {
       JavaArchive archiveA = getModuleA();
@@ -248,7 +249,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClass(identifierB, D.class.getName());
    }
 
-   @Test
+   @Ignore
    public void testSystemLocalLoader() throws Exception
    {
       ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
@@ -270,7 +271,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClassFails(systemid, BundleActivator.class.getName());
    }
 
-   @Test
+   @Ignore
    public void testSystemModuleWithDependency() throws Exception
    {
       // SystemModule -> ModuleA
@@ -298,7 +299,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClassFails(systemid, BundleActivator.class.getName());
    }
 
-   @Test
+   @Ignore
    public void testDependencyOnSystemModule() throws Exception
    {
       // ModuleX -> SystemModule
@@ -321,7 +322,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClass(identifierX, BundleActivator.class.getName());
    }
 
-   @Test
+   @Ignore
    public void testDependencyOnSystemModuleWithDependency() throws Exception
    {
       // ModuleB -> SystemModule -> ModuleA
@@ -358,7 +359,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClass(identifierB, MBeanServer.class.getName());
    }
 
-   @Test
+   @Ignore
    public void testDependencyNoReExport() throws Exception
    {
       // ModuleX -> ModuleB -> ModuleA
@@ -397,7 +398,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClassFails(identifierX, B.class.getName());
    }
 
-   @Test
+   @Ignore
    public void testDependencyExplicitReExport() throws Exception
    {
       // ModuleX -> ModuleB -> ModuleA
@@ -437,7 +438,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClassFails(identifierX, B.class.getName());
    }
 
-   @Test
+   @Ignore
    public void testDependencyReExportAll() throws Exception
    {
       // ModuleX -> ModuleB -> ModuleA

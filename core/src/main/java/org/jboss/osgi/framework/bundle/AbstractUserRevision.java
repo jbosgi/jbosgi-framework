@@ -21,14 +21,19 @@
 */
 package org.jboss.osgi.framework.bundle;
 
+import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
 
@@ -44,6 +49,7 @@ public abstract class AbstractUserRevision extends AbstractRevision
    static final Logger log = Logger.getLogger(AbstractUserRevision.class);
 
    private final Deployment deployment;
+   private List<VirtualFile> contentRoots;
    private final EntriesProvider entriesProvider;
 
    AbstractUserRevision(AbstractUserBundle bundleState, Deployment dep, int revCount) throws BundleException
@@ -52,9 +58,16 @@ public abstract class AbstractUserRevision extends AbstractRevision
       this.deployment = dep;
 
       if (dep.getRoot() != null)
+      {
          entriesProvider = new VirtualFileEntriesProvider(dep.getRoot());
+         // TODO:
+         contentRoots = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
+      }
       else
+      {
          entriesProvider = new ModuleEntriesProvider(dep.getAttachment(Module.class));
+         contentRoots = Collections.emptyList();
+      }
    }
 
    public Deployment getDeployment()
@@ -67,9 +80,9 @@ public abstract class AbstractUserRevision extends AbstractRevision
       return deployment.getLocation();
    }
 
-   public VirtualFile getContentRoot()
+   public List<VirtualFile> getContentRoots()
    {
-      return deployment.getRoot();
+      return contentRoots;
    }
 
    @Override
@@ -91,5 +104,45 @@ public abstract class AbstractUserRevision extends AbstractRevision
    {
       getBundleState().assertNotUninstalled();
       return entriesProvider.findEntries(path, pattern, recurse);
+   }
+
+   private List<VirtualFile> getBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata)
+   {
+      if (rootFile == null)
+         throw new IllegalArgumentException("Null rootFile");
+
+      // Setup single root file list, if there is no Bundle-ClassPath
+      if (metadata.getBundleClassPath().size() == 0)
+      {
+         List<VirtualFile> rootList = new ArrayList<VirtualFile>(Collections.singleton(rootFile));
+         return Collections.unmodifiableList(rootList);
+      }
+
+      // Add the Bundle-ClassPath to the root virtual files
+      List<VirtualFile> rootList = new ArrayList<VirtualFile>();
+      for (String path : metadata.getBundleClassPath())
+      {
+         if (path.equals("."))
+         {
+            rootList.add(rootFile);
+         }
+         else
+         {
+            try
+            {
+               VirtualFile child = rootFile.getChild(path);
+               if (child != null)
+               {
+                  VirtualFile root = AbstractVFS.toVirtualFile(child.toURL());
+                  rootList.add(root);
+               }
+            }
+            catch (IOException ex)
+            {
+               log.errorf(ex, "Cannot get class path element: %s", path);
+            }
+         }
+      }
+      return Collections.unmodifiableList(rootList);
    }
 }

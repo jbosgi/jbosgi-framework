@@ -424,7 +424,7 @@ public class BundleManager
       VirtualFile rootFile;
       try
       {
-         rootFile = AbstractVFS.getRoot(locationURL);
+         rootFile = AbstractVFS.toVirtualFile(locationURL);
       }
       catch (Exception ex)
       {
@@ -438,7 +438,7 @@ public class BundleManager
       }
       catch (BundleException ex)
       {
-         deleteContentRoot(rootFile);
+         deleteContentRoots(Collections.singletonList(rootFile));
          throw ex;
       }
       return bundle;
@@ -604,7 +604,7 @@ public class BundleManager
 
       try
       {
-         return AbstractVFS.getRoot(moduleFile.toURI().toURL());
+         return AbstractVFS.toVirtualFile(moduleFile.toURI().toURL());
       }
       catch (IOException ex)
       {
@@ -633,7 +633,7 @@ public class BundleManager
       }
       catch (BundleException ex)
       {
-         deleteContentRoot(dep.getRoot());
+         deleteContentRoots(Collections.singletonList(dep.getRoot()));
          throw ex;
       }
 
@@ -745,14 +745,16 @@ public class BundleManager
          plugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.WARNING, new BundleException("Error " + context, t));
    }
 
-   void deleteContentRoot(VirtualFile rootFile)
+   void deleteContentRoots(List<VirtualFile> rootFiles)
    {
-      if (rootFile != null)
+      File streamDir = getPlugin(BundleStoragePlugin.class).getBundleStreamDir();
+      for (VirtualFile rootFile : rootFiles)
       {
+         // Close the virtual file
          String contentRootPath = rootFile.getPathName();
          rootFile.close();
 
-         File streamDir = getPlugin(BundleStoragePlugin.class).getBundleStreamDir();
+         // Delete the stream dir if it exists
          if (contentRootPath.startsWith(streamDir.getAbsolutePath()))
          {
             File file = new File(contentRootPath);

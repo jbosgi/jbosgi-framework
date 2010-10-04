@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.bundle;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -33,9 +32,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
 
@@ -55,16 +52,11 @@ public class HostRevision extends AbstractUserRevision
 {
    static final Logger log = Logger.getLogger(HostRevision.class);
 
-   private List<VirtualFile> contentRoots;
    private List<FragmentRevision> attachedFragments;
 
    public HostRevision(HostBundle hostBundle, Deployment dep, int revCount) throws BundleException
    {
       super(hostBundle, dep, revCount);
-
-      // Set the aggregated root file
-      if (dep.getRoot() != null)
-         contentRoots = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
    }
 
    @Override
@@ -95,11 +87,6 @@ public class HostRevision extends AbstractUserRevision
          return Collections.emptyList();
 
       return Collections.unmodifiableList(attachedFragments);
-   }
-
-   public List<VirtualFile> getContentRoots()
-   {
-      return contentRoots;
    }
 
    @Override
@@ -142,11 +129,11 @@ public class HostRevision extends AbstractUserRevision
       }
 
       // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
-      if (getContentRoot() != null)
+      for (VirtualFile rootFile : getContentRoots())
       {
          try
          {
-            VirtualFile child = getContentRoot().getChild(path);
+            VirtualFile child = rootFile.getChild(path);
             if (child == null)
                return null;
 
@@ -160,50 +147,8 @@ public class HostRevision extends AbstractUserRevision
             return null;
          }
       }
-      
+
       return null;
-   }
-
-   private List<VirtualFile> getBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata)
-   {
-      if (rootFile == null)
-         throw new IllegalArgumentException("Null rootFile");
-
-      List<VirtualFile> rootList;
-
-      // Add the Bundle-ClassPath to the root virtual files
-      if (metadata.getBundleClassPath().size() > 0)
-      {
-         rootList = new ArrayList<VirtualFile>();
-         for (String path : metadata.getBundleClassPath())
-         {
-            if (path.equals("."))
-            {
-               rootList.add(rootFile);
-            }
-            else
-            {
-               try
-               {
-                  VirtualFile child = rootFile.getChild(path);
-                  if (child != null)
-                  {
-                     VirtualFile root = AbstractVFS.getRoot(child.toURL());
-                     rootList.add(root);
-                  }
-               }
-               catch (IOException ex)
-               {
-                  log.errorf(ex, "Cannot get class path element: %s", path);
-               }
-            }
-         }
-      }
-      else
-      {
-         rootList = new ArrayList<VirtualFile>(Collections.singleton(rootFile));
-      }
-      return Collections.unmodifiableList(rootList);
    }
 
    @Override

@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.plugin.internal;
 
+import java.util.List;
+
 import org.jboss.logging.Logger;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.AbstractLifecycleInterceptorService;
@@ -40,7 +42,7 @@ import org.osgi.framework.ServiceRegistration;
 
 /**
  * A plugin that manages bundle lifecycle interceptors.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
@@ -72,12 +74,14 @@ public class LifecycleInterceptorPluginImpl extends AbstractPlugin implements Li
 
             AbstractUserBundle userBundle = AbstractUserBundle.assertBundleState(bundleState);
             Deployment dep = userBundle.getDeployment();
-            
+
             InvocationContext inv = dep.getAttachment(InvocationContext.class);
             if (inv == null)
             {
                BundleContext context = userBundle.getBundleManager().getSystemContext();
-               VirtualFile rootFile = userBundle.getContentRoot();
+               // TODO: support multiple roots defined in Bundle-ClassPath
+               List<VirtualFile> rootsFiles = userBundle.getContentRoots();
+               VirtualFile rootFile = rootsFiles.size() > 0 ? rootsFiles.get(0) : null;
                LifecycleInterceptorAttachments att = new LifecycleInterceptorAttachments();
                inv = new InvocationContextImpl(context, bundle, rootFile, att);
                dep.addAttachment(InvocationContext.class, inv);
@@ -105,7 +109,7 @@ public class LifecycleInterceptorPluginImpl extends AbstractPlugin implements Li
       if (delegate != null)
          delegate.handleStateChange(state, bundle);
    }
-   
+
    static class LifecycleInterceptorAttachments extends AttachmentSupport
    {
    }

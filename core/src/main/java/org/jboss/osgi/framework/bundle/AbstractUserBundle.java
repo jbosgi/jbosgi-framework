@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -137,9 +138,9 @@ public abstract class AbstractUserBundle extends AbstractBundle
       return (AbstractUserRevision)super.getCurrentRevision();
    }
 
-   public VirtualFile getContentRoot()
+   public List<VirtualFile> getContentRoots()
    {
-      return getCurrentRevision().getContentRoot();
+      return getCurrentRevision().getContentRoots();
    }
 
    @Override
@@ -258,12 +259,12 @@ public abstract class AbstractUserBundle extends AbstractBundle
          if (updateLocation != null)
          {
             URL updateURL = new URL(updateLocation);
-            internalRoot = AbstractVFS.getRoot(updateURL);
+            internalRoot = AbstractVFS.toVirtualFile(updateURL);
             internalInput = internalRoot.openStream();
          }
          else
          {
-            internalRoot = getCurrentRevision().getContentRoot();
+            internalRoot = getContentRoots().get(0);
             internalInput = internalRoot.openStream();
          }
       }
@@ -274,12 +275,12 @@ public abstract class AbstractUserBundle extends AbstractBundle
          BundleStoragePlugin plugin = bundleManager.getPlugin(BundleStoragePlugin.class);
          InputStream newInput = (input != null ? input : internalInput);
          File newFile = plugin.storeBundleStream(getLocation(), newInput, revCount);
-         newRoot = AbstractVFS.getRoot(newFile.toURI().toURL());
+         newRoot = AbstractVFS.toVirtualFile(newFile.toURI().toURL());
       }
       catch (IOException ex)
       {
          if (internalRoot != null)
-            bundleManager.deleteContentRoot(internalRoot);
+            bundleManager.deleteContentRoots(Collections.singletonList(internalRoot));
 
          throw new BundleException("Cannot store bundle from stream", ex);
       }
@@ -297,14 +298,14 @@ public abstract class AbstractUserBundle extends AbstractBundle
       catch (BundleException ex)
       {
          if (internalRoot != null)
-            bundleManager.deleteContentRoot(internalRoot);
+            bundleManager.deleteContentRoots(Collections.singletonList(internalRoot));
 
          throw ex;
       }
    }
 
    /**
-    * This method gets called by Package Admin when the bundle needs to be refreshed,
+    * This method gets called by {@link PackageAdmin} when the bundle needs to be refreshed,
     * this means that all the old revisions are thrown out.
     */
    public void refresh() throws BundleException
@@ -331,8 +332,8 @@ public abstract class AbstractUserBundle extends AbstractBundle
          if (rev != currentRev)
          {
             AbstractUserRevision userRev = (AbstractUserRevision)rev;
-            VirtualFile contentRoot = userRev.getContentRoot();
-            bundleManager.deleteContentRoot(contentRoot);
+            List<VirtualFile> contentRoots = userRev.getContentRoots();
+            bundleManager.deleteContentRoots(contentRoots);
          }
       }
       clearRevisions();
@@ -363,7 +364,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
          }
 
          AbstractUserRevision userRev = (AbstractUserRevision)rev;
-         bundleManager.deleteContentRoot(userRev.getContentRoot());
+         bundleManager.deleteContentRoots(userRev.getContentRoots());
       }
    }
 
