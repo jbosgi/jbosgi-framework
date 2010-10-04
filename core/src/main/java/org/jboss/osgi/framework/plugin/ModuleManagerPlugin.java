@@ -39,12 +39,6 @@ import org.jboss.osgi.resolver.XModule;
  */
 public interface ModuleManagerPlugin extends Plugin
 {
-   /** The property that defines a comma seperated list of system module identifiers */
-   String PROP_JBOSS_OSGI_SYSTEM_MODULES = "org.jboss.osgi.system.modules";
-   
-   /** The module prefix for modules managed by the OSGi layer */
-   String MODULE_PREFIX = "jbosgi";
-   
    /**
     * Get the OSGi {@link ModuleLoader}
     */

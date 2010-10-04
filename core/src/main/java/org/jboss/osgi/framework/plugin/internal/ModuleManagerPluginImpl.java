@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.plugin.internal;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -42,6 +43,7 @@ import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.PathFilters;
 import org.jboss.modules.SimpleModuleLoaderSelector;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.framework.bundle.AbstractUserBundle;
@@ -72,7 +74,6 @@ import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.application.Framework;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.Constants;
 
 /**
  * The module manager plugin.
@@ -106,7 +107,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
 
          // Setup the {@link ClassifyingModuleLoader}
-         Map<String, ModuleLoader> delegates = Collections.singletonMap(MODULE_PREFIX, (ModuleLoader)moduleLoader);
+         Map<String, ModuleLoader> delegates = Collections.singletonMap(org.jboss.osgi.framework.Constants.MODULE_PREFIX, (ModuleLoader)moduleLoader);
          ModuleLoader classifyingLoader = new ClassifyingModuleLoader(delegates, Module.getCurrentLoader());
          Module.setModuleLoaderSelector(new SimpleModuleLoaderSelector(classifyingLoader));
       }
@@ -133,7 +134,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       if (identifier == null)
       {
          XModuleIdentity moduleId = resModule.getModuleId();
-         String name = MODULE_PREFIX + "." + moduleId.getName();
+         String name = org.jboss.osgi.framework.Constants.MODULE_PREFIX + "." + moduleId.getName();
          String slot = moduleId.getVersion() + "-rev" + moduleId.getRevision();
          identifier = ModuleIdentifier.create(name, slot);
       }
@@ -222,16 +223,29 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       // When running in AS there are no jars on the system classpath except jboss-modules.jar
       if (bundleManager.getIntegrationMode() == IntegrationMode.CONTAINER)
       {
-         String systemModules = (String)bundleManager.getProperty(PROP_JBOSS_OSGI_SYSTEM_MODULES);
-         if (systemModules != null)
+         // The hardcoded list of dependencies for the core framework
+         List<ModuleIdentifier> systemModules = new ArrayList<ModuleIdentifier>();
+         systemModules.add(ModuleIdentifier.create("org.jboss.logging"));
+         systemModules.add(ModuleIdentifier.create("org.osgi.core"));
+         systemModules.add(ModuleIdentifier.create("org.osgi.compendium"));
+         systemModules.add(ModuleIdentifier.create("org.jboss.osgi.spi"));
+         systemModules.add(ModuleIdentifier.create("org.jboss.osgi.deployment"));
+         // User defined dependencies can be added by 'org.jboss.osgi.system.modules'
+         String modulesProps = (String)bundleManager.getProperty(Constants.PROP_JBOSS_OSGI_SYSTEM_MODULES);
+         if (modulesProps != null)
          {
-            for (String moduleid : systemModules.split(","))
+            for (String moduleProp : modulesProps.split(","))
             {
-               ModuleIdentifier identifier = ModuleIdentifier.create(moduleid.trim());
-               ModuleDependencySpec.Builder moduleDependency = ModuleDependencySpec.build(identifier);
-               moduleDependency.setExportFilter(PathFilters.acceptAll()); // re-export everything
-               specBuilder.addModuleDependency(moduleDependency.create());
+               ModuleIdentifier moduleId = ModuleIdentifier.create(moduleProp.trim());
+               systemModules.add(moduleId);
             }
+         }
+         // Add the module dependencies to the framework
+         for (ModuleIdentifier moduleId : systemModules)
+         {
+            ModuleDependencySpec.Builder moduleDependency = ModuleDependencySpec.build(moduleId);
+            moduleDependency.setExportFilter(PathFilters.acceptAll()); // re-export everything
+            specBuilder.addModuleDependency(moduleDependency.create());
          }
       }
 
@@ -245,7 +259,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    /**
     * Create a {@link ModuleSpec} from the given resolver module definition
     */
-   public ModuleSpec createModuleSpec(final XModule resModule, List<VirtualFile> contentRoots)
+   private ModuleSpec createModuleSpec(final XModule resModule, List<VirtualFile> contentRoots)
    {
       ModuleSpec moduleSpec = resModule.getAttachment(ModuleSpec.class);
       if (moduleSpec == null)
