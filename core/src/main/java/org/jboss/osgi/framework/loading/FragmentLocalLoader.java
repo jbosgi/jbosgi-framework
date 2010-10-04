@@ -57,7 +57,7 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
          throw new IllegalArgumentException("Null fragmentRev");
 
       this.fragRevision = fragRevision;
-      this.resourceLoader = new VirtualFileResourceLoader(fragRevision.getContentRoots().get(0));
+      this.resourceLoader = new VirtualFileResourceLoader(fragRevision.getFirstContentRoot());
       this.paths = Collections.unmodifiableSet(new HashSet<String>(resourceLoader.getPaths()));
    }
 

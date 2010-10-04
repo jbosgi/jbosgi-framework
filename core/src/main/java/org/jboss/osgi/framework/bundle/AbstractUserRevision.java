@@ -60,7 +60,6 @@ public abstract class AbstractUserRevision extends AbstractRevision
       if (dep.getRoot() != null)
       {
          entriesProvider = new VirtualFileEntriesProvider(dep.getRoot());
-         // TODO:
          contentRoots = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
       }
       else
@@ -80,6 +79,23 @@ public abstract class AbstractUserRevision extends AbstractRevision
       return deployment.getLocation();
    }
 
+   /**
+    * A user revision may have one or more associated content root files.
+    * Multiple content root files exist if there is a Bundle-ClassPath header.
+    * No content root file may exist if bundle metadata was provided externally.
+    * @return The first entry in the list of content root files or null
+    */
+   public VirtualFile getFirstContentRoot()
+   {
+      return contentRoots.size() > 0 ? contentRoots.get(0) : null;
+   }
+   
+   /**
+    * A user revision may have one or more associated content root files.
+    * Multiple content root files exist if there is a Bundle-ClassPath header.
+    * No content root file may exist if bundle metadata was provided externally.
+    * @return The list of content root files or an empty list
+    */
    public List<VirtualFile> getContentRoots()
    {
       return contentRoots;

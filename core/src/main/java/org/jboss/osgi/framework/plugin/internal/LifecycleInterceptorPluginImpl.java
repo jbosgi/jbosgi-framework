@@ -80,8 +80,7 @@ public class LifecycleInterceptorPluginImpl extends AbstractPlugin implements Li
             {
                BundleContext context = userBundle.getBundleManager().getSystemContext();
                // TODO: support multiple roots defined in Bundle-ClassPath
-               List<VirtualFile> rootsFiles = userBundle.getContentRoots();
-               VirtualFile rootFile = rootsFiles.size() > 0 ? rootsFiles.get(0) : null;
+               VirtualFile rootFile = userBundle.getFirstContentRoot();
                LifecycleInterceptorAttachments att = new LifecycleInterceptorAttachments();
                inv = new InvocationContextImpl(context, bundle, rootFile, att);
                dep.addAttachment(InvocationContext.class, inv);

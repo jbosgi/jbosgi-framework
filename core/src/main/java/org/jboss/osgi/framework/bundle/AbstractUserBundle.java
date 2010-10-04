@@ -132,15 +132,20 @@ public abstract class AbstractUserBundle extends AbstractBundle
       return getCurrentRevision().getDeployment();
    }
 
-   @Override
-   public AbstractUserRevision getCurrentRevision()
+   public VirtualFile getFirstContentRoot()
    {
-      return (AbstractUserRevision)super.getCurrentRevision();
+      return getCurrentRevision().getFirstContentRoot();
    }
 
    public List<VirtualFile> getContentRoots()
    {
       return getCurrentRevision().getContentRoots();
+   }
+
+   @Override
+   public AbstractUserRevision getCurrentRevision()
+   {
+      return (AbstractUserRevision)super.getCurrentRevision();
    }
 
    @Override
@@ -264,7 +269,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
          }
          else
          {
-            internalRoot = getContentRoots().get(0);
+            internalRoot = getFirstContentRoot();
             internalInput = internalRoot.openStream();
          }
       }

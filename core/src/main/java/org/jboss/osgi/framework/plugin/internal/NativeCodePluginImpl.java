@@ -325,12 +325,11 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
       @Override
       public File getLibraryLocation() throws IOException
       {
-         List<VirtualFile> contentRoots = bundleState.getContentRoots();
-         if (libraryFile == null && contentRoots.size() > 0)
+         VirtualFile contentRoot = bundleState.getFirstContentRoot();
+         if (libraryFile == null && contentRoot != null)
          {
             // Get the virtual file for entry for the library
-            VirtualFile root = contentRoots.get(0);
-            VirtualFile fileSource = root.getChild(libpath);
+            VirtualFile fileSource = contentRoot.getChild(libpath);
 
             // Create a unique local file location
             libraryFile = getUniqueLibraryFile(bundleState, libpath);
