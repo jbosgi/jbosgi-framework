@@ -21,6 +21,7 @@
  */
 package org.jboss.osgi.framework.plugin;
 
+import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -28,19 +29,27 @@ import org.osgi.framework.BundleException;
 
 /**
  * A plugin the handles Bundle deployments.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 12-Jul-2010
  */
-public interface BundleDeploymentPlugin extends Plugin 
+public interface BundleDeploymentPlugin extends Plugin
 {
    /**
     * Create a {@link Deployment} from the given virtual file.
     * @param rootFile The root file pointing to one of the supported bundle formats
-    * @param location The bundle location to be associated with the deployment  
-    * @throws BundleException If the given root file does not 
+    * @param location The bundle location to be associated with the deployment
+    * @throws BundleException If the given root file does not
     */
    Deployment createDeployment(VirtualFile rootFile, String location) throws BundleException;
+
+   /**
+    * Create a {@link Deployment} from the given module identifier.
+    * @param identifier The root file pointing to one of the supported bundle formats
+    * @param location The bundle location to be associated with the deployment
+    * @throws BundleException If the given root file does not
+    */
+   Deployment createDeployment(ModuleIdentifier identifier) throws BundleException;
 
    /**
     * Creates {@link OSGiMetaData} from the deployment.

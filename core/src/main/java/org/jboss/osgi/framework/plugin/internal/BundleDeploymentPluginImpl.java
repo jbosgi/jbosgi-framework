@@ -21,19 +21,31 @@
  */
 package org.jboss.osgi.framework.plugin.internal;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleLoadException;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.BundleDeploymentPlugin;
+import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.spi.util.BundleInfo;
+import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
@@ -99,6 +111,148 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
    }
 
    @Override
+   public Deployment createDeployment(ModuleIdentifier identifier) throws BundleException
+   {
+      if (identifier == null)
+         throw new IllegalArgumentException("Null identifier");
+
+      // Check if we have a single root file
+      VirtualFile rootFile = getModuleRepositoryEntry(identifier);
+      if (rootFile != null)
+      {
+         try
+         {
+            // Check if this is a valid OSGi deployment
+            String location = identifier.getName() + ":" + identifier.getSlot();
+            return createDeployment(rootFile, location);
+         }
+         catch (BundleException ex)
+         {
+            // Ignore, the rootFile is not a valid deployment
+         }
+      }
+
+      // Check if the module can be loaded
+      Module module;
+      try
+      {
+         ModuleLoader loader = Module.getCurrentLoader();
+         module = loader.loadModule(identifier);
+      }
+      catch (ModuleLoadException ex)
+      {
+         throw new BundleException("Cannot load module: " + identifier, ex);
+      }
+
+      // Do a sanity check that this is not an OSGi bundle
+      ModuleClassLoader classLoader = module.getClassLoader();
+      InputStream inStream = classLoader.getResourceAsStream(JarFile.MANIFEST_NAME);
+      if (inStream != null)
+      {
+         try
+         {
+            Manifest manifest = new Manifest();
+            manifest.read(inStream);
+            if (BundleInfo.isValidateBundleManifest(manifest))
+               throw new BundleException("Cannot install bundle from loaded module: " + identifier);
+         }
+         catch (IOException ex)
+         {
+            throw new BundleException("Cannot read mainfest from: " + identifier, ex);
+         }
+      }
+
+      String symbolicName = identifier.getName();
+      Version version;
+      try
+      {
+         version = Version.parseVersion(identifier.getSlot());
+      }
+      catch (IllegalArgumentException ex)
+      {
+         version = Version.emptyVersion;
+      }
+
+      // Build the resolver capabilities, which exports every package
+      ResolverPlugin resolverPlugin = getPlugin(ResolverPlugin.class);
+      XModuleBuilder builder = resolverPlugin.getModuleBuilder();
+      builder.createModule(symbolicName, version, 0);
+      builder.addBundleCapability(symbolicName, version);
+      for (String path : module.getExportedPaths())
+      {
+         if (path.startsWith("/"))
+            path = path.substring(1);
+         if (path.endsWith("/"))
+            path = path.substring(0, path.length() - 1);
+         if (path.startsWith("META-INF"))
+            continue;
+
+         String packageName = path.replace('/', '.');
+         builder.addPackageCapability(packageName, null, null);
+      }
+      XModule resModule = builder.getModule();
+      resModule.addAttachment(Module.class, module);
+
+      String location = identifier.getName() + ":" + identifier.getSlot();
+      Deployment dep = DeploymentFactory.createDeployment(location, symbolicName, version);
+      dep.addAttachment(XModule.class, resModule);
+      dep.addAttachment(Module.class, module);
+      return dep;
+   }
+
+   /**
+    * Get virtual file for the singe jar that corresponds to the given identifier
+    * @return The root virtual or null
+    */
+   private VirtualFile getModuleRepositoryEntry(ModuleIdentifier identifier)
+   {
+      File rootPath = new File(getBundleManager().getProperty("module.path").toString());
+      String identifierPath = identifier.getName().replace('.', File.separatorChar) + File.separator + identifier.getSlot();
+      File moduleDir = new File(rootPath + File.separator + identifierPath);
+      if (moduleDir.isDirectory() == false)
+      {
+         log.warnf("Cannot obtain module directory: %s", moduleDir);
+         return null;
+      }
+
+      String[] files = moduleDir.list(new FilenameFilter()
+      {
+         @Override
+         public boolean accept(File dir, String name)
+         {
+            return name.endsWith(".jar");
+         }
+      });
+      if (files.length == 0)
+      {
+         log.warnf("Cannot find module jar in: %s", moduleDir);
+         return null;
+      }
+      if (files.length > 1)
+      {
+         log.warnf("Multiple module jars in: %s", moduleDir);
+         return null;
+      }
+
+      File moduleFile = new File(moduleDir + File.separator + files[0]);
+      if (moduleFile.exists() == false)
+      {
+         log.warnf("Module file does not exist: %s", moduleFile);
+         return null;
+      }
+
+      try
+      {
+         return AbstractVFS.toVirtualFile(moduleFile.toURI().toURL());
+      }
+      catch (IOException ex)
+      {
+         log.errorf(ex, "Cannot obtain root file: %s", moduleFile);
+         return null;
+      }
+   }
+
+   @Override
    public OSGiMetaData createOSGiMetaData(Deployment dep) throws BundleException
    {
       // #1 check if the Deployment already contains a OSGiMetaData
@@ -157,7 +311,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
             OSGiMetaData metadata = OSGiMetaDataBuilder.load(child.openStream());
             return metadata;
          }
-         
+
          VirtualFile parentFile = rootFile.getParent();
          if (parentFile != null)
          {
