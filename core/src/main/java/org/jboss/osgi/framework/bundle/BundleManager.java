@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceContainer;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.plugin.AutoInstallPlugin;
 import org.jboss.osgi.framework.plugin.BundleDeploymentPlugin;
@@ -148,9 +147,8 @@ public class BundleManager
 
    public IntegrationMode getIntegrationMode()
    {
-      // The AS integration layer provides the ServiceContainer
-      Object value = getProperty(ServiceContainer.class.getName());
-      return value != null ? IntegrationMode.CONTAINER : IntegrationMode.STANDALONE;
+      Object value = getProperty(IntegrationMode.class.getName());
+      return value != null ? (IntegrationMode)value : IntegrationMode.STANDALONE;
    }
 
    long getNextBundleId()
