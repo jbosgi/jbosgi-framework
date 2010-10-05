@@ -131,11 +131,6 @@
         <version>${version.apache.aries.jmx}</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.aries</groupId>
-        <artifactId>org.apache.aries.util</artifactId>
-        <version>${version.apache.aries.util}</version>
-      </dependency>
-      <dependency>
         <groupId>org.apache.felix</groupId>
         <artifactId>org.apache.felix.eventadmin</artifactId>
         <version>${version.apache.felix.eventadmin}</version>

@@ -211,7 +211,7 @@ public class BundleManager
       if (bundleMap.containsKey(bundleId) == true)
          throw new IllegalStateException("Bundle already added: " + bundleState);
 
-      log.tracef("Add bundle: %s", bundleState);
+      log.infof("Install bundle: %s", bundleState);
 
       // Register the bundle with the manager
       bundleMap.put(bundleId, bundleState);

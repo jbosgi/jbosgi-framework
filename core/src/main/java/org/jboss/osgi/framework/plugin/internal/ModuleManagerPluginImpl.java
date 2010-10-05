@@ -22,7 +22,6 @@
 package org.jboss.osgi.framework.plugin.internal;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -90,11 +89,21 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    private ModuleIdentifier frameworkIdentifier;
    // The module loader for the OSGi layer
    private OSGiModuleLoader moduleLoader;
+   // The module spec creation hook
+   private ModuleSpecCreationHook creationHook;
 
    public ModuleManagerPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
       moduleLoader = new OSGiModuleLoader(bundleManager);
+      creationHook = new ModuleSpecCreationHook()
+      {
+         @Override
+         public ModuleSpec create(ModuleSpec.Builder specBuilder)
+         {
+            return specBuilder.create();
+         }
+      };
    }
 
    @Override
@@ -111,6 +120,14 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          ModuleLoader classifyingLoader = new ClassifyingModuleLoader(delegates, Module.getCurrentLoader());
          Module.setModuleLoaderSelector(new SimpleModuleLoaderSelector(classifyingLoader));
       }
+   }
+
+   @Override
+   public void setModuleSpecCreationHook(ModuleSpecCreationHook hook)
+   {
+      if (frameworkIdentifier != null)
+         throw new IllegalStateException("Cannot set ModuleSpecCreationHook after Framework module was created");
+      creationHook = hook;
    }
 
    @Override
@@ -220,36 +237,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       localDependency.setExportFilter(PathFilters.acceptAll());
       specBuilder.addLocalDependency(localDependency.create());
 
-      // When running in AS there are no jars on the system classpath except jboss-modules.jar
-      if (bundleManager.getIntegrationMode() == IntegrationMode.CONTAINER)
-      {
-         // The hardcoded list of dependencies for the core framework
-         List<ModuleIdentifier> systemModules = new ArrayList<ModuleIdentifier>();
-         systemModules.add(ModuleIdentifier.create("org.jboss.logging"));
-         systemModules.add(ModuleIdentifier.create("org.osgi.core"));
-         systemModules.add(ModuleIdentifier.create("org.osgi.compendium"));
-         systemModules.add(ModuleIdentifier.create("org.jboss.osgi.spi"));
-         systemModules.add(ModuleIdentifier.create("org.jboss.osgi.deployment"));
-         // User defined dependencies can be added by 'org.jboss.osgi.system.modules'
-         String modulesProps = (String)bundleManager.getProperty(Constants.PROP_JBOSS_OSGI_SYSTEM_MODULES);
-         if (modulesProps != null)
-         {
-            for (String moduleProp : modulesProps.split(","))
-            {
-               ModuleIdentifier moduleId = ModuleIdentifier.create(moduleProp.trim());
-               systemModules.add(moduleId);
-            }
-         }
-         // Add the module dependencies to the framework
-         for (ModuleIdentifier moduleId : systemModules)
-         {
-            ModuleDependencySpec.Builder moduleDependency = ModuleDependencySpec.build(moduleId);
-            moduleDependency.setExportFilter(PathFilters.acceptAll()); // re-export everything
-            specBuilder.addModuleDependency(moduleDependency.create());
-         }
-      }
-
-      ModuleSpec frameworkSpec = specBuilder.create();
+      ModuleSpec frameworkSpec = creationHook.create(specBuilder);
       AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
       moduleLoader.addModule(bundleRev, frameworkSpec);
 
@@ -342,7 +330,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          specBuilder.setFallbackLoader(new ModuleClassLoaderExt(getBundleManager(), identifier));
 
          // Build the ModuleSpec
-         moduleSpec = specBuilder.create();
+         moduleSpec = creationHook.create(specBuilder);
       }
 
       AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);

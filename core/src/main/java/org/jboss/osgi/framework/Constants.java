@@ -30,9 +30,6 @@ package org.jboss.osgi.framework;
  */
 public interface Constants extends org.osgi.framework.Constants
 {
-   /** The property that defines a comma seperated list of system module identifiers */
-   String PROP_JBOSS_OSGI_SYSTEM_MODULES = "org.jboss.osgi.system.modules";
-
    /** The module prefix for modules managed by the OSGi layer */
    String MODULE_PREFIX = "jbosgi";
 }

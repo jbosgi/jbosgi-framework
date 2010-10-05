@@ -27,6 +27,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
+import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.resolver.XModule;
@@ -43,12 +44,12 @@ public interface ModuleManagerPlugin extends Plugin
     * Get the OSGi {@link ModuleLoader}
     */
    ModuleLoader getModuleLoader();
-   
+
    /**
     * Return the module identifier for a given XModule.
     */
    ModuleIdentifier getModuleIdentifier(XModule resModule);
-   
+
    /**
     * Get the set of registered module idetifiers
     */
@@ -89,4 +90,18 @@ public interface ModuleManagerPlugin extends Plugin
     * @return The module or null
     */
    Module removeModule(ModuleIdentifier identifier);
+
+   /**
+    * Set the {@link ModuleSpecCreationHook}
+    */
+   void setModuleSpecCreationHook(ModuleSpecCreationHook hook);
+
+   /**
+    * A callback interface that allows the client to modify the ModuleSpec
+    * just before it gets created.
+    */
+   interface ModuleSpecCreationHook
+   {
+      ModuleSpec create(ModuleSpec.Builder specBuilder);
+   }
 }
