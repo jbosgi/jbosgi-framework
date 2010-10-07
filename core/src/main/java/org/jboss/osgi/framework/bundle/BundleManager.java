@@ -69,6 +69,7 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XVersionRange;
 import org.jboss.osgi.spi.util.SysPropertyActions;
 import org.jboss.osgi.vfs.AbstractVFS;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -598,7 +599,7 @@ public class BundleManager
       {
          // Close the virtual file
          String contentRootPath = rootFile.getPathName();
-         rootFile.close();
+         VFSUtils.safeClose(rootFile);
 
          // Delete the stream dir if it exists
          if (contentRootPath.startsWith(streamDir.getAbsolutePath()))
