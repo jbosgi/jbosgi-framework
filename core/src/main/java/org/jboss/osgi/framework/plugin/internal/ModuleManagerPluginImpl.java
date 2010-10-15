@@ -22,7 +22,6 @@
 package org.jboss.osgi.framework.plugin.internal;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,17 +29,16 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.ClassifyingModuleLoader;
-import org.jboss.modules.LocalDependencySpec;
+import org.jboss.modules.DependencySpec;
+import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.modules.PathFilter;
 import org.jboss.modules.PathFilters;
-import org.jboss.modules.SimpleModuleLoaderSelector;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
@@ -114,11 +112,6 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       {
          // Set the {@link ModuleLogger}
          Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
-
-         // Setup the {@link ClassifyingModuleLoader}
-         Map<String, ModuleLoader> delegates = Collections.singletonMap(org.jboss.osgi.framework.Constants.MODULE_PREFIX, (ModuleLoader)moduleLoader);
-         ModuleLoader classifyingLoader = new ClassifyingModuleLoader(delegates, Module.getCurrentLoader());
-         Module.setModuleLoaderSelector(new SimpleModuleLoaderSelector(classifyingLoader));
       }
    }
 
@@ -230,12 +223,8 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       frameworkIdentifier = getModuleIdentifier(resModule);
       ModuleSpec.Builder specBuilder = ModuleSpec.build(frameworkIdentifier);
 
-      BundleManager bundleManager = getBundleManager();
-      FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(bundleManager);
-      LocalDependencySpec.Builder localDependency = LocalDependencySpec.build(frameworkLoader, frameworkLoader.getExportedPaths());
-      localDependency.setImportFilter(PathFilters.acceptAll()); // [TODO] Remove when this becomes the default
-      localDependency.setExportFilter(PathFilters.acceptAll());
-      specBuilder.addLocalDependency(localDependency.create());
+      FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(getBundleManager());
+      specBuilder.addDependency(DependencySpec.createLocalDependencySpec(frameworkLoader, frameworkLoader.getExportedPaths(), true));
 
       ModuleSpec frameworkSpec = creationHook.create(specBuilder);
       AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
@@ -256,11 +245,11 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
 
          // Add the framework module as the first required dependency
-         ModuleDependencySpec.Builder frameworkDependency = ModuleDependencySpec.build(frameworkIdentifier);
-         specBuilder.addModuleDependency(frameworkDependency.create());
+         DependencySpec frameworkDependency = DependencySpec.createModuleDependencySpec(frameworkIdentifier, true);
+         specBuilder.addDependency(frameworkDependency);
 
          // Map the dependency builder for (the likely) case that the same exporter is choosen for multiple wires
-         Map<XModule, DependencyBuildlerHolder> depBuilderMap = new LinkedHashMap<XModule, DependencyBuildlerHolder>();
+         Map<XModule, DependencyHolder> specHolderMap = new LinkedHashMap<XModule, DependencyHolder>();
 
          // In case there are no wires, there may still be dependencies due to attached fragments
          HostBundle hostBundle = resModule.getAttachment(HostBundle.class);
@@ -271,29 +260,26 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             {
                // Process the fragment wires. This would take care of Package-Imports and Require-Bundle defined on the fragment
                List<XWire> fragWires = fragRev.getResolverModule().getWires();
-               processModuleWires(fragWires, depBuilderMap);
+               processModuleWires(fragWires, specHolderMap);
 
                // Create a fragment {@link LocalLoader} and add a dependency on it
                FragmentLocalLoader localLoader = new FragmentLocalLoader(fragRev);
-               LocalDependencySpec.Builder localDependency = LocalDependencySpec.build(localLoader, localLoader.getPaths());
-               localDependency.setImportFilter(PathFilters.acceptAll()); // [TODO] Remove when this becomes the default
-               localDependency.setExportFilter(PathFilters.acceptAll());
-
-               depBuilderMap.put(fragRev.getResolverModule(), new DependencyBuildlerHolder(localDependency));
+               specHolderMap.put(fragRev.getResolverModule(), new LocalDependencyHolder(localLoader, localLoader.getPaths()));
             }
          }
 
          // For every {@link XWire} add a dependency on the exporter
-         processModuleWires(resModule.getWires(), depBuilderMap);
+         processModuleWires(resModule.getWires(), specHolderMap);
 
          // Add the dependencies
-         for (DependencyBuildlerHolder aux : depBuilderMap.values())
-            aux.addDependency(specBuilder);
+         for (DependencyHolder aux : specHolderMap.values())
+            specBuilder.addDependency(aux.create());
 
          // Add a local dependency for the local bundle content
          for (VirtualFile contentRoot : contentRoots)
             specBuilder.addResourceRoot(new VirtualFileResourceLoader(contentRoot));
-         specBuilder.addLocalDependency();
+
+         specBuilder.addDependency(DependencySpec.createLocalDependencySpec());
 
          // Native - Hack
          Bundle bundle = resModule.getAttachment(Bundle.class);
@@ -338,7 +324,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       return moduleSpec;
    }
 
-   private void processModuleWires(List<XWire> wires, Map<XModule, DependencyBuildlerHolder> depBuilderMap)
+   private void processModuleWires(List<XWire> wires, Map<XModule, DependencyHolder> depBuilderMap)
    {
       for (XWire wire : wires)
       {
@@ -359,7 +345,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          // Dependency for Import-Package
          if (req instanceof XPackageRequirement)
          {
-            DependencyBuildlerHolder holder = getDependencyHolder(depBuilderMap, exporter);
+            ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
             holder.addImportPath(VFSUtils.getPathFromPackageName(req.getName()));
             continue;
          }
@@ -367,27 +353,25 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          // Dependency for Require-Bundle
          if (req instanceof XRequireBundleRequirement)
          {
-            DependencyBuildlerHolder holder = getDependencyHolder(depBuilderMap, exporter);
+            ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
             XRequireBundleRequirement bndreq = (XRequireBundleRequirement)req;
             boolean reexport = Constants.VISIBILITY_REEXPORT.equals(bndreq.getVisibility());
             if (reexport == true)
-            {
-               ModuleDependencySpec.Builder moduleDependency = holder.moduleDependencyBuilder;
-               moduleDependency.setExportFilter(PathFilters.acceptAll());
-            }
+               holder.setExportFilter(PathFilters.acceptAll());
+
             continue;
          }
       }
    }
 
    // Get or create the dependency builder for the exporter
-   private DependencyBuildlerHolder getDependencyHolder(Map<XModule, DependencyBuildlerHolder> depBuilderMap, XModule exporter)
+   private ModuleDependencyHolder getDependencyHolder(Map<XModule, DependencyHolder> depBuilderMap, XModule exporter)
    {
       ModuleIdentifier exporterId = getModuleIdentifier(exporter);
-      DependencyBuildlerHolder holder = depBuilderMap.get(exporter);
+      ModuleDependencyHolder holder = (ModuleDependencyHolder)depBuilderMap.get(exporter);
       if (holder == null)
       {
-         holder = new DependencyBuildlerHolder(ModuleDependencySpec.build(exporterId));
+         holder = new ModuleDependencyHolder(exporterId);
          depBuilderMap.put(exporter, holder);
       }
       return holder;
@@ -405,45 +389,82 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       return moduleLoader.removeModule(identifier);
    }
 
-   static class DependencyBuildlerHolder
+   abstract class DependencyHolder
    {
-      private LocalDependencySpec.Builder localDependencyBuilder;
-      private ModuleDependencySpec.Builder moduleDependencyBuilder;
-      private Set<String> importPaths;
-
-      DependencyBuildlerHolder(LocalDependencySpec.Builder builder)
+      private DependencySpec dependencySpec;
+      
+      DependencySpec create()
       {
-         this.localDependencyBuilder = builder;
+         assertNotCreated();
+         return dependencySpec = createInternal();
       }
-
-      DependencyBuildlerHolder(ModuleDependencySpec.Builder builder)
+      
+      abstract DependencySpec createInternal();
+      
+      void assertNotCreated()
       {
-         this.moduleDependencyBuilder = builder;
+         if (dependencySpec != null)
+            throw new IllegalStateException("DependencySpec already created");
+      }
+   }
+
+   class ModuleDependencyHolder extends DependencyHolder
+   {
+      private ModuleIdentifier identifier;
+      private Set<String> importPaths;
+      private PathFilter exportFilter = PathFilters.rejectAll();
+      private boolean optional;
+
+      ModuleDependencyHolder(ModuleIdentifier identifier)
+      {
+         this.identifier = identifier;
       }
 
       void addImportPath(String path)
       {
+         assertNotCreated();
          if (importPaths == null)
             importPaths = new HashSet<String>();
 
          importPaths.add(path);
       }
 
-      void addDependency(ModuleSpec.Builder specBuilder)
+      void setExportFilter(PathFilter exportFilter)
       {
-         if (moduleDependencyBuilder != null)
-         {
-            if (importPaths != null)
-            {
-               moduleDependencyBuilder.setImportFilter(PathFilters.in(importPaths));
-            }
-            specBuilder.addModuleDependency(moduleDependencyBuilder.create());
-         }
+         assertNotCreated();
+         this.exportFilter = exportFilter;
+      }
 
-         if (localDependencyBuilder != null)
-         {
-            specBuilder.addLocalDependency(localDependencyBuilder.create());
-         }
+      void setOptional(boolean optional)
+      {
+         assertNotCreated();
+         this.optional = optional;
+      }
+
+      DependencySpec createInternal()
+      {
+         PathFilter importFilter = importPaths != null ? PathFilters.in(importPaths) : PathFilters.acceptAll();
+         return DependencySpec.createModuleDependencySpec(importFilter, exportFilter, moduleLoader, identifier, optional);
+      }
+
+   }
+
+   class LocalDependencyHolder extends DependencyHolder
+   {
+      private LocalLoader localLoader;
+      private Set<String> loaderPaths;
+
+      LocalDependencyHolder(LocalLoader localLoader, Set<String> loaderPaths)
+      {
+         this.localLoader = localLoader;
+         this.loaderPaths = loaderPaths;
+      }
+
+      DependencySpec createInternal()
+      {
+         PathFilter importFilter = PathFilters.acceptAll();
+         PathFilter exportFilter = PathFilters.in(loaderPaths);
+         return DependencySpec.createLocalDependencySpec(importFilter, exportFilter, localLoader, loaderPaths);
       }
    }
 }

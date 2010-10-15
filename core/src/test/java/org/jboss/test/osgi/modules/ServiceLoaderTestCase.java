@@ -26,11 +26,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.net.URL;
+import java.util.Collections;
 import java.util.ServiceLoader;
 
+import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.PathFilter;
@@ -59,6 +60,7 @@ public class ServiceLoaderTestCase extends ModulesTestBase
       ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
       ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
       specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
       addModuleSpec(specBuilderA.create());
 
       Module moduleA = loadModule(identifierA);
@@ -83,14 +85,14 @@ public class ServiceLoaderTestCase extends ModulesTestBase
 
       ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
       ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      PathFilter exportFilter = PathFilters.all(PathFilters.include("META-INF"));
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA), exportFilter));
+      PathFilter exportFilter = PathFilters.in(Collections.singleton("META-INF/services"));
+      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(PathFilters.acceptAll(), exportFilter));
       addModuleSpec(specBuilderA.create());
 
       ModuleIdentifier identifierB = ModuleIdentifier.create("moduleB");
       ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      ModuleDependencySpec.Builder depSpecA = ModuleDependencySpec.build(identifierA);
-      specBuilderB.addModuleDependency(depSpecA.create());
+      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
       addModuleSpec(specBuilderB.create());
 
       Module moduleB = loadModule(identifierB);

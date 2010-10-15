@@ -100,7 +100,7 @@ public class HostRevision extends AbstractUserRevision
 
       // Load the class through the module
       ModuleClassLoader loader = getModuleClassLoader();
-      return loader.loadClass(className);
+      return loader.loadClass(className, true);
    }
 
    @Override

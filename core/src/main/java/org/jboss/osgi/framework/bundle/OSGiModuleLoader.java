@@ -102,6 +102,12 @@ public final class OSGiModuleLoader extends ModuleLoader
       return holder;
    }
 
+   @Override
+   public String toString()
+   {
+      return "OSGiModuleLoader";
+   }
+   
    // A holder for the {@link ModuleSpec}  @{link Module} tuple
    static class ModuleHolder
    {

@@ -36,14 +36,12 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
-import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.PathFilter;
 import org.jboss.modules.PathFilters;
 import org.jboss.osgi.testing.OSGiTestHelper;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.After;
 import org.junit.Before;
 
 /**
@@ -55,34 +53,16 @@ import org.junit.Before;
 public abstract class ModulesTestBase
 {
    private ModuleLoaderSupport moduleLoader;
-   private ModuleLoader currentLoader;
 
    @Before
    public void setUp()
    {
-      currentLoader = Module.getCurrentLoader();
       moduleLoader = new ModuleLoaderSupport("default");
-      Module.setModuleLoaderSelector(new ModuleLoaderSelector()
-      {
-         @Override
-         public ModuleLoader getCurrentLoader()
-         {
-            return moduleLoader;
-         }
-      });
    }
 
-   @After
-   public void tearDown()
+   protected ModuleLoaderSupport getModuleLoader()
    {
-      Module.setModuleLoaderSelector(new ModuleLoaderSelector()
-      {
-         @Override
-         public ModuleLoader getCurrentLoader()
-         {
-            return currentLoader;
-         }
-      });
+      return moduleLoader;
    }
 
    protected void addModuleSpec(ModuleSpec moduleSpec)
@@ -111,29 +91,35 @@ public abstract class ModulesTestBase
       return Collections.unmodifiableSet(paths);
    }
 
-   protected void assertLoadClass(ModuleIdentifier loaderId, String className) throws Exception
+   protected void assertLoadClass(ModuleIdentifier identifier, String className) throws Exception
    {
-      Class<?> clazz = Module.loadClass(loaderId, className);
+      Class<?> clazz = loadClass(identifier, className);
       assertNotNull(clazz);
    }
 
-   protected void assertLoadClass(ModuleIdentifier loaderId, String className, ModuleIdentifier exporterId) throws Exception
+   protected void assertLoadClass(ModuleIdentifier identifier, String className, ModuleIdentifier exporterId) throws Exception
    {
-      Class<?> clazz = Module.loadClass(loaderId, className);
+      Class<?> clazz = loadClass(identifier, className);
       assertEquals(loadModule(exporterId).getClassLoader(), clazz.getClassLoader());
    }
 
-   protected void assertLoadClassFails(ModuleIdentifier loader, String className) throws Exception
+   protected void assertLoadClassFails(ModuleIdentifier identifier, String className) throws Exception
    {
       try
       {
-         Module.loadClass(loader, className);
+         loadClass(identifier, className);
          fail("ClassNotFoundException expected");
       }
       catch (ClassNotFoundException ex)
       {
          // expected
       }
+   }
+
+   protected Class<?> loadClass(ModuleIdentifier identifier, String className) throws Exception
+   {
+      Class<?> clazz = loadModule(identifier).getClassLoader().loadClass(className, true);
+      return clazz;
    }
 
    protected VirtualFile toVirtualFile(JavaArchive archive) throws IOException
@@ -166,7 +152,7 @@ public abstract class ModulesTestBase
       @Override
       public String toString()
       {
-         return "ModuleLoader[" + loaderName + "]";
+         return "ModuleLoaderSupport[" + loaderName + "]";
       }
    }
 }

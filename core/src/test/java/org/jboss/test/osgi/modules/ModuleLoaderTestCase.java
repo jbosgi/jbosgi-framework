@@ -23,15 +23,10 @@ package org.jboss.test.osgi.modules;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.jboss.modules.ClassifyingModuleLoader;
+import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleDependencySpec;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoader;
-import org.jboss.modules.ModuleLoaderSelector;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
@@ -52,25 +47,13 @@ import org.osgi.framework.Version;
 public class ModuleLoaderTestCase extends ModulesTestBase
 {
    private ModuleManagerPlugin moduleManager;
-   private ModuleLoaderSupport defaultLoader;
    private ModuleLoaderSupport jbosgiLoader;
 
    @Before
    public void setUp()
    {
       super.setUp();
-      defaultLoader = (ModuleLoaderSupport)Module.getCurrentLoader();
       jbosgiLoader = new ModuleLoaderSupport("jbosgi");
-      Module.setModuleLoaderSelector(new ModuleLoaderSelector()
-      {
-         @Override
-         public ModuleLoader getCurrentLoader()
-         {
-            Map<String, ModuleLoader> delegates = new HashMap<String, ModuleLoader>();
-            delegates.put("jbosgi", jbosgiLoader);
-            return new ClassifyingModuleLoader(delegates, defaultLoader);
-         }
-      });
       BundleManager bundleManager = Mockito.mock(BundleManager.class);
       moduleManager = new ModuleManagerPluginImpl(bundleManager);
    }
@@ -90,7 +73,7 @@ public class ModuleLoaderTestCase extends ModulesTestBase
       ModuleSpec bundleSpec = specBuilder.create();
       jbosgiLoader.addModuleSpec(bundleSpec);
       
-      Module bundle = Module.getModule(bundleId);
+      Module bundle = jbosgiLoader.loadModule(bundleId);
       assertEquals(jbosgiLoader, bundle.getModuleLoader());
    }
 
@@ -100,7 +83,7 @@ public class ModuleLoaderTestCase extends ModulesTestBase
       ModuleIdentifier moduleId = ModuleIdentifier.create("moduleA");
       ModuleSpec.Builder specBuilder = ModuleSpec.build(moduleId);
       ModuleSpec moduleSpec = specBuilder.create();
-      defaultLoader.addModuleSpec(moduleSpec);
+      getModuleLoader().addModuleSpec(moduleSpec);
       
       XResolverFactory factory = XResolverFactory.getInstance();
       XModuleBuilder builder = factory.newModuleBuilder();
@@ -108,16 +91,15 @@ public class ModuleLoaderTestCase extends ModulesTestBase
       
       ModuleIdentifier bundleId = moduleManager.getModuleIdentifier(builder.getModule());
       specBuilder = ModuleSpec.build(bundleId);
-      ModuleDependencySpec.Builder depBuilder = ModuleDependencySpec.build(moduleId);
-      specBuilder.addModuleDependency(depBuilder.create());
+      specBuilder.addDependency(DependencySpec.createModuleDependencySpec(moduleId));
       ModuleSpec bundleSpec = specBuilder.create();
       jbosgiLoader.addModuleSpec(bundleSpec);
 
-      Module bundle = Module.getModule(bundleId);
+      Module bundle = jbosgiLoader.loadModule(bundleId);
       assertEquals(jbosgiLoader, bundle.getModuleLoader());
       
-      Module module = Module.getModule(moduleId);
-      assertEquals(defaultLoader, module.getModuleLoader());
+      Module module = loadModule(moduleId);
+      assertEquals(getModuleLoader(), module.getModuleLoader());
    }
 
    @Test
@@ -137,15 +119,14 @@ public class ModuleLoaderTestCase extends ModulesTestBase
       jbosgiLoader.addModuleSpec(bundleSpecA);
       
       ModuleSpec.Builder specBuilderB = ModuleSpec.build(bundleIdB);
-      ModuleDependencySpec.Builder depBuilder = ModuleDependencySpec.build(bundleIdA);
-      specBuilderB.addModuleDependency(depBuilder.create());
+      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(bundleIdA));
       ModuleSpec bundleSpecB = specBuilderB.create();
       jbosgiLoader.addModuleSpec(bundleSpecB);
       
-      Module bundleA = Module.getModule(bundleIdA);
+      Module bundleA = jbosgiLoader.loadModule(bundleIdA);
       assertEquals(jbosgiLoader, bundleA.getModuleLoader());
       
-      Module bundleB = Module.getModule(bundleIdB);
+      Module bundleB = jbosgiLoader.loadModule(bundleIdB);
       assertEquals(jbosgiLoader, bundleB.getModuleLoader());
    }
 
@@ -155,20 +136,19 @@ public class ModuleLoaderTestCase extends ModulesTestBase
       ModuleIdentifier moduleIdA = ModuleIdentifier.create("moduleA");
       ModuleSpec.Builder specBuilderA = ModuleSpec.build(moduleIdA);
       ModuleSpec moduleSpecA = specBuilderA.create();
-      defaultLoader.addModuleSpec(moduleSpecA);
+      getModuleLoader().addModuleSpec(moduleSpecA);
       
       ModuleIdentifier moduleIdB = ModuleIdentifier.create("moduleB");
       ModuleSpec.Builder specBuilderB = ModuleSpec.build(moduleIdB);
-      ModuleDependencySpec.Builder depBuilder = ModuleDependencySpec.build(moduleIdA);
-      specBuilderB.addModuleDependency(depBuilder.create());
+      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(moduleIdA));
       ModuleSpec moduleSpecB = specBuilderB.create();
-      defaultLoader.addModuleSpec(moduleSpecB);
+      getModuleLoader().addModuleSpec(moduleSpecB);
 
-      Module moduleA = Module.getModule(moduleIdA);
-      assertEquals(defaultLoader, moduleA.getModuleLoader());
+      Module moduleA = loadModule(moduleIdA);
+      assertEquals(getModuleLoader(), moduleA.getModuleLoader());
 
-      Module moduleB = Module.getModule(moduleIdB);
-      assertEquals(defaultLoader, moduleB.getModuleLoader());
+      Module moduleB = loadModule(moduleIdB);
+      assertEquals(getModuleLoader(), moduleB.getModuleLoader());
    }
 
    @Test
@@ -185,15 +165,14 @@ public class ModuleLoaderTestCase extends ModulesTestBase
       
       ModuleIdentifier moduleIdB = ModuleIdentifier.create("moduleB");
       ModuleSpec.Builder specBuilderB = ModuleSpec.build(moduleIdB);
-      ModuleDependencySpec.Builder depBuilder = ModuleDependencySpec.build(bundleIdA);
-      specBuilderB.addModuleDependency(depBuilder.create());
+      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(bundleIdA));
       ModuleSpec moduleSpecB = specBuilderB.create();
-      defaultLoader.addModuleSpec(moduleSpecB);
+      getModuleLoader().addModuleSpec(moduleSpecB);
 
-      Module moduleB = Module.getModule(moduleIdB);
-      assertEquals(defaultLoader, moduleB.getModuleLoader());
+      Module moduleB = loadModule(moduleIdB);
+      assertEquals(getModuleLoader(), moduleB.getModuleLoader());
 
-      Module bundleA = Module.getModule(bundleIdA);
+      Module bundleA = jbosgiLoader.loadModule(bundleIdA);
       assertEquals(jbosgiLoader, bundleA.getModuleLoader());
    }
 }
