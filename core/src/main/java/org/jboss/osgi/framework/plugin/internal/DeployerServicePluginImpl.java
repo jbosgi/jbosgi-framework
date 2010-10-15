@@ -50,6 +50,7 @@ public class DeployerServicePluginImpl extends AbstractPlugin implements Deploye
    // Provide logging
    final Logger log = Logger.getLogger(DeployerServicePluginImpl.class);
 
+   private DeploymentRegistryService registry;
    private DeployerService delegate;
 
    public DeployerServicePluginImpl(BundleManager bundleManager)
@@ -60,11 +61,11 @@ public class DeployerServicePluginImpl extends AbstractPlugin implements Deploye
    @Override
    public void initPlugin()
    {
-      delegate = new DeployerServiceImpl();
-
       BundleContext sysContext = getBundleManager().getSystemContext();
-      DeploymentRegistryService registry = new DefaultDeploymentRegistryService(sysContext);
+      registry = new DefaultDeploymentRegistryService(sysContext);
       sysContext.registerService(DeploymentRegistryService.class.getName(), registry, null);
+
+      delegate = new DeployerServiceImpl(sysContext, registry);
 
       Properties props = new Properties();
       props.put("provider", "system");
@@ -98,13 +99,13 @@ public class DeployerServicePluginImpl extends AbstractPlugin implements Deploye
 
    private class DeployerServiceImpl extends SystemDeployerService
    {
-      public DeployerServiceImpl()
+      public DeployerServiceImpl(BundleContext sysContext, DeploymentRegistryService registry)
       {
-         super(getBundleManager().getSystemContext());
+         super(sysContext, registry);
       }
 
       @Override
-      protected Bundle installBundleInternal(Deployment dep) throws BundleException
+      protected Bundle installBundle(Deployment dep) throws BundleException
       {
          AbstractBundle bundleState = getBundleManager().installBundle(dep);
          return bundleState.getBundleWrapper();
