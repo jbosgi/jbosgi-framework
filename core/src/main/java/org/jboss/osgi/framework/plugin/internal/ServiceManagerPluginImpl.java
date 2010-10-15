@@ -48,6 +48,7 @@ import org.jboss.msc.service.ServiceRegistryException;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.ServiceReferenceComparator;
@@ -58,10 +59,8 @@ import org.jboss.osgi.framework.plugin.PackageAdminPlugin;
 import org.jboss.osgi.framework.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.framework.util.NoFilter;
 import org.jboss.osgi.framework.util.RemoveOnlyCollection;
-import org.jboss.osgi.modules.ModuleContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
@@ -108,6 +107,10 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    {
       eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
       packageAdmin = getPlugin(PackageAdminPlugin.class);
+
+      // Register the {@link ServiceContainer} as OSGi service
+      BundleContext context = getBundleManager().getSystemContext();
+      context.registerService(ServiceContainer.class.getName(), serviceContainer, null);
    }
 
    @Override
@@ -268,7 +271,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
             serviceNames = new ArrayList<ServiceName>();
 
          // Add potentially registered xservcie
-         ServiceName xserviceName = ServiceName.of(ModuleContext.XSERVICE_PREFIX, clazz);
+         ServiceName xserviceName = ServiceName.of(Constants.JBOSGI_PREFIX, clazz);
          ServiceController<?> xservice = serviceContainer.getService(xserviceName);
          if (xservice != null)
             serviceNames.add(xserviceName);
@@ -307,7 +310,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          // [TODO] This should be done eagerly to keep the serviceId constant
          // [TODO] service events for XService lifecycle changes
          // [MSC-17] Canonical ServiceName string representation
-         if (value instanceof ServiceState == false && serviceName.toString().contains(ModuleContext.XSERVICE_PREFIX))
+         if (value instanceof ServiceState == false && serviceName.toString().contains(Constants.JBOSGI_PREFIX))
          {
             long serviceId = getNextServiceId();
             Bundle bundle = packageAdmin.getBundle(value.getClass());

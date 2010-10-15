@@ -144,7 +144,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       if (identifier == null)
       {
          XModuleIdentity moduleId = resModule.getModuleId();
-         String name = org.jboss.osgi.framework.Constants.MODULE_PREFIX + "." + moduleId.getName();
+         String name = Constants.JBOSGI_PREFIX + "." + moduleId.getName();
          String slot = moduleId.getVersion() + "-rev" + moduleId.getRevision();
          identifier = ModuleIdentifier.create(name, slot);
       }
@@ -392,15 +392,15 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    abstract class DependencyHolder
    {
       private DependencySpec dependencySpec;
-      
+
       DependencySpec create()
       {
          assertNotCreated();
          return dependencySpec = createInternal();
       }
-      
+
       abstract DependencySpec createInternal();
-      
+
       void assertNotCreated()
       {
          if (dependencySpec != null)

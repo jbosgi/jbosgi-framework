@@ -60,10 +60,15 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
 {
    // Provide logging
    private static final Logger log = Logger.getLogger(BundleDeploymentPluginImpl.class);
+   private final ModuleLoader defaultModuleLoader;
 
    public BundleDeploymentPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
+
+      // Initialize the default module loader
+      ModuleLoader moduleLoader = (ModuleLoader)bundleManager.getProperty(ModuleLoader.class.getName());
+      defaultModuleLoader = moduleLoader != null ? moduleLoader : Module.getDefaultModuleLoader();
    }
 
    /**
@@ -136,8 +141,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       Module module;
       try
       {
-         ModuleLoader loader = Module.getDefaultModuleLoader();
-         module = loader.loadModule(identifier);
+         module = defaultModuleLoader.loadModule(identifier);
       }
       catch (ModuleLoadException ex)
       {

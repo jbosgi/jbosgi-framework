@@ -25,6 +25,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.framework.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.modules.ModuleActivator;
@@ -111,7 +112,7 @@ public class ModuleActivatorBridge implements BundleActivator
          if (service == null)
             throw new IllegalArgumentException("Null service");
 
-         return ServiceName.of(XSERVICE_PREFIX, service.getName());
+         return ServiceName.of(Constants.JBOSGI_PREFIX, service.getName());
       }
 
       @Override

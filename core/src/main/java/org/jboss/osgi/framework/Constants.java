@@ -30,6 +30,6 @@ package org.jboss.osgi.framework;
  */
 public interface Constants extends org.osgi.framework.Constants
 {
-   /** The module prefix for modules managed by the OSGi layer */
-   String MODULE_PREFIX = "jbosgi";
+   /** The prefix for modules/services managed by the OSGi layer */
+   String JBOSGI_PREFIX = "jbosgi";
 }
