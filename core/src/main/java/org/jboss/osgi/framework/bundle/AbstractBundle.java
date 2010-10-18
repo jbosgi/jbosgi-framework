@@ -425,7 +425,7 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       startInternal(options);
-      log.debugf("Bundle started: %s", this);
+      log.infof("Bundle started: %s", this);
    }
 
    @Override
@@ -433,7 +433,7 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       startInternal(0);
-      log.debugf("Bundle started: %s", this);
+      log.infof("Bundle started: %s", this);
    }
 
    abstract void startInternal(int options) throws BundleException;
@@ -443,7 +443,7 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       stopInternal(options);
-      log.debugf("Bundle stopped: %s", this);
+      log.infof("Bundle stopped: %s", this);
    }
 
    @Override
@@ -451,7 +451,7 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       stopInternal(0);
-      log.debugf("Bundle stopped: %s", this);
+      log.infof("Bundle stopped: %s", this);
    }
 
    abstract void stopInternal(int options) throws BundleException;
@@ -463,7 +463,7 @@ public abstract class AbstractBundle implements Bundle
       updateInternal(input);
       // A bundle is considered to be modified when it is installed, updated or uninstalled.
       lastModified = System.currentTimeMillis();
-      log.debugf("Bundle updated: %s", this);
+      log.infof("Bundle updated: %s", this);
    }
 
    @Override
@@ -473,7 +473,7 @@ public abstract class AbstractBundle implements Bundle
       updateInternal(null);
       // A bundle is considered to be modified when it is installed, updated or uninstalled.
       lastModified = System.currentTimeMillis();
-      log.debugf("Bundle updated: %s", this);
+      log.infof("Bundle updated: %s", this);
    }
 
    abstract void updateInternal(InputStream input) throws BundleException;
@@ -490,7 +490,7 @@ public abstract class AbstractBundle implements Bundle
 
       // A bundle is considered to be modified when it is installed, updated or uninstalled.
       lastModified = System.currentTimeMillis();
-      log.debugf("Bundle uninstalled: %s", this);
+      log.infof("Bundle uninstalled: %s", this);
    }
 
    abstract void uninstallInternal() throws BundleException;

@@ -198,11 +198,6 @@ public class FrameworkState extends SystemBundle implements Framework
       if (state == Bundle.STARTING || state == Bundle.ACTIVE || state == Bundle.STOPPING)
          return;
 
-      // Log INFO about this implementation
-      String implTitle = getClass().getPackage().getImplementationTitle();
-      String implVersion = getClass().getPackage().getImplementationVersion();
-      log.infof(implTitle + " - " + implVersion);
-
       // Put into the STARTING state
       changeState(Bundle.STARTING);
 

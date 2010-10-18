@@ -107,6 +107,11 @@ public class BundleManager
 
    public BundleManager(Map<String, Object> initialProperties)
    {
+      // Log INFO about this implementation
+      String implTitle = getClass().getPackage().getImplementationTitle();
+      String implVersion = getClass().getPackage().getImplementationVersion();
+      log.infof(implTitle + " - " + implVersion);
+
       // The properties on the BundleManager are mutable as long the framework is not created
       // Plugins may modify these properties in their respective constructor
       if (initialProperties != null)
