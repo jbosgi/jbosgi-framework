@@ -54,9 +54,9 @@ public class HostRevision extends AbstractUserRevision
 
    private List<FragmentRevision> attachedFragments;
 
-   public HostRevision(HostBundle hostBundle, Deployment dep, int revCount) throws BundleException
+   public HostRevision(HostBundle hostBundle, Deployment dep) throws BundleException
    {
-      super(hostBundle, dep, revCount);
+      super(hostBundle, dep);
    }
 
    @Override

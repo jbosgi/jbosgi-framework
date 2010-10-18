@@ -34,6 +34,7 @@ import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
+import org.jboss.osgi.resolver.XModuleIdentity;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
@@ -49,7 +50,7 @@ public abstract class AbstractRevision
 {
    static final Logger log = Logger.getLogger(AbstractRevision.class);
 
-   private final int revisionCount;
+   private final int revision;
    private final AbstractBundle bundleState;
    private final OSGiMetaData metadata;
    private XModule resolverModule;
@@ -59,7 +60,7 @@ public abstract class AbstractRevision
    private final ModuleManagerPlugin moduleManager;
    private final ResolverPlugin resolverPlugin;
 
-   AbstractRevision(AbstractBundle bundleState, OSGiMetaData metadata, XModule resModule, int revCount) throws BundleException
+   AbstractRevision(AbstractBundle bundleState, OSGiMetaData metadata, XModule resModule, int revision) throws BundleException
    {
       if (bundleState == null)
          throw new IllegalArgumentException("Null bundleState");
@@ -68,7 +69,7 @@ public abstract class AbstractRevision
 
       this.bundleState = bundleState;
       this.metadata = metadata;
-      this.revisionCount = revCount;
+      this.revision = revision;
 
       BundleManager bundleManager = getBundleManager();
       this.moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
@@ -103,8 +104,25 @@ public abstract class AbstractRevision
 
    XModule createResolverModule(OSGiMetaData metadata) throws BundleException
    {
+      String symbolicName = metadata.getBundleSymbolicName();
+      Version version = metadata.getBundleVersion();
+      int modulerev = revision;
+      
+      // An UNINSTALLED module with active wires may still be registered in with the Resolver
+      // Make sure we have a unique module identifier
       XModuleBuilder builder = resolverPlugin.getModuleBuilder();
-      XModule resModule = builder.createModule(metadata, revisionCount).getModule();
+      builder.createModule(symbolicName, version, modulerev);
+      XModuleIdentity moduleId = builder.getModuleIdentity();
+      XModule resModule = resolverPlugin.getModuleById(moduleId);
+      while(resModule != null)
+      {
+         builder = resolverPlugin.getModuleBuilder();
+         builder.createModule(symbolicName, version, modulerev += 100);
+         moduleId = builder.getModuleIdentity();
+         resModule = resolverPlugin.getModuleById(moduleId);
+      }
+      
+      resModule = builder.createModule(metadata, modulerev).getModule();
       resModule.addAttachment(AbstractRevision.class, this);
       resModule.addAttachment(Bundle.class, bundleState);
       return resModule;
@@ -114,7 +132,7 @@ public abstract class AbstractRevision
 
    public int getRevisionCount()
    {
-      return revisionCount;
+      return revision;
    }
 
    public XModule getResolverModule()

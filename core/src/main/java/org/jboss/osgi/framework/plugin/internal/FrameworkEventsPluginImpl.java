@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.plugin.internal;
 
-//$Id: SystemPackagesPluginImpl.java 92858 2009-08-27 10:58:32Z thomas.diesler@jboss.com $
+//$Id$
 
 import java.security.AccessControlContext;
 import java.security.AccessController;

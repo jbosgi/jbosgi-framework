@@ -52,9 +52,9 @@ public abstract class AbstractUserRevision extends AbstractRevision
    private List<VirtualFile> contentRoots;
    private final EntriesProvider entriesProvider;
 
-   AbstractUserRevision(AbstractUserBundle bundleState, Deployment dep, int revCount) throws BundleException
+   AbstractUserRevision(AbstractUserBundle bundleState, Deployment dep) throws BundleException
    {
-      super(bundleState, dep.getAttachment(OSGiMetaData.class), dep.getAttachment(XModule.class), revCount);
+      super(bundleState, getOSGiMetaData(dep), getXModule(dep), getRevision(dep));
       this.deployment = dep;
 
       if (dep.getRoot() != null)
@@ -67,6 +67,22 @@ public abstract class AbstractUserRevision extends AbstractRevision
          entriesProvider = new ModuleEntriesProvider(dep.getAttachment(Module.class));
          contentRoots = Collections.emptyList();
       }
+   }
+   
+   private static OSGiMetaData getOSGiMetaData(Deployment dep)
+   {
+      return dep.getAttachment(OSGiMetaData.class);
+   }
+
+   private static XModule getXModule(Deployment dep)
+   {
+      return dep.getAttachment(XModule.class);
+   }
+
+   private static int getRevision(Deployment dep)
+   {
+      BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
+      return storageState.getRevision();
    }
 
    public Deployment getDeployment()

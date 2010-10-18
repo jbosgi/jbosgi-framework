@@ -24,17 +24,19 @@ package org.jboss.osgi.framework.plugin.internal;
 //$Id$
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.framework.bundle.BundleManager;
+import org.jboss.osgi.framework.bundle.BundleStorageState;
 import org.jboss.osgi.framework.bundle.FrameworkState;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
-import org.jboss.osgi.vfs.VFSUtils;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 
@@ -49,8 +51,10 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
    // Provide logging
    final Logger log = Logger.getLogger(BundleStoragePluginImpl.class);
 
+   // The BundleId generator
+   private AtomicLong identityGenerator = new AtomicLong();
+   // The Framework storage area
    private String storageArea;
-   private File bundleStreamDir;
 
    public BundleStoragePluginImpl(BundleManager bundleManager)
    {
@@ -58,9 +62,55 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
    }
 
    @Override
+   public BundleStorageState createStorageState(String location, VirtualFile rootFile) throws IOException
+   {
+      if (location == null)
+         throw new IllegalArgumentException("Null location");
+
+      int revision = 0;
+      long bundleId = identityGenerator.incrementAndGet();
+
+      // Make the bundle's storage dir
+      String bundlePath = getStorageDir(bundleId).getAbsolutePath();
+      File bundleDir = new File(bundlePath);
+      bundleDir.mkdirs();
+
+      Properties props = new Properties();
+      File propsFile = new File(bundleDir + File.separator + BUNDLE_PERSISTENT_PROPERTIES);
+      if (propsFile.exists())
+      {
+         props.load(new FileInputStream(propsFile));
+         revision = Integer.parseInt(props.getProperty(PROPERTY_BUNDLE_REV));
+         revision++;
+      }
+
+      if (rootFile != null)
+      {
+         int index = location.lastIndexOf(File.separator);
+         String name = index > 0 ? location.substring(index + 1) : location;
+         props.put(PROPERTY_BUNDLE_FILE, name);
+      }
+
+      /* Make the file copy
+      File revisionDir = new File(bundlePath + File.separator + "rev-" + revision);
+      revisionDir.mkdirs();
+      File fileCopy = new File(revisionDir + File.separator + name);
+      rootFile.recursiveCopy(fileCopy);
+      */
+      
+      // Write the bundle properties
+      props.put(PROPERTY_BUNDLE_LOCATION, location);
+      props.put(PROPERTY_BUNDLE_ID, new Long(bundleId).toString());
+      props.put(PROPERTY_BUNDLE_REV, new Integer(revision).toString());
+      props.store(new FileOutputStream(propsFile), "Persistent Bundle Properties");
+
+      return new BundleStorageState(bundleDir, rootFile, props);
+   }
+
+   @Override
    public File getDataFile(Bundle bundle, String filename)
    {
-      File bundleDir = getStorageDir(bundle);
+      File bundleDir = getStorageDir(bundle.getBundleId());
       File dataFile = new File(bundleDir.getAbsolutePath() + "/" + filename);
       dataFile.getParentFile().mkdirs();
 
@@ -77,9 +127,9 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
    }
 
    @Override
-   public File getStorageDir(Bundle bundle)
+   public File getStorageDir(long bundleId)
    {
-      File bundleDir = new File(getStorageArea() + "/bundle-" + bundle.getBundleId());
+      File bundleDir = new File(getStorageArea() + "/bundle-" + bundleId);
       if (bundleDir.exists() == false)
          bundleDir.mkdirs();
 
@@ -96,101 +146,14 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
    }
 
    @Override
-   public File storeBundleStream(String location, InputStream input, int revCount) throws IOException
-   {
-      if (location == null)
-         throw new IllegalArgumentException("Null location");
-      if (input == null)
-         throw new IllegalArgumentException("Null input");
-
-      // Generate the filename from the location
-      String filename;
-      try
-      {
-         URL url = new URL(location);
-         filename = url.getPath();
-      }
-      catch (IOException ex)
-      {
-         filename = location;
-      }
-      String testdir = "target" + File.separator + "test-libs";
-      int testlibsIndex = filename.indexOf(testdir);
-      if (testlibsIndex > 0)
-         filename = filename.substring(testlibsIndex + testdir.length() + 1);
-      String currentPath = new File(".").getCanonicalPath();
-      if (filename.startsWith(currentPath))
-         filename = filename.substring(currentPath.length() + 1);
-      if (filename.endsWith("jar"))
-         filename = filename.substring(0, filename.length() - 4);
-
-      filename = filename.replace('/', '.');
-      if (revCount > 0)
-         filename += "-rev" + revCount;
-
-      File streamdir = getBundleStreamDir();
-      streamdir.mkdirs();
-
-      File file = new File(streamdir + File.separator + filename + ".jar");
-      if (file.exists() && revCount > 0)
-         throw new IllegalStateException("File already exists: " + file);
-
-      int dupcount = 0;
-      while (file.exists())
-      {
-         int dupindex = filename.lastIndexOf("-dup");
-         if (dupcount > 0 && dupindex > 0)
-            filename = filename.substring(0, dupindex);
-
-         filename += "-dup" + (++dupcount);
-         file = new File(streamdir + File.separator + filename + ".jar");
-      }
-
-      FileOutputStream fos = new FileOutputStream(file);
-      try
-      {
-         log.tracef("Store bundle stream: %s", file);
-         VFSUtils.copyStream(input, fos);
-      }
-      catch (IOException ex)
-      {
-         file.delete();
-         throw ex;
-      }
-      finally
-      {
-         fos.close();
-      }
-
-      return file;
-   }
-
-   @Override
-   public File getBundleStreamDir()
-   {
-      if (bundleStreamDir == null)
-      {
-         String path;
-         try
-         {
-            path = getStorageDir(getBundleManager().getSystemBundle()).getCanonicalPath();
-         }
-         catch (IOException ex)
-         {
-            throw new IllegalStateException("Cannot obtain bundle stream dir", ex);
-         }
-         bundleStreamDir = new File(path + File.separator + "bundle-streams");
-      }
-      return bundleStreamDir;
-   }
-
-   @Override
    public void cleanStorage(String propValue)
    {
       // [TODO] Support values other than 'onFirstInit'
       if (Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT.equals(propValue))
       {
          File storage = new File(getStorageArea());
+         log.tracef("Deleting from storage: %s", storage.getAbsolutePath());
+
          try
          {
             deleteRecursively(storage);
@@ -199,16 +162,6 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
          {
             log.errorf(ex, "Cannot delete storage area");
          }
-      }
-
-      // Always delete the bundle stream dir
-      try
-      {
-         deleteRecursively(getBundleStreamDir());
-      }
-      catch (IOException ex)
-      {
-         log.errorf(ex, "Cannot delete bundle stream dir");
       }
    }
 
@@ -240,20 +193,12 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
    {
       if (file.isDirectory())
       {
-         String[] fileList = file.list();
-         if (fileList != null)
-         {
-            for (String name : fileList)
-            {
-               File child = new File(file.getCanonicalPath() + File.separator + name);
-               deleteRecursively(child);
-            }
-         }
+         for (File aux : file.listFiles())
+            deleteRecursively(aux);
       }
-
-      if (log.isTraceEnabled())
-         log.tracef("Deleting from storage: %s", file);
-
-      file.delete();
+      else
+      {
+         file.delete();
+      }
    }
 }

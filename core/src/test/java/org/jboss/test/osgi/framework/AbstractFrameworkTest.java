@@ -19,46 +19,27 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.framework.bundle;
+package org.jboss.test.osgi.framework;
 
 
-import static org.junit.Assert.assertNotNull;
-
+import org.jboss.osgi.framework.bundle.AbstractBundle;
+import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.launch.Framework;
+import org.osgi.framework.BundleException;
 
 /**
- * Test framework bootstrap options.
+ * An abstract core framework test
  * 
  * @author thomas.diesler@jboss.com
- * @since 29-Apr-2010
+ * @since 18-Oct-2010
  */
-public class FrameworkLaunchTestCase extends OSGiFrameworkTest
+public abstract class AbstractFrameworkTest extends OSGiFrameworkTest 
 {
-   @BeforeClass
-   public static void beforeClass()
+   protected BundleManager getBundleManager() throws BundleException
    {
-      // prevent framework creation
-   }
-   
-   @Test
-   public void frameworkStartStop() throws Exception
-   {
-      Framework framework = createFramework();
-      assertNotNull("Framework not null", framework);
-      
-      assertBundleState(Bundle.INSTALLED, framework.getState());
-      
-      framework.start();
-      assertBundleState(Bundle.ACTIVE, framework.getState());
-      
-      framework.stop();
-      assertBundleState(Bundle.ACTIVE, framework.getState());
-      
-      framework.waitForStop(2000);
-      assertBundleState(Bundle.RESOLVED, framework.getState());
+      Bundle systemBundle = getSystemContext().getBundle();
+      BundleManager bundleManager = AbstractBundle.assertBundleState(systemBundle).getBundleManager();
+      return bundleManager;
    }
 }

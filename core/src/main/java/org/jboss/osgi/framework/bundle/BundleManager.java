@@ -24,7 +24,6 @@ package org.jboss.osgi.framework.bundle;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,7 +31,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
@@ -69,7 +67,6 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XVersionRange;
 import org.jboss.osgi.spi.util.SysPropertyActions;
 import org.jboss.osgi.vfs.AbstractVFS;
-import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -90,8 +87,6 @@ public class BundleManager
 
    // The raw properties
    private Map<String, Object> properties = new HashMap<String, Object>();
-   // The BundleId generator
-   private AtomicLong identityGenerator = new AtomicLong();
    // Maps bundleId to Bundle
    private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
    /// The registered plugins
@@ -155,11 +150,6 @@ public class BundleManager
    {
       Object value = getProperty(IntegrationMode.class.getName());
       return value != null ? (IntegrationMode)value : IntegrationMode.STANDALONE;
-   }
-
-   long getNextBundleId()
-   {
-      return identityGenerator.incrementAndGet();
    }
 
    public BundleContext getSystemContext()
@@ -368,11 +358,20 @@ public class BundleManager
    }
 
    /**
-    * Install a bundle from the given location.
+    * Install a bundle from the given URL location.
     */
    public AbstractBundle installBundle(URL location) throws BundleException
    {
-      return installBundle(location.toExternalForm(), null);
+      VirtualFile rootFile;
+      try
+      {
+         rootFile = AbstractVFS.toVirtualFile(location);
+      }
+      catch (IOException ex)
+      {
+         throw new BundleException("Cannot obtain virtual file from: " + location, ex);
+      }
+      return installBundleInternal(location.toExternalForm(), rootFile);
    }
 
    /**
@@ -388,62 +387,88 @@ public class BundleManager
     */
    public AbstractBundle installBundle(String location, InputStream input) throws BundleException
    {
-      if (location == null)
-         throw new BundleException("Null location");
-
-      URL locationURL;
-
-      // Get the location URL
+      VirtualFile rootFile = null;
       if (input != null)
       {
          try
          {
-            BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
-            File streamFile = plugin.storeBundleStream(location, input, 0);
-            locationURL = streamFile.toURI().toURL();
+            rootFile = AbstractVFS.toVirtualFile(location, input);
          }
          catch (IOException ex)
          {
-            throw new BundleException("Cannot store bundle from stream", ex);
+            throw new BundleException("Cannot obtain virtual file from input stream", ex);
          }
       }
-      else
+
+      // Try location as URL
+      if (rootFile == null)
       {
-         locationURL = getLocationURL(location);
+         try
+         {
+            URL url = new URL(location);
+            rootFile = AbstractVFS.toVirtualFile(url);
+         }
+         catch (IOException ex)
+         {
+            // Ignore, not a valid URL
+         }
       }
 
-      // Get the root file
-      VirtualFile rootFile;
-      try
+      // Try location as File
+      if (rootFile == null)
       {
-         rootFile = AbstractVFS.toVirtualFile(locationURL);
-      }
-      catch (Exception ex)
-      {
-         throw new BundleException("Invalid bundle location=" + locationURL, ex);
+         try
+         {
+            File file = new File(location);
+            if (file.exists())
+               rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
+         }
+         catch (IOException ex)
+         {
+            throw new BundleException("Cannot obtain virtual file from: " + location, ex);
+         }
       }
 
-      AbstractBundle bundle;
+      if (rootFile == null)
+         throw new BundleException("Cannot obtain virtual file from: " + location);
+
+      return installBundleInternal(location, rootFile);
+   }
+
+   private AbstractBundle installBundleInternal(String location, VirtualFile rootFile) throws BundleException
+   {
+      if (location == null)
+         throw new IllegalArgumentException("Null location");
+      if (rootFile == null)
+         throw new IllegalArgumentException("Null rootFile");
+      
+      BundleStorageState storageState;
       try
       {
-         bundle = install(rootFile, location, false);
+         BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
+         storageState = plugin.createStorageState(location, rootFile);
+      }
+      catch (IOException ex)
+      {
+         throw new BundleException("Cannot setup storage for: " + rootFile, ex);
+      }
+      
+      try
+      {
+         BundleDeploymentPlugin deploymentPlugin = getPlugin(BundleDeploymentPlugin.class);
+         Deployment dep = deploymentPlugin.createDeployment(storageState);
+         return installBundle(dep);
       }
       catch (BundleException ex)
       {
-         deleteContentRoots(Collections.singletonList(rootFile));
+         storageState.deleteBundleStorage();
          throw ex;
       }
-      return bundle;
-   }
-
-   /**
-    * Install a bundle from the given {@link VirtualFile}
-    */
-   private AbstractBundle install(VirtualFile rootFile, String location, boolean autoStart) throws BundleException
-   {
-      BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
-      Deployment dep = plugin.createDeployment(rootFile, location);
-      return installBundle(dep);
+      catch (RuntimeException ex)
+      {
+         storageState.deleteBundleStorage();
+         throw ex;
+      }
    }
 
    /**
@@ -473,6 +498,22 @@ public class BundleManager
       if (dep == null)
          throw new IllegalArgumentException("Null deployment");
 
+      // Setup the bundle storage area if not done so already
+      BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
+      if (storageState == null)
+      {
+         try
+         {
+            BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
+            storageState = plugin.createStorageState(dep.getLocation(), dep.getRoot());
+            dep.addAttachment(BundleStorageState.class, storageState);
+         }
+         catch (IOException ex)
+         {
+            throw new BundleException("Cannot setup storage for: " + dep, ex);
+         }
+      }
+
       // If a bundle containing the same location identifier is already installed,
       // the Bundle object for that bundle is returned.
       AbstractBundle bundleState = getBundleByLocation(dep.getLocation());
@@ -485,7 +526,9 @@ public class BundleManager
       }
       catch (BundleException ex)
       {
-         deleteContentRoots(Collections.singletonList(dep.getRoot()));
+         BundleStorageState bundleStorage = storageState;
+         if (bundleStorage != null)
+            bundleStorage.deleteRevisionStorage();
          throw ex;
       }
 
@@ -535,40 +578,6 @@ public class BundleManager
       validator.validateBundle(bundleState);
    }
 
-   private URL getLocationURL(String location) throws BundleException
-   {
-      // Try location as URL
-      URL url = null;
-      try
-      {
-         url = new URL(location);
-      }
-      catch (MalformedURLException e)
-      {
-         // ignore
-      }
-
-      // Try location as File
-      if (url == null)
-      {
-         try
-         {
-            File file = new File(location);
-            if (file.exists())
-               url = file.toURI().toURL();
-         }
-         catch (MalformedURLException e)
-         {
-            // ignore
-         }
-      }
-
-      if (url == null)
-         throw new BundleException("Unable to handle location=" + location);
-
-      return url;
-   }
-
    /**
     * Fire a framework error
     */
@@ -597,21 +606,4 @@ public class BundleManager
          plugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.WARNING, new BundleException("Error " + context, t));
    }
 
-   void deleteContentRoots(List<VirtualFile> rootFiles)
-   {
-      File streamDir = getPlugin(BundleStoragePlugin.class).getBundleStreamDir();
-      for (VirtualFile rootFile : rootFiles)
-      {
-         // Close the virtual file
-         String contentRootPath = rootFile.getPathName();
-         VFSUtils.safeClose(rootFile);
-
-         // Delete the stream dir if it exists
-         if (contentRootPath.startsWith(streamDir.getAbsolutePath()))
-         {
-            File file = new File(contentRootPath);
-            file.delete();
-         }
-      }
-   }
 }

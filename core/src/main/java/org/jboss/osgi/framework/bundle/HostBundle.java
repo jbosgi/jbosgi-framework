@@ -49,7 +49,6 @@ public class HostBundle extends AbstractUserBundle
 
    private BundleActivator bundleActivator;
    private int startLevel = StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
-   private boolean persistentlyStarted;
 
    HostBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {
@@ -75,9 +74,9 @@ public class HostBundle extends AbstractUserBundle
    }
 
    @Override
-   AbstractUserRevision createRevisionInternal(Deployment dep, int revCount) throws BundleException
+   AbstractUserRevision createRevisionInternal(Deployment dep) throws BundleException
    {
-      return new HostRevision(this, dep, revCount);
+      return new HostRevision(this, dep);
    }
 
    @Override
@@ -151,12 +150,14 @@ public class HostBundle extends AbstractUserBundle
 
    public boolean isPersistentlyStarted()
    {
-      return persistentlyStarted;
+      BundleStorageState storageState = getBundleStorageState();
+      return storageState.isPersistentlyStarted();
    }
 
    public void setPersistentlyStarted(boolean started)
    {
-      persistentlyStarted = started;
+      BundleStorageState storageState = getBundleStorageState();
+      storageState.setPersistentlyStarted(started);
    }
 
    @Override

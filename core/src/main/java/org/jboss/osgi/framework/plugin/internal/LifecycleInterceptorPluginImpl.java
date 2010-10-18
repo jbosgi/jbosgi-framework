@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.plugin.internal;
 
-import java.util.List;
-
 import org.jboss.logging.Logger;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.AbstractLifecycleInterceptorService;

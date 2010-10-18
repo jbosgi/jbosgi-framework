@@ -19,12 +19,8 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.framework.simple;
+package org.jboss.test.osgi.framework.launch;
 
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 
 import java.io.InputStream;
 
@@ -35,49 +31,88 @@ import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.simple.bundleC.SimpleActivator;
 import org.jboss.test.osgi.framework.simple.bundleC.SimpleService;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.Version;
+import org.osgi.framework.launch.Framework;
 
 /**
- * A test that deployes a bundle and verifies its state
+ * Test persistent bundle startup
  * 
  * @author thomas.diesler@jboss.com
- * @since 18-Aug-2009
+ * @since 20-Oct-2010
  */
-public class SimpleBundleTestCase extends OSGiFrameworkTest 
+public class PersistentBundleStartupTestCase extends OSGiFrameworkTest
 {
-   @Test
-   public void testBundleLifecycle() throws Exception
+   @BeforeClass
+   public static void beforeClass()
    {
-      Bundle bundle = installBundle(getBundleArchive());
-      assertEquals("simple-bundle", bundle.getSymbolicName());
-      assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
+      // prevent framework creation
+   }
+   
+   @Test
+   public void testInstalledBundle() throws Exception
+   {
+      Framework framework = createFramework();
+      framework.start();
+      assertBundleState(Bundle.ACTIVE, framework.getState());
+      
+      JavaArchive archive = getBundleArchive();
+      BundleContext context = framework.getBundleContext();
+      Bundle bundle = context.installBundle(archive.getName(), toInputStream(archive));
+      assertBundleState(Bundle.INSTALLED, bundle.getState());
+      
+      framework.stop();
+      framework.waitForStop(2000);
+      assertBundleState(Bundle.RESOLVED, framework.getState());
+      assertBundleState(Bundle.INSTALLED, bundle.getState());
+      
+      // Restart the Framework
+      framework.start();
+      assertBundleState(Bundle.ACTIVE, framework.getState());
+      
+      context = framework.getBundleContext();
+      bundle = context.getBundle(bundle.getBundleId());
       assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-      bundle.start();
-      assertBundleState(Bundle.ACTIVE, bundle.getState());
+      framework.stop();
+      framework.waitForStop(2000);
+      assertBundleState(Bundle.RESOLVED, framework.getState());
+   }
 
-      BundleContext context = bundle.getBundleContext();
-      assertNotNull("BundleContext not null", context);
-
-      ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
-      assertNotNull("ServiceReference not null", sref);
+   @Test
+   public void testActiveBundle() throws Exception
+   {
+      Framework framework = createFramework();
+      framework.start();
+      assertBundleState(Bundle.ACTIVE, framework.getState());
       
-      Object service = context.getService(sref);
-      assertEquals(SimpleService.class.getName(), service.getClass().getName());
-
-      bundle.stop();
+      JavaArchive archive = getBundleArchive();
+      BundleContext context = framework.getBundleContext();
+      Bundle bundle = context.installBundle(archive.getName(), toInputStream(archive));
+      assertBundleState(Bundle.INSTALLED, bundle.getState());
+      
+      bundle.start();
+      assertBundleState(Bundle.ACTIVE, framework.getState());
+      
+      framework.stop();
+      framework.waitForStop(2000);
+      assertBundleState(Bundle.RESOLVED, framework.getState());
       assertBundleState(Bundle.RESOLVED, bundle.getState());
       
-      sref = getSystemContext().getServiceReference(SimpleService.class.getName());
-      assertNull("ServiceReference null", sref);
+      // Restart the Framework
+      framework.start();
+      assertBundleState(Bundle.ACTIVE, framework.getState());
       
-      bundle.uninstall();
-      assertBundleState(Bundle.UNINSTALLED, bundle.getState());
+      context = framework.getBundleContext();
+      bundle = context.getBundle(bundle.getBundleId());
+      assertBundleState(Bundle.ACTIVE, bundle.getState());
+
+      framework.stop();
+      framework.waitForStop(2000);
+      assertBundleState(Bundle.RESOLVED, framework.getState());
    }
 
    private JavaArchive getBundleArchive()

@@ -103,7 +103,6 @@ public class InstallFromModuleIdentifierTestCase extends OSGiTest
       ModuleIdentifier identifier = ModuleIdentifier.create("javax.inject.api");
       Bundle bundle = bundleManager.installBundle(identifier);
       assertBundleState(Bundle.INSTALLED, bundle.getState());
-      assertEquals("Bundle id", 1, bundle.getBundleId());
       
       assertLoadClass(bundle, Inject.class.getName());
       assertBundleState(Bundle.RESOLVED, bundle.getState());

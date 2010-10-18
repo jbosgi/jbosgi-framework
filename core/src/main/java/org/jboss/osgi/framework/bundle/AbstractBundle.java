@@ -90,9 +90,8 @@ public abstract class AbstractBundle implements Bundle
    private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
    private final List<AbstractRevision> revisions = new CopyOnWriteArrayList<AbstractRevision>();
 
-   private AbstractBundleContext bundleContext;
    private BundleWrapper bundleWrapper;
-   private long lastModified = System.currentTimeMillis();
+   private AbstractBundleContext bundleContext;
    private final CopyOnWriteArrayList<ServiceState> registeredServices = new CopyOnWriteArrayList<ServiceState>();
    private final ConcurrentHashMap<ServiceState, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
 
@@ -103,7 +102,7 @@ public abstract class AbstractBundle implements Bundle
    private final ModuleManagerPlugin moduleManager;
    private final ServiceManagerPlugin serviceManager;
 
-   AbstractBundle(BundleManager bundleManager, String symbolicName)
+   AbstractBundle(BundleManager bundleManager, long bundleId, String symbolicName)
    {
       if (bundleManager == null)
          throw new IllegalArgumentException("Null bundleManager");
@@ -116,9 +115,7 @@ public abstract class AbstractBundle implements Bundle
 
       this.bundleManager = bundleManager;
       this.symbolicName = symbolicName;
-
-      boolean systemBundle = symbolicName.equals(Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
-      this.bundleId = (systemBundle ? 0 : bundleManager.getNextBundleId());
+      this.bundleId = bundleId;
 
       this.eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
       this.interceptorPlugin = bundleManager.getPlugin(LifecycleInterceptorPlugin.class);
@@ -232,7 +229,6 @@ public abstract class AbstractBundle implements Bundle
          XModule resModule = abr.getResolverModule();
          resolverPlugin.removeModule(resModule);
       }
-      clearRevisions();
    }
 
    boolean hasActiveWires()
@@ -461,9 +457,8 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       updateInternal(input);
-      // A bundle is considered to be modified when it is installed, updated or uninstalled.
-      lastModified = System.currentTimeMillis();
       log.infof("Bundle updated: %s", this);
+      updateLastModified();
    }
 
    @Override
@@ -471,9 +466,8 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       updateInternal(null);
-      // A bundle is considered to be modified when it is installed, updated or uninstalled.
-      lastModified = System.currentTimeMillis();
       log.infof("Bundle updated: %s", this);
+      updateLastModified();
    }
 
    abstract void updateInternal(InputStream input) throws BundleException;
@@ -488,9 +482,8 @@ public abstract class AbstractBundle implements Bundle
 
       uninstallInternal();
 
-      // A bundle is considered to be modified when it is installed, updated or uninstalled.
-      lastModified = System.currentTimeMillis();
       log.infof("Bundle uninstalled: %s", this);
+      updateLastModified();
    }
 
    abstract void uninstallInternal() throws BundleException;
@@ -706,11 +699,10 @@ public abstract class AbstractBundle implements Bundle
    }
 
    @Override
-   public long getLastModified()
-   {
-      // A bundle is considered to be modified when it is installed, updated or uninstalled.
-      return lastModified;
-   }
+   public abstract long getLastModified();
+   
+   // A bundle is considered to be modified when it is installed, updated or uninstalled.
+   abstract void updateLastModified();
 
    @Override
    @SuppressWarnings("rawtypes")

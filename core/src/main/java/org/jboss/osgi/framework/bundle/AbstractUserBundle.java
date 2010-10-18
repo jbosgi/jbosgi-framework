@@ -21,15 +21,12 @@
 */
 package org.jboss.osgi.framework.bundle;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
@@ -39,8 +36,6 @@ import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XModuleBuilder;
-import org.jboss.osgi.resolver.XModuleIdentity;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -48,7 +43,7 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.Version;
+import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * This is the internal implementation of a Bundle based on a user {@link Deployment}.
@@ -60,39 +55,17 @@ public abstract class AbstractUserBundle extends AbstractBundle
 {
    // The headers localized with the default locale
    private Dictionary<String, String> headersOnUninstall;
-   private final AtomicInteger revCounter = new AtomicInteger(0);
 
    AbstractUserBundle(BundleManager bundleManager, Deployment dep) throws BundleException
    {
-      super(bundleManager, dep.getSymbolicName());
-      createRevision(dep, incrementRevisionCount(dep));
+      super(bundleManager, getBundleId(dep), dep.getSymbolicName());
+      createRevision(dep);
    }
 
-   // The initial revision count is greater than 1 if the framework
-   // still retains UNISTALLED bundles with the same symbolic name and version
-   private int incrementRevisionCount(Deployment dep) throws BundleException
+   private static long getBundleId(Deployment dep)
    {
-      int revCount = revCounter.incrementAndGet();
-      XModule resModule = dep.getAttachment(XModule.class);
-      XModuleIdentity moduleId = (resModule != null ? resModule.getModuleId() : null);
-      if (moduleId == null)
-      {
-         OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
-         String name = metadata.getBundleSymbolicName();
-         Version version = metadata.getBundleVersion();
-
-         XModuleBuilder builder = getResolverPlugin().getModuleBuilder();
-         builder.createModule(name, version, revCount);
-         moduleId = builder.getModuleIdentity();
-      }
-      resModule = getResolverPlugin().getModuleById(moduleId);
-      if (resModule != null)
-      {
-         Bundle resBundle = resModule.getAttachment(Bundle.class);
-         if (resBundle.getState() == Bundle.UNINSTALLED)
-            return incrementRevisionCount(dep);
-      }
-      return revCount;
+      BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
+      return storageState.getBundleId();
    }
 
    /**
@@ -113,14 +86,14 @@ public abstract class AbstractUserBundle extends AbstractBundle
       return (AbstractUserBundle)bundle;
    }
 
-   AbstractUserRevision createRevision(Deployment deployment, int revCount) throws BundleException
+   AbstractUserRevision createRevision(Deployment deployment) throws BundleException
    {
-      AbstractUserRevision revision = createRevisionInternal(deployment, revCount);
+      AbstractUserRevision revision = createRevisionInternal(deployment);
       addRevision(revision);
       return revision;
    }
 
-   abstract AbstractUserRevision createRevisionInternal(Deployment deployment, int revCount) throws BundleException;
+   abstract AbstractUserRevision createRevisionInternal(Deployment deployment) throws BundleException;
 
    public ModuleClassLoader getModuleClassLoader()
    {
@@ -130,6 +103,12 @@ public abstract class AbstractUserBundle extends AbstractBundle
    public Deployment getDeployment()
    {
       return getCurrentRevision().getDeployment();
+   }
+
+   public BundleStorageState getBundleStorageState()
+   {
+      Deployment dep = getCurrentRevision().getDeployment();
+      return dep.getAttachment(BundleStorageState.class);
    }
 
    public VirtualFile getFirstContentRoot()
@@ -177,6 +156,20 @@ public abstract class AbstractUserBundle extends AbstractBundle
    }
 
    @Override
+   public long getLastModified()
+   {
+      BundleStorageState storageState = getBundleStorageState();
+      return storageState.getLastModified();
+   }
+
+   @Override
+   void updateLastModified()
+   {
+      BundleStorageState storageState = getBundleStorageState();
+      storageState.updateLastModified();
+   }
+   
+   @Override
    void updateInternal(InputStream input) throws BundleException
    {
       // Not checking that the bundle is uninstalled as that already happened
@@ -202,7 +195,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
          // If the Framework is unable to install the updated version of this bundle, the original
          // version of this bundle must be restored and a BundleException must be thrown after
          // completion of the remaining steps.
-         createRevision(input);
+         createUpdateRevision(input);
       }
       catch (BundleException ex)
       {
@@ -246,13 +239,10 @@ public abstract class AbstractUserBundle extends AbstractBundle
     * was initially installed.
     * @throws Exception If the bundle cannot be read, or if the update attempt to change the BSN.
     */
-   private void createRevision(InputStream input) throws Exception
+   private void createUpdateRevision(InputStream input) throws Exception
    {
       BundleManager bundleManager = getBundleManager();
-      InputStream internalInput = null;
-      VirtualFile internalRoot = null;
-
-      int revCount = revCounter.incrementAndGet();
+      VirtualFile rootFile = null;
 
       // If the specified InputStream is null, the Framework must create the InputStream from
       // which to read the updated bundle by interpreting, in an implementation dependent manner,
@@ -264,47 +254,40 @@ public abstract class AbstractUserBundle extends AbstractBundle
          if (updateLocation != null)
          {
             URL updateURL = new URL(updateLocation);
-            internalRoot = AbstractVFS.toVirtualFile(updateURL);
-            internalInput = internalRoot.openStream();
+            rootFile = AbstractVFS.toVirtualFile(updateURL);
          }
          else
          {
-            internalRoot = getFirstContentRoot();
-            internalInput = internalRoot.openStream();
+            rootFile = getFirstContentRoot();
          }
       }
 
-      VirtualFile newRoot;
+      if (rootFile == null && input != null)
+         rootFile = AbstractVFS.toVirtualFile(getLocation(), input);
+
+      BundleStorageState storageState;
       try
       {
          BundleStoragePlugin plugin = bundleManager.getPlugin(BundleStoragePlugin.class);
-         InputStream newInput = (input != null ? input : internalInput);
-         File newFile = plugin.storeBundleStream(getLocation(), newInput, revCount);
-         newRoot = AbstractVFS.toVirtualFile(newFile.toURI().toURL());
+         storageState = plugin.createStorageState(getLocation(), rootFile);
       }
       catch (IOException ex)
       {
-         if (internalRoot != null)
-            bundleManager.deleteContentRoots(Collections.singletonList(internalRoot));
-
-         throw new BundleException("Cannot store bundle from stream", ex);
+         throw new BundleException("Cannot setup storage for: " + rootFile, ex);
       }
-
+      
       try
       {
          BundleDeploymentPlugin plugin = bundleManager.getPlugin(BundleDeploymentPlugin.class);
-         Deployment dep = plugin.createDeployment(newRoot, getLocation());
+         Deployment dep = plugin.createDeployment(storageState);
          OSGiMetaData metadata = plugin.createOSGiMetaData(dep);
          dep.addAttachment(OSGiMetaData.class, metadata);
 
-         createRevision(dep, revCount);
+         createRevision(dep);
          getResolverPlugin().addModule(getResolverModule());
       }
       catch (BundleException ex)
       {
-         if (internalRoot != null)
-            bundleManager.deleteContentRoots(Collections.singletonList(internalRoot));
-
          throw ex;
       }
    }
@@ -321,9 +304,6 @@ public abstract class AbstractUserBundle extends AbstractBundle
 
       changeState(Bundle.INSTALLED);
 
-      BundleManager bundleManager = getBundleManager();
-      AbstractRevision currentRev = getCurrentRevision();
-
       // Remove the revisions from the resolver
       for (AbstractRevision rev : getRevisions())
       {
@@ -332,15 +312,9 @@ public abstract class AbstractUserBundle extends AbstractBundle
 
          ModuleIdentifier identifier = rev.getModuleIdentifier();
          getModuleManagerPlugin().removeModule(identifier);
-
-         // Delete the content root file
-         if (rev != currentRev)
-         {
-            AbstractUserRevision userRev = (AbstractUserRevision)rev;
-            List<VirtualFile> contentRoots = userRev.getContentRoots();
-            bundleManager.deleteContentRoots(contentRoots);
-         }
       }
+      
+      AbstractRevision currentRev = getCurrentRevision();
       clearRevisions();
 
       // Update the resolver module for the current revision
@@ -353,23 +327,20 @@ public abstract class AbstractUserBundle extends AbstractBundle
     */
    public void remove()
    {
-      // Get a snapshot of all revisions before we clear the list
-      List<AbstractRevision> revisions = new ArrayList<AbstractRevision>(getRevisions());
-
       BundleManager bundleManager = getBundleManager();
       bundleManager.removeBundle(this);
 
+      BundleStorageState storageState = getDeployment().getAttachment(BundleStorageState.class);
+      storageState.deleteBundleStorage();
+      
       ModuleManagerPlugin moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
-      for (AbstractRevision rev : revisions)
+      for (AbstractRevision rev : getRevisions())
       {
          if (isFragment() == false)
          {
             ModuleIdentifier identifier = rev.getModuleIdentifier();
             moduleManager.removeModule(identifier);
          }
-
-         AbstractUserRevision userRev = (AbstractUserRevision)rev;
-         bundleManager.deleteContentRoots(userRev.getContentRoots());
       }
    }
 

@@ -24,21 +24,20 @@ package org.jboss.osgi.framework.plugin.internal;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.bundle.BundleManager;
+import org.jboss.osgi.framework.bundle.BundleStorageState;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.BundleDeploymentPlugin;
+import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
 import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
@@ -71,25 +70,41 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       defaultModuleLoader = moduleLoader != null ? moduleLoader : Module.getDefaultModuleLoader();
    }
 
-   /**
-    * Create a {@link Deployment} from the given virtual file.
-    * @param rootFile The root file pointing to one of the supported bundle formats
-    * @param location The bundle location to be associated with the deployment
-    * @throws BundleException If the given root file does not
-    */
-   public Deployment createDeployment(VirtualFile rootFile, String location) throws BundleException
+   @Override
+   public Deployment createDeployment(BundleStorageState storageState) throws BundleException
    {
-      if (rootFile == null)
-         throw new IllegalArgumentException("Null rootFile");
+      if (storageState == null)
+         throw new IllegalArgumentException("Null storageState");
+      
+      try
+      {
+         String location = storageState.getLocation();
+         VirtualFile rootFile = storageState.getRootFile();
+         Deployment dep = createDeployment(location, rootFile);
+         dep.addAttachment(BundleStorageState.class, storageState);
+         return dep;
+      }
+      catch (BundleException ex)
+      {
+         storageState.deleteBundleStorage();
+         throw ex;
+      }
+      catch (RuntimeException ex)
+      {
+         storageState.deleteBundleStorage();
+         throw ex;
+      }
+   }
 
-      // Check if we have a valid OSGi Manifest
+   private Deployment createDeployment(String location, VirtualFile rootFile) throws BundleException
+   {
       try
       {
          BundleInfo info = BundleInfo.createBundleInfo(rootFile, location);
          Deployment dep = DeploymentFactory.createDeployment(info);
          OSGiMetaData metadata = toOSGiMetaData(dep, info);
-         dep.addAttachment(OSGiMetaData.class, metadata);
          dep.addAttachment(BundleInfo.class, info);
+         dep.addAttachment(OSGiMetaData.class, metadata);
          return dep;
       }
       catch (NumberFormatException nfe)
@@ -98,7 +113,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       }
       catch (BundleException ex)
       {
-         log.debugf("Not a valid OSGi manifest: %s", ex.getMessage());
+         // No valid OSGi manifest. Fallback to jbosgi-xservice.properties
       }
 
       // Check if we have META-INF/jbosgi-xservice.properties
@@ -121,19 +136,33 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       if (identifier == null)
          throw new IllegalArgumentException("Null identifier");
 
+      BundleStoragePlugin storagePlugin = getPlugin(BundleStoragePlugin.class);
+      String location = identifier.getName() + ":" + identifier.getSlot();
+      BundleStorageState storageState = null;
+      
       // Check if we have a single root file
-      VirtualFile rootFile = getModuleRepositoryEntry(identifier);
-      if (rootFile != null)
+      File repoFile = getModuleRepositoryEntry(identifier);
+      if (repoFile != null)
       {
+         // Try to process this as a valid OSGi bundle 
          try
          {
-            // Check if this is a valid OSGi deployment
-            String location = identifier.getName() + ":" + identifier.getSlot();
-            return createDeployment(rootFile, location);
+            BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
+            VirtualFile rootFile = AbstractVFS.toVirtualFile(repoFile.toURI().toURL());
+            storageState = plugin.createStorageState(location, rootFile);
          }
-         catch (BundleException ex)
+         catch (IOException ex)
          {
-            // Ignore, the rootFile is not a valid deployment
+            throw new BundleException("Cannot setup storage for: " + location, ex);
+         }
+         
+         try
+         {
+            return createDeployment(storageState);
+         }
+         catch (Exception ex)
+         {
+            log.debugf("Cannot process '%s' as OSGi deployment: %s", location, ex.toString());
          }
       }
 
@@ -148,24 +177,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          throw new BundleException("Cannot load module: " + identifier, ex);
       }
 
-      // Do a sanity check that this is not an OSGi bundle
-      ModuleClassLoader classLoader = module.getClassLoader();
-      InputStream inStream = classLoader.getResourceAsStream(JarFile.MANIFEST_NAME);
-      if (inStream != null)
-      {
-         try
-         {
-            Manifest manifest = new Manifest();
-            manifest.read(inStream);
-            if (BundleInfo.isValidateBundleManifest(manifest))
-               throw new BundleException("Cannot install bundle from loaded module: " + identifier);
-         }
-         catch (IOException ex)
-         {
-            throw new BundleException("Cannot read mainfest from: " + identifier, ex);
-         }
-      }
-
+      // Get the symbolic name and version
       String symbolicName = identifier.getName();
       Version version;
       try
@@ -197,8 +209,21 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       XModule resModule = builder.getModule();
       resModule.addAttachment(Module.class, module);
 
-      String location = identifier.getName() + ":" + identifier.getSlot();
+      // Create the bundle storage state
+      if (storageState == null)
+      {
+         try
+         {
+            storageState = storagePlugin.createStorageState(location, null);
+         }
+         catch (IOException ex)
+         {
+            throw new BundleException("Cannot create bundle storage for: " + location, ex);
+         }
+      }
+      
       Deployment dep = DeploymentFactory.createDeployment(location, symbolicName, version);
+      dep.addAttachment(BundleStorageState.class, storageState);
       dep.addAttachment(XModule.class, resModule);
       dep.addAttachment(Module.class, module);
       return dep;
@@ -206,9 +231,9 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
 
    /**
     * Get virtual file for the singe jar that corresponds to the given identifier
-    * @return The root virtual or null
+    * @return The file or null
     */
-   private VirtualFile getModuleRepositoryEntry(ModuleIdentifier identifier)
+   private File getModuleRepositoryEntry(ModuleIdentifier identifier)
    {
       File rootPath = new File(getBundleManager().getProperty("module.path").toString());
       String identifierPath = identifier.getName().replace('.', File.separatorChar) + File.separator + identifier.getSlot();
@@ -245,15 +270,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          return null;
       }
 
-      try
-      {
-         return AbstractVFS.toVirtualFile(moduleFile.toURI().toURL());
-      }
-      catch (IOException ex)
-      {
-         log.errorf(ex, "Cannot obtain root file: %s", moduleFile);
-         return null;
-      }
+      return moduleFile;
    }
 
    @Override

@@ -48,9 +48,9 @@ public class FragmentRevision extends AbstractUserRevision
 {
    private List<HostRevision> attachedHosts;
 
-   public FragmentRevision(FragmentBundle bundleState, Deployment dep, int revCount) throws BundleException
+   public FragmentRevision(FragmentBundle bundleState, Deployment dep) throws BundleException
    {
-      super(bundleState, dep, revCount);
+      super(bundleState, dep);
    }
 
    @Override

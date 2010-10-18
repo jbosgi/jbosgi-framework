@@ -69,7 +69,7 @@ public class BundleReInstallTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   public void testUnistallWithWiredCapability() throws Exception
+   public void testUninstallWithWiredCapability() throws Exception
    {
       Bundle bundleB = installBundle(assembleArchive("lifecycle-bundleB", "/bundles/lifecycle/bundleB", ActivatorB.class, ServiceB.class));
       assertBundleState(Bundle.INSTALLED, bundleB.getState());
@@ -96,7 +96,7 @@ public class BundleReInstallTestCase extends OSGiFrameworkTest
       bundleB.uninstall();
       assertBundleState(Bundle.UNINSTALLED, bundleX.getState());
 
-      // Unistalling BundleB will also remove BundleX 
+      // Uninstalling BundleB will also remove BundleX 
       bundleX = getSystemContext().getBundle(xid);
       assertNull("BundleX not available", bundleX);
 
@@ -106,7 +106,7 @@ public class BundleReInstallTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   public void testUnistallWithWiredRequirement() throws Exception
+   public void testUnInstallWithWiredRequirement() throws Exception
    {
       Bundle bundleB = installBundle(assembleArchive("lifecycle-bundleB", "/bundles/lifecycle/bundleB", ActivatorB.class, ServiceB.class));
       assertBundleState(Bundle.INSTALLED, bundleB.getState());
@@ -136,7 +136,7 @@ public class BundleReInstallTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   public void testReistallWithWiredCapability() throws Exception
+   public void testReInstallWithWiredCapability() throws Exception
    {
       Bundle bundleB = installBundle(assembleArchive("lifecycle-bundleB", "/bundles/lifecycle/bundleB", ActivatorB.class, ServiceB.class));
       assertBundleState(Bundle.INSTALLED, bundleB.getState());

@@ -48,10 +48,11 @@ public class SystemBundle extends AbstractBundle
 {
    private OSGiMetaData metadata;
    private SystemBundleRevision systemRevision;
+   private long lastModified = System.currentTimeMillis();
 
    public SystemBundle(BundleManager bundleManager)
    {
-      super(bundleManager, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+      super(bundleManager, 0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
 
       // Initialize the OSGiMetaData
       OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(getSymbolicName(), getVersion());
@@ -185,5 +186,17 @@ public class SystemBundle extends AbstractBundle
    public Version getVersion()
    {
       return Version.emptyVersion;
+   }
+
+   @Override
+   public long getLastModified()
+   {
+      return lastModified;
+   }
+
+   @Override
+   void updateLastModified()
+   {
+      lastModified = System.currentTimeMillis();
    }
 }

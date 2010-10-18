@@ -19,38 +19,46 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework.plugin;
+package org.jboss.test.osgi.framework.launch;
 
-// $Id$
 
-import java.io.File;
-import java.io.IOException;
+import static org.junit.Assert.assertNotNull;
 
-import org.jboss.osgi.framework.bundle.BundleStorageState;
-import org.jboss.osgi.vfs.VirtualFile;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.launch.Framework;
 
 /**
- * An abstraction of a bundle persistent storage system.
+ * Test framework bootstrap options.
  * 
  * @author thomas.diesler@jboss.com
- * @since 18-Aug-2009
+ * @since 29-Apr-2010
  */
-public interface BundleStoragePlugin extends Plugin 
+public class FrameworkLaunchTestCase extends OSGiFrameworkTest
 {
-   String BUNDLE_PERSISTENT_PROPERTIES = "bundle-persistent.properties";
-   String PROPERTY_BUNDLE_FILE = "BundleFile";
-   String PROPERTY_BUNDLE_REV = "BundleRev";
-   String PROPERTY_BUNDLE_ID = "BundleId";
-   String PROPERTY_BUNDLE_LOCATION = "Location";
-   String PROPERTY_LAST_MODIFIED = "LastModified";
-   String PROPERTY_PERSISTENTLY_STARTED = "PersistentlyStarted";
+   @BeforeClass
+   public static void beforeClass()
+   {
+      // prevent framework creation
+   }
    
-   BundleStorageState createStorageState(String location, VirtualFile root) throws IOException;
-   
-   File getStorageDir(long bundleId);
-   
-   File getDataFile(Bundle bundle, String filename);
-   
-   void cleanStorage(String propValue);
+   @Test
+   public void frameworkStartStop() throws Exception
+   {
+      Framework framework = createFramework();
+      assertNotNull("Framework not null", framework);
+      
+      assertBundleState(Bundle.INSTALLED, framework.getState());
+      
+      framework.start();
+      assertBundleState(Bundle.ACTIVE, framework.getState());
+      
+      framework.stop();
+      assertBundleState(Bundle.ACTIVE, framework.getState());
+      
+      framework.waitForStop(2000);
+      assertBundleState(Bundle.RESOLVED, framework.getState());
+   }
 }
