@@ -24,6 +24,8 @@ package org.jboss.osgi.framework.plugin;
 import org.osgi.service.startlevel.StartLevel;
 
 /**
+ * [TODO] Add meaningful javadoc
+ * 
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
 public interface StartLevelPlugin extends Plugin, StartLevel

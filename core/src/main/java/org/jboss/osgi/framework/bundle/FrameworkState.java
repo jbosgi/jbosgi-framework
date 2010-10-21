@@ -207,19 +207,31 @@ public class FrameworkState extends SystemBundle implements Framework
       createBundleContext();
 
       // Have event handling enabled
-      FrameworkEventsPlugin eventsPlugin = getBundleManager().getPlugin(FrameworkEventsPlugin.class);
+      BundleManager bundleManager = getBundleManager();
+      FrameworkEventsPlugin eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
       eventsPlugin.setActive(true);
 
       // Init Plugins Lifecycle
-      for (Plugin plugin : getBundleManager().getPlugins())
+      for (Plugin plugin : bundleManager.getPlugins())
          plugin.initPlugin();
 
       // Cleanup the storage area
       String storageClean = getProperty(Constants.FRAMEWORK_STORAGE_CLEAN);
-      BundleStoragePlugin storagePlugin = getBundleManager().getPlugin(BundleStoragePlugin.class);
+      BundleStoragePlugin storagePlugin = bundleManager.getPlugin(BundleStoragePlugin.class);
       if (firstInit == true && Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT.equals(storageClean))
          storagePlugin.cleanStorage();
-      
+
+      // Install the persisted bundles
+      try
+      {
+         List<BundleStorageState> storageStates = storagePlugin.getBundleStorageStates();
+         bundleManager.installPersistedBundles(storageStates);
+      }
+      catch (IOException ex)
+      {
+         throw new BundleException("Cannot install persisted bundles", ex);
+      }
+
       firstInit = false;
       log.debug("Framework initialized");
    }
@@ -256,7 +268,7 @@ public class FrameworkState extends SystemBundle implements Framework
       // A framework event of type STARTED is fired
       FrameworkEventsPlugin plugin = getBundleManager().getPlugin(FrameworkEventsPlugin.class);
       plugin.fireFrameworkEvent(this, FrameworkEvent.STARTED, null);
-      
+
       log.info("Framework started");
    }
 
@@ -439,7 +451,7 @@ public class FrameworkState extends SystemBundle implements Framework
 
          // All resources held by this Framework are released
          destroyBundleContext();
-         
+
          log.info("Framework stopped");
       }
       finally

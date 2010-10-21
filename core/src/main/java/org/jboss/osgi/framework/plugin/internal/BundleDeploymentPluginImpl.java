@@ -137,6 +137,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       
       // Check if we have a single root file
       File repoFile = getModuleRepositoryEntry(identifier);
+      long bundleId = getBundleManager().getNextBundleId();
       if (repoFile != null)
       {
          // Try to process this as a valid OSGi bundle 
@@ -144,7 +145,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          {
             BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
             VirtualFile rootFile = AbstractVFS.toVirtualFile(repoFile.toURI().toURL());
-            storageState = plugin.createStorageState(location, rootFile);
+            storageState = plugin.createStorageState(bundleId, location, rootFile);
          }
          catch (IOException ex)
          {
@@ -210,7 +211,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       {
          try
          {
-            storageState = storagePlugin.createStorageState(location, null);
+            storageState = storagePlugin.createStorageState(bundleId, location, null);
          }
          catch (IOException ex)
          {

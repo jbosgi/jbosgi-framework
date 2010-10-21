@@ -87,6 +87,7 @@ public abstract class AbstractBundle implements Bundle
    private final BundleManager bundleManager;
    private final String symbolicName;
    private final long bundleId;
+   private final BundleStorageState storageState;
    private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
    private final List<AbstractRevision> revisions = new CopyOnWriteArrayList<AbstractRevision>();
 
@@ -102,12 +103,14 @@ public abstract class AbstractBundle implements Bundle
    private final ModuleManagerPlugin moduleManager;
    private final ServiceManagerPlugin serviceManager;
 
-   AbstractBundle(BundleManager bundleManager, long bundleId, String symbolicName)
+   AbstractBundle(BundleManager bundleManager, String symbolicName, BundleStorageState storageState)
    {
       if (bundleManager == null)
          throw new IllegalArgumentException("Null bundleManager");
       if (symbolicName == null)
          throw new IllegalArgumentException("Null symbolicName");
+      if (storageState == null)
+         throw new IllegalArgumentException("Null storageState");
 
       // strip-off the directives
       if (symbolicName.indexOf(';') > 0)
@@ -115,7 +118,8 @@ public abstract class AbstractBundle implements Bundle
 
       this.bundleManager = bundleManager;
       this.symbolicName = symbolicName;
-      this.bundleId = bundleId;
+      this.storageState = storageState;
+      this.bundleId = storageState.getBundleId();
 
       this.eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
       this.interceptorPlugin = bundleManager.getPlugin(LifecycleInterceptorPlugin.class);
@@ -167,11 +171,11 @@ public abstract class AbstractBundle implements Bundle
       return bundleContext;
    }
 
-   void createBundleContext()
+   BundleContext createBundleContext()
    {
       if (bundleContext != null)
          throw new IllegalStateException("BundleContext already available");
-      bundleContext = createContextInternal();
+      return bundleContext = createContextInternal();
    }
 
    void destroyBundleContext()
@@ -206,6 +210,22 @@ public abstract class AbstractBundle implements Bundle
       return getSymbolicName() + ":" + getVersion();
    }
 
+   public BundleStorageState getBundleStorageState()
+   {
+      return storageState;
+   }
+
+   public long getLastModified()
+   {
+      return storageState.getLastModified();
+   }
+
+   // A bundle is considered to be modified when it is installed, updated or uninstalled.
+   void updateLastModified()
+   {
+      storageState.updateLastModified();
+   }
+   
    public boolean isResolved()
    {
       return getResolverModule().isResolved();
@@ -697,12 +717,6 @@ public abstract class AbstractBundle implements Bundle
    {
       return getCurrentRevision().getResolverModule();
    }
-
-   @Override
-   public abstract long getLastModified();
-   
-   // A bundle is considered to be modified when it is installed, updated or uninstalled.
-   abstract void updateLastModified();
 
    @Override
    @SuppressWarnings("rawtypes")

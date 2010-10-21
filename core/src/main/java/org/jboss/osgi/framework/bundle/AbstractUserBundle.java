@@ -58,14 +58,8 @@ public abstract class AbstractUserBundle extends AbstractBundle
 
    AbstractUserBundle(BundleManager bundleManager, Deployment dep) throws BundleException
    {
-      super(bundleManager, getBundleId(dep), dep.getSymbolicName());
+      super(bundleManager, dep.getSymbolicName(), dep.getAttachment(BundleStorageState.class));
       createRevision(dep);
-   }
-
-   private static long getBundleId(Deployment dep)
-   {
-      BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
-      return storageState.getBundleId();
    }
 
    /**
@@ -103,12 +97,6 @@ public abstract class AbstractUserBundle extends AbstractBundle
    public Deployment getDeployment()
    {
       return getCurrentRevision().getDeployment();
-   }
-
-   public BundleStorageState getBundleStorageState()
-   {
-      Deployment dep = getCurrentRevision().getDeployment();
-      return dep.getAttachment(BundleStorageState.class);
    }
 
    public VirtualFile getFirstContentRoot()
@@ -155,20 +143,6 @@ public abstract class AbstractUserBundle extends AbstractBundle
       return super.getHeaders(locale);
    }
 
-   @Override
-   public long getLastModified()
-   {
-      BundleStorageState storageState = getBundleStorageState();
-      return storageState.getLastModified();
-   }
-
-   @Override
-   void updateLastModified()
-   {
-      BundleStorageState storageState = getBundleStorageState();
-      storageState.updateLastModified();
-   }
-   
    @Override
    void updateInternal(InputStream input) throws BundleException
    {
@@ -269,7 +243,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
       try
       {
          BundleStoragePlugin plugin = bundleManager.getPlugin(BundleStoragePlugin.class);
-         storageState = plugin.createStorageState(getLocation(), rootFile);
+         storageState = plugin.createStorageState(getBundleId(), getLocation(), rootFile);
       }
       catch (IOException ex)
       {

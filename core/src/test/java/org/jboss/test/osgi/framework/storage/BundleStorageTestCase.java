@@ -61,7 +61,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest
       assertNotNull("BundleStoragePlugin not null", plugin);
 
       JavaArchive archive = getArchive();
-      BundleStorageState storageState = plugin.createStorageState(archive.getName(), toVirtualFile(archive));
+      BundleStorageState storageState = plugin.createStorageState(bundleManager.getNextBundleId(), archive.getName(), toVirtualFile(archive));
       assertStorageState(storageState);
 
       storageState.deleteBundleStorage();
@@ -69,7 +69,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest
       assertFalse("Storage dir deleted", storageDir.exists());
 
       // Try this a second time
-      storageState = plugin.createStorageState(archive.getName(), toVirtualFile(archive));
+      storageState = plugin.createStorageState(bundleManager.getNextBundleId(), archive.getName(), toVirtualFile(archive));
       assertStorageState(storageState);
 
       storageState.deleteBundleStorage();
@@ -90,7 +90,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest
       fos.close();
 
       VirtualFile rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
-      BundleStorageState storageState = plugin.createStorageState(file.getAbsolutePath(), rootFile);
+      BundleStorageState storageState = plugin.createStorageState(bundleManager.getNextBundleId(), file.getAbsolutePath(), rootFile);
       assertStorageState(storageState);
 
       storageState.deleteBundleStorage();
@@ -107,7 +107,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest
       assertNotNull("Location not null", storageState.getLocation());
       assertTrue("Storage dir exists", storageDir.exists());
 
-      File propertiesFile = new File(storageDir + File.separator + BundleStoragePlugin.BUNDLE_PERSISTENT_PROPERTIES);
+      File propertiesFile = new File(storageDir + File.separator + BundleStorageState.BUNDLE_PERSISTENT_PROPERTIES);
       assertTrue("Properties file exists", propertiesFile.exists());
    }
 

@@ -22,11 +22,16 @@
 package org.jboss.osgi.framework.bundle;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
-import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
+import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 
@@ -43,11 +48,54 @@ public final class BundleStorageState
    // Provide logging
    final Logger log = Logger.getLogger(BundleStorageState.class);
 
+   public static final String PROPERTY_PERSISTENTLY_STARTED = "PersistentlyStarted";
+   public static final String PROPERTY_LAST_MODIFIED = "LastModified";
+   public static final String PROPERTY_BUNDLE_LOCATION = "Location";
+   public static final String PROPERTY_BUNDLE_ID = "BundleId";
+   public static final String PROPERTY_BUNDLE_REV = "BundleRev";
+   public static final String PROPERTY_BUNDLE_FILE = "BundleFile";
+   public static final String BUNDLE_PERSISTENT_PROPERTIES = "bundle-persistent.properties";
+
    private final File bundleDir;
    private final VirtualFile rootFile;
    private final Properties props;
+   private final String location;
+   private final long bundleId;
+   private final int revision;
 
-   public BundleStorageState(File bundleDir, VirtualFile rootFile, Properties props) throws IOException
+   private long lastModified;
+
+   static Set<String> requiredProps = new HashSet<String>();
+   static
+   {
+      requiredProps.add(PROPERTY_BUNDLE_ID);
+      requiredProps.add(PROPERTY_BUNDLE_REV);
+      requiredProps.add(PROPERTY_BUNDLE_LOCATION);
+      requiredProps.add(PROPERTY_LAST_MODIFIED);
+   }
+
+   public static BundleStorageState createFromStorage(File storageDir) throws IOException
+   {
+      File propsFile = new File(storageDir + File.separator + BUNDLE_PERSISTENT_PROPERTIES);
+      Properties props = new Properties();
+      props.load(new FileInputStream(propsFile));
+      
+      VirtualFile rootFile = null;
+      String vfsLocation = props.getProperty(PROPERTY_BUNDLE_FILE);
+      if (vfsLocation != null)
+         rootFile = AbstractVFS.toVirtualFile(new URL(vfsLocation));
+         
+      return new BundleStorageState(storageDir, rootFile, props);
+   }
+   
+   public static BundleStorageState createBundleStorageState(File storageDir, VirtualFile rootFile, Properties props) throws IOException
+   {
+      BundleStorageState storageState = new BundleStorageState(storageDir, rootFile, props);
+      storageState.writeToStorage();
+      return storageState;
+   }
+   
+   private BundleStorageState(File bundleDir, VirtualFile rootFile, Properties props) throws IOException
    {
       if (bundleDir == null)
          throw new IllegalArgumentException("Null storageDir");
@@ -56,11 +104,18 @@ public final class BundleStorageState
       if (props == null)
          throw new IllegalArgumentException("Null properties");
 
+      for (String key : requiredProps)
+         if (props.get(key) == null)
+            throw new IllegalArgumentException("Required property missing: " + key);
+
       this.bundleDir = bundleDir;
       this.rootFile = rootFile;
       this.props = props;
-      
-      updateLastModified();
+
+      this.location = props.getProperty(PROPERTY_BUNDLE_LOCATION);
+      this.bundleId = Long.parseLong(props.getProperty(PROPERTY_BUNDLE_ID));
+      this.revision = Integer.parseInt(props.getProperty(PROPERTY_BUNDLE_REV));
+      this.lastModified = Long.parseLong(props.getProperty(PROPERTY_LAST_MODIFIED));
    }
 
    public File getBundleStorageDir()
@@ -70,7 +125,6 @@ public final class BundleStorageState
 
    public String getLocation()
    {
-      String location = props.getProperty(BundleStoragePlugin.PROPERTY_BUNDLE_LOCATION);
       return location;
    }
 
@@ -81,36 +135,36 @@ public final class BundleStorageState
 
    public long getBundleId()
    {
-      String value = props.getProperty(BundleStoragePlugin.PROPERTY_BUNDLE_ID);
-      return new Long(value);
+      return bundleId;
    }
 
    public int getRevision()
    {
-      String value = props.getProperty(BundleStoragePlugin.PROPERTY_BUNDLE_REV);
-      return new Integer(value);
+      return revision;
    }
 
    public long getLastModified()
    {
-      String value = props.getProperty(BundleStoragePlugin.PROPERTY_LAST_MODIFIED);
+      String value = props.getProperty(PROPERTY_LAST_MODIFIED);
       return new Long(value);
    }
 
-   public void updateLastModified()
+   public void updateLastModified() 
    {
-      props.setProperty(BundleStoragePlugin.PROPERTY_LAST_MODIFIED, new Long(System.currentTimeMillis()).toString());
+      lastModified = System.currentTimeMillis();
+      props.setProperty(PROPERTY_LAST_MODIFIED, new Long(lastModified).toString());
+      writeToStorage();
    }
-   
+
    public boolean isPersistentlyStarted()
    {
-      String value = props.getProperty(BundleStoragePlugin.PROPERTY_PERSISTENTLY_STARTED);
+      String value = props.getProperty(PROPERTY_PERSISTENTLY_STARTED);
       return value != null ? new Boolean(value) : false;
    }
 
    public void setPersistentlyStarted(boolean started)
    {
-      props.setProperty(BundleStoragePlugin.PROPERTY_PERSISTENTLY_STARTED, new Boolean(started).toString());
+      props.setProperty(PROPERTY_PERSISTENTLY_STARTED, new Boolean(started).toString());
    }
 
    public void deleteBundleStorage()
@@ -131,5 +185,18 @@ public final class BundleStorageState
             deleteInternal(aux);
       }
       file.delete();
+   }
+
+   private void writeToStorage() 
+   {
+      try
+      {
+         File propsFile = new File(bundleDir + File.separator + BUNDLE_PERSISTENT_PROPERTIES);
+         props.store(new FileOutputStream(propsFile), "Persistent Bundle Properties");
+      }
+      catch (IOException ex)
+      {
+         log.errorf(ex, "Cannot write persistent storage: %s", bundleDir.toString());
+      }
    }
 }

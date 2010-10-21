@@ -105,7 +105,7 @@ public class StartLevelTestCase extends OSGiFrameworkTest
 
       BundleContext bc = framework.getBundleContext();
       ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
-      StartLevelPlugin sl = (StartLevelPlugin)bc.getService(sref);
+      StartLevel sl = (StartLevel)bc.getService(sref);
 
       Bundle b1 = installBundle(archive1);
       assertEquals(Bundle.INSTALLED, b1.getState());
@@ -122,7 +122,8 @@ public class StartLevelTestCase extends OSGiFrameworkTest
       b3.start();
       assertEquals("Start level of 5 should have prevented the bundle from starting right now", Bundle.INSTALLED, b3.getState());
 
-      sl.increaseStartLevel(10);
+      // [TODO] Remove dependency on propriatary API
+      ((StartLevelPlugin)sl).increaseStartLevel(10);
       assertEquals(Bundle.ACTIVE, b1.getState());
       assertEquals(Bundle.ACTIVE, b2.getState());
       assertEquals(Bundle.ACTIVE, b3.getState());
@@ -151,7 +152,7 @@ public class StartLevelTestCase extends OSGiFrameworkTest
 
       BundleContext bc = framework.getBundleContext();
       ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
-      StartLevelPlugin sl = (StartLevelPlugin)bc.getService(sref);
+      StartLevel sl = (StartLevel)bc.getService(sref);
 
       sl.setInitialBundleStartLevel(10);
       
@@ -196,7 +197,7 @@ public class StartLevelTestCase extends OSGiFrameworkTest
 
       BundleContext bc = framework.getBundleContext();
       ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
-      StartLevelPlugin sl = (StartLevelPlugin)bc.getService(sref);
+      StartLevel sl = (StartLevel)bc.getService(sref);
 
       sl.setInitialBundleStartLevel(10);
 

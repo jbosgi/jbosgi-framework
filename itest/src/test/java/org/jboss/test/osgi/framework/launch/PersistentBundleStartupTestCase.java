@@ -22,8 +22,16 @@
 package org.jboss.test.osgi.framework.launch;
 
 
-import java.io.InputStream;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -37,6 +45,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
+import org.osgi.framework.launch.FrameworkFactory;
 
 /**
  * Test persistent bundle startup
@@ -46,6 +55,8 @@ import org.osgi.framework.launch.Framework;
  */
 public class PersistentBundleStartupTestCase extends OSGiFrameworkTest
 {
+   File storageDir = new File("./target/test-osgi-store");
+   
    @BeforeClass
    public static void beforeClass()
    {
@@ -53,29 +64,52 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest
    }
    
    @Test
-   public void testInstalledBundle() throws Exception
+   public void testInstalledBundleOnFirstInit() throws Exception
    {
-      Framework framework = createFramework();
+      Map<String,String> props = new HashMap<String, String>();
+      props.put("org.osgi.framework.storage", storageDir.getAbsolutePath());
+      props.put("org.osgi.framework.storage.clean", "onFirstInit");
+      
+      if (storageDir.exists())
+         deleteRecursively(storageDir);
+         
+      FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
+      Framework framework = factory.newFramework(props);
+      
       framework.start();
       assertBundleState(Bundle.ACTIVE, framework.getState());
+      
+      File systemStorageDir = new File(storageDir + File.separator + "bundle-0");
+      assertTrue("File exists: " + systemStorageDir, systemStorageDir.exists());
       
       JavaArchive archive = getBundleArchive();
       BundleContext context = framework.getBundleContext();
       Bundle bundle = context.installBundle(archive.getName(), toInputStream(archive));
       assertBundleState(Bundle.INSTALLED, bundle.getState());
       
+      File bundleStorageDir = new File(storageDir + File.separator + "bundle-1");
+      assertTrue("File exists: " + bundleStorageDir, bundleStorageDir.exists());
+      
       framework.stop();
       framework.waitForStop(2000);
       assertBundleState(Bundle.RESOLVED, framework.getState());
       assertBundleState(Bundle.INSTALLED, bundle.getState());
       
+      // Check that the storage dirs are still there 
+      assertTrue("File exists: " + systemStorageDir, systemStorageDir.exists());
+      assertTrue("File exists: " + bundleStorageDir, bundleStorageDir.exists());
+      
       // Restart the Framework
       framework.start();
       assertBundleState(Bundle.ACTIVE, framework.getState());
       
+      // Check that the storage dirs are still there 
+      assertTrue("File exists: " + systemStorageDir, systemStorageDir.exists());
+      assertTrue("File exists: " + bundleStorageDir, bundleStorageDir.exists());
+      
       context = framework.getBundleContext();
       bundle = context.getBundle(bundle.getBundleId());
-      assertBundleState(Bundle.INSTALLED, bundle.getState());
+      assertNotNull("Bundle available", bundle);
 
       framework.stop();
       framework.waitForStop(2000);
@@ -136,5 +170,15 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest
          }
       });
       return archive;
+   }
+
+   private void deleteRecursively(File file) throws IOException
+   {
+      if (file.isDirectory())
+      {
+         for (File aux : file.listFiles())
+            deleteRecursively(aux);
+      }
+      file.delete();
    }
 }

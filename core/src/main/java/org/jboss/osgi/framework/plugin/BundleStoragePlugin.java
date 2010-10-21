@@ -25,6 +25,7 @@ package org.jboss.osgi.framework.plugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.jboss.osgi.framework.bundle.BundleStorageState;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -38,15 +39,9 @@ import org.osgi.framework.Bundle;
  */
 public interface BundleStoragePlugin extends Plugin 
 {
-   String BUNDLE_PERSISTENT_PROPERTIES = "bundle-persistent.properties";
-   String PROPERTY_BUNDLE_FILE = "BundleFile";
-   String PROPERTY_BUNDLE_REV = "BundleRev";
-   String PROPERTY_BUNDLE_ID = "BundleId";
-   String PROPERTY_BUNDLE_LOCATION = "Location";
-   String PROPERTY_LAST_MODIFIED = "LastModified";
-   String PROPERTY_PERSISTENTLY_STARTED = "PersistentlyStarted";
+   BundleStorageState createStorageState(long bundleId, String location, VirtualFile root) throws IOException;
    
-   BundleStorageState createStorageState(String location, VirtualFile root) throws IOException;
+   List<BundleStorageState> getBundleStorageStates() throws IOException;
    
    File getStorageDir(long bundleId);
    

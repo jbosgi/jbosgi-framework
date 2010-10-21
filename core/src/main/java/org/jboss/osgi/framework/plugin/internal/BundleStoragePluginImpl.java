@@ -25,15 +25,15 @@ package org.jboss.osgi.framework.plugin.internal;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.BundleStorageState;
-import org.jboss.osgi.framework.bundle.FrameworkState;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -51,10 +51,8 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
    // Provide logging
    final Logger log = Logger.getLogger(BundleStoragePluginImpl.class);
 
-   // The BundleId generator
-   private AtomicLong identityGenerator = new AtomicLong();
    // The Framework storage area
-   private String storageArea;
+   private File storageArea;
 
    public BundleStoragePluginImpl(BundleManager bundleManager)
    {
@@ -62,49 +60,53 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
    }
 
    @Override
-   public BundleStorageState createStorageState(String location, VirtualFile rootFile) throws IOException
+   public BundleStorageState createStorageState(long bundleId, String location, VirtualFile rootFile) throws IOException
    {
       if (location == null)
          throw new IllegalArgumentException("Null location");
-
-      int revision = 0;
-      long bundleId = identityGenerator.incrementAndGet();
 
       // Make the bundle's storage dir
       String bundlePath = getStorageDir(bundleId).getAbsolutePath();
       File bundleDir = new File(bundlePath);
       bundleDir.mkdirs();
 
+      int revision = 0;
+
       Properties props = new Properties();
-      File propsFile = new File(bundleDir + File.separator + BUNDLE_PERSISTENT_PROPERTIES);
+      File propsFile = new File(bundleDir + File.separator + BundleStorageState.BUNDLE_PERSISTENT_PROPERTIES);
       if (propsFile.exists())
       {
          props.load(new FileInputStream(propsFile));
-         revision = Integer.parseInt(props.getProperty(PROPERTY_BUNDLE_REV));
+         revision = Integer.parseInt(props.getProperty(BundleStorageState.PROPERTY_BUNDLE_REV));
          revision++;
       }
 
       if (rootFile != null)
-      {
-         int index = location.lastIndexOf(File.separator);
-         String name = index > 0 ? location.substring(index + 1) : location;
-         props.put(PROPERTY_BUNDLE_FILE, name);
-      }
-
-      /* Make the file copy
-      File revisionDir = new File(bundlePath + File.separator + "rev-" + revision);
-      revisionDir.mkdirs();
-      File fileCopy = new File(revisionDir + File.separator + name);
-      rootFile.recursiveCopy(fileCopy);
-      */
+         props.put(BundleStorageState.PROPERTY_BUNDLE_FILE, rootFile.toURL().toExternalForm());
 
       // Write the bundle properties
-      props.put(PROPERTY_BUNDLE_LOCATION, location);
-      props.put(PROPERTY_BUNDLE_ID, new Long(bundleId).toString());
-      props.put(PROPERTY_BUNDLE_REV, new Integer(revision).toString());
-      props.store(new FileOutputStream(propsFile), "Persistent Bundle Properties");
+      props.put(BundleStorageState.PROPERTY_BUNDLE_LOCATION, location);
+      props.put(BundleStorageState.PROPERTY_BUNDLE_ID, new Long(bundleId).toString());
+      props.put(BundleStorageState.PROPERTY_BUNDLE_REV, new Integer(revision).toString());
+      props.put(BundleStorageState.PROPERTY_LAST_MODIFIED, new Long(System.currentTimeMillis()).toString());
 
-      return new BundleStorageState(bundleDir, rootFile, props);
+      return BundleStorageState.createBundleStorageState(bundleDir, rootFile, props);
+   }
+
+   @Override
+   public List<BundleStorageState> getBundleStorageStates() throws IOException
+   {
+      List<BundleStorageState> states = new ArrayList<BundleStorageState>();
+      File[] storageDirs = getStorageArea().listFiles();
+      if (storageDirs != null)
+      {
+         for (File bundleDir : storageDirs)
+         {
+            BundleStorageState storageState = BundleStorageState.createFromStorage(bundleDir);
+            states.add(storageState);
+         }
+      }
+      return Collections.unmodifiableList(states);
    }
 
    @Override
@@ -148,7 +150,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
    @Override
    public void cleanStorage()
    {
-      File storage = new File(getStorageArea());
+      File storage = getStorageArea();
       log.tracef("Deleting from storage: %s", storage.getAbsolutePath());
 
       try
@@ -161,12 +163,11 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       }
    }
 
-   private String getStorageArea()
+   private File getStorageArea()
    {
       if (storageArea == null)
       {
-         FrameworkState frameworkState = getBundleManager().getFrameworkState();
-         String dirName = frameworkState.getProperty(Constants.FRAMEWORK_STORAGE);
+         String dirName = (String)getBundleManager().getProperty(Constants.FRAMEWORK_STORAGE);
          if (dirName == null)
          {
             try
@@ -180,7 +181,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
                throw new IllegalStateException("Cannot create storage area");
             }
          }
-         storageArea = dirName;
+         storageArea = new File(dirName).getAbsoluteFile();
       }
       return storageArea;
    }
@@ -192,9 +193,6 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
          for (File aux : file.listFiles())
             deleteRecursively(aux);
       }
-      else
-      {
-         file.delete();
-      }
+      file.delete();
    }
 }

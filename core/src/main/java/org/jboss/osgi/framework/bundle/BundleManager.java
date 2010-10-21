@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
@@ -90,6 +91,8 @@ public class BundleManager
 
    // The raw properties
    private Map<String, Object> properties = new HashMap<String, Object>();
+   // The BundleId generator
+   private AtomicLong identityGenerator = new AtomicLong();
    // Maps bundleId to Bundle
    private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
    // The registered plugins
@@ -122,11 +125,11 @@ public class BundleManager
       // Initialize the default module loader
       ModuleLoader mlProp = (ModuleLoader)initialProperties.get(ModuleLoader.class.getName());
       defaultModuleLoader = mlProp != null ? mlProp : Module.getDefaultModuleLoader();
-      
+
       // Get/Create the service container
       ServiceContainer scProp = (ServiceContainer)initialProperties.get(ServiceContainer.class.getName());
       serviceContainer = scProp != null ? scProp : ServiceContainer.Factory.create();
-      
+
       // Register the framework plugins
       plugins.put(BundleDeploymentPlugin.class, new BundleDeploymentPluginImpl(this));
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
@@ -466,18 +469,18 @@ public class BundleManager
          throw new IllegalArgumentException("Null location");
       if (rootFile == null)
          throw new IllegalArgumentException("Null rootFile");
-      
+
       BundleStorageState storageState;
       try
       {
          BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
-         storageState = plugin.createStorageState(location, rootFile);
+         storageState = plugin.createStorageState(getNextBundleId(), location, rootFile);
       }
       catch (IOException ex)
       {
          throw new BundleException("Cannot setup storage for: " + rootFile, ex);
       }
-      
+
       try
       {
          BundleDeploymentPlugin deploymentPlugin = getPlugin(BundleDeploymentPlugin.class);
@@ -530,7 +533,7 @@ public class BundleManager
          try
          {
             BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
-            storageState = plugin.createStorageState(dep.getLocation(), dep.getRoot());
+            storageState = plugin.createStorageState(getNextBundleId(), dep.getLocation(), dep.getRoot());
             dep.addAttachment(BundleStorageState.class, storageState);
          }
          catch (IOException ex)
@@ -559,6 +562,21 @@ public class BundleManager
 
       addBundleState(bundleState);
       return bundleState;
+   }
+
+   public long getNextBundleId()
+   {
+      return identityGenerator.incrementAndGet();
+   }
+
+   void installPersistedBundles(List<BundleStorageState> storageStates)
+   {
+      for (BundleStorageState storageState : storageStates)
+      {
+         long bundleId = storageState.getBundleId();
+         if (bundleId == 0)
+            continue;
+      }
    }
 
    private AbstractBundle createBundle(Deployment dep) throws BundleException
@@ -647,7 +665,7 @@ public class BundleManager
             log.errorf(ex, "Cannot destroy plugin: %s", plugin);
          }
       }
-      
+
       // Clear out the bundles 
       for (AbstractBundle bundle : getBundles(null))
       {

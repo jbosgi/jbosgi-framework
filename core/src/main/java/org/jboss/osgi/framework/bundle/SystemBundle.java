@@ -21,12 +21,14 @@
 */
 package org.jboss.osgi.framework.bundle;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.jboss.osgi.framework.bundle.BundleManager.IntegrationMode;
+import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
 import org.jboss.osgi.framework.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
@@ -48,11 +50,10 @@ public class SystemBundle extends AbstractBundle
 {
    private OSGiMetaData metadata;
    private SystemBundleRevision systemRevision;
-   private long lastModified = System.currentTimeMillis();
 
-   public SystemBundle(BundleManager bundleManager)
+   public SystemBundle(BundleManager bundleManager) 
    {
-      super(bundleManager, 0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+      super(bundleManager, Constants.SYSTEM_BUNDLE_SYMBOLICNAME, getSystemBundleStorage(bundleManager));
 
       // Initialize the OSGiMetaData
       OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(getSymbolicName(), getVersion());
@@ -93,6 +94,19 @@ public class SystemBundle extends AbstractBundle
 
       // Add the system bundle
       getBundleManager().addBundleState(this);
+   }
+
+   private static BundleStorageState getSystemBundleStorage(BundleManager bundleManager) 
+   {
+      try
+      {
+         BundleStoragePlugin plugin = bundleManager.getPlugin(BundleStoragePlugin.class);
+         return plugin.createStorageState(0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME, null);
+      }
+      catch (IOException ex)
+      {
+         throw new IllegalStateException("Cannot create system persistence storage", ex);
+      }
    }
 
    /**
@@ -186,17 +200,5 @@ public class SystemBundle extends AbstractBundle
    public Version getVersion()
    {
       return Version.emptyVersion;
-   }
-
-   @Override
-   public long getLastModified()
-   {
-      return lastModified;
-   }
-
-   @Override
-   void updateLastModified()
-   {
-      lastModified = System.currentTimeMillis();
    }
 }
