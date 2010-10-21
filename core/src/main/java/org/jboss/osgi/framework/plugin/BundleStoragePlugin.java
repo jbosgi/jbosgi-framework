@@ -52,5 +52,5 @@ public interface BundleStoragePlugin extends Plugin
    
    File getDataFile(Bundle bundle, String filename);
    
-   void cleanStorage(String propValue);
+   void cleanStorage();
 }

@@ -83,6 +83,8 @@ public class FrameworkState extends SystemBundle implements Framework
    private int stoppedEvent = FrameworkEvent.STOPPED;
    // The framework executor
    private Executor executor = Executors.newFixedThreadPool(10);
+   // Flag that indicates the first init of this instance
+   private boolean firstInit = true;
 
    static
    {
@@ -214,10 +216,11 @@ public class FrameworkState extends SystemBundle implements Framework
 
       // Cleanup the storage area
       String storageClean = getProperty(Constants.FRAMEWORK_STORAGE_CLEAN);
-      BundleStoragePlugin storagePlugin = getBundleManager().getOptionalPlugin(BundleStoragePlugin.class);
-      if (storagePlugin != null)
-         storagePlugin.cleanStorage(storageClean);
+      BundleStoragePlugin storagePlugin = getBundleManager().getPlugin(BundleStoragePlugin.class);
+      if (firstInit == true && Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT.equals(storageClean))
+         storagePlugin.cleanStorage();
       
+      firstInit = false;
       log.debug("Framework initialized");
    }
 
@@ -431,18 +434,8 @@ public class FrameworkState extends SystemBundle implements Framework
          // This Framework's state is set to Bundle.RESOLVED
          changeState(Bundle.RESOLVED);
 
-         // Destroy Plugins Lifecycle
-         for (Plugin plugin : reversePlugins)
-         {
-            try
-            {
-               plugin.destroyPlugin();
-            }
-            catch (RuntimeException ex)
-            {
-               log.errorf(ex, "Cannot destroy plugin: %s", plugin);
-            }
-         }
+         // Destroy the BundeleManager
+         getBundleManager().destroy();
 
          // All resources held by this Framework are released
          destroyBundleContext();

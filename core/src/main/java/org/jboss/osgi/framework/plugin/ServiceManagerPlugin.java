@@ -25,7 +25,6 @@ import java.util.Dictionary;
 import java.util.List;
 import java.util.Set;
 
-import org.jboss.msc.service.ServiceContainer;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.ServiceState;
 import org.osgi.framework.Bundle;
@@ -44,11 +43,6 @@ public interface ServiceManagerPlugin extends Plugin
     * Get the next service is from the manager 
     */
    long getNextServiceId();
-
-   /**
-    * Get the service framework
-    */
-   ServiceContainer getServiceContainer();
 
    /**
     * Registers the specified service object with the specified properties under the specified class names 

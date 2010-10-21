@@ -40,7 +40,6 @@ import org.jboss.logging.Logger;
 import org.jboss.msc.service.BatchBuilder;
 import org.jboss.msc.service.BatchServiceBuilder;
 import org.jboss.msc.service.Service;
-import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
@@ -84,8 +83,6 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
    // The ServiceId generator
    private AtomicLong identityGenerator = new AtomicLong();
-   // The ServiceContainer
-   private ServiceContainer serviceContainer;
    // Maps the service interface to the list of registered service names
    private Map<String, List<ServiceName>> serviceNameMap = new ConcurrentHashMap<String, List<ServiceName>>();
 
@@ -96,10 +93,6 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    public ServiceManagerPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
-
-      // Get/Create the {@link ServiceContainer}
-      ServiceContainer value = (ServiceContainer)bundleManager.getProperty(ServiceContainer.class.getName());
-      serviceContainer = value != null ? value : ServiceContainer.Factory.create();
    }
 
    @Override
@@ -107,16 +100,6 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    {
       eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
       packageAdmin = getPlugin(PackageAdminPlugin.class);
-
-      // Register the {@link ServiceContainer} as OSGi service
-      BundleContext context = getBundleManager().getSystemContext();
-      context.registerService(ServiceContainer.class.getName(), serviceContainer, null);
-   }
-
-   @Override
-   public ServiceContainer getServiceContainer()
-   {
-      return serviceContainer;
    }
 
    @Override
@@ -155,7 +138,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       }
 
       final ServiceState serviceState = new ServiceState(bundleState, serviceId, serviceNames, clazzes, serviceValue, properties);
-      BatchBuilder batchBuilder = serviceContainer.batchBuilder();
+      BatchBuilder batchBuilder = getBundleManager().getServiceContainer().batchBuilder();
       Service service = new Service()
       {
          @Override
@@ -272,7 +255,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
          // Add potentially registered xservcie
          ServiceName xserviceName = ServiceName.of(Constants.JBOSGI_PREFIX, clazz);
-         ServiceController<?> xservice = serviceContainer.getService(xserviceName);
+         ServiceController<?> xservice = getBundleManager().getServiceContainer().getService(xserviceName);
          if (xservice != null)
             serviceNames.add(xserviceName);
       }
@@ -300,7 +283,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       List<ServiceState> result = new ArrayList<ServiceState>();
       for (ServiceName serviceName : serviceNames)
       {
-         ServiceController<?> controller = serviceContainer.getService(serviceName);
+         ServiceController<?> controller = getBundleManager().getServiceContainer().getService(serviceName);
          if (controller == null)
             throw new IllegalStateException("Cannot obtain service for: " + serviceName);
 
@@ -448,7 +431,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       ServiceName rootServiceName = serviceNames.get(0);
       try
       {
-         ServiceController<?> controller = serviceContainer.getService(rootServiceName);
+         ServiceController<?> controller = getBundleManager().getServiceContainer().getService(rootServiceName);
          if (controller != null)
             controller.setMode(Mode.REMOVE);
       }

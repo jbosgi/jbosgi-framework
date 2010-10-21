@@ -33,7 +33,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleLoader;
+import org.jboss.msc.service.ServiceContainer;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.plugin.AutoInstallPlugin;
 import org.jboss.osgi.framework.plugin.BundleDeploymentPlugin;
@@ -89,8 +92,12 @@ public class BundleManager
    private Map<String, Object> properties = new HashMap<String, Object>();
    // Maps bundleId to Bundle
    private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
-   /// The registered plugins
+   // The registered plugins
    private Map<Class<? extends Plugin>, Plugin> plugins = new LinkedHashMap<Class<? extends Plugin>, Plugin>();
+   // The default ModuleLoader 
+   private final ModuleLoader defaultModuleLoader;
+   // The ServiceContainer
+   private ServiceContainer serviceContainer;
    // The Framework state
    private FrameworkState frameworkState;
 
@@ -112,6 +119,14 @@ public class BundleManager
       if (initialProperties != null)
          properties.putAll(initialProperties);
 
+      // Initialize the default module loader
+      ModuleLoader mlProp = (ModuleLoader)initialProperties.get(ModuleLoader.class.getName());
+      defaultModuleLoader = mlProp != null ? mlProp : Module.getDefaultModuleLoader();
+      
+      // Get/Create the service container
+      ServiceContainer scProp = (ServiceContainer)initialProperties.get(ServiceContainer.class.getName());
+      serviceContainer = scProp != null ? scProp : ServiceContainer.Factory.create();
+      
       // Register the framework plugins
       plugins.put(BundleDeploymentPlugin.class, new BundleDeploymentPluginImpl(this));
       plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
@@ -144,6 +159,16 @@ public class BundleManager
    public SystemBundle getSystemBundle()
    {
       return frameworkState;
+   }
+
+   public ModuleLoader getDefaultModuleLoader()
+   {
+      return defaultModuleLoader;
+   }
+
+   public ServiceContainer getServiceContainer()
+   {
+      return serviceContainer;
    }
 
    public IntegrationMode getIntegrationMode()
@@ -606,4 +631,29 @@ public class BundleManager
          plugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.WARNING, new BundleException("Error " + context, t));
    }
 
+   void destroy()
+   {
+      // Destroy Plugins Lifecycle
+      List<Plugin> reversePlugins = new ArrayList<Plugin>(getPlugins());
+      Collections.reverse(reversePlugins);
+      for (Plugin plugin : reversePlugins)
+      {
+         try
+         {
+            plugin.destroyPlugin();
+         }
+         catch (RuntimeException ex)
+         {
+            log.errorf(ex, "Cannot destroy plugin: %s", plugin);
+         }
+      }
+      
+      // Clear out the bundles 
+      for (AbstractBundle bundle : getBundles(null))
+      {
+         long bundleId = bundle.getBundleId();
+         if (bundleId != 0)
+            bundleMap.remove(bundleId);
+      }
+   }
 }

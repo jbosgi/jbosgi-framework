@@ -97,7 +97,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       File fileCopy = new File(revisionDir + File.separator + name);
       rootFile.recursiveCopy(fileCopy);
       */
-      
+
       // Write the bundle properties
       props.put(PROPERTY_BUNDLE_LOCATION, location);
       props.put(PROPERTY_BUNDLE_ID, new Long(bundleId).toString());
@@ -146,22 +146,18 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
    }
 
    @Override
-   public void cleanStorage(String propValue)
+   public void cleanStorage()
    {
-      // [TODO] Support values other than 'onFirstInit'
-      if (Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT.equals(propValue))
-      {
-         File storage = new File(getStorageArea());
-         log.tracef("Deleting from storage: %s", storage.getAbsolutePath());
+      File storage = new File(getStorageArea());
+      log.tracef("Deleting from storage: %s", storage.getAbsolutePath());
 
-         try
-         {
-            deleteRecursively(storage);
-         }
-         catch (IOException ex)
-         {
-            log.errorf(ex, "Cannot delete storage area");
-         }
+      try
+      {
+         deleteRecursively(storage);
+      }
+      catch (IOException ex)
+      {
+         log.errorf(ex, "Cannot delete storage area");
       }
    }
 
