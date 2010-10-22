@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.bundle;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
@@ -48,12 +49,12 @@ public final class BundleStorageState
    // Provide logging
    final Logger log = Logger.getLogger(BundleStorageState.class);
 
-   public static final String PROPERTY_PERSISTENTLY_STARTED = "PersistentlyStarted";
-   public static final String PROPERTY_LAST_MODIFIED = "LastModified";
-   public static final String PROPERTY_BUNDLE_LOCATION = "Location";
-   public static final String PROPERTY_BUNDLE_ID = "BundleId";
-   public static final String PROPERTY_BUNDLE_REV = "BundleRev";
    public static final String PROPERTY_BUNDLE_FILE = "BundleFile";
+   public static final String PROPERTY_BUNDLE_ID = "BundleId";
+   public static final String PROPERTY_BUNDLE_LOCATION = "Location";
+   public static final String PROPERTY_BUNDLE_REV = "BundleRev";
+   public static final String PROPERTY_LAST_MODIFIED = "LastModified";
+   public static final String PROPERTY_PERSISTENTLY_STARTED = "PersistentlyStarted";
    public static final String BUNDLE_PERSISTENT_PROPERTIES = "bundle-persistent.properties";
 
    private final File bundleDir;
@@ -76,9 +77,7 @@ public final class BundleStorageState
 
    public static BundleStorageState createFromStorage(File storageDir) throws IOException
    {
-      File propsFile = new File(storageDir + File.separator + BUNDLE_PERSISTENT_PROPERTIES);
-      Properties props = new Properties();
-      props.load(new FileInputStream(propsFile));
+      Properties props = loadProperties(storageDir);
       
       VirtualFile rootFile = null;
       String vfsLocation = props.getProperty(PROPERTY_BUNDLE_FILE);
@@ -87,11 +86,30 @@ public final class BundleStorageState
          
       return new BundleStorageState(storageDir, rootFile, props);
    }
+
+   public static Properties loadProperties(File storageDir) throws FileNotFoundException, IOException
+   {
+      Properties props = new Properties();
+      File propsFile = new File(storageDir + File.separator + BUNDLE_PERSISTENT_PROPERTIES);
+      if (propsFile.exists())
+      {
+         FileInputStream input = new FileInputStream(propsFile);
+         try
+         {
+            props.load(input);
+         }
+         finally
+         {
+            VFSUtils.safeClose(input);
+         }
+      }
+      return props;
+   }
    
    public static BundleStorageState createBundleStorageState(File storageDir, VirtualFile rootFile, Properties props) throws IOException
    {
       BundleStorageState storageState = new BundleStorageState(storageDir, rootFile, props);
-      storageState.writeToStorage();
+      storageState.writeProperties();
       return storageState;
    }
    
@@ -153,7 +171,7 @@ public final class BundleStorageState
    {
       lastModified = System.currentTimeMillis();
       props.setProperty(PROPERTY_LAST_MODIFIED, new Long(lastModified).toString());
-      writeToStorage();
+      writeProperties();
    }
 
    public boolean isPersistentlyStarted()
@@ -165,6 +183,7 @@ public final class BundleStorageState
    public void setPersistentlyStarted(boolean started)
    {
       props.setProperty(PROPERTY_PERSISTENTLY_STARTED, new Boolean(started).toString());
+      writeProperties();
    }
 
    public void deleteBundleStorage()
@@ -187,16 +206,30 @@ public final class BundleStorageState
       file.delete();
    }
 
-   private void writeToStorage() 
+   private void writeProperties() 
    {
       try
       {
          File propsFile = new File(bundleDir + File.separator + BUNDLE_PERSISTENT_PROPERTIES);
-         props.store(new FileOutputStream(propsFile), "Persistent Bundle Properties");
+         FileOutputStream output = new FileOutputStream(propsFile);
+         try
+         {
+            props.store(output, "Persistent Bundle Properties");
+         }
+         finally
+         {
+            VFSUtils.safeClose(output);
+         }
       }
       catch (IOException ex)
       {
-         log.errorf(ex, "Cannot write persistent storage: %s", bundleDir.toString());
+         log.errorf(ex, "Cannot write persistent storage: %s", bundleDir);
       }
+   }
+
+   @Override
+   public String toString()
+   {
+      return "BundleStorageState[id=" + bundleId + ",location=" + location+ ",file=" + rootFile + "]";
    }
 }

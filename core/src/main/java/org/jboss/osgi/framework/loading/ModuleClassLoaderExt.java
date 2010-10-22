@@ -21,7 +21,6 @@
 */
 package org.jboss.osgi.framework.loading;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -163,7 +162,7 @@ public class ModuleClassLoaderExt implements LocalLoader, BundleReference
          if (pattern.endsWith(".*"))
             pattern = pattern.substring(0, pattern.length() - 2);
 
-         pattern = pattern.replace('.', File.separatorChar);
+         pattern = pattern.replace('.', '/');
          String path = VFSUtils.getPathFromClassName(className);
          if (path.startsWith(pattern))
          {

@@ -86,6 +86,12 @@ public class WebXMLVerifierInterceptor extends AbstractPlugin implements Lifecyc
    }
    
    @Override
+   public void destroyPlugin()
+   {
+      delegate = null;
+   }
+
+   @Override
    public void startPlugin()
    {
       BundleContext sysContext = getBundleManager().getSystemContext();

@@ -75,6 +75,7 @@ import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 
 /**
@@ -103,6 +104,8 @@ public class BundleManager
    private ServiceContainer serviceContainer;
    // The Framework state
    private FrameworkState frameworkState;
+   // Flag that indicates the first init of this instance
+   private boolean firstInit = true;
 
    // The Framework integration mode
    public enum IntegrationMode
@@ -150,8 +153,15 @@ public class BundleManager
       // Finally add the AutoInstallPlugin
       plugins.put(AutoInstallPlugin.class, new AutoInstallPluginImpl(this));
 
+      // Cleanup the storage area
+      BundleStoragePlugin storagePlugin = getPlugin(BundleStoragePlugin.class);
+      String storageClean = (String)getProperty(Constants.FRAMEWORK_STORAGE_CLEAN);
+      if (firstInit == true && Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT.equals(storageClean))
+         storagePlugin.cleanStorage();
+      
       // Create the Framework state
       frameworkState = new FrameworkState(this);
+      firstInit = false;
    }
 
    public FrameworkState getFrameworkState()
@@ -571,11 +581,22 @@ public class BundleManager
 
    void installPersistedBundles(List<BundleStorageState> storageStates)
    {
+      BundleDeploymentPlugin deploymentPlugin = getPlugin(BundleDeploymentPlugin.class);
       for (BundleStorageState storageState : storageStates)
       {
          long bundleId = storageState.getBundleId();
          if (bundleId == 0)
             continue;
+         
+         try
+         {
+            Deployment dep = deploymentPlugin.createDeployment(storageState);
+            installBundle(dep);
+         }
+         catch (BundleException ex)
+         {
+            log.errorf(ex, "Cannot install persistet bundle: %s", storageState);
+         }
       }
    }
 
@@ -667,11 +688,6 @@ public class BundleManager
       }
 
       // Clear out the bundles 
-      for (AbstractBundle bundle : getBundles(null))
-      {
-         long bundleId = bundle.getBundleId();
-         if (bundleId != 0)
-            bundleMap.remove(bundleId);
-      }
+      bundleMap.clear();
    }
 }

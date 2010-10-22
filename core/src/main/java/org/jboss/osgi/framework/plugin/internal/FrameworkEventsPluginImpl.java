@@ -117,6 +117,15 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
    }
 
    @Override
+   public void destroyPlugin()
+   {
+      setActive(false);
+      bundleListeners.clear();
+      serviceListeners.clear();
+      frameworkListeners.clear();
+   }
+
+   @Override
    public boolean isActive()
    {
       return active;

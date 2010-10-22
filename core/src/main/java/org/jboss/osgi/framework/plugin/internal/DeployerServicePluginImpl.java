@@ -59,7 +59,7 @@ public class DeployerServicePluginImpl extends AbstractPlugin implements Deploye
    }
 
    @Override
-   public void initPlugin()
+   public void startPlugin()
    {
       BundleContext sysContext = getBundleManager().getSystemContext();
       registry = new DefaultDeploymentRegistryService(sysContext);
@@ -72,6 +72,13 @@ public class DeployerServicePluginImpl extends AbstractPlugin implements Deploye
       sysContext.registerService(DeployerService.class.getName(), this, props);
    }
 
+
+   @Override
+   public void stopPlugin()
+   {
+      registry = null;
+      delegate = null;
+   }
 
    @Override
    public Bundle deploy(Deployment bundleDep) throws BundleException

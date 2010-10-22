@@ -21,7 +21,6 @@
 */
 package org.jboss.osgi.framework.loading;
 
-import java.io.File;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -55,7 +54,7 @@ public class FrameworkLocalLoader extends SystemLocalLoader
          if (packageName.endsWith(".*"))
             packageName = packageName.substring(0, packageName.length() - 2);
 
-         result.add(packageName.replace('.', File.separatorChar));
+         result.add(packageName.replace('.', '/'));
       }
 
       // Add system packages exported by the framework
@@ -66,7 +65,7 @@ public class FrameworkLocalLoader extends SystemLocalLoader
          if (index > 0)
             packageSpec = packageSpec.substring(0, index);
 
-         result.add(packageSpec.replace('.', File.separatorChar));
+         result.add(packageSpec.replace('.', '/'));
       }
       return result;
    }

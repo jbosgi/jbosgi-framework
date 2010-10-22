@@ -103,6 +103,13 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
    }
 
    @Override
+   public void destroyPlugin()
+   {
+      // Clear all servie names
+      serviceNameMap.clear();
+   }
+
+   @Override
    public long getNextServiceId()
    {
       return identityGenerator.incrementAndGet();

@@ -64,17 +64,31 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    final Logger log = Logger.getLogger(ResolverPluginImpl.class);
 
    private final XResolverFactory factory;
-   private final XResolver resolver;
    private final NativeCodePlugin nativeCodePlugin;
    private final ModuleManagerPlugin moduleManager;
+   
+   private XResolver resolver;
 
    public ResolverPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
       factory = XResolverFactory.getInstance(getClass().getClassLoader());
-      resolver = factory.newResolver();
       nativeCodePlugin = getOptionalPlugin(NativeCodePlugin.class);
       moduleManager = getPlugin(ModuleManagerPlugin.class);
+   }
+
+   @Override
+   public void initPlugin()
+   {
+      // Create the {@link XResolver}
+      resolver = factory.newResolver();
+   }
+
+   @Override
+   public void destroyPlugin()
+   {
+      // Destroy the {@link XResolver}
+      resolver = null;
    }
 
    @Override
@@ -104,7 +118,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
    @Override
    public XModule getModuleById(XModuleIdentity moduleId)
    {
-      return resolver.getModuleById(moduleId);
+      return resolver != null ? resolver.getModuleById(moduleId) : null;
    }
 
    @Override

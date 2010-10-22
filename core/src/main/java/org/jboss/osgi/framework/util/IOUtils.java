@@ -27,15 +27,15 @@ import java.net.URL;
 import org.jboss.osgi.vfs.VirtualFile;
 
 /**
- * A helper for URL convertions that does not throw checked exceptions.
+ * A collection of IO utilities.
  * 
  * @author thomas.diesler@jboss.com
  * @since 19-Dec-2009
  */
-public final class URLHelper
+public final class IOUtils
 {
    // Hide the ctor
-   private URLHelper()
+   private IOUtils()
    {
    }
 

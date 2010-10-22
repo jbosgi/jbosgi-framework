@@ -67,7 +67,7 @@ public class ModuleLoaderTestCase extends ModulesTestBase
       
       ModuleIdentifier bundleId = moduleManager.getModuleIdentifier(builder.getModule());
       assertEquals("jbosgi.bundleA", bundleId.getName());
-      assertEquals("1.0.0-rev0", bundleId.getSlot());
+      assertEquals("1.0.0", bundleId.getSlot());
       
       ModuleSpec.Builder specBuilder = ModuleSpec.build(bundleId);
       ModuleSpec bundleSpec = specBuilder.create();

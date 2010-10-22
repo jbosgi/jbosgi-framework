@@ -503,7 +503,6 @@ public abstract class AbstractBundle implements Bundle
       uninstallInternal();
 
       log.infof("Bundle uninstalled: %s", this);
-      updateLastModified();
    }
 
    abstract void uninstallInternal() throws BundleException;

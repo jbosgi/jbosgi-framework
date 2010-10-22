@@ -24,7 +24,6 @@ package org.jboss.osgi.framework.plugin.internal;
 //$Id$
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -70,17 +69,10 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       File bundleDir = new File(bundlePath);
       bundleDir.mkdirs();
 
-      int revision = 0;
-
-      Properties props = new Properties();
-      File propsFile = new File(bundleDir + File.separator + BundleStorageState.BUNDLE_PERSISTENT_PROPERTIES);
-      if (propsFile.exists())
-      {
-         props.load(new FileInputStream(propsFile));
-         revision = Integer.parseInt(props.getProperty(BundleStorageState.PROPERTY_BUNDLE_REV));
-         revision++;
-      }
-
+      Properties props = BundleStorageState.loadProperties(bundleDir);
+      String previousRev = props.getProperty(BundleStorageState.PROPERTY_BUNDLE_REV);
+      int revision = (previousRev != null ? Integer.parseInt(previousRev) + 1: 0);
+      
       if (rootFile != null)
          props.put(BundleStorageState.PROPERTY_BUNDLE_FILE, rootFile.toURL().toExternalForm());
 

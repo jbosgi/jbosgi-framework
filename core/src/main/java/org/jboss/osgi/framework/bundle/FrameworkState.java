@@ -83,8 +83,6 @@ public class FrameworkState extends SystemBundle implements Framework
    private int stoppedEvent = FrameworkEvent.STOPPED;
    // The framework executor
    private Executor executor = Executors.newFixedThreadPool(10);
-   // Flag that indicates the first init of this instance
-   private boolean firstInit = true;
 
    static
    {
@@ -131,6 +129,9 @@ public class FrameworkState extends SystemBundle implements Framework
          bundleManager.setProperty(Constants.FRAMEWORK_VENDOR, OSGi_FRAMEWORK_VENDOR);
       if (bundleManager.getProperty(Constants.FRAMEWORK_VERSION) == null)
          bundleManager.setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
+
+      // Put into the INSTALLED state
+      changeState(Bundle.INSTALLED);
    }
 
    public Framework getBundleWrapper()
@@ -200,6 +201,15 @@ public class FrameworkState extends SystemBundle implements Framework
       if (state == Bundle.STARTING || state == Bundle.ACTIVE || state == Bundle.STOPPING)
          return;
 
+      // Init Plugins Lifecycle
+      BundleManager bundleManager = getBundleManager();
+      for (Plugin plugin : bundleManager.getPlugins())
+         plugin.initPlugin();
+
+      // Add the system bundle
+      createSystemBundleRevision();
+      bundleManager.addBundleState(this);
+      
       // Put into the STARTING state
       changeState(Bundle.STARTING);
 
@@ -207,23 +217,13 @@ public class FrameworkState extends SystemBundle implements Framework
       createBundleContext();
 
       // Have event handling enabled
-      BundleManager bundleManager = getBundleManager();
       FrameworkEventsPlugin eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
       eventsPlugin.setActive(true);
-
-      // Init Plugins Lifecycle
-      for (Plugin plugin : bundleManager.getPlugins())
-         plugin.initPlugin();
-
-      // Cleanup the storage area
-      String storageClean = getProperty(Constants.FRAMEWORK_STORAGE_CLEAN);
-      BundleStoragePlugin storagePlugin = bundleManager.getPlugin(BundleStoragePlugin.class);
-      if (firstInit == true && Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT.equals(storageClean))
-         storagePlugin.cleanStorage();
 
       // Install the persisted bundles
       try
       {
+         BundleStoragePlugin storagePlugin = bundleManager.getPlugin(BundleStoragePlugin.class);
          List<BundleStorageState> storageStates = storagePlugin.getBundleStorageStates();
          bundleManager.installPersistedBundles(storageStates);
       }
@@ -232,7 +232,6 @@ public class FrameworkState extends SystemBundle implements Framework
          throw new BundleException("Cannot install persisted bundles", ex);
       }
 
-      firstInit = false;
       log.debug("Framework initialized");
    }
 
@@ -451,6 +450,7 @@ public class FrameworkState extends SystemBundle implements Framework
 
          // All resources held by this Framework are released
          destroyBundleContext();
+         destroySystemBundleRevision();
 
          log.info("Framework stopped");
       }

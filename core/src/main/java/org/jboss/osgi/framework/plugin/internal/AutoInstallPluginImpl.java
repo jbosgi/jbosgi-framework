@@ -114,6 +114,13 @@ public class AutoInstallPluginImpl extends AbstractPlugin implements AutoInstall
    }
 
    @Override
+   public void destroyPlugin()
+   {
+      autoInstall = null;
+      autoStart = null;
+   }
+
+   @Override
    public void installBundles() throws BundleException
    {
       // Add the autoStart bundles to autoInstall

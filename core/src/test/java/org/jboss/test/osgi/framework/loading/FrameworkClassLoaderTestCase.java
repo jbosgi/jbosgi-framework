@@ -24,8 +24,6 @@ package org.jboss.test.osgi.framework.loading;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.util.HashMap;
 
@@ -33,19 +31,10 @@ import javax.management.MBeanServer;
 import javax.transaction.xa.XAResource;
 
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.framework.bundle.BundleManager;
-import org.jboss.osgi.framework.bundle.BundleManager.IntegrationMode;
-import org.jboss.osgi.framework.bundle.FrameworkState;
-import org.jboss.osgi.framework.bundle.SystemBundle;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
-import org.jboss.osgi.framework.plugin.ResolverPlugin;
-import org.jboss.osgi.framework.plugin.SystemPackagesPlugin;
-import org.jboss.osgi.framework.plugin.internal.ModuleManagerPluginImpl;
-import org.jboss.osgi.framework.plugin.internal.SystemPackagesPluginImpl;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XResolverFactory;
-import org.junit.BeforeClass;
+import org.jboss.test.osgi.framework.AbstractFrameworkTest;
+import org.junit.Before;
 import org.junit.Test;
 import org.kohsuke.args4j.CmdLineParser;
 import org.osgi.framework.BundleActivator;
@@ -56,41 +45,16 @@ import org.osgi.framework.BundleActivator;
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
-public class FrameworkClassLoaderTestCase
+public class FrameworkClassLoaderTestCase extends AbstractFrameworkTest
 {
-   static ClassLoader classLoader;
+   ClassLoader classLoader;
 
-   @BeforeClass
-   public static void beforeClass() throws Exception
+   @Before
+   public void before() throws Exception
    {
-      // Mock the BundleManager to return the {@link FrameworkState}
-      BundleManager bundleManager = mock(BundleManager.class);
-      FrameworkState frameworkState = mock(FrameworkState.class);
-      when(bundleManager.getFrameworkState()).thenReturn(frameworkState);
-      when(bundleManager.getIntegrationMode()).thenReturn(IntegrationMode.STANDALONE);
-
-      // Mock the BundleManager to return an instance of the {@link ModuleManagerPlugin}
-      ModuleManagerPlugin moduleManager = new ModuleManagerPluginImpl(bundleManager);
-      when(bundleManager.getPlugin(ModuleManagerPlugin.class)).thenReturn(moduleManager);
-      
-      // Mock the BundleManager to return an instance of the {@link SystemPackagesPlugin}
-      SystemPackagesPluginImpl sysPackagesPlugin = new SystemPackagesPluginImpl(bundleManager);
-      when(bundleManager.getPlugin(SystemPackagesPlugin.class)).thenReturn(sysPackagesPlugin);
-
-      // Mock the BundleManager to return an instance of the {@link ResolverPlugin}
-      XResolverFactory factory = XResolverFactory.getInstance();
-      ResolverPlugin resolverPlugin = mock(ResolverPlugin.class);
-      when(resolverPlugin.getModuleBuilder()).thenReturn(factory.newModuleBuilder());
-      when(bundleManager.getPlugin(ResolverPlugin.class)).thenReturn(resolverPlugin);
-      
-      // Get the resolver module for the SystemBundle
-      SystemBundle systemBundle = new SystemBundle(bundleManager);
-      when(bundleManager.getSystemBundle()).thenReturn(systemBundle);
-      XModule resModule = systemBundle.getResolverModule();
-
-      // Create the Framework module
-      ModuleIdentifier identifier = moduleManager.addModule(resModule);
-      Module module = moduleManager.loadModule(identifier);
+      BundleManager bundleManager = getBundleManager();
+      ModuleManagerPlugin plugin = bundleManager.getPlugin(ModuleManagerPlugin.class);
+      Module module = plugin.getModule(ModuleManagerPlugin.FRAMEWORK_IDENTIFIER);
       classLoader = module.getClassLoader();
    }
 

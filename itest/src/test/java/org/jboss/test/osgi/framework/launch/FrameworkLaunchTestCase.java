@@ -24,11 +24,16 @@ package org.jboss.test.osgi.framework.launch;
 
 import static org.junit.Assert.assertNotNull;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.launch.Framework;
+import org.osgi.framework.launch.FrameworkFactory;
 
 /**
  * Test framework bootstrap options.
@@ -47,7 +52,13 @@ public class FrameworkLaunchTestCase extends OSGiFrameworkTest
    @Test
    public void frameworkStartStop() throws Exception
    {
-      Framework framework = createFramework();
+      Map<String,String> props = new HashMap<String, String>();
+      props.put("org.osgi.framework.storage", "target/osgi-store");
+      props.put("org.osgi.framework.storage.clean", "onFirstInit");
+      
+      FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
+      Framework framework = factory.newFramework(props);
+      
       assertNotNull("Framework not null", framework);
       
       assertBundleState(Bundle.INSTALLED, framework.getState());

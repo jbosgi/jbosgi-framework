@@ -70,7 +70,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
    {
       if (storageState == null)
          throw new IllegalArgumentException("Null storageState");
-      
+
       try
       {
          String location = storageState.getLocation();
@@ -133,14 +133,14 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
 
       BundleStoragePlugin storagePlugin = getPlugin(BundleStoragePlugin.class);
       String location = identifier.getName() + ":" + identifier.getSlot();
-      BundleStorageState storageState = null;
-      
+
       // Check if we have a single root file
       File repoFile = getModuleRepositoryEntry(identifier);
       long bundleId = getBundleManager().getNextBundleId();
       if (repoFile != null)
       {
          // Try to process this as a valid OSGi bundle 
+         BundleStorageState storageState;
          try
          {
             BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
@@ -151,7 +151,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          {
             throw new BundleException("Cannot setup storage for: " + location, ex);
          }
-         
+
          try
          {
             return createDeployment(storageState);
@@ -207,18 +207,16 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       resModule.addAttachment(Module.class, module);
 
       // Create the bundle storage state
-      if (storageState == null)
+      BundleStorageState storageState;
+      try
       {
-         try
-         {
-            storageState = storagePlugin.createStorageState(bundleId, location, null);
-         }
-         catch (IOException ex)
-         {
-            throw new BundleException("Cannot create bundle storage for: " + location, ex);
-         }
+         storageState = storagePlugin.createStorageState(bundleId, location, null);
       }
-      
+      catch (IOException ex)
+      {
+         throw new BundleException("Cannot create bundle storage for: " + location, ex);
+      }
+
       Deployment dep = DeploymentFactory.createDeployment(location, symbolicName, version);
       dep.addAttachment(BundleStorageState.class, storageState);
       dep.addAttachment(XModule.class, resModule);

@@ -48,7 +48,7 @@ import org.osgi.framework.Version;
  */
 public class SystemBundle extends AbstractBundle
 {
-   private OSGiMetaData metadata;
+   private final OSGiMetaData metadata;
    private SystemBundleRevision systemRevision;
 
    public SystemBundle(BundleManager bundleManager) 
@@ -82,18 +82,17 @@ public class SystemBundle extends AbstractBundle
          builder.addExportPackages(packname + ";version=" + version);
       }
 
-      try
-      {
-         metadata = builder.getOSGiMetaData();
-         systemRevision = new SystemBundleRevision(this, metadata);
-      }
-      catch (BundleException ex)
-      {
-         throw new IllegalStateException("Cannot construct system revision", ex);
-      }
+      metadata = builder.getOSGiMetaData();
+   }
 
-      // Add the system bundle
-      getBundleManager().addBundleState(this);
+   void createSystemBundleRevision() throws BundleException
+   {
+      systemRevision = new SystemBundleRevision(this, metadata);
+   }
+
+   void destroySystemBundleRevision()
+   {
+      systemRevision = null;
    }
 
    private static BundleStorageState getSystemBundleStorage(BundleManager bundleManager) 

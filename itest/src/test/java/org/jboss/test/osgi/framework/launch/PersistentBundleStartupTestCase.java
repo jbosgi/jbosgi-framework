@@ -26,7 +26,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -55,7 +54,7 @@ import org.osgi.framework.launch.FrameworkFactory;
  */
 public class PersistentBundleStartupTestCase extends OSGiFrameworkTest
 {
-   File storageDir = new File("./target/test-osgi-store");
+   File storageDir = new File("target/test-osgi-store").getAbsoluteFile();
    
    @BeforeClass
    public static void beforeClass()
@@ -70,9 +69,6 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest
       props.put("org.osgi.framework.storage", storageDir.getAbsolutePath());
       props.put("org.osgi.framework.storage.clean", "onFirstInit");
       
-      if (storageDir.exists())
-         deleteRecursively(storageDir);
-         
       FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
       Framework framework = factory.newFramework(props);
       
@@ -119,7 +115,13 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest
    @Test
    public void testActiveBundle() throws Exception
    {
-      Framework framework = createFramework();
+      Map<String,String> props = new HashMap<String, String>();
+      props.put("org.osgi.framework.storage", storageDir.getAbsolutePath());
+      props.put("org.osgi.framework.storage.clean", "onFirstInit");
+      
+      FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
+      Framework framework = factory.newFramework(props);
+      
       framework.start();
       assertBundleState(Bundle.ACTIVE, framework.getState());
       
@@ -170,15 +172,5 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest
          }
       });
       return archive;
-   }
-
-   private void deleteRecursively(File file) throws IOException
-   {
-      if (file.isDirectory())
-      {
-         for (File aux : file.listFiles())
-            deleteRecursively(aux);
-      }
-      file.delete();
    }
 }

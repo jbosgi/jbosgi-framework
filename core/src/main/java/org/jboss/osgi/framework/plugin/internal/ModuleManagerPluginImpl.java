@@ -83,8 +83,6 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    // Provide logging
    final Logger log = Logger.getLogger(ModuleManagerPluginImpl.class);
 
-   // The framework module identifier
-   private ModuleIdentifier frameworkIdentifier;
    // The module loader for the OSGi layer
    private OSGiModuleLoader moduleLoader;
    // The module spec creation hook
@@ -93,7 +91,6 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    public ModuleManagerPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
-      moduleLoader = new OSGiModuleLoader(bundleManager);
       creationHook = new ModuleSpecCreationHook()
       {
          @Override
@@ -107,6 +104,9 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    @Override
    public void initPlugin()
    {
+      // Setup the OSGiModuleLoader
+      moduleLoader = new OSGiModuleLoader(getBundleManager());
+      
       // Setup the Module system when running STANDALONE
       if (getBundleManager().getIntegrationMode() == IntegrationMode.STANDALONE)
       {
@@ -115,10 +115,18 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       }
    }
 
+   
+   @Override
+   public void destroyPlugin()
+   {
+      // Destroy the OSGiModuleLoader
+      moduleLoader = null;
+   }
+
    @Override
    public void setModuleSpecCreationHook(ModuleSpecCreationHook hook)
    {
-      if (frameworkIdentifier != null)
+      if (FRAMEWORK_IDENTIFIER != null)
          throw new IllegalStateException("Cannot set ModuleSpecCreationHook after Framework module was created");
       creationHook = hook;
    }
@@ -145,8 +153,18 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       {
          XModuleIdentity moduleId = resModule.getModuleId();
          String name = Constants.JBOSGI_PREFIX + "." + moduleId.getName();
-         String slot = moduleId.getVersion() + "-rev" + moduleId.getRevision();
-         identifier = ModuleIdentifier.create(name, slot);
+         if (name.equals(FRAMEWORK_IDENTIFIER.getName()))
+            identifier = FRAMEWORK_IDENTIFIER;
+  
+         if (identifier == null)
+         {
+            String slot = moduleId.getVersion().toString();
+            int revision = moduleId.getRevision();
+            if (revision > 0)
+               slot += "-rev" + revision;
+            
+            identifier = ModuleIdentifier.create(name, slot);
+         }
       }
 
       resModule.addAttachment(ModuleIdentifier.class, identifier);
@@ -217,11 +235,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
     */
    private ModuleSpec createFrameworkSpec(final XModule resModule)
    {
-      if (frameworkIdentifier != null)
-         throw new IllegalStateException("Framework module already created");
-
-      frameworkIdentifier = getModuleIdentifier(resModule);
-      ModuleSpec.Builder specBuilder = ModuleSpec.build(frameworkIdentifier);
+      ModuleSpec.Builder specBuilder = ModuleSpec.build(FRAMEWORK_IDENTIFIER);
 
       FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(getBundleManager());
       specBuilder.addDependency(DependencySpec.createLocalDependencySpec(frameworkLoader, frameworkLoader.getExportedPaths(), true));
@@ -245,7 +259,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
 
          // Add the framework module as the first required dependency
-         DependencySpec frameworkDependency = DependencySpec.createModuleDependencySpec(frameworkIdentifier, true);
+         DependencySpec frameworkDependency = DependencySpec.createModuleDependencySpec(FRAMEWORK_IDENTIFIER, true);
          specBuilder.addDependency(frameworkDependency);
 
          // Map the dependency builder for (the likely) case that the same exporter is choosen for multiple wires
@@ -339,7 +353,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          // Skip dependencies on the system module. This is always added as the first module dependency anyway
          // [TODO] Check if the bundle still fails to resolve when it fails to declare an import on 'org.osgi.framework'
          ModuleIdentifier exporterId = getModuleIdentifier(exporter);
-         if (exporterId.equals(frameworkIdentifier))
+         if (exporterId.equals(FRAMEWORK_IDENTIFIER))
             continue;
 
          // Dependency for Import-Package
