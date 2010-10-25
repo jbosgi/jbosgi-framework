@@ -21,7 +21,7 @@
  */
 package org.jboss.test.osgi.framework.bundle.support.b;
 
-//$Id: ServiceB.java 85016 2009-03-02 12:12:31Z thomas.diesler@jboss.com $
+//$Id$
 
 import org.jboss.test.osgi.framework.bundle.support.x.ServiceX;
 

@@ -21,7 +21,7 @@
  */
 package org.jboss.test.osgi.framework.fragments.hostB;
 
-//$Id: FragmentHostActivator.java 99106 2010-01-07 11:02:59Z thomas.diesler@jboss.com $
+//$Id$
 
 import org.jboss.test.osgi.framework.fragments.subA.SubBeanA;
 import org.osgi.framework.BundleActivator;

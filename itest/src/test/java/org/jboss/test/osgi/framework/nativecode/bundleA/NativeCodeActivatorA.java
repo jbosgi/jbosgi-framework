@@ -21,7 +21,7 @@
  */
 package org.jboss.test.osgi.framework.nativecode.bundleA;
 
-//$Id: NativeCodeActivatorA.java 99304 2010-01-12 17:29:06Z thomas.diesler@jboss.com $
+//$Id$
 
 import java.io.File;
 import java.util.HashMap;
