@@ -21,7 +21,7 @@
 */
 package org.jboss.test.osgi.framework.jbosgi323;
 
-// $Id: $
+// $Id$
 
 import java.io.InputStream;
 

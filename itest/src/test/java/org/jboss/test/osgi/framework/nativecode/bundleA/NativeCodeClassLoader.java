@@ -21,7 +21,7 @@
  */
 package org.jboss.test.osgi.framework.nativecode.bundleA;
 
-// $Id: $
+// $Id$
 
 public class NativeCodeClassLoader extends ClassLoader
 {

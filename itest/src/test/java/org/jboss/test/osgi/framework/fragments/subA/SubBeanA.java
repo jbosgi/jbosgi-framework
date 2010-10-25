@@ -26,7 +26,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.packageadmin.PackageAdmin;
 
-//$Id: SomeBean.java 91513 2009-07-21 19:48:28Z thomas.diesler@jboss.com $
+//$Id$
 
 public class SubBeanA
 {
