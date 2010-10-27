@@ -21,13 +21,14 @@
  */
 package org.jboss.osgi.framework.plugin;
 
+import java.util.List;
 import java.util.Set;
 
+import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
-import org.jboss.modules.ModuleSpec;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
@@ -43,7 +44,7 @@ public interface ModuleManagerPlugin extends Plugin
 {
    /** The framework module identifier */
    ModuleIdentifier FRAMEWORK_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + "." + Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
-   
+
    /**
     * Get the OSGi {@link ModuleLoader}
     */
@@ -96,16 +97,7 @@ public interface ModuleManagerPlugin extends Plugin
    Module removeModule(ModuleIdentifier identifier);
 
    /**
-    * Set the {@link ModuleSpecCreationHook}
+    * Set the framework dependencies
     */
-   void setModuleSpecCreationHook(ModuleSpecCreationHook hook);
-
-   /**
-    * A callback interface that allows the client to modify the ModuleSpec
-    * just before it gets created.
-    */
-   interface ModuleSpecCreationHook
-   {
-      ModuleSpec create(ModuleSpec.Builder specBuilder);
-   }
+   void setFrameworkDependencies(List<DependencySpec> moduleDependencies);
 }
