@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.bundle;
 
-//$Id$
-
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.launch.Framework;

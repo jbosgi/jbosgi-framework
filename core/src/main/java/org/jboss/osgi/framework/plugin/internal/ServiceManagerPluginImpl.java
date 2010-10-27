@@ -173,7 +173,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       associations.put(rootServiceName, clazzes[0]);
 
       // Set the startup mode
-      serviceBuilder.setInitialMode(Mode.AUTOMATIC);
+      serviceBuilder.setInitialMode(Mode.PASSIVE);
 
       // Add the service aliases
       for (int i = 1; i < serviceNames.length; i++)

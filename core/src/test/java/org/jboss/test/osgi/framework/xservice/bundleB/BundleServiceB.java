@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.xservice.bundleB;
 
-//$Id$
 
 import org.osgi.framework.Bundle;
 

@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.localization;
 
-//$Id$
 
 import static org.junit.Assert.assertEquals;
 

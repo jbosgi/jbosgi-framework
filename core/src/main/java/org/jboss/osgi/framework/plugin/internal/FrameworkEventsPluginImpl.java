@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.plugin.internal;
 
-//$Id$
-
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.util.ArrayList;

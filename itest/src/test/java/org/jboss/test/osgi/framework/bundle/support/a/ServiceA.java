@@ -21,8 +21,6 @@
  */
 package org.jboss.test.osgi.framework.bundle.support.a;
 
-//$Id$
-
 import org.jboss.test.osgi.framework.bundle.support.b.ServiceB;
 import org.jboss.test.osgi.framework.bundle.support.x.ServiceX;
 import org.osgi.framework.BundleContext;
@@ -31,7 +29,7 @@ import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * ServiceA has a dependency on ServiceB, both have a dependency on SomePojo
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 02-Mar-2009
  */

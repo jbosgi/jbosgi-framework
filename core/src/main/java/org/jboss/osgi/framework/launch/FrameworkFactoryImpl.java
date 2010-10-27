@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.launch;
 
-// $Id$
-
 import java.util.Map;
 
 import org.jboss.logging.Logger;

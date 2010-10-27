@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.plugin.internal;
 
-//$Id$
-
 import java.util.Properties;
 
 import org.jboss.logging.Logger;

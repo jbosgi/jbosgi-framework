@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.fragments.hostA;
 
-//$Id$
 
 import org.jboss.logging.Logger;
 import org.jboss.test.osgi.framework.fragments.subA.SubBeanA;
