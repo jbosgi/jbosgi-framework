@@ -106,7 +106,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    {
       // Setup the OSGiModuleLoader
       moduleLoader = new OSGiModuleLoader(getBundleManager());
-      
+
       // Setup the Module system when running STANDALONE
       if (getBundleManager().getIntegrationMode() == IntegrationMode.STANDALONE)
       {
@@ -115,7 +115,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       }
    }
 
-   
+
    @Override
    public void destroyPlugin()
    {
@@ -126,7 +126,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    @Override
    public void setModuleSpecCreationHook(ModuleSpecCreationHook hook)
    {
-      if (FRAMEWORK_IDENTIFIER != null)
+      if (moduleLoader != null)
          throw new IllegalStateException("Cannot set ModuleSpecCreationHook after Framework module was created");
       creationHook = hook;
    }
@@ -155,14 +155,14 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          String name = Constants.JBOSGI_PREFIX + "." + moduleId.getName();
          if (name.equals(FRAMEWORK_IDENTIFIER.getName()))
             identifier = FRAMEWORK_IDENTIFIER;
-  
+
          if (identifier == null)
          {
             String slot = moduleId.getVersion().toString();
             int revision = moduleId.getRevision();
             if (revision > 0)
                slot += "-rev" + revision;
-            
+
             identifier = ModuleIdentifier.create(name, slot);
          }
       }
