@@ -88,7 +88,7 @@ public final class BundleStorageState
    public static Properties loadProperties(File storageDir) throws FileNotFoundException, IOException
    {
       Properties props = new Properties();
-      File propsFile = new File(storageDir + File.separator + BUNDLE_PERSISTENT_PROPERTIES);
+      File propsFile = new File(storageDir + "/" + BUNDLE_PERSISTENT_PROPERTIES);
       if (propsFile.exists())
       {
          FileInputStream input = new FileInputStream(propsFile);
@@ -208,7 +208,7 @@ public final class BundleStorageState
    {
       try
       {
-         File propsFile = new File(bundleDir + File.separator + BUNDLE_PERSISTENT_PROPERTIES);
+         File propsFile = new File(bundleDir + "/" + BUNDLE_PERSISTENT_PROPERTIES);
          FileOutputStream output = new FileOutputStream(propsFile);
          try
          {

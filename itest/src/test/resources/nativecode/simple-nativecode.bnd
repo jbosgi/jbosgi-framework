@@ -8,6 +8,7 @@ Bundle-NativeCode: \
  macosx_x86/libNative.jnilib; osname="mac os x"; processor=ppc, \
  windows_x86/Native.dll; osname=Win32; processor=x86, \
  windows_x86/Native.dll; osname=WindowsXP; processor=x86, \
+ windows_x86/Native.dll; osname=Windows7; processor=x86, \
  windows_x86/Native.dll; osname=Windows7; processor=amd64
 Include-Resource: libs
 
