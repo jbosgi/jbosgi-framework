@@ -85,20 +85,12 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
    // The module loader for the OSGi layer
    private OSGiModuleLoader moduleLoader;
-   // The module spec creation hook
-   private ModuleSpecCreationHook creationHook;
+   // The framework module dependencies
+   private List<DependencySpec> frameworkDependencies;
 
    public ModuleManagerPluginImpl(BundleManager bundleManager)
    {
       super(bundleManager);
-      creationHook = new ModuleSpecCreationHook()
-      {
-         @Override
-         public ModuleSpec create(ModuleSpec.Builder specBuilder)
-         {
-            return specBuilder.create();
-         }
-      };
    }
 
    @Override
@@ -115,20 +107,18 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       }
    }
 
-
    @Override
    public void destroyPlugin()
    {
-      // Destroy the OSGiModuleLoader
       moduleLoader = null;
    }
 
    @Override
-   public void setModuleSpecCreationHook(ModuleSpecCreationHook hook)
+   public void setFrameworkDependencies(List<DependencySpec> frameworkDependencies)
    {
       if (moduleLoader != null)
-         throw new IllegalStateException("Cannot set ModuleSpecCreationHook after Framework module was created");
-      creationHook = hook;
+         throw new IllegalStateException("Cannot set dependencies after Framework was created");
+      this.frameworkDependencies = frameworkDependencies;
    }
 
    @Override
@@ -240,10 +230,17 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(getBundleManager());
       specBuilder.addDependency(DependencySpec.createLocalDependencySpec(frameworkLoader, frameworkLoader.getExportedPaths(), true));
 
-      ModuleSpec frameworkSpec = creationHook.create(specBuilder);
+      if (frameworkDependencies != null)
+      {
+         for (DependencySpec moduleDependency : frameworkDependencies)
+         {
+            specBuilder.addDependency(moduleDependency);
+         }
+      }
+
+      ModuleSpec frameworkSpec = specBuilder.create();
       AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
       moduleLoader.addModule(bundleRev, frameworkSpec);
-
       return frameworkSpec;
    }
 
@@ -330,7 +327,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          specBuilder.setFallbackLoader(new ModuleClassLoaderExt(getBundleManager(), identifier));
 
          // Build the ModuleSpec
-         moduleSpec = creationHook.create(specBuilder);
+         moduleSpec = specBuilder.create();
       }
 
       AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
