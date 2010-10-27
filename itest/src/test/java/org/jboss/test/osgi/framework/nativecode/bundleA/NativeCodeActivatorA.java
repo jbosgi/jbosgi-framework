@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.nativecode.bundleA;
 
-//$Id$
 
 import java.io.File;
 import java.util.HashMap;

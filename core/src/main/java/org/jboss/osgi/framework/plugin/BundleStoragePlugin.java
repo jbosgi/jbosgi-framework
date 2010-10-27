@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.plugin;
 
-// $Id$
-
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -33,19 +31,19 @@ import org.osgi.framework.Bundle;
 
 /**
  * An abstraction of a bundle persistent storage system.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public interface BundleStoragePlugin extends Plugin 
+public interface BundleStoragePlugin extends Plugin
 {
    BundleStorageState createStorageState(long bundleId, String location, VirtualFile root) throws IOException;
-   
+
    List<BundleStorageState> getBundleStorageStates() throws IOException;
-   
+
    File getStorageDir(long bundleId);
-   
+
    File getDataFile(Bundle bundle, String filename);
-   
+
    void cleanStorage();
 }

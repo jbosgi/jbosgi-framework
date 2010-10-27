@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.plugin;
 
-//$Id$
-
 import java.util.List;
 
 /**

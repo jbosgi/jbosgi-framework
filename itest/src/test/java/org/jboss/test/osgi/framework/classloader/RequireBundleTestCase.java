@@ -21,7 +21,7 @@
 */
 package org.jboss.test.osgi.framework.classloader;
 
-// $Id$
+// 
 
 import static org.junit.Assert.fail;
 

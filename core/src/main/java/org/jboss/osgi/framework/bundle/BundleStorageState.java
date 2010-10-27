@@ -36,11 +36,9 @@ import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 
-// $Id$
-
 /**
  * An abstraction of a bundle persistent storage.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
@@ -78,12 +76,12 @@ public final class BundleStorageState
    public static BundleStorageState createFromStorage(File storageDir) throws IOException
    {
       Properties props = loadProperties(storageDir);
-      
+
       VirtualFile rootFile = null;
       String vfsLocation = props.getProperty(PROPERTY_BUNDLE_FILE);
       if (vfsLocation != null)
          rootFile = AbstractVFS.toVirtualFile(new URL(vfsLocation));
-         
+
       return new BundleStorageState(storageDir, rootFile, props);
    }
 
@@ -105,14 +103,14 @@ public final class BundleStorageState
       }
       return props;
    }
-   
+
    public static BundleStorageState createBundleStorageState(File storageDir, VirtualFile rootFile, Properties props) throws IOException
    {
       BundleStorageState storageState = new BundleStorageState(storageDir, rootFile, props);
       storageState.writeProperties();
       return storageState;
    }
-   
+
    private BundleStorageState(File bundleDir, VirtualFile rootFile, Properties props) throws IOException
    {
       if (bundleDir == null)
@@ -167,7 +165,7 @@ public final class BundleStorageState
       return new Long(value);
    }
 
-   public void updateLastModified() 
+   public void updateLastModified()
    {
       lastModified = System.currentTimeMillis();
       props.setProperty(PROPERTY_LAST_MODIFIED, new Long(lastModified).toString());
@@ -206,7 +204,7 @@ public final class BundleStorageState
       file.delete();
    }
 
-   private void writeProperties() 
+   private void writeProperties()
    {
       try
       {

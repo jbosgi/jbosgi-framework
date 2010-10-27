@@ -21,13 +21,11 @@
  */
 package org.jboss.osgi.framework.plugin;
 
-//$Id$
-
 import org.jboss.osgi.framework.bundle.BundleManager;
 
 /**
  * The base class of all framework plugins.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
@@ -39,10 +37,10 @@ public abstract class AbstractPlugin implements Plugin
    {
       if (bundleManager == null)
          throw new IllegalArgumentException("Null bundleManager");
-      
+
       this.bundleManager = bundleManager;
    }
-   
+
    public BundleManager getBundleManager()
    {
       return bundleManager;
@@ -76,7 +74,7 @@ public abstract class AbstractPlugin implements Plugin
    {
       return bundleManager.getPlugin(clazz);
    }
-   
+
    public <T extends Plugin> T getOptionalPlugin(Class<T> clazz)
    {
       return bundleManager.getOptionalPlugin(clazz);

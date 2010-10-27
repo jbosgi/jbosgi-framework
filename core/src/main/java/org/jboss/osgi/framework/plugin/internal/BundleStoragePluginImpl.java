@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.plugin.internal;
 
-//$Id$
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,7 +39,7 @@ import org.osgi.framework.Constants;
 
 /**
  * A simple implementation of a BundleStorage
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
@@ -72,7 +70,7 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
       Properties props = BundleStorageState.loadProperties(bundleDir);
       String previousRev = props.getProperty(BundleStorageState.PROPERTY_BUNDLE_REV);
       int revision = (previousRev != null ? Integer.parseInt(previousRev) + 1: 0);
-      
+
       if (rootFile != null)
          props.put(BundleStorageState.PROPERTY_BUNDLE_FILE, rootFile.toURL().toExternalForm());
 

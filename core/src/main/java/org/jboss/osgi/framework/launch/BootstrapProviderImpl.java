@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.launch;
 
-// $Id$
-
 import java.util.Map;
 
 import org.jboss.logging.Logger;
@@ -34,7 +32,7 @@ import org.osgi.framework.launch.FrameworkFactory;
 
 /**
  * The {@link OSGiBootstrapProvider} for the MSC Framework.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 21-Aug-2009
  */
@@ -42,7 +40,7 @@ public class BootstrapProviderImpl extends PropertiesBootstrapProvider
 {
    // Provide logging
    private static final Logger log = Logger.getLogger(BootstrapProviderImpl.class);
-   
+
    @Override
    protected Framework createFramework(Map<String, Object> properties)
    {
@@ -50,7 +48,7 @@ public class BootstrapProviderImpl extends PropertiesBootstrapProvider
       String implTitle = getClass().getPackage().getImplementationTitle();
       String impVersion = getClass().getPackage().getImplementationVersion();
       log.infof(implTitle + " - " + impVersion);
-      
+
       // Load the framework instance
       FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
       Framework framework = factory.newFramework(properties);

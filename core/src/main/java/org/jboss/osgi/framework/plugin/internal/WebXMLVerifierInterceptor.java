@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.plugin.internal;
 
-//$Id$
-
 import java.util.Set;
 
 import org.jboss.osgi.deployment.interceptor.AbstractLifecycleInterceptor;
@@ -38,7 +36,7 @@ import org.osgi.framework.BundleContext;
 /**
  * The lifecycle interceptor that verifies that deployments ending in '.war'
  * have a WEB-INF/web.xml descriptor.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 20-Oct-2009
  */
@@ -84,7 +82,7 @@ public class WebXMLVerifierInterceptor extends AbstractPlugin implements Lifecyc
          }
       };
    }
-   
+
    @Override
    public void destroyPlugin()
    {

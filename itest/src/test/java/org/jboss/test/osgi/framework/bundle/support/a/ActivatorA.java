@@ -21,8 +21,6 @@
  */
 package org.jboss.test.osgi.framework.bundle.support.a;
 
-//$Id$
-
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 

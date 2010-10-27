@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.loading.subB;
 
-//$Id$
 
 import org.osgi.framework.BundleContext;
 

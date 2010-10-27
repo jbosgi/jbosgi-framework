@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.xservice.moduleB;
 
-//$Id$
 
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.BatchBuilder;
@@ -75,7 +74,7 @@ public class ModuleActivatorB implements ModuleActivator
       };
 
       BatchServiceBuilder<ModuleServiceB> serviceBuilder = batchBuilder.addService(serviceName, service);
-      serviceBuilder.setInitialMode(Mode.AUTOMATIC);
+      serviceBuilder.setInitialMode(Mode.PASSIVE);
       try
       {
          batchBuilder.install();

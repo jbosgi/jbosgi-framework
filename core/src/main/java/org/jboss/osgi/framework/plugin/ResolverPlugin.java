@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.plugin;
 
-// $Id$
-
 import java.util.Set;
 
 import org.jboss.osgi.resolver.XModule;
@@ -69,7 +67,7 @@ public interface ResolverPlugin extends Plugin
     * @return The module or null
     */
    XModule getModuleById(XModuleIdentity moduleId);
-   
+
    /**
     * Resolve the given modules.
     *

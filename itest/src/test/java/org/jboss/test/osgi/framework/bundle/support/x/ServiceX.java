@@ -22,7 +22,6 @@
 package org.jboss.test.osgi.framework.bundle.support.x;
 
 
-//$Id$
 
 public class ServiceX
 {

@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.loading;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
