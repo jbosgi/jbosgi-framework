@@ -107,7 +107,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest
       assertNotNull("Location not null", storageState.getLocation());
       assertTrue("Storage dir exists", storageDir.exists());
 
-      File propertiesFile = new File(storageDir + File.separator + BundleStorageState.BUNDLE_PERSISTENT_PROPERTIES);
+      File propertiesFile = new File(storageDir + "/" + BundleStorageState.BUNDLE_PERSISTENT_PROPERTIES);
       assertTrue("Properties file exists", propertiesFile.exists());
    }
 

@@ -231,8 +231,8 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
    private File getModuleRepositoryEntry(ModuleIdentifier identifier)
    {
       File rootPath = new File(getBundleManager().getProperty("module.path").toString());
-      String identifierPath = identifier.getName().replace('.', File.separatorChar) + File.separator + identifier.getSlot();
-      File moduleDir = new File(rootPath + File.separator + identifierPath);
+      String identifierPath = identifier.getName().replace('.', '/') + "/" + identifier.getSlot();
+      File moduleDir = new File(rootPath + "/" + identifierPath);
       if (moduleDir.isDirectory() == false)
       {
          log.warnf("Cannot obtain module directory: %s", moduleDir);
@@ -258,7 +258,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
          return null;
       }
 
-      File moduleFile = new File(moduleDir + File.separator + files[0]);
+      File moduleFile = new File(moduleDir + "/" + files[0]);
       if (moduleFile.exists() == false)
       {
          log.warnf("Module file does not exist: %s", moduleFile);
