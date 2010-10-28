@@ -23,7 +23,9 @@ package org.jboss.osgi.framework.plugin.internal;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.framework.bundle.BundleManager;
@@ -47,6 +49,8 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
    private List<String> allPackages = new ArrayList<String>();
    // The boot delegation packages
    private List<String> bootDelegationPackages = new ArrayList<String>();
+   // The list of exported paths
+   private Set<String> exportedPaths;
 
    public SystemPackagesPluginImpl(BundleManager bundleManager)
    {
@@ -207,6 +211,39 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
    {
       assertInitialized();
       return isPackageNameInList(allPackages, name);
+   }
+
+   @Override
+   public Set<String> getExportedPaths()
+   {
+      assertInitialized();
+      if(exportedPaths == null)
+      {
+         Set<String> result = new LinkedHashSet<String>();
+
+         // Add bootdelegation paths
+         List<String> bootDelegationPackages = getBootDelegationPackages();
+         for (String packageName : bootDelegationPackages)
+         {
+            if (packageName.endsWith(".*"))
+               packageName = packageName.substring(0, packageName.length() - 2);
+
+            result.add(packageName.replace('.', '/'));
+         }
+
+         // Add system packages exported by the framework
+         List<String> systemPackages = getSystemPackages();
+         for (String packageSpec : systemPackages)
+         {
+            int index = packageSpec.indexOf(';');
+            if (index > 0)
+               packageSpec = packageSpec.substring(0, index);
+
+            result.add(packageSpec.replace('.', '/'));
+         }
+         exportedPaths = Collections.unmodifiableSet(result);
+      }
+      return exportedPaths;
    }
 
    private boolean isPackageNameInList(List<String> packages, String name)

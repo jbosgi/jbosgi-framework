@@ -21,8 +21,6 @@
 */
 package org.jboss.osgi.framework.loading;
 
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.jboss.modules.LocalLoader;
@@ -44,29 +42,7 @@ public class FrameworkLocalLoader extends SystemLocalLoader
 
    private static Set<String> getExportedPaths(BundleManager bundleManager)
    {
-      Set<String> result = new LinkedHashSet<String>();
-
-      // Add bootdelegation paths
       SystemPackagesPlugin plugin = bundleManager.getPlugin(SystemPackagesPlugin.class);
-      List<String> bootDelegationPackages = plugin.getBootDelegationPackages();
-      for (String packageName : bootDelegationPackages)
-      {
-         if (packageName.endsWith(".*"))
-            packageName = packageName.substring(0, packageName.length() - 2);
-
-         result.add(packageName.replace('.', '/'));
-      }
-
-      // Add system packages exported by the framework
-      List<String> systemPackages = plugin.getSystemPackages();
-      for (String packageSpec : systemPackages)
-      {
-         int index = packageSpec.indexOf(';');
-         if (index > 0)
-            packageSpec = packageSpec.substring(0, index);
-
-         result.add(packageSpec.replace('.', '/'));
-      }
-      return result;
+      return plugin.getExportedPaths();
    }
 }
