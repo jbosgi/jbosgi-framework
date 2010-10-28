@@ -58,6 +58,7 @@ import org.jboss.osgi.framework.loading.NativeResourceLoader;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
+import org.jboss.osgi.framework.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.framework.plugin.internal.NativeCodePluginImpl.BundleNativeLibraryProvider;
 import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
@@ -255,7 +256,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
          // Add the framework module as the first required dependency
          PathFilter importFilter = PathFilters.acceptAll();
-         PathFilter exportFilter = PathFilters.acceptAll(); //PathFilters.in(getPlugin(SystemPackagesPlugin.class).getExportedPaths());
+         PathFilter exportFilter = PathFilters.in(getPlugin(SystemPackagesPlugin.class).getExportedPaths());
          ModuleLoader frameworkLoader = getModule(FRAMEWORK_IDENTIFIER).getModuleLoader();
          DependencySpec frameworkDep = DependencySpec.createModuleDependencySpec(importFilter, exportFilter, frameworkLoader, FRAMEWORK_IDENTIFIER, false);
          specBuilder.addDependency(frameworkDep);
