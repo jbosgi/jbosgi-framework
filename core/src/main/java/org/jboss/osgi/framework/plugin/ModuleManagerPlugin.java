@@ -21,15 +21,12 @@
  */
 package org.jboss.osgi.framework.plugin;
 
-import java.util.List;
 import java.util.Set;
 
-import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
-import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.resolver.XModule;
@@ -43,7 +40,7 @@ import org.jboss.osgi.resolver.XModule;
 public interface ModuleManagerPlugin extends Plugin
 {
    /** The framework module identifier */
-   ModuleIdentifier FRAMEWORK_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + "." + Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+   ModuleIdentifier FRAMEWORK_IDENTIFIER = ModuleIdentifier.create("org.jboss.osgi.framework");
 
    /**
     * Get the OSGi {@link ModuleLoader}
@@ -95,9 +92,4 @@ public interface ModuleManagerPlugin extends Plugin
     * @return The module or null
     */
    Module removeModule(ModuleIdentifier identifier);
-
-   /**
-    * Set the framework dependencies
-    */
-   void setFrameworkDependencies(List<DependencySpec> moduleDependencies);
 }

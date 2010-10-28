@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.plugin;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * A plugin that provides the configured list of system packages.
@@ -61,7 +62,6 @@ public interface SystemPackagesPlugin extends Plugin
     */
    boolean isSystemPackage(String name);
 
-
    /**
     * Get the list of packages provided by the framework
     *
@@ -76,4 +76,11 @@ public interface SystemPackagesPlugin extends Plugin
     * @return True if the given package name is system package.
     */
    boolean isFrameworkPackage(String name);
+
+   /**
+    * Get the list of paths that the framework exports
+    *
+    * @return The list of framework exported paths
+    */
+   Set<String> getExportedPaths();
 }
