@@ -54,7 +54,7 @@ public class FrameworkClassLoaderTestCase extends AbstractFrameworkTest
    {
       BundleManager bundleManager = getBundleManager();
       ModuleManagerPlugin plugin = bundleManager.getPlugin(ModuleManagerPlugin.class);
-      Module module = plugin.getModule(ModuleManagerPlugin.FRAMEWORK_IDENTIFIER);
+      Module module = plugin.getModule(ModuleManagerPlugin.DEFAULT_FRAMEWORK_IDENTIFIER);
       classLoader = module.getClassLoader();
    }
 

@@ -27,6 +27,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.resolver.XModule;
@@ -39,8 +40,8 @@ import org.jboss.osgi.resolver.XModule;
  */
 public interface ModuleManagerPlugin extends Plugin
 {
-   /** The framework module identifier */
-   ModuleIdentifier FRAMEWORK_IDENTIFIER = ModuleIdentifier.create("org.jboss.osgi.framework");
+   /** The default framework module identifier */
+   ModuleIdentifier DEFAULT_FRAMEWORK_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + "." + Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
 
    /**
     * Get the OSGi {@link ModuleLoader}
