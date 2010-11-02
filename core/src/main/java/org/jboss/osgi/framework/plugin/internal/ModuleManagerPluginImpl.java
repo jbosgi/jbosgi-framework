@@ -268,10 +268,10 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          // Map the dependency builder for (the likely) case that the same exporter is choosen for multiple wires
          Map<XModule, DependencyHolder> specHolderMap = new LinkedHashMap<XModule, DependencyHolder>();
 
-         // In case there are no wires, there may still be dependencies due to attached fragments
          HostBundle hostBundle = resModule.getAttachment(HostBundle.class);
-         if (resModule.getWires().isEmpty() && hostBundle != null)
+         if (hostBundle != null)
          {
+            // Look at the fragment wires
             List<FragmentRevision> fragRevs = hostBundle.getCurrentRevision().getAttachedFragments();
             for (FragmentRevision fragRev : fragRevs)
             {
