@@ -30,9 +30,9 @@ import java.util.Set;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.DependencySpec;
+import org.jboss.modules.JDKModuleLogger;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
@@ -51,7 +51,6 @@ import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.OSGiModuleLoader;
 import org.jboss.osgi.framework.loading.FragmentLocalLoader;
 import org.jboss.osgi.framework.loading.FrameworkLocalLoader;
-import org.jboss.osgi.framework.loading.JBossLoggingModuleLogger;
 import org.jboss.osgi.framework.loading.ModuleClassLoaderExt;
 import org.jboss.osgi.framework.loading.NativeLibraryProvider;
 import org.jboss.osgi.framework.loading.NativeResourceLoader;
@@ -104,10 +103,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
       // Setup the Module system when running STANDALONE
       if (getBundleManager().getIntegrationMode() == IntegrationMode.STANDALONE)
-      {
-         // Set the {@link ModuleLogger}
-         Module.setModuleLogger(new JBossLoggingModuleLogger(Logger.getLogger(ModuleClassLoader.class)));
-      }
+         Module.setModuleLogger(new JDKModuleLogger());
    }
 
    @Override
