@@ -26,7 +26,6 @@ import static org.junit.Assert.assertEquals;
 import java.io.InputStream;
 import java.util.Properties;
 
-import org.jboss.osgi.framework.plugin.StartLevelPlugin;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -122,8 +121,11 @@ public class StartLevelTestCase extends OSGiFrameworkTest
       b3.start();
       assertEquals("Start level of 5 should have prevented the bundle from starting right now", Bundle.INSTALLED, b3.getState());
 
-      // [TODO] Remove dependency on propriatary API
-      ((StartLevelPlugin)sl).increaseStartLevel(10);
+      getSystemContext().addFrameworkListener(this);
+      sl.setStartLevel(10);
+      assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, getSystemContext().getBundle(), null);
+      getSystemContext().removeFrameworkListener(this);
+
       assertEquals(Bundle.ACTIVE, b1.getState());
       assertEquals(Bundle.ACTIVE, b2.getState());
       assertEquals(Bundle.ACTIVE, b3.getState());
