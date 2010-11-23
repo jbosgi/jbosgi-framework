@@ -44,12 +44,12 @@
 
     <!-- JBoss OSGi Dependencies -->
     <dependency>
-      <groupId>org.jboss.osgi</groupId>
-      <artifactId>jboss-osgi-spi</artifactId>
+      <groupId>org.jboss.osgi.spi</groupId>
+      <artifactId>jbosgi-spi</artifactId>
     </dependency>
     <dependency>
       <groupId>org.jboss.osgi.deployment</groupId>
-      <artifactId>jboss-osgi-deployment</artifactId>
+      <artifactId>jbosgi-deployment</artifactId>
     </dependency>
     <dependency>
       <groupId>org.jboss.osgi.resolver</groupId>

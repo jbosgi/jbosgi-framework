@@ -23,8 +23,8 @@
         <include>*:jboss-modules:jar</include>
         <include>*:jboss-msc:jar</include>
         <include>*:jboss-vfs:jar</include>
-        <include>*:jboss-osgi-deployment:jar</include>
-        <include>*:jboss-osgi-spi:jar</include>
+        <include>*:jbosgi-deployment:jar</include>
+        <include>*:jbosgi-spi:jar</include>
         <include>*:jboss-osgi-vfs:jar</include>
         <include>*:jboss-osgi-vfs30:jar</include>
         <include>*:org.osgi.core:jar</include>
