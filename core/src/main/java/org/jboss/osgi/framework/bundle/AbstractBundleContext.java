@@ -22,14 +22,22 @@
 package org.jboss.osgi.framework.bundle;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.List;
 
+import org.jboss.osgi.deployment.deployer.DeployerService;
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
+import org.jboss.osgi.framework.plugin.DeployerServicePlugin;
 import org.jboss.osgi.framework.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.framework.plugin.ServiceManagerPlugin;
+import org.jboss.osgi.vfs.AbstractVFS;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -50,8 +58,11 @@ import org.osgi.framework.ServiceRegistration;
  */
 public abstract class AbstractBundleContext implements BundleContext
 {
-   private BundleManager bundleManager;
-   private AbstractBundle bundleState;
+   private final BundleManager bundleManager;
+   private final AbstractBundle bundleState;
+   private final DeployerService deployerService;
+   private final BundleStoragePlugin storagePlugin;
+   private final BundleDeploymentPlugin deploymentPlugin;
    private BundleContext contextWrapper;
    private boolean destroyed;
 
@@ -59,8 +70,14 @@ public abstract class AbstractBundleContext implements BundleContext
    {
       if (bundleState == null)
          throw new IllegalArgumentException("Null bundleState");
+      
       this.bundleManager = bundleState.getBundleManager();
       this.bundleState = bundleState;
+      
+      // Cache the frequently used plugins
+      this.deployerService = bundleManager.getPlugin(DeployerServicePlugin.class);
+      this.storagePlugin = bundleManager.getPlugin(BundleStoragePlugin.class);
+      this.deploymentPlugin = bundleManager.getPlugin(BundleDeploymentPlugin.class);
    }
 
    /**
@@ -121,18 +138,107 @@ public abstract class AbstractBundleContext implements BundleContext
    }
 
    @Override
-   public Bundle installBundle(String location, InputStream input) throws BundleException
+   public Bundle installBundle(String location) throws BundleException
    {
-      checkValidBundleContext();
-      AbstractBundle bundleState = bundleManager.installBundle(location, input);
-      return bundleState.getBundleWrapper();
+      return installBundleInternal(location, null);
    }
 
    @Override
-   public Bundle installBundle(String location) throws BundleException
+   public Bundle installBundle(String location, InputStream input) throws BundleException
+   {
+      return installBundleInternal(location, input);
+   }
+
+   /*
+    * This is the entry point for all bundle deployments.
+    * 
+    * #1 Construct the {@link VirtualFile} from the given parameters
+    * #2 Setup Bundle permanent storage
+    * #3 Create a Bundle {@link Deployment}
+    * #4 Deploy the Bundle through the {@link DeploymentService}
+    * 
+    * The {@link DeploymentService} is the integration point for JBossAS.
+    * 
+    * By default the {@link DeployerServicePlugin} simply delegates to {@link BundleManager#installBundle(Deployment)}
+    * In JBossAS however, the {@link DeployerServicePlugin} delegates to the management API that feeds the Bundle
+    * deployment through the DeploymentUnitProcessor chain.
+    */
+   private Bundle installBundleInternal(String location, InputStream input) throws BundleException
    {
       checkValidBundleContext();
-      AbstractBundle bundleState = bundleManager.installBundle(location);
+      
+      VirtualFile rootFile = null;
+      if (input != null)
+      {
+         try
+         {
+            rootFile = AbstractVFS.toVirtualFile(location, input);
+         }
+         catch (IOException ex)
+         {
+            throw new BundleException("Cannot obtain virtual file from input stream", ex);
+         }
+      }
+
+      // Try location as URL
+      if (rootFile == null)
+      {
+         try
+         {
+            URL url = new URL(location);
+            rootFile = AbstractVFS.toVirtualFile(url);
+         }
+         catch (IOException ex)
+         {
+            // Ignore, not a valid URL
+         }
+      }
+
+      // Try location as File
+      if (rootFile == null)
+      {
+         try
+         {
+            File file = new File(location);
+            if (file.exists())
+               rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
+         }
+         catch (IOException ex)
+         {
+            throw new BundleException("Cannot obtain virtual file from: " + location, ex);
+         }
+      }
+
+      if (rootFile == null)
+         throw new BundleException("Cannot obtain virtual file from: " + location);
+      
+      BundleStorageState storageState;
+      try
+      {
+         storageState = storagePlugin.createStorageState(bundleManager.getNextBundleId(), location, rootFile);
+      }
+      catch (IOException ex)
+      {
+         throw new BundleException("Cannot setup storage for: " + rootFile, ex);
+      }
+
+      AbstractBundle bundleState;
+      try
+      {
+         Deployment dep = deploymentPlugin.createDeployment(storageState);
+         bundleState = AbstractBundle.assertBundleState(deployerService.deploy(dep));
+      }
+      catch (BundleException ex)
+      {
+         storageState.deleteBundleStorage();
+         throw ex;
+      }
+      catch (RuntimeException ex)
+      {
+         storageState.deleteBundleStorage();
+         throw ex;
+      }
+      
       return bundleState.getBundleWrapper();
    }
 

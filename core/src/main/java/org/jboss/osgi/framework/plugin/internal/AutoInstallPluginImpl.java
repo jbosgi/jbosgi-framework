@@ -37,6 +37,7 @@ import org.jboss.osgi.framework.plugin.AutoInstallPlugin;
 import org.jboss.osgi.spi.util.StringPropertyReplacer;
 import org.jboss.osgi.spi.util.StringPropertyReplacer.PropertyProvider;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
 /**
@@ -135,10 +136,10 @@ public class AutoInstallPluginImpl extends AbstractPlugin implements AutoInstall
       // Install autoInstall bundles
       if (autoInstall != null)
       {
+         BundleContext sysContext = getBundleManager().getSystemContext();
          for (URL bundleURL : autoInstall)
          {
-
-            Bundle bundle = getBundleManager().installBundle(bundleURL);
+            Bundle bundle = sysContext.installBundle(bundleURL.toExternalForm());
             registerBundle(bundleURL, bundle);
          }
       }

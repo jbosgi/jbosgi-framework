@@ -21,10 +21,7 @@
 */
 package org.jboss.osgi.framework.bundle;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,8 +67,6 @@ import org.jboss.osgi.framework.plugin.internal.WebXMLVerifierInterceptor;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XVersionRange;
 import org.jboss.osgi.spi.util.SysPropertyActions;
-import org.jboss.osgi.vfs.AbstractVFS;
-import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -393,120 +388,6 @@ public class BundleManager
    public <T extends Plugin> T getOptionalPlugin(Class<T> clazz)
    {
       return (T)plugins.get(clazz);
-   }
-
-   /**
-    * Install a bundle from the given URL location.
-    */
-   public AbstractBundle installBundle(URL location) throws BundleException
-   {
-      VirtualFile rootFile;
-      try
-      {
-         rootFile = AbstractVFS.toVirtualFile(location);
-      }
-      catch (IOException ex)
-      {
-         throw new BundleException("Cannot obtain virtual file from: " + location, ex);
-      }
-      return installBundleInternal(location.toExternalForm(), rootFile);
-   }
-
-   /**
-    * Install a bundle from the given location.
-    */
-   public AbstractBundle installBundle(String location) throws BundleException
-   {
-      return installBundle(location, null);
-   }
-
-   /**
-    * Install a bundle from the given location and optional input stream.
-    */
-   public AbstractBundle installBundle(String location, InputStream input) throws BundleException
-   {
-      VirtualFile rootFile = null;
-      if (input != null)
-      {
-         try
-         {
-            rootFile = AbstractVFS.toVirtualFile(location, input);
-         }
-         catch (IOException ex)
-         {
-            throw new BundleException("Cannot obtain virtual file from input stream", ex);
-         }
-      }
-
-      // Try location as URL
-      if (rootFile == null)
-      {
-         try
-         {
-            URL url = new URL(location);
-            rootFile = AbstractVFS.toVirtualFile(url);
-         }
-         catch (IOException ex)
-         {
-            // Ignore, not a valid URL
-         }
-      }
-
-      // Try location as File
-      if (rootFile == null)
-      {
-         try
-         {
-            File file = new File(location);
-            if (file.exists())
-               rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
-         }
-         catch (IOException ex)
-         {
-            throw new BundleException("Cannot obtain virtual file from: " + location, ex);
-         }
-      }
-
-      if (rootFile == null)
-         throw new BundleException("Cannot obtain virtual file from: " + location);
-
-      return installBundleInternal(location, rootFile);
-   }
-
-   private AbstractBundle installBundleInternal(String location, VirtualFile rootFile) throws BundleException
-   {
-      if (location == null)
-         throw new IllegalArgumentException("Null location");
-      if (rootFile == null)
-         throw new IllegalArgumentException("Null rootFile");
-
-      BundleStorageState storageState;
-      try
-      {
-         BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
-         storageState = plugin.createStorageState(getNextBundleId(), location, rootFile);
-      }
-      catch (IOException ex)
-      {
-         throw new BundleException("Cannot setup storage for: " + rootFile, ex);
-      }
-
-      try
-      {
-         BundleDeploymentPlugin deploymentPlugin = getPlugin(BundleDeploymentPlugin.class);
-         Deployment dep = deploymentPlugin.createDeployment(storageState);
-         return installBundle(dep);
-      }
-      catch (BundleException ex)
-      {
-         storageState.deleteBundleStorage();
-         throw ex;
-      }
-      catch (RuntimeException ex)
-      {
-         storageState.deleteBundleStorage();
-         throw ex;
-      }
    }
 
    /**
