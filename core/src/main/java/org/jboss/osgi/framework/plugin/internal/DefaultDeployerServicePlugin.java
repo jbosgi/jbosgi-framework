@@ -56,11 +56,11 @@ public class DefaultDeployerServicePlugin extends AbstractDeployerServicePlugin
             return bundleState.getBundleWrapper();
          }
 
-         //@Override
-         //protected void uninstallBundle(Deployment dep, Bundle bundle) throws BundleException
-         //{
-         //   getBundleManager().uninstallBundle(dep);
-         //}
+         @Override
+         protected void uninstallBundle(Deployment dep, Bundle bundle) throws BundleException
+         {
+            getBundleManager().uninstallBundle(dep);
+         }
       };
       return service;
    }

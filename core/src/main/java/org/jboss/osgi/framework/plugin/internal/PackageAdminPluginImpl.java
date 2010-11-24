@@ -192,8 +192,8 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       ExportedPackage[] exported = getExportedPackagesInternal(name);
       List<ExportedPackage> wired = new ArrayList<ExportedPackage>();
       List<ExportedPackage> notWired = new ArrayList<ExportedPackage>();
-      
-      for (ExportedPackage ep : exported) 
+
+      for (ExportedPackage ep : exported)
       {
          XPackageCapability capability = ((ExportedPackageImpl) ep).getCapability();
          if (isWired(capability))
@@ -204,7 +204,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
       ExportedPackageComparator comparator = new ExportedPackageComparator();
       Collections.sort(wired, comparator);
       Collections.sort(notWired, comparator);
-      
+
       if (wired.size() > 0)
          return wired.get(0);
       else if (notWired.size() > 0)
@@ -753,7 +753,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          return sl1 < sl2 ? -1 : (sl1 == sl2 ? 0 : 1);
       }
    }
-   
+
    private static class ExportedPackageComparator implements Comparator<ExportedPackage>
    {
       @Override

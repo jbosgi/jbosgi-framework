@@ -27,10 +27,10 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
- * This is the internal implementation of a fragment Bundle. 
- * 
- * Fragment specific functionality is handled here. 
- * 
+ * This is the internal implementation of a fragment Bundle.
+ *
+ * Fragment specific functionality is handled here.
+ *
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
@@ -58,7 +58,7 @@ public class FragmentBundle extends AbstractUserBundle
 
       return (FragmentBundle)bundle;
    }
-   
+
    @Override
    AbstractUserRevision createRevisionInternal(Deployment deployment) throws BundleException
    {
@@ -86,7 +86,7 @@ public class FragmentBundle extends AbstractUserBundle
    @Override
    AbstractBundleContext createContextInternal()
    {
-      // If this bundle is a fragment bundle, then this bundle has no valid BundleContext. 
+      // If this bundle is a fragment bundle, then this bundle has no valid BundleContext.
       // This method will return null if this bundle has no valid BundleContext.
       return null;
    }
@@ -101,12 +101,5 @@ public class FragmentBundle extends AbstractUserBundle
    void stopInternal(int options) throws BundleException
    {
       throw new BundleException("Fragments cannot be stoped");
-   }
-
-   @Override
-   void uninstallInternal() throws BundleException
-   {
-      BundleManager bundleManager = getBundleManager();
-      bundleManager.uninstallBundle(this);
    }
 }

@@ -243,8 +243,9 @@ public class BundleManager
       bundleMap.remove(bundleState.getBundleId());
    }
 
-   void uninstallBundle(AbstractBundle bundleState)
+   public void uninstallBundle(Deployment dep)
    {
+      AbstractBundle bundleState = dep.getAttachment(AbstractBundle.class);
       bundleState.changeState(Bundle.UNINSTALLED);
       List<AbstractBundle> uninstalled = getBundles(Bundle.UNINSTALLED);
       for (AbstractBundle aux : uninstalled)
@@ -500,6 +501,7 @@ public class BundleManager
       boolean isFragment = metadata.getFragmentHost() != null;
       AbstractBundle bundleState = (isFragment ? new FragmentBundle(this, dep) : new HostBundle(this, dep));
       dep.addAttachment(AbstractBundle.class, bundleState);
+      dep.addAttachment(Bundle.class, bundleState);
 
       // Validate the deployed bundle
       // The system bundle is not validated

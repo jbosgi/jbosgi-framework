@@ -339,6 +339,6 @@ public class HostBundle extends AbstractUserBundle
          }
       }
 
-      bundleManager.uninstallBundle(this);
+      super.uninstallInternal();
    }
 }

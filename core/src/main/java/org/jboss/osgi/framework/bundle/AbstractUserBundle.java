@@ -33,6 +33,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.plugin.BundleDeploymentPlugin;
 import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
+import org.jboss.osgi.framework.plugin.DeployerServicePlugin;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
@@ -249,13 +250,15 @@ public abstract class AbstractUserBundle extends AbstractBundle
       {
          throw new BundleException("Cannot setup storage for: " + rootFile, ex);
       }
-      
+
       try
       {
          BundleDeploymentPlugin plugin = bundleManager.getPlugin(BundleDeploymentPlugin.class);
          Deployment dep = plugin.createDeployment(storageState);
          OSGiMetaData metadata = plugin.createOSGiMetaData(dep);
          dep.addAttachment(OSGiMetaData.class, metadata);
+         dep.addAttachment(AbstractBundle.class, this);
+         dep.addAttachment(Bundle.class, this);
 
          createRevision(dep);
          getResolverPlugin().addModule(getResolverModule());
@@ -287,7 +290,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
          ModuleIdentifier identifier = rev.getModuleIdentifier();
          getModuleManagerPlugin().removeModule(identifier);
       }
-      
+
       AbstractRevision currentRev = getCurrentRevision();
       clearRevisions();
 
@@ -306,7 +309,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
 
       BundleStorageState storageState = getDeployment().getAttachment(BundleStorageState.class);
       storageState.deleteBundleStorage();
-      
+
       ModuleManagerPlugin moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
       for (AbstractRevision rev : getRevisions())
       {
@@ -324,5 +327,12 @@ public abstract class AbstractUserBundle extends AbstractBundle
       // Cache the headers in the default locale
       headersOnUninstall = getHeaders(null);
       super.uninstall();
+   }
+
+   @Override
+   void uninstallInternal() throws BundleException
+   {
+      DeployerServicePlugin service = getBundleManager().getPlugin(DeployerServicePlugin.class);
+      service.undeploy(getDeployment());
    }
 }
