@@ -24,10 +24,8 @@ package org.jboss.osgi.framework.plugin.internal;
 import java.util.Properties;
 
 import org.jboss.logging.Logger;
-import org.jboss.osgi.deployment.deployer.DefaultDeploymentRegistryService;
 import org.jboss.osgi.deployment.deployer.DeployerService;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.deployment.deployer.DeploymentRegistryService;
 import org.jboss.osgi.deployment.deployer.SystemDeployerService;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
@@ -48,7 +46,6 @@ public class DeployerServicePluginImpl extends AbstractPlugin implements Deploye
    // Provide logging
    final Logger log = Logger.getLogger(DeployerServicePluginImpl.class);
 
-   private DeploymentRegistryService registry;
    private DeployerService delegate;
 
    public DeployerServicePluginImpl(BundleManager bundleManager)
@@ -60,10 +57,8 @@ public class DeployerServicePluginImpl extends AbstractPlugin implements Deploye
    public void startPlugin()
    {
       BundleContext sysContext = getBundleManager().getSystemContext();
-      registry = new DefaultDeploymentRegistryService(sysContext);
-      sysContext.registerService(DeploymentRegistryService.class.getName(), registry, null);
 
-      delegate = new DeployerServiceImpl(sysContext, registry);
+      delegate = new DeployerServiceImpl(sysContext);
 
       Properties props = new Properties();
       props.put("provider", "system");
@@ -74,7 +69,6 @@ public class DeployerServicePluginImpl extends AbstractPlugin implements Deploye
    @Override
    public void stopPlugin()
    {
-      registry = null;
       delegate = null;
    }
 
@@ -104,9 +98,9 @@ public class DeployerServicePluginImpl extends AbstractPlugin implements Deploye
 
    private class DeployerServiceImpl extends SystemDeployerService
    {
-      public DeployerServiceImpl(BundleContext sysContext, DeploymentRegistryService registry)
+      public DeployerServiceImpl(BundleContext sysContext)
       {
-         super(sysContext, registry);
+         super(sysContext);
       }
 
       @Override
