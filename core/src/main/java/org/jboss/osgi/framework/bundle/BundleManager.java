@@ -53,7 +53,7 @@ import org.jboss.osgi.framework.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.framework.plugin.internal.AutoInstallPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.BundleDeploymentPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.BundleStoragePluginImpl;
-import org.jboss.osgi.framework.plugin.internal.DeployerServicePluginImpl;
+import org.jboss.osgi.framework.plugin.internal.DefaultDeployerServicePlugin;
 import org.jboss.osgi.framework.plugin.internal.FrameworkEventsPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.LifecycleInterceptorPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.ModuleManagerPluginImpl;
@@ -93,7 +93,7 @@ public class BundleManager
    private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
    // The registered plugins
    private Map<Class<? extends Plugin>, Plugin> plugins = new LinkedHashMap<Class<? extends Plugin>, Plugin>();
-   // The default ModuleLoader 
+   // The default ModuleLoader
    private final ModuleLoader defaultModuleLoader;
    // The ServiceContainer
    private ServiceContainer serviceContainer;
@@ -139,7 +139,7 @@ public class BundleManager
       plugins.put(SystemPackagesPlugin.class, new SystemPackagesPluginImpl(this));
 
       // Register system service plugins
-      plugins.put(DeployerServicePlugin.class, new DeployerServicePluginImpl(this));
+      plugins.put(DeployerServicePlugin.class, new DefaultDeployerServicePlugin(this));
       plugins.put(LifecycleInterceptorPlugin.class, new LifecycleInterceptorPluginImpl(this));
       plugins.put(WebXMLVerifierInterceptor.class, new WebXMLVerifierInterceptor(this));
       plugins.put(PackageAdminPlugin.class, new PackageAdminPluginImpl(this));
@@ -153,7 +153,7 @@ public class BundleManager
       String storageClean = (String)getProperty(Constants.FRAMEWORK_STORAGE_CLEAN);
       if (firstInit == true && Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT.equals(storageClean))
          storagePlugin.cleanStorage();
-      
+
       // Create the Framework state
       frameworkState = new FrameworkState(this);
       firstInit = false;
@@ -391,6 +391,16 @@ public class BundleManager
    }
 
    /**
+    * Add a plugin to the bundle manager
+    * @return The previous plugin that was registered for the given key, or null.
+    */
+   @SuppressWarnings("unchecked")
+   public <T extends Plugin> T addPlugin(Class<T> clazz, T plugin)
+   {
+      return (T)plugins.put(clazz, plugin);
+   }
+
+   /**
     * Install a bundle from a {@link ModuleIdentifier}.
     *
     * This method can be used to install plain modules or bundles to the {@link BundleManager}.
@@ -468,7 +478,7 @@ public class BundleManager
          long bundleId = storageState.getBundleId();
          if (bundleId == 0)
             continue;
-         
+
          try
          {
             Deployment dep = deploymentPlugin.createDeployment(storageState);
@@ -568,7 +578,7 @@ public class BundleManager
          }
       }
 
-      // Clear out the bundles 
+      // Clear out the bundles
       bundleMap.clear();
    }
 }
