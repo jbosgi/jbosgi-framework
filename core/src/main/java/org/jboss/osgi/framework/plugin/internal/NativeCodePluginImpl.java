@@ -49,6 +49,7 @@ import org.jboss.osgi.metadata.Parameter;
 import org.jboss.osgi.metadata.ParameterizedAttribute;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 
 /**
@@ -113,7 +114,7 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
    @SuppressWarnings("unchecked")
    public void deployNativeCode(Deployment dep)
    {
-      AbstractBundle bundleState = dep.getAttachment(AbstractBundle.class);
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(dep.getAttachment(Bundle.class));
       if (bundleState == null)
          throw new IllegalStateException("Cannot obtain Bundle from: " + dep);
 

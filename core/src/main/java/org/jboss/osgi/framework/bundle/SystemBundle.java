@@ -51,7 +51,7 @@ public class SystemBundle extends AbstractBundle
    private final OSGiMetaData metadata;
    private SystemBundleRevision systemRevision;
 
-   public SystemBundle(BundleManager bundleManager) 
+   public SystemBundle(BundleManager bundleManager)
    {
       super(bundleManager, Constants.SYSTEM_BUNDLE_SYMBOLICNAME, getSystemBundleStorage(bundleManager));
 
@@ -95,7 +95,7 @@ public class SystemBundle extends AbstractBundle
       systemRevision = null;
    }
 
-   private static BundleStorageState getSystemBundleStorage(BundleManager bundleManager) 
+   private static BundleStorageState getSystemBundleStorage(BundleManager bundleManager)
    {
       try
       {
@@ -186,7 +186,7 @@ public class SystemBundle extends AbstractBundle
    @Override
    void uninstallInternal() throws BundleException
    {
-      throw new NotImplementedException();
+      // do nothing
    }
 
    @Override
