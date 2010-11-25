@@ -225,7 +225,7 @@ public abstract class AbstractBundle implements Bundle
    {
       storageState.updateLastModified();
    }
-   
+
    public boolean isResolved()
    {
       return getResolverModule().isResolved();
@@ -491,21 +491,6 @@ public abstract class AbstractBundle implements Bundle
    }
 
    abstract void updateInternal(InputStream input) throws BundleException;
-
-   @Override
-   public void uninstall() throws BundleException
-   {
-      assertNotUninstalled();
-
-      if (bundleManager.getBundleById(getBundleId()) == null)
-         throw new BundleException("Not installed: " + this);
-
-      uninstallInternal();
-
-      log.infof("Bundle uninstalled: %s", this);
-   }
-
-   abstract void uninstallInternal() throws BundleException;
 
    @Override
    public boolean hasPermission(Object permission)

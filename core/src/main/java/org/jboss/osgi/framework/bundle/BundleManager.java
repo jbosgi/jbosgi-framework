@@ -243,9 +243,14 @@ public class BundleManager
       bundleMap.remove(bundleState.getBundleId());
    }
 
-   public void uninstallBundle(Deployment dep)
+   public void uninstallBundle(Deployment dep) throws BundleException
    {
-      AbstractBundle bundleState = dep.getAttachment(AbstractBundle.class);
+      AbstractUserBundle bundleState = AbstractUserBundle.assertBundleState(dep.getAttachment(Bundle.class));
+      bundleState.uninstallInternal();
+   }
+
+   void uninstallBundle(AbstractUserBundle bundleState)
+   {
       bundleState.changeState(Bundle.UNINSTALLED);
       List<AbstractBundle> uninstalled = getBundles(Bundle.UNINSTALLED);
       for (AbstractBundle aux : uninstalled)
@@ -500,7 +505,6 @@ public class BundleManager
       // Create the bundle state
       boolean isFragment = metadata.getFragmentHost() != null;
       AbstractBundle bundleState = (isFragment ? new FragmentBundle(this, dep) : new HostBundle(this, dep));
-      dep.addAttachment(AbstractBundle.class, bundleState);
       dep.addAttachment(Bundle.class, bundleState);
 
       // Validate the deployed bundle

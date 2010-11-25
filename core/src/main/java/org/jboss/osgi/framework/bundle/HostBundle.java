@@ -43,7 +43,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public class HostBundle extends AbstractUserBundle
+public final class HostBundle extends AbstractUserBundle
 {
    //private static final Logger log = Logger.getLogger(HostBundle.class);
 
@@ -318,7 +318,7 @@ public class HostBundle extends AbstractUserBundle
    }
 
    @Override
-   void uninstallInternal() throws BundleException
+   protected void beforeUninstall() throws BundleException
    {
       BundleManager bundleManager = getBundleManager();
 
@@ -338,7 +338,5 @@ public class HostBundle extends AbstractUserBundle
             bundleManager.fireError(this, "Error stopping bundle: " + this, ex);
          }
       }
-
-      super.uninstallInternal();
    }
 }

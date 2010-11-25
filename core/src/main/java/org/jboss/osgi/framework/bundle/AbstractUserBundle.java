@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.List;
 
+import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -54,6 +55,8 @@ import org.osgi.service.packageadmin.PackageAdmin;
  */
 public abstract class AbstractUserBundle extends AbstractBundle
 {
+   private static final Logger log = Logger.getLogger(AbstractUserBundle.class);
+
    // The headers localized with the default locale
    private Dictionary<String, String> headersOnUninstall;
 
@@ -257,7 +260,6 @@ public abstract class AbstractUserBundle extends AbstractBundle
          Deployment dep = plugin.createDeployment(storageState);
          OSGiMetaData metadata = plugin.createOSGiMetaData(dep);
          dep.addAttachment(OSGiMetaData.class, metadata);
-         dep.addAttachment(AbstractBundle.class, this);
          dep.addAttachment(Bundle.class, this);
 
          createRevision(dep);
@@ -324,15 +326,28 @@ public abstract class AbstractUserBundle extends AbstractBundle
    @Override
    public void uninstall() throws BundleException
    {
-      // Cache the headers in the default locale
-      headersOnUninstall = getHeaders(null);
-      super.uninstall();
-   }
-
-   @Override
-   void uninstallInternal() throws BundleException
-   {
       DeployerServicePlugin service = getBundleManager().getPlugin(DeployerServicePlugin.class);
       service.undeploy(getDeployment());
+   }
+
+   void uninstallInternal() throws BundleException
+   {
+      assertNotUninstalled();
+
+      // Cache the headers in the default locale
+      headersOnUninstall = getHeaders(null);
+      BundleManager bundleManager = getBundleManager();
+      if (bundleManager.getBundleById(getBundleId()) == null)
+         throw new BundleException("Not installed: " + this);
+
+      beforeUninstall();
+      bundleManager.uninstallBundle(this);
+
+      log.infof("Bundle uninstalled: %s", this);
+   }
+
+   protected void beforeUninstall() throws BundleException
+   {
+      // do nothing
    }
 }

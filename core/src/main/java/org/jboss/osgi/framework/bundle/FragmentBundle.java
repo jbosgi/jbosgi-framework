@@ -34,7 +34,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
-public class FragmentBundle extends AbstractUserBundle
+public final class FragmentBundle extends AbstractUserBundle
 {
    FragmentBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {

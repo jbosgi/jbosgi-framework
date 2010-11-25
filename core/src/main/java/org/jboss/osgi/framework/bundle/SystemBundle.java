@@ -184,7 +184,7 @@ public class SystemBundle extends AbstractBundle
    }
 
    @Override
-   void uninstallInternal() throws BundleException
+   public void uninstall() throws BundleException
    {
       // do nothing
    }
