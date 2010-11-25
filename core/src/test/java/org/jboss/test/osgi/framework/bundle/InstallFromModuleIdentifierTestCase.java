@@ -56,40 +56,40 @@ public class InstallFromModuleIdentifierTestCase extends OSGiTest
 {
    private BundleManager bundleManager;
    private FrameworkState framework;
-   
+
    @Before
    public void setUp() throws Exception
    {
       super.setUp();
-      
+
       Map<String, Object> props = new HashMap<String, Object>();
       props.put(Constants.FRAMEWORK_STORAGE, new File("target/osgi-store").getAbsolutePath());
-      
+
       bundleManager = new BundleManager(props);
       framework = bundleManager.getFrameworkState();
       framework.start();
    }
-   
+
    @Test
    public void testInstallBundle() throws Exception
    {
       assertFrameworkState();
-      
+
       ModuleIdentifier identifier = ModuleIdentifier.create("org.osgi.compendium");
-      Bundle bundle = bundleManager.installBundle(identifier);
+      Bundle bundle = bundleManager.installBundle("org.osgi.compendium", identifier);
       assertNotNull("Bundle not null", bundle);
       assertBundleState(Bundle.INSTALLED, bundle.getState());
       assertEquals("Bundle id", 1, bundle.getBundleId());
-      
+
       assertLoadClass(bundle, ServiceTracker.class.getName());
       assertBundleState(Bundle.RESOLVED, bundle.getState());
-      
+
       bundle.start();
       assertBundleState(Bundle.ACTIVE, bundle.getState());
-      
+
       bundle.stop();
       assertBundleState(Bundle.RESOLVED, bundle.getState());
-      
+
       bundle.uninstall();
       BundleContext context = framework.getBundleContext();
       assertNull("Bundle null", context.getBundle(bundle.getBundleId()));
@@ -99,20 +99,20 @@ public class InstallFromModuleIdentifierTestCase extends OSGiTest
    public void testInstallModule() throws Exception
    {
       assertFrameworkState();
-      
+
       ModuleIdentifier identifier = ModuleIdentifier.create("javax.inject.api");
-      Bundle bundle = bundleManager.installBundle(identifier);
+      Bundle bundle = bundleManager.installBundle("javax.inject.api", identifier);
       assertBundleState(Bundle.INSTALLED, bundle.getState());
-      
+
       assertLoadClass(bundle, Inject.class.getName());
       assertBundleState(Bundle.RESOLVED, bundle.getState());
-      
+
       bundle.start();
       assertBundleState(Bundle.ACTIVE, bundle.getState());
-      
+
       bundle.stop();
       assertBundleState(Bundle.RESOLVED, bundle.getState());
-      
+
       bundle.uninstall();
       BundleContext context = framework.getBundleContext();
       assertNull("Bundle null", context.getBundle(bundle.getBundleId()));

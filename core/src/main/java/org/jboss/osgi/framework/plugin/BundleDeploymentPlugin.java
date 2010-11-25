@@ -44,11 +44,11 @@ public interface BundleDeploymentPlugin extends Plugin
 
    /**
     * Create a {@link Deployment} from the given module identifier.
-    * @param identifier The root file pointing to one of the supported bundle formats
-    * @param location The bundle location to be associated with the deployment
+    * @param location The bundle location that is to be used for this module
+    * @param identifier The module identifier
     * @throws BundleException If the given root file does not
     */
-   Deployment createDeployment(ModuleIdentifier identifier) throws BundleException;
+   Deployment createDeployment(String location, ModuleIdentifier identifier) throws BundleException;
 
    /**
     * Creates {@link OSGiMetaData} from the deployment.
