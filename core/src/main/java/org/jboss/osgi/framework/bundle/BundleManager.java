@@ -418,10 +418,10 @@ public class BundleManager
     *    - module may or may not have been loaded previously
     *    - module cannot be installed multiple times
     */
-   public Bundle installBundle(ModuleIdentifier identifier) throws BundleException
+   public Bundle installBundle(String location, ModuleIdentifier identifier) throws BundleException
    {
       BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
-      Deployment dep = plugin.createDeployment(identifier);
+      Deployment dep = plugin.createDeployment(location, identifier);
       return installBundle(dep);
    }
 

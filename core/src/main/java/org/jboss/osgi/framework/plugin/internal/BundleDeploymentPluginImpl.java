@@ -126,20 +126,19 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
    }
 
    @Override
-   public Deployment createDeployment(ModuleIdentifier identifier) throws BundleException
+   public Deployment createDeployment(String location, ModuleIdentifier identifier) throws BundleException
    {
       if (identifier == null)
          throw new IllegalArgumentException("Null identifier");
 
       BundleStoragePlugin storagePlugin = getPlugin(BundleStoragePlugin.class);
-      String location = identifier.getName() + ":" + identifier.getSlot();
 
       // Check if we have a single root file
       File repoFile = getModuleRepositoryEntry(identifier);
       long bundleId = getBundleManager().getNextBundleId();
       if (repoFile != null)
       {
-         // Try to process this as a valid OSGi bundle 
+         // Try to process this as a valid OSGi bundle
          BundleStorageState storageState;
          try
          {
