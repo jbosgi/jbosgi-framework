@@ -28,7 +28,7 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.BundleException;
 
 /**
- * A plugin the handles Bundle deployments.
+ * A plugin that handles Bundle deployments.
  *
  * @author thomas.diesler@jboss.com
  * @since 12-Jul-2010
@@ -44,7 +44,14 @@ public interface BundleDeploymentPlugin extends Plugin
 
    /**
     * Create a {@link Deployment} from the given module identifier.
-    * @param location The bundle location that is to be used for this module
+    * @param identifier The module identifier
+    * @throws BundleException If the given root file does not
+    */
+   Deployment createDeployment(ModuleIdentifier identifier) throws BundleException;
+
+   /**
+    * Create a {@link Deployment} from the given module identifier.
+    * @param location The bundle location that is to be used
     * @param identifier The module identifier
     * @throws BundleException If the given root file does not
     */

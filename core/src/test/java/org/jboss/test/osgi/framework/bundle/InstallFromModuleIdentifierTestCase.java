@@ -76,7 +76,7 @@ public class InstallFromModuleIdentifierTestCase extends OSGiTest
       assertFrameworkState();
 
       ModuleIdentifier identifier = ModuleIdentifier.create("org.osgi.compendium");
-      Bundle bundle = bundleManager.installBundle("org.osgi.compendium", identifier);
+      Bundle bundle = bundleManager.installBundle(identifier);
       assertNotNull("Bundle not null", bundle);
       assertBundleState(Bundle.INSTALLED, bundle.getState());
       assertEquals("Bundle id", 1, bundle.getBundleId());
@@ -101,7 +101,7 @@ public class InstallFromModuleIdentifierTestCase extends OSGiTest
       assertFrameworkState();
 
       ModuleIdentifier identifier = ModuleIdentifier.create("javax.inject.api");
-      Bundle bundle = bundleManager.installBundle("javax.inject.api", identifier);
+      Bundle bundle = bundleManager.installBundle(identifier);
       assertBundleState(Bundle.INSTALLED, bundle.getState());
 
       assertLoadClass(bundle, Inject.class.getName());
