@@ -51,7 +51,7 @@ import org.osgi.framework.ServiceRegistration;
 
 /**
  * The service implementation.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
@@ -61,7 +61,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    // Provide logging
    private static final Logger log = Logger.getLogger(ServiceState.class);
 
-   // The service id 
+   // The service id
    private long serviceId;
    // The bundle that ownes this service
    private AbstractBundle ownerBundle;
@@ -78,7 +78,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    // The service object value
    private Object value;
 
-   // The properties 
+   // The properties
    private CaseInsensitiveDictionary prevProperties;
    private CaseInsensitiveDictionary currProperties;
 
@@ -169,9 +169,9 @@ public class ServiceState implements ServiceRegistration, ServiceReference
 
          result = factoryHolder.getService();
 
-         // If the service object returned by the ServiceFactory object is not an instanceof all the classes named 
-         // when the service was registered or the ServiceFactory object throws an exception, 
-         // null is returned and a Framework event of type {@link FrameworkEvent#ERROR} 
+         // If the service object returned by the ServiceFactory object is not an instanceof all the classes named
+         // when the service was registered or the ServiceFactory object throws an exception,
+         // null is returned and a Framework event of type {@link FrameworkEvent#ERROR}
          // containing a {@link ServiceException} describing the error is fired.
          if (result == null)
          {
@@ -268,7 +268,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       properties.put(Constants.OBJECTCLASS, currProperties.get(Constants.OBJECTCLASS));
       currProperties = new CaseInsensitiveDictionary(properties);
 
-      // This event is synchronously delivered after the service properties have been modified. 
+      // This event is synchronously delivered after the service properties have been modified.
       eventsPlugin.fireServiceEvent(ownerBundle, ServiceEvent.MODIFIED, this);
    }
 
@@ -287,7 +287,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    {
       if (isUnregistered())
          return null;
-      
+
       return ownerBundle.getBundleWrapper();
    }
 
@@ -346,10 +346,10 @@ public class ServiceState implements ServiceRegistration, ServiceReference
          throw new IllegalArgumentException("Null bundle");
       if (className == null)
          throw new IllegalArgumentException("Null className");
-      
+
       if (ownerBundle == AbstractBundle.assertBundleState(bundle))
          return true;
-      
+
       Class<?> targetClass = null;
       try
       {
@@ -357,12 +357,12 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       }
       catch (ClassNotFoundException ex)
       {
-         // If the requesting bundle does not have a wire to the 
-         // service package it cannot be constraint on that package. 
+         // If the requesting bundle does not have a wire to the
+         // service package it cannot be constraint on that package.
          log.warnf("Requesting bundle cannot load class: %s", className);
          return true;
       }
-      
+
       Class<?> ownerClass = null;
       try
       {
@@ -373,13 +373,13 @@ public class ServiceState implements ServiceRegistration, ServiceReference
          log.warnf("Owner bundle cannot load class: %s", className);
          return false;
       }
-      
+
       if (targetClass != ownerClass)
       {
          log.debugf("Not assignable: %s", value.getClass().getName());
          return false;
       }
-      
+
       return true;
    }
 
@@ -388,7 +388,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
    {
       if (sref instanceof ServiceReference == false)
          throw new IllegalArgumentException("Invalid sref: " + sref);
-      
+
       Comparator<ServiceReference> comparator = ServiceReferenceComparator.getInstance();
       return comparator.compare(this, (ServiceReference)sref);
    }
@@ -398,10 +398,10 @@ public class ServiceState implements ServiceRegistration, ServiceReference
       Object prop = getProperty(Constants.SERVICE_RANKING);
       if (prop instanceof Integer == false)
          return 0;
-      
+
       return ((Integer)prop).intValue();
    }
-   
+
    public boolean isUnregistered()
    {
       return registration == null;
@@ -421,7 +421,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
          throw new IllegalArgumentException("Null classNames");
       if (value == null)
          throw new IllegalArgumentException("Null value");
-      
+
       if (value instanceof ServiceFactory)
          return true;
 
@@ -433,9 +433,11 @@ public class ServiceState implements ServiceRegistration, ServiceReference
          try
          {
             Class<?> clazz = bundleState.loadClass(className);
-            if (clazz.isAssignableFrom(value.getClass()) == false)
+            Class<? extends Object> valueClass = value.getClass();
+            if (clazz.isAssignableFrom(valueClass) == false)
             {
-               log.errorf("Service interface [%s] is not assignable from [%s]", className, value.getClass().getName());
+               String format = "Service interface [%s] loaded from [%s] is not assignable from [%s] loaded from [%s]";
+               log.errorf(format, className, clazz.getClassLoader(), valueClass.getName(), valueClass.getClassLoader());
                return false;
             }
          }
@@ -484,7 +486,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference
                if (retValue == null)
                   return null;
 
-               // The Framework will check if the returned service object is an instance of all the 
+               // The Framework will check if the returned service object is an instance of all the
                // classes named when the service was registered. If not, then null is returned to the bundle.
                if (checkValidClassNames(ownerBundle, (String[])getProperty(Constants.OBJECTCLASS), retValue) == false)
                   return null;

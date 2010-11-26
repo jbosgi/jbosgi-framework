@@ -407,7 +407,7 @@ public class BundleManager
    }
 
    /**
-    * Install a bundle from a {@link ModuleIdentifier}.
+    * Install a bundle from a given location and {@link ModuleIdentifier}.
     *
     * This method can be used to install plain modules or bundles to the {@link BundleManager}.
     * A plain module is one that does not have a valid OSGi manifest.
@@ -422,6 +422,16 @@ public class BundleManager
    {
       BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
       Deployment dep = plugin.createDeployment(location, identifier);
+      return installBundle(dep);
+   }
+
+   /**
+    * Install a bundle from a {@link ModuleIdentifier}.
+    */
+   public Bundle installBundle(ModuleIdentifier identifier) throws BundleException
+   {
+      BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
+      Deployment dep = plugin.createDeployment(identifier);
       return installBundle(dep);
    }
 
