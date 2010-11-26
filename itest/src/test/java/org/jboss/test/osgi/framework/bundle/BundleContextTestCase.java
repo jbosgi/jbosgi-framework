@@ -58,56 +58,53 @@ public class BundleContextTestCase extends OSGiFrameworkTest
    @Test
    public void testGetBundle() throws Exception
    {
-      Bundle bundle2 = installBundle(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
-      BundleContext context2 = null;
+      Bundle bundle1 = installBundle(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
+      BundleContext context1 = null;
       try
       {
-         bundle2.start();
-         context2 = bundle2.getBundleContext();
-         assertEquals(bundle2, context2.getBundle());
-         assertEquals(bundle2, context2.getBundle(bundle2.getBundleId()));
+         bundle1.start();
+         context1 = bundle1.getBundleContext();
+         assertEquals(bundle1, context1.getBundle());
+         assertEquals(bundle1, context1.getBundle(bundle1.getBundleId()));
 
-         Bundle[] bundles = context2.getBundles();
-         assertEquals(3, bundles.length);
-         assertEquals(context2.getBundle(0), bundles[0]);
-         assertEquals(context2.getBundle(1), bundles[1]);
-         assertEquals(bundle2, bundles[2]);
+         Bundle[] bundles = context1.getBundles();
+         assertEquals(2, bundles.length);
+         assertEquals(context1.getBundle(0), bundles[0]);
+         assertEquals(bundle1, bundles[1]);
 
-         Bundle bundle3 = installBundle(assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2"));
-         BundleContext context3 = null;
+         Bundle bundle2 = installBundle(assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2"));
+         BundleContext context2 = null;
          try
          {
-            bundle3.start();
-            context3 = bundle3.getBundleContext();
-            assertEquals(bundle3, context3.getBundle());
+            bundle2.start();
+            context2 = bundle2.getBundleContext();
+            assertEquals(bundle2, context2.getBundle());
 
-            bundles = context2.getBundles();
-            assertEquals(4, bundles.length);
-            assertEquals(context2.getBundle(0), bundles[0]);
-            assertEquals(context2.getBundle(1), bundles[1]);
+            bundles = context1.getBundles();
+            assertEquals(3, bundles.length);
+            assertEquals(context1.getBundle(0), bundles[0]);
+            assertEquals(bundle1, bundles[1]);
             assertEquals(bundle2, bundles[2]);
-            assertEquals(bundle3, bundles[3]);
 
-            assertEquals(bundle2, context3.getBundle(bundle2.getBundleId()));
-            assertEquals(bundle3, context2.getBundle(bundle3.getBundleId()));
+            assertEquals(bundle1, context2.getBundle(bundle1.getBundleId()));
+            assertEquals(bundle2, context1.getBundle(bundle2.getBundleId()));
          }
          finally
          {
-            bundle3.uninstall();
+            bundle2.uninstall();
          }
 
-         assertEquals(bundle2, context2.getBundle(bundle2.getBundleId()));
-         assertNull(context2.getBundle(bundle3.getBundleId()));
+         assertEquals(bundle1, context1.getBundle(bundle1.getBundleId()));
+         assertNull(context1.getBundle(bundle2.getBundleId()));
 
-         bundles = context2.getBundles();
-         assertEquals(3, bundles.length);
-         assertEquals(context2.getBundle(0), bundles[0]);
-         assertEquals(context2.getBundle(1), bundles[1]);
-         assertEquals(bundle2, bundles[2]);
+         bundles = context1.getBundles();
+         assertEquals(2, bundles.length);
+         assertEquals(context1.getBundle(0), bundles[0]);
+         assertEquals(bundle1, bundles[1]);
 
          try
          {
-            context3.getBundle();
+            context2.getBundle();
             fail("Should not be here!");
          }
          catch (IllegalStateException t)
@@ -117,7 +114,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest
 
          try
          {
-            context3.getBundle(bundle2.getBundleId());
+            context2.getBundle(bundle1.getBundleId());
             fail("Should not be here!");
          }
          catch (IllegalStateException t)
@@ -127,7 +124,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest
 
          try
          {
-            context3.getBundles();
+            context2.getBundles();
             fail("Should not be here!");
          }
          catch (IllegalStateException t)
@@ -137,12 +134,12 @@ public class BundleContextTestCase extends OSGiFrameworkTest
       }
       finally
       {
-         bundle2.uninstall();
+         bundle1.uninstall();
       }
 
       try
       {
-         context2.getBundle();
+         context1.getBundle();
          fail("Should not be here!");
       }
       catch (IllegalStateException t)
@@ -152,7 +149,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest
 
       try
       {
-         context2.getBundle(bundle2.getBundleId());
+         context1.getBundle(bundle1.getBundleId());
          fail("Should not be here!");
       }
       catch (IllegalStateException t)
@@ -162,7 +159,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest
 
       try
       {
-         context2.getBundles();
+         context1.getBundles();
          fail("Should not be here!");
       }
       catch (IllegalStateException t)
