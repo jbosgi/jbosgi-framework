@@ -38,8 +38,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.BatchBuilder;
-import org.jboss.msc.service.BatchServiceBuilder;
 import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
@@ -169,7 +169,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
       log.debugf("Register service: %s", serviceState);
 
       ServiceName rootServiceName = serviceNames[0];
-      BatchServiceBuilder serviceBuilder = batchBuilder.addService(rootServiceName, service);
+      ServiceBuilder<?> serviceBuilder = batchBuilder.addService(rootServiceName, service);
       associations.put(rootServiceName, clazzes[0]);
 
       // Set the startup mode
@@ -182,6 +182,8 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          associations.put(alias, clazzes[1]);
          serviceBuilder.addAliases(alias);
       }
+      // Install
+      serviceBuilder.install();
 
       try
       {
