@@ -24,8 +24,8 @@ package org.jboss.test.osgi.framework.xservice.moduleA;
 
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.BatchBuilder;
-import org.jboss.msc.service.BatchServiceBuilder;
 import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
@@ -73,8 +73,8 @@ public class ModuleActivatorA implements ModuleActivator
          }
       };
 
-      BatchServiceBuilder<ModuleServiceA> serviceBuilder = batchBuilder.addService(serviceName, service);
-      serviceBuilder.setInitialMode(Mode.PASSIVE);
+      ServiceBuilder<ModuleServiceA> serviceBuilder = batchBuilder.addService(serviceName, service);
+      serviceBuilder.setInitialMode(Mode.PASSIVE).install();
       try
       {
          batchBuilder.install();
