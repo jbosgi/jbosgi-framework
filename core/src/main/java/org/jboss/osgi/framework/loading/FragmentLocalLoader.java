@@ -106,7 +106,8 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
       final ClassSpec classSpec;
       try
       {
-         classSpec = resourceLoader.getClassSpec(className);
+         String fileName = className.replace('.', '/') + ".class";
+         classSpec = resourceLoader.getClassSpec(fileName);
       }
       catch (Throwable th)
       {
