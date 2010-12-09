@@ -195,7 +195,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
 
       for (ExportedPackage ep : exported)
       {
-         XPackageCapability capability = ((ExportedPackageImpl) ep).getCapability();
+         XPackageCapability capability = ((ExportedPackageImpl)ep).getCapability();
          if (isWired(capability))
             wired.add(ep);
          else
@@ -569,7 +569,8 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          ModuleManagerPlugin moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
 
          AbstractBundle bundleState = moduleManager.getBundleState(moduleCL.getModule().getIdentifier());
-         return bundleState.getBundleWrapper();
+         if (bundleState != null)
+            return bundleState.getBundleWrapper();
       }
 
       log.debugf("Cannot obtain bundle for: %s", clazz.getName());
