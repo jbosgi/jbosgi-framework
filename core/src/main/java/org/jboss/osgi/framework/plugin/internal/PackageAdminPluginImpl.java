@@ -572,7 +572,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          return bundleState.getBundleWrapper();
       }
 
-      log.errorf("Cannot obtain bundle for: %s", loader);
+      log.debugf("Cannot obtain bundle for: %s", clazz.getName());
       return null;
    }
 
