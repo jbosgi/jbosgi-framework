@@ -301,12 +301,11 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
          // Create the ServiceState on demand for an XService instance
          // [TODO] This should be done eagerly to keep the serviceId constant
          // [TODO] service events for XService lifecycle changes
-         // [MSC-17] Canonical ServiceName string representation
-         if (value instanceof ServiceState == false && serviceName.toString().contains(Constants.JBOSGI_PREFIX))
+         if (value instanceof ServiceState == false && serviceName.getCanonicalName().startsWith(Constants.JBOSGI_PREFIX))
          {
             long serviceId = getNextServiceId();
             Bundle bundle = packageAdmin.getBundle(value.getClass());
-            AbstractBundle owner = AbstractBundle.assertBundleState(bundle);
+            AbstractBundle owner = (bundle != null ? AbstractBundle.assertBundleState(bundle) : getBundleManager().getSystemBundle());
             value = new ServiceState(owner, serviceId, new ServiceName[] { serviceName }, new String[] { clazz }, value, null);
          }
 
