@@ -22,15 +22,19 @@
 package org.jboss.osgi.framework.bundle;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.plugin.StartLevelPlugin;
+import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.modules.ModuleActivator;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
+import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.service.packageadmin.PackageAdmin;
 
@@ -49,6 +53,7 @@ public final class HostBundle extends AbstractUserBundle
 
    private BundleActivator bundleActivator;
    private int startLevel = StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
+   private AtomicBoolean activating = new AtomicBoolean();
 
    HostBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {
@@ -172,77 +177,131 @@ public final class HostBundle extends AbstractUserBundle
 
       StartLevelPlugin plugin = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
       if (plugin != null && plugin.getStartLevel() < getStartLevel())
+      {
          // Not at the required start level yet. This bundle will be started later once
          // the required start level has been reached.
          // TODO the spec says that we need to throw a BundleException here...
          return;
+      }
 
+      transitionToStarting(options);
+
+      if (isActivationLazy() == false)
+         transitionToActive(options);
+   }
+
+   private void transitionToStarting(int options) throws BundleException
+   {
       // Resolve this bundles
       XModule resModule = getResolverModule();
       getResolverPlugin().resolve(resModule);
 
-      // The BundleActivator.start(BundleContext) method of this bundle's BundleActivator, if one is specified, is called.
+      // Create the bundle context
+      createBundleContext();
+
+      // This bundle's state is set to STARTING
+      changeState(Bundle.STARTING);
+   }
+
+   private void transitionToActive(int options) throws BundleException
+   {
+      if (activating.get() == true)
+         return;
+
+      activating.set(true);
       try
       {
-         // Create the bundle context
-         createBundleContext();
+         // The normal STARTING event is fired
+         if (isActivationLazy() == true)
+            fireBundleEvent(BundleEvent.STARTING);
 
-         // This bundle's state is set to STARTING
-         changeState(Bundle.STARTING);
-
-         // Do we have a bundle activator
-         String bundleActivatorClassName = resModule.getModuleActivator();
-         if (bundleActivatorClassName != null)
+         // The BundleActivator.start(BundleContext) method of this bundle's BundleActivator, if one is specified, is called.
+         try
          {
-            Object result = loadClass(bundleActivatorClassName).newInstance();
-            if (result instanceof ModuleActivator)
+            // Do we have a bundle activator
+            XModule resModule = getResolverModule();
+            String bundleActivatorClassName = resModule.getModuleActivator();
+            if (bundleActivatorClassName != null)
             {
-               bundleActivator = new ModuleActivatorBridge((ModuleActivator)result);
-               bundleActivator.start(getBundleContext());
+               Object result = loadClass(bundleActivatorClassName).newInstance();
+               if (result instanceof ModuleActivator)
+               {
+                  bundleActivator = new ModuleActivatorBridge((ModuleActivator)result);
+                  bundleActivator.start(getBundleContext());
+               }
+               else if (result instanceof BundleActivator)
+               {
+                  bundleActivator = (BundleActivator)result;
+                  bundleActivator.start(getBundleContext());
+               }
+               else
+               {
+                  throw new BundleException(bundleActivatorClassName + " is not an implementation of " + BundleActivator.class.getName());
+               }
             }
-            else if (result instanceof BundleActivator)
-            {
-               bundleActivator = (BundleActivator)result;
-               bundleActivator.start(getBundleContext());
-            }
-            else
-            {
-               throw new BundleException(bundleActivatorClassName + " is not an implementation of " + BundleActivator.class.getName());
-            }
+            changeState(ACTIVE);
          }
-         changeState(ACTIVE);
-      }
 
-      // If the BundleActivator is invalid or throws an exception then:
-      //   * This bundle's state is set to STOPPING.
-      //   * A bundle event of type BundleEvent.STOPPING is fired.
-      //   * Any services registered by this bundle must be unregistered.
-      //   * Any services used by this bundle must be released.
-      //   * Any listeners registered by this bundle must be removed.
-      //   * This bundle's state is set to RESOLVED.
-      //   * A bundle event of type BundleEvent.STOPPED is fired.
-      //   * A BundleException is then thrown.
-      catch (Throwable t)
+         // If the BundleActivator is invalid or throws an exception then:
+         //   * This bundle's state is set to STOPPING.
+         //   * A bundle event of type BundleEvent.STOPPING is fired.
+         //   * Any services registered by this bundle must be unregistered.
+         //   * Any services used by this bundle must be released.
+         //   * Any listeners registered by this bundle must be removed.
+         //   * This bundle's state is set to RESOLVED.
+         //   * A bundle event of type BundleEvent.STOPPED is fired.
+         //   * A BundleException is then thrown.
+         catch (Throwable t)
+         {
+            // This bundle's state is set to STOPPING
+            // A bundle event of type BundleEvent.STOPPING is fired
+            changeState(STOPPING);
+
+            // Any services registered by this bundle must be unregistered.
+            // Any services used by this bundle must be released.
+            // Any listeners registered by this bundle must be removed.
+            stopInternal(options);
+
+            // This bundle's state is set to RESOLVED
+            // A bundle event of type BundleEvent.STOPPED is fired
+            destroyBundleContext();
+            changeState(RESOLVED);
+
+            if (t instanceof BundleException)
+               throw (BundleException)t;
+
+            throw new BundleException("Cannot start bundle: " + this, t);
+         }
+      }
+      finally
       {
-         // This bundle's state is set to STOPPING
-         // A bundle event of type BundleEvent.STOPPING is fired
-         changeState(STOPPING);
-
-         // Any services registered by this bundle must be unregistered.
-         // Any services used by this bundle must be released.
-         // Any listeners registered by this bundle must be removed.
-         stopInternal(options);
-
-         // This bundle's state is set to RESOLVED
-         // A bundle event of type BundleEvent.STOPPED is fired
-         destroyBundleContext();
-         changeState(RESOLVED);
-
-         if (t instanceof BundleException)
-            throw (BundleException)t;
-
-         throw new BundleException("Cannot start bundle: " + this, t);
+         activating.set(false);
       }
+   }
+
+   protected boolean isActivationLazy()
+   {
+      ActivationPolicyMetaData policyMetaData = getOSGiMetaData().getBundleActivationPolicy();
+      String policyType = (policyMetaData != null ? policyMetaData.getType() : null);
+      return Constants.ACTIVATION_LAZY.equals(policyType);
+   }
+
+   @Override
+   public Class<?> loadClass(String name) throws ClassNotFoundException
+   {
+      // If the bundle was started lazily, we transition to ACTIVE now
+      if (getState() == Bundle.STARTING && isActivationLazy())
+      {
+         try
+         {
+            transitionToActive(0);
+         }
+         catch (BundleException ex)
+         {
+            throw new IllegalStateException(ex);
+         }
+      }
+      return super.loadClass(name);
    }
 
    @Override
