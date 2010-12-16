@@ -50,8 +50,9 @@ import org.jboss.osgi.framework.bundle.FragmentRevision;
 import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.OSGiModuleLoader;
 import org.jboss.osgi.framework.loading.FragmentLocalLoader;
+import org.jboss.osgi.framework.loading.BundleModuleClassLoader;
 import org.jboss.osgi.framework.loading.FrameworkLocalLoader;
-import org.jboss.osgi.framework.loading.ModuleClassLoaderExt;
+import org.jboss.osgi.framework.loading.BundleFallbackLoader;
 import org.jboss.osgi.framework.loading.NativeLibraryProvider;
 import org.jboss.osgi.framework.loading.NativeResourceLoader;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
@@ -236,6 +237,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
          FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(getBundleManager());
          specBuilder.addDependency(DependencySpec.createLocalDependencySpec(frameworkLoader, frameworkLoader.getExportedPaths(), true));
+         specBuilder.setModuleClassLoaderFactory(new BundleModuleClassLoader.Factory(getBundleManager().getSystemBundle()));
 
          ModuleSpec frameworkSpec = specBuilder.create();
          moduleLoader.addModule(bundleRev, frameworkSpec);
@@ -326,7 +328,8 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             specBuilder.addResourceRoot(nativeLoader);
          }
 
-         specBuilder.setFallbackLoader(new ModuleClassLoaderExt(getBundleManager(), identifier));
+         specBuilder.setModuleClassLoaderFactory(new BundleModuleClassLoader.Factory(bundleState));
+         specBuilder.setFallbackLoader(new BundleFallbackLoader(getBundleManager(), identifier));
 
          // Build the ModuleSpec
          moduleSpec = specBuilder.create();

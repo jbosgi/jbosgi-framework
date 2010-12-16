@@ -39,8 +39,8 @@
     <version.apache.felix.log>1.0.0</version.apache.felix.log>
     <version.javax.inject>1</version.javax.inject>
     <version.jboss.arquillian>1.0.0.Alpha4.SP5-SNAPSHOT</version.jboss.arquillian>
-    <version.jboss.logmanager>1.2.0.CR7</version.jboss.logmanager>
-    <version.jboss.logmanager.log4j>1.0.0.CR3</version.jboss.logmanager.log4j>
+    <version.jboss.logmanager>1.2.0.CR8</version.jboss.logmanager>
+    <version.jboss.logging>3.0.0.Beta4</version.jboss.logging>
     <version.jboss.msc>1.0.0.Beta5-SNAPSHOT</version.jboss.msc>
     <version.jboss.modules>1.0.0.Beta12-SNAPSHOT</version.jboss.modules>
     <version.jboss.osgi.deployment>1.0.9</version.jboss.osgi.deployment>
@@ -67,9 +67,9 @@
           <version>${version.jboss.logmanager}</version>
       </dependency>
       <dependency>
-          <groupId>org.jboss.logmanager</groupId>
-          <artifactId>jboss-logmanager-log4j</artifactId>
-          <version>${version.jboss.logmanager.log4j}</version>
+          <groupId>org.jboss.logging</groupId>
+          <artifactId>jboss-logging</artifactId>
+          <version>${version.jboss.logging}</version>
       </dependency>
       <dependency>
         <groupId>org.jboss.modules</groupId>

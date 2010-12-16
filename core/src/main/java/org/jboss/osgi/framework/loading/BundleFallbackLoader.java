@@ -41,37 +41,29 @@ import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleReference;
 
 /**
- * An OSGi extention to the {@link ModuleClassLoader}.
+ * A fallback loader that takes care of dynamic class loads.
  *
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class ModuleClassLoaderExt implements LocalLoader, BundleReference
+public class BundleFallbackLoader implements LocalLoader
 {
    // Provide logging
-   private static final Logger log = Logger.getLogger(ModuleClassLoaderExt.class);
+   private static final Logger log = Logger.getLogger(BundleFallbackLoader.class);
 
    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
    private final ModuleManagerPlugin moduleManager;
    private final BundleManager bundleManager;
    private final ModuleIdentifier id;
 
-   public ModuleClassLoaderExt(BundleManager bundleManager, ModuleIdentifier id)
+   public BundleFallbackLoader(BundleManager bundleManager, ModuleIdentifier id)
    {
       this.bundleManager = bundleManager;
       this.id = id;
 
       moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
-   }
-
-   @Override
-   public Bundle getBundle()
-   {
-      AbstractBundle bundleState = moduleManager.getBundleState(id);
-      return bundleState.getBundleWrapper();
    }
 
    @Override
@@ -252,14 +244,12 @@ public class ModuleClassLoaderExt implements LocalLoader, BundleReference
    @Override
    public List<Resource> loadResourceLocal(String name)
    {
-      // TODO Auto-generated method stub
       return Collections.emptyList();
    }
 
    @Override
    public Resource loadResourceLocal(String root, String name)
    {
-      // TODO Auto-generated method stub
       return null;
    }
 }
