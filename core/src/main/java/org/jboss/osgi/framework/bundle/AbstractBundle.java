@@ -388,7 +388,10 @@ public abstract class AbstractBundle implements Bundle
       switch (state)
       {
          case Bundle.STARTING:
-            bundleEventType = BundleEvent.STARTING;
+            if (isActivationLazy() == true)
+               bundleEventType = BundleEvent.LAZY_ACTIVATION;
+            else
+               bundleEventType = BundleEvent.STARTING;
             break;
          case Bundle.ACTIVE:
             bundleEventType = BundleEvent.STARTED;
@@ -426,6 +429,13 @@ public abstract class AbstractBundle implements Bundle
       bundleState.set(state);
 
       // Fire the bundle event
+      fireBundleEvent(bundleEventType);
+   }
+
+   protected abstract boolean isActivationLazy();
+
+   protected void fireBundleEvent(int bundleEventType)
+   {
       if (getBundleManager().isFrameworkActive())
          eventsPlugin.fireBundleEvent(this, bundleEventType);
    }
@@ -653,8 +663,7 @@ public abstract class AbstractBundle implements Bundle
    }
 
    @Override
-   @SuppressWarnings("rawtypes")
-   public Class loadClass(String name) throws ClassNotFoundException
+   public Class<?> loadClass(String name) throws ClassNotFoundException
    {
       return getCurrentRevision().loadClass(name);
    }
