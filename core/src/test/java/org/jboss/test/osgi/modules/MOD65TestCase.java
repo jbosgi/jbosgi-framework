@@ -36,9 +36,9 @@ import org.jboss.osgi.framework.loading.SystemLocalLoader;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.test.osgi.modules.a.CircularityErrorTest;
+import org.jboss.test.osgi.modules.a.CircularityError;
 import org.jboss.test.osgi.modules.b.CircularityActivator;
-import org.jboss.test.osgi.modules.b.CircularityError;
+import org.jboss.test.osgi.modules.b.CircularityErrorDep;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -83,7 +83,7 @@ public class MOD65TestCase extends ModulesTestBase
       specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
       addModuleSpec(specBuilderB.create());
 
-      assertLoadClass(identifierB, CircularityErrorTest.class.getName());
+      assertLoadClass(identifierB, CircularityError.class.getName());
    }
 
    class LazyActivationLocalLoader implements LocalLoader
@@ -110,7 +110,7 @@ public class MOD65TestCase extends ModulesTestBase
             // After defining the class the LocalLoader may call into the ModuleActivator
             // which in turn may try to load a class that initialted a call to this local loader
             Module moduleB = moduleLoader.loadModule(identifierB);
-            moduleB.getClassLoader().loadClass(CircularityErrorTest.class.getName());
+            moduleB.getClassLoader().loadClass(CircularityError.class.getName());
 
             return definedClass;
          }
@@ -136,14 +136,14 @@ public class MOD65TestCase extends ModulesTestBase
    private JavaArchive getModuleA()
    {
       JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-      archive.addClasses(CircularityError.class, CircularityActivator.class);
+      archive.addClasses(CircularityErrorDep.class, CircularityActivator.class);
       return archive;
    }
 
    private JavaArchive getModuleB()
    {
       JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
-      archive.addClasses(CircularityErrorTest.class);
+      archive.addClasses(CircularityError.class);
       return archive;
    }
 }

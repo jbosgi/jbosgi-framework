@@ -31,10 +31,11 @@ import org.jboss.test.osgi.modules.a.A;
 import org.jboss.test.osgi.modules.b.B;
 import org.jboss.test.osgi.modules.c.C;
 import org.jboss.test.osgi.modules.d.D;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * MODULES-45 Unexpected class load with unwired dependency
+ * [MODULES-45] Unexpected class load with unwired dependency
  *
  * @author Thomas.Diesler@jboss.com
  * @since 15-Sep-2010
@@ -42,6 +43,7 @@ import org.junit.Test;
 public class MOD45TestCase extends ModulesTestBase
 {
    @Test
+   @Ignore("[MODULES-45] Unexpected class load with unwired dependency")
    public void testDependencyNotWired() throws Exception
    {
       JavaArchive archiveA = getModuleA();
