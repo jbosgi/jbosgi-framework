@@ -149,7 +149,7 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClass(identifierA, A.class.getName());
       assertLoadClass(identifierA, B.class.getName());
 
-      // [TODO] MODULES-45 Unexpected class load with unwired dependency
+      // [TODO] [MODULES-45] Unexpected class load with unwired dependency
       // assertLoadClassFails(identifierB, C.class.getName());
 
       Class<?> clazz = loadClass(identifierB, C.class.getName());
