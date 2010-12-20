@@ -210,15 +210,25 @@ public final class HostBundle extends AbstractUserBundle
       if (getState() == Bundle.STARTING)
          return;
 
-      // Resolve this bundles
-      XModule resModule = getResolverModule();
-      getResolverPlugin().resolve(resModule);
+      try
+      {
+         // Resolve this bundles
+         XModule resModule = getResolverModule();
+         getResolverPlugin().resolve(resModule);
 
-      // Create the bundle context
-      createBundleContext();
+         // Create the bundle context
+         createBundleContext();
 
-      // This bundle's state is set to STARTING
-      changeState(Bundle.STARTING);
+         // This bundle's state is set to STARTING
+         changeState(Bundle.STARTING);
+      }
+      catch (Throwable th)
+      {
+         if (th instanceof BundleException)
+            throw (BundleException)th;
+         
+         throw new BundleException("Cannot transition to starting: " + this, th);
+      }
    }
 
    private void transitionToActive(int options) throws BundleException
