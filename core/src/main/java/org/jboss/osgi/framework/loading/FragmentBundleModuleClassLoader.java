@@ -23,36 +23,26 @@ package org.jboss.osgi.framework.loading;
 
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleClassLoaderFactory;
-import org.jboss.osgi.framework.bundle.AbstractBundle;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleReference;
+import org.jboss.osgi.framework.bundle.FragmentBundle;
 
 /**
- * The {@link ModuleClassLoader} for a bundle.
+ * The {@link ModuleClassLoader} for a fragment bundle.
  *
  * @author thomas.diesler@jboss.com
- * @since 16-Dec-2010
+ * @since 17-Dec-2010
  */
-public class BundleModuleClassLoader extends ModuleClassLoader implements BundleReference
+public class FragmentBundleModuleClassLoader extends AbstractModuleClassLoader
 {
-   private AbstractBundle bundleState;
-   
-   private BundleModuleClassLoader(AbstractBundle bundleState, Configuration configuration)
+   private FragmentBundleModuleClassLoader(FragmentBundle bundleState, Configuration configuration)
    {
-      super(configuration);
-      this.bundleState = bundleState;
+      super(bundleState, configuration);
    }
 
-   @Override
-   public Bundle getBundle()
-   {
-      return bundleState.getBundleWrapper();
-   }
-   
    public static class Factory implements ModuleClassLoaderFactory
    {
-      private AbstractBundle bundleState;
-      public Factory(AbstractBundle bundleState)
+      private FragmentBundle bundleState;
+
+      public Factory(FragmentBundle bundleState)
       {
          this.bundleState = bundleState;
       }
@@ -60,7 +50,7 @@ public class BundleModuleClassLoader extends ModuleClassLoader implements Bundle
       @Override
       public ModuleClassLoader create(Configuration configuration)
       {
-         return new BundleModuleClassLoader(bundleState, configuration);
+         return new FragmentBundleModuleClassLoader(bundleState, configuration);
       }
    }
 }

@@ -22,6 +22,7 @@
 package org.jboss.test.osgi.framework.service;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.io.InputStream;
 import java.lang.reflect.Field;
@@ -36,6 +37,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.startlevel.StartLevel;
 
@@ -132,8 +134,15 @@ public class StartLevelTestCase extends OSGiFrameworkTest
          {
             assertBundleState(Bundle.INSTALLED, bundle.getState());
             assertEquals(5, sls.getBundleStartLevel(bundle));
-            bundle.start(Bundle.START_TRANSIENT);
-            assertBundleState(Bundle.INSTALLED, bundle.getState());
+            try
+            {
+               bundle.start(Bundle.START_TRANSIENT);
+               fail("BundleException expected");
+            }
+            catch (BundleException ex)
+            {
+               assertBundleState(Bundle.INSTALLED, bundle.getState());
+            }
 
             sls.setStartLevel(5);
             // Increasing the start level should not have started the bundle since it wasn't started persistently

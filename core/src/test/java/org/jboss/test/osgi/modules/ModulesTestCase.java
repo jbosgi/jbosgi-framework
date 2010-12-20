@@ -23,13 +23,21 @@ package org.jboss.test.osgi.modules;
 
 import static org.junit.Assert.fail;
 
+import java.util.Collections;
+import java.util.List;
+
 import javax.management.MBeanServer;
 import javax.net.SocketFactory;
 
 import org.jboss.modules.DependencySpec;
+import org.jboss.modules.LocalLoader;
+import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.modules.PathFilter;
 import org.jboss.modules.PathFilters;
+import org.jboss.modules.Resource;
 import org.jboss.osgi.framework.loading.SystemLocalLoader;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -86,7 +94,38 @@ public class ModulesTestCase extends ModulesTestBase
       addModuleSpec(specBuilderA.create());
 
       assertLoadClass(identifierA, A.class.getName());
-      // B can be loaded from moduleA, even though there is an export filter on the ResouceLoader
+      // [TODO] MODULES-64 ExportFilter on ResourceLoader has no effect
+      //assertLoadClassFails(identifierA, B.class.getName());
+   }
+
+   @Test
+   public void testImportFilterOnLocalDependency() throws Exception
+   {
+      JavaArchive archiveA = getModuleA();
+      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(getPathFilter(A.class), PathFilters.acceptAll()));
+      addModuleSpec(specBuilderA.create());
+
+      assertLoadClass(identifierA, A.class.getName());
+      assertLoadClassFails(identifierA, B.class.getName());
+   }
+
+   @Test
+   public void testLazyActivation() throws Exception
+   {
+      JavaArchive archiveA = getModuleA();
+      PathFilter eagerPathsFilter = getPathFilter(A.class);
+      PathFilter lazyPathsFilter = PathFilters.not(eagerPathsFilter);
+      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(eagerPathsFilter, PathFilters.acceptAll()));
+      specBuilderA.setFallbackLoader(new RelinkFallbackLoader(identifierA, lazyPathsFilter));
+      addModuleSpec(specBuilderA.create());
+
+      assertLoadClass(identifierA, A.class.getName());
       assertLoadClass(identifierA, B.class.getName());
    }
 
@@ -112,7 +151,7 @@ public class ModulesTestCase extends ModulesTestBase
 
       // [TODO] MODULES-45 Unexpected class load with unwired dependency
       // assertLoadClassFails(identifierB, C.class.getName());
-      
+
       Class<?> clazz = loadClass(identifierB, C.class.getName());
       try
       {
@@ -123,7 +162,7 @@ public class ModulesTestCase extends ModulesTestBase
       {
          // expected
       }
-      
+
       assertLoadClass(identifierB, D.class.getName());
    }
 
@@ -471,6 +510,54 @@ public class ModulesTestCase extends ModulesTestBase
       assertLoadClass(identifierX, D.class.getName());
       assertLoadClass(identifierX, A.class.getName());
       assertLoadClassFails(identifierX, B.class.getName());
+   }
+
+   class RelinkFallbackLoader implements LocalLoader
+   {
+      private final ModuleIdentifier identifier;
+      private final PathFilter activationFilter;
+
+      RelinkFallbackLoader(ModuleIdentifier identifier, PathFilter activationFilter)
+      {
+         this.identifier = identifier;
+         this.activationFilter = activationFilter;
+      }
+
+      @Override
+      public Class<?> loadClassLocal(String className, boolean resolve)
+      {
+         if (activationFilter.accept(getPath(className)) == false)
+            return null;
+
+         try
+         {
+            ModuleLoaderSupport moduleLoader = getModuleLoader();
+            Module module = moduleLoader.loadModule(identifier);
+            List<DependencySpec> dependencies = Collections.singletonList(DependencySpec.createLocalDependencySpec());
+            moduleLoader.setAndRelinkDependencies(module, dependencies);
+            return module.getClassLoader().loadClass(className);
+         }
+         catch (ModuleLoadException ex)
+         {
+            throw new IllegalStateException(ex);
+         }
+         catch (ClassNotFoundException ex)
+         {
+            return null;
+         }
+      }
+
+      @Override
+      public List<Resource> loadResourceLocal(String name)
+      {
+         return null;
+      }
+
+      @Override
+      public Resource loadResourceLocal(String root, String name)
+      {
+         return null;
+      }
    }
 
    private JavaArchive getModuleA()

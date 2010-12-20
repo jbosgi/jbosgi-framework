@@ -36,6 +36,7 @@ import org.jboss.modules.Resource;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.framework.bundle.BundleManager;
+import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
@@ -48,28 +49,27 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class BundleFallbackLoader implements LocalLoader
+public class HostBundleFallbackLoader implements LocalLoader
 {
    // Provide logging
-   private static final Logger log = Logger.getLogger(BundleFallbackLoader.class);
+   private static final Logger log = Logger.getLogger(HostBundleFallbackLoader.class);
 
    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
    private final ModuleManagerPlugin moduleManager;
    private final BundleManager bundleManager;
-   private final ModuleIdentifier id;
-
-   public BundleFallbackLoader(BundleManager bundleManager, ModuleIdentifier id)
+   private final ModuleIdentifier identifier;
+   
+   public HostBundleFallbackLoader(HostBundle hostBundle, ModuleIdentifier identifier)
    {
-      this.bundleManager = bundleManager;
-      this.id = id;
+      this.identifier = identifier;
 
+      bundleManager = hostBundle.getBundleManager();
       moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
    }
 
    @Override
    public Class<?> loadClassLocal(String className, boolean resolve)
    {
-
       // Try to load the class dynamically
       String matchingPattern = findMatchingDynamicImportPattern(className);
       if (matchingPattern != null)
@@ -134,7 +134,7 @@ public class BundleFallbackLoader implements LocalLoader
 
    private String findMatchingDynamicImportPattern(String className)
    {
-      AbstractRevision bundleRev = moduleManager.getBundleRevision(id);
+      AbstractRevision bundleRev = moduleManager.getBundleRevision(identifier);
       XModule resModule = bundleRev.getResolverModule();
       List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
       if (dynamicRequirements.isEmpty())
