@@ -21,8 +21,8 @@
  */
 package org.jboss.test.osgi.modules.a;
 
-import org.jboss.test.osgi.modules.b.CircularityError;
+import org.jboss.test.osgi.modules.b.CircularityErrorDep;
 
-public class CircularityErrorTest implements CircularityError
+public class CircularityError implements CircularityErrorDep
 {
 }
