@@ -149,7 +149,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
       Module module;
       try
       {
-         ModuleLoader moduleLoader = getBundleManager().getDefaultModuleLoader();
+         ModuleLoader moduleLoader = getBundleManager().getSystemModuleLoader();
          module = moduleLoader.loadModule(identifier);
       }
       catch (ModuleLoadException ex)

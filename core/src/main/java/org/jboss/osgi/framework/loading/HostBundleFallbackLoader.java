@@ -36,48 +36,40 @@ import org.jboss.modules.Resource;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.framework.bundle.BundleManager;
+import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleReference;
 
 /**
- * An OSGi extention to the {@link ModuleClassLoader}.
+ * A fallback loader that takes care of dynamic class loads.
  *
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class ModuleClassLoaderExt implements LocalLoader, BundleReference
+public class HostBundleFallbackLoader implements LocalLoader
 {
    // Provide logging
-   private static final Logger log = Logger.getLogger(ModuleClassLoaderExt.class);
+   private static final Logger log = Logger.getLogger(HostBundleFallbackLoader.class);
 
    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
    private final ModuleManagerPlugin moduleManager;
    private final BundleManager bundleManager;
-   private final ModuleIdentifier id;
-
-   public ModuleClassLoaderExt(BundleManager bundleManager, ModuleIdentifier id)
+   private final ModuleIdentifier identifier;
+   
+   public HostBundleFallbackLoader(HostBundle hostBundle, ModuleIdentifier identifier)
    {
-      this.bundleManager = bundleManager;
-      this.id = id;
+      this.identifier = identifier;
 
+      bundleManager = hostBundle.getBundleManager();
       moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
-   }
-
-   @Override
-   public Bundle getBundle()
-   {
-      AbstractBundle bundleState = moduleManager.getBundleState(id);
-      return bundleState.getBundleWrapper();
    }
 
    @Override
    public Class<?> loadClassLocal(String className, boolean resolve)
    {
-
       // Try to load the class dynamically
       String matchingPattern = findMatchingDynamicImportPattern(className);
       if (matchingPattern != null)
@@ -142,7 +134,7 @@ public class ModuleClassLoaderExt implements LocalLoader, BundleReference
 
    private String findMatchingDynamicImportPattern(String className)
    {
-      AbstractRevision bundleRev = moduleManager.getBundleRevision(id);
+      AbstractRevision bundleRev = moduleManager.getBundleRevision(identifier);
       XModule resModule = bundleRev.getResolverModule();
       List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
       if (dynamicRequirements.isEmpty())
@@ -252,14 +244,12 @@ public class ModuleClassLoaderExt implements LocalLoader, BundleReference
    @Override
    public List<Resource> loadResourceLocal(String name)
    {
-      // TODO Auto-generated method stub
       return Collections.emptyList();
    }
 
    @Override
    public Resource loadResourceLocal(String root, String name)
    {
-      // TODO Auto-generated method stub
       return null;
    }
 }

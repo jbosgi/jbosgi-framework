@@ -135,6 +135,12 @@ public class SystemBundle extends AbstractBundle
    }
 
    @Override
+   protected boolean isActivationLazy()
+   {
+      return false;
+   }
+
+   @Override
    public List<XModule> getAllResolverModules()
    {
       return Collections.singletonList(getResolverModule());
