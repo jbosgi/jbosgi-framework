@@ -30,6 +30,7 @@ import org.jboss.modules.ModuleLoader;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
+import org.jboss.osgi.framework.bundle.OSGiModuleLoader;
 import org.jboss.osgi.resolver.XModule;
 
 /**
@@ -44,9 +45,9 @@ public interface ModuleManagerPlugin extends Plugin
    ModuleIdentifier DEFAULT_FRAMEWORK_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + "." + Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
 
    /**
-    * Get the OSGi {@link ModuleLoader}
+    * Get the {@link OSGiModuleLoader}
     */
-   ModuleLoader getModuleLoader();
+   OSGiModuleLoader getModuleLoader();
 
    /**
     * Return the module identifier for a given XModule.

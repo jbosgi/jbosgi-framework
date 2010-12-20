@@ -184,8 +184,11 @@ public abstract class AbstractBundle implements Bundle
       // that is, during the period from when the context bundle is in the STARTING, STOPPING, and ACTIVE bundle states.
       // If the BundleContext  object is used subsequently, an IllegalStateException must be thrown.
       // The BundleContext object must never be reused after its context bundle is stopped.
-      bundleContext.destroy();
-      bundleContext = null;
+      if (bundleContext != null)
+      {
+         bundleContext.destroy();
+         bundleContext = null;
+      }
    }
 
    @Override

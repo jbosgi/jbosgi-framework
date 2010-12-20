@@ -29,9 +29,11 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
@@ -86,9 +88,18 @@ public abstract class ModulesTestBase
       Set<String> paths = new HashSet<String>();
       for (Class<?> clazz : classes)
       {
-         paths.add(clazz.getPackage().getName().replace('.', '/'));
+         paths.add(getPath(clazz.getName()));
       }
       return Collections.unmodifiableSet(paths);
+   }
+
+   protected String getPath(String className)
+   {
+      if (className.endsWith(".class"))
+         className = className.substring(0, className.length() - 6);
+      className = className.substring(0, className.lastIndexOf('.'));
+      className = className.replace('.', '/');
+      return className;
    }
 
    protected void assertLoadClass(ModuleIdentifier identifier, String className) throws Exception
@@ -147,6 +158,12 @@ public abstract class ModulesTestBase
       {
          ModuleSpec moduleSpec = modules.get(identifier);
          return moduleSpec;
+      }
+
+      @Override
+      protected void setAndRelinkDependencies(Module module, List<DependencySpec> dependencies) throws ModuleLoadException
+      {
+         super.setAndRelinkDependencies(module, dependencies);
       }
 
       @Override
