@@ -29,10 +29,8 @@ import org.jboss.modules.DependencySpec;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.Resource;
-import org.jboss.osgi.framework.loading.SystemLocalLoader;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -60,17 +58,7 @@ public class MOD65TestCase extends ModulesTestBase
       JavaArchive archiveB = getModuleB();
       ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
 
-      ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
-      ModuleSpec.Builder systemBuilder = ModuleSpec.build(systemid);
-      SystemLocalLoader sysLoader = new SystemLocalLoader(getFilterPaths(ModuleLoader.class));
-      DependencySpec localDependency = DependencySpec.createLocalDependencySpec(sysLoader, sysLoader.getExportedPaths(), true);
-      systemBuilder.addDependency(localDependency);
-      addModuleSpec(systemBuilder.create());
-
-      assertLoadClass(systemid, ModuleLoader.class.getName());
-
       ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addDependency(DependencySpec.createModuleDependencySpec(systemid));
       specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
       LazyActivationLocalLoader localLoader = new LazyActivationLocalLoader(identifierA, identifierB);
       Set<String> lazyPaths = Collections.singleton(getPath(CircularityActivator.class.getName()));
@@ -108,7 +96,7 @@ public class MOD65TestCase extends ModulesTestBase
             Class<?> definedClass = moduleA.getClassLoader().loadClass(className);
 
             // After defining the class the LocalLoader may call into the ModuleActivator
-            // which in turn may try to load a class that initialted a call to this local loader
+            // which in turn may try to load a class that initiated a call to this local loader
             Module moduleB = moduleLoader.loadModule(identifierB);
             moduleB.getClassLoader().loadClass(CircularityError.class.getName());
 
