@@ -184,8 +184,11 @@ public abstract class AbstractBundle implements Bundle
       // that is, during the period from when the context bundle is in the STARTING, STOPPING, and ACTIVE bundle states.
       // If the BundleContext  object is used subsequently, an IllegalStateException must be thrown.
       // The BundleContext object must never be reused after its context bundle is stopped.
-      bundleContext.destroy();
-      bundleContext = null;
+      if (bundleContext != null)
+      {
+         bundleContext.destroy();
+         bundleContext = null;
+      }
    }
 
    @Override
@@ -388,7 +391,10 @@ public abstract class AbstractBundle implements Bundle
       switch (state)
       {
          case Bundle.STARTING:
-            bundleEventType = BundleEvent.STARTING;
+            if (isActivationLazy() == true)
+               bundleEventType = BundleEvent.LAZY_ACTIVATION;
+            else
+               bundleEventType = BundleEvent.STARTING;
             break;
          case Bundle.ACTIVE:
             bundleEventType = BundleEvent.STARTED;
@@ -426,6 +432,13 @@ public abstract class AbstractBundle implements Bundle
       bundleState.set(state);
 
       // Fire the bundle event
+      fireBundleEvent(bundleEventType);
+   }
+
+   protected abstract boolean isActivationLazy();
+
+   protected void fireBundleEvent(int bundleEventType)
+   {
       if (getBundleManager().isFrameworkActive())
          eventsPlugin.fireBundleEvent(this, bundleEventType);
    }
@@ -653,8 +666,7 @@ public abstract class AbstractBundle implements Bundle
    }
 
    @Override
-   @SuppressWarnings("rawtypes")
-   public Class loadClass(String name) throws ClassNotFoundException
+   public Class<?> loadClass(String name) throws ClassNotFoundException
    {
       return getCurrentRevision().loadClass(name);
    }

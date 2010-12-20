@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.plugin.internal;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,14 +47,19 @@ import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.framework.bundle.AbstractUserBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.BundleManager.IntegrationMode;
+import org.jboss.osgi.framework.bundle.FragmentBundle;
 import org.jboss.osgi.framework.bundle.FragmentRevision;
 import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.OSGiModuleLoader;
+import org.jboss.osgi.framework.loading.FragmentBundleModuleClassLoader;
 import org.jboss.osgi.framework.loading.FragmentLocalLoader;
 import org.jboss.osgi.framework.loading.FrameworkLocalLoader;
-import org.jboss.osgi.framework.loading.ModuleClassLoaderExt;
+import org.jboss.osgi.framework.loading.HostBundleFallbackLoader;
+import org.jboss.osgi.framework.loading.HostBundleModuleClassLoader;
+import org.jboss.osgi.framework.loading.LazyActivationLocalLoader;
 import org.jboss.osgi.framework.loading.NativeLibraryProvider;
 import org.jboss.osgi.framework.loading.NativeResourceLoader;
+import org.jboss.osgi.framework.loading.SystemBundleModuleClassLoader;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
@@ -114,7 +120,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    }
 
    @Override
-   public ModuleLoader getModuleLoader()
+   public OSGiModuleLoader getModuleLoader()
    {
       return moduleLoader;
    }
@@ -236,6 +242,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
          FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(getBundleManager());
          specBuilder.addDependency(DependencySpec.createLocalDependencySpec(frameworkLoader, frameworkLoader.getExportedPaths(), true));
+         specBuilder.setModuleClassLoaderFactory(new SystemBundleModuleClassLoader.Factory(getBundleManager().getSystemBundle()));
 
          ModuleSpec frameworkSpec = specBuilder.create();
          moduleLoader.addModule(bundleRev, frameworkSpec);
@@ -253,17 +260,19 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       {
          ModuleIdentifier identifier = getModuleIdentifier(resModule);
          ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
+         List<DependencySpec> moduleDependencies = new ArrayList<DependencySpec>();
 
          // Add the framework module as the first required dependency
          PathFilter importFilter = PathFilters.acceptAll();
          PathFilter exportFilter = PathFilters.in(getPlugin(SystemPackagesPlugin.class).getExportedPaths());
          ModuleLoader frameworkLoader = getModule(frameworkIdentifier).getModuleLoader();
          DependencySpec frameworkDep = DependencySpec.createModuleDependencySpec(importFilter, exportFilter, frameworkLoader, frameworkIdentifier, false);
-         specBuilder.addDependency(frameworkDep);
+         moduleDependencies.add(frameworkDep);
 
-         // Map the dependency builder for (the likely) case that the same exporter is choosen for multiple wires
+         // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
          Map<XModule, DependencyHolder> specHolderMap = new LinkedHashMap<XModule, DependencyHolder>();
 
+         AbstractBundle bundleState = AbstractBundle.assertBundleState(resModule.getAttachment(Bundle.class));
          HostBundle hostBundle = resModule.getAttachment(HostBundle.class);
          if (hostBundle != null)
          {
@@ -284,50 +293,57 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          // For every {@link XWire} add a dependency on the exporter
          processModuleWires(resModule.getWires(), specHolderMap);
 
-         // Add the dependencies
+         // Add the holder values to dependencies
          for (DependencyHolder aux : specHolderMap.values())
-            specBuilder.addDependency(aux.create());
+            moduleDependencies.add(aux.create());
 
+         // Add the module dependencies to the builder
+         for(DependencySpec dep : moduleDependencies)
+            specBuilder.addDependency(dep);
+         
          // Add a local dependency for the local bundle content
+         Set<String> allPaths = new HashSet<String>();
          for (VirtualFile contentRoot : contentRoots)
-            specBuilder.addResourceRoot(new VirtualFileResourceLoader(contentRoot));
-
-         specBuilder.addDependency(DependencySpec.createLocalDependencySpec());
-
-         // Native - Hack
-         Bundle bundle = resModule.getAttachment(Bundle.class);
-         AbstractUserBundle bundleState = AbstractUserBundle.assertBundleState(bundle);
-         Deployment deployment = bundleState.getDeployment();
-
-         NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
-         if (libMetaData != null)
          {
-            NativeResourceLoader nativeLoader = new NativeResourceLoader();
-            // Add the native library mappings to the OSGiClassLoaderPolicy
-            for (NativeLibrary library : libMetaData.getNativeLibraries())
-            {
-               String libpath = library.getLibraryPath();
-               String libfile = new File(libpath).getName();
-               String libname = libfile.substring(0, libfile.lastIndexOf('.'));
-
-               // Add the library provider to the policy
-               NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(bundleState, libname, libpath);
-               nativeLoader.addNativeLibrary(libProvider);
-
-               // [TODO] why does the TCK use 'Native' to mean 'libNative' ?
-               if (libname.startsWith("lib"))
-               {
-                  libname = libname.substring(3);
-                  libProvider = new BundleNativeLibraryProvider(bundleState, libname, libpath);
-                  nativeLoader.addNativeLibrary(libProvider);
-               }
-            }
-
-            specBuilder.addResourceRoot(nativeLoader);
+            VirtualFileResourceLoader resLoader = new VirtualFileResourceLoader(contentRoot);
+            specBuilder.addResourceRoot(resLoader);
+            allPaths.addAll(resLoader.getPaths());
          }
 
-         specBuilder.setFallbackLoader(new ModuleClassLoaderExt(getBundleManager(), identifier));
+         if (hostBundle != null && hostBundle.isActivationLazy())
+         {
+            PathFilter eagerFilter = hostBundle.getEagerPackagesFilter();
+            specBuilder.addDependency(DependencySpec.createLocalDependencySpec(eagerFilter, PathFilters.acceptAll()));
+            
+            Set<String> lazyPaths = new HashSet<String>();
+            PathFilter lazyFilter = hostBundle.getLazyPackagesFilter();
+            for (String path : allPaths)
+            {
+               if (lazyFilter.accept(path))
+                  lazyPaths.add(path);
+            }
+            LocalLoader localLoader = new LazyActivationLocalLoader(hostBundle, identifier, moduleDependencies);
+            specBuilder.addDependency(DependencySpec.createLocalDependencySpec(localLoader, lazyPaths, true));
+         }
+         else
+         {
+            specBuilder.addDependency(DependencySpec.createLocalDependencySpec());
+         }
 
+         // Native - Hack
+         addNativeResourceLoader(resModule, specBuilder);
+
+         if (hostBundle != null)
+         {
+            specBuilder.setModuleClassLoaderFactory(new HostBundleModuleClassLoader.Factory(hostBundle));
+            specBuilder.setFallbackLoader(new HostBundleFallbackLoader(hostBundle, identifier));
+         }
+         else
+         {
+            FragmentBundle fragmentBundle = FragmentBundle.assertBundleState(bundleState);
+            specBuilder.setModuleClassLoaderFactory(new FragmentBundleModuleClassLoader.Factory(fragmentBundle));
+         }
+         
          // Build the ModuleSpec
          moduleSpec = specBuilder.create();
       }
@@ -335,6 +351,39 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
       moduleLoader.addModule(bundleRev, moduleSpec);
       return moduleSpec.getModuleIdentifier();
+   }
+
+   private void addNativeResourceLoader(final XModule resModule, ModuleSpec.Builder specBuilder)
+   {
+      Bundle bundle = resModule.getAttachment(Bundle.class);
+      AbstractUserBundle bundleState = AbstractUserBundle.assertBundleState(bundle);
+      Deployment deployment = bundleState.getDeployment();
+
+      NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
+      if (libMetaData != null)
+      {
+         NativeResourceLoader nativeLoader = new NativeResourceLoader();
+         for (NativeLibrary library : libMetaData.getNativeLibraries())
+         {
+            String libpath = library.getLibraryPath();
+            String libfile = new File(libpath).getName();
+            String libname = libfile.substring(0, libfile.lastIndexOf('.'));
+
+            // Add the library provider to the policy
+            NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(bundleState, libname, libpath);
+            nativeLoader.addNativeLibrary(libProvider);
+
+            // [TODO] why does the TCK use 'Native' to mean 'libNative' ?
+            if (libname.startsWith("lib"))
+            {
+               libname = libname.substring(3);
+               libProvider = new BundleNativeLibraryProvider(bundleState, libname, libpath);
+               nativeLoader.addNativeLibrary(libProvider);
+            }
+         }
+
+         specBuilder.addResourceRoot(nativeLoader);
+      }
    }
 
    private void processModuleWires(List<XWire> wires, Map<XModule, DependencyHolder> depBuilderMap)

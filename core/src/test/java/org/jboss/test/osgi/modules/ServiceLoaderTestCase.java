@@ -85,27 +85,34 @@ public class ServiceLoaderTestCase extends ModulesTestBase
 
       ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
       ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      PathFilter exportFilter = PathFilters.in(Collections.singleton("META-INF/services"));
       specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(PathFilters.acceptAll(), exportFilter));
+      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
       addModuleSpec(specBuilderA.create());
 
       ModuleIdentifier identifierB = ModuleIdentifier.create("moduleB");
       ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
+      PathFilter importFilter = PathFilters.in(Collections.singleton("META-INF/services"));
+      PathFilter exportFilter = PathFilters.acceptAll();
+      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, getModuleLoader(), identifierA, false));
       addModuleSpec(specBuilderB.create());
 
-      Module moduleB = loadModule(identifierB);
-      ModuleClassLoader classloader = moduleB.getClassLoader();
+      Module moduleA = loadModule(identifierA);
+      ModuleClassLoader classloaderA = moduleA.getClassLoader();
 
-      URL resURL = classloader.getResource(resName);
+      URL resURL = classloaderA.getResource(resName);
+      assertNotNull("Resource found", resURL);
+
+      Module moduleB = loadModule(identifierB);
+      ModuleClassLoader classloaderB = moduleB.getClassLoader();
+
+      resURL = classloaderB.getResource(resName);
       assertNotNull("Resource found", resURL);
 
       ServiceLoader<Foo> serviceLoader = ServiceLoader.load(Foo.class);
       assertNotNull("ServiceLoader not null", serviceLoader);
       assertFalse("ServiceLoader no next", serviceLoader.iterator().hasNext());
 
-      serviceLoader = ServiceLoader.load(Foo.class, classloader);
+      serviceLoader = ServiceLoader.load(Foo.class, classloaderB);
       assertNotNull("ServiceLoader not null", serviceLoader);
       assertTrue("ServiceLoader next", serviceLoader.iterator().hasNext());
    }

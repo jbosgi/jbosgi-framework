@@ -1,10 +1,12 @@
 package org.jboss.osgi.framework.bundle;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
@@ -94,6 +96,12 @@ public final class OSGiModuleLoader extends ModuleLoader
    {
       ModuleHolder holder = getModuleHolder(identifier);
       return holder != null ? holder.getModule() : null;
+   }
+
+   @Override
+   public void setAndRelinkDependencies(Module module, List<DependencySpec> dependencies) throws ModuleLoadException
+   {
+      super.setAndRelinkDependencies(module, dependencies);
    }
 
    private ModuleHolder getModuleHolder(ModuleIdentifier identifier)

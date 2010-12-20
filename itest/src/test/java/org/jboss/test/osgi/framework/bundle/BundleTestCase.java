@@ -48,7 +48,6 @@ import org.jboss.test.osgi.framework.bundle.update.a.ClassA;
 import org.jboss.test.osgi.framework.bundle.update.b.ClassB;
 import org.jboss.test.osgi.framework.bundle.update.startexc.BundleStartExActivator;
 import org.jboss.test.osgi.framework.bundle.update.stopexc.BundleStopExActivator;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
@@ -537,7 +536,6 @@ public class BundleTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   @Ignore("[JBOSGI-389] Bundle classloader does not implement BundleReference")
    public void testBundleReference() throws Exception
    {
       Archive<?> assembly = assembleArchive("bundle1", "/bundles/update/update-bundle1", ObjectA.class);

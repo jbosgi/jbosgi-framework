@@ -94,7 +94,7 @@ public class BundleManager
    // The registered plugins
    private Map<Class<? extends Plugin>, Plugin> plugins = new LinkedHashMap<Class<? extends Plugin>, Plugin>();
    // The default ModuleLoader
-   private final ModuleLoader defaultModuleLoader;
+   private final ModuleLoader systemModuleLoader;
    // The ServiceContainer
    private ServiceContainer serviceContainer;
    // The Framework state
@@ -122,7 +122,7 @@ public class BundleManager
 
       // Initialize the default module loader
       ModuleLoader mlProp = (ModuleLoader)initialProperties.get(ModuleLoader.class.getName());
-      defaultModuleLoader = mlProp != null ? mlProp : Module.getDefaultModuleLoader();
+      systemModuleLoader = mlProp != null ? mlProp : Module.getSystemModuleLoader();
 
       // Get/Create the service container
       ServiceContainer scProp = (ServiceContainer)initialProperties.get(ServiceContainer.class.getName());
@@ -169,9 +169,9 @@ public class BundleManager
       return frameworkState;
    }
 
-   public ModuleLoader getDefaultModuleLoader()
+   public ModuleLoader getSystemModuleLoader()
    {
-      return defaultModuleLoader;
+      return systemModuleLoader;
    }
 
    public ServiceContainer getServiceContainer()

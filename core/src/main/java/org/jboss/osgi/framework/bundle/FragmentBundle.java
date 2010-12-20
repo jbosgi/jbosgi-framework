@@ -84,6 +84,12 @@ public final class FragmentBundle extends AbstractUserBundle
    }
 
    @Override
+   protected boolean isActivationLazy()
+   {
+      return false;
+   }
+
+   @Override
    AbstractBundleContext createContextInternal()
    {
       // If this bundle is a fragment bundle, then this bundle has no valid BundleContext.

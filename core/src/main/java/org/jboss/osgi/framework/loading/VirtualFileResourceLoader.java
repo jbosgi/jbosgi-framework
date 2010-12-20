@@ -85,9 +85,8 @@ public final class VirtualFileResourceLoader implements ResourceLoader
    }
 
    @Override
-   public ClassSpec getClassSpec(String name) throws IOException
+   public ClassSpec getClassSpec(String fileName) throws IOException
    {
-      String fileName = name.replace('.', '/') + ".class";
       VirtualFile child = virtualFile.getChild(fileName);
       if (child == null)
          return null;

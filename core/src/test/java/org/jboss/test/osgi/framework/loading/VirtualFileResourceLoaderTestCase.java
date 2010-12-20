@@ -90,7 +90,9 @@ public class VirtualFileResourceLoaderTestCase
    public void testClassSpec() throws Exception
    {
       ResourceLoader loader = new VirtualFileResourceLoader(rootFile);
-      ClassSpec result = loader.getClassSpec(SimpleActivator.class.getName());
+      String fileName = SimpleActivator.class.getName();
+      fileName = fileName.replace('.', '/') + ".class";
+      ClassSpec result = loader.getClassSpec(fileName);
       assertNotNull("ClassSpec not null", result);
    }
 

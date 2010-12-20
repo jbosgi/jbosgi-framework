@@ -21,16 +21,32 @@
 */
 package org.jboss.osgi.framework.bundle;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.jboss.modules.PathFilter;
+import org.jboss.modules.PathFilters;
+import org.jboss.msc.service.AbstractService;
+import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.plugin.StartLevelPlugin;
+import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.modules.ModuleActivator;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
+import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.service.packageadmin.PackageAdmin;
 
@@ -47,16 +63,17 @@ public final class HostBundle extends AbstractUserBundle
 {
    //private static final Logger log = Logger.getLogger(HostBundle.class);
 
+   private final AtomicBoolean awaitLazyActivation;
    private BundleActivator bundleActivator;
-   private int startLevel = StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
+   private int startLevel;
 
    HostBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {
       super(bundleManager, deployment);
 
       StartLevelPlugin sl = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
-      if (sl != null)
-         startLevel = sl.getInitialBundleStartLevel();
+      startLevel = (sl != null ? sl.getInitialBundleStartLevel() : StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED);
+      awaitLazyActivation = new AtomicBoolean(isActivationLazy());
    }
 
    /**
@@ -172,25 +189,49 @@ public final class HostBundle extends AbstractUserBundle
 
       StartLevelPlugin plugin = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
       if (plugin != null && plugin.getStartLevel() < getStartLevel())
-         // Not at the required start level yet. This bundle will be started later once
-         // the required start level has been reached.
-         // TODO the spec says that we need to throw a BundleException here...
+      {
+         // If the START_TRANSIENT option is set, then a BundleException is thrown indicating this 
+         // bundle cannot be started due to the Framework's current start level
+         if ((options & Bundle.START_TRANSIENT) != 0)
+            throw new BundleException("Bundle cannot be started due to the Framework's current start level");
+
+         return;
+      }
+
+      transitionToStarting(options);
+
+      if (awaitLazyActivation.get() == false)
+         transitionToActive(options);
+   }
+
+   private void transitionToStarting(int options) throws BundleException
+   {
+      // Do nothing if the bundle is already starting
+      if (getState() == Bundle.STARTING)
          return;
 
       // Resolve this bundles
       XModule resModule = getResolverModule();
       getResolverPlugin().resolve(resModule);
 
+      // Create the bundle context
+      createBundleContext();
+
+      // This bundle's state is set to STARTING
+      changeState(Bundle.STARTING);
+   }
+
+   private void transitionToActive(int options) throws BundleException
+   {
+      // The normal STARTING event is fired
+      if (isActivationLazy() == true)
+         fireBundleEvent(BundleEvent.STARTING);
+
       // The BundleActivator.start(BundleContext) method of this bundle's BundleActivator, if one is specified, is called.
       try
       {
-         // Create the bundle context
-         createBundleContext();
-
-         // This bundle's state is set to STARTING
-         changeState(Bundle.STARTING);
-
          // Do we have a bundle activator
+         XModule resModule = getResolverModule();
          String bundleActivatorClassName = resModule.getModuleActivator();
          if (bundleActivatorClassName != null)
          {
@@ -242,6 +283,84 @@ public final class HostBundle extends AbstractUserBundle
             throw (BundleException)t;
 
          throw new BundleException("Cannot start bundle: " + this, t);
+      }
+   }
+
+   public boolean isActivationLazy()
+   {
+      ActivationPolicyMetaData activationPolicy = getActivationPolicy();
+      String policyType = (activationPolicy != null ? activationPolicy.getType() : null);
+      return Constants.ACTIVATION_LAZY.equals(policyType);
+   }
+
+   public ActivationPolicyMetaData getActivationPolicy()
+   {
+      ActivationPolicyMetaData policyMetaData = getOSGiMetaData().getBundleActivationPolicy();
+      return policyMetaData;
+   }
+
+   /**
+    * Get a path filter for packages that can be loaded eagerly.
+    * 
+    * A class load from an eager package does not cause bundle activation 
+    * for a host bundle with lazy ActivationPolicy
+    */
+   public PathFilter getEagerPackagesFilter()
+   {
+      ActivationPolicyMetaData activationPolicy = getActivationPolicy();
+      if (activationPolicy == null)
+         return PathFilters.acceptAll();
+
+      // If there is no exclude list on the activation policy, all packages are loaded lazily
+      List<String> excludes = activationPolicy.getExcludes();
+      if (excludes == null || excludes.isEmpty())
+         return PathFilters.rejectAll();
+
+      // The set of packages on the exclude list determines the packages that can be loaded eagerly
+      Set<String> paths = new HashSet<String>();
+      for (String packageName : excludes)
+         paths.add(packageName.replace('.', '/'));
+
+      return PathFilters.in(paths);
+   }
+
+   /**
+    * Get a path filter for packages that trigger bundle activation 
+    * for a host bundle with lazy ActivationPolicy
+    */
+   public PathFilter getLazyPackagesFilter()
+   {
+      ActivationPolicyMetaData activationPolicy = getActivationPolicy();
+      if (activationPolicy == null)
+         return PathFilters.rejectAll();
+
+      // If there is no include list on the activation policy, all packages are loaded lazily
+      List<String> includes = activationPolicy.getIncludes();
+      if (includes == null || includes.isEmpty())
+         return PathFilters.acceptAll();
+
+      // The set of packages on the include list determines the packages that trigger bundle activation
+      Set<String> paths = new HashSet<String>();
+      for (String packageName : includes)
+         paths.add(packageName.replace('.', '/'));
+
+      return PathFilters.in(paths);
+   }
+
+   public void activateOnClassLoad(final Class<?> definedClass)
+   {
+      // If the bundle was started lazily, we transition to ACTIVE now
+      if (awaitLazyActivation.compareAndSet(true, false))
+      {
+         try
+         {
+            transitionToStarting(0);
+            transitionToActive(0);
+         }
+         catch (BundleException ex)
+         {
+            ex.printStackTrace();
+         }
       }
    }
 
@@ -337,6 +456,60 @@ public final class HostBundle extends AbstractUserBundle
             // fired containing the exception
             bundleManager.fireError(this, "Error stopping bundle: " + this, ex);
          }
+      }
+   }
+
+   static class LazyActivationService extends AbstractService<LazyActivationService>
+   {
+      static final ServiceName SERVICE_NAME_BASE = ServiceName.JBOSS.append("osgi", "bundle", "activation");
+      static final AtomicLong activationCount = new AtomicLong();
+      private final HostBundle hostBundle;
+      private final Class<?> definedClass;
+
+      private LazyActivationService(HostBundle hostBundle, Class<?> definedClass)
+      {
+         this.hostBundle = hostBundle;
+         this.definedClass = definedClass;
+      }
+
+      static void addService(final HostBundle hostBundle, final Class<?> definedClass)
+      {
+         ServiceTarget target = hostBundle.getBundleManager().getServiceContainer();
+         ServiceName serviceName = SERVICE_NAME_BASE.append("" + activationCount.incrementAndGet());
+         LazyActivationService service = new LazyActivationService(hostBundle, definedClass);
+         ServiceBuilder<?> serviceBuilder = target.addService(serviceName, service);
+         serviceBuilder.install();
+      }
+
+      @Override
+      public void start(StartContext context) throws StartException
+      {
+         context.getController().setMode(Mode.REMOVE);
+
+         ActivationPolicyMetaData policyMetaData = hostBundle.getOSGiMetaData().getBundleActivationPolicy();
+         List<String> includes = policyMetaData.getIncludes();
+         if (includes != null && includes.contains(definedClass.getPackage().getName()) == false)
+            return;
+
+         List<String> excludes = policyMetaData.getExcludes();
+         if (excludes != null && excludes.contains(definedClass.getPackage().getName()) == true)
+            return;
+
+         try
+         {
+            hostBundle.transitionToStarting(0);
+            hostBundle.transitionToActive(0);
+         }
+         catch (BundleException ex)
+         {
+            throw new StartException(ex);
+         }
+      }
+
+      @Override
+      public LazyActivationService getValue() throws IllegalStateException
+      {
+         return this;
       }
    }
 }
