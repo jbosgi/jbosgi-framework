@@ -30,6 +30,6 @@ public class CircularityActivator
    public void start(ModuleLoader moduleLoader, ModuleIdentifier identifierA) throws Exception
    {
       Module module = moduleLoader.loadModule(identifierA);
-      module.getClassLoader().loadClass("org.jboss.test.osgi.modules.a.CircularityErrorTest");
+      module.getClassLoader().loadClass("org.jboss.test.osgi.modules.a.CircularityError");
    }
 }
