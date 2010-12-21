@@ -121,11 +121,11 @@ public class BundleManager
          properties.putAll(initialProperties);
 
       // Initialize the default module loader
-      ModuleLoader mlProp = (ModuleLoader)initialProperties.get(ModuleLoader.class.getName());
+      ModuleLoader mlProp = (ModuleLoader)getProperty(ModuleLoader.class.getName());
       systemModuleLoader = mlProp != null ? mlProp : Module.getSystemModuleLoader();
 
       // Get/Create the service container
-      ServiceContainer scProp = (ServiceContainer)initialProperties.get(ServiceContainer.class.getName());
+      ServiceContainer scProp = (ServiceContainer)getProperty(ServiceContainer.class.getName());
       serviceContainer = scProp != null ? scProp : ServiceContainer.Factory.create();
 
       // Register the framework plugins

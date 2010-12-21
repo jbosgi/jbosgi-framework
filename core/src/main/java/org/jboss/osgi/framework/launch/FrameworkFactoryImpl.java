@@ -21,9 +21,10 @@
  */
 package org.jboss.osgi.framework.launch;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Map;
 
-import org.jboss.logging.Logger;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.FrameworkState;
 import org.osgi.framework.launch.Framework;
@@ -37,8 +38,19 @@ import org.osgi.framework.launch.FrameworkFactory;
  */
 public class FrameworkFactoryImpl implements FrameworkFactory
 {
-   // Provide logging
-   final Logger log = Logger.getLogger(FrameworkFactoryImpl.class);
+   static
+   {
+      AccessController.doPrivileged(new PrivilegedAction<Void>()
+      {
+         public Void run()
+         {
+            String cname = System.getProperty("java.util.logging.manager");
+            if (cname == null)
+               System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+            return null;
+         }
+      });
+   }
 
    // Main entry point used by FrameworkLaunchTestCase
    public static void main(String[] args) throws Exception
