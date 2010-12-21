@@ -21,14 +21,10 @@
 */
 package org.jboss.osgi.framework.bundle;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.jboss.modules.PathFilter;
-import org.jboss.modules.PathFilters;
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -226,7 +222,7 @@ public final class HostBundle extends AbstractUserBundle
       {
          if (th instanceof BundleException)
             throw (BundleException)th;
-         
+
          throw new BundleException("Cannot transition to starting: " + this, th);
       }
    }
@@ -309,68 +305,13 @@ public final class HostBundle extends AbstractUserBundle
       return policyMetaData;
    }
 
-   /**
-    * Get a path filter for packages that can be loaded eagerly.
-    * 
-    * A class load from an eager package does not cause bundle activation 
-    * for a host bundle with lazy ActivationPolicy
-    */
-   public PathFilter getEagerPackagesFilter()
-   {
-      ActivationPolicyMetaData activationPolicy = getActivationPolicy();
-      if (activationPolicy == null)
-         return PathFilters.acceptAll();
-
-      // If there is no exclude list on the activation policy, all packages are loaded lazily
-      List<String> excludes = activationPolicy.getExcludes();
-      if (excludes == null || excludes.isEmpty())
-         return PathFilters.rejectAll();
-
-      // The set of packages on the exclude list determines the packages that can be loaded eagerly
-      Set<String> paths = new HashSet<String>();
-      for (String packageName : excludes)
-         paths.add(packageName.replace('.', '/'));
-
-      return PathFilters.in(paths);
-   }
-
-   /**
-    * Get a path filter for packages that trigger bundle activation 
-    * for a host bundle with lazy ActivationPolicy
-    */
-   public PathFilter getLazyPackagesFilter()
-   {
-      ActivationPolicyMetaData activationPolicy = getActivationPolicy();
-      if (activationPolicy == null)
-         return PathFilters.rejectAll();
-
-      // If there is no include list on the activation policy, all packages are loaded lazily
-      List<String> includes = activationPolicy.getIncludes();
-      if (includes == null || includes.isEmpty())
-         return PathFilters.acceptAll();
-
-      // The set of packages on the include list determines the packages that trigger bundle activation
-      Set<String> paths = new HashSet<String>();
-      for (String packageName : includes)
-         paths.add(packageName.replace('.', '/'));
-
-      return PathFilters.in(paths);
-   }
-
-   public void activateOnClassLoad(final Class<?> definedClass)
+   public void activateOnClassLoad(final Class<?> definedClass) throws BundleException
    {
       // If the bundle was started lazily, we transition to ACTIVE now
       if (awaitLazyActivation.compareAndSet(true, false))
       {
-         try
-         {
-            transitionToStarting(0);
-            transitionToActive(0);
-         }
-         catch (BundleException ex)
-         {
-            ex.printStackTrace();
-         }
+         transitionToStarting(0);
+         transitionToActive(0);
       }
    }
 
