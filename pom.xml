@@ -90,7 +90,7 @@
         <exclusions>
       	  <exclusion>
 	        <groupId>org.jboss.osgi.vfs</groupId>
-	        <artifactId>jboss-osgi-vfs</artifactId>
+	        <artifactId>jbosgi-vfs</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
