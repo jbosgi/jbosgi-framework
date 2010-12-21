@@ -49,7 +49,7 @@
     <version.jboss.osgi.jmx>1.0.9</version.jboss.osgi.jmx>
     <version.jboss.osgi.resolver>1.0.5</version.jboss.osgi.resolver>
     <version.jboss.osgi.spi>1.0.20</version.jboss.osgi.spi>
-    <version.jboss.osgi.vfs>1.0.4</version.jboss.osgi.vfs>
+    <version.jboss.osgi.vfs>1.0.5-SNAPSHOT</version.jboss.osgi.vfs>
     <version.mockito>1.8.4</version.mockito>
     <version.osgi>4.2.0</version.osgi>
     
@@ -110,7 +110,7 @@
       </dependency>
       <dependency>
         <groupId>org.jboss.osgi.vfs</groupId>
-        <artifactId>jboss-osgi-vfs</artifactId>
+        <artifactId>jbosgi-vfs</artifactId>
         <version>${version.jboss.osgi.vfs}</version>
       </dependency>
       
@@ -207,7 +207,7 @@
       </dependency>
       <dependency>
         <groupId>org.jboss.osgi.vfs</groupId>
-        <artifactId>jboss-osgi-vfs30</artifactId>
+        <artifactId>jbosgi-vfs30</artifactId>
         <exclusions>
           <exclusion>
             <groupId>org.jboss.osgi</groupId>
