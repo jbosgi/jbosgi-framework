@@ -66,8 +66,6 @@
               <goal>single</goal>
             </goals>
             <configuration>
-              <finalName>jbosgi-framework-assembly-${project.version}</finalName>
-              <appendAssemblyId>false</appendAssemblyId>
               <descriptors>
                 <descriptor>scripts/assembly.xml</descriptor>
               </descriptors>
