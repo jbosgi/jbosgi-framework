@@ -27,7 +27,6 @@ import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
-import org.jboss.osgi.framework.bundle.AbstractUserBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.SystemBundle;
@@ -85,32 +84,32 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
    }
 
    @Override
-   public synchronized void setStartLevel(final int sl)
+   public synchronized void setStartLevel(final int level)
    {
-      if (sl > getStartLevel())
+      if (level > getStartLevel())
       {
-         log.infof("About to increase start level from %s to %s", getStartLevel(), sl);
+         log.infof("About to increase start level from %s to %s", getStartLevel(), level);
          executor.execute(new Runnable()
          {
             @Override
             public void run()
             {
-               log.infof("Increasing start level from %s to %s", getStartLevel(), sl);
-               increaseStartLevel(sl);
+               log.infof("Increasing start level from %s to %s", getStartLevel(), level);
+               increaseStartLevel(level);
                eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(), FrameworkEvent.STARTLEVEL_CHANGED, null);
             }
          });
       }
-      else if (sl < getStartLevel())
+      else if (level < getStartLevel())
       {
-         log.infof("About to decrease start level from %s to %s", getStartLevel(), sl);
+         log.infof("About to decrease start level from %s to %s", getStartLevel(), level);
          executor.execute(new Runnable()
          {
             @Override
             public void run()
             {
-               log.infof("Decreasing start level from %s to %s", getStartLevel(), sl);
-               decreaseStartLevel(sl);
+               log.infof("Decreasing start level from %s to %s", getStartLevel(), level);
+               decreaseStartLevel(level);
                eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(), FrameworkEvent.STARTLEVEL_CHANGED, null);
             }
          });
@@ -213,54 +212,62 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
       if (bundle.getBundleId() == 0)
          return true;
 
-      AbstractUserBundle userBundle = AbstractUserBundle.assertBundleState(bundle);
-      if (userBundle instanceof HostBundle)
-         return ((HostBundle)userBundle).isPersistentlyStarted();
-
-      return false;
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      if (bundleState.isFragment())
+         return false;
+      
+      HostBundle hostBundle = HostBundle.assertBundleState(bundleState);
+      return hostBundle.isPersistentlyStarted();
    }
 
    @Override
    public boolean isBundleActivationPolicyUsed(Bundle bundle)
    {
-      // TODO Needs to be implemented
-      return false;
+      if (bundle.getBundleId() == 0)
+         return false;
+
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      if (bundleState.isFragment())
+         return false;
+      
+      HostBundle hostBundle = HostBundle.assertBundleState(bundleState);
+      return hostBundle.isBundleActivationPolicyUsed();
    }
 
    /** 
     * Increases the Start Level of the Framework in the current thread.
-    * @param sl the target Start Level to which the Framework should move. 
+    * @param level the target Start Level to which the Framework should move. 
     */
    @Override
-   public synchronized void increaseStartLevel(int sl)
+   public synchronized void increaseStartLevel(int level)
    {
       Collection<AbstractBundle> bundles = getBundleManager().getBundles();
-      while (startLevel < sl)
+      while (startLevel < level)
       {
          startLevel++;
          log.infof("Starting bundles for start level: %s",  startLevel);
-         for (AbstractBundle b : bundles)
+         for (AbstractBundle bundle : bundles)
          {
-            if (!(b instanceof HostBundle))
+            if (!(bundle instanceof HostBundle))
                continue;
 
-            HostBundle hb = (HostBundle)b;
-            if (hb.getStartLevel() == startLevel && hb.isPersistentlyStarted())
+            HostBundle hostBundle = (HostBundle)bundle;
+            if (hostBundle.getStartLevel() == startLevel && hostBundle.isPersistentlyStarted())
             {
-               if (hb.isPersistentlyStarted())
+               if (hostBundle.isPersistentlyStarted())
                {
                   try
                   {
                      int opts = Bundle.START_TRANSIENT;
-                     if (isBundleActivationPolicyUsed(b))
+                     if (isBundleActivationPolicyUsed(bundle))
                      {
                         opts |= Bundle.START_ACTIVATION_POLICY;
                      }
-                     b.start(opts);
+                     bundle.start(opts);
                   }
                   catch (Throwable e)
                   {
-                     eventsPlugin.fireFrameworkEvent(b, FrameworkEvent.ERROR, e);
+                     eventsPlugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, e);
                   }
                }
             }

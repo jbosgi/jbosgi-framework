@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.jboss.logging.Logger;
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -57,18 +58,20 @@ import org.osgi.service.packageadmin.PackageAdmin;
  */
 public final class HostBundle extends AbstractUserBundle
 {
-   //private static final Logger log = Logger.getLogger(HostBundle.class);
-
+   private static final Logger log = Logger.getLogger(HostBundle.class);
+   
    private final AtomicBoolean awaitLazyActivation;
    private BundleActivator bundleActivator;
    private int startLevel;
+
+   private final StartLevelPlugin startLevelPlugin;
 
    HostBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {
       super(bundleManager, deployment);
 
-      StartLevelPlugin sl = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
-      startLevel = (sl != null ? sl.getInitialBundleStartLevel() : StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED);
+      startLevelPlugin = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
+      startLevel = (startLevelPlugin != null ? startLevelPlugin.getInitialBundleStartLevel() : StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED);
       awaitLazyActivation = new AtomicBoolean(isActivationLazy());
    }
 
@@ -167,10 +170,22 @@ public final class HostBundle extends AbstractUserBundle
       return storageState.isPersistentlyStarted();
    }
 
-   public void setPersistentlyStarted(boolean started)
+   private void setPersistentlyStarted(boolean started)
    {
       BundleStorageState storageState = getBundleStorageState();
       storageState.setPersistentlyStarted(started);
+   }
+
+   public boolean isBundleActivationPolicyUsed()
+   {
+      BundleStorageState storageState = getBundleStorageState();
+      return storageState.isBundleActivationPolicyUsed();
+   }
+
+   private void setBundleActivationPolicyUsed(boolean started)
+   {
+      BundleStorageState storageState = getBundleStorageState();
+      storageState.setBundleActivationPolicyUsed(started);
    }
 
    @Override
@@ -180,30 +195,42 @@ public final class HostBundle extends AbstractUserBundle
       if (getState() == Bundle.ACTIVE)
          return;
 
-      if ((options & Bundle.START_TRANSIENT) == 0)
-         setPersistentlyStarted(true);
-
-      StartLevelPlugin plugin = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
-      if (plugin != null && plugin.getStartLevel() < getStartLevel())
+      // Check the bundle's start level
+      if (checkBundleStartLevel(options) == true)
       {
-         // If the START_TRANSIENT option is set, then a BundleException is thrown indicating this 
-         // bundle cannot be started due to the Framework's current start level
-         if ((options & Bundle.START_TRANSIENT) != 0)
-            throw new BundleException("Bundle cannot be started due to the Framework's current start level");
+         transitionToStarting(options);
 
-         return;
+         if (awaitLazyActivation.get() == false)
+            transitionToActive(options);
       }
+      
+      // The Framework must set this bundle's persistent autostart setting to 
+      // Started with declared activation if the START_ACTIVATION_POLICY option is set or 
+      // Started with eager activation if not set. 
+      setPersistentlyStarted(true);
+      setBundleActivationPolicyUsed((options & Bundle.START_ACTIVATION_POLICY) != 0);
+   }
 
-      transitionToStarting(options);
+   private boolean checkBundleStartLevel(int options) throws BundleException
+   {
+      if (startLevelPlugin == null)
+         return true;
 
-      if (awaitLazyActivation.get() == false)
-         transitionToActive(options);
+      if (getStartLevel() <= startLevelPlugin.getStartLevel())
+         return true;
+
+      // If the START_TRANSIENT option is set, then a BundleException is thrown indicating this 
+      // bundle cannot be started due to the Framework's current start level
+      if ((options & Bundle.START_TRANSIENT) != 0)
+         throw new BundleException("Bundle cannot be started due to the Framework's current start level");
+
+      return false;
    }
 
    private void transitionToStarting(int options) throws BundleException
    {
-      // Do nothing if the bundle is already starting
-      if (getState() == Bundle.STARTING)
+      // If this bundle's state is ACTIVE then this method returns immediately.
+      if (getState() == Bundle.ACTIVE || getState() == Bundle.STARTING)
          return;
 
       try
@@ -258,6 +285,8 @@ public final class HostBundle extends AbstractUserBundle
             }
          }
          changeState(ACTIVE);
+         
+         log.infof("Bundle started: %s", this);
       }
 
       // If the BundleActivator is invalid or throws an exception then:
@@ -307,11 +336,14 @@ public final class HostBundle extends AbstractUserBundle
 
    public void activateOnClassLoad(final Class<?> definedClass) throws BundleException
    {
-      // If the bundle was started lazily, we transition to ACTIVE now
-      if (awaitLazyActivation.compareAndSet(true, false))
+      if (checkBundleStartLevel(0))
       {
-         transitionToStarting(0);
-         transitionToActive(0);
+         // If the bundle was started lazily, we transition to ACTIVE now
+         if (awaitLazyActivation.compareAndSet(true, false))
+         {
+            transitionToStarting(0);
+            transitionToActive(0);
+         }
       }
    }
 
@@ -326,7 +358,7 @@ public final class HostBundle extends AbstractUserBundle
       // to complete before continuing. If this does not occur in a reasonable time, a BundleException is thrown to indicate this bundle
       // was unable to be stopped.
 
-      // [TODO] If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to to Stopped.
+      // [TODO] If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to Stopped.
       // When the Framework is restarted and this bundle's autostart setting is Stopped, this bundle must not be automatically started.
       if ((options & Bundle.STOP_TRANSIENT) == 0)
          setPersistentlyStarted(false);
@@ -383,6 +415,8 @@ public final class HostBundle extends AbstractUserBundle
       destroyBundleContext();
       changeState(RESOLVED);
 
+      log.infof("Bundle stopped: %s", this);
+      
       if (rethrow != null)
          throw new BundleException("Error during stop of bundle: " + this, rethrow);
    }

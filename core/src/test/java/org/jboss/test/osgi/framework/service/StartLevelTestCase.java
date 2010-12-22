@@ -49,52 +49,50 @@ public class StartLevelTestCase extends OSGiFrameworkTest
    @Test
    public void testStartLevel() throws Exception
    {
-      BundleContext sc = getFramework().getBundleContext();
-      ServiceReference sref = sc.getServiceReference(StartLevel.class.getName());
-      StartLevel sls = (StartLevel)sc.getService(sref);
-      int orgInitialStartlevel = sls.getInitialBundleStartLevel();
+      StartLevel startLevel = getStartLevel();
+      int orgInitialStartlevel = startLevel.getInitialBundleStartLevel();
       try
       {
-         setTestExecutor(sls);
+         setTestExecutor(startLevel);
 
-         assertEquals(1, sls.getInitialBundleStartLevel());
-         sls.setInitialBundleStartLevel(5);
-         assertEquals(5, sls.getInitialBundleStartLevel());
+         assertEquals(1, startLevel.getInitialBundleStartLevel());
+         startLevel.setInitialBundleStartLevel(5);
+         assertEquals(5, startLevel.getInitialBundleStartLevel());
 
          Bundle bundle = installBundle(createTestBundle("bundle1"));
          try
          {
             assertBundleState(Bundle.INSTALLED, bundle.getState());
-            assertEquals(5, sls.getBundleStartLevel(bundle));
+            assertEquals(5, startLevel.getBundleStartLevel(bundle));
             bundle.start();
             assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-            sls.setStartLevel(5);
+            startLevel.setStartLevel(5);
             assertBundleState(Bundle.ACTIVE, bundle.getState());
 
-            sls.setStartLevel(4);
+            startLevel.setStartLevel(4);
             assertBundleState(Bundle.RESOLVED, bundle.getState());
 
-            sls.setInitialBundleStartLevel(7);
-            assertEquals(7, sls.getInitialBundleStartLevel());
+            startLevel.setInitialBundleStartLevel(7);
+            assertEquals(7, startLevel.getInitialBundleStartLevel());
 
-            sls.setStartLevel(10);
+            startLevel.setStartLevel(10);
             assertBundleState(Bundle.ACTIVE, bundle.getState());
 
             Bundle bundle2 = installBundle(createTestBundle("bundle2"));
             try
             {
                assertBundleState(Bundle.INSTALLED, bundle2.getState());
-               assertEquals(7, sls.getBundleStartLevel(bundle2));
+               assertEquals(7, startLevel.getBundleStartLevel(bundle2));
                bundle2.start();
                assertBundleState(Bundle.ACTIVE, bundle2.getState());
 
-               sls.setBundleStartLevel(bundle2, 11);
+               startLevel.setBundleStartLevel(bundle2, 11);
                assertBundleState(Bundle.RESOLVED, bundle2.getState());
-               sls.setBundleStartLevel(bundle2, 9);
+               startLevel.setBundleStartLevel(bundle2, 9);
                assertBundleState(Bundle.ACTIVE, bundle2.getState());
 
-               sls.setStartLevel(1);
+               startLevel.setStartLevel(1);
                assertBundleState(Bundle.RESOLVED, bundle.getState());
                assertBundleState(Bundle.RESOLVED, bundle2.getState());
             }
@@ -110,7 +108,7 @@ public class StartLevelTestCase extends OSGiFrameworkTest
       }
       finally
       {
-         sls.setInitialBundleStartLevel(orgInitialStartlevel);
+         startLevel.setInitialBundleStartLevel(orgInitialStartlevel);
       }
    }
 

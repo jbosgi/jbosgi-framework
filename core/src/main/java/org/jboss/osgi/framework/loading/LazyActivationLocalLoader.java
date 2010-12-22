@@ -86,7 +86,7 @@ public class LazyActivationLocalLoader implements LocalLoader
             Module module = moduleManager.getModule(identifier);
             if (relinkModule.getAndSet(false))
             {
-               log.debugf("Relinking module [%s] on class load: %s", module, className);
+               log.debugf("Relinking [%s] on class load: %s", identifier, className);
                OSGiModuleLoader moduleLoader = moduleManager.getModuleLoader();
                List<DependencySpec> dependencies = new ArrayList<DependencySpec>(moduleDependencies);
                dependencies.add(DependencySpec.createLocalDependencySpec());
@@ -108,7 +108,7 @@ public class LazyActivationLocalLoader implements LocalLoader
          {
             try
             {
-               log.debugf("Trigger lazy activation on class load: %s", className);
+               log.debugf("Lazy activation [%s] on class load: %s",  identifier, className);
                hostBundle.activateOnClassLoad(definedClass);
             }
             catch (BundleException ex)

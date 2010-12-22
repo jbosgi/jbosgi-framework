@@ -299,9 +299,9 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             moduleDependencies.add(aux.create());
 
          // Add the module dependencies to the builder
-         for(DependencySpec dep : moduleDependencies)
+         for (DependencySpec dep : moduleDependencies)
             specBuilder.addDependency(dep);
-         
+
          // Add a local dependency for the local bundle content
          Set<String> allPaths = new HashSet<String>();
          for (VirtualFile contentRoot : contentRoots)
@@ -313,18 +313,21 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
          if (hostBundle != null && hostBundle.isActivationLazy())
          {
-            PathFilter eagerFilter = getExcludedPackagesFilter(hostBundle);
-            specBuilder.addDependency(DependencySpec.createLocalDependencySpec(eagerFilter, PathFilters.acceptAll()));
-            
             Set<String> lazyPaths = new HashSet<String>();
-            PathFilter lazyFilter = PathFilters.all(getIncludedPackagesFilter(hostBundle), PathFilters.not(eagerFilter));
+            PathFilter lazyFilter = getLazyPackagesFilter(hostBundle);
             for (String path : allPaths)
             {
                if (lazyFilter.accept(path))
                   lazyPaths.add(path);
             }
+            log.tracef("Module [%s] lazy filter: %s", identifier, lazyFilter);
             LocalLoader localLoader = new LazyActivationLocalLoader(hostBundle, identifier, moduleDependencies, lazyFilter);
             specBuilder.addDependency(DependencySpec.createLocalDependencySpec(localLoader, lazyPaths, true));
+            
+            PathFilter eagerFilter = PathFilters.not(lazyFilter);
+            log.tracef("Module [%s] eager filter: %s", identifier, eagerFilter);
+            specBuilder.addDependency(DependencySpec.createLocalDependencySpec(eagerFilter, PathFilters.acceptAll()));
+
          }
          else
          {
@@ -344,7 +347,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             FragmentBundle fragmentBundle = FragmentBundle.assertBundleState(bundleState);
             specBuilder.setModuleClassLoaderFactory(new FragmentBundleModuleClassLoader.Factory(fragmentBundle));
          }
-         
+
          // Build the ModuleSpec
          moduleSpec = specBuilder.create();
       }
@@ -355,51 +358,67 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    }
 
    /**
+    * Get a path filter for packages that trigger bundle activation 
+    * for a host bundle with lazy ActivationPolicy
+    */
+   private PathFilter getLazyPackagesFilter(HostBundle hostBundle)
+   {
+      // By default all packages are loaded lazily
+      PathFilter result = PathFilters.acceptAll();
+
+      ActivationPolicyMetaData activationPolicy = hostBundle.getActivationPolicy();
+      List<String> includes = activationPolicy.getIncludes();
+      if (includes != null)
+      {
+         Set<String> paths = new HashSet<String>();
+         for (String packageName : includes)
+            paths.add(packageName.replace('.', '/'));
+
+         result = PathFilters.in(paths);
+      }
+
+      List<String> excludes = activationPolicy.getExcludes();
+      if (excludes != null)
+      {
+         // The set of packages on the exclude list determines the packages that can be loaded eagerly
+         Set<String> paths = new HashSet<String>();
+         for (String packageName : excludes)
+            paths.add(packageName.replace('.', '/'));
+
+         if (includes != null)
+            result = PathFilters.all(result, PathFilters.not(PathFilters.in(paths)));
+         else
+            result = PathFilters.not(PathFilters.in(paths));
+      }
+
+      return result;
+   }
+
+   /**
     * Get a path filter for packages that can be loaded eagerly.
     * 
     * A class load from an eager package does not cause bundle activation 
     * for a host bundle with lazy ActivationPolicy
     */
-   private PathFilter getExcludedPackagesFilter(HostBundle hostBundle)
+   private PathFilter getEagerPackagesFilter(HostBundle hostBundle)
    {
-      ActivationPolicyMetaData activationPolicy = hostBundle.getActivationPolicy();
-      if (activationPolicy == null)
-         return PathFilters.acceptAll();
+      // By default no package are loaded lazily
+      PathFilter result = PathFilters.rejectAll();
 
       // If there is no exclude list on the activation policy, all packages are loaded lazily
-      List<String> excludes = activationPolicy.getExcludes();
-      if (excludes == null || excludes.isEmpty())
-         return PathFilters.rejectAll();
-
-      // The set of packages on the exclude list determines the packages that can be loaded eagerly
-      Set<String> paths = new HashSet<String>();
-      for (String packageName : excludes)
-         paths.add(packageName.replace('.', '/'));
-
-      return PathFilters.in(paths);
-   }
-
-   /**
-    * Get a path filter for packages that trigger bundle activation 
-    * for a host bundle with lazy ActivationPolicy
-    */
-   private PathFilter getIncludedPackagesFilter(HostBundle hostBundle)
-   {
       ActivationPolicyMetaData activationPolicy = hostBundle.getActivationPolicy();
-      if (activationPolicy == null)
-         return PathFilters.rejectAll();
+      List<String> excludes = activationPolicy.getExcludes();
+      if (excludes != null)
+      {
+         // The set of packages on the exclude list determines the packages that can be loaded eagerly
+         Set<String> paths = new HashSet<String>();
+         for (String packageName : excludes)
+            paths.add(packageName.replace('.', '/'));
 
-      // If there is no include list on the activation policy, all packages are loaded lazily
-      List<String> includes = activationPolicy.getIncludes();
-      if (includes == null || includes.isEmpty())
-         return PathFilters.acceptAll();
+         result = PathFilters.in(paths);
+      }
 
-      // The set of packages on the include list determines the packages that trigger bundle activation
-      Set<String> paths = new HashSet<String>();
-      for (String packageName : includes)
-         paths.add(packageName.replace('.', '/'));
-
-      return PathFilters.in(paths);
+      return result;
    }
 
    private void addNativeResourceLoader(final XModule resModule, ModuleSpec.Builder specBuilder)
