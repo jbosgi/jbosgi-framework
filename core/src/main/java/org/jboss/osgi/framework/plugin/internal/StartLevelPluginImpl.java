@@ -132,15 +132,15 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
    }
 
    @Override
-   public void setBundleStartLevel(Bundle bundle, int sl)
+   public void setBundleStartLevel(Bundle bundle, int level)
    {
       if (bundle.getBundleId() == 0)
          throw new IllegalArgumentException("Cannot set the start level of the System Bundle");
 
       final HostBundle hostBundle = HostBundle.assertBundleState(bundle);
-      hostBundle.setStartLevel(sl);
+      hostBundle.setStartLevel(level);
 
-      if (sl <= getStartLevel() && hostBundle.isPersistentlyStarted())
+      if (level <= getStartLevel() && hostBundle.isPersistentlyStarted())
       {
          // If the bundle is active or starting, we don't need to start it again
          if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) > 0)

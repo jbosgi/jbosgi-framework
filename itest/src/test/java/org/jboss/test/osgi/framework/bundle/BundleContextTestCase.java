@@ -374,22 +374,43 @@ public class BundleContextTestCase extends OSGiFrameworkTest
             // expected
          }
 
-         bundleContext.addBundleListener(this);
-         bundleContext = assertBundleLifecycle(bundle, true);
-         bundleContext.removeBundleListener(this);
+         bundle.stop();
+         
+         getSystemContext().addBundleListener(this);
+         
+         bundle.start();
+         assertBundleEvent(BundleEvent.STARTING, bundle);
+         assertBundleEvent(BundleEvent.STARTED, bundle);
+         assertNoBundleEvent();
+         
+         bundle.stop();
+         assertBundleEvent(BundleEvent.STOPPING, bundle);
+         assertBundleEvent(BundleEvent.STOPPED, bundle);
+         assertNoBundleEvent();
+         
+         getSystemContext().removeBundleListener(this);
+         bundle.start();
+         bundle.stop();
+         assertNoBundleEvent();
 
-         bundleContext.addBundleListener(this);
-         bundleContext.removeBundleListener(this);
-         bundleContext = assertBundleLifecycle(bundle, false);
+         getSystemContext().addBundleListener(this);
+         getSystemContext().addBundleListener(this);
+         bundle.start();
+         assertBundleEvent(BundleEvent.STARTING, bundle);
+         assertBundleEvent(BundleEvent.STARTED, bundle);
+         assertNoBundleEvent();
+         
+         bundle.stop();
+         assertBundleEvent(BundleEvent.STOPPING, bundle);
+         assertBundleEvent(BundleEvent.STOPPED, bundle);
+         assertNoBundleEvent();
 
-         bundleContext.addBundleListener(this);
-         bundleContext.addBundleListener(this);
-         bundleContext = assertBundleLifecycle(bundle, true);
-         bundleContext.removeBundleListener(this);
-
-         bundleContext.addBundleListener(this);
-
-         // todo test asynch BundleListener
+         bundle.start();
+         assertBundleEvent(BundleEvent.STARTING, bundle);
+         assertBundleEvent(BundleEvent.STARTED, bundle);
+         assertNoBundleEvent();
+         
+         // [TODO] test asynch BundleListener
       }
       finally
       {
@@ -397,8 +418,8 @@ public class BundleContextTestCase extends OSGiFrameworkTest
       }
       assertBundleEvent(BundleEvent.STOPPING, bundle);
       assertBundleEvent(BundleEvent.STOPPED, bundle);
-      // todo assertBundleEvent(BundleEvent.UNRESOLVED, bundle);
       assertBundleEvent(BundleEvent.UNINSTALLED, bundle);
+      getSystemContext().removeBundleListener(this);
    }
 
    @Test
@@ -535,35 +556,6 @@ public class BundleContextTestCase extends OSGiFrameworkTest
       {
          bundle.uninstall();
       }
-   }
-
-   private BundleContext assertBundleLifecycle(Bundle bundle, boolean events) throws Exception
-   {
-      assertNoBundleEvent();
-
-      bundle.stop();
-      if (events)
-      {
-         assertBundleEvent(BundleEvent.STOPPING, bundle);
-         assertBundleEvent(BundleEvent.STOPPED, bundle);
-      }
-      else
-      {
-         assertNoBundleEvent();
-      }
-
-      bundle.start();
-      if (events)
-      {
-         assertBundleEvent(BundleEvent.STARTING, bundle);
-         assertBundleEvent(BundleEvent.STARTED, bundle);
-      }
-      else
-      {
-         assertNoBundleEvent();
-      }
-
-      return bundle.getBundleContext();
    }
 
    private void assertSystemProperty(BundleContext bundleContext, String property, String osgiProperty)

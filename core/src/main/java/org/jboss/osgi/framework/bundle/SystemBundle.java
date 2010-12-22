@@ -153,7 +153,7 @@ public class SystemBundle extends AbstractBundle
    }
 
    @Override
-   public boolean ensureResolved()
+   public boolean ensureResolved(boolean fireEvent)
    {
       // The system bundle is always resolved
       return true;

@@ -78,7 +78,7 @@ public final class FragmentBundle extends AbstractUserBundle
    }
 
    @Override
-   public boolean ensureResolved()
+   public boolean ensureResolved(boolean fireEvent)
    {
       throw new NotImplementedException();
    }

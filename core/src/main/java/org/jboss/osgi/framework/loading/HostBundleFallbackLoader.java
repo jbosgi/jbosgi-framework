@@ -213,7 +213,7 @@ public class HostBundleFallbackLoader implements LocalLoader
 
          // Attempt to resolve the bundle
          AbstractBundle bundle = AbstractBundle.assertBundleState(aux);
-         if (bundle.ensureResolved() == false)
+         if (bundle.ensureResolved(false) == false)
             continue;
 
          // Create and load the module. This should not fail for resolved bundles.

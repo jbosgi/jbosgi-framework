@@ -95,7 +95,7 @@ public class HostRevision extends AbstractUserRevision
       getBundleState().assertNotUninstalled();
 
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      if (getBundleState().ensureResolved() == false)
+      if (getBundleState().ensureResolved(false) == false)
          throw new ClassNotFoundException("Class '" + className + "' not found in: " + this);
 
       // Load the class through the module
@@ -109,7 +109,7 @@ public class HostRevision extends AbstractUserRevision
       getBundleState().assertNotUninstalled();
 
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      if (getBundleState().ensureResolved() == true)
+      if (getBundleState().ensureResolved(true) == true)
          return getModuleClassLoader().getResource(path);
 
       // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
@@ -122,7 +122,7 @@ public class HostRevision extends AbstractUserRevision
       getBundleState().assertNotUninstalled();
 
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-      if (getBundleState().ensureResolved() == true)
+      if (getBundleState().ensureResolved(true) == true)
       {
          Enumeration<URL> resources = getModuleClassLoader().getResources(path);
          return resources.hasMoreElements() ? resources : null;

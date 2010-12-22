@@ -85,7 +85,7 @@ public class BundleActivationTestCase extends OSGiTest
       {
          assertBundleState(Bundle.INSTALLED, providerBundle.getState());
 
-         providerBundle.start();
+         providerBundle.start(Bundle.START_ACTIVATION_POLICY);
          assertBundleState(Bundle.STARTING, providerBundle.getState());
 
          assertEquals(3, events.size());
