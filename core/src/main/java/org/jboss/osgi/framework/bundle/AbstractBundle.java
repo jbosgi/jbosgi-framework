@@ -387,44 +387,46 @@ public abstract class AbstractBundle implements Bundle
       int previous = getState();
 
       // Get the corresponding bundle event type
-      int bundleEventType;
+      int bundleEvent;
       switch (state)
       {
          case Bundle.STARTING:
-            if (isActivationLazy() == true)
-               bundleEventType = BundleEvent.LAZY_ACTIVATION;
-            else
-               bundleEventType = BundleEvent.STARTING;
+            bundleEvent = BundleEvent.STARTING;
             break;
          case Bundle.ACTIVE:
-            bundleEventType = BundleEvent.STARTED;
+            bundleEvent = BundleEvent.STARTED;
             break;
          case Bundle.STOPPING:
-            bundleEventType = BundleEvent.STOPPING;
+            bundleEvent = BundleEvent.STOPPING;
             break;
          case Bundle.UNINSTALLED:
-            bundleEventType = BundleEvent.UNINSTALLED;
+            bundleEvent = BundleEvent.UNINSTALLED;
             break;
          case Bundle.INSTALLED:
          {
             if (previous == Bundle.RESOLVED)
-               bundleEventType = BundleEvent.UNRESOLVED;
+               bundleEvent = BundleEvent.UNRESOLVED;
             else
-               bundleEventType = BundleEvent.INSTALLED;
+               bundleEvent = BundleEvent.INSTALLED;
             break;
          }
          case Bundle.RESOLVED:
          {
             if (previous == Bundle.STOPPING)
-               bundleEventType = BundleEvent.STOPPED;
+               bundleEvent = BundleEvent.STOPPED;
             else
-               bundleEventType = BundleEvent.RESOLVED;
+               bundleEvent = BundleEvent.RESOLVED;
             break;
          }
          default:
             throw new IllegalArgumentException("Unknown bundle state: " + state);
       }
 
+      changeState(state, bundleEvent);
+   }
+
+   public void changeState(int state, int bundleEvent)
+   {
       // Invoke the bundle lifecycle interceptors
       if (getBundleManager().isFrameworkActive() && getBundleId() != 0)
          interceptorPlugin.handleStateChange(state, getBundleWrapper());
@@ -432,7 +434,7 @@ public abstract class AbstractBundle implements Bundle
       bundleState.set(state);
 
       // Fire the bundle event
-      fireBundleEvent(bundleEventType);
+      fireBundleEvent(bundleEvent);
    }
 
    protected abstract boolean isActivationLazy();

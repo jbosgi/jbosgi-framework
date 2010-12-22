@@ -59,12 +59,12 @@ import org.osgi.service.packageadmin.PackageAdmin;
 public final class HostBundle extends AbstractUserBundle
 {
    private static final Logger log = Logger.getLogger(HostBundle.class);
-   
-   private final AtomicBoolean awaitLazyActivation;
-   private BundleActivator bundleActivator;
-   private int startLevel;
 
    private final StartLevelPlugin startLevelPlugin;
+   private final AtomicBoolean awaitLazyActivation;
+
+   private BundleActivator bundleActivator;
+   private int startLevel;
 
    HostBundle(BundleManager bundleManager, Deployment deployment) throws BundleException
    {
@@ -203,7 +203,7 @@ public final class HostBundle extends AbstractUserBundle
          if (awaitLazyActivation.get() == false)
             transitionToActive(options);
       }
-      
+
       // The Framework must set this bundle's persistent autostart setting to 
       // Started with declared activation if the START_ACTIVATION_POLICY option is set or 
       // Started with eager activation if not set. 
@@ -241,9 +241,10 @@ public final class HostBundle extends AbstractUserBundle
 
          // Create the bundle context
          createBundleContext();
-
-         // This bundle's state is set to STARTING
-         changeState(Bundle.STARTING);
+         
+         // Transition to STARTING and send the bundle event
+         if (awaitLazyActivation.get() == true)
+            changeState(Bundle.STARTING, BundleEvent.LAZY_ACTIVATION);
       }
       catch (Throwable th)
       {
@@ -257,8 +258,7 @@ public final class HostBundle extends AbstractUserBundle
    private void transitionToActive(int options) throws BundleException
    {
       // The normal STARTING event is fired
-      if (isActivationLazy() == true)
-         fireBundleEvent(BundleEvent.STARTING);
+      changeState(Bundle.STARTING);
 
       // The BundleActivator.start(BundleContext) method of this bundle's BundleActivator, if one is specified, is called.
       try
@@ -285,7 +285,7 @@ public final class HostBundle extends AbstractUserBundle
             }
          }
          changeState(ACTIVE);
-         
+
          log.infof("Bundle started: %s", this);
       }
 
@@ -336,10 +336,9 @@ public final class HostBundle extends AbstractUserBundle
 
    public void activateOnClassLoad(final Class<?> definedClass) throws BundleException
    {
-      if (checkBundleStartLevel(0))
+      if (awaitLazyActivation.getAndSet(false))
       {
-         // If the bundle was started lazily, we transition to ACTIVE now
-         if (awaitLazyActivation.compareAndSet(true, false))
+         if (checkBundleStartLevel(0))
          {
             transitionToStarting(0);
             transitionToActive(0);
@@ -416,7 +415,7 @@ public final class HostBundle extends AbstractUserBundle
       changeState(RESOLVED);
 
       log.infof("Bundle stopped: %s", this);
-      
+
       if (rethrow != null)
          throw new BundleException("Error during stop of bundle: " + this, rethrow);
    }
