@@ -22,17 +22,11 @@
 package org.jboss.osgi.framework.bundle;
 
 import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
-import org.jboss.msc.service.AbstractService;
-import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.plugin.StartLevelPlugin;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
@@ -62,6 +56,7 @@ public final class HostBundle extends AbstractUserBundle
 
    private final StartLevelPlugin startLevelPlugin;
    private final AtomicBoolean awaitLazyActivation;
+   private final Semaphore activationSemaphore;
 
    private BundleActivator bundleActivator;
    private int startLevel;
@@ -73,6 +68,7 @@ public final class HostBundle extends AbstractUserBundle
       startLevelPlugin = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
       startLevel = (startLevelPlugin != null ? startLevelPlugin.getInitialBundleStartLevel() : StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED);
       awaitLazyActivation = new AtomicBoolean(isActivationLazy());
+      activationSemaphore = new Semaphore(1);
    }
 
    /**
@@ -125,27 +121,30 @@ public final class HostBundle extends AbstractUserBundle
    }
 
    @Override
-   public boolean ensureResolved()
+   public boolean ensureResolved(boolean fireEvent)
    {
-      boolean result = true;
-
       // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
       // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired
       // containing a BundleException with details of the reason this bundle could not be resolved.
-      if (getState() == Bundle.INSTALLED)
+      synchronized (this)
       {
+         XModule resModule = getResolverModule();
+         if (resModule.isResolved())
+            return true;
+
          try
          {
-            getResolverPlugin().resolve(getResolverModule());
+            getResolverPlugin().resolve(resModule);
+            return true;
          }
          catch (BundleException ex)
          {
-            getFrameworkEventsPlugin().fireFrameworkEvent(this, FrameworkEvent.ERROR, ex);
-            result = false;
+            if (fireEvent == true)
+               getFrameworkEventsPlugin().fireFrameworkEvent(this, FrameworkEvent.ERROR, ex);
+            
+            return false;
          }
       }
-
-      return result;
    }
 
    @Override
@@ -159,9 +158,9 @@ public final class HostBundle extends AbstractUserBundle
       return startLevel;
    }
 
-   public void setStartLevel(int sl)
+   public void setStartLevel(int level)
    {
-      startLevel = sl;
+      startLevel = level;
    }
 
    public boolean isPersistentlyStarted()
@@ -191,81 +190,116 @@ public final class HostBundle extends AbstractUserBundle
    @Override
    void startInternal(int options) throws BundleException
    {
-      // If this bundle's state is ACTIVE then this method returns immediately.
-      if (getState() == Bundle.ACTIVE)
-         return;
-
-      // Check the bundle's start level
-      if (checkBundleStartLevel(options) == true)
+      // If the Framework's current start level is less than this bundle's start level
+      if (hasStartLevelValidForStart() == false)
       {
-         transitionToStarting(options);
+         // If the START_TRANSIENT option is set, then a BundleException is thrown
+         // indicating this bundle cannot be started due to the Framework's current start level
+         if ((options & Bundle.START_TRANSIENT) != 0)
+            throw new BundleException("Bundle cannot be started due to the Framework's current start level");
 
-         if (awaitLazyActivation.get() == false)
-            transitionToActive(options);
+         // Set this bundle's autostart setting
+         persistAutoStartSettings(options);
+         return;
       }
 
-      // The Framework must set this bundle's persistent autostart setting to 
-      // Started with declared activation if the START_ACTIVATION_POLICY option is set or 
-      // Started with eager activation if not set. 
-      setPersistentlyStarted(true);
-      setBundleActivationPolicyUsed((options & Bundle.START_ACTIVATION_POLICY) != 0);
+      try
+      {
+         // #1 If this bundle is in the process of being activated or deactivated 
+         // then this method must wait  for activation or deactivation to complete before continuing. 
+         // If this does not occur in a reasonable time, a BundleException is thrown
+         aquireActivationLock();
+
+         // #2 If this bundle's state is ACTIVE then this method returns immediately.
+         if (getState() == Bundle.ACTIVE)
+            return;
+
+         // #3 Set this bundle's autostart setting
+         persistAutoStartSettings(options);
+
+         // #4 If this bundle's state is not RESOLVED, an attempt is made to resolve this bundle. 
+         // If the Framework cannot resolve this bundle, a BundleException is thrown. 
+         if (ensureResolved(false) == false)
+            throw new BundleException("Cannot resolve bundle: " + this);
+
+         // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
+         if (getBundleContextInternal() == null)
+            createBundleContext();
+
+         // #5 If the START_ACTIVATION_POLICY option is set and this bundle's declared activation policy is lazy
+         boolean useActivationPolicy = (options & Bundle.START_ACTIVATION_POLICY) != 0;
+         if (isActivationLazy() && useActivationPolicy == true)
+         {
+            transitionToStarting(options);
+         }
+         else
+         {
+            transitionToActive(options);
+         }
+      }
+      finally
+      {
+         activationSemaphore.release();
+      }
    }
 
-   private boolean checkBundleStartLevel(int options) throws BundleException
+   private void aquireActivationLock() throws BundleException
+   {
+      try
+      {
+         if (activationSemaphore.tryAcquire(10, TimeUnit.SECONDS) == false)
+            throw new BundleException("Cannot acquire start/stop lock for: " + this);
+      }
+      catch (InterruptedException ex)
+      {
+         log.warnf("Tread interupted while trying to start/stop bundle: %s", this);
+         return;
+      }
+   }
+
+   private void persistAutoStartSettings(int options)
+   {
+      // The Framework must set this bundle's persistent autostart setting to 
+      // Started with declared activation if the START_ACTIVATION_POLICY option is set or 
+      // Started with eager activation if not set.
+
+      setPersistentlyStarted(true);
+
+      boolean useActivationPolicy = (options & Bundle.START_ACTIVATION_POLICY) != 0;
+      setBundleActivationPolicyUsed(useActivationPolicy);
+   }
+
+   private boolean hasStartLevelValidForStart()
    {
       if (startLevelPlugin == null)
          return true;
 
-      if (getStartLevel() <= startLevelPlugin.getStartLevel())
-         return true;
-
-      // If the START_TRANSIENT option is set, then a BundleException is thrown indicating this 
-      // bundle cannot be started due to the Framework's current start level
-      if ((options & Bundle.START_TRANSIENT) != 0)
-         throw new BundleException("Bundle cannot be started due to the Framework's current start level");
-
-      return false;
+      return getStartLevel() <= startLevelPlugin.getStartLevel();
    }
 
    private void transitionToStarting(int options) throws BundleException
    {
-      // If this bundle's state is ACTIVE then this method returns immediately.
-      if (getState() == Bundle.ACTIVE || getState() == Bundle.STARTING)
+      // #5.1 If this bundle's state is STARTING then this method returns immediately.
+      if (getState() == Bundle.STARTING)
          return;
 
-      try
-      {
-         // Resolve this bundles
-         XModule resModule = getResolverModule();
-         getResolverPlugin().resolve(resModule);
-
-         // Create the bundle context
-         createBundleContext();
-         
-         // Transition to STARTING and send the bundle event
-         if (awaitLazyActivation.get() == true)
-            changeState(Bundle.STARTING, BundleEvent.LAZY_ACTIVATION);
-      }
-      catch (Throwable th)
-      {
-         if (th instanceof BundleException)
-            throw (BundleException)th;
-
-         throw new BundleException("Cannot transition to starting: " + this, th);
-      }
+      // #5.2 This bundle's state is set to STARTING.
+      // #5.3 A bundle event of type BundleEvent.LAZY_ACTIVATION is fired
+      changeState(Bundle.STARTING, BundleEvent.LAZY_ACTIVATION);
    }
 
    private void transitionToActive(int options) throws BundleException
    {
-      try
+      // #6 This bundle's state is set to STARTING.
+      // #7 A bundle event of type BundleEvent.STARTING is fired. 
+      changeState(Bundle.STARTING);
+
+      // #8 The BundleActivator.start(BundleContext) method of this bundle is called
+      XModule resModule = getResolverModule();
+      String bundleActivatorClassName = resModule.getModuleActivator();
+      if (bundleActivatorClassName != null)
       {
-         // The normal STARTING event is fired
-         changeState(Bundle.STARTING);
-         
-         // Do we have a bundle activator
-         XModule resModule = getResolverModule();
-         String bundleActivatorClassName = resModule.getModuleActivator();
-         if (bundleActivatorClassName != null)
+         try
          {
             Object result = loadClass(bundleActivatorClassName).newInstance();
             if (result instanceof ModuleActivator)
@@ -283,41 +317,44 @@ public final class HostBundle extends AbstractUserBundle
                throw new BundleException(bundleActivatorClassName + " is not an implementation of " + BundleActivator.class.getName());
             }
          }
-         changeState(ACTIVE);
 
-         log.infof("Bundle started: %s", this);
+         // If the BundleActivator is invalid or throws an exception then
+         catch (Exception ex)
+         {
+            // #8.1 This bundle's state is set to STOPPING
+            // #8.2 A bundle event of type BundleEvent.STOPPING is fired
+            changeState(STOPPING);
+
+            // #8.3 Any services registered by this bundle must be unregistered.
+            // #8.4 Any services used by this bundle must be released.
+            // #8.5 Any listeners registered by this bundle must be removed.
+            removeServicesAndListeners();
+
+            // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
+            destroyBundleContext();
+
+            // #8.6 This bundle's state is set to RESOLVED
+            // #8.7 A bundle event of type BundleEvent.STOPPED is fired
+            changeState(RESOLVED);
+
+            // #8.8 A BundleException is then thrown
+            if (ex instanceof BundleException)
+               throw (BundleException)ex;
+
+            throw new BundleException("Cannot start bundle: " + this, ex);
+         }
       }
 
-      // If the BundleActivator is invalid or throws an exception then:
-      //   * This bundle's state is set to STOPPING.
-      //   * A bundle event of type BundleEvent.STOPPING is fired.
-      //   * Any services registered by this bundle must be unregistered.
-      //   * Any services used by this bundle must be released.
-      //   * Any listeners registered by this bundle must be removed.
-      //   * This bundle's state is set to RESOLVED.
-      //   * A bundle event of type BundleEvent.STOPPED is fired.
-      //   * A BundleException is then thrown.
-      catch (Throwable t)
-      {
-         // This bundle's state is set to STOPPING
-         // A bundle event of type BundleEvent.STOPPING is fired
-         changeState(STOPPING);
+      // #9 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while 
+      // the BundleActivator.start method was running, a BundleException is thrown
+      if (getState() == UNINSTALLED)
+         throw new BundleException("Bundle was uninstalled while activator was running: " + this);
 
-         // Any services registered by this bundle must be unregistered.
-         // Any services used by this bundle must be released.
-         // Any listeners registered by this bundle must be removed.
-         stopInternal(options);
+      // #10 This bundle's state is set to ACTIVE.
+      // #11 A bundle event of type BundleEvent.STARTED is fired
+      changeState(ACTIVE);
 
-         // This bundle's state is set to RESOLVED
-         // A bundle event of type BundleEvent.STOPPED is fired
-         destroyBundleContext();
-         changeState(RESOLVED);
-
-         if (t instanceof BundleException)
-            throw (BundleException)t;
-
-         throw new BundleException("Cannot start bundle: " + this, t);
-      }
+      log.infof("Bundle started: %s", this);
    }
 
    public boolean isActivationLazy()
@@ -329,94 +366,109 @@ public final class HostBundle extends AbstractUserBundle
 
    public ActivationPolicyMetaData getActivationPolicy()
    {
-      ActivationPolicyMetaData policyMetaData = getOSGiMetaData().getBundleActivationPolicy();
-      return policyMetaData;
+      return getOSGiMetaData().getBundleActivationPolicy();
    }
 
    public void activateOnClassLoad(final Class<?> definedClass) throws BundleException
    {
       if (awaitLazyActivation.getAndSet(false))
       {
-         if (checkBundleStartLevel(0))
-         {
-            transitionToStarting(0);
-            transitionToActive(0);
-         }
+         startInternal(Bundle.START_TRANSIENT);
       }
    }
 
    @Override
    void stopInternal(int options) throws BundleException
    {
-      // If this bundle's state is UNINSTALLED then an IllegalStateException is thrown.
+      // #1 If this bundle's state is UNINSTALLED then an IllegalStateException is thrown
       if (getState() == Bundle.UNINSTALLED)
          throw new IllegalStateException("Bundle already uninstalled: " + this);
 
-      // [TODO] If this bundle is in the process of being activated or deactivated then this method must wait for activation or deactivation
-      // to complete before continuing. If this does not occur in a reasonable time, a BundleException is thrown to indicate this bundle
-      // was unable to be stopped.
-
-      // [TODO] If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to Stopped.
-      // When the Framework is restarted and this bundle's autostart setting is Stopped, this bundle must not be automatically started.
-      if ((options & Bundle.STOP_TRANSIENT) == 0)
-         setPersistentlyStarted(false);
-
-      // If this bundle's state is not STARTING or ACTIVE then this method returns immediately
-      if (getState() != Bundle.STARTING && getState() != Bundle.ACTIVE)
-         return;
-
-      // This bundle's state is set to STOPPING
-      // A bundle event of type BundleEvent.STOPPING is fired
-      int priorState = getState();
-      changeState(STOPPING);
-
-      // If this bundle's state was ACTIVE prior to setting the state to STOPPING,
-      // the BundleActivator.stop(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, if one is specified, is called.
-      // If that method throws an exception, this method must continue to stop this bundle and a BundleException must be thrown after completion
-      // of the remaining steps.
-      Throwable rethrow = null;
-      if (priorState == Bundle.ACTIVE)
+      try
       {
-         if (bundleActivator != null && getBundleContext() != null)
+         // #2 f this bundle is in the process of being activated or deactivated 
+         // then this method must wait for activation or deactivation to complete before continuing. 
+         // If this does not occur in a reasonable time, a BundleException is thrown to indicate this bundle was unable to be stopped
+         aquireActivationLock();
+
+         // #3 If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to Stopped.
+         // When the Framework is restarted and this bundle's autostart setting is Stopped, this bundle must not be automatically started.
+         if ((options & Bundle.STOP_TRANSIENT) == 0)
+            setPersistentlyStarted(false);
+
+         // #4 If this bundle's state is not STARTING or ACTIVE then this method returns immediately
+         if (getState() != Bundle.STARTING && getState() != Bundle.ACTIVE)
+            return;
+
+         // #5 This bundle's state is set to STOPPING
+         // #6 A bundle event of type BundleEvent.STOPPING is fired
+         int priorState = getState();
+         changeState(STOPPING);
+
+         // #7 If this bundle's state was ACTIVE prior to setting the state to STOPPING,
+         // the BundleActivator.stop(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, if one is specified, is called.
+         // If that method throws an exception, this method must continue to stop this bundle and a BundleException must be thrown after completion
+         // of the remaining steps.
+         Throwable rethrow = null;
+         if (priorState == Bundle.ACTIVE)
          {
-            try
+            if (bundleActivator != null)
             {
-               if (bundleActivator instanceof ModuleActivatorBridge)
+               try
                {
-                  bundleActivator.stop(getBundleContextInternal());
+                  if (bundleActivator instanceof ModuleActivatorBridge)
+                  {
+                     bundleActivator.stop(getBundleContext());
+                  }
+                  else
+                  {
+                     bundleActivator.stop(getBundleContext());
+                  }
                }
-               else
+               catch (Throwable t)
                {
-                  bundleActivator.stop(getBundleContext());
+                  rethrow = t;
                }
-            }
-            catch (Throwable t)
-            {
-               rethrow = t;
             }
          }
-      }
 
-      // Any services registered by this bundle must be unregistered
+         // #8 Any services registered by this bundle must be unregistered.
+         // #9 Any services used by this bundle must be released. 
+         // #10 Any listeners registered by this bundle must be removed.
+         removeServicesAndListeners();
+
+         // #11 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while the
+         // BundleActivator.stop method was running, a BundleException must be thrown
+         if (getState() == Bundle.UNINSTALLED)
+            throw new BundleException("Bundle uninstalled during activator stop: " + this);
+
+         // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
+         destroyBundleContext();
+
+         // #12 This bundle's state is set to RESOLVED
+         // #13 A bundle event of type BundleEvent.STOPPED is fired
+         changeState(RESOLVED);
+
+         log.infof("Bundle stopped: %s", this);
+
+         if (rethrow != null)
+            throw new BundleException("Error during stop of bundle: " + this, rethrow);
+      }
+      finally
+      {
+         activationSemaphore.release();
+      }
+   }
+
+   private void removeServicesAndListeners()
+   {
+      // Any services registered by this bundle must be unregistered.
+      // Any services used by this bundle must be released. 
       for (ServiceState serviceState : getRegisteredServicesInternal())
          serviceState.unregister();
 
-      // [TODO] Any listeners registered by this bundle must be removed
-
-      // If this bundle's state is UNINSTALLED, because this bundle was uninstalled while the
-      // BundleActivator.stop method was running, a BundleException must be thrown
-      if (getState() == Bundle.UNINSTALLED)
-         throw new BundleException("Bundle uninstalled during activator stop: " + this);
-
-      // This bundle's state is set to RESOLVED
-      // A bundle event of type BundleEvent.STOPPED is fired
-      destroyBundleContext();
-      changeState(RESOLVED);
-
-      log.infof("Bundle stopped: %s", this);
-
-      if (rethrow != null)
-         throw new BundleException("Error during stop of bundle: " + this, rethrow);
+      // Any listeners registered by this bundle must be removed
+      getFrameworkEventsPlugin().removeBundleListeners(this);
    }
 
    @Override
@@ -439,60 +491,6 @@ public final class HostBundle extends AbstractUserBundle
             // fired containing the exception
             bundleManager.fireError(this, "Error stopping bundle: " + this, ex);
          }
-      }
-   }
-
-   static class LazyActivationService extends AbstractService<LazyActivationService>
-   {
-      static final ServiceName SERVICE_NAME_BASE = ServiceName.JBOSS.append("osgi", "bundle", "activation");
-      static final AtomicLong activationCount = new AtomicLong();
-      private final HostBundle hostBundle;
-      private final Class<?> definedClass;
-
-      private LazyActivationService(HostBundle hostBundle, Class<?> definedClass)
-      {
-         this.hostBundle = hostBundle;
-         this.definedClass = definedClass;
-      }
-
-      static void addService(final HostBundle hostBundle, final Class<?> definedClass)
-      {
-         ServiceTarget target = hostBundle.getBundleManager().getServiceContainer();
-         ServiceName serviceName = SERVICE_NAME_BASE.append("" + activationCount.incrementAndGet());
-         LazyActivationService service = new LazyActivationService(hostBundle, definedClass);
-         ServiceBuilder<?> serviceBuilder = target.addService(serviceName, service);
-         serviceBuilder.install();
-      }
-
-      @Override
-      public void start(StartContext context) throws StartException
-      {
-         context.getController().setMode(Mode.REMOVE);
-
-         ActivationPolicyMetaData policyMetaData = hostBundle.getOSGiMetaData().getBundleActivationPolicy();
-         List<String> includes = policyMetaData.getIncludes();
-         if (includes != null && includes.contains(definedClass.getPackage().getName()) == false)
-            return;
-
-         List<String> excludes = policyMetaData.getExcludes();
-         if (excludes != null && excludes.contains(definedClass.getPackage().getName()) == true)
-            return;
-
-         try
-         {
-            hostBundle.transitionToStarting(0);
-            hostBundle.transitionToActive(0);
-         }
-         catch (BundleException ex)
-         {
-            throw new StartException(ex);
-         }
-      }
-
-      @Override
-      public LazyActivationService getValue() throws IllegalStateException
-      {
-         return this;
       }
    }
 }

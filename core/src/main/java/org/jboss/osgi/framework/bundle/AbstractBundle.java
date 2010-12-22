@@ -148,7 +148,7 @@ public abstract class AbstractBundle implements Bundle
 
    public abstract boolean isFragment();
 
-   public abstract boolean ensureResolved();
+   public abstract boolean ensureResolved(boolean fireEvent);
 
    abstract AbstractBundleContext createContextInternal();
 

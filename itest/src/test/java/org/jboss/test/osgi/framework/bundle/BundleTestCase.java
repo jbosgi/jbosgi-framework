@@ -238,6 +238,7 @@ public class BundleTestCase extends OSGiFrameworkTest
          // Assembly X depends on a package in the bundle, this should still be available 
          assertLoadClass(bundleX, ObjectA.class.getName());
 
+         assertNoFrameworkEvent();
          getSystemContext().addFrameworkListener(this);
          getPackageAdmin().refreshPackages(new Bundle[] { bundleA });
          assertFrameworkEvent(FrameworkEvent.ERROR, bundleX, BundleException.class);
