@@ -257,12 +257,11 @@ public final class HostBundle extends AbstractUserBundle
 
    private void transitionToActive(int options) throws BundleException
    {
-      // The normal STARTING event is fired
-      changeState(Bundle.STARTING);
-
-      // The BundleActivator.start(BundleContext) method of this bundle's BundleActivator, if one is specified, is called.
       try
       {
+         // The normal STARTING event is fired
+         changeState(Bundle.STARTING);
+         
          // Do we have a bundle activator
          XModule resModule = getResolverModule();
          String bundleActivatorClassName = resModule.getModuleActivator();
