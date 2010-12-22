@@ -76,9 +76,9 @@ public class LazyActivationLocalLoader implements LocalLoader
    public Class<?> loadClassLocal(String className, boolean resolve)
    {
       Class<?> definedClass = null;
-      
+
       String pathForClassName = getPathForClassName(className);
-      if (lazyPackagesFilter.accept(pathForClassName) )
+      if (lazyPackagesFilter.accept(pathForClassName))
       {
          // Relink the module and load the requested class
          try
@@ -102,13 +102,13 @@ public class LazyActivationLocalLoader implements LocalLoader
          {
             return null;
          }
-         
+
          // Activate the bundle lazily
-         if (activateHost.getAndSet(false) && definedClass != null)
+         if (activateHost.getAndSet(false))
          {
             try
             {
-               log.debugf("Lazy activation [%s] on class load: %s",  identifier, className);
+               log.debugf("Lazy activation [%s] on class load: %s", identifier, className);
                hostBundle.activateOnClassLoad(definedClass);
             }
             catch (BundleException ex)

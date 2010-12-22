@@ -215,7 +215,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
       if (bundleState.isFragment())
          return false;
-      
+
       HostBundle hostBundle = HostBundle.assertBundleState(bundleState);
       return hostBundle.isPersistentlyStarted();
    }
@@ -229,7 +229,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
       if (bundleState.isFragment())
          return false;
-      
+
       HostBundle hostBundle = HostBundle.assertBundleState(bundleState);
       return hostBundle.isBundleActivationPolicyUsed();
    }
@@ -245,7 +245,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
       while (startLevel < level)
       {
          startLevel++;
-         log.infof("Starting bundles for start level: %s",  startLevel);
+         log.infof("Starting bundles for start level: %s", startLevel);
          for (AbstractBundle bundle : bundles)
          {
             if (!(bundle instanceof HostBundle))
@@ -254,21 +254,18 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
             HostBundle hostBundle = (HostBundle)bundle;
             if (hostBundle.getStartLevel() == startLevel && hostBundle.isPersistentlyStarted())
             {
-               if (hostBundle.isPersistentlyStarted())
+               try
                {
-                  try
+                  int opts = Bundle.START_TRANSIENT;
+                  if (isBundleActivationPolicyUsed(bundle))
                   {
-                     int opts = Bundle.START_TRANSIENT;
-                     if (isBundleActivationPolicyUsed(bundle))
-                     {
-                        opts |= Bundle.START_ACTIVATION_POLICY;
-                     }
-                     bundle.start(opts);
+                     opts |= Bundle.START_ACTIVATION_POLICY;
                   }
-                  catch (Throwable e)
-                  {
-                     eventsPlugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, e);
-                  }
+                  bundle.start(opts);
+               }
+               catch (Throwable e)
+               {
+                  eventsPlugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, e);
                }
             }
          }
