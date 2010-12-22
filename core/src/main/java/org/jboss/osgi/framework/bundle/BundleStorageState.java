@@ -53,6 +53,7 @@ public final class BundleStorageState
    public static final String PROPERTY_BUNDLE_REV = "BundleRev";
    public static final String PROPERTY_LAST_MODIFIED = "LastModified";
    public static final String PROPERTY_PERSISTENTLY_STARTED = "PersistentlyStarted";
+   public static final String PROPERTY_ACTIVATION_POLICY_USED = "ActivationPolicyUsed";
    public static final String BUNDLE_PERSISTENT_PROPERTIES = "bundle-persistent.properties";
 
    private final File bundleDir;
@@ -181,6 +182,18 @@ public final class BundleStorageState
    public void setPersistentlyStarted(boolean started)
    {
       props.setProperty(PROPERTY_PERSISTENTLY_STARTED, new Boolean(started).toString());
+      writeProperties();
+   }
+
+   public boolean isBundleActivationPolicyUsed()
+   {
+      String value = props.getProperty(PROPERTY_ACTIVATION_POLICY_USED);
+      return value != null ? new Boolean(value) : false;
+   }
+
+   public void setBundleActivationPolicyUsed(boolean started)
+   {
+      props.setProperty(PROPERTY_ACTIVATION_POLICY_USED, new Boolean(started).toString());
       writeProperties();
    }
 

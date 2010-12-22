@@ -454,7 +454,6 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       startInternal(options);
-      log.infof("Bundle started: %s", this);
    }
 
    @Override
@@ -462,7 +461,6 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       startInternal(0);
-      log.infof("Bundle started: %s", this);
    }
 
    abstract void startInternal(int options) throws BundleException;
@@ -472,7 +470,6 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       stopInternal(options);
-      log.infof("Bundle stopped: %s", this);
    }
 
    @Override
@@ -480,7 +477,6 @@ public abstract class AbstractBundle implements Bundle
    {
       assertNotUninstalled();
       stopInternal(0);
-      log.infof("Bundle stopped: %s", this);
    }
 
    abstract void stopInternal(int options) throws BundleException;
