@@ -191,9 +191,9 @@ public final class BundleStorageState
       return value != null ? new Boolean(value) : false;
    }
 
-   public void setBundleActivationPolicyUsed(boolean started)
+   public void setBundleActivationPolicyUsed(boolean usePolicy)
    {
-      props.setProperty(PROPERTY_ACTIVATION_POLICY_USED, new Boolean(started).toString());
+      props.setProperty(PROPERTY_ACTIVATION_POLICY_USED, new Boolean(usePolicy).toString());
       writeProperties();
    }
 
