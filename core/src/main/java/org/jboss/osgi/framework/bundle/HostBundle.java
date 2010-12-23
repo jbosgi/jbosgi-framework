@@ -200,9 +200,15 @@ public final class HostBundle extends AbstractUserBundle
 
          // Set this bundle's autostart setting
          persistAutoStartSettings(options);
-         return;
       }
+      else
+      {
+         startInternal(options, false);
+      }
+   }
 
+   private void startInternal(int options, boolean lazyTrigger) throws BundleException
+   {
       try
       {
          // #1 If this bundle is in the process of being activated or deactivated 
@@ -228,7 +234,7 @@ public final class HostBundle extends AbstractUserBundle
 
          // #5 If the START_ACTIVATION_POLICY option is set and this bundle's declared activation policy is lazy
          boolean useActivationPolicy = (options & Bundle.START_ACTIVATION_POLICY) != 0;
-         if (awaitLazyActivation.get() == true && useActivationPolicy == true)
+         if (lazyTrigger == false && isActivationLazy() && useActivationPolicy == true)
          {
             transitionToStarting(options);
          }
@@ -375,7 +381,7 @@ public final class HostBundle extends AbstractUserBundle
       if (awaitLazyActivation.getAndSet(false))
       {
          if (hasStartLevelValidForStart() == true)
-            startInternal(Bundle.START_TRANSIENT);
+            startInternal(Bundle.START_TRANSIENT, true);
       }
    }
 
@@ -398,8 +404,8 @@ public final class HostBundle extends AbstractUserBundle
          if ((options & Bundle.STOP_TRANSIENT) == 0)
             setPersistentlyStarted(false);
 
-         // [TODO] Verify if this is correct here
-         setBundleActivationPolicyUsed(false);
+         // [TODO] Verify that this is correct
+         //setBundleActivationPolicyUsed(false);
          
          // #4 If this bundle's state is not STARTING or ACTIVE then this method returns immediately
          if (getState() != Bundle.STARTING && getState() != Bundle.ACTIVE)
