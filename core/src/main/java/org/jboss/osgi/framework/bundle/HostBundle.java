@@ -141,7 +141,7 @@ public final class HostBundle extends AbstractUserBundle
          {
             if (fireEvent == true)
                getFrameworkEventsPlugin().fireFrameworkEvent(this, FrameworkEvent.ERROR, ex);
-            
+
             return false;
          }
       }
@@ -181,10 +181,10 @@ public final class HostBundle extends AbstractUserBundle
       return storageState.isBundleActivationPolicyUsed();
    }
 
-   private void setBundleActivationPolicyUsed(boolean started)
+   private void setBundleActivationPolicyUsed(boolean usePolicy)
    {
       BundleStorageState storageState = getBundleStorageState();
-      storageState.setBundleActivationPolicyUsed(started);
+      storageState.setBundleActivationPolicyUsed(usePolicy);
    }
 
    @Override
@@ -228,7 +228,7 @@ public final class HostBundle extends AbstractUserBundle
 
          // #5 If the START_ACTIVATION_POLICY option is set and this bundle's declared activation policy is lazy
          boolean useActivationPolicy = (options & Bundle.START_ACTIVATION_POLICY) != 0;
-         if (isActivationLazy() && useActivationPolicy == true)
+         if (awaitLazyActivation.get() == true && useActivationPolicy == true)
          {
             transitionToStarting(options);
          }
@@ -263,10 +263,11 @@ public final class HostBundle extends AbstractUserBundle
       // Started with declared activation if the START_ACTIVATION_POLICY option is set or 
       // Started with eager activation if not set.
 
-      setPersistentlyStarted(true);
+      if ((options & Bundle.START_TRANSIENT) == 0)
+         setPersistentlyStarted(true);
 
-      boolean useActivationPolicy = (options & Bundle.START_ACTIVATION_POLICY) != 0;
-      setBundleActivationPolicyUsed(useActivationPolicy);
+      boolean activationPolicyUsed = (options & Bundle.START_ACTIVATION_POLICY) != 0;
+      setBundleActivationPolicyUsed(activationPolicyUsed);
    }
 
    private boolean hasStartLevelValidForStart()
@@ -373,7 +374,8 @@ public final class HostBundle extends AbstractUserBundle
    {
       if (awaitLazyActivation.getAndSet(false))
       {
-         startInternal(Bundle.START_TRANSIENT);
+         if (hasStartLevelValidForStart() == true)
+            startInternal(Bundle.START_TRANSIENT);
       }
    }
 
@@ -396,6 +398,9 @@ public final class HostBundle extends AbstractUserBundle
          if ((options & Bundle.STOP_TRANSIENT) == 0)
             setPersistentlyStarted(false);
 
+         // [TODO] Verify if this is correct here
+         setBundleActivationPolicyUsed(false);
+         
          // #4 If this bundle's state is not STARTING or ACTIVE then this method returns immediately
          if (getState() != Bundle.STARTING && getState() != Bundle.ACTIVE)
             return;
