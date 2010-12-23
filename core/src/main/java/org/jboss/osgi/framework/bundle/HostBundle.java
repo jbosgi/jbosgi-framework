@@ -195,20 +195,14 @@ public final class HostBundle extends AbstractUserBundle
       {
          // If the START_TRANSIENT option is set, then a BundleException is thrown
          // indicating this bundle cannot be started due to the Framework's current start level
-         if ((options & Bundle.START_TRANSIENT) != 0)
+         if ((options & START_TRANSIENT) != 0)
             throw new BundleException("Bundle cannot be started due to the Framework's current start level");
 
          // Set this bundle's autostart setting
          persistAutoStartSettings(options);
+         return;
       }
-      else
-      {
-         startInternal(options, false);
-      }
-   }
-
-   private void startInternal(int options, boolean lazyTrigger) throws BundleException
-   {
+      
       try
       {
          // #1 If this bundle is in the process of being activated or deactivated 
@@ -217,7 +211,7 @@ public final class HostBundle extends AbstractUserBundle
          aquireActivationLock();
 
          // #2 If this bundle's state is ACTIVE then this method returns immediately.
-         if (getState() == Bundle.ACTIVE)
+         if (getState() == ACTIVE)
             return;
 
          // #3 Set this bundle's autostart setting
@@ -233,8 +227,8 @@ public final class HostBundle extends AbstractUserBundle
             createBundleContext();
 
          // #5 If the START_ACTIVATION_POLICY option is set and this bundle's declared activation policy is lazy
-         boolean useActivationPolicy = (options & Bundle.START_ACTIVATION_POLICY) != 0;
-         if (lazyTrigger == false && isActivationLazy() && useActivationPolicy == true)
+         boolean useActivationPolicy = (options & START_ACTIVATION_POLICY) != 0;
+         if (awaitLazyActivation.get() == true && useActivationPolicy == true)
          {
             transitionToStarting(options);
          }
@@ -269,11 +263,12 @@ public final class HostBundle extends AbstractUserBundle
       // Started with declared activation if the START_ACTIVATION_POLICY option is set or 
       // Started with eager activation if not set.
 
-      if ((options & Bundle.START_TRANSIENT) == 0)
+      if ((options & START_TRANSIENT) == 0)
+      {
          setPersistentlyStarted(true);
-
-      boolean activationPolicyUsed = (options & Bundle.START_ACTIVATION_POLICY) != 0;
-      setBundleActivationPolicyUsed(activationPolicyUsed);
+         boolean activationPolicyUsed = (options & START_ACTIVATION_POLICY) != 0;
+         setBundleActivationPolicyUsed(activationPolicyUsed);
+      }
    }
 
    private boolean hasStartLevelValidForStart()
@@ -287,19 +282,19 @@ public final class HostBundle extends AbstractUserBundle
    private void transitionToStarting(int options) throws BundleException
    {
       // #5.1 If this bundle's state is STARTING then this method returns immediately.
-      if (getState() == Bundle.STARTING)
+      if (getState() == STARTING)
          return;
 
       // #5.2 This bundle's state is set to STARTING.
       // #5.3 A bundle event of type BundleEvent.LAZY_ACTIVATION is fired
-      changeState(Bundle.STARTING, BundleEvent.LAZY_ACTIVATION);
+      changeState(STARTING, BundleEvent.LAZY_ACTIVATION);
    }
 
    private void transitionToActive(int options) throws BundleException
    {
       // #6 This bundle's state is set to STARTING.
       // #7 A bundle event of type BundleEvent.STARTING is fired. 
-      changeState(Bundle.STARTING);
+      changeState(STARTING);
 
       // #8 The BundleActivator.start(BundleContext) method of this bundle is called
       XModule resModule = getResolverModule();
@@ -381,7 +376,13 @@ public final class HostBundle extends AbstractUserBundle
       if (awaitLazyActivation.getAndSet(false))
       {
          if (hasStartLevelValidForStart() == true)
-            startInternal(Bundle.START_TRANSIENT, true);
+         {
+            int options = START_TRANSIENT;
+            if (isBundleActivationPolicyUsed())
+               options |= START_ACTIVATION_POLICY;
+            
+            startInternal(options);
+         }
       }
    }
 
@@ -389,7 +390,7 @@ public final class HostBundle extends AbstractUserBundle
    void stopInternal(int options) throws BundleException
    {
       // #1 If this bundle's state is UNINSTALLED then an IllegalStateException is thrown
-      if (getState() == Bundle.UNINSTALLED)
+      if (getState() == UNINSTALLED)
          throw new IllegalStateException("Bundle already uninstalled: " + this);
 
       try
@@ -401,14 +402,14 @@ public final class HostBundle extends AbstractUserBundle
 
          // #3 If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to Stopped.
          // When the Framework is restarted and this bundle's autostart setting is Stopped, this bundle must not be automatically started.
-         if ((options & Bundle.STOP_TRANSIENT) == 0)
+         if ((options & STOP_TRANSIENT) == 0)
+         {
             setPersistentlyStarted(false);
+            setBundleActivationPolicyUsed(false);
+         }
 
-         // [TODO] Verify that this is correct
-         //setBundleActivationPolicyUsed(false);
-         
          // #4 If this bundle's state is not STARTING or ACTIVE then this method returns immediately
-         if (getState() != Bundle.STARTING && getState() != Bundle.ACTIVE)
+         if (getState() != STARTING && getState() != ACTIVE)
             return;
 
          // #5 This bundle's state is set to STOPPING
@@ -421,7 +422,7 @@ public final class HostBundle extends AbstractUserBundle
          // If that method throws an exception, this method must continue to stop this bundle and a BundleException must be thrown after completion
          // of the remaining steps.
          Throwable rethrow = null;
-         if (priorState == Bundle.ACTIVE)
+         if (priorState == ACTIVE)
          {
             if (bundleActivator != null)
             {
@@ -450,7 +451,7 @@ public final class HostBundle extends AbstractUserBundle
 
          // #11 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while the
          // BundleActivator.stop method was running, a BundleException must be thrown
-         if (getState() == Bundle.UNINSTALLED)
+         if (getState() == UNINSTALLED)
             throw new BundleException("Bundle uninstalled during activator stop: " + this);
 
          // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
@@ -490,7 +491,7 @@ public final class HostBundle extends AbstractUserBundle
       // If this bundle's state is ACTIVE, STARTING or STOPPING, this bundle is stopped
       // as described in the Bundle.stop method.
       int state = getState();
-      if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING)
+      if (state == ACTIVE || state == STARTING || state == STOPPING)
       {
          try
          {
