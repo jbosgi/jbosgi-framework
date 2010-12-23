@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.framework.plugin.StartLevelPlugin;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.modules.ModuleActivator;
@@ -294,7 +295,14 @@ public final class HostBundle extends AbstractUserBundle
    {
       // #6 This bundle's state is set to STARTING.
       // #7 A bundle event of type BundleEvent.STARTING is fired. 
-      changeState(STARTING);
+      try
+      {
+         changeState(STARTING);
+      }
+      catch (LifecycleInterceptorException ex)
+      {
+         throw new BundleException("Cannot transition to STARTING: " + this, ex);
+      }
 
       // #8 The BundleActivator.start(BundleContext) method of this bundle is called
       XModule resModule = getResolverModule();
