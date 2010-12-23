@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
+import org.jboss.osgi.framework.bundle.BundleStorageState;
 import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.SystemBundle;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
@@ -209,29 +210,17 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
    @Override
    public boolean isBundlePersistentlyStarted(Bundle bundle)
    {
-      if (bundle.getBundleId() == 0)
-         return true;
-
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      if (bundleState.isFragment())
-         return false;
-
-      HostBundle hostBundle = HostBundle.assertBundleState(bundleState);
-      return hostBundle.isPersistentlyStarted();
+      BundleStorageState storageState = bundleState.getBundleStorageState();
+      return storageState.isPersistentlyStarted();
    }
 
    @Override
    public boolean isBundleActivationPolicyUsed(Bundle bundle)
    {
-      if (bundle.getBundleId() == 0)
-         return false;
-
       AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      if (bundleState.isFragment())
-         return false;
-
-      HostBundle hostBundle = HostBundle.assertBundleState(bundleState);
-      return hostBundle.isBundleActivationPolicyUsed();
+      BundleStorageState storageState = bundleState.getBundleStorageState();
+      return storageState.isBundleActivationPolicyUsed();
    }
 
    /** 
