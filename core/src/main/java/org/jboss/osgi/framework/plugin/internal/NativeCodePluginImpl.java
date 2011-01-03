@@ -56,10 +56,16 @@ import org.osgi.framework.Constants;
  * The bundle native code plugin
  *
  * @author thomas.diesler@jboss.com
+ * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 11-Aug-2010
  */
 public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePlugin
 {
+   /** The string that is to be replaced with the absolute path of the native library as specified
+    * by the core spec with the org.osgi.framework.command.execpermission framework property.
+    */
+   private static final String ABSPATH_VARIABLE = "${abspath}";
+
    /** Maps an alias to an OSGi processor name */
    private static Map<String, String> processorAlias = new HashMap<String, String>();
    static
@@ -340,8 +346,33 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
             FileOutputStream fos = new FileOutputStream(libraryFile);
             VFSUtils.copyStream(fileSource.openStream(), fos);
             fos.close();
+
+            handleExecPermission();
          }
          return libraryFile;
+      }
+
+      private void handleExecPermission() throws IOException
+      {
+         String epProp = bundleState.getBundleContext().getProperty(Constants.FRAMEWORK_EXECPERMISSION);
+         if (epProp == null)
+            return;
+
+         StringBuilder command = new StringBuilder(epProp);
+         int idx = command.indexOf(ABSPATH_VARIABLE);
+         if (idx >= 0)
+         {
+            command.replace(idx, idx + ABSPATH_VARIABLE.length(), libraryFile.getAbsolutePath());
+         }
+         Process process = Runtime.getRuntime().exec(command.toString());
+         try
+         {
+            process.waitFor();
+         }
+         catch (InterruptedException e)
+         {
+            // Move ahead when interrupted
+         }
       }
 
       private File getUniqueLibraryFile(final AbstractUserBundle bundleState, final String libpath)
