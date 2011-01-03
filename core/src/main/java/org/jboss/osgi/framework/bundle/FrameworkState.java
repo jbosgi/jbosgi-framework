@@ -200,21 +200,24 @@ public class FrameworkState extends SystemBundle implements Framework
       int state = getState();
       if (state == Bundle.STARTING || state == Bundle.ACTIVE || state == Bundle.STOPPING)
          return;
-
-      // Init Plugins Lifecycle
-      BundleManager bundleManager = getBundleManager();
-      for (Plugin plugin : bundleManager.getPlugins())
-         plugin.initPlugin();
-
+      
       // Add the system bundle
       createSystemBundleRevision();
-      bundleManager.addBundleState(this);
-      
-      // Put into the STARTING state
-      changeState(Bundle.STARTING);
 
       // Create the system bundle context
       createBundleContext();
+
+      BundleManager bundleManager = getBundleManager();
+
+      // Init Plugins Lifecycle
+      for (Plugin plugin : bundleManager.getPlugins())
+         plugin.initPlugin();
+      
+      // Attach the Bundle State
+      bundleManager.addBundleState(this);
+
+      // Put into the STARTING state
+      changeState(Bundle.STARTING);
 
       // Have event handling enabled
       FrameworkEventsPlugin eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);

@@ -22,6 +22,7 @@
 package org.jboss.test.osgi.framework.launch;
 
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.util.HashMap;
@@ -32,13 +33,18 @@ import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
+import org.osgi.service.packageadmin.PackageAdmin;
+import org.osgi.service.startlevel.StartLevel;
 
 /**
  * Test framework bootstrap options.
  * 
  * @author thomas.diesler@jboss.com
+ * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Apr-2010
  */
 public class FrameworkLaunchTestCase extends OSGiFrameworkTest
@@ -50,7 +56,7 @@ public class FrameworkLaunchTestCase extends OSGiFrameworkTest
    }
    
    @Test
-   public void frameworkStartStop() throws Exception
+   public void testFrameworkStartStop() throws Exception
    {
       Map<String,String> props = new HashMap<String, String>();
       props.put("org.osgi.framework.storage", "target/osgi-store");
@@ -71,5 +77,32 @@ public class FrameworkLaunchTestCase extends OSGiFrameworkTest
       
       framework.waitForStop(2000);
       assertBundleState(Bundle.RESOLVED, framework.getState());
+   }
+
+   @Test
+   public void testFrameworkInit() throws Exception
+   {
+      Map<String, String> props = new HashMap<String, String>();
+      props.put("org.osgi.framework.storage", "target/osgi-store");
+      props.put("org.osgi.framework.storage.clean", "onFirstInit");
+
+      FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
+      Framework framework = factory.newFramework(props);
+
+      assertNotNull("Framework not null", framework);
+
+      assertBundleState(Bundle.INSTALLED, framework.getState());
+
+      framework.init();
+      assertBundleState(Bundle.STARTING, framework.getState());
+
+      BundleContext bc = framework.getBundleContext();
+      ServiceReference slRef = bc.getServiceReference(StartLevel.class.getName());
+      StartLevel sls = (StartLevel)bc.getService(slRef);
+      assertEquals("Framework should be at Start Level 0 on init()", 0, sls.getStartLevel());
+
+      ServiceReference paRef = bc.getServiceReference(PackageAdmin.class.getName());
+      PackageAdmin pa = (PackageAdmin)bc.getService(paRef);
+      assertNotNull("The Package Admin service should be available", pa);
    }
 }
