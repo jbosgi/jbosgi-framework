@@ -48,7 +48,7 @@ public abstract class AbstractDeployerServicePlugin extends AbstractPlugin imple
    }
 
    @Override
-   public void startPlugin()
+   public void initPlugin()
    {
       BundleContext context = getBundleManager().getSystemContext();
       delegate = getDeployerService(context);
