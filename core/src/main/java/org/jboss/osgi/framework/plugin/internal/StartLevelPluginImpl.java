@@ -62,8 +62,9 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
    }
 
    @Override
-   public void startPlugin()
+   public void initPlugin()
    {
+      // Start Level service needs to be registered when the Framework.init() is called
       BundleContext sc = getBundleManager().getSystemContext();
       registration = sc.registerService(StartLevel.class.getName(), this, null);
    }
