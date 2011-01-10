@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.loading;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -32,9 +33,11 @@ import org.jboss.modules.ClassSpec;
 import org.jboss.modules.ConcurrentClassLoader;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Resource;
+import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.framework.bundle.FragmentRevision;
 import org.jboss.osgi.framework.bundle.HostRevision;
 import org.jboss.osgi.vfs.VFSUtils;
+import org.jboss.osgi.vfs.VirtualFile;
 
 /**
  * A {@link LocalLoader} that loads fragment defined classes/resources.
@@ -48,7 +51,7 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
    private static final Logger log = Logger.getLogger(FragmentLocalLoader.class);
 
    private final FragmentRevision fragRevision;
-   private final VirtualFileResourceLoader resourceLoader;
+   private final List<VirtualFileResourceLoader> resourceLoaders = new ArrayList<VirtualFileResourceLoader>();
    private final Set<String> paths;
 
    public FragmentLocalLoader(FragmentRevision fragRevision)
@@ -57,8 +60,16 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
          throw new IllegalArgumentException("Null fragmentRev");
 
       this.fragRevision = fragRevision;
-      this.resourceLoader = new VirtualFileResourceLoader(fragRevision.getFirstContentRoot());
-      this.paths = Collections.unmodifiableSet(new HashSet<String>(resourceLoader.getPaths()));
+
+      Set<String> allPaths = new HashSet<String>();
+      for (VirtualFile contentRoot : fragRevision.getContentRoots())
+      {
+         VirtualFileResourceLoader resourceLoader = new VirtualFileResourceLoader(contentRoot);
+         allPaths.addAll(resourceLoader.getPaths());
+         resourceLoaders.add(resourceLoader);
+      }
+
+      this.paths = Collections.unmodifiableSet(allPaths);
    }
 
    public List<HostRevision> getAttachedHosts()
@@ -103,11 +114,16 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
       }
 
       // Check to see if we can define it locally it
-      final ClassSpec classSpec;
+      ClassSpec classSpec = null;
       try
       {
          String fileName = className.replace('.', '/') + ".class";
-         classSpec = resourceLoader.getClassSpec(fileName);
+         for (ResourceLoader resLoader : resourceLoaders)
+         {
+            classSpec = resLoader.getClassSpec(fileName);
+            if (classSpec != null)
+               break;
+         }
       }
       catch (Throwable th)
       {
@@ -144,7 +160,7 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
    @Override
    public List<Resource> loadResourceLocal(String name)
    {
-      Resource result = resourceLoader.getResource(name);
+      Resource result = loadResourceInternal(name);
       if (result == null)
          return Collections.emptyList();
 
@@ -154,7 +170,18 @@ public class FragmentLocalLoader extends ConcurrentClassLoader implements LocalL
    @Override
    public Resource loadResourceLocal(String root, String name)
    {
-      Resource result = resourceLoader.getResource(root + File.pathSeparator + name);
+      return loadResourceInternal(root + File.pathSeparator + name);
+   }
+
+   private Resource loadResourceInternal(String name)
+   {
+      Resource result = null;
+      for (ResourceLoader resLoader : resourceLoaders)
+      {
+         result = resLoader.getResource(name);
+         if (result != null)
+            break;
+      }
       return result;
    }
 }
