@@ -448,7 +448,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest
          bundle.uninstall();
       }
 
-      assertEquals("Event count in: " + events, 9, events.size());
+      assertEquals("Event count in: " + events, 10, events.size());
       assertEquals(BundleEvent.INSTALLED, events.get(0).getType());
       assertEquals(BundleEvent.RESOLVED, events.get(1).getType());
       assertEquals(BundleEvent.STARTING, events.get(2).getType());
@@ -457,7 +457,8 @@ public class BundleContextTestCase extends OSGiFrameworkTest
       assertEquals(BundleEvent.STOPPED, events.get(5).getType());
       assertEquals(BundleEvent.UNRESOLVED, events.get(6).getType());
       assertEquals(BundleEvent.UPDATED, events.get(7).getType());
-      assertEquals(BundleEvent.UNINSTALLED, events.get(8).getType());
+      assertEquals(BundleEvent.UNRESOLVED, events.get(8).getType());
+      assertEquals(BundleEvent.UNINSTALLED, events.get(9).getType());
    }
 
    @Test

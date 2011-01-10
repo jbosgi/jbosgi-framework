@@ -384,8 +384,6 @@ public abstract class AbstractBundle implements Bundle
 
    public void changeState(int state)
    {
-      int previous = getState();
-
       // Get the corresponding bundle event type
       int bundleEvent;
       switch (state)
@@ -403,21 +401,11 @@ public abstract class AbstractBundle implements Bundle
             bundleEvent = BundleEvent.UNINSTALLED;
             break;
          case Bundle.INSTALLED:
-         {
-            if (previous == Bundle.RESOLVED)
-               bundleEvent = BundleEvent.UNRESOLVED;
-            else
-               bundleEvent = BundleEvent.INSTALLED;
+            bundleEvent = BundleEvent.INSTALLED;
             break;
-         }
          case Bundle.RESOLVED:
-         {
-            if (previous == Bundle.STOPPING)
-               bundleEvent = BundleEvent.STOPPED;
-            else
-               bundleEvent = BundleEvent.RESOLVED;
+            bundleEvent = BundleEvent.RESOLVED;
             break;
-         }
          default:
             throw new IllegalArgumentException("Unknown bundle state: " + state);
       }
@@ -425,7 +413,7 @@ public abstract class AbstractBundle implements Bundle
       changeState(state, bundleEvent);
    }
 
-   public void changeState(int state, int bundleEvent)
+   public void changeState(int state, int eventType)
    {
       // Invoke the bundle lifecycle interceptors
       if (getBundleManager().isFrameworkActive() && getBundleId() != 0)
@@ -434,7 +422,8 @@ public abstract class AbstractBundle implements Bundle
       bundleState.set(state);
 
       // Fire the bundle event
-      fireBundleEvent(bundleEvent);
+      if (eventType != 0)
+         fireBundleEvent(eventType);
    }
 
    protected abstract boolean isActivationLazy();
