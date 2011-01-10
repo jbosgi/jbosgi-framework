@@ -69,6 +69,7 @@ import org.jboss.osgi.resolver.XVersionRange;
 import org.jboss.osgi.spi.util.SysPropertyActions;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
@@ -251,7 +252,7 @@ public class BundleManager
 
    void uninstallBundle(AbstractUserBundle bundleState)
    {
-      bundleState.changeState(Bundle.UNINSTALLED);
+      bundleState.changeState(Bundle.UNINSTALLED, 0);
       List<AbstractBundle> uninstalled = getBundles(Bundle.UNINSTALLED);
       for (AbstractBundle aux : uninstalled)
       {
@@ -259,6 +260,7 @@ public class BundleManager
          if (userBundle.hasActiveWires() == false)
             userBundle.remove();
       }
+      bundleState.fireBundleEvent(BundleEvent.UNINSTALLED);
    }
 
    /**

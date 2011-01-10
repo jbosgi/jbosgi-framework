@@ -467,7 +467,7 @@ public final class HostBundle extends AbstractUserBundle
 
          // #12 This bundle's state is set to RESOLVED
          // #13 A bundle event of type BundleEvent.STOPPED is fired
-         changeState(RESOLVED);
+         changeState(RESOLVED, BundleEvent.STOPPED);
 
          log.infof("Bundle stopped: %s", this);
 

@@ -166,7 +166,8 @@ public abstract class AbstractUserBundle extends AbstractBundle
          }
       }
 
-      changeState(Bundle.INSTALLED);
+      // Sent when the Framework detects that a bundle becomes unresolved; this could happen when the bundle is refreshed or updated. 
+      changeState(Bundle.INSTALLED, BundleEvent.UNRESOLVED);
 
       try
       {
@@ -281,8 +282,6 @@ public abstract class AbstractUserBundle extends AbstractBundle
       if (isResolved() == false)
          throw new IllegalStateException("Attempt to refresh an unresolved bundle: " + this);
 
-      changeState(Bundle.INSTALLED);
-
       // Remove the revisions from the resolver
       for (AbstractRevision rev : getRevisions())
       {
@@ -296,9 +295,13 @@ public abstract class AbstractUserBundle extends AbstractBundle
       AbstractRevision currentRev = getCurrentRevision();
       clearRevisions();
 
+      fireBundleEvent(BundleEvent.UNRESOLVED);
+      
       // Update the resolver module for the current revision
       currentRev.refreshRevision(getOSGiMetaData());
       getResolverPlugin().addModule(currentRev.getResolverModule());
+      
+      changeState(Bundle.INSTALLED);
    }
 
    /**
@@ -321,6 +324,7 @@ public abstract class AbstractUserBundle extends AbstractBundle
             moduleManager.removeModule(identifier);
          }
       }
+      fireBundleEvent(BundleEvent.UNRESOLVED);
    }
 
    @Override
