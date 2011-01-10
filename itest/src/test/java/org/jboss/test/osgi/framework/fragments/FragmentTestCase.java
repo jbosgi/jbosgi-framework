@@ -354,7 +354,6 @@ public class FragmentTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   @Ignore("[JBOSGI-402] This fails because the fragment class implements an interface from the host")
    public void testFragmentHostCircularDeps() throws Exception
    {
       Bundle hostD = installBundle(getHostD());
