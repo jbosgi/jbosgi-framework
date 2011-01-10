@@ -170,7 +170,6 @@ public class FragmentTestCase extends OSGiFrameworkTest
    }
 
    @Test
-   @Ignore("[JBOSGI-431] Fragments do not use Host ClassLoader")
    public void testClassLoaderEquality() throws Exception
    {
       Bundle hostA = installBundle(getHostA());
@@ -196,6 +195,7 @@ public class FragmentTestCase extends OSGiFrameworkTest
    }
    
    @Test
+   @Ignore("[JBOSGI-432] Fragments do not have a seperate ProtectionDomain")
    public void testProtectionDomainEquality() throws Exception
    {
       Bundle hostA = installBundle(getHostA());
@@ -236,8 +236,8 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.ACTIVE, hostA.getState());
       assertBundleState(Bundle.RESOLVED, fragB.getState());
 
-      // The fragment contains an overwrites Private-Package with Import-Package
-      // The SubBeanA is expected to come from HostB, which exports that package
+      // The fragment containsan import for a package that is also available locally 
+      // SubBeanA is expected to come from HostB, which exports that package
       assertLoadClass(hostA, SubBeanA.class.getName(), hostB);
 
       hostA.uninstall();
