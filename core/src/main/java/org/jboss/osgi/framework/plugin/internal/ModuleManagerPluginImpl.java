@@ -47,12 +47,9 @@ import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.framework.bundle.AbstractUserBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.BundleManager.IntegrationMode;
-import org.jboss.osgi.framework.bundle.FragmentBundle;
 import org.jboss.osgi.framework.bundle.FragmentRevision;
 import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.OSGiModuleLoader;
-import org.jboss.osgi.framework.loading.FragmentBundleModuleClassLoader;
-import org.jboss.osgi.framework.loading.FragmentLocalLoader;
 import org.jboss.osgi.framework.loading.FrameworkLocalLoader;
 import org.jboss.osgi.framework.loading.HostBundleFallbackLoader;
 import org.jboss.osgi.framework.loading.HostBundleModuleClassLoader;
@@ -193,6 +190,11 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       if (resModule == null)
          throw new IllegalArgumentException("Null module");
 
+      Bundle bundle = resModule.getAttachment(Bundle.class);
+      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+      if (bundleState.isFragment())
+         throw new IllegalStateException("Fragments cannot be added: " + bundleState);
+      
       ModuleIdentifier identifier;
       Module module = resModule.getAttachment(Module.class);
       if (module == null)
@@ -203,12 +205,9 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          }
          else
          {
-            // Get the root virtual file
-            Bundle bundle = resModule.getAttachment(Bundle.class);
-            HostBundle bundleState = HostBundle.assertBundleState(bundle);
-            List<VirtualFile> contentRoots = bundleState.getContentRoots();
-
-            identifier = createModule(resModule, contentRoots);
+            HostBundle hostBundle = HostBundle.assertBundleState(bundle);
+            List<VirtualFile> contentRoots = hostBundle.getContentRoots();
+            identifier = createHostModule(resModule, contentRoots);
          }
       }
       else
@@ -254,7 +253,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
    /**
     * Create a {@link ModuleSpec} from the given resolver module definition
     */
-   private ModuleIdentifier createModule(final XModule resModule, List<VirtualFile> contentRoots)
+   private ModuleIdentifier createHostModule(final XModule resModule, List<VirtualFile> contentRoots)
    {
       ModuleSpec moduleSpec = resModule.getAttachment(ModuleSpec.class);
       if (moduleSpec == null)
@@ -273,27 +272,21 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
          Map<XModule, DependencyHolder> specHolderMap = new LinkedHashMap<XModule, DependencyHolder>();
 
-         AbstractBundle bundleState = AbstractBundle.assertBundleState(resModule.getAttachment(Bundle.class));
          HostBundle hostBundle = resModule.getAttachment(HostBundle.class);
-         if (hostBundle != null)
-         {
-            // Look at the fragment wires
-            List<FragmentRevision> fragRevs = hostBundle.getCurrentRevision().getAttachedFragments();
-            for (FragmentRevision fragRev : fragRevs)
-            {
-               // Process the fragment wires. This would take care of Package-Imports and Require-Bundle defined on the fragment
-               List<XWire> fragWires = fragRev.getResolverModule().getWires();
-               processModuleWires(fragWires, specHolderMap);
-
-               // Create a fragment {@link LocalLoader} and add a dependency on it
-               FragmentLocalLoader localLoader = new FragmentLocalLoader(fragRev);
-               specHolderMap.put(fragRev.getResolverModule(), new LocalDependencyHolder(localLoader, localLoader.getPaths()));
-            }
-         }
 
          // For every {@link XWire} add a dependency on the exporter
          processModuleWires(resModule.getWires(), specHolderMap);
 
+         // Process fragment wires
+         Set<String> allPaths = new HashSet<String>();
+         List<FragmentRevision> fragRevs = hostBundle.getCurrentRevision().getAttachedFragments();
+         for (FragmentRevision fragRev : fragRevs)
+         {
+            // Process the fragment wires. This would take care of Package-Imports and Require-Bundle defined on the fragment
+            List<XWire> fragWires = fragRev.getResolverModule().getWires();
+            processModuleWires(fragWires, specHolderMap);
+         }
+         
          // Add the holder values to dependencies
          for (DependencyHolder aux : specHolderMap.values())
             moduleDependencies.add(aux.create());
@@ -302,16 +295,26 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          for (DependencySpec dep : moduleDependencies)
             specBuilder.addDependency(dep);
 
+         // Process fragment local content
+         for (FragmentRevision fragRev : fragRevs)
+         {
+            for (VirtualFile contentRoot : fragRev.getContentRoots())
+            {
+               VirtualFileResourceLoader resLoader = new VirtualFileResourceLoader(contentRoot);
+               specBuilder.addResourceRoot(resLoader);
+               allPaths.addAll(resLoader.getPaths());
+            }
+         }
+         
          // Add a local dependency for the local bundle content
-         Set<String> allPaths = new HashSet<String>();
          for (VirtualFile contentRoot : contentRoots)
          {
             VirtualFileResourceLoader resLoader = new VirtualFileResourceLoader(contentRoot);
             specBuilder.addResourceRoot(resLoader);
             allPaths.addAll(resLoader.getPaths());
          }
-
-         if (hostBundle != null && hostBundle.isActivationLazy())
+         
+         if (hostBundle.isActivationLazy())
          {
             Set<String> lazyPaths = new HashSet<String>();
             PathFilter lazyFilter = getLazyPackagesFilter(hostBundle);
@@ -323,7 +326,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             log.tracef("Module [%s] lazy filter: %s", identifier, lazyFilter);
             LocalLoader localLoader = new LazyActivationLocalLoader(hostBundle, identifier, moduleDependencies, lazyFilter);
             specBuilder.addDependency(DependencySpec.createLocalDependencySpec(localLoader, lazyPaths, true));
-            
+
             PathFilter eagerFilter = PathFilters.not(lazyFilter);
             log.tracef("Module [%s] eager filter: %s", identifier, eagerFilter);
             specBuilder.addDependency(DependencySpec.createLocalDependencySpec(eagerFilter, PathFilters.acceptAll()));
@@ -337,16 +340,8 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          // Native - Hack
          addNativeResourceLoader(resModule, specBuilder);
 
-         if (hostBundle != null)
-         {
-            specBuilder.setModuleClassLoaderFactory(new HostBundleModuleClassLoader.Factory(hostBundle));
-            specBuilder.setFallbackLoader(new HostBundleFallbackLoader(hostBundle, identifier));
-         }
-         else
-         {
-            FragmentBundle fragmentBundle = FragmentBundle.assertBundleState(bundleState);
-            specBuilder.setModuleClassLoaderFactory(new FragmentBundleModuleClassLoader.Factory(fragmentBundle));
-         }
+         specBuilder.setModuleClassLoaderFactory(new HostBundleModuleClassLoader.Factory(hostBundle));
+         specBuilder.setFallbackLoader(new HostBundleFallbackLoader(hostBundle, identifier));
 
          // Build the ModuleSpec
          moduleSpec = specBuilder.create();
@@ -389,33 +384,6 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             result = PathFilters.all(result, PathFilters.not(PathFilters.in(paths)));
          else
             result = PathFilters.not(PathFilters.in(paths));
-      }
-
-      return result;
-   }
-
-   /**
-    * Get a path filter for packages that can be loaded eagerly.
-    * 
-    * A class load from an eager package does not cause bundle activation 
-    * for a host bundle with lazy ActivationPolicy
-    */
-   private PathFilter getEagerPackagesFilter(HostBundle hostBundle)
-   {
-      // By default no package are loaded lazily
-      PathFilter result = PathFilters.rejectAll();
-
-      // If there is no exclude list on the activation policy, all packages are loaded lazily
-      ActivationPolicyMetaData activationPolicy = hostBundle.getActivationPolicy();
-      List<String> excludes = activationPolicy.getExcludes();
-      if (excludes != null)
-      {
-         // The set of packages on the exclude list determines the packages that can be loaded eagerly
-         Set<String> paths = new HashSet<String>();
-         for (String packageName : excludes)
-            paths.add(packageName.replace('.', '/'));
-
-         result = PathFilters.in(paths);
       }
 
       return result;
