@@ -26,6 +26,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.security.CodeSigner;
+import java.security.CodeSource;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -91,19 +93,23 @@ public final class VirtualFileResourceLoader implements ResourceLoader
       if (child == null)
          return null;
 
-      ClassSpec spec = new ClassSpec();
+      ClassSpec classSpec = new ClassSpec();
       InputStream is = child.openStream();
       try
       {
          ByteArrayOutputStream os = new ByteArrayOutputStream(1024);
          VFSUtils.copyStream(is, os);
-         spec.setBytes(os.toByteArray());
-         return spec;
+         classSpec.setBytes(os.toByteArray());
       }
       finally
       {
          safeClose(is);
       }
+
+      CodeSigner[] codeSigners = child.getCodeSigners();
+      classSpec.setCodeSource(new CodeSource(new URL("jar", null, -1, child.getName()), codeSigners));
+
+      return classSpec;
    }
 
    @Override
