@@ -50,7 +50,6 @@ import org.jboss.test.osgi.framework.fragments.hostD.HostDInterface;
 import org.jboss.test.osgi.framework.fragments.hostE.HostEInterface;
 import org.jboss.test.osgi.framework.fragments.hostF.HostFInterface;
 import org.jboss.test.osgi.framework.fragments.subA.SubBeanA;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -195,7 +194,6 @@ public class FragmentTestCase extends OSGiFrameworkTest
    }
    
    @Test
-   @Ignore("[JBOSGI-432] Fragments do not have a seperate ProtectionDomain")
    public void testProtectionDomainEquality() throws Exception
    {
       Bundle hostA = installBundle(getHostA());
