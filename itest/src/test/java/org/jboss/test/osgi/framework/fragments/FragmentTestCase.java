@@ -24,11 +24,14 @@ package org.jboss.test.osgi.framework.fragments;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.security.ProtectionDomain;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
@@ -132,7 +135,7 @@ public class FragmentTestCase extends OSGiFrameworkTest
       // Load class provided by the fragment
       assertLoadClass(hostA, FragBeanA.class.getName());
 
-      // Load a private class
+      // Load a private class from host
       assertLoadClass(hostA, SubBeanA.class.getName());
 
       // PackageAdmin.getBundleType
@@ -166,6 +169,57 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.UNINSTALLED, fragA.getState());
    }
 
+   @Test
+   @Ignore("[JBOSGI-431] Fragments do not use Host ClassLoader")
+   public void testClassLoaderEquality() throws Exception
+   {
+      Bundle hostA = installBundle(getHostA());
+      Bundle fragA = installBundle(getFragmentA());
+
+      hostA.start();
+      
+      // Load class provided by the fragment
+      assertLoadClass(hostA, FragBeanA.class.getName());
+      Class<?> fragBeanClass = hostA.loadClass(FragBeanA.class.getName());
+      ClassLoader fragClassLoader = fragBeanClass.getClassLoader();
+
+      // Load a private class from host
+      assertLoadClass(hostA, SubBeanA.class.getName());
+      Class<?> hostBeanClass = hostA.loadClass(SubBeanA.class.getName());
+      ClassLoader hostClassLoader = hostBeanClass.getClassLoader();
+      
+      // Assert ClassLoader
+      assertSame(hostClassLoader, fragClassLoader);
+
+      hostA.uninstall();
+      fragA.uninstall();
+   }
+   
+   @Test
+   public void testProtectionDomainEquality() throws Exception
+   {
+      Bundle hostA = installBundle(getHostA());
+      Bundle fragA = installBundle(getFragmentA());
+
+      hostA.start();
+      
+      // Load class provided by the fragment
+      assertLoadClass(hostA, FragBeanA.class.getName());
+      Class<?> fragBeanClass = hostA.loadClass(FragBeanA.class.getName());
+      ProtectionDomain fragDomain = fragBeanClass.getProtectionDomain();
+
+      // Load a private class from host
+      assertLoadClass(hostA, SubBeanA.class.getName());
+      Class<?> hostBeanClass = hostA.loadClass(SubBeanA.class.getName());
+      ProtectionDomain hostDomain = hostBeanClass.getProtectionDomain();
+      
+      // Assert ProtectionDomain
+      assertNotSame(hostDomain, fragDomain);
+
+      hostA.uninstall();
+      fragA.uninstall();
+   }
+   
    @Test
    public void testFragmentHidesPrivatePackage() throws Exception
    {
@@ -299,8 +353,8 @@ public class FragmentTestCase extends OSGiFrameworkTest
       assertBundleState(Bundle.UNINSTALLED, hostB.getState());
    }
 
-   @Ignore("[JBOSGI-402] This fails because the fragment class implements an interface from the host")
    @Test
+   @Ignore("[JBOSGI-402] This fails because the fragment class implements an interface from the host")
    public void testFragmentHostCircularDeps() throws Exception
    {
       Bundle hostD = installBundle(getHostD());
