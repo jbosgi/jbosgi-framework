@@ -19,31 +19,42 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework.plugin.internal;
+package org.jboss.osgi.framework.url;
 
-import java.net.ContentHandler;
-import java.net.ContentHandlerFactory;
+import java.net.URLStreamHandler;
+import java.net.URLStreamHandlerFactory;
+
+import org.jboss.osgi.framework.plugin.URLHandlerPlugin;
 
 /**
- * There can only ever be one ContentHandlerFactory active in the system and it can
- * only be set once, using {@link URLConnection#setContentHandlerFactory()}.
- * This delegate makes it possible to replace this factory after it has been set, which
- * is useful for testing purposes.
+ * A {@link URLStreamHandlerFactory} that provides {@link URLStreamHandler} instances
+ * which are backed by an OSGi service.
+ * 
+ * The returned handler instances are proxies which allow the URL Stream Handler implementation
+ * to be changed at a later point in time (the JRE caches the first URL Stream Handler returned
+ * for a given protocol).
  *
  * @author <a href="david@redhat.com">David Bosschaert</a>
+ * @author Thomas.Diesler@jboss.com
+ * @since 10-Jan-2011
  */
-class ContentHandlerFactoryDelegate implements ContentHandlerFactory
+public class OSGiStreamHandlerFactoryService implements URLStreamHandlerFactory
 {
-   private ContentHandlerFactory delegate;
-
-   public void setDelegate(FrameworkContentHandlerFactory factory)
+   private static URLHandlerPlugin delegate;
+   
+   public static void initStreamHandlerFactory(URLHandlerPlugin handlerPlugin)
    {
-      delegate = factory;
+      delegate = handlerPlugin;
+   }
+
+   public static void destroyStreamHandlerFactory()
+   {
+      delegate = null;
    }
 
    @Override
-   public ContentHandler createContentHandler(String mimetype)
+   public URLStreamHandler createURLStreamHandler(String protocol)
    {
-      return delegate != null ? delegate.createContentHandler(mimetype) : null;
+      return delegate != null ? delegate.createURLStreamHandler(protocol) : null;
    }
 }

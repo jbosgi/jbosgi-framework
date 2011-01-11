@@ -1,2 +1,2 @@
-org.jboss.osgi.framework.url.OSGiStreamHandlerFactory
+org.jboss.osgi.framework.url.OSGiStreamHandlerFactoryService
 org.jboss.osgi.framework.url.VFSStreamHandlerFactory

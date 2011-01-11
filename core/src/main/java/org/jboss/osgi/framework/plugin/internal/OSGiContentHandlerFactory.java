@@ -33,11 +33,11 @@ import org.jboss.osgi.framework.plugin.URLHandlerPlugin;
  * @author Thomas.Diesler@jboss.com
  * @since 10-Jan-2011
  */
-public class FrameworkContentHandlerFactory implements ContentHandlerFactory
+public class OSGiContentHandlerFactory implements ContentHandlerFactory
 {
    private URLHandlerPlugin handlerPlugin;
    
-   public FrameworkContentHandlerFactory(URLHandlerPlugin handlerPlugin)
+   public OSGiContentHandlerFactory(URLHandlerPlugin handlerPlugin)
    {
       this.handlerPlugin = handlerPlugin;
    }

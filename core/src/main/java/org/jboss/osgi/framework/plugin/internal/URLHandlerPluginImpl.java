@@ -47,6 +47,7 @@ import org.jboss.osgi.framework.bundle.ServiceReferenceComparator;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.URLHandlerPlugin;
 import org.jboss.osgi.framework.url.OSGiStreamHandlerFactory;
+import org.jboss.osgi.framework.url.OSGiStreamHandlerFactoryService;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.url.URLConstants;
@@ -71,7 +72,7 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
    private ConcurrentMap<String, List<ServiceReference>> streamHandlers = new ConcurrentHashMap<String, List<ServiceReference>>();
    private ConcurrentMap<String, List<ServiceReference>> contentHandlers = new ConcurrentHashMap<String, List<ServiceReference>>();
 
-   private static ContentHandlerFactoryDelegate contentHandlerDelegate;
+   private static OSGiContentHandlerFactoryDelegate contentHandlerDelegate;
    private static OSGiStreamHandlerFactoryDelegate streamHandlerDelegate;
 
    public URLHandlerPluginImpl(final BundleManager bundleManager)
@@ -101,7 +102,7 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
 
       if (contentHandlerDelegate == null)
       {
-         contentHandlerDelegate = new ContentHandlerFactoryDelegate();
+         contentHandlerDelegate = new OSGiContentHandlerFactoryDelegate();
          AccessController.doPrivileged(new PrivilegedAction<Void>()
          {
             public Void run()
@@ -124,8 +125,9 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
    @Override
    public void initPlugin()
    {
+      OSGiStreamHandlerFactoryService.initStreamHandlerFactory(this);
       streamHandlerDelegate.setDelegate(new OSGiStreamHandlerFactory(this));
-      contentHandlerDelegate.setDelegate(new FrameworkContentHandlerFactory(this));
+      contentHandlerDelegate.setDelegate(new OSGiContentHandlerFactory(this));
    }
 
    @Override
@@ -264,6 +266,7 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
    {
       streamHandlerDelegate.setDelegate(null);
       contentHandlerDelegate.setDelegate(null);
+      OSGiStreamHandlerFactoryService.destroyStreamHandlerFactory();
    }
 
    @Override
