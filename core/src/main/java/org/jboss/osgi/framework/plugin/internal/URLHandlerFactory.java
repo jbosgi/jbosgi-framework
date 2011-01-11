@@ -91,7 +91,14 @@ public class URLHandlerFactory implements URLStreamHandlerFactory
    static void initSystemBundleContext(BundleContext bc)
    {
       if (systemBundleContext != null)
-         throw new IllegalStateException("URL Handler Factory already initialized.");
+      {
+         cleanUp();
+         // A number of don't properly shut down the system, so I'm doing the cleanup here instead.
+         // These tests are mostly found in the umbrella project.
+         // TODO fix the shutdown sequence in the tests concerned so that the following error condition
+         // can be enabled.
+         // throw new IllegalStateException("URL Handler Factory already initialized.");
+      }
 
       systemBundleContext = bc;
       tracker = new ServiceTracker(systemBundleContext, URLStreamHandlerService.class.getName(), null)
