@@ -40,22 +40,22 @@ import org.jboss.osgi.framework.plugin.URLHandlerPlugin;
  */
 public class OSGiStreamHandlerFactory implements URLStreamHandlerFactory
 {
-   private static URLHandlerPlugin handlerPlugin;
+   private static URLHandlerPlugin delegate;
    
    public OSGiStreamHandlerFactory()
    {
-      if (handlerPlugin == null)
+      if (delegate == null)
          throw new IllegalStateException("URLHandlerFactory used before it was initialized");
    }
 
    public OSGiStreamHandlerFactory(URLHandlerPlugin handlerPlugin)
    {
-      OSGiStreamHandlerFactory.handlerPlugin = handlerPlugin;
+      OSGiStreamHandlerFactory.delegate = handlerPlugin;
    }
 
    @Override
    public URLStreamHandler createURLStreamHandler(String protocol)
    {
-      return handlerPlugin.createURLStreamHandler(protocol);
+      return delegate.createURLStreamHandler(protocol);
    }
 }

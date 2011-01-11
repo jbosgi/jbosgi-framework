@@ -44,6 +44,6 @@ class OSGiStreamHandlerFactoryDelegate implements URLStreamHandlerFactory
    @Override
    public URLStreamHandler createURLStreamHandler(String protocol)
    {
-      return delegate.createURLStreamHandler(protocol);
+      return delegate != null ? delegate.createURLStreamHandler(protocol) : null;
    }
 }
