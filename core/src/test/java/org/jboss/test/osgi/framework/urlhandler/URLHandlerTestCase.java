@@ -49,7 +49,7 @@ import java.util.Hashtable;
 import java.util.ServiceLoader;
 
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.url.OSGiStreamHandlerFactory;
+import org.jboss.osgi.framework.url.OSGiStreamHandlerFactoryService;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -64,43 +64,6 @@ import org.osgi.service.url.URLStreamHandlerSetter;
  */
 public class URLHandlerTestCase extends OSGiFrameworkTest
 {
-   private static void pumpStream(InputStream is, OutputStream os) throws IOException
-   {
-      byte[] bytes = new byte[8192];
-
-      int length = 0;
-      int offset = 0;
-
-      while ((length = is.read(bytes, offset, bytes.length - offset)) != -1)
-      {
-         offset += length;
-
-         if (offset == bytes.length)
-         {
-            os.write(bytes, 0, bytes.length);
-            offset = 0;
-         }
-      }
-      if (offset != 0)
-      {
-         os.write(bytes, 0, offset);
-      }
-   }
-
-   private static byte[] suckStream(InputStream is) throws IOException
-   {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      try
-      {
-         pumpStream(is, baos);
-         return baos.toByteArray();
-      }
-      finally
-      {
-         is.close();
-      }
-   }
-
    @Test
    public void testURLHandling() throws Exception
    {
@@ -232,7 +195,7 @@ public class URLHandlerTestCase extends OSGiFrameworkTest
       props.put(URLConstants.URL_HANDLER_PROTOCOL, "jbossosgitest");
       ServiceRegistration reg = getSystemContext().registerService(URLStreamHandlerService.class.getName(), svc, props);
 
-      URLStreamHandlerFactory factory = new OSGiStreamHandlerFactory();
+      URLStreamHandlerFactory factory = new OSGiStreamHandlerFactoryService();
       URLStreamHandler handler = factory.createURLStreamHandler("jbossosgitest");
 
       // Invoke methods through reflection to make sure the proxying works ok.
@@ -308,6 +271,43 @@ public class URLHandlerTestCase extends OSGiFrameworkTest
          }
       }
       Assert.assertNotNull("ServiceLoader should find our factory", factory);
+   }
+
+   private static void pumpStream(InputStream is, OutputStream os) throws IOException
+   {
+      byte[] bytes = new byte[8192];
+
+      int length = 0;
+      int offset = 0;
+
+      while ((length = is.read(bytes, offset, bytes.length - offset)) != -1)
+      {
+         offset += length;
+
+         if (offset == bytes.length)
+         {
+            os.write(bytes, 0, bytes.length);
+            offset = 0;
+         }
+      }
+      if (offset != 0)
+      {
+         os.write(bytes, 0, offset);
+      }
+   }
+
+   private static byte[] suckStream(InputStream is) throws IOException
+   {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      try
+      {
+         pumpStream(is, baos);
+         return baos.toByteArray();
+      }
+      finally
+      {
+         is.close();
+      }
    }
 
    private static class TestURLConnection extends URLConnection
