@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.plugin.internal;
 
+import static org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -138,7 +140,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       if (identifier == null)
       {
          XModuleIdentity moduleId = resModule.getModuleId();
-         if (frameworkIdentifier != null && Constants.SYSTEM_BUNDLE_SYMBOLICNAME.equals(moduleId.getName()))
+         if (frameworkIdentifier != null && SYSTEM_BUNDLE_SYMBOLICNAME.equals(moduleId.getName()))
             identifier = frameworkIdentifier;
 
          if (identifier == null)
@@ -199,7 +201,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
       Module module = resModule.getAttachment(Module.class);
       if (module == null)
       {
-         if (resModule.getModuleId().getName().equals("system.bundle"))
+         if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(resModule.getModuleId().getName()))
          {
             identifier = createFrameworkModule(resModule);
          }
@@ -224,7 +226,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
     */
    private ModuleIdentifier createFrameworkModule(final XModule resModule)
    {
-      if (resModule == null || resModule.getName().equals(Constants.SYSTEM_BUNDLE_SYMBOLICNAME) == false)
+      if (resModule == null || SYSTEM_BUNDLE_SYMBOLICNAME.equals(resModule.getName()) == false)
          throw new IllegalArgumentException("Invalid resolver module: " + resModule);
 
       // The integration layer may provide the Framework module
