@@ -98,7 +98,6 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
             }
          });
       }
-      streamHandlerDelegate.setDelegate(new OSGiStreamHandlerFactory(this));
 
       if (contentHandlerDelegate == null)
       {
@@ -120,6 +119,12 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
             }
          });
       }
+   }
+
+   @Override
+   public void initPlugin()
+   {
+      streamHandlerDelegate.setDelegate(new OSGiStreamHandlerFactory(this));
       contentHandlerDelegate.setDelegate(new FrameworkContentHandlerFactory(this));
    }
 
@@ -247,6 +252,18 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
    @Override
    public void stopPlugin()
    {
+      streamServiceTracker.close();
+      streamHandlers.clear();
+      
+      contentServiceTracker.close();
+      contentHandlers.clear();
+   }
+
+   @Override
+   public void destroyPlugin()
+   {
+      streamHandlerDelegate.setDelegate(null);
+      contentHandlerDelegate.setDelegate(null);
    }
 
    @Override

@@ -44,6 +44,6 @@ class ContentHandlerFactoryDelegate implements ContentHandlerFactory
    @Override
    public ContentHandler createContentHandler(String mimetype)
    {
-      return delegate.createContentHandler(mimetype);
+      return delegate != null ? delegate.createContentHandler(mimetype) : null;
    }
 }
