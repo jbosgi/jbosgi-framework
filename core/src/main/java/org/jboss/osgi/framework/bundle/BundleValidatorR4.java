@@ -21,14 +21,21 @@
 */
 package org.jboss.osgi.framework.bundle;
 
+import static org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
+import static org.osgi.framework.Constants.EXTENSION_BOOTCLASSPATH;
+import static org.osgi.framework.Constants.EXTENSION_FRAMEWORK;
+import static org.osgi.framework.Constants.EXTENSION_DIRECTIVE;
+import static org.osgi.framework.Constants.VERSION_ATTRIBUTE;
+import static org.osgi.framework.Constants.PACKAGE_SPECIFICATION_VERSION;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.PackageAttribute;
+import org.jboss.osgi.metadata.ParameterizedAttribute;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
 
 /**
  * A bundle validator for OSGi R4.
@@ -60,8 +67,6 @@ public class BundleValidatorR4 implements BundleValidator
       if (manifestVersion > 2)
          throw new BundleException("Unsupported manifest version " + manifestVersion + " for " + bundleState);
 
-      // [TODO] Duplicate attribute or duplicate directive (except in the Bundle-Native code clause).
-      
       // Multiple imports of a given package.
       List<PackageAttribute> importPackages = osgiMetaData.getImportPackages();
       if (importPackages != null && importPackages.isEmpty() == false)
@@ -77,8 +82,8 @@ public class BundleValidatorR4 implements BundleValidator
             if (packageName.startsWith("java."))
                throw new BundleException("Not allowed to import java.* for " + bundleState);
 
-            String version = packageAttribute.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
-            String specificationVersion = packageAttribute.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
+            String version = packageAttribute.getAttributeValue(VERSION_ATTRIBUTE, String.class);
+            String specificationVersion = packageAttribute.getAttributeValue(PACKAGE_SPECIFICATION_VERSION, String.class);
             if (version != null && specificationVersion != null && version.equals(specificationVersion) == false)
                throw new BundleException(packageName + " version and specification version should be the same for " + bundleState);
          }
@@ -96,8 +101,6 @@ public class BundleValidatorR4 implements BundleValidator
          }
       }
       
-      // [TODO] Export-Package with a mandatory attribute that is not defined.
-      
       // Installing a bundle that has the same symbolic name and version as an already installed bundle.
       for (AbstractBundle bundle : bundleManager.getBundles())
       {
@@ -111,6 +114,29 @@ public class BundleValidatorR4 implements BundleValidator
                      + bundle.getLocation());
          }
       }
+      
+      // Verify Fragment-Host header
+      if (bundleState.isFragment())
+      {
+         ParameterizedAttribute hostAttr = osgiMetaData.getFragmentHost();
+         String fragmentHost = hostAttr.getAttribute();
+         String extension = hostAttr.getDirectiveValue(EXTENSION_DIRECTIVE, String.class);
+         if (extension != null)
+         {
+            if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(fragmentHost) == false)
+               throw new BundleException("Invalid Fragment-Host for extension fragment: " + bundleState);
+            
+            if (EXTENSION_BOOTCLASSPATH.equals(extension))
+               throw new UnsupportedOperationException("Boot classpath extension not supported");
+            
+            if (EXTENSION_FRAMEWORK.equals(extension))
+               throw new UnsupportedOperationException("Framework extension not supported");
+         }
+      }
+      
+      // [TODO] Duplicate attribute or duplicate directive (except in the Bundle-Native code clause).
+      
+      // [TODO] Export-Package with a mandatory attribute that is not defined.
       
       // [TODO] Updating a bundle to a bundle that has the same symbolic name and version as another installed bundle.
       

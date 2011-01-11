@@ -37,7 +37,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.ModuleClassLoader;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.framework.bundle.AbstractUserBundle;
@@ -46,10 +45,8 @@ import org.jboss.osgi.framework.bundle.FragmentBundle;
 import org.jboss.osgi.framework.bundle.FragmentRevision;
 import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.HostRevision;
-import org.jboss.osgi.framework.loading.FragmentLocalLoader;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.FrameworkEventsPlugin;
-import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.framework.plugin.PackageAdminPlugin;
 import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.framework.plugin.StartLevelPlugin;
@@ -63,6 +60,7 @@ import org.jboss.osgi.resolver.XVersionRange;
 import org.jboss.osgi.resolver.XWire;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleReference;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
@@ -553,25 +551,10 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
          throw new IllegalArgumentException("Null clazz");
 
       ClassLoader loader = clazz.getClassLoader();
-      if (loader instanceof FragmentLocalLoader)
+      if (loader instanceof BundleReference)
       {
-         FragmentLocalLoader fragLL = (FragmentLocalLoader)loader;
-         List<HostRevision> attachedHosts = fragLL.getAttachedHosts();
-         if (attachedHosts.size() == 1)
-         {
-            HostBundle hostBundle = attachedHosts.get(0).getBundleState();
-            return hostBundle.getBundleWrapper();
-         }
-      }
-
-      else if (loader instanceof ModuleClassLoader)
-      {
-         ModuleClassLoader moduleCL = (ModuleClassLoader)loader;
-         ModuleManagerPlugin moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
-
-         AbstractBundle bundleState = moduleManager.getBundleState(moduleCL.getModule().getIdentifier());
-         if (bundleState != null)
-            return bundleState.getBundleWrapper();
+         BundleReference bundleRef = (BundleReference)loader;
+         return bundleRef.getBundle();
       }
 
       log.debugf("Cannot obtain bundle for: %s", clazz.getName());

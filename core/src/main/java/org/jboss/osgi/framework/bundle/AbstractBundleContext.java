@@ -233,10 +233,10 @@ public abstract class AbstractBundleContext implements BundleContext
          storageState.deleteBundleStorage();
          throw ex;
       }
-      catch (RuntimeException ex)
+      catch (RuntimeException rte)
       {
          storageState.deleteBundleStorage();
-         throw ex;
+         throw new BundleException("Cannot install bundle: " + location, rte);
       }
       
       return bundleState.getBundleWrapper();
