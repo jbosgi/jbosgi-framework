@@ -93,7 +93,7 @@ public class URLHandlerFactory implements URLStreamHandlerFactory
       if (systemBundleContext != null)
       {
          cleanUp();
-         // A number of don't properly shut down the system, so I'm doing the cleanup here instead.
+         // A number of tests don't properly shut down the system, so I'm doing the cleanup here instead.
          // These tests are mostly found in the umbrella project.
          // TODO fix the shutdown sequence in the tests concerned so that the following error condition
          // can be enabled.
