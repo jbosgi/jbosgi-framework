@@ -50,6 +50,7 @@ import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.framework.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.framework.plugin.StartLevelPlugin;
 import org.jboss.osgi.framework.plugin.SystemPackagesPlugin;
+import org.jboss.osgi.framework.plugin.URLHandlerPlugin;
 import org.jboss.osgi.framework.plugin.internal.AutoInstallPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.BundleDeploymentPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.BundleStoragePluginImpl;
@@ -63,6 +64,7 @@ import org.jboss.osgi.framework.plugin.internal.ResolverPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.ServiceManagerPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.StartLevelPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.SystemPackagesPluginImpl;
+import org.jboss.osgi.framework.plugin.internal.URLHandlerPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.WebXMLVerifierInterceptor;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XVersionRange;
@@ -138,6 +140,7 @@ public class BundleManager
       plugins.put(ResolverPlugin.class, new ResolverPluginImpl(this));
       plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
       plugins.put(SystemPackagesPlugin.class, new SystemPackagesPluginImpl(this));
+      plugins.put(URLHandlerPlugin.class, new URLHandlerPluginImpl(this));
 
       // Register system service plugins
       plugins.put(DeployerServicePlugin.class, new DefaultDeployerServicePlugin(this));

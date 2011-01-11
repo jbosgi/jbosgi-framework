@@ -111,10 +111,13 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
 
          // SchemaFactoryFinder attempting to use the platform default XML Schema validator
          allPackages.add("com.sun.org.apache.xerces.internal.jaxp.validation");
-         
+
          // Only add non-jdk packages when running STANDALONE
          if (bundleManager.getIntegrationMode() == IntegrationMode.STANDALONE)
+         {
             allPackages.addAll(getFrameworkPackages());
+            allPackages.addAll(getInternalFrameworkPackages());
+         }
 
          String asString = packagesAsString(allPackages);
          bundleManager.setProperty(Constants.FRAMEWORK_SYSTEMPACKAGES, asString);
@@ -162,6 +165,25 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
       packages.add("org.osgi.service.startlevel;version=1.1");
       packages.add("org.osgi.service.url;version=1.0");
       packages.add("org.osgi.util.tracker;version=1.4");
+      return packages;
+   }
+
+   private List<String> getInternalFrameworkPackages()
+   {
+      // For the correct behaviour of the Module Classloader, all the internal packages
+      // need to be listed
+      List<String> packages = new ArrayList<String>();
+      packages.add("org.jboss.osgi.framework");
+      packages.add("org.jboss.osgi.framework.bundle");
+      packages.add("org.jboss.osgi.framework.launch");
+      packages.add("org.jboss.osgi.framework.loading");
+      packages.add("org.jboss.osgi.framework.plugin");
+      packages.add("org.jboss.osgi.framework.plugin.internal");
+      packages.add("org.jboss.osgi.framework.util");
+
+      // META-INF/services also needs to be added. JBoss modules exports this one by default in every module
+      // this is depended on by the ModularURLStreamHandlerFactory which we hook into to provide URL handler support.
+      packages.add("META-INF.services");
       return packages;
    }
 

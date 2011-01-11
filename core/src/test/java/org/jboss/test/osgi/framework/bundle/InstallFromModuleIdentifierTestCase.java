@@ -39,6 +39,7 @@ import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.testing.OSGiTest;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
@@ -68,6 +69,15 @@ public class InstallFromModuleIdentifierTestCase extends OSGiTest
       bundleManager = new BundleManager(props);
       framework = bundleManager.getFrameworkState();
       framework.start();
+   }
+
+   @After
+   public void tearDown() throws Exception
+   {
+      super.tearDown();
+
+      framework.stop();
+      framework.waitForStop(2000);
    }
 
    @Test

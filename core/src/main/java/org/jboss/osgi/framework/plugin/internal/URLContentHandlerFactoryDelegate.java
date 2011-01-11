@@ -19,34 +19,31 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework.plugin;
+package org.jboss.osgi.framework.plugin.internal;
 
-import org.osgi.service.startlevel.StartLevel;
+import java.net.ContentHandler;
+import java.net.ContentHandlerFactory;
 
 /**
- * The start level plugin implements the standard OSGi Start Level service
- * and adds synchronous versions for moving the system start level which
- * are used internally.
- * 
+ * There can only ever be one ContentHandlerFactory active in the system and it can
+ * only be set once, using {@link URLConnection#setContentHandlerFactory()}.
+ * This delegate makes it possible to replace this factory after it has been set, which
+ * is useful for testing purposes.
+ *
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public interface StartLevelPlugin extends Plugin, StartLevel
+class URLContentHandlerFactoryDelegate implements ContentHandlerFactory
 {
-   static final int BUNDLE_STARTLEVEL_UNSPECIFIED = -1;
+   private static ContentHandlerFactory delegate;
 
-   /**
-    * Increase the start level to the specified level. 
-    * This method moves to the specified start level in the current thread and
-    * returns when the desired start level has been reached.
-    * @param level the target start level.
-    */
-   void increaseStartLevel(int level);
+   static void setDelegate(URLContentHandlerFactory factory)
+   {
+      delegate = factory;
+   }
 
-   /**
-    * Decrease the start level to the specified level.
-    * This method moves to the specified start level in the current thread and
-    * returns when the desired start level has been reached.
-    * @param level the target start level.
-    */
-   void decreaseStartLevel(int level);
+   @Override
+   public ContentHandler createContentHandler(String mimetype)
+   {
+      return delegate.createContentHandler(mimetype);
+   }
 }
