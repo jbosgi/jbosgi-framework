@@ -21,16 +21,20 @@
 */
 package org.jboss.osgi.framework.loading;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Resource;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VFSUtils;
 
 /**
@@ -103,12 +107,75 @@ public class SystemLocalLoader implements LocalLoader
    @Override
    public List<Resource> loadResourceLocal(String name)
    {
-      throw new NotImplementedException();
+      // TODO, what do we do with this one?
+      // We need to provide the META-INF/service/java.net.URLStreamHandlerFactory
+      // resource to hook it in with the ModularURLStreamHandlerFactory
+      // but we cannot simply serve every single META-INF/service resource
+      // on the classpath because that's may too much! It will actually cause
+      // Arquillian to fail because it finds two test runners in that case...
+      if (!"META-INF/services/java.net.URLStreamHandlerFactory".equals(name))
+         return Collections.emptyList();
+
+      Enumeration<URL> urls;
+      try
+      {
+         urls = systemClassLoader.getResources(name);
+      }
+      catch (IOException e)
+      {
+         return Collections.emptyList();
+      }
+
+      List<Resource> list = new ArrayList<Resource>();
+      while (urls.hasMoreElements())
+         list.add(new URLResource(urls.nextElement()));
+
+      return list;
    }
 
    @Override
    public Resource loadResourceLocal(String root, String name)
    {
-      throw new NotImplementedException();
+      // TODO see loadResourceLocal(String name)
+      if (!"META-INF/services/java.net.URLStreamHandlerFactory".equals(name))
+         return null;
+
+      if (!"".equals(root))
+         return null;
+
+      final URL url = systemClassLoader.getResource(name);
+      return url == null ? null : new URLResource(url);
+   }
+
+   // TODO this class exists in org.jboss.modules but is package-protected
+   // Should it not be made public?
+   private static final class URLResource implements Resource
+   {
+      private final URL url;
+
+      public URLResource(final URL url)
+      {
+         this.url = url;
+      }
+
+      public String getName()
+      {
+         return url.getPath();
+      }
+
+      public URL getURL()
+      {
+         return url;
+      }
+
+      public InputStream openStream() throws IOException
+      {
+         return url.openStream();
+      }
+
+      public long getSize()
+      {
+         return 0L;
+      }
    }
 }

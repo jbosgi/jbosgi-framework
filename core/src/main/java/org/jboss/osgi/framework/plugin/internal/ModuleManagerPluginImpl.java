@@ -243,7 +243,9 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
          ModuleSpec.Builder specBuilder = ModuleSpec.build(DEFAULT_FRAMEWORK_IDENTIFIER);
 
          FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(getBundleManager());
-         specBuilder.addDependency(DependencySpec.createLocalDependencySpec(frameworkLoader, frameworkLoader.getExportedPaths(), true));
+         PathFilter exportedPathFilter = PathFilters.in(frameworkLoader.getExportedPaths());
+         specBuilder.addDependency(DependencySpec.createLocalDependencySpec(PathFilters.acceptAll(), exportedPathFilter,
+               frameworkLoader, frameworkLoader.getLoaderPaths()));
          specBuilder.setModuleClassLoaderFactory(new SystemBundleModuleClassLoader.Factory(getBundleManager().getSystemBundle()));
 
          ModuleSpec frameworkSpec = specBuilder.create();
