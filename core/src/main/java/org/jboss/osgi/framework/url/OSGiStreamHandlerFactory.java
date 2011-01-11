@@ -19,32 +19,43 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework.plugin;
+package org.jboss.osgi.framework.url;
 
-import java.net.ContentHandler;
 import java.net.URLStreamHandler;
+import java.net.URLStreamHandlerFactory;
+
+import org.jboss.osgi.framework.plugin.URLHandlerPlugin;
 
 /**
- * This plugin provides OSGi URL handler support as per the specification.
- * The interface is through the java.net.URL class and the OSGi Service
- * Registry.
+ * A {@link URLStreamHandlerFactory} that provides {@link URLStreamHandler} instances
+ * which are backed by an OSGi service.
+ * 
+ * The returned handler instances are proxies which allow the URL Stream Handler implementation
+ * to be changed at a later point in time (the JRE caches the first URL Stream Handler returned
+ * for a given protocol).
  *
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @author Thomas.Diesler@jboss.com
  * @since 10-Jan-2011
  */
-public interface URLHandlerPlugin extends Plugin
+public class OSGiStreamHandlerFactory implements URLStreamHandlerFactory
 {
-   /**
-    * Creates a new <code>URLStreamHandler</code> instance with the specified protocol.
-    * @see     java.net.URLStreamHandler
-    */
-   URLStreamHandler createURLStreamHandler(String protocol);
+   private static URLHandlerPlugin handlerPlugin;
+   
+   public OSGiStreamHandlerFactory()
+   {
+      if (handlerPlugin == null)
+         throw new IllegalStateException("URLHandlerFactory used before it was initialized");
+   }
 
-   /**
-    * Creates a new <code>ContentHandler</code> to read an object from a <code>URLStreamHandler</code>.
-    * @see     java.net.ContentHandler
-    * @see     java.net.URLStreamHandler
-    */
-   ContentHandler createContentHandler(String mimetype);
+   public OSGiStreamHandlerFactory(URLHandlerPlugin handlerPlugin)
+   {
+      OSGiStreamHandlerFactory.handlerPlugin = handlerPlugin;
+   }
+
+   @Override
+   public URLStreamHandler createURLStreamHandler(String protocol)
+   {
+      return handlerPlugin.createURLStreamHandler(protocol);
+   }
 }

@@ -107,53 +107,35 @@ public class SystemLocalLoader implements LocalLoader
    @Override
    public List<Resource> loadResourceLocal(String name)
    {
-      // TODO, what do we do with this one?
-      // We need to provide the META-INF/service/java.net.URLStreamHandlerFactory
-      // resource to hook it in with the ModularURLStreamHandlerFactory
-      // but we cannot simply serve every single META-INF/service resource
-      // on the classpath because that's may too much! It will actually cause
-      // Arquillian to fail because it finds two test runners in that case...
-      if (!"META-INF/services/java.net.URLStreamHandlerFactory".equals(name))
-         return Collections.emptyList();
-
-      Enumeration<URL> urls;
+      Enumeration<URL> resources;
       try
       {
-         urls = systemClassLoader.getResources(name);
+         resources = systemClassLoader.getResources(name);
       }
-      catch (IOException e)
+      catch (IOException ex)
       {
-         return Collections.emptyList();
+         throw new IllegalStateException(ex);
       }
+      
+      List<Resource> result = new ArrayList<Resource>();
+      while (resources.hasMoreElements())
+         result.add(new URLResource(resources.nextElement()));
 
-      List<Resource> list = new ArrayList<Resource>();
-      while (urls.hasMoreElements())
-         list.add(new URLResource(urls.nextElement()));
-
-      return list;
+      return Collections.unmodifiableList(result);
    }
 
    @Override
    public Resource loadResourceLocal(String root, String name)
    {
-      // TODO see loadResourceLocal(String name)
-      if (!"META-INF/services/java.net.URLStreamHandlerFactory".equals(name))
-         return null;
-
-      if (!"".equals(root))
-         return null;
-
       final URL url = systemClassLoader.getResource(name);
       return url == null ? null : new URLResource(url);
    }
 
-   // TODO this class exists in org.jboss.modules but is package-protected
-   // Should it not be made public?
    private static final class URLResource implements Resource
    {
       private final URL url;
 
-      public URLResource(final URL url)
+      URLResource(final URL url)
       {
          this.url = url;
       }

@@ -21,43 +21,47 @@
 */
 package org.jboss.test.osgi.framework.loading;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
+import java.net.URL;
 import java.net.URLStreamHandlerFactory;
-import java.util.ServiceLoader;
+import java.util.Iterator;
 
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleClassLoader;
 import org.jboss.osgi.framework.bundle.SystemBundle;
-import org.jboss.osgi.framework.plugin.internal.URLHandlerFactory;
+import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.Test;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
 
 /**
+ * Test whether we can load a service through the framework module
+ * 
  * @author <a href="david@redhat.com">David Bosschaert</a>
+ * @author Thomas.Diesler@jboss.com
+ * @since 10-Jan-2011
  */
 public class FrameworkServiceLoaderTestCase extends OSGiFrameworkTest
 {
    @Test
    public void testServiceLoader() throws Exception
    {
-      // The ModularURLStreamHandlerFactory follows a pattern similar to this.
-      BundleContext ctx = getSystemContext();
-      Bundle sb = ctx.getBundle();
-      SystemBundle systemBundle = SystemBundle.assertBundleState(sb);
-      ModuleIdentifier systemModuleID = systemBundle.getBundleManager().getSystemBundle().getModuleIdentifier();
-      Module systemModule = systemBundle.getBundleManager().getSystemModuleLoader().loadModule(systemModuleID);
-      ServiceLoader<URLStreamHandlerFactory> sl = systemModule.loadService(URLStreamHandlerFactory.class);
-
-      boolean factoryFound = false;
-      for (URLStreamHandlerFactory f : sl)
-      {
-         if (f instanceof URLHandlerFactory)
-            factoryFound = true;
-      }
-
-      assertTrue("Expected an instance of " + URLHandlerFactory.class.getName(), factoryFound);
+      // The {@link ModularURLStreamHandlerFactory} follows a pattern similar to this.
+      SystemBundle systemBundle = SystemBundle.assertBundleState(getSystemContext().getBundle());
+      ModuleManagerPlugin plugin = systemBundle.getBundleManager().getPlugin(ModuleManagerPlugin.class);
+      Module frameworkModule = plugin.loadModule(systemBundle.getModuleIdentifier());
+      assertNotNull("Framework module not null", frameworkModule);
+      
+      // Test resource access
+      ModuleClassLoader classLoader = frameworkModule.getClassLoader();
+      URL resource = classLoader.getResource("META-INF/services/" + URLStreamHandlerFactory.class.getName());
+      assertNotNull("Resource URL not null", resource);
+      
+      // Test ServiceLoader access 
+      Iterator<URLStreamHandlerFactory> iterator = frameworkModule.loadService(URLStreamHandlerFactory.class).iterator();
+      assertNotNull("URLStreamHandlerFactory not null", iterator.next());
+      assertNotNull("URLStreamHandlerFactory not null", iterator.next());
+      assertFalse("No more URLStreamHandlerFactory", iterator.hasNext());
    }
 }

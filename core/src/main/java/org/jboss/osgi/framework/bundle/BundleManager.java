@@ -123,6 +123,9 @@ public class BundleManager
       if (initialProperties != null)
          properties.putAll(initialProperties);
 
+      // Register the URL handler plugin
+      plugins.put(URLHandlerPlugin.class, new URLHandlerPluginImpl(this));
+      
       // Initialize the default module loader
       ModuleLoader mlProp = (ModuleLoader)getProperty(ModuleLoader.class.getName());
       systemModuleLoader = mlProp != null ? mlProp : Module.getSystemModuleLoader();
@@ -140,7 +143,6 @@ public class BundleManager
       plugins.put(ResolverPlugin.class, new ResolverPluginImpl(this));
       plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
       plugins.put(SystemPackagesPlugin.class, new SystemPackagesPluginImpl(this));
-      plugins.put(URLHandlerPlugin.class, new URLHandlerPluginImpl(this));
 
       // Register system service plugins
       plugins.put(DeployerServicePlugin.class, new DefaultDeployerServicePlugin(this));
