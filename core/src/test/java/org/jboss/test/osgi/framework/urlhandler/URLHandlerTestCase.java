@@ -49,7 +49,7 @@ import java.util.Hashtable;
 import java.util.ServiceLoader;
 
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.plugin.internal.URLHandlerFactory;
+import org.jboss.osgi.framework.url.OSGiStreamHandlerFactory;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -232,7 +232,7 @@ public class URLHandlerTestCase extends OSGiFrameworkTest
       props.put(URLConstants.URL_HANDLER_PROTOCOL, "jbossosgitest");
       ServiceRegistration reg = getSystemContext().registerService(URLStreamHandlerService.class.getName(), svc, props);
 
-      URLStreamHandlerFactory factory = new URLHandlerFactory();
+      URLStreamHandlerFactory factory = new OSGiStreamHandlerFactory();
       URLStreamHandler handler = factory.createURLStreamHandler("jbossosgitest");
 
       // Invoke methods through reflection to make sure the proxying works ok.

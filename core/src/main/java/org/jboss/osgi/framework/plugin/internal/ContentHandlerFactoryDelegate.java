@@ -19,32 +19,31 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework.plugin;
+package org.jboss.osgi.framework.plugin.internal;
 
 import java.net.ContentHandler;
-import java.net.URLStreamHandler;
+import java.net.ContentHandlerFactory;
 
 /**
- * This plugin provides OSGi URL handler support as per the specification.
- * The interface is through the java.net.URL class and the OSGi Service
- * Registry.
+ * There can only ever be one ContentHandlerFactory active in the system and it can
+ * only be set once, using {@link URLConnection#setContentHandlerFactory()}.
+ * This delegate makes it possible to replace this factory after it has been set, which
+ * is useful for testing purposes.
  *
  * @author <a href="david@redhat.com">David Bosschaert</a>
- * @author Thomas.Diesler@jboss.com
- * @since 10-Jan-2011
  */
-public interface URLHandlerPlugin extends Plugin
+class ContentHandlerFactoryDelegate implements ContentHandlerFactory
 {
-   /**
-    * Creates a new <code>URLStreamHandler</code> instance with the specified protocol.
-    * @see     java.net.URLStreamHandler
-    */
-   URLStreamHandler createURLStreamHandler(String protocol);
+   private ContentHandlerFactory delegate;
 
-   /**
-    * Creates a new <code>ContentHandler</code> to read an object from a <code>URLStreamHandler</code>.
-    * @see     java.net.ContentHandler
-    * @see     java.net.URLStreamHandler
-    */
-   ContentHandler createContentHandler(String mimetype);
+   public void setDelegate(FrameworkContentHandlerFactory factory)
+   {
+      delegate = factory;
+   }
+
+   @Override
+   public ContentHandler createContentHandler(String mimetype)
+   {
+      return delegate.createContentHandler(mimetype);
+   }
 }

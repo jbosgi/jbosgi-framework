@@ -21,29 +21,29 @@
  */
 package org.jboss.osgi.framework.plugin.internal;
 
-import java.net.ContentHandler;
-import java.net.ContentHandlerFactory;
+import java.net.URL;
+import java.net.URLStreamHandler;
+import java.net.URLStreamHandlerFactory;
 
 /**
- * There can only ever be one ContentHandlerFactory active in the system and it can
- * only be set once, using {@link URLConnection#setContentHandlerFactory()}.
- * This delegate makes it possible to replace this factory after it has been set, which
- * is useful for testing purposes.
- *
- * @author <a href="david@redhat.com">David Bosschaert</a>
+ * There can only ever be one URLStreamHandlerFactory active in the system and it can
+ * only be set once, using {@link URL#setURLStreamHandlerFactory()}.
+ * 
+ * @author Thomas.Diesler@jboss.com
+ * @since 10-Jan-2011
  */
-class URLContentHandlerFactoryDelegate implements ContentHandlerFactory
+class OSGiStreamHandlerFactoryDelegate implements URLStreamHandlerFactory
 {
-   private static ContentHandlerFactory delegate;
+   private URLStreamHandlerFactory delegate;
 
-   static void setDelegate(URLContentHandlerFactory factory)
+   public void setDelegate(URLStreamHandlerFactory factory)
    {
       delegate = factory;
    }
 
    @Override
-   public ContentHandler createContentHandler(String mimetype)
+   public URLStreamHandler createURLStreamHandler(String protocol)
    {
-      return delegate.createContentHandler(mimetype);
+      return delegate.createURLStreamHandler(protocol);
    }
 }
