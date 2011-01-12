@@ -35,102 +35,98 @@ import org.junit.Test;
 
 /**
  * [MODULES-37] Re-Export depends on module dependency order
- *
+ * 
  * @author Thomas.Diesler@jboss.com
  * @since 15-Sep-2010
  */
-public class MOD37TestCase extends ModulesTestBase
-{
-   @Test
-   public void testDirectDependencyFirst() throws Exception
-   {
-      // ModuleD
-      // +--> ModuleC
-      //      +-reex-> ModuleA
-      //      +-reex-> ModuleB
-      //               +--> ModuleA
+public class MOD37TestCase extends ModulesTestBase {
 
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
+    @Test
+    public void testDirectDependencyFirst() throws Exception {
+        // ModuleD
+        // +--> ModuleC
+        // +-reex-> ModuleA
+        // +-reex-> ModuleB
+        // +--> ModuleA
 
-      JavaArchive archiveB = getModuleB();
-      ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
-      specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderB.create());
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
 
-      ModuleIdentifier identifierC = ModuleIdentifier.create("moduleC");
-      ModuleSpec.Builder specBuilderC = ModuleSpec.build(identifierC);
-      specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(identifierA, true)); // moduleA
-      specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(identifierB, true)); // moduleB
-      addModuleSpec(specBuilderC.create());
+        JavaArchive archiveB = getModuleB();
+        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
+        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderB.create());
 
-      ModuleIdentifier identifierD = ModuleIdentifier.create("moduleD");
-      ModuleSpec.Builder specBuilderD = ModuleSpec.build(identifierD);
-      DependencySpec modDepC = DependencySpec.createModuleDependencySpec(identifierC);
-      specBuilderD.addDependency(modDepC);
-      addModuleSpec(specBuilderD.create());
+        ModuleIdentifier identifierC = ModuleIdentifier.create("moduleC");
+        ModuleSpec.Builder specBuilderC = ModuleSpec.build(identifierC);
+        specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(identifierA, true)); // moduleA
+        specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(identifierB, true)); // moduleB
+        addModuleSpec(specBuilderC.create());
 
-      assertLoadClass(identifierD, A.class.getName());
-      assertLoadClass(identifierD, C.class.getName());
-   }
+        ModuleIdentifier identifierD = ModuleIdentifier.create("moduleD");
+        ModuleSpec.Builder specBuilderD = ModuleSpec.build(identifierD);
+        DependencySpec modDepC = DependencySpec.createModuleDependencySpec(identifierC);
+        specBuilderD.addDependency(modDepC);
+        addModuleSpec(specBuilderD.create());
 
-   @Test
-   public void testDirectDependencySecond() throws Exception
-   {
-      // ModuleD
-      // +--> ModuleC
-      //      +-reex-> ModuleB
-      //      |        +--> ModuleA
-      //      +-reex-> ModuleA
+        assertLoadClass(identifierD, A.class.getName());
+        assertLoadClass(identifierD, C.class.getName());
+    }
 
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
+    @Test
+    public void testDirectDependencySecond() throws Exception {
+        // ModuleD
+        // +--> ModuleC
+        // +-reex-> ModuleB
+        // | +--> ModuleA
+        // +-reex-> ModuleA
 
-      JavaArchive archiveB = getModuleB();
-      ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
-      specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderB.create());
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
 
-      ModuleIdentifier identifierC = ModuleIdentifier.create("moduleC");
-      ModuleSpec.Builder specBuilderC = ModuleSpec.build(identifierC);
-      specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(identifierB, true)); // moduleB
-      specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(identifierA, true)); // moduleA
-      addModuleSpec(specBuilderC.create());
+        JavaArchive archiveB = getModuleB();
+        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
+        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderB.create());
 
-      ModuleIdentifier identifierD = ModuleIdentifier.create("moduleD");
-      ModuleSpec.Builder specBuilderD = ModuleSpec.build(identifierD);
-      specBuilderD.addDependency(DependencySpec.createModuleDependencySpec(identifierC));
-      addModuleSpec(specBuilderD.create());
+        ModuleIdentifier identifierC = ModuleIdentifier.create("moduleC");
+        ModuleSpec.Builder specBuilderC = ModuleSpec.build(identifierC);
+        specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(identifierB, true)); // moduleB
+        specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(identifierA, true)); // moduleA
+        addModuleSpec(specBuilderC.create());
 
-      assertLoadClass(identifierD, A.class.getName());
-      assertLoadClass(identifierD, C.class.getName());
-   }
+        ModuleIdentifier identifierD = ModuleIdentifier.create("moduleD");
+        ModuleSpec.Builder specBuilderD = ModuleSpec.build(identifierD);
+        specBuilderD.addDependency(DependencySpec.createModuleDependencySpec(identifierC));
+        addModuleSpec(specBuilderD.create());
 
-   private JavaArchive getModuleA()
-   {
-      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-      archive.addClasses(A.class, B.class);
-      return archive;
-   }
+        assertLoadClass(identifierD, A.class.getName());
+        assertLoadClass(identifierD, C.class.getName());
+    }
 
-   private JavaArchive getModuleB()
-   {
-      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
-      archive.addClasses(C.class, D.class);
-      return archive;
-   }
+    private JavaArchive getModuleA() {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
+        archive.addClasses(A.class, B.class);
+        return archive;
+    }
+
+    private JavaArchive getModuleB() {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
+        archive.addClasses(C.class, D.class);
+        return archive;
+    }
 }

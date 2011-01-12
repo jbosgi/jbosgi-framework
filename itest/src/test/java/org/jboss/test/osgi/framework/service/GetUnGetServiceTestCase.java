@@ -1,24 +1,24 @@
 /*
-* JBoss, Home of Professional Open Source
-* Copyright 2009, Red Hat Middleware LLC, and individual contributors
-* as indicated by the @author tags. See the copyright.txt file in the
-* distribution for a full listing of individual contributors.
-*
-* This is free software; you can redistribute it and/or modify it
-* under the terms of the GNU Lesser General Public License as
-* published by the Free Software Foundation; either version 2.1 of
-* the License, or (at your option) any later version.
-*
-* This software is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-* Lesser General Public License for more details.
-*
-* You should have received a copy of the GNU Lesser General Public
-* License along with this software; if not, write to the Free
-* Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-* 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-*/
+ * JBoss, Home of Professional Open Source
+ * Copyright 2009, Red Hat Middleware LLC, and individual contributors
+ * as indicated by the @author tags. See the copyright.txt file in the
+ * distribution for a full listing of individual contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
 package org.jboss.test.osgi.framework.service;
 
 import static org.junit.Assert.assertEquals;
@@ -47,213 +47,177 @@ import org.osgi.framework.ServiceRegistration;
  * @author Thomas.Diesler@jboss.com
  * @version $Revision: 1.1 $
  */
-public class GetUnGetServiceTestCase extends OSGiFrameworkTest
-{
-   static String OBJCLASS = BundleContext.class.getName();
+public class GetUnGetServiceTestCase extends OSGiFrameworkTest {
 
-   @Test
-   public void testGetUnServiceErrors() throws Exception
-   {
-      Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-      Bundle bundle = installBundle(assembly);
-      try
-      {
-         bundle.start();
-         BundleContext context = bundle.getBundleContext();
-         assertNotNull(context);
+    static String OBJCLASS = BundleContext.class.getName();
 
-         context.registerService(OBJCLASS, context, null);
+    @Test
+    public void testGetUnServiceErrors() throws Exception {
+        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
+        Bundle bundle = installBundle(assembly);
+        try {
+            bundle.start();
+            BundleContext context = bundle.getBundleContext();
+            assertNotNull(context);
 
-         try
-         {
-            context.getService(null);
-            fail("Should not be here!");
-         }
-         catch (IllegalArgumentException t)
-         {
-            // expected
-         }
+            context.registerService(OBJCLASS, context, null);
 
-         try
-         {
-            context.ungetService(null);
-            fail("Should not be here!");
-         }
-         catch (IllegalArgumentException t)
-         {
-            // expected
-         }
-      }
-      finally
-      {
-         bundle.uninstall();
-      }
-   }
+            try {
+                context.getService(null);
+                fail("Should not be here!");
+            } catch (IllegalArgumentException t) {
+                // expected
+            }
 
-   @Test
-   public void testGetService() throws Exception
-   {
-      Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-      Bundle bundle = installBundle(assembly);
-      try
-      {
-         bundle.start();
-         BundleContext context = bundle.getBundleContext();
-         assertNotNull(context);
+            try {
+                context.ungetService(null);
+                fail("Should not be here!");
+            } catch (IllegalArgumentException t) {
+                // expected
+            }
+        } finally {
+            bundle.uninstall();
+        }
+    }
 
-         ServiceRegistration sreg = context.registerService(OBJCLASS, context, null);
-         ServiceReference sref = sreg.getReference();
+    @Test
+    public void testGetService() throws Exception {
+        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
+        Bundle bundle = installBundle(assembly);
+        try {
+            bundle.start();
+            BundleContext context = bundle.getBundleContext();
+            assertNotNull(context);
 
-         Object actual = context.getService(sref);
-         assertEquals(context, actual);
+            ServiceRegistration sreg = context.registerService(OBJCLASS, context, null);
+            ServiceReference sref = sreg.getReference();
 
-         sreg.unregister();
-         actual = context.getService(sref);
-         assertNull("" + actual, actual);
-      }
-      finally
-      {
-         bundle.uninstall();
-      }
-   }
+            Object actual = context.getService(sref);
+            assertEquals(context, actual);
 
-   @Test
-   public void testGetServiceAfterStop() throws Exception
-   {
-      Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-      Bundle bundle = installBundle(assembly);
-      try
-      {
-         bundle.start();
-         BundleContext context = bundle.getBundleContext();
-         assertNotNull(context);
+            sreg.unregister();
+            actual = context.getService(sref);
+            assertNull("" + actual, actual);
+        } finally {
+            bundle.uninstall();
+        }
+    }
 
-         ServiceRegistration sreg = context.registerService(OBJCLASS, context, null);
-         ServiceReference sref = sreg.getReference();
+    @Test
+    public void testGetServiceAfterStop() throws Exception {
+        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
+        Bundle bundle = installBundle(assembly);
+        try {
+            bundle.start();
+            BundleContext context = bundle.getBundleContext();
+            assertNotNull(context);
 
-         Object actual = context.getService(sref);
-         assertEquals(context, actual);
+            ServiceRegistration sreg = context.registerService(OBJCLASS, context, null);
+            ServiceReference sref = sreg.getReference();
 
-         bundle.stop();
-         try
-         {
-            context.getService(sref);
-            fail("Should not be here!");
-         }
-         catch (IllegalStateException t)
-         {
-            // expected
-         }
-      }
-      finally
-      {
-         bundle.uninstall();
-      }
-   }
+            Object actual = context.getService(sref);
+            assertEquals(context, actual);
 
-   @Test
-   public void testErrorInGetService() throws Exception
-   {
-      Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-      Bundle bundle = installBundle(assembly);
-      try
-      {
-         bundle.start();
-         BundleContext context = bundle.getBundleContext();
-         assertNotNull(context);
+            bundle.stop();
+            try {
+                context.getService(sref);
+                fail("Should not be here!");
+            } catch (IllegalStateException t) {
+                // expected
+            }
+        } finally {
+            bundle.uninstall();
+        }
+    }
 
-         context.addFrameworkListener(this);
+    @Test
+    public void testErrorInGetService() throws Exception {
+        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
+        Bundle bundle = installBundle(assembly);
+        try {
+            bundle.start();
+            BundleContext context = bundle.getBundleContext();
+            assertNotNull(context);
 
-         ServiceRegistration sreg = context.registerService(OBJCLASS, new BrokenServiceFactory(context, true), null);
-         ServiceReference sref = sreg.getReference();
-         Object actual = context.getService(sref);
-         assertNull("" + actual, actual);
+            context.addFrameworkListener(this);
 
-         assertFrameworkEvent(FrameworkEvent.ERROR, bundle, ServiceException.class);
-      }
-      finally
-      {
-         bundle.uninstall();
-      }
-   }
+            ServiceRegistration sreg = context.registerService(OBJCLASS, new BrokenServiceFactory(context, true), null);
+            ServiceReference sref = sreg.getReference();
+            Object actual = context.getService(sref);
+            assertNull("" + actual, actual);
 
-   @Test
-   public void testErrorInUnGetService() throws Exception
-   {
-      Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-      Bundle bundle = installBundle(assembly);
-      try
-      {
-         bundle.start();
-         BundleContext context = bundle.getBundleContext();
-         assertNotNull(context);
+            assertFrameworkEvent(FrameworkEvent.ERROR, bundle, ServiceException.class);
+        } finally {
+            bundle.uninstall();
+        }
+    }
 
-         context.addFrameworkListener(this);
+    @Test
+    public void testErrorInUnGetService() throws Exception {
+        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
+        Bundle bundle = installBundle(assembly);
+        try {
+            bundle.start();
+            BundleContext context = bundle.getBundleContext();
+            assertNotNull(context);
 
-         ServiceRegistration sreg = context.registerService(OBJCLASS, new BrokenServiceFactory(context, false), null);
-         ServiceReference sref = sreg.getReference();
-         Object actual = context.getService(sref);
-         assertEquals(context, actual);
-         assertNoFrameworkEvent();
+            context.addFrameworkListener(this);
 
-         sreg.unregister();
+            ServiceRegistration sreg = context.registerService(OBJCLASS, new BrokenServiceFactory(context, false), null);
+            ServiceReference sref = sreg.getReference();
+            Object actual = context.getService(sref);
+            assertEquals(context, actual);
+            assertNoFrameworkEvent();
 
-         // [TODO] verify that this is expected
-         assertFrameworkEvent(FrameworkEvent.WARNING, bundle, ServiceException.class);
-      }
-      finally
-      {
-         bundle.uninstall();
-      }
-   }
+            sreg.unregister();
 
-   @Test
-   public void testUnGetServiceResult() throws Exception
-   {
-      Archive<?> assembly1 = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-      Bundle bundle1 = installBundle(assembly1);
-      try
-      {
-         bundle1.start();
-         BundleContext context1 = bundle1.getBundleContext();
-         assertNotNull(context1);
+            // [TODO] verify that this is expected
+            assertFrameworkEvent(FrameworkEvent.WARNING, bundle, ServiceException.class);
+        } finally {
+            bundle.uninstall();
+        }
+    }
 
-         ServiceRegistration sreg = context1.registerService(OBJCLASS, context1, null);
-         ServiceReference sref = sreg.getReference();
-         Object actual = context1.getService(sref);
-         assertEquals(context1, actual);
-         assertTrue(context1.ungetService(sref));
-         assertFalse(context1.ungetService(sref));
+    @Test
+    public void testUnGetServiceResult() throws Exception {
+        Archive<?> assembly1 = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
+        Bundle bundle1 = installBundle(assembly1);
+        try {
+            bundle1.start();
+            BundleContext context1 = bundle1.getBundleContext();
+            assertNotNull(context1);
 
-         context1.getService(sref);
-         context1.getService(sref);
-         assertTrue(context1.ungetService(sref));
-         assertTrue(context1.ungetService(sref));
-         assertFalse(context1.ungetService(sref));
-
-         Archive<?> assembly2 = assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2");
-         Bundle bundle2 = installBundle(assembly2);
-         try
-         {
-            bundle2.start();
-            BundleContext context2 = bundle2.getBundleContext();
-            assertNotNull(context2);
-
-            context2.getService(sref);
-            context1.getService(sref);
+            ServiceRegistration sreg = context1.registerService(OBJCLASS, context1, null);
+            ServiceReference sref = sreg.getReference();
+            Object actual = context1.getService(sref);
+            assertEquals(context1, actual);
             assertTrue(context1.ungetService(sref));
             assertFalse(context1.ungetService(sref));
-            assertTrue(context2.ungetService(sref));
-            assertFalse(context2.ungetService(sref));
-         }
-         finally
-         {
-            bundle2.uninstall();
-         }
-      }
-      finally
-      {
-         bundle1.uninstall();
-      }
-   }
+
+            context1.getService(sref);
+            context1.getService(sref);
+            assertTrue(context1.ungetService(sref));
+            assertTrue(context1.ungetService(sref));
+            assertFalse(context1.ungetService(sref));
+
+            Archive<?> assembly2 = assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2");
+            Bundle bundle2 = installBundle(assembly2);
+            try {
+                bundle2.start();
+                BundleContext context2 = bundle2.getBundleContext();
+                assertNotNull(context2);
+
+                context2.getService(sref);
+                context1.getService(sref);
+                assertTrue(context1.ungetService(sref));
+                assertFalse(context1.ungetService(sref));
+                assertTrue(context2.ungetService(sref));
+                assertFalse(context2.ungetService(sref));
+            } finally {
+                bundle2.uninstall();
+            }
+        } finally {
+            bundle1.uninstall();
+        }
+    }
 }

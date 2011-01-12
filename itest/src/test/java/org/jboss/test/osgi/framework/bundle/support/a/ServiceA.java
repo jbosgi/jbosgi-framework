@@ -29,24 +29,22 @@ import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * ServiceA has a dependency on ServiceB, both have a dependency on SomePojo
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 02-Mar-2009
  */
-public class ServiceA
-{
-   ServiceA(BundleContext context)
-   {
-      ServiceTracker tracker = new ServiceTracker(context, ServiceB.class.getName(), null)
-      {
-         @Override
-         public Object addingService(ServiceReference sref)
-         {
-            ServiceB serviceB = (ServiceB)super.addingService(sref);
-            serviceB.doStuffInB(new ServiceX("hello"));
-            return serviceB;
-         }
-      };
-      tracker.open();
-   }
+public class ServiceA {
+
+    ServiceA(BundleContext context) {
+        ServiceTracker tracker = new ServiceTracker(context, ServiceB.class.getName(), null) {
+
+            @Override
+            public Object addingService(ServiceReference sref) {
+                ServiceB serviceB = (ServiceB) super.addingService(sref);
+                serviceB.doStuffInB(new ServiceX("hello"));
+                return serviceB;
+            }
+        };
+        tracker.open();
+    }
 }

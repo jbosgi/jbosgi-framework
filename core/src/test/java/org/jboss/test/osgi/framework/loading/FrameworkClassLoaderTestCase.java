@@ -41,72 +41,60 @@ import org.osgi.framework.BundleActivator;
 
 /**
  * Test the bundle content loader.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
-public class FrameworkClassLoaderTestCase extends AbstractFrameworkTest
-{
-   ClassLoader classLoader;
+public class FrameworkClassLoaderTestCase extends AbstractFrameworkTest {
 
-   @Before
-   public void before() throws Exception
-   {
-      BundleManager bundleManager = getBundleManager();
-      ModuleManagerPlugin plugin = bundleManager.getPlugin(ModuleManagerPlugin.class);
-      Module module = plugin.getModule(ModuleManagerPlugin.DEFAULT_FRAMEWORK_IDENTIFIER);
-      classLoader = module.getClassLoader();
-   }
+    ClassLoader classLoader;
 
-   @Test
-   public void testLoadJavaClass() throws Exception
-   {
-      Class<?> result = classLoader.loadClass(HashMap.class.getName());
-      assertNotNull("HashMap loaded", result);
-      assertTrue("Is assignable", HashMap.class.isAssignableFrom(result));
-   }
+    @Before
+    public void before() throws Exception {
+        BundleManager bundleManager = getBundleManager();
+        ModuleManagerPlugin plugin = bundleManager.getPlugin(ModuleManagerPlugin.class);
+        Module module = plugin.getModule(ModuleManagerPlugin.DEFAULT_FRAMEWORK_IDENTIFIER);
+        classLoader = module.getClassLoader();
+    }
 
-   @Test
-   public void testLoadJavaXSuccess() throws Exception
-   {
-      Class<?> result = classLoader.loadClass(MBeanServer.class.getName());
-      assertNotNull("MBeanServer loaded", result);
-      assertTrue("Is assignable", MBeanServer.class.isAssignableFrom(result));
-   }
+    @Test
+    public void testLoadJavaClass() throws Exception {
+        Class<?> result = classLoader.loadClass(HashMap.class.getName());
+        assertNotNull("HashMap loaded", result);
+        assertTrue("Is assignable", HashMap.class.isAssignableFrom(result));
+    }
 
-   @Test
-   public void testLoadJavaXFail() throws Exception
-   {
-      try
-      {
-         classLoader.loadClass(XAResource.class.getName());
-         fail("ClassNotFoundException expected");
-      }
-      catch (ClassNotFoundException ex)
-      {
-         //expected
-      }
-   }
+    @Test
+    public void testLoadJavaXSuccess() throws Exception {
+        Class<?> result = classLoader.loadClass(MBeanServer.class.getName());
+        assertNotNull("MBeanServer loaded", result);
+        assertTrue("Is assignable", MBeanServer.class.isAssignableFrom(result));
+    }
 
-   @Test
-   public void testLoadClassSuccess() throws Exception
-   {
-      Class<?> result = classLoader.loadClass(BundleActivator.class.getName());
-      assertNotNull("BundleActivator loaded", result);
-      assertTrue("Is assignable", BundleActivator.class.isAssignableFrom(result));
-   }
+    @Test
+    public void testLoadJavaXFail() throws Exception {
+        try {
+            classLoader.loadClass(XAResource.class.getName());
+            fail("ClassNotFoundException expected");
+        } catch (ClassNotFoundException ex) {
+            // expected
+        }
+    }
 
-   @Test
-   public void testLoadClassFail() throws Exception
-   {
-      try
-      {
-         classLoader.loadClass(CmdLineParser.class.getName());
-         fail("ClassNotFoundException expected");
-      }
-      catch (ClassNotFoundException ex)
-      {
-         //expected
-      }
-   }
+    @Test
+    public void testLoadClassSuccess() throws Exception {
+        Class<?> result = classLoader.loadClass(BundleActivator.class.getName());
+        assertNotNull("BundleActivator loaded", result);
+        assertTrue("Is assignable", BundleActivator.class.isAssignableFrom(result));
+    }
+
+    @Test
+    public void testLoadClassFail() throws Exception {
+        try {
+            classLoader.loadClass(CmdLineParser.class.getName());
+            fail("ClassNotFoundException expected");
+        } catch (ClassNotFoundException ex) {
+            // expected
+        }
+    }
 }

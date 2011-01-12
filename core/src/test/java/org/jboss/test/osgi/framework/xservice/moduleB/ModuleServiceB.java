@@ -32,20 +32,18 @@ import org.osgi.framework.ServiceReference;
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
-public class ModuleServiceB
-{
-   Bundle owner;
-   
-   ModuleServiceB(Bundle owner)
-   {
-      this.owner = owner;
-   }
+public class ModuleServiceB {
 
-   public String echo(String msg)
-   {
-      BundleContext context = owner.getBundleContext();
-      ServiceReference sref = context.getServiceReference(BundleServiceB.class.getName());
-      BundleServiceB service = (BundleServiceB)context.getService(sref);
-      return service.echo(msg + ":" + owner.getSymbolicName());
-   }
+    Bundle owner;
+
+    ModuleServiceB(Bundle owner) {
+        this.owner = owner;
+    }
+
+    public String echo(String msg) {
+        BundleContext context = owner.getBundleContext();
+        ServiceReference sref = context.getServiceReference(BundleServiceB.class.getName());
+        BundleServiceB service = (BundleServiceB) context.getService(sref);
+        return service.echo(msg + ":" + owner.getSymbolicName());
+    }
 }

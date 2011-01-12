@@ -32,20 +32,19 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 21-Jan-2010
  */
-public class NativeCodeTestCase extends OSGiFrameworkTest
-{
-   @Test
-   public void testNativeCode() throws Exception
-   {
-      BundleContext context = getFramework().getBundleContext();
+public class NativeCodeTestCase extends OSGiFrameworkTest {
 
-      Bundle bundleA = context.installBundle(getTestArchivePath("simple-nativecode.jar"));
-      assertBundleState(Bundle.INSTALLED, bundleA.getState());
+    @Test
+    public void testNativeCode() throws Exception {
+        BundleContext context = getFramework().getBundleContext();
 
-      bundleA.start();
-      assertBundleState(Bundle.ACTIVE, bundleA.getState());
+        Bundle bundleA = context.installBundle(getTestArchivePath("simple-nativecode.jar"));
+        assertBundleState(Bundle.INSTALLED, bundleA.getState());
 
-      bundleA.uninstall();
-      assertBundleState(Bundle.UNINSTALLED, bundleA.getState());
-   }
+        bundleA.start();
+        assertBundleState(Bundle.ACTIVE, bundleA.getState());
+
+        bundleA.uninstall();
+        assertBundleState(Bundle.UNINSTALLED, bundleA.getState());
+    }
 }

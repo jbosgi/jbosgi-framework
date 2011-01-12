@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.nativecode.bundleA;
 
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,66 +30,60 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
-public class NativeCodeActivatorA implements BundleActivator
-{
-   private static Map<String, String> osAliases = new HashMap<String, String>();
+public class NativeCodeActivatorA implements BundleActivator {
 
-   static
-   {
-      osAliases.put("SymbianOS", "Epoc32");
-      osAliases.put("hp-ux", "HPUX");
-      osAliases.put("Linux", "Linux");
-      osAliases.put("Mac OS", "MacOS");
-      osAliases.put("Mac OS X", "MacOSX");
-      osAliases.put("OS/2", "OS2");
-      osAliases.put("procnto", "QNX");
-      // map any winz stuff to plain windows
-      osAliases.put("Win2000", "Windows");
-      osAliases.put("Win2003", "Windows");
-      osAliases.put("Win32", "Windows");
-      osAliases.put("Win95", "Windows");
-      osAliases.put("Win98", "Windows");
-      osAliases.put("WinCE", "Windows");
-      osAliases.put("Windows 2000", "Windows");
-      osAliases.put("Windows 2003", "Windows");
-      osAliases.put("Windows 7", "Windows");
-      osAliases.put("Windows 95", "Windows");
-      osAliases.put("Windows 98", "Windows");
-      osAliases.put("Windows CE", "Windows");
-      osAliases.put("Windows NT", "Windows");
-      osAliases.put("Windows Server 2003", "Windows");
-      osAliases.put("Windows Vista", "Windows");
-      osAliases.put("Windows XP", "Windows");
-      osAliases.put("WinNT", "Windows");
-      osAliases.put("WinVista", "Windows");
-      osAliases.put("WinXP", "Windows");
-   }
+    private static Map<String, String> osAliases = new HashMap<String, String>();
 
-   public void start(BundleContext context) throws BundleException
-   {
-      Bundle bundle = context.getBundle();
-      try
-      {
-         System.loadLibrary("Native");
-         throw new IllegalStateException("UnsatisfiedLinkError expected");
-      }
-      catch (UnsatisfiedLinkError ex)
-      {
-         String exmsg = ex.getMessage();
-         long bundleid = bundle.getBundleId();
-         String os = System.getProperty("os.name");
-         String osAlias = osAliases.get(os);
-         String suffix = osAlias != null ? osAlias.toLowerCase() : "";
-         if ("".equals(suffix))
-            System.err.println("No such OS mapped to alias: " + os);
+    static {
+        osAliases.put("SymbianOS", "Epoc32");
+        osAliases.put("hp-ux", "HPUX");
+        osAliases.put("Linux", "Linux");
+        osAliases.put("Mac OS", "MacOS");
+        osAliases.put("Mac OS X", "MacOSX");
+        osAliases.put("OS/2", "OS2");
+        osAliases.put("procnto", "QNX");
+        // map any winz stuff to plain windows
+        osAliases.put("Win2000", "Windows");
+        osAliases.put("Win2003", "Windows");
+        osAliases.put("Win32", "Windows");
+        osAliases.put("Win95", "Windows");
+        osAliases.put("Win98", "Windows");
+        osAliases.put("WinCE", "Windows");
+        osAliases.put("Windows 2000", "Windows");
+        osAliases.put("Windows 2003", "Windows");
+        osAliases.put("Windows 7", "Windows");
+        osAliases.put("Windows 95", "Windows");
+        osAliases.put("Windows 98", "Windows");
+        osAliases.put("Windows CE", "Windows");
+        osAliases.put("Windows NT", "Windows");
+        osAliases.put("Windows Server 2003", "Windows");
+        osAliases.put("Windows Vista", "Windows");
+        osAliases.put("Windows XP", "Windows");
+        osAliases.put("WinNT", "Windows");
+        osAliases.put("WinVista", "Windows");
+        osAliases.put("WinXP", "Windows");
+    }
 
-         String substr = "osgi-store" + File.separator + "bundle-" + bundleid + File.separator + suffix;
-         if (exmsg.indexOf(substr) < 0)
-            throw new UnsatisfiedLinkError("Cannot find '" + substr + "' in '" + exmsg + "'");
-      }
-   }
+    public void start(BundleContext context) throws BundleException {
+        Bundle bundle = context.getBundle();
+        try {
+            System.loadLibrary("Native");
+            throw new IllegalStateException("UnsatisfiedLinkError expected");
+        } catch (UnsatisfiedLinkError ex) {
+            String exmsg = ex.getMessage();
+            long bundleid = bundle.getBundleId();
+            String os = System.getProperty("os.name");
+            String osAlias = osAliases.get(os);
+            String suffix = osAlias != null ? osAlias.toLowerCase() : "";
+            if ("".equals(suffix))
+                System.err.println("No such OS mapped to alias: " + os);
 
-   public void stop(BundleContext context)
-   {
-   }
+            String substr = "osgi-store" + File.separator + "bundle-" + bundleid + File.separator + suffix;
+            if (exmsg.indexOf(substr) < 0)
+                throw new UnsatisfiedLinkError("Cannot find '" + substr + "' in '" + exmsg + "'");
+        }
+    }
+
+    public void stop(BundleContext context) {
+    }
 }

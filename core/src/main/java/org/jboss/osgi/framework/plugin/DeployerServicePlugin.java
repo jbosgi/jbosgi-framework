@@ -23,13 +23,11 @@ package org.jboss.osgi.framework.plugin;
 
 import org.jboss.osgi.deployment.deployer.DeployerService;
 
-
 /**
  * The DeployerService service plugin
  * 
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-public interface DeployerServicePlugin extends Plugin, DeployerService
-{
+public interface DeployerServicePlugin extends Plugin, DeployerService {
 }

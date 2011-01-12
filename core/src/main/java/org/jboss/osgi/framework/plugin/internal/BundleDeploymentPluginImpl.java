@@ -51,333 +51,278 @@ import org.osgi.framework.Version;
 
 /**
  * A plugin the handles Bundle deployments.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 12-Jul-2010
  */
-public class BundleDeploymentPluginImpl extends AbstractPlugin implements BundleDeploymentPlugin
-{
-   // Provide logging
-   private static final Logger log = Logger.getLogger(BundleDeploymentPluginImpl.class);
+public class BundleDeploymentPluginImpl extends AbstractPlugin implements BundleDeploymentPlugin {
 
-   public BundleDeploymentPluginImpl(BundleManager bundleManager)
-   {
-      super(bundleManager);
-   }
+    // Provide logging
+    private static final Logger log = Logger.getLogger(BundleDeploymentPluginImpl.class);
 
-   @Override
-   public Deployment createDeployment(BundleStorageState storageState) throws BundleException
-   {
-      if (storageState == null)
-         throw new IllegalArgumentException("Null storageState");
+    public BundleDeploymentPluginImpl(BundleManager bundleManager) {
+        super(bundleManager);
+    }
 
-      try
-      {
-         String location = storageState.getLocation();
-         VirtualFile rootFile = storageState.getRootFile();
-         Deployment dep = createDeployment(location, rootFile);
-         dep.addAttachment(BundleStorageState.class, storageState);
-         return dep;
-      }
-      catch (BundleException ex)
-      {
-         storageState.deleteBundleStorage();
-         throw ex;
-      }
-      catch (RuntimeException ex)
-      {
-         storageState.deleteBundleStorage();
-         throw ex;
-      }
-   }
+    @Override
+    public Deployment createDeployment(BundleStorageState storageState) throws BundleException {
+        if (storageState == null)
+            throw new IllegalArgumentException("Null storageState");
 
-   @Override
-   public Deployment createDeployment(ModuleIdentifier identifier) throws BundleException
-   {
-      return createDeploymentInternal(null, identifier);
-   }
+        try {
+            String location = storageState.getLocation();
+            VirtualFile rootFile = storageState.getRootFile();
+            Deployment dep = createDeployment(location, rootFile);
+            dep.addAttachment(BundleStorageState.class, storageState);
+            return dep;
+        } catch (BundleException ex) {
+            storageState.deleteBundleStorage();
+            throw ex;
+        } catch (RuntimeException ex) {
+            storageState.deleteBundleStorage();
+            throw ex;
+        }
+    }
 
-   @Override
-   public Deployment createDeployment(String location, ModuleIdentifier identifier) throws BundleException
-   {
-       return createDeploymentInternal(location, identifier);
-   }
+    @Override
+    public Deployment createDeployment(ModuleIdentifier identifier) throws BundleException {
+        return createDeploymentInternal(null, identifier);
+    }
 
-   private Deployment createDeploymentInternal(String location, ModuleIdentifier identifier) throws BundleException
-   {
-      if (identifier == null)
-         throw new IllegalArgumentException("Null identifier");
+    @Override
+    public Deployment createDeployment(String location, ModuleIdentifier identifier) throws BundleException {
+        return createDeploymentInternal(location, identifier);
+    }
 
-       if (location == null)
-       {
-          location = "module:" + identifier.getName();
-          if ("main".equals(identifier.getSlot()) == false)
-             location += ":" + identifier.getSlot();
-       }
+    private Deployment createDeploymentInternal(String location, ModuleIdentifier identifier) throws BundleException {
+        if (identifier == null)
+            throw new IllegalArgumentException("Null identifier");
 
-      BundleStoragePlugin storagePlugin = getPlugin(BundleStoragePlugin.class);
+        if (location == null) {
+            location = "module:" + identifier.getName();
+            if ("main".equals(identifier.getSlot()) == false)
+                location += ":" + identifier.getSlot();
+        }
 
-      // Check if we have a single root file
-      File repoFile = getModuleRepositoryEntry(identifier);
-      long bundleId = getBundleManager().getNextBundleId();
-      if (repoFile != null)
-      {
-         // Try to process this as a valid OSGi bundle
-         BundleStorageState storageState;
-         try
-         {
-            BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
-            VirtualFile rootFile = AbstractVFS.toVirtualFile(repoFile.toURI().toURL());
-            storageState = plugin.createStorageState(bundleId, location, rootFile);
-         }
-         catch (IOException ex)
-         {
-            throw new BundleException("Cannot setup storage for: " + location, ex);
-         }
+        BundleStoragePlugin storagePlugin = getPlugin(BundleStoragePlugin.class);
 
-         try
-         {
-            return createDeployment(storageState);
-         }
-         catch (Exception ex)
-         {
-            log.debugf("Cannot process '%s' as OSGi deployment: %s", location, ex.toString());
-         }
-      }
-
-      // Check if the module can be loaded
-      Module module;
-      try
-      {
-         ModuleLoader moduleLoader = getBundleManager().getSystemModuleLoader();
-         module = moduleLoader.loadModule(identifier);
-      }
-      catch (ModuleLoadException ex)
-      {
-         throw new BundleException("Cannot load module: " + identifier, ex);
-      }
-
-      // Get the symbolic name and version
-      String symbolicName = identifier.getName();
-      Version version;
-      try
-      {
-         version = Version.parseVersion(identifier.getSlot());
-      }
-      catch (IllegalArgumentException ex)
-      {
-         version = Version.emptyVersion;
-      }
-
-      // Build the resolver capabilities, which exports every package
-      ResolverPlugin resolverPlugin = getPlugin(ResolverPlugin.class);
-      XModuleBuilder builder = resolverPlugin.getModuleBuilder();
-      builder.createModule(symbolicName, version, 0);
-      builder.addBundleCapability(symbolicName, version);
-      for (String path : module.getExportedPaths())
-      {
-         if (path.startsWith("/"))
-            path = path.substring(1);
-         if (path.endsWith("/"))
-            path = path.substring(0, path.length() - 1);
-         if (path.startsWith("META-INF"))
-            continue;
-
-         String packageName = path.replace('/', '.');
-         builder.addPackageCapability(packageName, null, null);
-      }
-      XModule resModule = builder.getModule();
-      resModule.addAttachment(Module.class, module);
-
-      // Create the bundle storage state
-      BundleStorageState storageState;
-      try
-      {
-         storageState = storagePlugin.createStorageState(bundleId, location, null);
-      }
-      catch (IOException ex)
-      {
-         throw new BundleException("Cannot create bundle storage for: " + location, ex);
-      }
-
-      Deployment dep = DeploymentFactory.createDeployment(location, symbolicName, version);
-      dep.addAttachment(BundleStorageState.class, storageState);
-      dep.addAttachment(XModule.class, resModule);
-      dep.addAttachment(Module.class, module);
-      return dep;
-   }
-
-   @Override
-   public OSGiMetaData createOSGiMetaData(Deployment dep) throws BundleException
-   {
-      // #1 check if the Deployment already contains a OSGiMetaData
-      OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
-      if (metadata != null)
-         return metadata;
-
-      // #2 check if the Deployment contains valid BundleInfo
-      BundleInfo info = dep.getAttachment(BundleInfo.class);
-      if (info != null)
-         metadata = toOSGiMetaData(dep, info);
-
-      // #3 we support deployments that contain XModule
-      XModule resModule = dep.getAttachment(XModule.class);
-      if (metadata == null && resModule != null)
-         metadata = toOSGiMetaData(dep, resModule);
-
-      // #4 check if we have a valid OSGi manifest
-      if (metadata == null)
-      {
-         VirtualFile rootFile = dep.getRoot();
-         String location = dep.getLocation();
-         try
-         {
-            info = BundleInfo.createBundleInfo(rootFile, location);
-            metadata = toOSGiMetaData(dep, info);
-         }
-         catch (BundleException ex)
-         {
-            // ignore
-         }
-      }
-
-      // #5 check if we have META-INF/jbosgi-xservice.properties
-      if (metadata == null)
-      {
-         VirtualFile rootFile = dep.getRoot();
-         metadata = getXServiceMetaData(rootFile);
-      }
-
-      if (metadata == null)
-         throw new BundleException("Not a valid OSGi deployment: " + dep);
-
-      dep.addAttachment(OSGiMetaData.class, metadata);
-      return metadata;
-   }
-
-   /**
-    * Get virtual file for the singe jar that corresponds to the given identifier
-    * @return The file or null
-    */
-   private File getModuleRepositoryEntry(ModuleIdentifier identifier)
-   {
-      File rootPath = new File(getBundleManager().getProperty("module.path").toString());
-      String identifierPath = identifier.getName().replace('.', '/') + "/" + identifier.getSlot();
-      File moduleDir = new File(rootPath + "/" + identifierPath);
-      if (moduleDir.isDirectory() == false)
-      {
-         log.warnf("Cannot obtain module directory: %s", moduleDir);
-         return null;
-      }
-
-      String[] files = moduleDir.list(new FilenameFilter()
-      {
-         @Override
-         public boolean accept(File dir, String name)
-         {
-            return name.endsWith(".jar");
-         }
-      });
-      if (files.length == 0)
-      {
-         log.warnf("Cannot find module jar in: %s", moduleDir);
-         return null;
-      }
-      if (files.length > 1)
-      {
-         log.warnf("Multiple module jars in: %s", moduleDir);
-         return null;
-      }
-
-      File moduleFile = new File(moduleDir + "/" + files[0]);
-      if (moduleFile.exists() == false)
-      {
-         log.warnf("Module file does not exist: %s", moduleFile);
-         return null;
-      }
-
-      return moduleFile;
-   }
-
-   private Deployment createDeployment(String location, VirtualFile rootFile) throws BundleException
-   {
-      try
-      {
-         BundleInfo info = BundleInfo.createBundleInfo(rootFile, location);
-         Deployment dep = DeploymentFactory.createDeployment(info);
-         OSGiMetaData metadata = toOSGiMetaData(dep, info);
-         dep.addAttachment(BundleInfo.class, info);
-         dep.addAttachment(OSGiMetaData.class, metadata);
-         return dep;
-      }
-      catch (NumberFormatException nfe)
-      {
-         throw new BundleException("Invalid OSGi version:", nfe);
-      }
-      catch (BundleException ex)
-      {
-         // No valid OSGi manifest. Fallback to jbosgi-xservice.properties
-      }
-
-      // Check if we have META-INF/jbosgi-xservice.properties
-      OSGiMetaData metadata = getXServiceMetaData(rootFile);
-      if (metadata != null)
-      {
-         String symbolicName = metadata.getBundleSymbolicName();
-         Version version = metadata.getBundleVersion();
-         Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, version);
-         dep.addAttachment(OSGiMetaData.class, metadata);
-         return dep;
-      }
-
-      throw new BundleException("Cannot create deployment from: " + rootFile);
-   }
-
-   private OSGiMetaData getXServiceMetaData(VirtualFile rootFile)
-   {
-      // Try jbosgi-xservice.properties
-      try
-      {
-         VirtualFile child = rootFile.getChild("META-INF/jbosgi-xservice.properties");
-         if (child != null)
-         {
-            OSGiMetaData metadata = OSGiMetaDataBuilder.load(child.openStream());
-            return metadata;
-         }
-
-         VirtualFile parentFile = rootFile.getParent();
-         if (parentFile != null)
-         {
-            child = parentFile.getChild("jbosgi-xservice.properties");
-            if (child != null)
-            {
-               OSGiMetaData metadata = OSGiMetaDataBuilder.load(child.openStream());
-               return metadata;
+        // Check if we have a single root file
+        File repoFile = getModuleRepositoryEntry(identifier);
+        long bundleId = getBundleManager().getNextBundleId();
+        if (repoFile != null) {
+            // Try to process this as a valid OSGi bundle
+            BundleStorageState storageState;
+            try {
+                BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
+                VirtualFile rootFile = AbstractVFS.toVirtualFile(repoFile.toURI().toURL());
+                storageState = plugin.createStorageState(bundleId, location, rootFile);
+            } catch (IOException ex) {
+                throw new BundleException("Cannot setup storage for: " + location, ex);
             }
-         }
-      }
-      catch (IOException ex)
-      {
-         log.warnf(ex, "Cannot process XService metadata: %s", rootFile);
-      }
-      return null;
-   }
 
-   private OSGiMetaData toOSGiMetaData(final Deployment dep, final BundleInfo info)
-   {
-      Manifest manifest = info.getManifest();
-      return OSGiMetaDataBuilder.load(manifest);
-   }
+            try {
+                return createDeployment(storageState);
+            } catch (Exception ex) {
+                log.debugf("Cannot process '%s' as OSGi deployment: %s", location, ex.toString());
+            }
+        }
 
-   private OSGiMetaData toOSGiMetaData(final Deployment dep, final XModule resModule)
-   {
-      String symbolicName = dep.getSymbolicName();
-      Version version = Version.parseVersion(dep.getVersion());
-      if (symbolicName.equals(resModule.getName()) == false || version.equals(resModule.getVersion()) == false)
-         throw new IllegalArgumentException("Inconsistent bundle metadata: " + resModule);
+        // Check if the module can be loaded
+        Module module;
+        try {
+            ModuleLoader moduleLoader = getBundleManager().getSystemModuleLoader();
+            module = moduleLoader.loadModule(identifier);
+        } catch (ModuleLoadException ex) {
+            throw new BundleException("Cannot load module: " + identifier, ex);
+        }
 
-      // Create dummy OSGiMetaData from the user provided XModule
-      OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(symbolicName, version);
-      return builder.getOSGiMetaData();
-   }
+        // Get the symbolic name and version
+        String symbolicName = identifier.getName();
+        Version version;
+        try {
+            version = Version.parseVersion(identifier.getSlot());
+        } catch (IllegalArgumentException ex) {
+            version = Version.emptyVersion;
+        }
+
+        // Build the resolver capabilities, which exports every package
+        ResolverPlugin resolverPlugin = getPlugin(ResolverPlugin.class);
+        XModuleBuilder builder = resolverPlugin.getModuleBuilder();
+        builder.createModule(symbolicName, version, 0);
+        builder.addBundleCapability(symbolicName, version);
+        for (String path : module.getExportedPaths()) {
+            if (path.startsWith("/"))
+                path = path.substring(1);
+            if (path.endsWith("/"))
+                path = path.substring(0, path.length() - 1);
+            if (path.startsWith("META-INF"))
+                continue;
+
+            String packageName = path.replace('/', '.');
+            builder.addPackageCapability(packageName, null, null);
+        }
+        XModule resModule = builder.getModule();
+        resModule.addAttachment(Module.class, module);
+
+        // Create the bundle storage state
+        BundleStorageState storageState;
+        try {
+            storageState = storagePlugin.createStorageState(bundleId, location, null);
+        } catch (IOException ex) {
+            throw new BundleException("Cannot create bundle storage for: " + location, ex);
+        }
+
+        Deployment dep = DeploymentFactory.createDeployment(location, symbolicName, version);
+        dep.addAttachment(BundleStorageState.class, storageState);
+        dep.addAttachment(XModule.class, resModule);
+        dep.addAttachment(Module.class, module);
+        return dep;
+    }
+
+    @Override
+    public OSGiMetaData createOSGiMetaData(Deployment dep) throws BundleException {
+        // #1 check if the Deployment already contains a OSGiMetaData
+        OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
+        if (metadata != null)
+            return metadata;
+
+        // #2 check if the Deployment contains valid BundleInfo
+        BundleInfo info = dep.getAttachment(BundleInfo.class);
+        if (info != null)
+            metadata = toOSGiMetaData(dep, info);
+
+        // #3 we support deployments that contain XModule
+        XModule resModule = dep.getAttachment(XModule.class);
+        if (metadata == null && resModule != null)
+            metadata = toOSGiMetaData(dep, resModule);
+
+        // #4 check if we have a valid OSGi manifest
+        if (metadata == null) {
+            VirtualFile rootFile = dep.getRoot();
+            String location = dep.getLocation();
+            try {
+                info = BundleInfo.createBundleInfo(rootFile, location);
+                metadata = toOSGiMetaData(dep, info);
+            } catch (BundleException ex) {
+                // ignore
+            }
+        }
+
+        // #5 check if we have META-INF/jbosgi-xservice.properties
+        if (metadata == null) {
+            VirtualFile rootFile = dep.getRoot();
+            metadata = getXServiceMetaData(rootFile);
+        }
+
+        if (metadata == null)
+            throw new BundleException("Not a valid OSGi deployment: " + dep);
+
+        dep.addAttachment(OSGiMetaData.class, metadata);
+        return metadata;
+    }
+
+    /**
+     * Get virtual file for the singe jar that corresponds to the given identifier
+     * 
+     * @return The file or null
+     */
+    private File getModuleRepositoryEntry(ModuleIdentifier identifier) {
+        File rootPath = new File(getBundleManager().getProperty("module.path").toString());
+        String identifierPath = identifier.getName().replace('.', '/') + "/" + identifier.getSlot();
+        File moduleDir = new File(rootPath + "/" + identifierPath);
+        if (moduleDir.isDirectory() == false) {
+            log.warnf("Cannot obtain module directory: %s", moduleDir);
+            return null;
+        }
+
+        String[] files = moduleDir.list(new FilenameFilter() {
+
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.endsWith(".jar");
+            }
+        });
+        if (files.length == 0) {
+            log.warnf("Cannot find module jar in: %s", moduleDir);
+            return null;
+        }
+        if (files.length > 1) {
+            log.warnf("Multiple module jars in: %s", moduleDir);
+            return null;
+        }
+
+        File moduleFile = new File(moduleDir + "/" + files[0]);
+        if (moduleFile.exists() == false) {
+            log.warnf("Module file does not exist: %s", moduleFile);
+            return null;
+        }
+
+        return moduleFile;
+    }
+
+    private Deployment createDeployment(String location, VirtualFile rootFile) throws BundleException {
+        try {
+            BundleInfo info = BundleInfo.createBundleInfo(rootFile, location);
+            Deployment dep = DeploymentFactory.createDeployment(info);
+            OSGiMetaData metadata = toOSGiMetaData(dep, info);
+            dep.addAttachment(BundleInfo.class, info);
+            dep.addAttachment(OSGiMetaData.class, metadata);
+            return dep;
+        } catch (NumberFormatException nfe) {
+            throw new BundleException("Invalid OSGi version:", nfe);
+        } catch (BundleException ex) {
+            // No valid OSGi manifest. Fallback to jbosgi-xservice.properties
+        }
+
+        // Check if we have META-INF/jbosgi-xservice.properties
+        OSGiMetaData metadata = getXServiceMetaData(rootFile);
+        if (metadata != null) {
+            String symbolicName = metadata.getBundleSymbolicName();
+            Version version = metadata.getBundleVersion();
+            Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, version);
+            dep.addAttachment(OSGiMetaData.class, metadata);
+            return dep;
+        }
+
+        throw new BundleException("Cannot create deployment from: " + rootFile);
+    }
+
+    private OSGiMetaData getXServiceMetaData(VirtualFile rootFile) {
+        // Try jbosgi-xservice.properties
+        try {
+            VirtualFile child = rootFile.getChild("META-INF/jbosgi-xservice.properties");
+            if (child != null) {
+                OSGiMetaData metadata = OSGiMetaDataBuilder.load(child.openStream());
+                return metadata;
+            }
+
+            VirtualFile parentFile = rootFile.getParent();
+            if (parentFile != null) {
+                child = parentFile.getChild("jbosgi-xservice.properties");
+                if (child != null) {
+                    OSGiMetaData metadata = OSGiMetaDataBuilder.load(child.openStream());
+                    return metadata;
+                }
+            }
+        } catch (IOException ex) {
+            log.warnf(ex, "Cannot process XService metadata: %s", rootFile);
+        }
+        return null;
+    }
+
+    private OSGiMetaData toOSGiMetaData(final Deployment dep, final BundleInfo info) {
+        Manifest manifest = info.getManifest();
+        return OSGiMetaDataBuilder.load(manifest);
+    }
+
+    private OSGiMetaData toOSGiMetaData(final Deployment dep, final XModule resModule) {
+        String symbolicName = dep.getSymbolicName();
+        Version version = Version.parseVersion(dep.getVersion());
+        if (symbolicName.equals(resModule.getName()) == false || version.equals(resModule.getVersion()) == false)
+            throw new IllegalArgumentException("Inconsistent bundle metadata: " + resModule);
+
+        // Create dummy OSGiMetaData from the user provided XModule
+        OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(symbolicName, version);
+        return builder.getOSGiMetaData();
+    }
 }

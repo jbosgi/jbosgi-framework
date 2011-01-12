@@ -66,798 +66,680 @@ import org.osgi.framework.hooks.service.ListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 
 /**
- * A plugin that manages {@link FrameworkListener}, {@link BundleListener}, {@link ServiceListener} and their
- * associated {@link FrameworkEvent}, {@link BundleEvent}, {@link ServiceEvent}.
- *
+ * A plugin that manages {@link FrameworkListener}, {@link BundleListener}, {@link ServiceListener} and their associated
+ * {@link FrameworkEvent}, {@link BundleEvent}, {@link ServiceEvent}.
+ * 
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public class FrameworkEventsPluginImpl extends AbstractPlugin implements FrameworkEventsPlugin
-{
-   // Provide logging
-   final Logger log = Logger.getLogger(FrameworkEventsPluginImpl.class);
-
-   /** The active state of this plugin */
-   private boolean active;
-   /** The bundle listeners */
-   private final Map<Bundle, List<BundleListener>> bundleListeners = new ConcurrentHashMap<Bundle, List<BundleListener>>();
-   /** The framework listeners */
-   private final Map<Bundle, List<FrameworkListener>> frameworkListeners = new ConcurrentHashMap<Bundle, List<FrameworkListener>>();
-   /** The service listeners */
-   private final Map<Bundle, List<ServiceListenerRegistration>> serviceListeners = new ConcurrentHashMap<Bundle, List<ServiceListenerRegistration>>();
-
-   /** The executor service */
-   private ExecutorService executorService;
-   /** The set of bundle events that are delivered to an (asynchronous) BundleListener */
-   private Set<Integer> asyncBundleEvents = new HashSet<Integer>();
-   /** The set of events that are logged at INFO level */
-   private Set<String> infoEvents = new HashSet<String>();
-
-   public FrameworkEventsPluginImpl(BundleManager bundleManager)
-   {
-      super(bundleManager);
-      executorService = Executors.newCachedThreadPool();
-      asyncBundleEvents.add(new Integer(BundleEvent.INSTALLED));
-      asyncBundleEvents.add(new Integer(BundleEvent.RESOLVED));
-      asyncBundleEvents.add(new Integer(BundleEvent.STARTED));
-      asyncBundleEvents.add(new Integer(BundleEvent.STOPPED));
-      asyncBundleEvents.add(new Integer(BundleEvent.UPDATED));
-      asyncBundleEvents.add(new Integer(BundleEvent.UNRESOLVED));
-      asyncBundleEvents.add(new Integer(BundleEvent.UNINSTALLED));
-      infoEvents.add(ConstantsHelper.frameworkEvent(FrameworkEvent.PACKAGES_REFRESHED));
-      infoEvents.add(ConstantsHelper.frameworkEvent(FrameworkEvent.ERROR));
-      infoEvents.add(ConstantsHelper.frameworkEvent(FrameworkEvent.WARNING));
-      infoEvents.add(ConstantsHelper.frameworkEvent(FrameworkEvent.INFO));
-      infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.INSTALLED));
-      infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.STARTED));
-      infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.STOPPED));
-      infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.UNINSTALLED));
-   }
-
-   @Override
-   public void destroyPlugin()
-   {
-      setActive(false);
-      bundleListeners.clear();
-      serviceListeners.clear();
-      frameworkListeners.clear();
-   }
-
-   @Override
-   public boolean isActive()
-   {
-      return active;
-   }
-
-   @Override
-   public void setActive(boolean active)
-   {
-      this.active = active;
-   }
-
-   @Override
-   public void addBundleListener(Bundle bundle, BundleListener listener)
-   {
-      if (listener == null)
-         throw new IllegalArgumentException("Null listener");
-
-      bundle = assertBundle(bundle);
-
-      synchronized (bundleListeners)
-      {
-         List<BundleListener> listeners = bundleListeners.get(bundle);
-         if (listeners == null)
-         {
-            listeners = new CopyOnWriteArrayList<BundleListener>();
-            bundleListeners.put(bundle, listeners);
-         }
-         if (listeners.contains(listener) == false)
-            listeners.add(listener);
-      }
-   }
-
-   @Override
-   public void removeBundleListener(Bundle bundle, BundleListener listener)
-   {
-      if (listener == null)
-         throw new IllegalArgumentException("Null listener");
-
-      bundle = assertBundle(bundle);
-
-      synchronized (bundleListeners)
-      {
-         List<BundleListener> listeners = bundleListeners.get(bundle);
-         if (listeners != null)
-         {
-            if (listeners.size() > 1)
-               listeners.remove(listener);
-            else
-               removeBundleListeners(bundle);
-         }
-      }
-   }
-
-   @Override
-   public void removeBundleListeners(Bundle bundle)
-   {
-      synchronized (bundleListeners)
-      {
-         bundle = assertBundle(bundle);
-         bundleListeners.remove(bundle);
-      }
-   }
-
-   @Override
-   public void addFrameworkListener(Bundle bundle, FrameworkListener listener)
-   {
-      if (listener == null)
-         throw new IllegalArgumentException("Null listener");
-
-      bundle = assertBundle(bundle);
-
-      synchronized (frameworkListeners)
-      {
-         List<FrameworkListener> listeners = frameworkListeners.get(bundle);
-         if (listeners == null)
-         {
-            listeners = new CopyOnWriteArrayList<FrameworkListener>();
-            frameworkListeners.put(bundle, listeners);
-         }
-         if (listeners.contains(listener) == false)
-            listeners.add(listener);
-      }
-   }
-
-   @Override
-   public void removeFrameworkListener(Bundle bundle, FrameworkListener listener)
-   {
-      if (listener == null)
-         throw new IllegalArgumentException("Null listener");
-
-      bundle = assertBundle(bundle);
-
-      synchronized (frameworkListeners)
-      {
-         List<FrameworkListener> listeners = frameworkListeners.get(bundle);
-         if (listeners != null)
-         {
-            if (listeners.size() > 1)
-               listeners.remove(listener);
-            else
-               removeFrameworkListeners(bundle);
-         }
-      }
-   }
-
-   @Override
-   public void removeFrameworkListeners(Bundle bundle)
-   {
-      synchronized (frameworkListeners)
-      {
-         bundle = assertBundle(bundle);
-         frameworkListeners.remove(bundle);
-      }
-   }
-
-   @Override
-   public void addServiceListener(Bundle bundle, ServiceListener listener, String filterstr) throws InvalidSyntaxException
-   {
-      if (listener == null)
-         throw new IllegalArgumentException("Null listener");
-
-      bundle = assertBundle(bundle);
-
-      synchronized (serviceListeners)
-      {
-         List<ServiceListenerRegistration> listeners = serviceListeners.get(bundle);
-         if (listeners == null)
-         {
-            listeners = new CopyOnWriteArrayList<ServiceListenerRegistration>();
-            serviceListeners.put(bundle, listeners);
-         }
-
-         // If the context bundle's list of listeners already contains a listener l such that (l==listener),
-         // then this method replaces that listener's filter (which may be null) with the specified one (which may be null).
-         removeServiceListener(bundle, listener);
-
-         // Create the new listener registration
-         Filter filter = (filterstr != null ? FrameworkUtil.createFilter(filterstr) : NoFilter.INSTANCE);
-         ServiceListenerRegistration slreg = new ServiceListenerRegistration(bundle, listener, filter);
-
-         // The {@link ListenerHook} added method is called to provide the hook implementation with information on newly added service listeners.
-         // This method will be called as service listeners are added while this hook is registered
-         for (ListenerHook hook : getServiceListenerHooks())
-         {
-            try
-            {
-               hook.added(Collections.singleton(slreg.getListenerInfo()));
-            }
-            catch (RuntimeException ex)
-            {
-               log.errorf(ex, "Error processing ListenerHook: %s", hook);
-            }
-         }
-
-         // Add the listener to the list
-         listeners.add(slreg);
-      }
-   }
-
-   @Override
-   public Collection<ListenerInfo> getServiceListenerInfos(Bundle bundle)
-   {
-      Collection<ListenerInfo> listeners = new ArrayList<ListenerInfo>();
-      for (Entry<Bundle, List<ServiceListenerRegistration>> entry : serviceListeners.entrySet())
-      {
-         if (bundle == null || assertBundle(bundle).equals(entry.getKey()))
-         {
-            for (ServiceListenerRegistration aux : entry.getValue())
-            {
-               ListenerInfo info = aux.getListenerInfo();
-               listeners.add(info);
-            }
-         }
-      }
-      return Collections.unmodifiableCollection(listeners);
-   }
-
-   @Override
-   public void removeServiceListener(Bundle bundle, ServiceListener listener)
-   {
-      if (listener == null)
-         throw new IllegalArgumentException("Null listener");
-
-      bundle = assertBundle(bundle);
-
-      synchronized (serviceListeners)
-      {
-         List<ServiceListenerRegistration> listeners = serviceListeners.get(bundle);
-         if (listeners != null)
-         {
-            ServiceListenerRegistration slreg = new ServiceListenerRegistration(bundle, listener, NoFilter.INSTANCE);
-            int index = listeners.indexOf(slreg);
-            if (index >= 0)
-            {
-               slreg = listeners.remove(index);
-
-               // The {@link ListenerHook} 'removed' method is called to provide the hook implementation with information on newly removed service listeners.
-               // This method will be called as service listeners are removed while this hook is registered.
-               for (ListenerHook hook : getServiceListenerHooks())
-               {
-                  try
-                  {
-                     ListenerInfoImpl info = (ListenerInfoImpl)slreg.getListenerInfo();
-                     info.setRemoved(true);
-                     hook.removed(Collections.singleton(info));
-                  }
-                  catch (RuntimeException ex)
-                  {
-                     log.errorf(ex, "Error processing ListenerHook: %s", hook);
-                  }
-               }
-            }
-         }
-      }
-   }
-
-   @Override
-   public void removeServiceListeners(Bundle bundle)
-   {
-      synchronized (serviceListeners)
-      {
-         Collection<ListenerInfo> listenerInfos = getServiceListenerInfos(bundle);
-         serviceListeners.remove(assertBundle(bundle));
-
-         // The {@link ListenerHook} 'removed' method is called to provide the hook implementation with information on newly removed service listeners.
-         // This method will be called as service listeners are removed while this hook is registered.
-         for (ListenerHook hook : getServiceListenerHooks())
-         {
-            try
-            {
-               hook.removed(listenerInfos);
-            }
-            catch (RuntimeException ex)
-            {
-               log.errorf(ex, "Error processing ListenerHook: %s", hook);
-            }
-         }
-      }
-   }
-
-   private List<ListenerHook> getServiceListenerHooks()
-   {
-      BundleContext context = getBundleManager().getSystemContext();
-      ServiceReference[] srefs = null;
-      try
-      {
-         srefs = context.getServiceReferences(ListenerHook.class.getName(), null);
-      }
-      catch (InvalidSyntaxException e)
-      {
-         // ignore
-      }
-      if (srefs == null)
-         return Collections.emptyList();
-
-      List<ListenerHook> hooks = new ArrayList<ListenerHook>();
-      for (ServiceReference sref : srefs)
-         hooks.add((ListenerHook)context.getService(sref));
-
-      return Collections.unmodifiableList(hooks);
-   }
-
-   @Override
-   public void fireBundleEvent(final Bundle bundle, final int type)
-   {
-      // Get a snapshot of the current listeners
-      final List<BundleListener> listeners = new ArrayList<BundleListener>();
-      synchronized (bundleListeners)
-      {
-         for (Entry<Bundle, List<BundleListener>> entry : bundleListeners.entrySet())
-         {
-            for (BundleListener listener : entry.getValue())
-            {
-               listeners.add(listener);
-            }
-         }
-      }
-
-      // Expose the bundle wrapper not the state itself
-      final BundleEvent event = new BundleEventImpl(type, assertBundle(bundle));
-      final String typeName = ConstantsHelper.bundleEvent(event.getType());
-
-      log.tracef("Bundle %s: %s", typeName, bundle);
-
-      // Are we active?
-      if (getBundleManager().isFrameworkActive() == false)
-         return;
-
-      // Nobody is interested
-      if (listeners.isEmpty())
-         return;
-
-      // Synchronous listeners first
-      for (BundleListener listener : listeners)
-      {
-         try
-         {
-            if (listener instanceof SynchronousBundleListener)
-               listener.bundleChanged(event);
-         }
-         catch (Throwable th)
-         {
-            log.warnf(th, "Error while firing %s for bundle: %s", typeName, bundle);
-         }
-      }
-
-      Runnable runnable = new Runnable()
-      {
-         public void run()
-         {
-            // BundleListeners are called with a BundleEvent object when a bundle has been
-            // installed, resolved, started, stopped, updated, unresolved, or uninstalled
-            if (asyncBundleEvents.contains(type))
-            {
-               for (BundleListener listener : listeners)
-               {
-                  try
-                  {
-                     if (listener instanceof SynchronousBundleListener == false)
-                        listener.bundleChanged(event);
-                  }
-                  catch (Throwable th)
-                  {
-                     log.warnf(th, "Error while firing %s for bundle: ", typeName, bundle);
-                  }
-               }
-            }
-         }
-      };
-
-      // Fire the event in a runnable
-      fireEvent(runnable);
-   }
-
-   @Override
-   public void fireFrameworkEvent(final Bundle bundle, final int type, final Throwable th)
-   {
-      // Get a snapshot of the current listeners
-      final ArrayList<FrameworkListener> listeners = new ArrayList<FrameworkListener>();
-      synchronized (frameworkListeners)
-      {
-         for (Entry<Bundle, List<FrameworkListener>> entry : frameworkListeners.entrySet())
-         {
-            for (FrameworkListener listener : entry.getValue())
-            {
-               listeners.add(listener);
-            }
-         }
-      }
-
-      // Expose the wrapper not the state itself
-      final FrameworkEvent event = new FrameworkEventImpl(type, assertBundle(bundle), th);
-      final String typeName = ConstantsHelper.frameworkEvent(event.getType());
-
-      switch (event.getType())
-      {
-         case FrameworkEvent.ERROR:
-            log.errorf(th, "Framwork %s", typeName);
-            break;
-         case FrameworkEvent.WARNING:
-            log.warnf(th, "Framwork %s", typeName);
-            break;
-         default:
-            log.tracef(th, "Framwork %s", typeName);
-      }
-
-      // Are we active?
-      if (getBundleManager().isFrameworkActive() == false)
-         return;
-
-      // Nobody is interested
-      if (listeners.isEmpty())
-         return;
-
-      Runnable runnable = new Runnable()
-      {
-         public void run()
-         {
-            // Call the listeners
-            for (FrameworkListener listener : listeners)
-            {
-               try
-               {
-                  listener.frameworkEvent(event);
-               }
-               catch (RuntimeException ex)
-               {
-                  log.warnf(ex, "Error while firing %s for framework", typeName);
-
-                  // The Framework must publish a FrameworkEvent.ERROR if a callback to an
-                  // event listener generates an unchecked exception - except when the callback
-                  // happens while delivering a FrameworkEvent.ERROR
-                  if (type != FrameworkEvent.ERROR)
-                  {
-                     fireFrameworkEvent(bundle, FrameworkEvent.ERROR, ex);
-                  }
-               }
-               catch (Throwable th)
-               {
-                  log.warnf(th, "Error while firing %s for framework", typeName);
-               }
-            }
-         }
-      };
-
-      // Fire the event in a runnable
-      fireEvent(runnable);
-   }
-
-   @Override
-   public void fireServiceEvent(Bundle bundle, int type, final ServiceState serviceState)
-   {
-      // Get a snapshot of the current listeners
-      List<ServiceListenerRegistration> listeners = new ArrayList<ServiceListenerRegistration>();
-      synchronized (serviceListeners)
-      {
-         for (Entry<Bundle, List<ServiceListenerRegistration>> entry : serviceListeners.entrySet())
-         {
-            for (ServiceListenerRegistration listener : entry.getValue())
-            {
-               BundleContext context = listener.getBundleContext();
-               if (context != null)
-                  listeners.add(listener);
-            }
-         }
-      }
-
-      // Expose the wrapper not the state itself
-      ServiceEvent event = new ServiceEventImpl(type, new ServiceReferenceWrapper(serviceState));
-      String typeName = ConstantsHelper.serviceEvent(event.getType());
-
-      log.tracef("Service %s: %s", typeName, serviceState);
-
-      // Do nothing if the Framework is not active
-      if (getBundleManager().isFrameworkActive() == false)
-         return;
-
-      // Call the registered event hooks
-      listeners = processEventHooks(listeners, event);
-
-      // Nobody is interested
-      if (listeners.isEmpty())
-         return;
-
-      // Call the listeners. All service events are synchronously delivered
-      for (ServiceListenerRegistration listener : listeners)
-      {
-         try
-         {
-            String filterstr = listener.filter.toString();
-            if (listener.filter.match(serviceState))
-            {
-               listener.listener.serviceChanged(event);
-            }
-
-            // The MODIFIED_ENDMATCH event is synchronously delivered after the service properties have been modified.
-            // This event is only delivered to listeners which were added with a non-null filter where
-            // the filter matched the service properties prior to the modification but the filter does
-            // not match the modified service properties.
-            else if (filterstr != null && ServiceEvent.MODIFIED == event.getType())
-            {
-               if (listener.filter.match(serviceState.getPreviousProperties()))
-               {
-                  event = new ServiceEventImpl(ServiceEvent.MODIFIED_ENDMATCH, new ServiceReferenceWrapper(serviceState));
-                  listener.listener.serviceChanged(event);
-               }
-            }
-         }
-         catch (Throwable th)
-         {
-            log.warnf(th, "Error while firing %s for service: %s", typeName, serviceState);
-         }
-      }
-   }
-
-   private List<ServiceListenerRegistration> processEventHooks(List<ServiceListenerRegistration> listeners, final ServiceEvent event)
-   {
-      // Collect the BundleContexts
-      Collection<BundleContext> contexts = new HashSet<BundleContext>();
-      for (ServiceListenerRegistration listener : listeners)
-      {
-         BundleContext context = listener.getBundleContext();
-         if (context != null)
-            contexts.add(context);
-      }
-      contexts = new RemoveOnlyCollection<BundleContext>(contexts);
-
-      // Call the registered event hooks
-      List<EventHook> eventHooks = getEventHooks();
-      for (EventHook hook : eventHooks)
-      {
-         try
-         {
-            hook.event(event, contexts);
-         }
-         catch (Exception ex)
-         {
-            log.warnf(ex, "Error while calling EventHook: %s", hook);
-         }
-      }
-
-      // Remove the listeners that have been filtered by the EventHooks
-      if (contexts.size() != listeners.size())
-      {
-         Iterator<ServiceListenerRegistration> it = listeners.iterator();
-         while (it.hasNext())
-         {
-            ServiceListenerRegistration slreg = it.next();
-            if (contexts.contains(slreg.getBundleContext()) == false)
-               it.remove();
-         }
-      }
-      return listeners;
-   }
-
-   private List<EventHook> getEventHooks()
-   {
-      List<EventHook> hooks = new ArrayList<EventHook>();
-      BundleContext context = getBundleManager().getSystemContext();
-      ServiceReference[] srefs = null;
-      try
-      {
-         srefs = context.getServiceReferences(EventHook.class.getName(), null);
-      }
-      catch (InvalidSyntaxException e)
-      {
-         // ignore
-      }
-      if (srefs != null)
-      {
-         // The calling order of the hooks is defined by the reversed compareTo ordering of their Service
-         // Reference objects. That is, the service with the highest ranking number is called first.
-         List<ServiceReference> sortedRefs = new ArrayList<ServiceReference>(Arrays.asList(srefs));
-         Collections.reverse(sortedRefs);
-
-         for (ServiceReference sref : sortedRefs)
-            hooks.add((EventHook)context.getService(sref));
-      }
-      return hooks;
-   }
-
-   private static Bundle assertBundle(Bundle bundle)
-   {
-      if (bundle == null)
-         throw new IllegalArgumentException("Null bundle");
-
-      // Expose the wrapper not the state itself
-      if (bundle instanceof AbstractBundle)
-         bundle = ((AbstractBundle)bundle).getBundleWrapper();
-
-      return bundle;
-   }
-
-   private void fireEvent(Runnable runnable)
-   {
-      executorService.execute(runnable);
-   }
-
-   /**
-    * Filter and AccessControl for service events
-    */
-   static class ServiceListenerRegistration
-   {
-      private Bundle bundle;
-      private ServiceListener listener;
-      private Filter filter;
-      private ListenerInfo info;
-
-      // Any access control context
-      AccessControlContext accessControlContext;
-
-      ServiceListenerRegistration(Bundle bundle, ServiceListener listener, Filter filter)
-      {
-         if (bundle == null)
-            throw new IllegalArgumentException("Null bundle");
-         if (listener == null)
+public class FrameworkEventsPluginImpl extends AbstractPlugin implements FrameworkEventsPlugin {
+
+    // Provide logging
+    final Logger log = Logger.getLogger(FrameworkEventsPluginImpl.class);
+
+    /** The active state of this plugin */
+    private boolean active;
+    /** The bundle listeners */
+    private final Map<Bundle, List<BundleListener>> bundleListeners = new ConcurrentHashMap<Bundle, List<BundleListener>>();
+    /** The framework listeners */
+    private final Map<Bundle, List<FrameworkListener>> frameworkListeners = new ConcurrentHashMap<Bundle, List<FrameworkListener>>();
+    /** The service listeners */
+    private final Map<Bundle, List<ServiceListenerRegistration>> serviceListeners = new ConcurrentHashMap<Bundle, List<ServiceListenerRegistration>>();
+
+    /** The executor service */
+    private ExecutorService executorService;
+    /** The set of bundle events that are delivered to an (asynchronous) BundleListener */
+    private Set<Integer> asyncBundleEvents = new HashSet<Integer>();
+    /** The set of events that are logged at INFO level */
+    private Set<String> infoEvents = new HashSet<String>();
+
+    public FrameworkEventsPluginImpl(BundleManager bundleManager) {
+        super(bundleManager);
+        executorService = Executors.newCachedThreadPool();
+        asyncBundleEvents.add(new Integer(BundleEvent.INSTALLED));
+        asyncBundleEvents.add(new Integer(BundleEvent.RESOLVED));
+        asyncBundleEvents.add(new Integer(BundleEvent.STARTED));
+        asyncBundleEvents.add(new Integer(BundleEvent.STOPPED));
+        asyncBundleEvents.add(new Integer(BundleEvent.UPDATED));
+        asyncBundleEvents.add(new Integer(BundleEvent.UNRESOLVED));
+        asyncBundleEvents.add(new Integer(BundleEvent.UNINSTALLED));
+        infoEvents.add(ConstantsHelper.frameworkEvent(FrameworkEvent.PACKAGES_REFRESHED));
+        infoEvents.add(ConstantsHelper.frameworkEvent(FrameworkEvent.ERROR));
+        infoEvents.add(ConstantsHelper.frameworkEvent(FrameworkEvent.WARNING));
+        infoEvents.add(ConstantsHelper.frameworkEvent(FrameworkEvent.INFO));
+        infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.INSTALLED));
+        infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.STARTED));
+        infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.STOPPED));
+        infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.UNINSTALLED));
+    }
+
+    @Override
+    public void destroyPlugin() {
+        setActive(false);
+        bundleListeners.clear();
+        serviceListeners.clear();
+        frameworkListeners.clear();
+    }
+
+    @Override
+    public boolean isActive() {
+        return active;
+    }
+
+    @Override
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    @Override
+    public void addBundleListener(Bundle bundle, BundleListener listener) {
+        if (listener == null)
             throw new IllegalArgumentException("Null listener");
-         if (filter == null)
-            throw new IllegalArgumentException("Null filter");
 
-         this.bundle = assertBundle(bundle);
-         this.listener = listener;
-         this.filter = filter;
-         this.info = new ListenerInfoImpl(this);
+        bundle = assertBundle(bundle);
 
-         if (System.getSecurityManager() != null)
-            accessControlContext = AccessController.getContext();
-      }
+        synchronized (bundleListeners) {
+            List<BundleListener> listeners = bundleListeners.get(bundle);
+            if (listeners == null) {
+                listeners = new CopyOnWriteArrayList<BundleListener>();
+                bundleListeners.put(bundle, listeners);
+            }
+            if (listeners.contains(listener) == false)
+                listeners.add(listener);
+        }
+    }
 
-      public BundleContext getBundleContext()
-      {
-         return bundle.getBundleContext();
-      }
+    @Override
+    public void removeBundleListener(Bundle bundle, BundleListener listener) {
+        if (listener == null)
+            throw new IllegalArgumentException("Null listener");
 
-      public ListenerInfo getListenerInfo()
-      {
-         return info;
-      }
+        bundle = assertBundle(bundle);
 
-      @Override
-      public int hashCode()
-      {
-         return listener.hashCode();
-      }
+        synchronized (bundleListeners) {
+            List<BundleListener> listeners = bundleListeners.get(bundle);
+            if (listeners != null) {
+                if (listeners.size() > 1)
+                    listeners.remove(listener);
+                else
+                    removeBundleListeners(bundle);
+            }
+        }
+    }
 
-      @Override
-      public boolean equals(Object obj)
-      {
-         if (obj instanceof ServiceListenerRegistration == false)
-            return false;
+    @Override
+    public void removeBundleListeners(Bundle bundle) {
+        synchronized (bundleListeners) {
+            bundle = assertBundle(bundle);
+            bundleListeners.remove(bundle);
+        }
+    }
 
-         // Only the ServiceListener instance determins equality
-         ServiceListenerRegistration other = (ServiceListenerRegistration)obj;
-         return other.listener.equals(listener);
-      }
+    @Override
+    public void addFrameworkListener(Bundle bundle, FrameworkListener listener) {
+        if (listener == null)
+            throw new IllegalArgumentException("Null listener");
 
-      @Override
-      public String toString()
-      {
-         String className = listener.getClass().getName();
-         return "ServiceListener[" + bundle + "," + className + "," + filter + "]";
-      }
-   }
+        bundle = assertBundle(bundle);
 
-   static class ListenerInfoImpl implements ListenerInfo
-   {
-      private BundleContext context;
-      private ServiceListener listener;
-      private String filter;
-      private boolean removed;
+        synchronized (frameworkListeners) {
+            List<FrameworkListener> listeners = frameworkListeners.get(bundle);
+            if (listeners == null) {
+                listeners = new CopyOnWriteArrayList<FrameworkListener>();
+                frameworkListeners.put(bundle, listeners);
+            }
+            if (listeners.contains(listener) == false)
+                listeners.add(listener);
+        }
+    }
 
-      ListenerInfoImpl(ServiceListenerRegistration slreg)
-      {
-         this.context = slreg.bundle.getBundleContext();
-         this.listener = slreg.listener;
-         this.filter = slreg.filter.toString();
-      }
+    @Override
+    public void removeFrameworkListener(Bundle bundle, FrameworkListener listener) {
+        if (listener == null)
+            throw new IllegalArgumentException("Null listener");
 
-      @Override
-      public BundleContext getBundleContext()
-      {
-         return context;
-      }
+        bundle = assertBundle(bundle);
 
-      @Override
-      public String getFilter()
-      {
-         return filter;
-      }
+        synchronized (frameworkListeners) {
+            List<FrameworkListener> listeners = frameworkListeners.get(bundle);
+            if (listeners != null) {
+                if (listeners.size() > 1)
+                    listeners.remove(listener);
+                else
+                    removeFrameworkListeners(bundle);
+            }
+        }
+    }
 
-      @Override
-      public boolean isRemoved()
-      {
-         return removed;
-      }
+    @Override
+    public void removeFrameworkListeners(Bundle bundle) {
+        synchronized (frameworkListeners) {
+            bundle = assertBundle(bundle);
+            frameworkListeners.remove(bundle);
+        }
+    }
 
-      public void setRemoved(boolean removed)
-      {
-         this.removed = removed;
-      }
+    @Override
+    public void addServiceListener(Bundle bundle, ServiceListener listener, String filterstr) throws InvalidSyntaxException {
+        if (listener == null)
+            throw new IllegalArgumentException("Null listener");
 
-      @Override
-      public int hashCode()
-      {
-         return toString().hashCode();
-      }
+        bundle = assertBundle(bundle);
 
-      @Override
-      public boolean equals(Object obj)
-      {
-         // Two ListenerInfos are equals if they refer to the same listener for a given addition and removal life cycle.
-         // If the same listener is added again, it must have a different ListenerInfo which is not equal to this ListenerInfo.
-         return super.equals(obj);
-      }
+        synchronized (serviceListeners) {
+            List<ServiceListenerRegistration> listeners = serviceListeners.get(bundle);
+            if (listeners == null) {
+                listeners = new CopyOnWriteArrayList<ServiceListenerRegistration>();
+                serviceListeners.put(bundle, listeners);
+            }
 
-      @Override
-      public String toString()
-      {
-         String className = listener.getClass().getName();
-         return "ListenerInfo[" + context + "," + className + "," + removed + "]";
-      }
-   }
+            // If the context bundle's list of listeners already contains a listener l such that (l==listener),
+            // then this method replaces that listener's filter (which may be null) with the specified one (which may be null).
+            removeServiceListener(bundle, listener);
 
-   static class FrameworkEventImpl extends FrameworkEvent
-   {
-      private static final long serialVersionUID = 6505331543651318189L;
+            // Create the new listener registration
+            Filter filter = (filterstr != null ? FrameworkUtil.createFilter(filterstr) : NoFilter.INSTANCE);
+            ServiceListenerRegistration slreg = new ServiceListenerRegistration(bundle, listener, filter);
 
-      public FrameworkEventImpl(int type, Bundle bundle, Throwable throwable)
-      {
-         super(type, bundle, throwable);
-         if (bundle instanceof AbstractBundle)
-            throw new IllegalArgumentException("Event must expose impl details");
-      }
+            // The {@link ListenerHook} added method is called to provide the hook implementation with information on newly
+            // added service listeners.
+            // This method will be called as service listeners are added while this hook is registered
+            for (ListenerHook hook : getServiceListenerHooks()) {
+                try {
+                    hook.added(Collections.singleton(slreg.getListenerInfo()));
+                } catch (RuntimeException ex) {
+                    log.errorf(ex, "Error processing ListenerHook: %s", hook);
+                }
+            }
 
-      @Override
-      public String toString()
-      {
-         return "FrameworkEvent[type=" + ConstantsHelper.frameworkEvent(getType()) + ",source=" + getSource() + "]";
-      }
-   }
+            // Add the listener to the list
+            listeners.add(slreg);
+        }
+    }
 
-   static class BundleEventImpl extends BundleEvent
-   {
-      private static final long serialVersionUID = -2705304702665185935L;
+    @Override
+    public Collection<ListenerInfo> getServiceListenerInfos(Bundle bundle) {
+        Collection<ListenerInfo> listeners = new ArrayList<ListenerInfo>();
+        for (Entry<Bundle, List<ServiceListenerRegistration>> entry : serviceListeners.entrySet()) {
+            if (bundle == null || assertBundle(bundle).equals(entry.getKey())) {
+                for (ServiceListenerRegistration aux : entry.getValue()) {
+                    ListenerInfo info = aux.getListenerInfo();
+                    listeners.add(info);
+                }
+            }
+        }
+        return Collections.unmodifiableCollection(listeners);
+    }
 
-      public BundleEventImpl(int type, Bundle bundle)
-      {
-         super(type, bundle);
-         if (bundle instanceof AbstractBundle)
-            throw new IllegalArgumentException("Event must expose impl details");
-      }
+    @Override
+    public void removeServiceListener(Bundle bundle, ServiceListener listener) {
+        if (listener == null)
+            throw new IllegalArgumentException("Null listener");
 
-      @Override
-      public String toString()
-      {
-         return "BundleEvent[type=" + ConstantsHelper.bundleEvent(getType()) + ",source=" + getSource() + "]";
-      }
-   }
+        bundle = assertBundle(bundle);
 
-   static class ServiceEventImpl extends ServiceEvent
-   {
-      private static final long serialVersionUID = 62018288275708239L;
+        synchronized (serviceListeners) {
+            List<ServiceListenerRegistration> listeners = serviceListeners.get(bundle);
+            if (listeners != null) {
+                ServiceListenerRegistration slreg = new ServiceListenerRegistration(bundle, listener, NoFilter.INSTANCE);
+                int index = listeners.indexOf(slreg);
+                if (index >= 0) {
+                    slreg = listeners.remove(index);
 
-      public ServiceEventImpl(int type, ServiceReference sref)
-      {
-         super(type, sref);
-         if (sref instanceof ServiceState)
-            throw new IllegalArgumentException("Event must expose impl details");
-      }
+                    // The {@link ListenerHook} 'removed' method is called to provide the hook implementation with information
+                    // on newly removed service listeners.
+                    // This method will be called as service listeners are removed while this hook is registered.
+                    for (ListenerHook hook : getServiceListenerHooks()) {
+                        try {
+                            ListenerInfoImpl info = (ListenerInfoImpl) slreg.getListenerInfo();
+                            info.setRemoved(true);
+                            hook.removed(Collections.singleton(info));
+                        } catch (RuntimeException ex) {
+                            log.errorf(ex, "Error processing ListenerHook: %s", hook);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-      @Override
-      public String toString()
-      {
-         return "ServiceEvent[type=" + ConstantsHelper.serviceEvent(getType()) + ",source=" + getSource() + "]";
-      }
-   }
+    @Override
+    public void removeServiceListeners(Bundle bundle) {
+        synchronized (serviceListeners) {
+            Collection<ListenerInfo> listenerInfos = getServiceListenerInfos(bundle);
+            serviceListeners.remove(assertBundle(bundle));
+
+            // The {@link ListenerHook} 'removed' method is called to provide the hook implementation with information on newly
+            // removed service listeners.
+            // This method will be called as service listeners are removed while this hook is registered.
+            for (ListenerHook hook : getServiceListenerHooks()) {
+                try {
+                    hook.removed(listenerInfos);
+                } catch (RuntimeException ex) {
+                    log.errorf(ex, "Error processing ListenerHook: %s", hook);
+                }
+            }
+        }
+    }
+
+    private List<ListenerHook> getServiceListenerHooks() {
+        BundleContext context = getBundleManager().getSystemContext();
+        ServiceReference[] srefs = null;
+        try {
+            srefs = context.getServiceReferences(ListenerHook.class.getName(), null);
+        } catch (InvalidSyntaxException e) {
+            // ignore
+        }
+        if (srefs == null)
+            return Collections.emptyList();
+
+        List<ListenerHook> hooks = new ArrayList<ListenerHook>();
+        for (ServiceReference sref : srefs)
+            hooks.add((ListenerHook) context.getService(sref));
+
+        return Collections.unmodifiableList(hooks);
+    }
+
+    @Override
+    public void fireBundleEvent(final Bundle bundle, final int type) {
+        // Get a snapshot of the current listeners
+        final List<BundleListener> listeners = new ArrayList<BundleListener>();
+        synchronized (bundleListeners) {
+            for (Entry<Bundle, List<BundleListener>> entry : bundleListeners.entrySet()) {
+                for (BundleListener listener : entry.getValue()) {
+                    listeners.add(listener);
+                }
+            }
+        }
+
+        // Expose the bundle wrapper not the state itself
+        final BundleEvent event = new BundleEventImpl(type, assertBundle(bundle));
+        final String typeName = ConstantsHelper.bundleEvent(event.getType());
+
+        log.tracef("Bundle %s: %s", typeName, bundle);
+
+        // Are we active?
+        if (getBundleManager().isFrameworkActive() == false)
+            return;
+
+        // Nobody is interested
+        if (listeners.isEmpty())
+            return;
+
+        // Synchronous listeners first
+        for (BundleListener listener : listeners) {
+            try {
+                if (listener instanceof SynchronousBundleListener)
+                    listener.bundleChanged(event);
+            } catch (Throwable th) {
+                log.warnf(th, "Error while firing %s for bundle: %s", typeName, bundle);
+            }
+        }
+
+        Runnable runnable = new Runnable() {
+
+            public void run() {
+                // BundleListeners are called with a BundleEvent object when a bundle has been
+                // installed, resolved, started, stopped, updated, unresolved, or uninstalled
+                if (asyncBundleEvents.contains(type)) {
+                    for (BundleListener listener : listeners) {
+                        try {
+                            if (listener instanceof SynchronousBundleListener == false)
+                                listener.bundleChanged(event);
+                        } catch (Throwable th) {
+                            log.warnf(th, "Error while firing %s for bundle: ", typeName, bundle);
+                        }
+                    }
+                }
+            }
+        };
+
+        // Fire the event in a runnable
+        fireEvent(runnable);
+    }
+
+    @Override
+    public void fireFrameworkEvent(final Bundle bundle, final int type, final Throwable th) {
+        // Get a snapshot of the current listeners
+        final ArrayList<FrameworkListener> listeners = new ArrayList<FrameworkListener>();
+        synchronized (frameworkListeners) {
+            for (Entry<Bundle, List<FrameworkListener>> entry : frameworkListeners.entrySet()) {
+                for (FrameworkListener listener : entry.getValue()) {
+                    listeners.add(listener);
+                }
+            }
+        }
+
+        // Expose the wrapper not the state itself
+        final FrameworkEvent event = new FrameworkEventImpl(type, assertBundle(bundle), th);
+        final String typeName = ConstantsHelper.frameworkEvent(event.getType());
+
+        switch (event.getType()) {
+            case FrameworkEvent.ERROR:
+                log.errorf(th, "Framwork %s", typeName);
+                break;
+            case FrameworkEvent.WARNING:
+                log.warnf(th, "Framwork %s", typeName);
+                break;
+            default:
+                log.tracef(th, "Framwork %s", typeName);
+        }
+
+        // Are we active?
+        if (getBundleManager().isFrameworkActive() == false)
+            return;
+
+        // Nobody is interested
+        if (listeners.isEmpty())
+            return;
+
+        Runnable runnable = new Runnable() {
+
+            public void run() {
+                // Call the listeners
+                for (FrameworkListener listener : listeners) {
+                    try {
+                        listener.frameworkEvent(event);
+                    } catch (RuntimeException ex) {
+                        log.warnf(ex, "Error while firing %s for framework", typeName);
+
+                        // The Framework must publish a FrameworkEvent.ERROR if a callback to an
+                        // event listener generates an unchecked exception - except when the callback
+                        // happens while delivering a FrameworkEvent.ERROR
+                        if (type != FrameworkEvent.ERROR) {
+                            fireFrameworkEvent(bundle, FrameworkEvent.ERROR, ex);
+                        }
+                    } catch (Throwable th) {
+                        log.warnf(th, "Error while firing %s for framework", typeName);
+                    }
+                }
+            }
+        };
+
+        // Fire the event in a runnable
+        fireEvent(runnable);
+    }
+
+    @Override
+    public void fireServiceEvent(Bundle bundle, int type, final ServiceState serviceState) {
+        // Get a snapshot of the current listeners
+        List<ServiceListenerRegistration> listeners = new ArrayList<ServiceListenerRegistration>();
+        synchronized (serviceListeners) {
+            for (Entry<Bundle, List<ServiceListenerRegistration>> entry : serviceListeners.entrySet()) {
+                for (ServiceListenerRegistration listener : entry.getValue()) {
+                    BundleContext context = listener.getBundleContext();
+                    if (context != null)
+                        listeners.add(listener);
+                }
+            }
+        }
+
+        // Expose the wrapper not the state itself
+        ServiceEvent event = new ServiceEventImpl(type, new ServiceReferenceWrapper(serviceState));
+        String typeName = ConstantsHelper.serviceEvent(event.getType());
+
+        log.tracef("Service %s: %s", typeName, serviceState);
+
+        // Do nothing if the Framework is not active
+        if (getBundleManager().isFrameworkActive() == false)
+            return;
+
+        // Call the registered event hooks
+        listeners = processEventHooks(listeners, event);
+
+        // Nobody is interested
+        if (listeners.isEmpty())
+            return;
+
+        // Call the listeners. All service events are synchronously delivered
+        for (ServiceListenerRegistration listener : listeners) {
+            try {
+                String filterstr = listener.filter.toString();
+                if (listener.filter.match(serviceState)) {
+                    listener.listener.serviceChanged(event);
+                }
+
+                // The MODIFIED_ENDMATCH event is synchronously delivered after the service properties have been modified.
+                // This event is only delivered to listeners which were added with a non-null filter where
+                // the filter matched the service properties prior to the modification but the filter does
+                // not match the modified service properties.
+                else if (filterstr != null && ServiceEvent.MODIFIED == event.getType()) {
+                    if (listener.filter.match(serviceState.getPreviousProperties())) {
+                        event = new ServiceEventImpl(ServiceEvent.MODIFIED_ENDMATCH, new ServiceReferenceWrapper(serviceState));
+                        listener.listener.serviceChanged(event);
+                    }
+                }
+            } catch (Throwable th) {
+                log.warnf(th, "Error while firing %s for service: %s", typeName, serviceState);
+            }
+        }
+    }
+
+    private List<ServiceListenerRegistration> processEventHooks(List<ServiceListenerRegistration> listeners, final ServiceEvent event) {
+        // Collect the BundleContexts
+        Collection<BundleContext> contexts = new HashSet<BundleContext>();
+        for (ServiceListenerRegistration listener : listeners) {
+            BundleContext context = listener.getBundleContext();
+            if (context != null)
+                contexts.add(context);
+        }
+        contexts = new RemoveOnlyCollection<BundleContext>(contexts);
+
+        // Call the registered event hooks
+        List<EventHook> eventHooks = getEventHooks();
+        for (EventHook hook : eventHooks) {
+            try {
+                hook.event(event, contexts);
+            } catch (Exception ex) {
+                log.warnf(ex, "Error while calling EventHook: %s", hook);
+            }
+        }
+
+        // Remove the listeners that have been filtered by the EventHooks
+        if (contexts.size() != listeners.size()) {
+            Iterator<ServiceListenerRegistration> it = listeners.iterator();
+            while (it.hasNext()) {
+                ServiceListenerRegistration slreg = it.next();
+                if (contexts.contains(slreg.getBundleContext()) == false)
+                    it.remove();
+            }
+        }
+        return listeners;
+    }
+
+    private List<EventHook> getEventHooks() {
+        List<EventHook> hooks = new ArrayList<EventHook>();
+        BundleContext context = getBundleManager().getSystemContext();
+        ServiceReference[] srefs = null;
+        try {
+            srefs = context.getServiceReferences(EventHook.class.getName(), null);
+        } catch (InvalidSyntaxException e) {
+            // ignore
+        }
+        if (srefs != null) {
+            // The calling order of the hooks is defined by the reversed compareTo ordering of their Service
+            // Reference objects. That is, the service with the highest ranking number is called first.
+            List<ServiceReference> sortedRefs = new ArrayList<ServiceReference>(Arrays.asList(srefs));
+            Collections.reverse(sortedRefs);
+
+            for (ServiceReference sref : sortedRefs)
+                hooks.add((EventHook) context.getService(sref));
+        }
+        return hooks;
+    }
+
+    private static Bundle assertBundle(Bundle bundle) {
+        if (bundle == null)
+            throw new IllegalArgumentException("Null bundle");
+
+        // Expose the wrapper not the state itself
+        if (bundle instanceof AbstractBundle)
+            bundle = ((AbstractBundle) bundle).getBundleWrapper();
+
+        return bundle;
+    }
+
+    private void fireEvent(Runnable runnable) {
+        executorService.execute(runnable);
+    }
+
+    /**
+     * Filter and AccessControl for service events
+     */
+    static class ServiceListenerRegistration {
+
+        private Bundle bundle;
+        private ServiceListener listener;
+        private Filter filter;
+        private ListenerInfo info;
+
+        // Any access control context
+        AccessControlContext accessControlContext;
+
+        ServiceListenerRegistration(Bundle bundle, ServiceListener listener, Filter filter) {
+            if (bundle == null)
+                throw new IllegalArgumentException("Null bundle");
+            if (listener == null)
+                throw new IllegalArgumentException("Null listener");
+            if (filter == null)
+                throw new IllegalArgumentException("Null filter");
+
+            this.bundle = assertBundle(bundle);
+            this.listener = listener;
+            this.filter = filter;
+            this.info = new ListenerInfoImpl(this);
+
+            if (System.getSecurityManager() != null)
+                accessControlContext = AccessController.getContext();
+        }
+
+        public BundleContext getBundleContext() {
+            return bundle.getBundleContext();
+        }
+
+        public ListenerInfo getListenerInfo() {
+            return info;
+        }
+
+        @Override
+        public int hashCode() {
+            return listener.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof ServiceListenerRegistration == false)
+                return false;
+
+            // Only the ServiceListener instance determins equality
+            ServiceListenerRegistration other = (ServiceListenerRegistration) obj;
+            return other.listener.equals(listener);
+        }
+
+        @Override
+        public String toString() {
+            String className = listener.getClass().getName();
+            return "ServiceListener[" + bundle + "," + className + "," + filter + "]";
+        }
+    }
+
+    static class ListenerInfoImpl implements ListenerInfo {
+
+        private BundleContext context;
+        private ServiceListener listener;
+        private String filter;
+        private boolean removed;
+
+        ListenerInfoImpl(ServiceListenerRegistration slreg) {
+            this.context = slreg.bundle.getBundleContext();
+            this.listener = slreg.listener;
+            this.filter = slreg.filter.toString();
+        }
+
+        @Override
+        public BundleContext getBundleContext() {
+            return context;
+        }
+
+        @Override
+        public String getFilter() {
+            return filter;
+        }
+
+        @Override
+        public boolean isRemoved() {
+            return removed;
+        }
+
+        public void setRemoved(boolean removed) {
+            this.removed = removed;
+        }
+
+        @Override
+        public int hashCode() {
+            return toString().hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            // Two ListenerInfos are equals if they refer to the same listener for a given addition and removal life cycle.
+            // If the same listener is added again, it must have a different ListenerInfo which is not equal to this
+            // ListenerInfo.
+            return super.equals(obj);
+        }
+
+        @Override
+        public String toString() {
+            String className = listener.getClass().getName();
+            return "ListenerInfo[" + context + "," + className + "," + removed + "]";
+        }
+    }
+
+    static class FrameworkEventImpl extends FrameworkEvent {
+
+        private static final long serialVersionUID = 6505331543651318189L;
+
+        public FrameworkEventImpl(int type, Bundle bundle, Throwable throwable) {
+            super(type, bundle, throwable);
+            if (bundle instanceof AbstractBundle)
+                throw new IllegalArgumentException("Event must expose impl details");
+        }
+
+        @Override
+        public String toString() {
+            return "FrameworkEvent[type=" + ConstantsHelper.frameworkEvent(getType()) + ",source=" + getSource() + "]";
+        }
+    }
+
+    static class BundleEventImpl extends BundleEvent {
+
+        private static final long serialVersionUID = -2705304702665185935L;
+
+        public BundleEventImpl(int type, Bundle bundle) {
+            super(type, bundle);
+            if (bundle instanceof AbstractBundle)
+                throw new IllegalArgumentException("Event must expose impl details");
+        }
+
+        @Override
+        public String toString() {
+            return "BundleEvent[type=" + ConstantsHelper.bundleEvent(getType()) + ",source=" + getSource() + "]";
+        }
+    }
+
+    static class ServiceEventImpl extends ServiceEvent {
+
+        private static final long serialVersionUID = 62018288275708239L;
+
+        public ServiceEventImpl(int type, ServiceReference sref) {
+            super(type, sref);
+            if (sref instanceof ServiceState)
+                throw new IllegalArgumentException("Event must expose impl details");
+        }
+
+        @Override
+        public String toString() {
+            return "ServiceEvent[type=" + ConstantsHelper.serviceEvent(getType()) + ",source=" + getSource() + "]";
+        }
+    }
 }

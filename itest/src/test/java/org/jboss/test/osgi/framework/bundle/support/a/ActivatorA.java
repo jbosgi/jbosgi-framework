@@ -24,15 +24,13 @@ package org.jboss.test.osgi.framework.bundle.support.a;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
-public class ActivatorA implements BundleActivator
-{
-   public void start(BundleContext context)
-   {
-      ServiceA service = new ServiceA(context);
-      context.registerService(ServiceA.class.getName(), service, null);
-   }
+public class ActivatorA implements BundleActivator {
 
-   public void stop(BundleContext context)
-   {
-   }
+    public void start(BundleContext context) {
+        ServiceA service = new ServiceA(context);
+        context.registerService(ServiceA.class.getName(), service, null);
+    }
+
+    public void stop(BundleContext context) {
+    }
 }

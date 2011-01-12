@@ -29,20 +29,20 @@ import org.jboss.osgi.framework.bundle.BundleManager;
  * @author thomas.diesler@jboss.com
  * @since 20-Aug-2009
  */
-public interface Plugin
-{
-   BundleManager getBundleManager();
+public interface Plugin {
 
-   void initPlugin();
+    BundleManager getBundleManager();
 
-   void startPlugin();
+    void initPlugin();
 
-   void stopPlugin();
+    void startPlugin();
 
-   void destroyPlugin();
+    void stopPlugin();
 
-   <T extends Plugin> T getPlugin(Class<T> clazz);
+    void destroyPlugin();
 
-   <T extends Plugin> T getOptionalPlugin(Class<T> clazz);
+    <T extends Plugin> T getPlugin(Class<T> clazz);
+
+    <T extends Plugin> T getOptionalPlugin(Class<T> clazz);
 
 }

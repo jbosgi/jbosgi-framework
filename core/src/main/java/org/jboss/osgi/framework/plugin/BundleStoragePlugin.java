@@ -31,19 +31,19 @@ import org.osgi.framework.Bundle;
 
 /**
  * An abstraction of a bundle persistent storage system.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public interface BundleStoragePlugin extends Plugin
-{
-   BundleStorageState createStorageState(long bundleId, String location, VirtualFile root) throws IOException;
+public interface BundleStoragePlugin extends Plugin {
 
-   List<BundleStorageState> getBundleStorageStates() throws IOException;
+    BundleStorageState createStorageState(long bundleId, String location, VirtualFile root) throws IOException;
 
-   File getStorageDir(long bundleId);
+    List<BundleStorageState> getBundleStorageStates() throws IOException;
 
-   File getDataFile(Bundle bundle, String filename);
+    File getStorageDir(long bundleId);
 
-   void cleanStorage();
+    File getDataFile(Bundle bundle, String filename);
+
+    void cleanStorage();
 }

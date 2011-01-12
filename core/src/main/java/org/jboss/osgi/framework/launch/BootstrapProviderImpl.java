@@ -32,26 +32,25 @@ import org.osgi.framework.launch.FrameworkFactory;
 
 /**
  * The {@link OSGiBootstrapProvider} for the MSC Framework.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 21-Aug-2009
  */
-public class BootstrapProviderImpl extends PropertiesBootstrapProvider
-{
-   // Provide logging
-   private static final Logger log = Logger.getLogger(BootstrapProviderImpl.class);
+public class BootstrapProviderImpl extends PropertiesBootstrapProvider {
 
-   @Override
-   protected Framework createFramework(Map<String, Object> properties)
-   {
-      // Log INFO about this implementation
-      String implTitle = getClass().getPackage().getImplementationTitle();
-      String impVersion = getClass().getPackage().getImplementationVersion();
-      log.infof(implTitle + " - " + impVersion);
+    // Provide logging
+    private static final Logger log = Logger.getLogger(BootstrapProviderImpl.class);
 
-      // Load the framework instance
-      FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-      Framework framework = factory.newFramework(properties);
-      return framework;
-   }
+    @Override
+    protected Framework createFramework(Map<String, Object> properties) {
+        // Log INFO about this implementation
+        String implTitle = getClass().getPackage().getImplementationTitle();
+        String impVersion = getClass().getPackage().getImplementationVersion();
+        log.infof(implTitle + " - " + impVersion);
+
+        // Load the framework instance
+        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
+        Framework framework = factory.newFramework(properties);
+        return framework;
+    }
 }

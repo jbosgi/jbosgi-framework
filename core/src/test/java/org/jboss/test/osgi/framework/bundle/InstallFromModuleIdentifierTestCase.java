@@ -49,97 +49,92 @@ import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * Test the BundleManager.installBundle(ModuleIdentifier) API.
- *
+ * 
  * @author Thomas.Diesler@jboss.com
  * @since 28-Sep-2010
  */
-public class InstallFromModuleIdentifierTestCase extends OSGiTest
-{
-   private BundleManager bundleManager;
-   private FrameworkState framework;
+public class InstallFromModuleIdentifierTestCase extends OSGiTest {
 
-   @Before
-   public void setUp() throws Exception
-   {
-      super.setUp();
+    private BundleManager bundleManager;
+    private FrameworkState framework;
 
-      Map<String, Object> props = new HashMap<String, Object>();
-      props.put(Constants.FRAMEWORK_STORAGE, new File("target/osgi-store").getAbsolutePath());
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
 
-      bundleManager = new BundleManager(props);
-      framework = bundleManager.getFrameworkState();
-      framework.start();
-   }
+        Map<String, Object> props = new HashMap<String, Object>();
+        props.put(Constants.FRAMEWORK_STORAGE, new File("target/osgi-store").getAbsolutePath());
 
-   @After
-   public void tearDown() throws Exception
-   {
-      super.tearDown();
+        bundleManager = new BundleManager(props);
+        framework = bundleManager.getFrameworkState();
+        framework.start();
+    }
 
-      framework.stop();
-      framework.waitForStop(2000);
-   }
+    @After
+    public void tearDown() throws Exception {
+        super.tearDown();
 
-   @Test
-   public void testInstallBundle() throws Exception
-   {
-      assertFrameworkState();
+        framework.stop();
+        framework.waitForStop(2000);
+    }
 
-      ModuleIdentifier identifier = ModuleIdentifier.create("org.osgi.compendium");
-      Bundle bundle = bundleManager.installBundle(identifier);
-      assertNotNull("Bundle not null", bundle);
-      assertBundleState(Bundle.INSTALLED, bundle.getState());
-      assertEquals("Bundle id", 1, bundle.getBundleId());
+    @Test
+    public void testInstallBundle() throws Exception {
+        assertFrameworkState();
 
-      assertLoadClass(bundle, ServiceTracker.class.getName());
-      assertBundleState(Bundle.RESOLVED, bundle.getState());
+        ModuleIdentifier identifier = ModuleIdentifier.create("org.osgi.compendium");
+        Bundle bundle = bundleManager.installBundle(identifier);
+        assertNotNull("Bundle not null", bundle);
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
+        assertEquals("Bundle id", 1, bundle.getBundleId());
 
-      bundle.start();
-      assertBundleState(Bundle.ACTIVE, bundle.getState());
+        assertLoadClass(bundle, ServiceTracker.class.getName());
+        assertBundleState(Bundle.RESOLVED, bundle.getState());
 
-      bundle.stop();
-      assertBundleState(Bundle.RESOLVED, bundle.getState());
+        bundle.start();
+        assertBundleState(Bundle.ACTIVE, bundle.getState());
 
-      bundle.uninstall();
-      BundleContext context = framework.getBundleContext();
-      assertNull("Bundle null", context.getBundle(bundle.getBundleId()));
-   }
+        bundle.stop();
+        assertBundleState(Bundle.RESOLVED, bundle.getState());
 
-   @Test
-   public void testInstallModule() throws Exception
-   {
-      assertFrameworkState();
+        bundle.uninstall();
+        BundleContext context = framework.getBundleContext();
+        assertNull("Bundle null", context.getBundle(bundle.getBundleId()));
+    }
 
-      ModuleIdentifier identifier = ModuleIdentifier.create("javax.inject.api");
-      Bundle bundle = bundleManager.installBundle(identifier);
-      assertBundleState(Bundle.INSTALLED, bundle.getState());
+    @Test
+    public void testInstallModule() throws Exception {
+        assertFrameworkState();
 
-      assertLoadClass(bundle, Inject.class.getName());
-      assertBundleState(Bundle.RESOLVED, bundle.getState());
+        ModuleIdentifier identifier = ModuleIdentifier.create("javax.inject.api");
+        Bundle bundle = bundleManager.installBundle(identifier);
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-      bundle.start();
-      assertBundleState(Bundle.ACTIVE, bundle.getState());
+        assertLoadClass(bundle, Inject.class.getName());
+        assertBundleState(Bundle.RESOLVED, bundle.getState());
 
-      bundle.stop();
-      assertBundleState(Bundle.RESOLVED, bundle.getState());
+        bundle.start();
+        assertBundleState(Bundle.ACTIVE, bundle.getState());
 
-      bundle.uninstall();
-      BundleContext context = framework.getBundleContext();
-      assertNull("Bundle null", context.getBundle(bundle.getBundleId()));
-   }
+        bundle.stop();
+        assertBundleState(Bundle.RESOLVED, bundle.getState());
 
-   private void assertFrameworkState()
-   {
-      BundleContext context = framework.getBundleContext();
-      assertNotNull("Framework active", context);
+        bundle.uninstall();
+        BundleContext context = framework.getBundleContext();
+        assertNull("Bundle null", context.getBundle(bundle.getBundleId()));
+    }
 
-      Bundle[] bundles = context.getBundles();
-      assertEquals("System bundle available", 1, bundles.length);
-      assertEquals("System bundle id", 0, bundles[0].getBundleId());
+    private void assertFrameworkState() {
+        BundleContext context = framework.getBundleContext();
+        assertNotNull("Framework active", context);
 
-      ResolverPlugin resolverPlugin = bundleManager.getPlugin(ResolverPlugin.class);
-      XResolver resolver = resolverPlugin.getResolver();
-      Set<XModule> modules = resolver.getModules();
-      assertEquals("System module available", 1, modules.size());
-   }
+        Bundle[] bundles = context.getBundles();
+        assertEquals("System bundle available", 1, bundles.length);
+        assertEquals("System bundle id", 0, bundles[0].getBundleId());
+
+        ResolverPlugin resolverPlugin = bundleManager.getPlugin(ResolverPlugin.class);
+        XResolver resolver = resolverPlugin.getResolver();
+        Set<XModule> modules = resolver.getModules();
+        assertEquals("System module available", 1, modules.size());
+    }
 }

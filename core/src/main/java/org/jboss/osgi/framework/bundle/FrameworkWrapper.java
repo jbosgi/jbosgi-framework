@@ -26,30 +26,26 @@ import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.launch.Framework;
 
 /**
- * A generic Framework wrapper that delegates all method calls to the underlying
- * Framework implementation.
- *
+ * A generic Framework wrapper that delegates all method calls to the underlying Framework implementation.
+ * 
  * @author thomas.diesler@jboss.com
  * @since 16-Oct-2009
  */
-public class FrameworkWrapper extends BundleWrapper implements Framework
-{
-   public FrameworkWrapper(FrameworkState framework)
-   {
-      super(framework);
-   }
+public class FrameworkWrapper extends BundleWrapper implements Framework {
 
-   @Override
-   public void init() throws BundleException
-   {
-      Framework framework = (Framework)getBundleState();
-      framework.init();
-   }
+    public FrameworkWrapper(FrameworkState framework) {
+        super(framework);
+    }
 
-   @Override
-   public FrameworkEvent waitForStop(long timeout) throws InterruptedException
-   {
-      Framework framework = (Framework)getBundleState();
-      return framework.waitForStop(timeout);
-   }
+    @Override
+    public void init() throws BundleException {
+        Framework framework = (Framework) getBundleState();
+        framework.init();
+    }
+
+    @Override
+    public FrameworkEvent waitForStop(long timeout) throws InterruptedException {
+        Framework framework = (Framework) getBundleState();
+        return framework.waitForStop(timeout);
+    }
 }

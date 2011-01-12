@@ -48,128 +48,107 @@ import org.junit.Before;
 
 /**
  * Test low level modules use cases.
- *
+ * 
  * @author Thomas.Diesler@jboss.com
  * @since 15-Sep-2010
  */
-public abstract class ModulesTestBase
-{
-   private ModuleLoaderSupport moduleLoader;
+public abstract class ModulesTestBase {
 
-   @Before
-   public void setUp()
-   {
-      moduleLoader = new ModuleLoaderSupport("default");
-   }
+    private ModuleLoaderSupport moduleLoader;
 
-   protected ModuleLoaderSupport getModuleLoader()
-   {
-      return moduleLoader;
-   }
+    @Before
+    public void setUp() {
+        moduleLoader = new ModuleLoaderSupport("default");
+    }
 
-   protected void addModuleSpec(ModuleSpec moduleSpec)
-   {
-      moduleLoader.addModuleSpec(moduleSpec);
-   }
+    protected ModuleLoaderSupport getModuleLoader() {
+        return moduleLoader;
+    }
 
-   protected Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException
-   {
-      return moduleLoader.loadModule(identifier);
-   }
+    protected void addModuleSpec(ModuleSpec moduleSpec) {
+        moduleLoader.addModuleSpec(moduleSpec);
+    }
 
-   protected PathFilter getPathFilter(Class<?>... classes)
-   {
-      Set<String> paths = getFilterPaths(classes);
-      return PathFilters.in(paths);
-   }
+    protected Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException {
+        return moduleLoader.loadModule(identifier);
+    }
 
-   protected Set<String> getFilterPaths(Class<?>... classes)
-   {
-      Set<String> paths = new HashSet<String>();
-      for (Class<?> clazz : classes)
-      {
-         paths.add(getPath(clazz.getName()));
-      }
-      return Collections.unmodifiableSet(paths);
-   }
+    protected PathFilter getPathFilter(Class<?>... classes) {
+        Set<String> paths = getFilterPaths(classes);
+        return PathFilters.in(paths);
+    }
 
-   protected String getPath(String className)
-   {
-      if (className.endsWith(".class"))
-         className = className.substring(0, className.length() - 6);
-      className = className.substring(0, className.lastIndexOf('.'));
-      className = className.replace('.', '/');
-      return className;
-   }
+    protected Set<String> getFilterPaths(Class<?>... classes) {
+        Set<String> paths = new HashSet<String>();
+        for (Class<?> clazz : classes) {
+            paths.add(getPath(clazz.getName()));
+        }
+        return Collections.unmodifiableSet(paths);
+    }
 
-   protected void assertLoadClass(ModuleIdentifier identifier, String className) throws Exception
-   {
-      Class<?> clazz = loadClass(identifier, className);
-      assertNotNull(clazz);
-   }
+    protected String getPath(String className) {
+        if (className.endsWith(".class"))
+            className = className.substring(0, className.length() - 6);
+        className = className.substring(0, className.lastIndexOf('.'));
+        className = className.replace('.', '/');
+        return className;
+    }
 
-   protected void assertLoadClass(ModuleIdentifier identifier, String className, ModuleIdentifier exporterId) throws Exception
-   {
-      Class<?> clazz = loadClass(identifier, className);
-      assertEquals(loadModule(exporterId).getClassLoader(), clazz.getClassLoader());
-   }
+    protected void assertLoadClass(ModuleIdentifier identifier, String className) throws Exception {
+        Class<?> clazz = loadClass(identifier, className);
+        assertNotNull(clazz);
+    }
 
-   protected void assertLoadClassFails(ModuleIdentifier identifier, String className) throws Exception
-   {
-      try
-      {
-         loadClass(identifier, className);
-         fail("ClassNotFoundException expected");
-      }
-      catch (ClassNotFoundException ex)
-      {
-         // expected
-      }
-   }
+    protected void assertLoadClass(ModuleIdentifier identifier, String className, ModuleIdentifier exporterId) throws Exception {
+        Class<?> clazz = loadClass(identifier, className);
+        assertEquals(loadModule(exporterId).getClassLoader(), clazz.getClassLoader());
+    }
 
-   protected Class<?> loadClass(ModuleIdentifier identifier, String className) throws Exception
-   {
-      Class<?> clazz = loadModule(identifier).getClassLoader().loadClass(className, true);
-      return clazz;
-   }
+    protected void assertLoadClassFails(ModuleIdentifier identifier, String className) throws Exception {
+        try {
+            loadClass(identifier, className);
+            fail("ClassNotFoundException expected");
+        } catch (ClassNotFoundException ex) {
+            // expected
+        }
+    }
 
-   protected VirtualFile toVirtualFile(JavaArchive archive) throws IOException
-   {
-      return OSGiTestHelper.toVirtualFile(archive);
-   }
+    protected Class<?> loadClass(ModuleIdentifier identifier, String className) throws Exception {
+        Class<?> clazz = loadModule(identifier).getClassLoader().loadClass(className, true);
+        return clazz;
+    }
 
-   static class ModuleLoaderSupport extends ModuleLoader
-   {
-      private String loaderName;
-      private Map<ModuleIdentifier, ModuleSpec> modules = new HashMap<ModuleIdentifier, ModuleSpec>();
+    protected VirtualFile toVirtualFile(JavaArchive archive) throws IOException {
+        return OSGiTestHelper.toVirtualFile(archive);
+    }
 
-      ModuleLoaderSupport(String loaderName)
-      {
-         this.loaderName = loaderName;
-      }
+    static class ModuleLoaderSupport extends ModuleLoader {
 
-      void addModuleSpec(ModuleSpec moduleSpec)
-      {
-         modules.put(moduleSpec.getModuleIdentifier(), moduleSpec);
-      }
+        private String loaderName;
+        private Map<ModuleIdentifier, ModuleSpec> modules = new HashMap<ModuleIdentifier, ModuleSpec>();
 
-      @Override
-      protected ModuleSpec findModule(ModuleIdentifier identifier) throws ModuleLoadException
-      {
-         ModuleSpec moduleSpec = modules.get(identifier);
-         return moduleSpec;
-      }
+        ModuleLoaderSupport(String loaderName) {
+            this.loaderName = loaderName;
+        }
 
-      @Override
-      protected void setAndRelinkDependencies(Module module, List<DependencySpec> dependencies) throws ModuleLoadException
-      {
-         super.setAndRelinkDependencies(module, dependencies);
-      }
+        void addModuleSpec(ModuleSpec moduleSpec) {
+            modules.put(moduleSpec.getModuleIdentifier(), moduleSpec);
+        }
 
-      @Override
-      public String toString()
-      {
-         return "ModuleLoaderSupport[" + loaderName + "]";
-      }
-   }
+        @Override
+        protected ModuleSpec findModule(ModuleIdentifier identifier) throws ModuleLoadException {
+            ModuleSpec moduleSpec = modules.get(identifier);
+            return moduleSpec;
+        }
+
+        @Override
+        protected void setAndRelinkDependencies(Module module, List<DependencySpec> dependencies) throws ModuleLoadException {
+            super.setAndRelinkDependencies(module, dependencies);
+        }
+
+        @Override
+        public String toString() {
+            return "ModuleLoaderSupport[" + loaderName + "]";
+        }
+    }
 }

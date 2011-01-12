@@ -47,88 +47,71 @@ import org.osgi.util.tracker.ServiceTracker;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public class SimpleLogServiceTestCase extends OSGiFrameworkTest
-{
-   static JavaArchive archive;
+public class SimpleLogServiceTestCase extends OSGiFrameworkTest {
 
-   @BeforeClass
-   public static void beforeClass()
-   {
-      // Bundle-SymbolicName: simple-logservice-bundle
-      // Bundle-Activator:
-      // org.jboss.test.osgi.framework.simple.bundleB.SimpleLogServiceActivator
-      archive = ShrinkWrap.create(JavaArchive.class, "simple-logservice-bundle");
-      archive.addClasses(SimpleLogServiceActivator.class);
-      archive.setManifest(new Asset()
-      {
-         public InputStream openStream()
-         {
-            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-            builder.addBundleManifestVersion(2);
-            builder.addBundleSymbolicName(archive.getName());
-            builder.addBundleActivator(SimpleLogServiceActivator.class);
-            builder.addImportPackages(BundleActivator.class, LogService.class, ServiceTracker.class);
-            return builder.openStream();
-         }
-      });
-   }
+    static JavaArchive archive;
 
-   @Before
-   public void setUp() throws Exception
-   {
-      super.setUp();
-      createFramework().start();
-   }
+    @BeforeClass
+    public static void beforeClass() {
+        // Bundle-SymbolicName: simple-logservice-bundle
+        // Bundle-Activator:
+        // org.jboss.test.osgi.framework.simple.bundleB.SimpleLogServiceActivator
+        archive = ShrinkWrap.create(JavaArchive.class, "simple-logservice-bundle");
+        archive.addClasses(SimpleLogServiceActivator.class);
+        archive.setManifest(new Asset() {
 
-   @After
-   public void tearDown() throws Exception
-   {
-      shutdownFramework();
-      super.tearDown();
-   }
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleActivator(SimpleLogServiceActivator.class);
+                builder.addImportPackages(BundleActivator.class, LogService.class, ServiceTracker.class);
+                return builder.openStream();
+            }
+        });
+    }
 
-   @Test
-   public void testNoLogService() throws Exception
-   {
-      Bundle bundle = installBundle(archive);
-      try
-      {
-         bundle.start();
-         fail("Unresolved package contstraint on [org.osgi.service.log] expected");
-      }
-      catch (BundleException ex)
-      {
-         // expected
-      }
-      finally
-      {
-         bundle.uninstall();
-      }
-   }
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        createFramework().start();
+    }
 
-   @Test
-   public void testLogServiceFromThirdParty() throws Exception
-   {
-      Bundle logBundle = installBundle(getTestArchivePath("bundles/org.apache.felix.log.jar"));
-      try
-      {
-         logBundle.start();
-         assertBundleState(Bundle.ACTIVE, logBundle.getState());
+    @After
+    public void tearDown() throws Exception {
+        shutdownFramework();
+        super.tearDown();
+    }
 
-         Bundle bundle = installBundle(archive);
-         try
-         {
+    @Test
+    public void testNoLogService() throws Exception {
+        Bundle bundle = installBundle(archive);
+        try {
             bundle.start();
-            assertBundleState(Bundle.ACTIVE, bundle.getState());
-         }
-         finally
-         {
+            fail("Unresolved package contstraint on [org.osgi.service.log] expected");
+        } catch (BundleException ex) {
+            // expected
+        } finally {
             bundle.uninstall();
-         }
-      }
-      finally
-      {
-         logBundle.uninstall();
-      }
-   }
+        }
+    }
+
+    @Test
+    public void testLogServiceFromThirdParty() throws Exception {
+        Bundle logBundle = installBundle(getTestArchivePath("bundles/org.apache.felix.log.jar"));
+        try {
+            logBundle.start();
+            assertBundleState(Bundle.ACTIVE, logBundle.getState());
+
+            Bundle bundle = installBundle(archive);
+            try {
+                bundle.start();
+                assertBundleState(Bundle.ACTIVE, bundle.getState());
+            } finally {
+                bundle.uninstall();
+            }
+        } finally {
+            logBundle.uninstall();
+        }
+    }
 }

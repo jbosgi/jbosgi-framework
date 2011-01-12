@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.xservice.bundleB;
 
-
 import org.osgi.framework.Bundle;
 
 /**
@@ -30,17 +29,15 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
-public class BundleServiceB
-{
-   private Bundle owner;
-   
-   public BundleServiceB(Bundle owner)
-   {
-      this.owner = owner;
-   }
+public class BundleServiceB {
 
-   public String echo(String msg)
-   {
-      return msg + ":" + owner;
-   }
+    private Bundle owner;
+
+    public BundleServiceB(Bundle owner) {
+        this.owner = owner;
+    }
+
+    public String echo(String msg) {
+        return msg + ":" + owner;
+    }
 }

@@ -51,83 +51,78 @@ import org.osgi.framework.BundleActivator;
  * @author thomas.diesler@jboss.com
  * @since 13-Aug-2010
  */
-public class BundleStorageTestCase extends AbstractFrameworkTest
-{
-   @Test
-   public void testBundleStorageForInputStream() throws Exception
-   {
-      BundleManager bundleManager = getBundleManager();
-      BundleStoragePlugin plugin = bundleManager.getPlugin(BundleStoragePlugin.class);
-      assertNotNull("BundleStoragePlugin not null", plugin);
+public class BundleStorageTestCase extends AbstractFrameworkTest {
 
-      JavaArchive archive = getArchive();
-      BundleStorageState storageState = plugin.createStorageState(bundleManager.getNextBundleId(), archive.getName(), toVirtualFile(archive));
-      assertStorageState(storageState);
+    @Test
+    public void testBundleStorageForInputStream() throws Exception {
+        BundleManager bundleManager = getBundleManager();
+        BundleStoragePlugin plugin = bundleManager.getPlugin(BundleStoragePlugin.class);
+        assertNotNull("BundleStoragePlugin not null", plugin);
 
-      storageState.deleteBundleStorage();
-      File storageDir = storageState.getBundleStorageDir();
-      assertFalse("Storage dir deleted", storageDir.exists());
+        JavaArchive archive = getArchive();
+        BundleStorageState storageState = plugin.createStorageState(bundleManager.getNextBundleId(), archive.getName(), toVirtualFile(archive));
+        assertStorageState(storageState);
 
-      // Try this a second time
-      storageState = plugin.createStorageState(bundleManager.getNextBundleId(), archive.getName(), toVirtualFile(archive));
-      assertStorageState(storageState);
+        storageState.deleteBundleStorage();
+        File storageDir = storageState.getBundleStorageDir();
+        assertFalse("Storage dir deleted", storageDir.exists());
 
-      storageState.deleteBundleStorage();
-      storageDir = storageState.getBundleStorageDir();
-      assertFalse("Storage dir deleted", storageDir.exists());
-   }
+        // Try this a second time
+        storageState = plugin.createStorageState(bundleManager.getNextBundleId(), archive.getName(), toVirtualFile(archive));
+        assertStorageState(storageState);
 
-   @Test
-   public void testBundleStorageForExternalFile() throws Exception
-   {
-      BundleManager bundleManager = getBundleManager();
-      BundleStoragePlugin plugin = bundleManager.getPlugin(BundleStoragePlugin.class);
-      assertNotNull("BundleStoragePlugin not null", plugin);
+        storageState.deleteBundleStorage();
+        storageDir = storageState.getBundleStorageDir();
+        assertFalse("Storage dir deleted", storageDir.exists());
+    }
 
-      File file = new File(plugin.getStorageDir(0) + "/testBundleExternalFile.jar");
-      FileOutputStream fos = new FileOutputStream(file);
-      VFSUtils.copyStream(toInputStream(getArchive()), fos);
-      fos.close();
+    @Test
+    public void testBundleStorageForExternalFile() throws Exception {
+        BundleManager bundleManager = getBundleManager();
+        BundleStoragePlugin plugin = bundleManager.getPlugin(BundleStoragePlugin.class);
+        assertNotNull("BundleStoragePlugin not null", plugin);
 
-      VirtualFile rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
-      BundleStorageState storageState = plugin.createStorageState(bundleManager.getNextBundleId(), file.getAbsolutePath(), rootFile);
-      assertStorageState(storageState);
+        File file = new File(plugin.getStorageDir(0) + "/testBundleExternalFile.jar");
+        FileOutputStream fos = new FileOutputStream(file);
+        VFSUtils.copyStream(toInputStream(getArchive()), fos);
+        fos.close();
 
-      storageState.deleteBundleStorage();
-      File storageDir = storageState.getBundleStorageDir();
-      assertFalse("Storage dir deleted", storageDir.exists());
-   }
+        VirtualFile rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
+        BundleStorageState storageState = plugin.createStorageState(bundleManager.getNextBundleId(), file.getAbsolutePath(), rootFile);
+        assertStorageState(storageState);
 
-   private void assertStorageState(BundleStorageState storageState)
-   {
-      assertNotNull("BundleStorageState not null", storageState);
+        storageState.deleteBundleStorage();
+        File storageDir = storageState.getBundleStorageDir();
+        assertFalse("Storage dir deleted", storageDir.exists());
+    }
 
-      File storageDir = storageState.getBundleStorageDir();
-      assertNotNull("Storage dir not null", storageDir);
-      assertNotNull("Location not null", storageState.getLocation());
-      assertTrue("Storage dir exists", storageDir.exists());
+    private void assertStorageState(BundleStorageState storageState) {
+        assertNotNull("BundleStorageState not null", storageState);
 
-      File propertiesFile = new File(storageDir + "/" + BundleStorageState.BUNDLE_PERSISTENT_PROPERTIES);
-      assertTrue("Properties file exists", propertiesFile.exists());
-   }
+        File storageDir = storageState.getBundleStorageDir();
+        assertNotNull("Storage dir not null", storageDir);
+        assertNotNull("Location not null", storageState.getLocation());
+        assertTrue("Storage dir exists", storageDir.exists());
 
-   private JavaArchive getArchive()
-   {
-      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
-      archive.addClasses(SimpleService.class, SimpleActivator.class);
-      archive.setManifest(new Asset()
-      {
-         public InputStream openStream()
-         {
-            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-            builder.addBundleManifestVersion(2);
-            builder.addBundleSymbolicName(archive.getName());
-            builder.addBundleVersion("1.0.0");
-            builder.addBundleActivator(SimpleActivator.class);
-            builder.addImportPackages(BundleActivator.class);
-            return builder.openStream();
-         }
-      });
-      return archive;
-   }
+        File propertiesFile = new File(storageDir + "/" + BundleStorageState.BUNDLE_PERSISTENT_PROPERTIES);
+        assertTrue("Properties file exists", propertiesFile.exists());
+    }
+
+    private JavaArchive getArchive() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
+        archive.addClasses(SimpleService.class, SimpleActivator.class);
+        archive.setManifest(new Asset() {
+
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addBundleActivator(SimpleActivator.class);
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
 }

@@ -1,24 +1,24 @@
 /*
-* JBoss, Home of Professional Open Source
-* Copyright 2009, Red Hat Middleware LLC, and individual contributors
-* as indicated by the @author tags. See the copyright.txt file in the
-* distribution for a full listing of individual contributors.
-*
-* This is free software; you can redistribute it and/or modify it
-* under the terms of the GNU Lesser General Public License as
-* published by the Free Software Foundation; either version 2.1 of
-* the License, or (at your option) any later version.
-*
-* This software is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-* Lesser General Public License for more details.
-*
-* You should have received a copy of the GNU Lesser General Public
-* License along with this software; if not, write to the Free
-* Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-* 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-*/
+ * JBoss, Home of Professional Open Source
+ * Copyright 2009, Red Hat Middleware LLC, and individual contributors
+ * as indicated by the @author tags. See the copyright.txt file in the
+ * distribution for a full listing of individual contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
 package org.jboss.osgi.framework.loading;
 
 import java.io.File;
@@ -39,96 +39,83 @@ import org.jboss.modules.ResourceLoader;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class NativeResourceLoader implements ResourceLoader
-{
-   // Provide logging
-   private static final Logger log = Logger.getLogger(NativeResourceLoader.class);
+public class NativeResourceLoader implements ResourceLoader {
 
-   // List of native library providers
-   private volatile List<NativeLibraryProvider> nativeLibraries;
+    // Provide logging
+    private static final Logger log = Logger.getLogger(NativeResourceLoader.class);
 
-   public NativeResourceLoader()
-   {
-   }
+    // List of native library providers
+    private volatile List<NativeLibraryProvider> nativeLibraries;
 
-   public void addNativeLibrary(NativeLibraryProvider libProvider)
-   {
-      if (nativeLibraries == null)
-         nativeLibraries = new CopyOnWriteArrayList<NativeLibraryProvider>();
+    public NativeResourceLoader() {
+    }
 
-      nativeLibraries.add(libProvider);
-   }
+    public void addNativeLibrary(NativeLibraryProvider libProvider) {
+        if (nativeLibraries == null)
+            nativeLibraries = new CopyOnWriteArrayList<NativeLibraryProvider>();
 
-   public String getLibrary(String libname)
-   {
-      List<NativeLibraryProvider> list = nativeLibraries;
-      if (list == null)
-         return null;
+        nativeLibraries.add(libProvider);
+    }
 
-      NativeLibraryProvider libProvider = null;
-      for (NativeLibraryProvider aux : list)
-      {
-         if (libname.equals(aux.getLibraryName()))
-         {
-            libProvider = aux;
-            break;
-         }
-      }
+    public String getLibrary(String libname) {
+        List<NativeLibraryProvider> list = nativeLibraries;
+        if (list == null)
+            return null;
 
-      if (libProvider == null)
-         return null;
+        NativeLibraryProvider libProvider = null;
+        for (NativeLibraryProvider aux : list) {
+            if (libname.equals(aux.getLibraryName())) {
+                libProvider = aux;
+                break;
+            }
+        }
 
-      File libfile;
-      try      {
-         libfile = libProvider.getLibraryLocation();
-      }
-      catch (IOException ex)
-      {
-         log.errorf(ex, "Cannot privide native library location for: %s", libname);
-         return null;
-      }
+        if (libProvider == null)
+            return null;
 
-      return libfile.getAbsolutePath();
-   }
+        File libfile;
+        try {
+            libfile = libProvider.getLibraryLocation();
+        } catch (IOException ex) {
+            log.errorf(ex, "Cannot privide native library location for: %s", libname);
+            return null;
+        }
 
-   @Override
-   public String getRootName()
-   {
-      return "??osgi-native??";
-   }
-
-   @Override
-   public ClassSpec getClassSpec(String name) throws IOException
-   {
-      return null;
-   }
-
-   @Override
-   public PackageSpec getPackageSpec(String name) throws IOException {
-      return null;
-   }
-
-   @Override
-   public Resource getResource(String name)
-   {
-      return null;
-   }
-
-   @Override
-   public Collection<String> getPaths()
-   {
-      return Collections.emptyList();
-   }
+        return libfile.getAbsolutePath();
+    }
 
     @Override
-    public PathFilter getExportFilter()
-    {
-       return new PathFilter()
-       {
-          public boolean accept(String path)
-          {
-             return false;
-          }
-       };
+    public String getRootName() {
+        return "??osgi-native??";
+    }
+
+    @Override
+    public ClassSpec getClassSpec(String name) throws IOException {
+        return null;
+    }
+
+    @Override
+    public PackageSpec getPackageSpec(String name) throws IOException {
+        return null;
+    }
+
+    @Override
+    public Resource getResource(String name) {
+        return null;
+    }
+
+    @Override
+    public Collection<String> getPaths() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public PathFilter getExportFilter() {
+        return new PathFilter() {
+
+            public boolean accept(String path) {
+                return false;
+            }
+        };
     }
 }

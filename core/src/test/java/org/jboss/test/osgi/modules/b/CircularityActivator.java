@@ -25,11 +25,10 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoader;
 
-public class CircularityActivator
-{
-   public void start(ModuleLoader moduleLoader, ModuleIdentifier identifierA) throws Exception
-   {
-      Module module = moduleLoader.loadModule(identifierA);
-      module.getClassLoader().loadClass("org.jboss.test.osgi.modules.a.CircularityError");
-   }
+public class CircularityActivator {
+
+    public void start(ModuleLoader moduleLoader, ModuleIdentifier identifierA) throws Exception {
+        Module module = moduleLoader.loadModule(identifierA);
+        module.getClassLoader().loadClass("org.jboss.test.osgi.modules.a.CircularityError");
+    }
 }

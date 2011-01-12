@@ -24,6 +24,5 @@ package org.jboss.test.osgi.framework.service.support.b;
 /**
  * @author <a href="mailto:ales.justin@jboss.org">Ales Justin</a>
  */
-public class Other
-{
+public class Other {
 }

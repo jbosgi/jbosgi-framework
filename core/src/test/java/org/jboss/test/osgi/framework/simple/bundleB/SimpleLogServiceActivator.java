@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.simple.bundleB;
 
-
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -34,45 +33,40 @@ import org.osgi.util.tracker.ServiceTracker;
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
-public class SimpleLogServiceActivator implements BundleActivator
-{
-   public void start(BundleContext context)
-   {
-      final String symName = context.getBundle().getSymbolicName();
-      addMessage(symName, "startBundleActivator");
+public class SimpleLogServiceActivator implements BundleActivator {
 
-      ServiceReference sref = context.getServiceReference(LogService.class.getName());
-      if (sref != null)
-      {
-         LogService service = (LogService)context.getService(sref);
-         String message = "getService: " + service.getClass().getName();
-         addMessage(symName, message);
-      }
+    public void start(BundleContext context) {
+        final String symName = context.getBundle().getSymbolicName();
+        addMessage(symName, "startBundleActivator");
 
-      ServiceTracker tracker = new ServiceTracker(context, LogService.class.getName(), null)
-      {
-         @Override
-         public Object addingService(ServiceReference reference)
-         {
-            LogService service = (LogService)super.addingService(reference);
-            String message = "addingService: " + service.getClass().getName();
+        ServiceReference sref = context.getServiceReference(LogService.class.getName());
+        if (sref != null) {
+            LogService service = (LogService) context.getService(sref);
+            String message = "getService: " + service.getClass().getName();
             addMessage(symName, message);
-            return service;
-         }
-      };
-      tracker.open();
-   }
+        }
 
-   public void stop(BundleContext context)
-   {
-      String symName = context.getBundle().getSymbolicName();
-      addMessage(symName, "stopBundleActivator");
-   }
+        ServiceTracker tracker = new ServiceTracker(context, LogService.class.getName(), null) {
 
-   private void addMessage(String propName, String message)
-   {
-      String previous = System.getProperty(propName, ":");
-      System.setProperty(propName, previous + message + ":");
-      //System.out.println(message);
-   }
+            @Override
+            public Object addingService(ServiceReference reference) {
+                LogService service = (LogService) super.addingService(reference);
+                String message = "addingService: " + service.getClass().getName();
+                addMessage(symName, message);
+                return service;
+            }
+        };
+        tracker.open();
+    }
+
+    public void stop(BundleContext context) {
+        String symName = context.getBundle().getSymbolicName();
+        addMessage(symName, "stopBundleActivator");
+    }
+
+    private void addMessage(String propName, String message) {
+        String previous = System.getProperty(propName, ":");
+        System.setProperty(propName, previous + message + ":");
+        // System.out.println(message);
+    }
 }

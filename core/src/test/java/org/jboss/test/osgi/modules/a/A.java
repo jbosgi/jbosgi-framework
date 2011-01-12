@@ -21,6 +21,5 @@
  */
 package org.jboss.test.osgi.modules.a;
 
-public class A
-{
+public class A {
 }

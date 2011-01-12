@@ -40,139 +40,133 @@ import org.osgi.framework.Version;
 
 /**
  * Test the {@link ModuleLoader} hirarchy.
- *
+ * 
  * @author Thomas.Diesler@jboss.com
  * @since 30-Sep-2010
  */
-public class ModuleLoaderTestCase extends ModulesTestBase
-{
-   private ModuleManagerPlugin moduleManager;
-   private ModuleLoaderSupport jbosgiLoader;
+public class ModuleLoaderTestCase extends ModulesTestBase {
 
-   @Before
-   public void setUp()
-   {
-      super.setUp();
-      jbosgiLoader = new ModuleLoaderSupport("jbosgi");
-      BundleManager bundleManager = Mockito.mock(BundleManager.class);
-      moduleManager = new ModuleManagerPluginImpl(bundleManager);
-   }
+    private ModuleManagerPlugin moduleManager;
+    private ModuleLoaderSupport jbosgiLoader;
 
-   @Test
-   public void testBundleIdentifier() throws Exception
-   {
-      XResolverFactory factory = XResolverFactory.getInstance();
-      XModuleBuilder builder = factory.newModuleBuilder();
-      builder.createModule("bundleA", Version.parseVersion("1.0.0"), 0);
-      
-      ModuleIdentifier bundleId = moduleManager.getModuleIdentifier(builder.getModule());
-      assertEquals("jbosgi.bundleA", bundleId.getName());
-      assertEquals("1.0.0", bundleId.getSlot());
-      
-      ModuleSpec.Builder specBuilder = ModuleSpec.build(bundleId);
-      ModuleSpec bundleSpec = specBuilder.create();
-      jbosgiLoader.addModuleSpec(bundleSpec);
-      
-      Module bundle = jbosgiLoader.loadModule(bundleId);
-      assertEquals(jbosgiLoader, bundle.getModuleLoader());
-   }
+    @Before
+    public void setUp() {
+        super.setUp();
+        jbosgiLoader = new ModuleLoaderSupport("jbosgi");
+        BundleManager bundleManager = Mockito.mock(BundleManager.class);
+        moduleManager = new ModuleManagerPluginImpl(bundleManager);
+    }
 
-   @Test
-   public void testBundleDependendsOnModule() throws Exception
-   {
-      ModuleIdentifier moduleId = ModuleIdentifier.create("moduleA");
-      ModuleSpec.Builder specBuilder = ModuleSpec.build(moduleId);
-      ModuleSpec moduleSpec = specBuilder.create();
-      getModuleLoader().addModuleSpec(moduleSpec);
-      
-      XResolverFactory factory = XResolverFactory.getInstance();
-      XModuleBuilder builder = factory.newModuleBuilder();
-      builder.createModule("bundleA", Version.parseVersion("1.0.0"), 0);
-      
-      ModuleIdentifier bundleId = moduleManager.getModuleIdentifier(builder.getModule());
-      specBuilder = ModuleSpec.build(bundleId);
-      specBuilder.addDependency(DependencySpec.createModuleDependencySpec(moduleId));
-      ModuleSpec bundleSpec = specBuilder.create();
-      jbosgiLoader.addModuleSpec(bundleSpec);
+    @Test
+    public void testBundleIdentifier() throws Exception {
+        XResolverFactory factory = XResolverFactory.getInstance();
+        XModuleBuilder builder = factory.newModuleBuilder();
+        builder.createModule("bundleA", Version.parseVersion("1.0.0"), 0);
 
-      Module bundle = jbosgiLoader.loadModule(bundleId);
-      assertEquals(jbosgiLoader, bundle.getModuleLoader());
-      
-      Module module = loadModule(moduleId);
-      assertEquals(getModuleLoader(), module.getModuleLoader());
-   }
+        ModuleIdentifier bundleId = moduleManager.getModuleIdentifier(builder.getModule());
+        assertEquals("jbosgi.bundleA", bundleId.getName());
+        assertEquals("1.0.0", bundleId.getSlot());
 
-   @Test
-   public void testBundleDependendsOnBundle() throws Exception
-   {
-      XResolverFactory factory = XResolverFactory.getInstance();
-      XModuleBuilder builder = factory.newModuleBuilder();
-      builder.createModule("bundleA", Version.parseVersion("1.0.0"), 0);
-      ModuleIdentifier bundleIdA = moduleManager.getModuleIdentifier(builder.getModule());
-      
-      builder = factory.newModuleBuilder();
-      builder.createModule("bundleB", Version.parseVersion("1.0.0"), 0);
-      ModuleIdentifier bundleIdB = moduleManager.getModuleIdentifier(builder.getModule());
-      
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(bundleIdA);
-      ModuleSpec bundleSpecA = specBuilderA.create();
-      jbosgiLoader.addModuleSpec(bundleSpecA);
-      
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(bundleIdB);
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(bundleIdA));
-      ModuleSpec bundleSpecB = specBuilderB.create();
-      jbosgiLoader.addModuleSpec(bundleSpecB);
-      
-      Module bundleA = jbosgiLoader.loadModule(bundleIdA);
-      assertEquals(jbosgiLoader, bundleA.getModuleLoader());
-      
-      Module bundleB = jbosgiLoader.loadModule(bundleIdB);
-      assertEquals(jbosgiLoader, bundleB.getModuleLoader());
-   }
+        ModuleSpec.Builder specBuilder = ModuleSpec.build(bundleId);
+        ModuleSpec bundleSpec = specBuilder.create();
+        jbosgiLoader.addModuleSpec(bundleSpec);
 
-   @Test
-   public void testModuleDependendsOnModule() throws Exception
-   {
-      ModuleIdentifier moduleIdA = ModuleIdentifier.create("moduleA");
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(moduleIdA);
-      ModuleSpec moduleSpecA = specBuilderA.create();
-      getModuleLoader().addModuleSpec(moduleSpecA);
-      
-      ModuleIdentifier moduleIdB = ModuleIdentifier.create("moduleB");
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(moduleIdB);
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(moduleIdA));
-      ModuleSpec moduleSpecB = specBuilderB.create();
-      getModuleLoader().addModuleSpec(moduleSpecB);
+        Module bundle = jbosgiLoader.loadModule(bundleId);
+        assertEquals(jbosgiLoader, bundle.getModuleLoader());
+    }
 
-      Module moduleA = loadModule(moduleIdA);
-      assertEquals(getModuleLoader(), moduleA.getModuleLoader());
+    @Test
+    public void testBundleDependendsOnModule() throws Exception {
+        ModuleIdentifier moduleId = ModuleIdentifier.create("moduleA");
+        ModuleSpec.Builder specBuilder = ModuleSpec.build(moduleId);
+        ModuleSpec moduleSpec = specBuilder.create();
+        getModuleLoader().addModuleSpec(moduleSpec);
 
-      Module moduleB = loadModule(moduleIdB);
-      assertEquals(getModuleLoader(), moduleB.getModuleLoader());
-   }
+        XResolverFactory factory = XResolverFactory.getInstance();
+        XModuleBuilder builder = factory.newModuleBuilder();
+        builder.createModule("bundleA", Version.parseVersion("1.0.0"), 0);
 
-   @Test
-   public void testModuleDependendsOnBundle() throws Exception
-   {
-      XResolverFactory factory = XResolverFactory.getInstance();
-      XModuleBuilder builder = factory.newModuleBuilder();
-      builder.createModule("bundleA", Version.parseVersion("1.0.0"), 0);
-      ModuleIdentifier bundleIdA = moduleManager.getModuleIdentifier(builder.getModule());
-      
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(bundleIdA);
-      ModuleSpec bundleSpecA = specBuilderA.create();
-      jbosgiLoader.addModuleSpec(bundleSpecA);
-      
-      ModuleIdentifier moduleIdB = ModuleIdentifier.create("moduleB");
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(moduleIdB);
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(bundleIdA));
-      ModuleSpec moduleSpecB = specBuilderB.create();
-      getModuleLoader().addModuleSpec(moduleSpecB);
+        ModuleIdentifier bundleId = moduleManager.getModuleIdentifier(builder.getModule());
+        specBuilder = ModuleSpec.build(bundleId);
+        specBuilder.addDependency(DependencySpec.createModuleDependencySpec(moduleId));
+        ModuleSpec bundleSpec = specBuilder.create();
+        jbosgiLoader.addModuleSpec(bundleSpec);
 
-      Module moduleB = loadModule(moduleIdB);
-      assertEquals(getModuleLoader(), moduleB.getModuleLoader());
+        Module bundle = jbosgiLoader.loadModule(bundleId);
+        assertEquals(jbosgiLoader, bundle.getModuleLoader());
 
-      Module bundleA = jbosgiLoader.loadModule(bundleIdA);
-      assertEquals(jbosgiLoader, bundleA.getModuleLoader());
-   }
+        Module module = loadModule(moduleId);
+        assertEquals(getModuleLoader(), module.getModuleLoader());
+    }
+
+    @Test
+    public void testBundleDependendsOnBundle() throws Exception {
+        XResolverFactory factory = XResolverFactory.getInstance();
+        XModuleBuilder builder = factory.newModuleBuilder();
+        builder.createModule("bundleA", Version.parseVersion("1.0.0"), 0);
+        ModuleIdentifier bundleIdA = moduleManager.getModuleIdentifier(builder.getModule());
+
+        builder = factory.newModuleBuilder();
+        builder.createModule("bundleB", Version.parseVersion("1.0.0"), 0);
+        ModuleIdentifier bundleIdB = moduleManager.getModuleIdentifier(builder.getModule());
+
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(bundleIdA);
+        ModuleSpec bundleSpecA = specBuilderA.create();
+        jbosgiLoader.addModuleSpec(bundleSpecA);
+
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(bundleIdB);
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(bundleIdA));
+        ModuleSpec bundleSpecB = specBuilderB.create();
+        jbosgiLoader.addModuleSpec(bundleSpecB);
+
+        Module bundleA = jbosgiLoader.loadModule(bundleIdA);
+        assertEquals(jbosgiLoader, bundleA.getModuleLoader());
+
+        Module bundleB = jbosgiLoader.loadModule(bundleIdB);
+        assertEquals(jbosgiLoader, bundleB.getModuleLoader());
+    }
+
+    @Test
+    public void testModuleDependendsOnModule() throws Exception {
+        ModuleIdentifier moduleIdA = ModuleIdentifier.create("moduleA");
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(moduleIdA);
+        ModuleSpec moduleSpecA = specBuilderA.create();
+        getModuleLoader().addModuleSpec(moduleSpecA);
+
+        ModuleIdentifier moduleIdB = ModuleIdentifier.create("moduleB");
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(moduleIdB);
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(moduleIdA));
+        ModuleSpec moduleSpecB = specBuilderB.create();
+        getModuleLoader().addModuleSpec(moduleSpecB);
+
+        Module moduleA = loadModule(moduleIdA);
+        assertEquals(getModuleLoader(), moduleA.getModuleLoader());
+
+        Module moduleB = loadModule(moduleIdB);
+        assertEquals(getModuleLoader(), moduleB.getModuleLoader());
+    }
+
+    @Test
+    public void testModuleDependendsOnBundle() throws Exception {
+        XResolverFactory factory = XResolverFactory.getInstance();
+        XModuleBuilder builder = factory.newModuleBuilder();
+        builder.createModule("bundleA", Version.parseVersion("1.0.0"), 0);
+        ModuleIdentifier bundleIdA = moduleManager.getModuleIdentifier(builder.getModule());
+
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(bundleIdA);
+        ModuleSpec bundleSpecA = specBuilderA.create();
+        jbosgiLoader.addModuleSpec(bundleSpecA);
+
+        ModuleIdentifier moduleIdB = ModuleIdentifier.create("moduleB");
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(moduleIdB);
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(bundleIdA));
+        ModuleSpec moduleSpecB = specBuilderB.create();
+        getModuleLoader().addModuleSpec(moduleSpecB);
+
+        Module moduleB = loadModule(moduleIdB);
+        assertEquals(getModuleLoader(), moduleB.getModuleLoader());
+
+        Module bundleA = jbosgiLoader.loadModule(bundleIdA);
+        assertEquals(jbosgiLoader, bundleA.getModuleLoader());
+    }
 }

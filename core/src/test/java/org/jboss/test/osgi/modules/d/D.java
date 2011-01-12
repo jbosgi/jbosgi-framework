@@ -21,7 +21,5 @@
  */
 package org.jboss.test.osgi.modules.d;
 
-
-public class D
-{
+public class D {
 }

@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.fragments.hostF;
 
-public class HostFInterface
-{
+public class HostFInterface {
 
 }

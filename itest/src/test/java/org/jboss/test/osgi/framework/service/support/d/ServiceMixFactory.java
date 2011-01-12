@@ -32,24 +32,21 @@ import org.osgi.framework.ServiceRegistration;
 /**
  * @author <a href="mailto:ales.justin@jboss.org">Ales Justin</a>
  */
-public class ServiceMixFactory implements ServiceFactory
-{
-   private List<Object> as = new ArrayList<Object>();
+public class ServiceMixFactory implements ServiceFactory {
 
-   public Object getService(Bundle bundle, ServiceRegistration registration)
-   {
-      A a = new A();
-      a.msg = bundle.getSymbolicName();
-      return a;
-   }
+    private List<Object> as = new ArrayList<Object>();
 
-   public void ungetService(Bundle bundle, ServiceRegistration registration, Object service)
-   {
-      as.add(service);
-   }
+    public Object getService(Bundle bundle, ServiceRegistration registration) {
+        A a = new A();
+        a.msg = bundle.getSymbolicName();
+        return a;
+    }
 
-   public List<Object> getAs()
-   {
-      return as;
-   }
+    public void ungetService(Bundle bundle, ServiceRegistration registration, Object service) {
+        as.add(service);
+    }
+
+    public List<Object> getAs() {
+        return as;
+    }
 }

@@ -44,259 +44,228 @@ import org.osgi.service.startlevel.StartLevel;
 
 /**
  * Test framework bootstrap options.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Apr-2010
  */
-public class StartLevelTestCase extends OSGiFrameworkTest
-{
-   private static final int BUNDLE_START_LEVEL_CHANGE_SLEEP = 500;
+public class StartLevelTestCase extends OSGiFrameworkTest {
 
-   @BeforeClass
-   public static void beforeClass()
-   {
-      // prevent framework creation
-   }
+    private static final int BUNDLE_START_LEVEL_CHANGE_SLEEP = 500;
 
-   @Test
-   public void testDefaultInitialStartLevel() throws Exception
-   {
-      Framework framework = createFramework();
-      try
-      {
-         framework.start();
+    @BeforeClass
+    public static void beforeClass() {
+        // prevent framework creation
+    }
 
-         BundleContext bc = framework.getBundleContext();
-         ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
-         StartLevel sl = (StartLevel)bc.getService(sref);
-         assertEquals(1, sl.getStartLevel());
-      }
-      finally
-      {
-         framework.stop();
-         framework.waitForStop(2000);
-      }
-   }
+    @Test
+    public void testDefaultInitialStartLevel() throws Exception {
+        Framework framework = createFramework();
+        try {
+            framework.start();
 
-   @Test
-   public void testNonDefaultInitialStartLevel() throws Exception
-   {
-      Properties oldProps = new Properties();
-      oldProps.putAll(System.getProperties());
+            BundleContext bc = framework.getBundleContext();
+            ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
+            StartLevel sl = (StartLevel) bc.getService(sref);
+            assertEquals(1, sl.getStartLevel());
+        } finally {
+            framework.stop();
+            framework.waitForStop(2000);
+        }
+    }
 
-      System.setProperty(Constants.FRAMEWORK_BEGINNING_STARTLEVEL, "51");
-      Framework framework = createFramework();
-      try
-      {
-         framework.start();
+    @Test
+    public void testNonDefaultInitialStartLevel() throws Exception {
+        Properties oldProps = new Properties();
+        oldProps.putAll(System.getProperties());
 
-         BundleContext bc = framework.getBundleContext();
-         ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
-         StartLevel sl = (StartLevel)bc.getService(sref);
-         assertEquals(51, sl.getStartLevel());
-      }
-      finally
-      {
-         framework.stop();
-         framework.waitForStop(2000);
+        System.setProperty(Constants.FRAMEWORK_BEGINNING_STARTLEVEL, "51");
+        Framework framework = createFramework();
+        try {
+            framework.start();
 
-         System.setProperties(oldProps);
-      }
-   }
+            BundleContext bc = framework.getBundleContext();
+            ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
+            StartLevel sl = (StartLevel) bc.getService(sref);
+            assertEquals(51, sl.getStartLevel());
+        } finally {
+            framework.stop();
+            framework.waitForStop(2000);
 
-   @Test
-   public void testOrderedStop() throws Exception
-   {
-      JavaArchive archive1 = createTestBundle("b1.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle1.Activator.class);
-      JavaArchive archive2 = createTestBundle("b2.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle2.Activator.class);
-      JavaArchive archive3 = createTestBundle("b3.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle3.Activator.class);
+            System.setProperties(oldProps);
+        }
+    }
 
-      Framework framework = createFramework();
-      try
-      {
-         framework.start();
+    @Test
+    public void testOrderedStop() throws Exception {
+        JavaArchive archive1 = createTestBundle("b1.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle1.Activator.class);
+        JavaArchive archive2 = createTestBundle("b2.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle2.Activator.class);
+        JavaArchive archive3 = createTestBundle("b3.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle3.Activator.class);
 
-         BundleContext bc = framework.getBundleContext();
-         ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
-         StartLevel sl = (StartLevel)bc.getService(sref);
+        Framework framework = createFramework();
+        try {
+            framework.start();
 
-         Bundle b1 = installBundle(archive1);
-         assertEquals(Bundle.INSTALLED, b1.getState());
-         b1.start();
-         assertEquals(Bundle.ACTIVE, b1.getState());
+            BundleContext bc = framework.getBundleContext();
+            ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
+            StartLevel sl = (StartLevel) bc.getService(sref);
 
-         sl.setInitialBundleStartLevel(7);
-         Bundle b2 = installBundle(archive2);
-         b2.start();
-         assertEquals("Start level of 7 should have prevented the bundle from starting right now", Bundle.INSTALLED, b2.getState());
+            Bundle b1 = installBundle(archive1);
+            assertEquals(Bundle.INSTALLED, b1.getState());
+            b1.start();
+            assertEquals(Bundle.ACTIVE, b1.getState());
 
-         sl.setInitialBundleStartLevel(5);
-         Bundle b3 = installBundle(archive3);
-         b3.start();
-         assertEquals("Start level of 5 should have prevented the bundle from starting right now", Bundle.INSTALLED, b3.getState());
+            sl.setInitialBundleStartLevel(7);
+            Bundle b2 = installBundle(archive2);
+            b2.start();
+            assertEquals("Start level of 7 should have prevented the bundle from starting right now", Bundle.INSTALLED, b2.getState());
 
-         getSystemContext().addFrameworkListener(this);
-         sl.setStartLevel(10);
-         assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, getSystemContext().getBundle(), null);
-         getSystemContext().removeFrameworkListener(this);
+            sl.setInitialBundleStartLevel(5);
+            Bundle b3 = installBundle(archive3);
+            b3.start();
+            assertEquals("Start level of 5 should have prevented the bundle from starting right now", Bundle.INSTALLED, b3.getState());
 
-         assertEquals(Bundle.ACTIVE, b1.getState());
-         assertEquals(Bundle.ACTIVE, b2.getState());
-         assertEquals(Bundle.ACTIVE, b3.getState());
+            getSystemContext().addFrameworkListener(this);
+            sl.setStartLevel(10);
+            assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, getSystemContext().getBundle(), null);
+            getSystemContext().removeFrameworkListener(this);
 
-         synchronized ("LifecycleOrdering")
-         {
-            assertEquals("start1start3start2", System.getProperty("LifecycleOrdering"));
-         }
+            assertEquals(Bundle.ACTIVE, b1.getState());
+            assertEquals(Bundle.ACTIVE, b2.getState());
+            assertEquals(Bundle.ACTIVE, b3.getState());
 
-         framework.stop();
-         framework.waitForStop(2000);
+            synchronized ("LifecycleOrdering") {
+                assertEquals("start1start3start2", System.getProperty("LifecycleOrdering"));
+            }
 
-         synchronized ("LifecycleOrdering")
-         {
-            assertEquals("start1start3start2stop2stop3stop1", System.getProperty("LifecycleOrdering"));
-         }
-      }
-      finally
-      {
-         framework.stop();
-         framework.waitForStop(2000);
-      }
-   }
+            framework.stop();
+            framework.waitForStop(2000);
 
-   @Test
-   public void testChangingStartLevel() throws Exception
-   {
-      JavaArchive archive1 = createTestBundle("b1.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle1.Activator.class);
+            synchronized ("LifecycleOrdering") {
+                assertEquals("start1start3start2stop2stop3stop1", System.getProperty("LifecycleOrdering"));
+            }
+        } finally {
+            framework.stop();
+            framework.waitForStop(2000);
+        }
+    }
 
-      Framework framework = createFramework();
-      try
-      {
-         framework.start();
+    @Test
+    public void testChangingStartLevel() throws Exception {
+        JavaArchive archive1 = createTestBundle("b1.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle1.Activator.class);
 
-         BundleContext bc = framework.getBundleContext();
-         ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
-         StartLevel sl = (StartLevel)bc.getService(sref);
+        Framework framework = createFramework();
+        try {
+            framework.start();
 
-         sl.setInitialBundleStartLevel(10);
+            BundleContext bc = framework.getBundleContext();
+            ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
+            StartLevel sl = (StartLevel) bc.getService(sref);
 
-         bc.addFrameworkListener(this);
-         sl.setStartLevel(5);
-         assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
-         assertEquals(5, sl.getStartLevel());
+            sl.setInitialBundleStartLevel(10);
 
-         Bundle b1 = installBundle(archive1);
-         assertEquals(Bundle.INSTALLED, b1.getState());
-         assertEquals(10, sl.getBundleStartLevel(b1));
+            bc.addFrameworkListener(this);
+            sl.setStartLevel(5);
+            assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
+            assertEquals(5, sl.getStartLevel());
 
-         sl.setStartLevel(15);
-         assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
-         assertEquals(15, sl.getStartLevel());
-         assertEquals("The bundle should not yet be started as bundle.start() was never called in the first place.",
-               Bundle.INSTALLED, b1.getState());
+            Bundle b1 = installBundle(archive1);
+            assertEquals(Bundle.INSTALLED, b1.getState());
+            assertEquals(10, sl.getBundleStartLevel(b1));
 
-         sl.setStartLevel(5);
-         assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
-         assertEquals(5, sl.getStartLevel());
+            sl.setStartLevel(15);
+            assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
+            assertEquals(15, sl.getStartLevel());
+            assertEquals("The bundle should not yet be started as bundle.start() was never called in the first place.", Bundle.INSTALLED, b1.getState());
 
-         b1.start();
-         assertEquals("The bundle should not yet be started since the start level is too low.",
-               Bundle.INSTALLED, b1.getState());
+            sl.setStartLevel(5);
+            assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
+            assertEquals(5, sl.getStartLevel());
 
-         sl.setStartLevel(15);
-         assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
-         assertEquals(15, sl.getStartLevel());
-         assertEquals(Bundle.ACTIVE, b1.getState());
+            b1.start();
+            assertEquals("The bundle should not yet be started since the start level is too low.", Bundle.INSTALLED, b1.getState());
 
-         b1.uninstall();
-      }
-      finally
-      {
-         framework.stop();
-         framework.waitForStop(2000);
-      }
-   }
+            sl.setStartLevel(15);
+            assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
+            assertEquals(15, sl.getStartLevel());
+            assertEquals(Bundle.ACTIVE, b1.getState());
 
-   @Test
-   public void testChangingBundleStartLevel() throws Exception
-   {
-      JavaArchive archive1 = createTestBundle("b1.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle1.Activator.class);
+            b1.uninstall();
+        } finally {
+            framework.stop();
+            framework.waitForStop(2000);
+        }
+    }
 
-      Framework framework = createFramework();
-      try
-      {
-         framework.start();
+    @Test
+    public void testChangingBundleStartLevel() throws Exception {
+        JavaArchive archive1 = createTestBundle("b1.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle1.Activator.class);
 
-         BundleContext bc = framework.getBundleContext();
-         ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
-         StartLevel sl = (StartLevel)bc.getService(sref);
+        Framework framework = createFramework();
+        try {
+            framework.start();
 
-         sl.setInitialBundleStartLevel(10);
+            BundleContext bc = framework.getBundleContext();
+            ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
+            StartLevel sl = (StartLevel) bc.getService(sref);
 
-         bc.addFrameworkListener(this);
-         sl.setStartLevel(5);
-         assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
-         assertEquals(5, sl.getStartLevel());
+            sl.setInitialBundleStartLevel(10);
 
-         Bundle b1 = installBundle(archive1);
-         assertEquals(Bundle.INSTALLED, b1.getState());
-         assertEquals(10, sl.getBundleStartLevel(b1));
+            bc.addFrameworkListener(this);
+            sl.setStartLevel(5);
+            assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, framework.getBundleContext().getBundle(), null);
+            assertEquals(5, sl.getStartLevel());
 
-         sl.setBundleStartLevel(b1, 3);
-         // Unfortunately this test has to use sleeps as there are no events sent here
-         Thread.sleep(BUNDLE_START_LEVEL_CHANGE_SLEEP);
-         assertEquals(3, sl.getBundleStartLevel(b1));
-         assertEquals("The bundle should not yet be started as bundle.start() was never called in the first place.",
-               Bundle.INSTALLED, b1.getState());
+            Bundle b1 = installBundle(archive1);
+            assertEquals(Bundle.INSTALLED, b1.getState());
+            assertEquals(10, sl.getBundleStartLevel(b1));
 
-         sl.setBundleStartLevel(b1, 8);
-         Thread.sleep(BUNDLE_START_LEVEL_CHANGE_SLEEP);
-         assertEquals(8, sl.getBundleStartLevel(b1));
-         assertEquals("The bundle should not yet be started as bundle.start() was never called in the first place.",
-               Bundle.INSTALLED, b1.getState());
+            sl.setBundleStartLevel(b1, 3);
+            // Unfortunately this test has to use sleeps as there are no events sent here
+            Thread.sleep(BUNDLE_START_LEVEL_CHANGE_SLEEP);
+            assertEquals(3, sl.getBundleStartLevel(b1));
+            assertEquals("The bundle should not yet be started as bundle.start() was never called in the first place.", Bundle.INSTALLED, b1.getState());
 
-         b1.start();
-         assertEquals("The bundle should not yet be started since the start level is too low.",
-               Bundle.INSTALLED, b1.getState());
+            sl.setBundleStartLevel(b1, 8);
+            Thread.sleep(BUNDLE_START_LEVEL_CHANGE_SLEEP);
+            assertEquals(8, sl.getBundleStartLevel(b1));
+            assertEquals("The bundle should not yet be started as bundle.start() was never called in the first place.", Bundle.INSTALLED, b1.getState());
 
-         sl.setBundleStartLevel(b1, 3);
-         Thread.sleep(BUNDLE_START_LEVEL_CHANGE_SLEEP);
-         assertEquals(3, sl.getBundleStartLevel(b1));
-         assertEquals(Bundle.ACTIVE, b1.getState());
+            b1.start();
+            assertEquals("The bundle should not yet be started since the start level is too low.", Bundle.INSTALLED, b1.getState());
 
-         sl.setBundleStartLevel(b1, 8);
-         Thread.sleep(BUNDLE_START_LEVEL_CHANGE_SLEEP);
-         assertEquals(8, sl.getBundleStartLevel(b1));
-         assertEquals("The bundle should have been stopped as its start level was set to a higher one than the current.",
-               Bundle.RESOLVED, b1.getState());
+            sl.setBundleStartLevel(b1, 3);
+            Thread.sleep(BUNDLE_START_LEVEL_CHANGE_SLEEP);
+            assertEquals(3, sl.getBundleStartLevel(b1));
+            assertEquals(Bundle.ACTIVE, b1.getState());
 
-         b1.uninstall();
-      }
-      finally
-      {
-         framework.stop();
-         framework.waitForStop(2000);
-      }
-   }
+            sl.setBundleStartLevel(b1, 8);
+            Thread.sleep(BUNDLE_START_LEVEL_CHANGE_SLEEP);
+            assertEquals(8, sl.getBundleStartLevel(b1));
+            assertEquals("The bundle should have been stopped as its start level was set to a higher one than the current.", Bundle.RESOLVED, b1.getState());
 
-   private JavaArchive createTestBundle(String name, final Class<? extends BundleActivator> activator)
-   {
-      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, name);
-      archive.setManifest(new Asset()
-      {
-         @Override
-         public InputStream openStream()
-         {
-            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-            builder.addBundleSymbolicName(archive.getName());
-            builder.addBundleManifestVersion(2);
-            builder.addBundleActivator(activator);
-            builder.addImportPackages("org.osgi.framework");
-            return builder.openStream();
-         }
-      });
-      archive.addClass(activator);
-      return archive;
-   }
+            b1.uninstall();
+        } finally {
+            framework.stop();
+            framework.waitForStop(2000);
+        }
+    }
+
+    private JavaArchive createTestBundle(String name, final Class<? extends BundleActivator> activator) {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, name);
+        archive.setManifest(new Asset() {
+
+            @Override
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleManifestVersion(2);
+                builder.addBundleActivator(activator);
+                builder.addImportPackages("org.osgi.framework");
+                return builder.openStream();
+            }
+        });
+        archive.addClass(activator);
+        return archive;
+    }
 }

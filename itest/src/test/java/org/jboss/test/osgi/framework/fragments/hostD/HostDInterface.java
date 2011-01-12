@@ -21,7 +21,7 @@
  */
 package org.jboss.test.osgi.framework.fragments.hostD;
 
-public interface HostDInterface
-{
-   String foo();
+public interface HostDInterface {
+
+    String foo();
 }

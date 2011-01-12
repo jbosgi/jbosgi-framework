@@ -35,76 +35,61 @@ import org.jboss.osgi.framework.bundle.ServiceReferenceComparator;
 import org.osgi.framework.ServiceReference;
 
 /**
- * There can only ever be one URLStreamHandlerFactory active in the system and it can
- * only be set once, using {@link URL#setURLStreamHandlerFactory()}.
+ * There can only ever be one URLStreamHandlerFactory active in the system and it can only be set once, using
+ * {@link URL#setURLStreamHandlerFactory()}.
  * 
  * @author Thomas.Diesler@jboss.com
  * @since 10-Jan-2011
  */
-class OSGiStreamHandlerFactoryDelegate implements URLStreamHandlerFactory
-{
-   private URLStreamHandlerFactory delegate;
-   private ConcurrentMap<String, List<ServiceReference>> streamHandlers = new ConcurrentHashMap<String, List<ServiceReference>>();
+class OSGiStreamHandlerFactoryDelegate implements URLStreamHandlerFactory {
 
-   public void setDelegate(URLStreamHandlerFactory factory)
-   {
-      delegate = factory;
-   }
+    private URLStreamHandlerFactory delegate;
+    private ConcurrentMap<String, List<ServiceReference>> streamHandlers = new ConcurrentHashMap<String, List<ServiceReference>>();
 
-   void addHandler(String protocol, ServiceReference reference)
-   {
-      synchronized (streamHandlers)
-      {
-         streamHandlers.putIfAbsent(protocol, new ArrayList<ServiceReference>());
-         List<ServiceReference> list = streamHandlers.get(protocol);
-         synchronized (list)
-         {
-            list.add(reference);
-            Collections.sort(list, Collections.reverseOrder(ServiceReferenceComparator.getInstance()));
-         }
-      }
-   }
+    public void setDelegate(URLStreamHandlerFactory factory) {
+        delegate = factory;
+    }
 
-   List<ServiceReference> getStreamHandlers(String protocol)
-   {
-      synchronized (streamHandlers)
-      {
-         return streamHandlers.get(protocol);
-      }
-   }
-
-   void removeHandler(ServiceReference reference)
-   {
-      synchronized (streamHandlers)
-      {
-         for (List<ServiceReference> list : streamHandlers.values())
-         {
-            for (Iterator<ServiceReference> it = list.iterator(); it.hasNext();)
-            {
-               if (it.next().equals(reference))
-               {
-                  it.remove();
-                  break;
-               }
+    void addHandler(String protocol, ServiceReference reference) {
+        synchronized (streamHandlers) {
+            streamHandlers.putIfAbsent(protocol, new ArrayList<ServiceReference>());
+            List<ServiceReference> list = streamHandlers.get(protocol);
+            synchronized (list) {
+                list.add(reference);
+                Collections.sort(list, Collections.reverseOrder(ServiceReferenceComparator.getInstance()));
             }
-         }
-      }
-   }
+        }
+    }
 
-   void clearHandlers()
-   {
-      synchronized (streamHandlers)
-      {
-         for (List<ServiceReference> list : streamHandlers.values())
-         {
-            list.clear();
-         }
-      }
-   }
+    List<ServiceReference> getStreamHandlers(String protocol) {
+        synchronized (streamHandlers) {
+            return streamHandlers.get(protocol);
+        }
+    }
 
-   @Override
-   public URLStreamHandler createURLStreamHandler(String protocol)
-   {
-      return delegate != null ? delegate.createURLStreamHandler(protocol) : null;
-   }
+    void removeHandler(ServiceReference reference) {
+        synchronized (streamHandlers) {
+            for (List<ServiceReference> list : streamHandlers.values()) {
+                for (Iterator<ServiceReference> it = list.iterator(); it.hasNext();) {
+                    if (it.next().equals(reference)) {
+                        it.remove();
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    void clearHandlers() {
+        synchronized (streamHandlers) {
+            for (List<ServiceReference> list : streamHandlers.values()) {
+                list.clear();
+            }
+        }
+    }
+
+    @Override
+    public URLStreamHandler createURLStreamHandler(String protocol) {
+        return delegate != null ? delegate.createURLStreamHandler(protocol) : null;
+    }
 }

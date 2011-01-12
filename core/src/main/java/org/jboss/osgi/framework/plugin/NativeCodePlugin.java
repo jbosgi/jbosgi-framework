@@ -24,16 +24,15 @@ package org.jboss.osgi.framework.plugin;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.bundle.AbstractUserBundle;
 
-
 /**
  * The bundle native code plugin
  * 
  * @author thomas.diesler@jboss.com
  * @since 11-Aug-2010
  */
-public interface NativeCodePlugin extends Plugin
-{
-   void deployNativeCode(Deployment deployment);
-   
-   void resolveNativeCode(AbstractUserBundle depBundle);
+public interface NativeCodePlugin extends Plugin {
+
+    void deployNativeCode(Deployment deployment);
+
+    void resolveNativeCode(AbstractUserBundle depBundle);
 }

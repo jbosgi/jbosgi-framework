@@ -45,253 +45,212 @@ import org.osgi.service.startlevel.StartLevel;
 /**
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPlugin
-{
-   final Logger log = Logger.getLogger(StartLevelPluginImpl.class);
+public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPlugin {
 
-   private final FrameworkEventsPlugin eventsPlugin;
-   private Executor executor = Executors.newSingleThreadExecutor();
-   private int initialBundleStartLevel = 1; // Synchronized on this
-   private ServiceRegistration registration;
-   private int startLevel = 0; // Synchronized on this
+    final Logger log = Logger.getLogger(StartLevelPluginImpl.class);
 
-   public StartLevelPluginImpl(BundleManager bundleManager)
-   {
-      super(bundleManager);
-      eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
-   }
+    private final FrameworkEventsPlugin eventsPlugin;
+    private Executor executor = Executors.newSingleThreadExecutor();
+    private int initialBundleStartLevel = 1; // Synchronized on this
+    private ServiceRegistration registration;
+    private int startLevel = 0; // Synchronized on this
 
-   @Override
-   public void initPlugin()
-   {
-      // Start Level service needs to be registered when the Framework.init() is called
-      BundleContext sc = getBundleManager().getSystemContext();
-      registration = sc.registerService(StartLevel.class.getName(), this, null);
-   }
+    public StartLevelPluginImpl(BundleManager bundleManager) {
+        super(bundleManager);
+        eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
+    }
 
-   @Override
-   public void stopPlugin()
-   {
-      if (registration != null)
-      {
-         registration.unregister();
-         registration = null;
-      }
-   }
+    @Override
+    public void initPlugin() {
+        // Start Level service needs to be registered when the Framework.init() is called
+        BundleContext sc = getBundleManager().getSystemContext();
+        registration = sc.registerService(StartLevel.class.getName(), this, null);
+    }
 
-   @Override
-   public synchronized int getStartLevel()
-   {
-      return startLevel;
-   }
+    @Override
+    public void stopPlugin() {
+        if (registration != null) {
+            registration.unregister();
+            registration = null;
+        }
+    }
 
-   @Override
-   public synchronized void setStartLevel(final int level)
-   {
-      if (level > getStartLevel())
-      {
-         log.infof("About to increase start level from %s to %s", getStartLevel(), level);
-         executor.execute(new Runnable()
-         {
-            @Override
-            public void run()
-            {
-               log.infof("Increasing start level from %s to %s", getStartLevel(), level);
-               increaseStartLevel(level);
-               eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(), FrameworkEvent.STARTLEVEL_CHANGED, null);
+    @Override
+    public synchronized int getStartLevel() {
+        return startLevel;
+    }
+
+    @Override
+    public synchronized void setStartLevel(final int level) {
+        if (level > getStartLevel()) {
+            log.infof("About to increase start level from %s to %s", getStartLevel(), level);
+            executor.execute(new Runnable() {
+
+                @Override
+                public void run() {
+                    log.infof("Increasing start level from %s to %s", getStartLevel(), level);
+                    increaseStartLevel(level);
+                    eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(), FrameworkEvent.STARTLEVEL_CHANGED, null);
+                }
+            });
+        } else if (level < getStartLevel()) {
+            log.infof("About to decrease start level from %s to %s", getStartLevel(), level);
+            executor.execute(new Runnable() {
+
+                @Override
+                public void run() {
+                    log.infof("Decreasing start level from %s to %s", getStartLevel(), level);
+                    decreaseStartLevel(level);
+                    eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(), FrameworkEvent.STARTLEVEL_CHANGED, null);
+                }
+            });
+        }
+    }
+
+    @Override
+    public int getBundleStartLevel(Bundle bundle) {
+        if (bundle instanceof Framework)
+            return 0;
+
+        AbstractBundle b = AbstractBundle.assertBundleState(bundle);
+        if (b instanceof SystemBundle)
+            return 0;
+        else if (b instanceof HostBundle)
+            return ((HostBundle) b).getStartLevel();
+
+        return StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
+    }
+
+    @Override
+    public void setBundleStartLevel(Bundle bundle, int level) {
+        if (bundle.getBundleId() == 0)
+            throw new IllegalArgumentException("Cannot set the start level of the System Bundle");
+
+        final HostBundle hostBundle = HostBundle.assertBundleState(bundle);
+        hostBundle.setStartLevel(level);
+
+        if (level <= getStartLevel() && hostBundle.isPersistentlyStarted()) {
+            // If the bundle is active or starting, we don't need to start it again
+            if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) > 0)
+                return;
+
+            log.infof("Start Level Service about to start: %s", hostBundle);
+            executor.execute(new Runnable() {
+
+                @Override
+                public void run() {
+                    log.infof("Start Level Service starting: %s", hostBundle);
+                    try {
+                        int opts = Bundle.START_TRANSIENT;
+                        if (isBundleActivationPolicyUsed(hostBundle))
+                            opts |= Bundle.START_ACTIVATION_POLICY;
+
+                        hostBundle.start(opts);
+                    } catch (BundleException e) {
+                        eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
+                    }
+                }
+            });
+        } else {
+            // If the bundle is not active we don't need to stop it
+            if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) == 0)
+                return;
+
+            log.infof("Start Level Service about to stop: %s", hostBundle);
+            executor.execute(new Runnable() {
+
+                @Override
+                public void run() {
+                    log.infof("Start Level Service stopping: %s", hostBundle);
+                    try {
+                        hostBundle.stop(Bundle.STOP_TRANSIENT);
+                    } catch (BundleException e) {
+                        eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
+                    }
+                }
+            });
+        }
+    }
+
+    @Override
+    public synchronized int getInitialBundleStartLevel() {
+        return initialBundleStartLevel;
+    }
+
+    @Override
+    public synchronized void setInitialBundleStartLevel(int startlevel) {
+        initialBundleStartLevel = startlevel;
+    }
+
+    @Override
+    public boolean isBundlePersistentlyStarted(Bundle bundle) {
+        AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+        BundleStorageState storageState = bundleState.getBundleStorageState();
+        return storageState.isPersistentlyStarted();
+    }
+
+    @Override
+    public boolean isBundleActivationPolicyUsed(Bundle bundle) {
+        AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+        BundleStorageState storageState = bundleState.getBundleStorageState();
+        return storageState.isBundleActivationPolicyUsed();
+    }
+
+    /**
+     * Increases the Start Level of the Framework in the current thread.
+     * 
+     * @param level the target Start Level to which the Framework should move.
+     */
+    @Override
+    public synchronized void increaseStartLevel(int level) {
+        Collection<AbstractBundle> bundles = getBundleManager().getBundles();
+        while (startLevel < level) {
+            startLevel++;
+            log.infof("Starting bundles for start level: %s", startLevel);
+            for (AbstractBundle bundle : bundles) {
+                if (!(bundle instanceof HostBundle))
+                    continue;
+
+                HostBundle hostBundle = (HostBundle) bundle;
+                if (hostBundle.getStartLevel() == startLevel && hostBundle.isPersistentlyStarted()) {
+                    try {
+                        int opts = Bundle.START_TRANSIENT;
+                        if (isBundleActivationPolicyUsed(bundle)) {
+                            opts |= Bundle.START_ACTIVATION_POLICY;
+                        }
+                        bundle.start(opts);
+                    } catch (Throwable e) {
+                        eventsPlugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, e);
+                    }
+                }
             }
-         });
-      }
-      else if (level < getStartLevel())
-      {
-         log.infof("About to decrease start level from %s to %s", getStartLevel(), level);
-         executor.execute(new Runnable()
-         {
-            @Override
-            public void run()
-            {
-               log.infof("Decreasing start level from %s to %s", getStartLevel(), level);
-               decreaseStartLevel(level);
-               eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(), FrameworkEvent.STARTLEVEL_CHANGED, null);
+        }
+    }
+
+    /**
+     * Decreases the Start Level of the Framework in the current thread.
+     * 
+     * @param sl the target Start Level to which the Framework should move.
+     */
+    @Override
+    public synchronized void decreaseStartLevel(int sl) {
+        Collection<AbstractBundle> bundles = getBundleManager().getBundles();
+        while (startLevel > sl) {
+            log.infof("Stopping bundles for start level: %s", startLevel);
+            for (AbstractBundle b : bundles) {
+                if (!(b instanceof HostBundle))
+                    continue;
+
+                HostBundle hb = (HostBundle) b;
+                if (hb.getStartLevel() == startLevel) {
+                    try {
+                        b.stop(Bundle.STOP_TRANSIENT);
+                    } catch (Throwable e) {
+                        eventsPlugin.fireFrameworkEvent(b, FrameworkEvent.ERROR, e);
+                    }
+                }
             }
-         });
-      }
-   }
-
-   @Override
-   public int getBundleStartLevel(Bundle bundle)
-   {
-      if (bundle instanceof Framework)
-         return 0;
-
-      AbstractBundle b = AbstractBundle.assertBundleState(bundle);
-      if (b instanceof SystemBundle)
-         return 0;
-      else if (b instanceof HostBundle)
-         return ((HostBundle)b).getStartLevel();
-
-      return StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
-   }
-
-   @Override
-   public void setBundleStartLevel(Bundle bundle, int level)
-   {
-      if (bundle.getBundleId() == 0)
-         throw new IllegalArgumentException("Cannot set the start level of the System Bundle");
-
-      final HostBundle hostBundle = HostBundle.assertBundleState(bundle);
-      hostBundle.setStartLevel(level);
-
-      if (level <= getStartLevel() && hostBundle.isPersistentlyStarted())
-      {
-         // If the bundle is active or starting, we don't need to start it again
-         if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) > 0)
-            return;
-
-         log.infof("Start Level Service about to start: %s", hostBundle);
-         executor.execute(new Runnable()
-         {
-            @Override
-            public void run()
-            {
-               log.infof("Start Level Service starting: %s", hostBundle);
-               try
-               {
-                  int opts = Bundle.START_TRANSIENT;
-                  if (isBundleActivationPolicyUsed(hostBundle))
-                     opts |= Bundle.START_ACTIVATION_POLICY;
-
-                  hostBundle.start(opts);
-               }
-               catch (BundleException e)
-               {
-                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
-               }
-            }
-         });
-      }
-      else
-      {
-         // If the bundle is not active we don't need to stop it
-         if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) == 0)
-            return;
-
-         log.infof("Start Level Service about to stop: %s", hostBundle);
-         executor.execute(new Runnable()
-         {
-            @Override
-            public void run()
-            {
-               log.infof("Start Level Service stopping: %s", hostBundle);
-               try
-               {
-                  hostBundle.stop(Bundle.STOP_TRANSIENT);
-               }
-               catch (BundleException e)
-               {
-                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
-               }
-            }
-         });
-      }
-   }
-
-   @Override
-   public synchronized int getInitialBundleStartLevel()
-   {
-      return initialBundleStartLevel;
-   }
-
-   @Override
-   public synchronized void setInitialBundleStartLevel(int startlevel)
-   {
-      initialBundleStartLevel = startlevel;
-   }
-
-   @Override
-   public boolean isBundlePersistentlyStarted(Bundle bundle)
-   {
-      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      BundleStorageState storageState = bundleState.getBundleStorageState();
-      return storageState.isPersistentlyStarted();
-   }
-
-   @Override
-   public boolean isBundleActivationPolicyUsed(Bundle bundle)
-   {
-      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      BundleStorageState storageState = bundleState.getBundleStorageState();
-      return storageState.isBundleActivationPolicyUsed();
-   }
-
-   /** 
-    * Increases the Start Level of the Framework in the current thread.
-    * @param level the target Start Level to which the Framework should move. 
-    */
-   @Override
-   public synchronized void increaseStartLevel(int level)
-   {
-      Collection<AbstractBundle> bundles = getBundleManager().getBundles();
-      while (startLevel < level)
-      {
-         startLevel++;
-         log.infof("Starting bundles for start level: %s", startLevel);
-         for (AbstractBundle bundle : bundles)
-         {
-            if (!(bundle instanceof HostBundle))
-               continue;
-
-            HostBundle hostBundle = (HostBundle)bundle;
-            if (hostBundle.getStartLevel() == startLevel && hostBundle.isPersistentlyStarted())
-            {
-               try
-               {
-                  int opts = Bundle.START_TRANSIENT;
-                  if (isBundleActivationPolicyUsed(bundle))
-                  {
-                     opts |= Bundle.START_ACTIVATION_POLICY;
-                  }
-                  bundle.start(opts);
-               }
-               catch (Throwable e)
-               {
-                  eventsPlugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, e);
-               }
-            }
-         }
-      }
-   }
-
-   /** 
-    * Decreases the Start Level of the Framework in the current thread.
-    * @param sl the target Start Level to which the Framework should move. 
-    */
-   @Override
-   public synchronized void decreaseStartLevel(int sl)
-   {
-      Collection<AbstractBundle> bundles = getBundleManager().getBundles();
-      while (startLevel > sl)
-      {
-         log.infof("Stopping bundles for start level: %s", startLevel);
-         for (AbstractBundle b : bundles)
-         {
-            if (!(b instanceof HostBundle))
-               continue;
-
-            HostBundle hb = (HostBundle)b;
-            if (hb.getStartLevel() == startLevel)
-            {
-               try
-               {
-                  b.stop(Bundle.STOP_TRANSIENT);
-               }
-               catch (Throwable e)
-               {
-                  eventsPlugin.fireFrameworkEvent(b, FrameworkEvent.ERROR, e);
-               }
-            }
-         }
-         startLevel--;
-      }
-   }
+            startLevel--;
+        }
+    }
 }

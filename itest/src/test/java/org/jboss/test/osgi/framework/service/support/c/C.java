@@ -26,37 +26,31 @@ import org.jboss.test.osgi.framework.service.support.a.A;
 /**
  * @author <a href="mailto:ales.justin@jboss.org">Ales Justin</a>
  */
-public class C
-{
-   private A a;
-   private String msg;
+public class C {
 
-   public C()
-   {
-   }
+    private A a;
+    private String msg;
 
-   public C(A a)
-   {
-      this.a = a;
-   }
+    public C() {
+    }
 
-   public A getA()
-   {
-      return a;
-   }
+    public C(A a) {
+        this.a = a;
+    }
 
-   public void setA(A a)
-   {
-      this.a = a;
-   }
+    public A getA() {
+        return a;
+    }
 
-   public String getMsg()
-   {
-      return msg;
-   }
+    public void setA(A a) {
+        this.a = a;
+    }
 
-   public void setMsg(String msg)
-   {
-      this.msg = msg;
-   }
+    public String getMsg() {
+        return msg;
+    }
+
+    public void setMsg(String msg) {
+        this.msg = msg;
+    }
 }

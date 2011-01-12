@@ -26,15 +26,13 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.packageadmin.PackageAdmin;
 
+public class SubBeanA {
 
-public class SubBeanA
-{
-   public Bundle getProvider(BundleContext context)
-   {
-      ServiceReference sref = context.getServiceReference(PackageAdmin.class.getName());
-      PackageAdmin packageAdmin = (PackageAdmin)context.getService(sref);
-      Bundle provider = packageAdmin.getBundle(getClass());
-      return provider;
-   }
+    public Bundle getProvider(BundleContext context) {
+        ServiceReference sref = context.getServiceReference(PackageAdmin.class.getName());
+        PackageAdmin packageAdmin = (PackageAdmin) context.getService(sref);
+        Bundle provider = packageAdmin.getBundle(getClass());
+        return provider;
+    }
 
 }

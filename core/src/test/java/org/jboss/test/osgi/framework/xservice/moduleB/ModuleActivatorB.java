@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.xservice.moduleB;
 
-
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.BatchBuilder;
 import org.jboss.msc.service.Service;
@@ -38,60 +37,51 @@ import org.jboss.osgi.modules.ModuleContext;
 
 /**
  * A Service Activator
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
-public class ModuleActivatorB implements ModuleActivator
-{
-   private ServiceName serviceName;
+public class ModuleActivatorB implements ModuleActivator {
 
-   @Override
-   public void start(final ModuleContext context) throws ModuleLoadException
-   {
-      BatchBuilder batchBuilder = context.getServiceContainer().batchBuilder();
-      serviceName = context.getServiceName(ModuleServiceB.class);
+    private ServiceName serviceName;
 
-      Service<ModuleServiceB> service = new Service<ModuleServiceB>()
-      {
-         ModuleServiceB value = new ModuleServiceB(context.getBundle());
+    @Override
+    public void start(final ModuleContext context) throws ModuleLoadException {
+        BatchBuilder batchBuilder = context.getServiceContainer().batchBuilder();
+        serviceName = context.getServiceName(ModuleServiceB.class);
 
-         @Override
-         public ModuleServiceB getValue() throws IllegalStateException
-         {
-            return value;
-         }
+        Service<ModuleServiceB> service = new Service<ModuleServiceB>() {
 
-         @Override
-         public void start(StartContext context) throws StartException
-         {
-         }
+            ModuleServiceB value = new ModuleServiceB(context.getBundle());
 
-         @Override
-         public void stop(StopContext context)
-         {
-         }
-      };
+            @Override
+            public ModuleServiceB getValue() throws IllegalStateException {
+                return value;
+            }
 
-      ServiceBuilder<ModuleServiceB> serviceBuilder = batchBuilder.addService(serviceName, service);
-      serviceBuilder.setInitialMode(Mode.PASSIVE).install();
-      try
-      {
-         batchBuilder.install();
-      }
-      catch (ServiceRegistryException ex)
-      {
-         throw new ModuleLoadException("Cannot register service: " + serviceName);
-      }
-   }
+            @Override
+            public void start(StartContext context) throws StartException {
+            }
 
-   @Override
-   public void stop(ModuleContext context)
-   {
-      if (serviceName != null)
-      {
-         ServiceController<?> service = context.getServiceContainer().getService(serviceName);
-         service.setMode(Mode.REMOVE);
-      }
-   }
+            @Override
+            public void stop(StopContext context) {
+            }
+        };
+
+        ServiceBuilder<ModuleServiceB> serviceBuilder = batchBuilder.addService(serviceName, service);
+        serviceBuilder.setInitialMode(Mode.PASSIVE).install();
+        try {
+            batchBuilder.install();
+        } catch (ServiceRegistryException ex) {
+            throw new ModuleLoadException("Cannot register service: " + serviceName);
+        }
+    }
+
+    @Override
+    public void stop(ModuleContext context) {
+        if (serviceName != null) {
+            ServiceController<?> service = context.getServiceContainer().getService(serviceName);
+            service.setMode(Mode.REMOVE);
+        }
+    }
 }

@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.loading.subA;
 
-
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -31,13 +30,11 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
-public class SimpleActivator implements BundleActivator
-{
-   public void start(BundleContext context)
-   {
-   }
+public class SimpleActivator implements BundleActivator {
 
-   public void stop(BundleContext context)
-   {
-   }
+    public void start(BundleContext context) {
+    }
+
+    public void stop(BundleContext context) {
+    }
 }

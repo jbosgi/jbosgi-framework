@@ -71,680 +71,588 @@ import org.osgi.service.startlevel.StartLevel;
 
 /**
  * A plugin manages the Framework's system packages.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2010
  */
-public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdminPlugin
-{
-   // Provide logging
-   final Logger log = Logger.getLogger(PackageAdminPluginImpl.class);
-
-   private Executor executor;
-   private ResolverPlugin resolverPlugin;
-   private ServiceRegistration registration;
-
-   public PackageAdminPluginImpl(BundleManager bundleManager)
-   {
-      super(bundleManager);
-   }
-
-   @Override
-   public void initPlugin()
-   {
-      // Package Admin service needs to be registered when the Framework.init() is called
-      BundleContext sysContext = getBundleManager().getSystemContext();
-      registration = sysContext.registerService(PackageAdmin.class.getName(), this, null);
-      resolverPlugin = getPlugin(ResolverPlugin.class);
-   }
-
-   @Override
-   public void stopPlugin()
-   {
-      if (registration != null)
-      {
-         registration.unregister();
-         registration = null;
-      }
-   }
-
-   @Override
-   public ExportedPackage[] getExportedPackages(Bundle bundle)
-   {
-      if (bundle == null)
-         return getAllExportedPackages();
-
-      AbstractBundle ab = AbstractBundle.assertBundleState(bundle);
-      if (ab instanceof HostBundle && ((HostBundle)ab).isDestroyed())
-         return null;
-
-      List<ExportedPackage> result = new ArrayList<ExportedPackage>();
-      for (XModule resModule : ab.getAllResolverModules())
-      {
-         if (resModule.isResolved() == false)
-            continue;
-
-         for (XPackageCapability cap : resModule.getPackageCapabilities())
-            result.add(new ExportedPackageImpl(cap));
-      }
-
-      if (result.size() == 0)
-         return null; // a bit ugly, but the spec mandates this
-
-      return result.toArray(new ExportedPackage[result.size()]);
-   }
-
-   private ExportedPackage[] getAllExportedPackages()
-   {
-      List<ExportedPackage> result = new ArrayList<ExportedPackage>();
-      for (AbstractBundle ab : getBundleManager().getBundles())
-      {
-         ExportedPackage[] pkgs = getExportedPackages(ab);
-         if (pkgs != null)
-            result.addAll(Arrays.asList(pkgs));
-      }
-
-      return result.toArray(new ExportedPackage[result.size()]);
-   }
-
-   @Override
-   public ExportedPackage[] getExportedPackages(String name)
-   {
-      ExportedPackage[] pkgs = getExportedPackagesInternal(name);
-      if (pkgs.length == 0)
-         return null; // a bit ugly, but the spec mandates this
-
-      return pkgs;
-   }
-
-   private ExportedPackage[] getExportedPackagesInternal(String name)
-   {
-      if (name == null)
-         throw new IllegalArgumentException("Null name");
-
-      Set<ExportedPackage> result = new HashSet<ExportedPackage>();
-      ResolverPlugin plugin = getBundleManager().getPlugin(ResolverPlugin.class);
-      for (XModule mod : plugin.getResolver().getModules())
-      {
-         if (mod.isResolved() && mod.isFragment() == false)
-         {
-            for (XCapability cap : mod.getCapabilities())
-            {
-               if (cap instanceof XPackageCapability)
-               {
-                  if (name.equals(cap.getName()))
-                     result.add(new ExportedPackageImpl((XPackageCapability)cap));
-               }
-            }
-         }
-      }
-      return result.toArray(new ExportedPackage[result.size()]);
-   }
-
-   @Override
-   public ExportedPackage getExportedPackage(String name)
-   {
-      // This implementation is flawed but the design of this API is PackageAdmin
-      // is also flawed and from 4.3 deprecated so we're doing a best effort to
-      // return a best effort result.
-      ExportedPackage[] exported = getExportedPackagesInternal(name);
-      List<ExportedPackage> wired = new ArrayList<ExportedPackage>();
-      List<ExportedPackage> notWired = new ArrayList<ExportedPackage>();
-
-      for (ExportedPackage ep : exported)
-      {
-         XPackageCapability capability = ((ExportedPackageImpl)ep).getCapability();
-         if (isWired(capability))
-            wired.add(ep);
-         else
-            notWired.add(ep);
-      }
-      ExportedPackageComparator comparator = new ExportedPackageComparator();
-      Collections.sort(wired, comparator);
-      Collections.sort(notWired, comparator);
-
-      if (wired.size() > 0)
-         return wired.get(0);
-      else if (notWired.size() > 0)
-         return notWired.get(0);
-      else
-         return null;
-   }
-
-   private boolean isWired(XPackageCapability capability)
-   {
-      for (AbstractBundle ab : getBundleManager().getBundles())
-      {
-         for (XModule module : ab.getAllResolverModules())
-         {
-            for (XWire wire : module.getWires())
-            {
-               if (wire.getCapability().equals(capability))
-                  return true;
-            }
-         }
-      }
-      return false;
-   }
-
-   @Override
-   public void refreshPackages(final Bundle[] bundlesToRefresh)
-   {
-      Runnable runner = new Runnable()
-      {
-         FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
-
-         @Override
-         public void run()
-         {
-            Bundle[] bundles = bundlesToRefresh;
-            if (bundles == null)
-            {
-               // 4.2 core spec 7.5.3.11 on null:
-               // all bundles updated or uninstalled since the last call to this method.
-
-               List<AbstractBundle> bundlesToRefresh = new ArrayList<AbstractBundle>();
-               for (AbstractBundle aux : getBundleManager().getBundles(null))
-               {
-                  // a bundle with more than 1 revision has been updated since the last refresh packages call
-                  if (aux.getRevisions().size() > 1 || aux.getState() == Bundle.UNINSTALLED)
-                     bundlesToRefresh.add(aux);
-               }
-               bundles = bundlesToRefresh.toArray(new Bundle[bundlesToRefresh.size()]);
-            }
-
-            Map<XModule, AbstractUserBundle> refreshMap = new HashMap<XModule, AbstractUserBundle>();
-            for (Bundle aux : bundles)
-            {
-               AbstractBundle bundleState = AbstractBundle.assertBundleState(aux);
-               if (bundleState instanceof AbstractUserBundle == false)
-                  continue;
-
-               for (XModule resModule : bundleState.getAllResolverModules())
-                  refreshMap.put(resModule, (AbstractUserBundle)bundleState);
-            }
-
-            Set<HostBundle> stopBundles = new HashSet<HostBundle>();
-            Set<AbstractUserBundle> refreshBundles = new HashSet<AbstractUserBundle>();
-            Set<AbstractUserBundle> uninstallBundles = new HashSet<AbstractUserBundle>();
-
-            for (AbstractUserBundle aux : refreshMap.values())
-            {
-               if (aux.getState() == Bundle.UNINSTALLED)
-                  uninstallBundles.add(aux);
-               else if (aux.isResolved() == true)
-                  refreshBundles.add(aux);
-            }
-
-            // Compute all depending bundles that need to be stopped and unresolved.
-            for (AbstractBundle aux : getBundleManager().getBundles())
-            {
-               if (aux instanceof HostBundle == false)
-                  continue;
-
-               HostBundle hostBundle = (HostBundle)aux;
-
-               XModule resModule = hostBundle.getResolverModule();
-               if (resModule.isResolved() == false)
-                  continue;
-
-               for (XWire wire : resModule.getWires())
-               {
-                  if (refreshMap.containsKey(wire.getExporter()))
-                  {
-                     // Bundles can be either ACTIVE or RESOLVED
-                     int state = hostBundle.getState();
-                     if (state == Bundle.ACTIVE || state == Bundle.STARTING)
-                     {
-                        stopBundles.add(hostBundle);
-                     }
-                     refreshBundles.add(hostBundle);
-                     break;
-                  }
-               }
-            }
-
-            // Add relevant bundles to be refreshed also to the stop list.
-            for (AbstractUserBundle aux : new HashSet<AbstractUserBundle>(refreshMap.values()))
-            {
-               if (aux instanceof HostBundle)
-               {
-                  int state = aux.getState();
-                  if (state == Bundle.ACTIVE || state == Bundle.STARTING)
-                  {
-                     stopBundles.add((HostBundle)aux);
-                  }
-               }
-            }
-
-            List<HostBundle> stopList = new ArrayList<HostBundle>(stopBundles);
-            List<AbstractUserBundle> refreshList = new ArrayList<AbstractUserBundle>(refreshBundles);
-
-            StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);
-            BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator(startLevel);
-            Collections.sort(stopList, startLevelComparator);
-
-            for (ListIterator<HostBundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();)
-            {
-               HostBundle hostBundle = it.previous();
-               try
-               {
-                  hostBundle.stop(Bundle.STOP_TRANSIENT);
-               }
-               catch (Exception th)
-               {
-                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
-               }
-            }
-
-            for (AbstractUserBundle userBundle : uninstallBundles)
-            {
-               userBundle.remove();
-            }
-
-            for (AbstractUserBundle userBundle : refreshList)
-            {
-               try
-               {
-                  userBundle.refresh();
-               }
-               catch (Exception th)
-               {
-                  eventsPlugin.fireFrameworkEvent(userBundle, FrameworkEvent.ERROR, th);
-               }
-            }
-
-            for (HostBundle hostBundle : stopList)
-            {
-               try
-               {
-                  hostBundle.start(Bundle.START_TRANSIENT);
-               }
-               catch (Exception th)
-               {
-                  eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
-               }
-            }
-
-            eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
-         }
-      };
-      getExecutor().execute(runner);
-   }
-
-   private Executor getExecutor()
-   {
-      if (executor == null)
-         executor = Executors.newSingleThreadExecutor();
-      return executor;
-   }
-
-   @Override
-   public boolean resolveBundles(Bundle[] bundles)
-   {
-      // Get the list of unresolved bundles
-      Set<XModule> unresolved = new HashSet<XModule>();
-      if (bundles == null)
-      {
-         for (AbstractBundle aux : getBundleManager().getBundles())
-         {
-            if (aux.getState() == Bundle.INSTALLED)
-               unresolved.add(aux.getResolverModule());
-         }
-      }
-      else
-      {
-         for (Bundle aux : bundles)
-         {
-            AbstractBundle bundleState = AbstractBundle.assertBundleState(aux);
-            if (bundleState.getState() == Bundle.INSTALLED)
-               unresolved.add(bundleState.getResolverModule());
-         }
-      }
-
-      log.debugf("Resolve bundles: %s", unresolved);
-      return resolverPlugin.resolveAll(unresolved);
-   }
-
-   @Override
-   public RequiredBundle[] getRequiredBundles(String symbolicName)
-   {
-      Map<AbstractBundle, Collection<AbstractBundle>> matchingBundles = new HashMap<AbstractBundle, Collection<AbstractBundle>>();
-
-      // Make a defensive copy to ensure thread safety as we are running through the list twice
-      List<AbstractBundle> bundles = new ArrayList<AbstractBundle>(getBundleManager().getBundles());
-      if (symbolicName != null)
-      {
-         for (AbstractBundle aux : bundles)
-         {
-            if (aux.getSymbolicName().equals(symbolicName))
-               matchingBundles.put(aux, new ArrayList<AbstractBundle>());
-         }
-      }
-      else
-      {
-         for (AbstractBundle aux : bundles)
-         {
-            if (!aux.isFragment())
-               matchingBundles.put(aux, new ArrayList<AbstractBundle>());
-         }
-      }
-
-      if (matchingBundles.size() == 0)
-         return null;
-
-      for (AbstractBundle aux : bundles)
-      {
-         XModule resModule = aux.getResolverModule();
-         for (XRequireBundleRequirement req : resModule.getBundleRequirements())
-         {
-            if (req.getName().equals(symbolicName))
-            {
-               for (XWire wire : req.getModule().getWires())
-               {
-                  if (wire.getRequirement().equals(req))
-                  {
-                     XCapability wiredCap = wire.getCapability();
-                     XModule module = wiredCap.getModule();
-                     Bundle bundle = module.getAttachment(Bundle.class);
-                     AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-                     Collection<AbstractBundle> requiring = matchingBundles.get(bundleState);
-                     if (requiring != null)
-                        requiring.add(aux);
-                  }
-               }
-            }
-         }
-      }
-
-      List<RequiredBundle> result = new ArrayList<RequiredBundle>(matchingBundles.size());
-      for (Map.Entry<AbstractBundle, Collection<AbstractBundle>> entry : matchingBundles.entrySet())
-         result.add(new RequiredBundleImpl(entry.getKey(), entry.getValue()));
-
-      return result.toArray(new RequiredBundle[matchingBundles.size()]);
-   }
-
-   @Override
-   public Bundle[] getBundles(String symbolicName, String versionRange)
-   {
-      Set<Bundle> bundles = new TreeSet<Bundle>(new Comparator<Bundle>()
-      {
-         // Makes sure that the bundles are sorted correctly in the returned array
-         // Matching bundles with the highest version should come first.
-         @Override
-         public int compare(Bundle b1, Bundle b2)
-         {
-            // Reverse the version comparison order
-            return b2.getVersion().compareTo(b1.getVersion());
-         }
-      });
-
-      XVersionRange range = null;
-      if (versionRange != null)
-         range = XVersionRange.parse(versionRange);
-
-      for (AbstractBundle ab : getBundleManager().getBundles())
-      {
-         Bundle b = AbstractBundle.assertBundleState(ab).getBundleWrapper();
-         if (b.getSymbolicName().equals(symbolicName))
-         {
-            if (range == null)
-               bundles.add(b);
-            else if (range.isInRange(b.getVersion()))
-               bundles.add(b);
-         }
-      }
-
-      if (bundles.size() == 0)
-         return null;
-      return bundles.toArray(new Bundle[bundles.size()]);
-   }
-
-   @Override
-   public Bundle[] getFragments(Bundle bundle)
-   {
-      // If the specified bundle is a fragment then null is returned.
-      // If the specified bundle is not resolved then null is returned
-      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      if (bundle.getBundleId() == 0 || bundleState.isFragment() || !bundleState.isResolved())
-         return null;
-
-      HostBundle hostBundle = HostBundle.assertBundleState(bundleState);
-      HostRevision curRevision = hostBundle.getCurrentRevision();
-
-      List<Bundle> result = new ArrayList<Bundle>();
-      for (FragmentRevision aux : curRevision.getAttachedFragments())
-         result.add(aux.getBundleState().getBundleWrapper());
-
-      if (result.isEmpty())
-         return null;
-
-      return result.toArray(new Bundle[result.size()]);
-   }
-
-   @Override
-   public Bundle[] getHosts(Bundle bundle)
-   {
-      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      if (bundleState.isFragment() == false)
-         return null;
-
-      FragmentBundle fragBundle = FragmentBundle.assertBundleState(bundleState);
-      FragmentRevision curRevision = fragBundle.getCurrentRevision();
-
-      List<Bundle> result = new ArrayList<Bundle>();
-      for (HostRevision aux : curRevision.getAttachedHosts())
-         result.add(aux.getBundleState().getBundleWrapper());
-
-      if (result.isEmpty())
-         return null;
-
-      return result.toArray(new Bundle[result.size()]);
-   }
-
-   @Override
-   @SuppressWarnings("rawtypes")
-   public Bundle getBundle(Class clazz)
-   {
-      if (clazz == null)
-         throw new IllegalArgumentException("Null clazz");
-
-      ClassLoader loader = clazz.getClassLoader();
-      if (loader instanceof BundleReference)
-      {
-         BundleReference bundleRef = (BundleReference)loader;
-         return bundleRef.getBundle();
-      }
-
-      log.debugf("Cannot obtain bundle for: %s", clazz.getName());
-      return null;
-   }
-
-   @Override
-   public int getBundleType(Bundle bundle)
-   {
-      AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-      return bundleState.isFragment() ? BUNDLE_TYPE_FRAGMENT : 0;
-   }
-
-   static class ExportedPackageImpl implements ExportedPackage
-   {
-      private final XPackageCapability capability;
-
-      ExportedPackageImpl(XPackageCapability cap)
-      {
-         capability = cap;
-      }
-
-      @Override
-      public String getName()
-      {
-         return capability.getName();
-      }
-
-      @Override
-      public Bundle getExportingBundle()
-      {
-         Bundle bundle = capability.getModule().getAttachment(Bundle.class);
-         AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-         return bundleState.getBundleWrapper();
-      }
-
-      @Override
-      public Bundle[] getImportingBundles()
-      {
-         if (isRemovalPending())
+public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdminPlugin {
+
+    // Provide logging
+    final Logger log = Logger.getLogger(PackageAdminPluginImpl.class);
+
+    private Executor executor;
+    private ResolverPlugin resolverPlugin;
+    private ServiceRegistration registration;
+
+    public PackageAdminPluginImpl(BundleManager bundleManager) {
+        super(bundleManager);
+    }
+
+    @Override
+    public void initPlugin() {
+        // Package Admin service needs to be registered when the Framework.init() is called
+        BundleContext sysContext = getBundleManager().getSystemContext();
+        registration = sysContext.registerService(PackageAdmin.class.getName(), this, null);
+        resolverPlugin = getPlugin(ResolverPlugin.class);
+    }
+
+    @Override
+    public void stopPlugin() {
+        if (registration != null) {
+            registration.unregister();
+            registration = null;
+        }
+    }
+
+    @Override
+    public ExportedPackage[] getExportedPackages(Bundle bundle) {
+        if (bundle == null)
+            return getAllExportedPackages();
+
+        AbstractBundle ab = AbstractBundle.assertBundleState(bundle);
+        if (ab instanceof HostBundle && ((HostBundle) ab).isDestroyed())
             return null;
 
-         XModule capModule = capability.getModule();
-         if (capModule.isResolved() == false)
+        List<ExportedPackage> result = new ArrayList<ExportedPackage>();
+        for (XModule resModule : ab.getAllResolverModules()) {
+            if (resModule.isResolved() == false)
+                continue;
+
+            for (XPackageCapability cap : resModule.getPackageCapabilities())
+                result.add(new ExportedPackageImpl(cap));
+        }
+
+        if (result.size() == 0)
+            return null; // a bit ugly, but the spec mandates this
+
+        return result.toArray(new ExportedPackage[result.size()]);
+    }
+
+    private ExportedPackage[] getAllExportedPackages() {
+        List<ExportedPackage> result = new ArrayList<ExportedPackage>();
+        for (AbstractBundle ab : getBundleManager().getBundles()) {
+            ExportedPackage[] pkgs = getExportedPackages(ab);
+            if (pkgs != null)
+                result.addAll(Arrays.asList(pkgs));
+        }
+
+        return result.toArray(new ExportedPackage[result.size()]);
+    }
+
+    @Override
+    public ExportedPackage[] getExportedPackages(String name) {
+        ExportedPackage[] pkgs = getExportedPackagesInternal(name);
+        if (pkgs.length == 0)
+            return null; // a bit ugly, but the spec mandates this
+
+        return pkgs;
+    }
+
+    private ExportedPackage[] getExportedPackagesInternal(String name) {
+        if (name == null)
+            throw new IllegalArgumentException("Null name");
+
+        Set<ExportedPackage> result = new HashSet<ExportedPackage>();
+        ResolverPlugin plugin = getBundleManager().getPlugin(ResolverPlugin.class);
+        for (XModule mod : plugin.getResolver().getModules()) {
+            if (mod.isResolved() && mod.isFragment() == false) {
+                for (XCapability cap : mod.getCapabilities()) {
+                    if (cap instanceof XPackageCapability) {
+                        if (name.equals(cap.getName()))
+                            result.add(new ExportedPackageImpl((XPackageCapability) cap));
+                    }
+                }
+            }
+        }
+        return result.toArray(new ExportedPackage[result.size()]);
+    }
+
+    @Override
+    public ExportedPackage getExportedPackage(String name) {
+        // This implementation is flawed but the design of this API is PackageAdmin
+        // is also flawed and from 4.3 deprecated so we're doing a best effort to
+        // return a best effort result.
+        ExportedPackage[] exported = getExportedPackagesInternal(name);
+        List<ExportedPackage> wired = new ArrayList<ExportedPackage>();
+        List<ExportedPackage> notWired = new ArrayList<ExportedPackage>();
+
+        for (ExportedPackage ep : exported) {
+            XPackageCapability capability = ((ExportedPackageImpl) ep).getCapability();
+            if (isWired(capability))
+                wired.add(ep);
+            else
+                notWired.add(ep);
+        }
+        ExportedPackageComparator comparator = new ExportedPackageComparator();
+        Collections.sort(wired, comparator);
+        Collections.sort(notWired, comparator);
+
+        if (wired.size() > 0)
+            return wired.get(0);
+        else if (notWired.size() > 0)
+            return notWired.get(0);
+        else
+            return null;
+    }
+
+    private boolean isWired(XPackageCapability capability) {
+        for (AbstractBundle ab : getBundleManager().getBundles()) {
+            for (XModule module : ab.getAllResolverModules()) {
+                for (XWire wire : module.getWires()) {
+                    if (wire.getCapability().equals(capability))
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void refreshPackages(final Bundle[] bundlesToRefresh) {
+        Runnable runner = new Runnable() {
+
+            FrameworkEventsPlugin eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
+
+            @Override
+            public void run() {
+                Bundle[] bundles = bundlesToRefresh;
+                if (bundles == null) {
+                    // 4.2 core spec 7.5.3.11 on null:
+                    // all bundles updated or uninstalled since the last call to this method.
+
+                    List<AbstractBundle> bundlesToRefresh = new ArrayList<AbstractBundle>();
+                    for (AbstractBundle aux : getBundleManager().getBundles(null)) {
+                        // a bundle with more than 1 revision has been updated since the last refresh packages call
+                        if (aux.getRevisions().size() > 1 || aux.getState() == Bundle.UNINSTALLED)
+                            bundlesToRefresh.add(aux);
+                    }
+                    bundles = bundlesToRefresh.toArray(new Bundle[bundlesToRefresh.size()]);
+                }
+
+                Map<XModule, AbstractUserBundle> refreshMap = new HashMap<XModule, AbstractUserBundle>();
+                for (Bundle aux : bundles) {
+                    AbstractBundle bundleState = AbstractBundle.assertBundleState(aux);
+                    if (bundleState instanceof AbstractUserBundle == false)
+                        continue;
+
+                    for (XModule resModule : bundleState.getAllResolverModules())
+                        refreshMap.put(resModule, (AbstractUserBundle) bundleState);
+                }
+
+                Set<HostBundle> stopBundles = new HashSet<HostBundle>();
+                Set<AbstractUserBundle> refreshBundles = new HashSet<AbstractUserBundle>();
+                Set<AbstractUserBundle> uninstallBundles = new HashSet<AbstractUserBundle>();
+
+                for (AbstractUserBundle aux : refreshMap.values()) {
+                    if (aux.getState() == Bundle.UNINSTALLED)
+                        uninstallBundles.add(aux);
+                    else if (aux.isResolved() == true)
+                        refreshBundles.add(aux);
+                }
+
+                // Compute all depending bundles that need to be stopped and unresolved.
+                for (AbstractBundle aux : getBundleManager().getBundles()) {
+                    if (aux instanceof HostBundle == false)
+                        continue;
+
+                    HostBundle hostBundle = (HostBundle) aux;
+
+                    XModule resModule = hostBundle.getResolverModule();
+                    if (resModule.isResolved() == false)
+                        continue;
+
+                    for (XWire wire : resModule.getWires()) {
+                        if (refreshMap.containsKey(wire.getExporter())) {
+                            // Bundles can be either ACTIVE or RESOLVED
+                            int state = hostBundle.getState();
+                            if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
+                                stopBundles.add(hostBundle);
+                            }
+                            refreshBundles.add(hostBundle);
+                            break;
+                        }
+                    }
+                }
+
+                // Add relevant bundles to be refreshed also to the stop list.
+                for (AbstractUserBundle aux : new HashSet<AbstractUserBundle>(refreshMap.values())) {
+                    if (aux instanceof HostBundle) {
+                        int state = aux.getState();
+                        if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
+                            stopBundles.add((HostBundle) aux);
+                        }
+                    }
+                }
+
+                List<HostBundle> stopList = new ArrayList<HostBundle>(stopBundles);
+                List<AbstractUserBundle> refreshList = new ArrayList<AbstractUserBundle>(refreshBundles);
+
+                StartLevelPlugin startLevel = getOptionalPlugin(StartLevelPlugin.class);
+                BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator(startLevel);
+                Collections.sort(stopList, startLevelComparator);
+
+                for (ListIterator<HostBundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();) {
+                    HostBundle hostBundle = it.previous();
+                    try {
+                        hostBundle.stop(Bundle.STOP_TRANSIENT);
+                    } catch (Exception th) {
+                        eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
+                    }
+                }
+
+                for (AbstractUserBundle userBundle : uninstallBundles) {
+                    userBundle.remove();
+                }
+
+                for (AbstractUserBundle userBundle : refreshList) {
+                    try {
+                        userBundle.refresh();
+                    } catch (Exception th) {
+                        eventsPlugin.fireFrameworkEvent(userBundle, FrameworkEvent.ERROR, th);
+                    }
+                }
+
+                for (HostBundle hostBundle : stopList) {
+                    try {
+                        hostBundle.start(Bundle.START_TRANSIENT);
+                    } catch (Exception th) {
+                        eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
+                    }
+                }
+
+                eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
+            }
+        };
+        getExecutor().execute(runner);
+    }
+
+    private Executor getExecutor() {
+        if (executor == null)
+            executor = Executors.newSingleThreadExecutor();
+        return executor;
+    }
+
+    @Override
+    public boolean resolveBundles(Bundle[] bundles) {
+        // Get the list of unresolved bundles
+        Set<XModule> unresolved = new HashSet<XModule>();
+        if (bundles == null) {
+            for (AbstractBundle aux : getBundleManager().getBundles()) {
+                if (aux.getState() == Bundle.INSTALLED)
+                    unresolved.add(aux.getResolverModule());
+            }
+        } else {
+            for (Bundle aux : bundles) {
+                AbstractBundle bundleState = AbstractBundle.assertBundleState(aux);
+                if (bundleState.getState() == Bundle.INSTALLED)
+                    unresolved.add(bundleState.getResolverModule());
+            }
+        }
+
+        log.debugf("Resolve bundles: %s", unresolved);
+        return resolverPlugin.resolveAll(unresolved);
+    }
+
+    @Override
+    public RequiredBundle[] getRequiredBundles(String symbolicName) {
+        Map<AbstractBundle, Collection<AbstractBundle>> matchingBundles = new HashMap<AbstractBundle, Collection<AbstractBundle>>();
+
+        // Make a defensive copy to ensure thread safety as we are running through the list twice
+        List<AbstractBundle> bundles = new ArrayList<AbstractBundle>(getBundleManager().getBundles());
+        if (symbolicName != null) {
+            for (AbstractBundle aux : bundles) {
+                if (aux.getSymbolicName().equals(symbolicName))
+                    matchingBundles.put(aux, new ArrayList<AbstractBundle>());
+            }
+        } else {
+            for (AbstractBundle aux : bundles) {
+                if (!aux.isFragment())
+                    matchingBundles.put(aux, new ArrayList<AbstractBundle>());
+            }
+        }
+
+        if (matchingBundles.size() == 0)
             return null;
 
-         Set<XRequirement> reqset = new HashSet<XRequirement>();
-         Set<XRequirement> pkgReqSet = capability.getWiredRequirements();
-         if (pkgReqSet != null)
-            reqset.addAll(pkgReqSet);
+        for (AbstractBundle aux : bundles) {
+            XModule resModule = aux.getResolverModule();
+            for (XRequireBundleRequirement req : resModule.getBundleRequirements()) {
+                if (req.getName().equals(symbolicName)) {
+                    for (XWire wire : req.getModule().getWires()) {
+                        if (wire.getRequirement().equals(req)) {
+                            XCapability wiredCap = wire.getCapability();
+                            XModule module = wiredCap.getModule();
+                            Bundle bundle = module.getAttachment(Bundle.class);
+                            AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+                            Collection<AbstractBundle> requiring = matchingBundles.get(bundleState);
+                            if (requiring != null)
+                                requiring.add(aux);
+                        }
+                    }
+                }
+            }
+        }
 
-         // Bundles which require the exporting bundle associated with this exported
-         // package are considered to be wired to this exported package are included in
-         // the returned array.
-         XBundleCapability bundleCap = capModule.getBundleCapability();
-         Set<XRequirement> bundleReqSet = bundleCap.getWiredRequirements();
-         if (bundleReqSet != null)
-            reqset.addAll(bundleReqSet);
+        List<RequiredBundle> result = new ArrayList<RequiredBundle>(matchingBundles.size());
+        for (Map.Entry<AbstractBundle, Collection<AbstractBundle>> entry : matchingBundles.entrySet())
+            result.add(new RequiredBundleImpl(entry.getKey(), entry.getValue()));
 
-         Set<Bundle> bundles = new HashSet<Bundle>();
-         for (XRequirement req : reqset)
-         {
-            XModule reqmod = req.getModule();
-            Bundle bundle = reqmod.getAttachment(Bundle.class);
+        return result.toArray(new RequiredBundle[matchingBundles.size()]);
+    }
+
+    @Override
+    public Bundle[] getBundles(String symbolicName, String versionRange) {
+        Set<Bundle> bundles = new TreeSet<Bundle>(new Comparator<Bundle>() {
+
+            // Makes sure that the bundles are sorted correctly in the returned array
+            // Matching bundles with the highest version should come first.
+            @Override
+            public int compare(Bundle b1, Bundle b2) {
+                // Reverse the version comparison order
+                return b2.getVersion().compareTo(b1.getVersion());
+            }
+        });
+
+        XVersionRange range = null;
+        if (versionRange != null)
+            range = XVersionRange.parse(versionRange);
+
+        for (AbstractBundle ab : getBundleManager().getBundles()) {
+            Bundle b = AbstractBundle.assertBundleState(ab).getBundleWrapper();
+            if (b.getSymbolicName().equals(symbolicName)) {
+                if (range == null)
+                    bundles.add(b);
+                else if (range.isInRange(b.getVersion()))
+                    bundles.add(b);
+            }
+        }
+
+        if (bundles.size() == 0)
+            return null;
+        return bundles.toArray(new Bundle[bundles.size()]);
+    }
+
+    @Override
+    public Bundle[] getFragments(Bundle bundle) {
+        // If the specified bundle is a fragment then null is returned.
+        // If the specified bundle is not resolved then null is returned
+        AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+        if (bundle.getBundleId() == 0 || bundleState.isFragment() || !bundleState.isResolved())
+            return null;
+
+        HostBundle hostBundle = HostBundle.assertBundleState(bundleState);
+        HostRevision curRevision = hostBundle.getCurrentRevision();
+
+        List<Bundle> result = new ArrayList<Bundle>();
+        for (FragmentRevision aux : curRevision.getAttachedFragments())
+            result.add(aux.getBundleState().getBundleWrapper());
+
+        if (result.isEmpty())
+            return null;
+
+        return result.toArray(new Bundle[result.size()]);
+    }
+
+    @Override
+    public Bundle[] getHosts(Bundle bundle) {
+        AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+        if (bundleState.isFragment() == false)
+            return null;
+
+        FragmentBundle fragBundle = FragmentBundle.assertBundleState(bundleState);
+        FragmentRevision curRevision = fragBundle.getCurrentRevision();
+
+        List<Bundle> result = new ArrayList<Bundle>();
+        for (HostRevision aux : curRevision.getAttachedHosts())
+            result.add(aux.getBundleState().getBundleWrapper());
+
+        if (result.isEmpty())
+            return null;
+
+        return result.toArray(new Bundle[result.size()]);
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    public Bundle getBundle(Class clazz) {
+        if (clazz == null)
+            throw new IllegalArgumentException("Null clazz");
+
+        ClassLoader loader = clazz.getClassLoader();
+        if (loader instanceof BundleReference) {
+            BundleReference bundleRef = (BundleReference) loader;
+            return bundleRef.getBundle();
+        }
+
+        log.debugf("Cannot obtain bundle for: %s", clazz.getName());
+        return null;
+    }
+
+    @Override
+    public int getBundleType(Bundle bundle) {
+        AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+        return bundleState.isFragment() ? BUNDLE_TYPE_FRAGMENT : 0;
+    }
+
+    static class ExportedPackageImpl implements ExportedPackage {
+
+        private final XPackageCapability capability;
+
+        ExportedPackageImpl(XPackageCapability cap) {
+            capability = cap;
+        }
+
+        @Override
+        public String getName() {
+            return capability.getName();
+        }
+
+        @Override
+        public Bundle getExportingBundle() {
+            Bundle bundle = capability.getModule().getAttachment(Bundle.class);
             AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-            bundles.add(bundleState.getBundleWrapper());
-         }
+            return bundleState.getBundleWrapper();
+        }
 
-         // Remove the exporting bundle from the result
-         Bundle capBundle = capModule.getAttachment(Bundle.class);
-         AbstractBundle capAbstractBundle = AbstractBundle.assertBundleState(capBundle);
-         bundles.remove(capAbstractBundle.getBundleWrapper());
+        @Override
+        public Bundle[] getImportingBundles() {
+            if (isRemovalPending())
+                return null;
 
-         return bundles.toArray(new Bundle[bundles.size()]);
-      }
+            XModule capModule = capability.getModule();
+            if (capModule.isResolved() == false)
+                return null;
 
-      @Override
-      public String getSpecificationVersion()
-      {
-         return capability.getVersion().toString();
-      }
+            Set<XRequirement> reqset = new HashSet<XRequirement>();
+            Set<XRequirement> pkgReqSet = capability.getWiredRequirements();
+            if (pkgReqSet != null)
+                reqset.addAll(pkgReqSet);
 
-      @Override
-      public Version getVersion()
-      {
-         return capability.getVersion();
-      }
+            // Bundles which require the exporting bundle associated with this exported
+            // package are considered to be wired to this exported package are included in
+            // the returned array.
+            XBundleCapability bundleCap = capModule.getBundleCapability();
+            Set<XRequirement> bundleReqSet = bundleCap.getWiredRequirements();
+            if (bundleReqSet != null)
+                reqset.addAll(bundleReqSet);
 
-      @Override
-      public boolean isRemovalPending()
-      {
-         XModule module = capability.getModule();
-         AbstractRevision rev = module.getAttachment(AbstractRevision.class);
-         Bundle b = module.getAttachment(Bundle.class);
-         AbstractBundle ab = AbstractBundle.assertBundleState(b);
-         return !ab.getCurrentRevision().equals(rev) || ab.getState() == Bundle.UNINSTALLED;
-      }
+            Set<Bundle> bundles = new HashSet<Bundle>();
+            for (XRequirement req : reqset) {
+                XModule reqmod = req.getModule();
+                Bundle bundle = reqmod.getAttachment(Bundle.class);
+                AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+                bundles.add(bundleState.getBundleWrapper());
+            }
 
-      private XPackageCapability getCapability()
-      {
-         return capability;
-      }
-   }
+            // Remove the exporting bundle from the result
+            Bundle capBundle = capModule.getAttachment(Bundle.class);
+            AbstractBundle capAbstractBundle = AbstractBundle.assertBundleState(capBundle);
+            bundles.remove(capAbstractBundle.getBundleWrapper());
 
-   static class RequiredBundleImpl implements RequiredBundle
-   {
-      private final Bundle requiredBundle;
-      private final Bundle[] requiringBundles;
-      private final AbstractRevision bundleRevision;
+            return bundles.toArray(new Bundle[bundles.size()]);
+        }
 
-      public RequiredBundleImpl(AbstractBundle requiredBundle, Collection<AbstractBundle> requiringBundles)
-      {
-         this.requiredBundle = AbstractBundle.assertBundleState(requiredBundle).getBundleWrapper();
-         this.bundleRevision = requiredBundle.getCurrentRevision();
+        @Override
+        public String getSpecificationVersion() {
+            return capability.getVersion().toString();
+        }
 
-         List<Bundle> bundles = new ArrayList<Bundle>(requiringBundles.size());
-         for (AbstractBundle ab : requiringBundles)
-         {
-            bundles.add(AbstractBundle.assertBundleState(ab).getBundleWrapper());
-         }
-         this.requiringBundles = bundles.toArray(new Bundle[bundles.size()]);
-      }
+        @Override
+        public Version getVersion() {
+            return capability.getVersion();
+        }
 
-      @Override
-      public String getSymbolicName()
-      {
-         return requiredBundle.getSymbolicName();
-      }
+        @Override
+        public boolean isRemovalPending() {
+            XModule module = capability.getModule();
+            AbstractRevision rev = module.getAttachment(AbstractRevision.class);
+            Bundle b = module.getAttachment(Bundle.class);
+            AbstractBundle ab = AbstractBundle.assertBundleState(b);
+            return !ab.getCurrentRevision().equals(rev) || ab.getState() == Bundle.UNINSTALLED;
+        }
 
-      @Override
-      public Bundle getBundle()
-      {
-         if (isRemovalPending())
-            return null;
+        private XPackageCapability getCapability() {
+            return capability;
+        }
+    }
 
-         return requiredBundle;
-      }
+    static class RequiredBundleImpl implements RequiredBundle {
 
-      @Override
-      public Bundle[] getRequiringBundles()
-      {
-         if (isRemovalPending())
-            return null;
+        private final Bundle requiredBundle;
+        private final Bundle[] requiringBundles;
+        private final AbstractRevision bundleRevision;
 
-         return requiringBundles;
-      }
+        public RequiredBundleImpl(AbstractBundle requiredBundle, Collection<AbstractBundle> requiringBundles) {
+            this.requiredBundle = AbstractBundle.assertBundleState(requiredBundle).getBundleWrapper();
+            this.bundleRevision = requiredBundle.getCurrentRevision();
 
-      @Override
-      public Version getVersion()
-      {
-         return requiredBundle.getVersion();
-      }
+            List<Bundle> bundles = new ArrayList<Bundle>(requiringBundles.size());
+            for (AbstractBundle ab : requiringBundles) {
+                bundles.add(AbstractBundle.assertBundleState(ab).getBundleWrapper());
+            }
+            this.requiringBundles = bundles.toArray(new Bundle[bundles.size()]);
+        }
 
-      @Override
-      public boolean isRemovalPending()
-      {
-         if (requiredBundle.getState() == Bundle.UNINSTALLED)
-            return true;
+        @Override
+        public String getSymbolicName() {
+            return requiredBundle.getSymbolicName();
+        }
 
-         return !bundleRevision.equals(bundleRevision.getBundleState().getCurrentRevision());
-      }
-   }
+        @Override
+        public Bundle getBundle() {
+            if (isRemovalPending())
+                return null;
 
-   private static class BundleStartLevelComparator implements Comparator<HostBundle>
-   {
-      private final StartLevel startLevel;
+            return requiredBundle;
+        }
 
-      private BundleStartLevelComparator(StartLevel startLevelService)
-      {
-         this.startLevel = startLevelService;
-      }
+        @Override
+        public Bundle[] getRequiringBundles() {
+            if (isRemovalPending())
+                return null;
 
-      @Override
-      public int compare(HostBundle o1, HostBundle o2)
-      {
-         if (startLevel == null)
-            return 0;
+            return requiringBundles;
+        }
 
-         int sl1 = o1.getStartLevel();
-         int sl2 = o2.getStartLevel();
-         return sl1 < sl2 ? -1 : (sl1 == sl2 ? 0 : 1);
-      }
-   }
+        @Override
+        public Version getVersion() {
+            return requiredBundle.getVersion();
+        }
 
-   private static class ExportedPackageComparator implements Comparator<ExportedPackage>
-   {
-      @Override
-      public int compare(ExportedPackage ep1, ExportedPackage ep2)
-      {
-         return ep2.getVersion().compareTo(ep1.getVersion());
-      }
-   }
+        @Override
+        public boolean isRemovalPending() {
+            if (requiredBundle.getState() == Bundle.UNINSTALLED)
+                return true;
+
+            return !bundleRevision.equals(bundleRevision.getBundleState().getCurrentRevision());
+        }
+    }
+
+    private static class BundleStartLevelComparator implements Comparator<HostBundle> {
+
+        private final StartLevel startLevel;
+
+        private BundleStartLevelComparator(StartLevel startLevelService) {
+            this.startLevel = startLevelService;
+        }
+
+        @Override
+        public int compare(HostBundle o1, HostBundle o2) {
+            if (startLevel == null)
+                return 0;
+
+            int sl1 = o1.getStartLevel();
+            int sl2 = o2.getStartLevel();
+            return sl1 < sl2 ? -1 : (sl1 == sl2 ? 0 : 1);
+        }
+    }
+
+    private static class ExportedPackageComparator implements Comparator<ExportedPackage> {
+
+        @Override
+        public int compare(ExportedPackage ep1, ExportedPackage ep2) {
+            return ep2.getVersion().compareTo(ep1.getVersion());
+        }
+    }
 }

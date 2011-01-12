@@ -21,6 +21,5 @@
  */
 package org.jboss.test.osgi.framework.simple.bundleB;
 
-public class BeanB
-{
+public class BeanB {
 }

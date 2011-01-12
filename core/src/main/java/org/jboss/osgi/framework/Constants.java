@@ -21,15 +21,14 @@
  */
 package org.jboss.osgi.framework;
 
-
 /**
  * The module manager plugin.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 06Jul2009
  */
-public interface Constants extends org.osgi.framework.Constants
-{
-   /** The prefix for modules/services managed by the OSGi layer */
-   String JBOSGI_PREFIX = "jbosgi";
+public interface Constants extends org.osgi.framework.Constants {
+
+    /** The prefix for modules/services managed by the OSGi layer */
+    String JBOSGI_PREFIX = "jbosgi";
 }

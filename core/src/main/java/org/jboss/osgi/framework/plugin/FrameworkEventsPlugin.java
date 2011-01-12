@@ -32,40 +32,40 @@ import org.osgi.framework.ServiceListener;
 import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 
 /**
- * A plugin that handles the various OSGi event types.  
+ * A plugin that handles the various OSGi event types.
  * 
  * @author thomas.diesler@jboss.com
  * @since 27-Aug-2009
  */
-public interface FrameworkEventsPlugin extends Plugin
-{
-   boolean isActive();
-   
-   void setActive(boolean active);
-   
-   void addBundleListener(Bundle bundle, BundleListener listener);
+public interface FrameworkEventsPlugin extends Plugin {
 
-   void removeBundleListener(Bundle bundle, BundleListener listener);
-   
-   void removeBundleListeners(Bundle bundle);
+    boolean isActive();
 
-   void addFrameworkListener(Bundle bundle, FrameworkListener listener);
+    void setActive(boolean active);
 
-   void removeFrameworkListener(Bundle bundle, FrameworkListener listener);
+    void addBundleListener(Bundle bundle, BundleListener listener);
 
-   void removeFrameworkListeners(Bundle bundle);
+    void removeBundleListener(Bundle bundle, BundleListener listener);
 
-   void addServiceListener(Bundle bundle, ServiceListener listener, String filter) throws InvalidSyntaxException;
+    void removeBundleListeners(Bundle bundle);
 
-   Collection<ListenerInfo> getServiceListenerInfos(Bundle bundle);
-   
-   void removeServiceListener(Bundle bundle, ServiceListener listener);
-   
-   void removeServiceListeners(Bundle bundle);
-   
-   void fireBundleEvent(Bundle bundle, int type);
+    void addFrameworkListener(Bundle bundle, FrameworkListener listener);
 
-   void fireFrameworkEvent(Bundle bundle, int type, Throwable throwable);
+    void removeFrameworkListener(Bundle bundle, FrameworkListener listener);
 
-   void fireServiceEvent(Bundle bundle, int type, ServiceState service);
+    void removeFrameworkListeners(Bundle bundle);
+
+    void addServiceListener(Bundle bundle, ServiceListener listener, String filter) throws InvalidSyntaxException;
+
+    Collection<ListenerInfo> getServiceListenerInfos(Bundle bundle);
+
+    void removeServiceListener(Bundle bundle, ServiceListener listener);
+
+    void removeServiceListeners(Bundle bundle);
+
+    void fireBundleEvent(Bundle bundle, int type);
+
+    void fireFrameworkEvent(Bundle bundle, int type, Throwable throwable);
+
+    void fireServiceEvent(Bundle bundle, int type, ServiceState service);
 }

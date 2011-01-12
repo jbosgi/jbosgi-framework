@@ -32,52 +32,48 @@ import org.osgi.service.url.AbstractURLStreamHandlerService;
 
 /**
  * A handler for the 'bundle' protocol.
- *
+ * 
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jan-2011
  */
-public class BundleProtocolHandler extends AbstractURLStreamHandlerService
-{
-   public static final String PROTOCOL_NAME = "bundle";
+public class BundleProtocolHandler extends AbstractURLStreamHandlerService {
 
-   private final BundleManager bundleManager;
+    public static final String PROTOCOL_NAME = "bundle";
 
-   BundleProtocolHandler(BundleManager bundleManager)
-   {
-      this.bundleManager = bundleManager;
-   }
+    private final BundleManager bundleManager;
 
-   public static URL getBundleURL(Bundle bundle, String path) throws IOException
-   {
-      if (bundle == null)
-         throw new IllegalArgumentException("Null bundle");
-      if (path == null)
-         throw new IllegalArgumentException("Null path");
+    BundleProtocolHandler(BundleManager bundleManager) {
+        this.bundleManager = bundleManager;
+    }
 
-      return new URL(PROTOCOL_NAME, new Long(bundle.getBundleId()).toString(), path.startsWith("/") ? path : "/" + path);
-   }
+    public static URL getBundleURL(Bundle bundle, String path) throws IOException {
+        if (bundle == null)
+            throw new IllegalArgumentException("Null bundle");
+        if (path == null)
+            throw new IllegalArgumentException("Null path");
 
-   @Override
-   public URLConnection openConnection(URL url) throws IOException
-   {
-      URL vfsURL = toVirtualFileURL(url);
-      if (vfsURL == null)
-         throw new IOException("Cannot obtain virtual file URL for: " + url);
-      
-      return vfsURL.openConnection();
-   }
+        return new URL(PROTOCOL_NAME, new Long(bundle.getBundleId()).toString(), path.startsWith("/") ? path : "/" + path);
+    }
 
-   private URL toVirtualFileURL(URL url) throws IOException
-   {
-      if (PROTOCOL_NAME.equals(url.getProtocol()) == false)
-         throw new IllegalArgumentException("Not a bundle url: " + url);
+    @Override
+    public URLConnection openConnection(URL url) throws IOException {
+        URL vfsURL = toVirtualFileURL(url);
+        if (vfsURL == null)
+            throw new IOException("Cannot obtain virtual file URL for: " + url);
 
-      long bundleId = Long.parseLong(url.getHost());
-      AbstractBundle bundleState = bundleManager.getBundleById(bundleId);
-      if (bundleState == null)
-         throw new IOException("Cannot obtain bundle for: " + url);
+        return vfsURL.openConnection();
+    }
 
-      String path = url.getPath();
-      return bundleState.getEntry(path);
-   }
+    private URL toVirtualFileURL(URL url) throws IOException {
+        if (PROTOCOL_NAME.equals(url.getProtocol()) == false)
+            throw new IllegalArgumentException("Not a bundle url: " + url);
+
+        long bundleId = Long.parseLong(url.getHost());
+        AbstractBundle bundleState = bundleManager.getBundleById(bundleId);
+        if (bundleState == null)
+            throw new IOException("Cannot obtain bundle for: " + url);
+
+        String path = url.getPath();
+        return bundleState.getEntry(path);
+    }
 }

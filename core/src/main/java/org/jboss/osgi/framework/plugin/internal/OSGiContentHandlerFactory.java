@@ -28,23 +28,21 @@ import org.jboss.osgi.framework.plugin.URLHandlerPlugin;
 
 /**
  * A {@link ContentHandlerFactory} which is backed by OSGi services.
- *
+ * 
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @author Thomas.Diesler@jboss.com
  * @since 10-Jan-2011
  */
-public class OSGiContentHandlerFactory implements ContentHandlerFactory
-{
-   private URLHandlerPlugin handlerPlugin;
-   
-   public OSGiContentHandlerFactory(URLHandlerPlugin handlerPlugin)
-   {
-      this.handlerPlugin = handlerPlugin;
-   }
+public class OSGiContentHandlerFactory implements ContentHandlerFactory {
 
-   @Override
-   public ContentHandler createContentHandler(String mimetype)
-   {
-      return handlerPlugin.createContentHandler(mimetype);
-   }
+    private URLHandlerPlugin handlerPlugin;
+
+    public OSGiContentHandlerFactory(URLHandlerPlugin handlerPlugin) {
+        this.handlerPlugin = handlerPlugin;
+    }
+
+    @Override
+    public ContentHandler createContentHandler(String mimetype) {
+        return handlerPlugin.createContentHandler(mimetype);
+    }
 }

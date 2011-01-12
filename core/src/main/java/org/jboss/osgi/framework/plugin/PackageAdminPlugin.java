@@ -29,6 +29,5 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 07-Sep-2009
  */
-public interface PackageAdminPlugin extends Plugin, PackageAdmin
-{
+public interface PackageAdminPlugin extends Plugin, PackageAdmin {
 }

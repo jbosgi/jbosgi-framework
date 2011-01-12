@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.fragments.fragE;
 
-public class FragEClass
-{
+public class FragEClass {
 
 }

@@ -31,111 +31,94 @@ import java.util.Iterator;
  * @since 21-MAr-2010
  */
 @SuppressWarnings("rawtypes")
-public class RemoveOnlyCollection<T> implements Collection<T>
-{
-   Collection<T> delegate;
+public class RemoveOnlyCollection<T> implements Collection<T> {
 
-   public RemoveOnlyCollection(Collection<T> delegate)
-   {
-      if (delegate == null)
-         throw new IllegalArgumentException("Null delegate");
-      this.delegate = delegate;
-   }
+    Collection<T> delegate;
 
-   @Override
-   public int size()
-   {
-      return delegate.size();
-   }
+    public RemoveOnlyCollection(Collection<T> delegate) {
+        if (delegate == null)
+            throw new IllegalArgumentException("Null delegate");
+        this.delegate = delegate;
+    }
 
-   @Override
-   public boolean isEmpty()
-   {
-      return delegate.isEmpty();
-   }
+    @Override
+    public int size() {
+        return delegate.size();
+    }
 
-   @Override
-   public boolean contains(Object o)
-   {
-      return delegate.contains(o);
-   }
+    @Override
+    public boolean isEmpty() {
+        return delegate.isEmpty();
+    }
 
-   @Override
-   public Iterator<T> iterator()
-   {
-      return delegate.iterator();
-   }
+    @Override
+    public boolean contains(Object o) {
+        return delegate.contains(o);
+    }
 
-   @Override
-   public Object[] toArray()
-   {
-      return delegate.toArray();
-   }
+    @Override
+    public Iterator<T> iterator() {
+        return delegate.iterator();
+    }
 
-   @Override
-   @SuppressWarnings("unchecked")
-   public Object[] toArray(Object[] a)
-   {
-      return delegate.toArray(a);
-   }
+    @Override
+    public Object[] toArray() {
+        return delegate.toArray();
+    }
 
-   @Override
-   public boolean add(Object e)
-   {
-      throw new UnsupportedOperationException("Add not supported");
-   }
+    @Override
+    @SuppressWarnings("unchecked")
+    public Object[] toArray(Object[] a) {
+        return delegate.toArray(a);
+    }
 
-   @Override
-   public boolean remove(Object o)
-   {
-      return delegate.remove(o);
-   }
+    @Override
+    public boolean add(Object e) {
+        throw new UnsupportedOperationException("Add not supported");
+    }
 
-   @Override
-   public boolean containsAll(Collection c)
-   {
-      return delegate.containsAll(c);
-   }
+    @Override
+    public boolean remove(Object o) {
+        return delegate.remove(o);
+    }
 
-   @Override
-   public boolean addAll(Collection c)
-   {
-      throw new UnsupportedOperationException("Add not supported");
-   }
+    @Override
+    public boolean containsAll(Collection c) {
+        return delegate.containsAll(c);
+    }
 
-   @Override
-   public boolean removeAll(Collection c)
-   {
-      return delegate.removeAll(c);
-   }
+    @Override
+    public boolean addAll(Collection c) {
+        throw new UnsupportedOperationException("Add not supported");
+    }
 
-   @Override
-   public boolean retainAll(Collection c)
-   {
-      return delegate.removeAll(c);
-   }
+    @Override
+    public boolean removeAll(Collection c) {
+        return delegate.removeAll(c);
+    }
 
-   @Override
-   public void clear()
-   {
-      delegate.clear();
-   }
+    @Override
+    public boolean retainAll(Collection c) {
+        return delegate.removeAll(c);
+    }
 
-   @Override
-   public int hashCode()
-   {
-      return delegate.hashCode();
-   }
+    @Override
+    public void clear() {
+        delegate.clear();
+    }
 
-   @Override
-   public boolean equals(Object obj)
-   {
-      return delegate.equals(obj);
-   }
+    @Override
+    public int hashCode() {
+        return delegate.hashCode();
+    }
 
-   @Override
-   public String toString()
-   {
-      return delegate.toString();
-   }
+    @Override
+    public boolean equals(Object obj) {
+        return delegate.equals(obj);
+    }
+
+    @Override
+    public String toString() {
+        return delegate.toString();
+    }
 }
