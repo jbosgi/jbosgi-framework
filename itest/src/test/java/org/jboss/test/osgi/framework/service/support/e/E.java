@@ -21,6 +21,5 @@
  */
 package org.jboss.test.osgi.framework.service.support.e;
 
-public class E
-{
+public class E {
 }

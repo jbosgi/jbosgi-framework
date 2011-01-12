@@ -25,58 +25,50 @@ import org.jboss.osgi.framework.bundle.BundleManager;
 
 /**
  * The base class of all framework plugins.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public abstract class AbstractPlugin implements Plugin
-{
-   private BundleManager bundleManager;
+public abstract class AbstractPlugin implements Plugin {
 
-   public AbstractPlugin(BundleManager bundleManager)
-   {
-      if (bundleManager == null)
-         throw new IllegalArgumentException("Null bundleManager");
+    private BundleManager bundleManager;
 
-      this.bundleManager = bundleManager;
-   }
+    public AbstractPlugin(BundleManager bundleManager) {
+        if (bundleManager == null)
+            throw new IllegalArgumentException("Null bundleManager");
 
-   public BundleManager getBundleManager()
-   {
-      return bundleManager;
-   }
+        this.bundleManager = bundleManager;
+    }
 
-   @Override
-   public void initPlugin()
-   {
-      // do nothing
-   }
+    public BundleManager getBundleManager() {
+        return bundleManager;
+    }
 
-   @Override
-   public void startPlugin()
-   {
-      // do nothing
-   }
+    @Override
+    public void initPlugin() {
+        // do nothing
+    }
 
-   @Override
-   public void stopPlugin()
-   {
-      // do nothing
-   }
+    @Override
+    public void startPlugin() {
+        // do nothing
+    }
 
-   @Override
-   public void destroyPlugin()
-   {
-      // do nothing
-   }
+    @Override
+    public void stopPlugin() {
+        // do nothing
+    }
 
-   public <T extends Plugin> T getPlugin(Class<T> clazz)
-   {
-      return bundleManager.getPlugin(clazz);
-   }
+    @Override
+    public void destroyPlugin() {
+        // do nothing
+    }
 
-   public <T extends Plugin> T getOptionalPlugin(Class<T> clazz)
-   {
-      return bundleManager.getOptionalPlugin(clazz);
-   }
+    public <T extends Plugin> T getPlugin(Class<T> clazz) {
+        return bundleManager.getPlugin(clazz);
+    }
+
+    public <T extends Plugin> T getOptionalPlugin(Class<T> clazz) {
+        return bundleManager.getOptionalPlugin(clazz);
+    }
 }

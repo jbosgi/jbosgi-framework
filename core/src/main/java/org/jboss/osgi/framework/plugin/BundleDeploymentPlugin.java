@@ -29,38 +29,42 @@ import org.osgi.framework.BundleException;
 
 /**
  * A plugin that handles Bundle deployments.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 12-Jul-2010
  */
-public interface BundleDeploymentPlugin extends Plugin
-{
-   /**
-    * Create a {@link Deployment} from the given bundle storage.
-    * @param storageState The bundle storage to be associated with the deployment
-    * @throws BundleException If the given root file does not
-    */
-   Deployment createDeployment(BundleStorageState storageState) throws BundleException;
+public interface BundleDeploymentPlugin extends Plugin {
 
-   /**
-    * Create a {@link Deployment} from the given module identifier.
-    * @param identifier The module identifier
-    * @throws BundleException If the given root file does not
-    */
-   Deployment createDeployment(ModuleIdentifier identifier) throws BundleException;
+    /**
+     * Create a {@link Deployment} from the given bundle storage.
+     * 
+     * @param storageState The bundle storage to be associated with the deployment
+     * @throws BundleException If the given root file does not
+     */
+    Deployment createDeployment(BundleStorageState storageState) throws BundleException;
 
-   /**
-    * Create a {@link Deployment} from the given module identifier.
-    * @param location The bundle location that is to be used
-    * @param identifier The module identifier
-    * @throws BundleException If the given root file does not
-    */
-   Deployment createDeployment(String location, ModuleIdentifier identifier) throws BundleException;
+    /**
+     * Create a {@link Deployment} from the given module identifier.
+     * 
+     * @param identifier The module identifier
+     * @throws BundleException If the given root file does not
+     */
+    Deployment createDeployment(ModuleIdentifier identifier) throws BundleException;
 
-   /**
-    * Creates {@link OSGiMetaData} from the deployment.
-    * @return The OSGiMetaData
-    * @throws BundleException If OSGiMetaData could not be constructed from the deployment
-    */
-   OSGiMetaData createOSGiMetaData(Deployment dep) throws BundleException;
+    /**
+     * Create a {@link Deployment} from the given module identifier.
+     * 
+     * @param location The bundle location that is to be used
+     * @param identifier The module identifier
+     * @throws BundleException If the given root file does not
+     */
+    Deployment createDeployment(String location, ModuleIdentifier identifier) throws BundleException;
+
+    /**
+     * Creates {@link OSGiMetaData} from the deployment.
+     * 
+     * @return The OSGiMetaData
+     * @throws BundleException If OSGiMetaData could not be constructed from the deployment
+     */
+    OSGiMetaData createOSGiMetaData(Deployment dep) throws BundleException;
 }

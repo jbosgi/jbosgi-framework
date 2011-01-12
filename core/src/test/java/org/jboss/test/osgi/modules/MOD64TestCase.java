@@ -34,31 +34,29 @@ import org.junit.Test;
 
 /**
  * [MODULES-64] ExportFilter on ResourceLoader has no effect
- *
+ * 
  * @author Thomas.Diesler@jboss.com
  * @since 15-Sep-2010
  */
-public class MOD64TestCase extends ModulesTestBase
-{
-   @Test
-   @Ignore("[MODULES-64] ExportFilter on ResourceLoader has no effect")
-   public void testExportFilterOnResourceLoader() throws Exception
-   {
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA), getPathFilter(A.class)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
+public class MOD64TestCase extends ModulesTestBase {
 
-      assertLoadClass(identifierA, A.class.getName());
-      assertLoadClassFails(identifierA, B.class.getName());
-   }
+    @Test
+    @Ignore("[MODULES-64] ExportFilter on ResourceLoader has no effect")
+    public void testExportFilterOnResourceLoader() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA), getPathFilter(A.class)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
 
-   private JavaArchive getModuleA()
-   {
-      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-      archive.addClasses(A.class, B.class);
-      return archive;
-   }
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClassFails(identifierA, B.class.getName());
+    }
+
+    private JavaArchive getModuleA() {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
+        archive.addClasses(A.class, B.class);
+        return archive;
+    }
 }

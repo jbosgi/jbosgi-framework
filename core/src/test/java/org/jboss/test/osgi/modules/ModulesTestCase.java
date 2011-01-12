@@ -51,533 +51,500 @@ import org.osgi.framework.BundleActivator;
 
 /**
  * Test low level modules use cases.
- *
+ * 
  * @author Thomas.Diesler@jboss.com
  * @since 15-Sep-2010
  */
-public class ModulesTestCase extends ModulesTestBase
-{
-   @Test
-   public void testNoResourceRoot() throws Exception
-   {
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      addModuleSpec(specBuilderA.create());
-
-      assertLoadClassFails(identifierA, A.class.getName());
-      assertLoadClassFails(identifierA, B.class.getName());
-   }
-
-   @Test
-   public void testResourceLoader() throws Exception
-   {
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
-
-      assertLoadClass(identifierA, A.class.getName());
-      assertLoadClass(identifierA, B.class.getName());
-   }
-
-   @Test
-   public void testExportFilterOnResourceLoader() throws Exception
-   {
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA), getPathFilter(A.class)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
-
-      assertLoadClass(identifierA, A.class.getName());
-      // [TODO] MODULES-64 ExportFilter on ResourceLoader has no effect
-      //assertLoadClassFails(identifierA, B.class.getName());
-   }
-
-   @Test
-   public void testImportFilterOnLocalDependency() throws Exception
-   {
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(getPathFilter(A.class), PathFilters.acceptAll()));
-      addModuleSpec(specBuilderA.create());
-
-      assertLoadClass(identifierA, A.class.getName());
-      assertLoadClassFails(identifierA, B.class.getName());
-   }
-
-   @Test
-   public void testLazyActivation() throws Exception
-   {
-      JavaArchive archiveA = getModuleA();
-      PathFilter eagerPathsFilter = getPathFilter(A.class);
-      PathFilter lazyPathsFilter = PathFilters.not(eagerPathsFilter);
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(eagerPathsFilter, PathFilters.acceptAll()));
-      specBuilderA.setFallbackLoader(new RelinkFallbackLoader(identifierA, lazyPathsFilter));
-      addModuleSpec(specBuilderA.create());
-
-      assertLoadClass(identifierA, A.class.getName());
-      assertLoadClass(identifierA, B.class.getName());
-   }
-
-   @Test
-   public void testDependencyNotWired() throws Exception
-   {
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
-
-      JavaArchive archiveB = getModuleB();
-      ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
-      specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderB.create());
-
-      assertLoadClass(identifierA, A.class.getName());
-      assertLoadClass(identifierA, B.class.getName());
-
-      // [TODO] [MODULES-45] Unexpected class load with unwired dependency
-      // assertLoadClassFails(identifierB, C.class.getName());
-
-      Class<?> clazz = loadClass(identifierB, C.class.getName());
-      try
-      {
-         clazz.newInstance();
-         fail("NoClassDefFoundError expected");
-      }
-      catch (NoClassDefFoundError er)
-      {
-         // expected
-      }
-
-      assertLoadClass(identifierB, D.class.getName());
-   }
-
-   @Test
-   public void testDependencyWiredNoFilters() throws Exception
-   {
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
-
-      JavaArchive archiveB = getModuleB();
-      ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
-      specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
-      addModuleSpec(specBuilderB.create());
-
-      assertLoadClass(identifierA, A.class.getName());
-      assertLoadClass(identifierA, B.class.getName());
-
-      assertLoadClass(identifierB, A.class.getName());
-      assertLoadClass(identifierB, C.class.getName());
-   }
-
-   @Test
-   public void testDependencyTwoExportersNotWired() throws Exception
-   {
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
-
-      JavaArchive archiveC = getModuleC();
-      ModuleIdentifier identifierC = ModuleIdentifier.create(archiveC.getName());
-      ModuleSpec.Builder specBuilderC = ModuleSpec.build(identifierC);
-      specBuilderC.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveC)));
-      specBuilderC.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderC.create());
-
-      assertLoadClass(identifierA, A.class.getName(), identifierA);
-      assertLoadClass(identifierC, A.class.getName(), identifierC);
-   }
-
-   @Test
-   public void testDependencyHidesLocal() throws Exception
-   {
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
-
-      JavaArchive archiveC = getModuleC();
-      ModuleIdentifier identifierC = ModuleIdentifier.create(archiveC.getName());
-      ModuleSpec.Builder specBuilderC = ModuleSpec.build(identifierC);
-      specBuilderC.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveC)));
-      specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
-      specBuilderC.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderC.create());
-
-      assertLoadClass(identifierA, A.class.getName());
-      assertLoadClass(identifierA, B.class.getName());
-
-      // moduleC also contains A, which however should be loaded from moduleA
-      assertLoadClass(identifierC, A.class.getName(), identifierA);
-      assertLoadClass(identifierC, B.class.getName());
-      assertLoadClass(identifierC, C.class.getName());
-   }
-
-   @Test
-   public void testDependencyExportFilter() throws Exception
-   {
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(PathFilters.acceptAll(), getPathFilter(A.class)));
-      addModuleSpec(specBuilderA.create());
-
-      JavaArchive archiveB = getModuleB();
-      ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
-      specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
-      addModuleSpec(specBuilderB.create());
-
-      assertLoadClass(identifierA, A.class.getName());
-      assertLoadClass(identifierA, B.class.getName());
-
-      // moduleA has an export filter on A, B is not visible
-      assertLoadClass(identifierB, A.class.getName(), identifierA);
-      assertLoadClassFails(identifierB, B.class.getName());
-
-      assertLoadClass(identifierB, C.class.getName());
-      assertLoadClass(identifierB, D.class.getName());
-   }
-
-   @Test
-   public void testDependencyImportFilter() throws Exception
-   {
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
-
-      JavaArchive archiveB = getModuleB();
-      ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
-      specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(getPathFilter(A.class), PathFilters.acceptAll(), getModuleLoader(), identifierA, false));
-      addModuleSpec(specBuilderB.create());
-
-      assertLoadClass(identifierA, A.class.getName());
-      assertLoadClass(identifierA, B.class.getName());
-
-      // The dependency on moduleA has an import filter on A, B is not visible
-      assertLoadClass(identifierB, A.class.getName(), identifierA);
-      assertLoadClassFails(identifierB, B.class.getName());
-
-      assertLoadClass(identifierB, C.class.getName());
-      assertLoadClass(identifierB, D.class.getName());
-   }
-
-   @Test
-   public void testSystemLocalLoader() throws Exception
-   {
-      ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
-      ModuleSpec.Builder systemBuilder = ModuleSpec.build(systemid);
-      SystemLocalLoader localLoader = new SystemLocalLoader(getFilterPaths(A.class, MBeanServer.class));
-      DependencySpec localDependency = DependencySpec.createLocalDependencySpec(localLoader, localLoader.getExportedPaths());
-      systemBuilder.addDependency(localDependency);
-      addModuleSpec(systemBuilder.create());
-
-      assertLoadClass(systemid, A.class.getName());
-      assertLoadClass(systemid, MBeanServer.class.getName());
-      assertLoadClassFails(systemid, SocketFactory.class.getName());
-      assertLoadClassFails(systemid, BundleActivator.class.getName());
-   }
-
-   @Test
-   public void testSystemModuleWithDependency() throws Exception
-   {
-      // SystemModule -> ModuleA
-
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
-
-      ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
-      ModuleSpec.Builder systemBuilder = ModuleSpec.build(systemid);
-      systemBuilder.addDependency(DependencySpec.createModuleDependencySpec(identifierA)); // add the module dependency first
-      SystemLocalLoader localLoader = new SystemLocalLoader(getFilterPaths(A.class, MBeanServer.class));
-      DependencySpec localDependency = DependencySpec.createLocalDependencySpec(localLoader, localLoader.getExportedPaths());
-      //localDependency.setExportFilter(PathFilters.acceptAll());
-      //localDependency.setImportFilter(PathFilters.acceptAll());
-      systemBuilder.addDependency(localDependency); // add a dependency on a LocalLoader next
-      addModuleSpec(systemBuilder.create());
-
-      assertLoadClass(systemid, A.class.getName(), identifierA);
-      assertLoadClass(systemid, MBeanServer.class.getName());
-      assertLoadClassFails(systemid, SocketFactory.class.getName());
-      assertLoadClassFails(systemid, BundleActivator.class.getName());
-   }
-
-   @Test
-   public void testDependencyOnSystemModule() throws Exception
-   {
-      // ModuleX -> SystemModule
-
-      ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
-      ModuleSpec.Builder systemBuilder = ModuleSpec.build(systemid);
-      SystemLocalLoader localLoader = new SystemLocalLoader(getFilterPaths(BundleActivator.class));
-      DependencySpec localDependency = DependencySpec.createLocalDependencySpec(localLoader, localLoader.getExportedPaths(), true);
-      systemBuilder.addDependency(localDependency);
-      addModuleSpec(systemBuilder.create());
-
-      ModuleIdentifier identifierX = ModuleIdentifier.create("dummy");
-      ModuleSpec.Builder specBuilderX = ModuleSpec.build(identifierX);
-      specBuilderX.addDependency(DependencySpec.createModuleDependencySpec(systemid));
-      addModuleSpec(specBuilderX.create());
-
-      assertLoadClass(identifierX, BundleActivator.class.getName());
-   }
-
-   @Test
-   public void testDependencyOnSystemModuleWithDependency() throws Exception
-   {
-      // ModuleB -> SystemModule -> ModuleA
-
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
-
-      ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
-      ModuleSpec.Builder systemBuilder = ModuleSpec.build(systemid);
-      systemBuilder.addDependency(DependencySpec.createModuleDependencySpec(identifierA, true));
-      SystemLocalLoader localLoader = new SystemLocalLoader(getFilterPaths(MBeanServer.class));
-      DependencySpec localDependency = DependencySpec.createLocalDependencySpec(localLoader, localLoader.getExportedPaths(), true);
-      systemBuilder.addDependency(localDependency);
-      addModuleSpec(systemBuilder.create());
-
-      JavaArchive archiveB = getModuleB();
-      ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
-      specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(systemid));
-      addModuleSpec(specBuilderB.create());
-
-      assertLoadClass(identifierB, C.class.getName());
-      assertLoadClass(identifierB, D.class.getName());
-      assertLoadClass(identifierB, A.class.getName(), identifierA);
-      assertLoadClass(identifierB, MBeanServer.class.getName());
-   }
-
-   @Test
-   public void testDependencyNoReExport() throws Exception
-   {
-      // ModuleX -> ModuleB -> ModuleA
-
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
-
-      JavaArchive archiveB = getModuleB();
-      ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
-      specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
-      addModuleSpec(specBuilderB.create());
-
-      ModuleIdentifier identifierX = ModuleIdentifier.create("dummy");
-      ModuleSpec.Builder specBuilderX = ModuleSpec.build(identifierX);
-      specBuilderX.addDependency(DependencySpec.createModuleDependencySpec(identifierB));
-      addModuleSpec(specBuilderX.create());
-
-      assertLoadClass(identifierA, A.class.getName());
-      assertLoadClass(identifierA, B.class.getName());
-
-      assertLoadClass(identifierB, C.class.getName());
-      assertLoadClass(identifierB, D.class.getName());
-      assertLoadClass(identifierB, A.class.getName());
-      assertLoadClass(identifierB, B.class.getName());
-
-      assertLoadClass(identifierX, C.class.getName());
-      assertLoadClass(identifierX, D.class.getName());
-      assertLoadClassFails(identifierX, A.class.getName());
-      assertLoadClassFails(identifierX, B.class.getName());
-   }
-
-   @Test
-   public void testDependencyExplicitReExport() throws Exception
-   {
-      // ModuleX -> ModuleB -> ModuleA
-
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
-
-      JavaArchive archiveB = getModuleB();
-      ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
-      specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(getPathFilter(A.class), identifierA, false));
-      addModuleSpec(specBuilderB.create());
-
-      ModuleIdentifier identifierX = ModuleIdentifier.create("dummy");
-      ModuleSpec.Builder specBuilderX = ModuleSpec.build(identifierX);
-      specBuilderX.addDependency(DependencySpec.createModuleDependencySpec(identifierB));
-      addModuleSpec(specBuilderX.create());
-
-      assertLoadClass(identifierA, A.class.getName());
-      assertLoadClass(identifierA, B.class.getName());
-
-      assertLoadClass(identifierB, C.class.getName());
-      assertLoadClass(identifierB, D.class.getName());
-      assertLoadClass(identifierB, A.class.getName());
-      assertLoadClass(identifierB, B.class.getName());
-
-      assertLoadClass(identifierX, C.class.getName());
-      assertLoadClass(identifierX, D.class.getName());
-      assertLoadClass(identifierX, A.class.getName());
-      assertLoadClassFails(identifierX, B.class.getName());
-   }
-
-   @Test
-   public void testDependencyReExportAll() throws Exception
-   {
-      // ModuleX -> ModuleB -> ModuleA
-
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(PathFilters.acceptAll(), getPathFilter(A.class)));
-      addModuleSpec(specBuilderA.create());
-
-      JavaArchive archiveB = getModuleB();
-      ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA, true));
-      specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderB.create());
-
-      ModuleIdentifier identifierX = ModuleIdentifier.create("dummy");
-      ModuleSpec.Builder specBuilderX = ModuleSpec.build(identifierX);
-      specBuilderX.addDependency(DependencySpec.createModuleDependencySpec(identifierB, true));
-      addModuleSpec(specBuilderX.create());
-
-      assertLoadClass(identifierA, A.class.getName());
-      assertLoadClass(identifierA, B.class.getName());
-
-      assertLoadClass(identifierB, C.class.getName());
-      assertLoadClass(identifierB, D.class.getName());
-      assertLoadClass(identifierB, A.class.getName());
-      assertLoadClassFails(identifierB, B.class.getName());
-
-      assertLoadClass(identifierX, C.class.getName());
-      assertLoadClass(identifierX, D.class.getName());
-      assertLoadClass(identifierX, A.class.getName());
-      assertLoadClassFails(identifierX, B.class.getName());
-   }
-
-   class RelinkFallbackLoader implements LocalLoader
-   {
-      private final ModuleIdentifier identifier;
-      private final PathFilter activationFilter;
-
-      RelinkFallbackLoader(ModuleIdentifier identifier, PathFilter activationFilter)
-      {
-         this.identifier = identifier;
-         this.activationFilter = activationFilter;
-      }
-
-      @Override
-      public Class<?> loadClassLocal(String className, boolean resolve)
-      {
-         if (activationFilter.accept(getPath(className)) == false)
+public class ModulesTestCase extends ModulesTestBase {
+
+    @Test
+    public void testNoResourceRoot() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        addModuleSpec(specBuilderA.create());
+
+        assertLoadClassFails(identifierA, A.class.getName());
+        assertLoadClassFails(identifierA, B.class.getName());
+    }
+
+    @Test
+    public void testResourceLoader() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
+
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClass(identifierA, B.class.getName());
+    }
+
+    @Test
+    public void testExportFilterOnResourceLoader() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA), getPathFilter(A.class)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
+
+        assertLoadClass(identifierA, A.class.getName());
+        // [TODO] MODULES-64 ExportFilter on ResourceLoader has no effect
+        // assertLoadClassFails(identifierA, B.class.getName());
+    }
+
+    @Test
+    public void testImportFilterOnLocalDependency() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(getPathFilter(A.class), PathFilters.acceptAll()));
+        addModuleSpec(specBuilderA.create());
+
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClassFails(identifierA, B.class.getName());
+    }
+
+    @Test
+    public void testLazyActivation() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        PathFilter eagerPathsFilter = getPathFilter(A.class);
+        PathFilter lazyPathsFilter = PathFilters.not(eagerPathsFilter);
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(eagerPathsFilter, PathFilters.acceptAll()));
+        specBuilderA.setFallbackLoader(new RelinkFallbackLoader(identifierA, lazyPathsFilter));
+        addModuleSpec(specBuilderA.create());
+
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClass(identifierA, B.class.getName());
+    }
+
+    @Test
+    public void testDependencyNotWired() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
+
+        JavaArchive archiveB = getModuleB();
+        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
+        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderB.create());
+
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClass(identifierA, B.class.getName());
+
+        // [TODO] [MODULES-45] Unexpected class load with unwired dependency
+        // assertLoadClassFails(identifierB, C.class.getName());
+
+        Class<?> clazz = loadClass(identifierB, C.class.getName());
+        try {
+            clazz.newInstance();
+            fail("NoClassDefFoundError expected");
+        } catch (NoClassDefFoundError er) {
+            // expected
+        }
+
+        assertLoadClass(identifierB, D.class.getName());
+    }
+
+    @Test
+    public void testDependencyWiredNoFilters() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
+
+        JavaArchive archiveB = getModuleB();
+        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
+        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
+        addModuleSpec(specBuilderB.create());
+
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClass(identifierA, B.class.getName());
+
+        assertLoadClass(identifierB, A.class.getName());
+        assertLoadClass(identifierB, C.class.getName());
+    }
+
+    @Test
+    public void testDependencyTwoExportersNotWired() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
+
+        JavaArchive archiveC = getModuleC();
+        ModuleIdentifier identifierC = ModuleIdentifier.create(archiveC.getName());
+        ModuleSpec.Builder specBuilderC = ModuleSpec.build(identifierC);
+        specBuilderC.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveC)));
+        specBuilderC.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderC.create());
+
+        assertLoadClass(identifierA, A.class.getName(), identifierA);
+        assertLoadClass(identifierC, A.class.getName(), identifierC);
+    }
+
+    @Test
+    public void testDependencyHidesLocal() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
+
+        JavaArchive archiveC = getModuleC();
+        ModuleIdentifier identifierC = ModuleIdentifier.create(archiveC.getName());
+        ModuleSpec.Builder specBuilderC = ModuleSpec.build(identifierC);
+        specBuilderC.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveC)));
+        specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
+        specBuilderC.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderC.create());
+
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClass(identifierA, B.class.getName());
+
+        // moduleC also contains A, which however should be loaded from moduleA
+        assertLoadClass(identifierC, A.class.getName(), identifierA);
+        assertLoadClass(identifierC, B.class.getName());
+        assertLoadClass(identifierC, C.class.getName());
+    }
+
+    @Test
+    public void testDependencyExportFilter() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(PathFilters.acceptAll(), getPathFilter(A.class)));
+        addModuleSpec(specBuilderA.create());
+
+        JavaArchive archiveB = getModuleB();
+        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
+        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
+        addModuleSpec(specBuilderB.create());
+
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClass(identifierA, B.class.getName());
+
+        // moduleA has an export filter on A, B is not visible
+        assertLoadClass(identifierB, A.class.getName(), identifierA);
+        assertLoadClassFails(identifierB, B.class.getName());
+
+        assertLoadClass(identifierB, C.class.getName());
+        assertLoadClass(identifierB, D.class.getName());
+    }
+
+    @Test
+    public void testDependencyImportFilter() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
+
+        JavaArchive archiveB = getModuleB();
+        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
+        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(getPathFilter(A.class), PathFilters.acceptAll(), getModuleLoader(), identifierA, false));
+        addModuleSpec(specBuilderB.create());
+
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClass(identifierA, B.class.getName());
+
+        // The dependency on moduleA has an import filter on A, B is not visible
+        assertLoadClass(identifierB, A.class.getName(), identifierA);
+        assertLoadClassFails(identifierB, B.class.getName());
+
+        assertLoadClass(identifierB, C.class.getName());
+        assertLoadClass(identifierB, D.class.getName());
+    }
+
+    @Test
+    public void testSystemLocalLoader() throws Exception {
+        ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
+        ModuleSpec.Builder systemBuilder = ModuleSpec.build(systemid);
+        SystemLocalLoader localLoader = new SystemLocalLoader(getFilterPaths(A.class, MBeanServer.class));
+        DependencySpec localDependency = DependencySpec.createLocalDependencySpec(localLoader, localLoader.getExportedPaths());
+        systemBuilder.addDependency(localDependency);
+        addModuleSpec(systemBuilder.create());
+
+        assertLoadClass(systemid, A.class.getName());
+        assertLoadClass(systemid, MBeanServer.class.getName());
+        assertLoadClassFails(systemid, SocketFactory.class.getName());
+        assertLoadClassFails(systemid, BundleActivator.class.getName());
+    }
+
+    @Test
+    public void testSystemModuleWithDependency() throws Exception {
+        // SystemModule -> ModuleA
+
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
+
+        ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
+        ModuleSpec.Builder systemBuilder = ModuleSpec.build(systemid);
+        systemBuilder.addDependency(DependencySpec.createModuleDependencySpec(identifierA)); // add the module dependency first
+        SystemLocalLoader localLoader = new SystemLocalLoader(getFilterPaths(A.class, MBeanServer.class));
+        DependencySpec localDependency = DependencySpec.createLocalDependencySpec(localLoader, localLoader.getExportedPaths());
+        // localDependency.setExportFilter(PathFilters.acceptAll());
+        // localDependency.setImportFilter(PathFilters.acceptAll());
+        systemBuilder.addDependency(localDependency); // add a dependency on a LocalLoader next
+        addModuleSpec(systemBuilder.create());
+
+        assertLoadClass(systemid, A.class.getName(), identifierA);
+        assertLoadClass(systemid, MBeanServer.class.getName());
+        assertLoadClassFails(systemid, SocketFactory.class.getName());
+        assertLoadClassFails(systemid, BundleActivator.class.getName());
+    }
+
+    @Test
+    public void testDependencyOnSystemModule() throws Exception {
+        // ModuleX -> SystemModule
+
+        ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
+        ModuleSpec.Builder systemBuilder = ModuleSpec.build(systemid);
+        SystemLocalLoader localLoader = new SystemLocalLoader(getFilterPaths(BundleActivator.class));
+        DependencySpec localDependency = DependencySpec.createLocalDependencySpec(localLoader, localLoader.getExportedPaths(), true);
+        systemBuilder.addDependency(localDependency);
+        addModuleSpec(systemBuilder.create());
+
+        ModuleIdentifier identifierX = ModuleIdentifier.create("dummy");
+        ModuleSpec.Builder specBuilderX = ModuleSpec.build(identifierX);
+        specBuilderX.addDependency(DependencySpec.createModuleDependencySpec(systemid));
+        addModuleSpec(specBuilderX.create());
+
+        assertLoadClass(identifierX, BundleActivator.class.getName());
+    }
+
+    @Test
+    public void testDependencyOnSystemModuleWithDependency() throws Exception {
+        // ModuleB -> SystemModule -> ModuleA
+
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
+
+        ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
+        ModuleSpec.Builder systemBuilder = ModuleSpec.build(systemid);
+        systemBuilder.addDependency(DependencySpec.createModuleDependencySpec(identifierA, true));
+        SystemLocalLoader localLoader = new SystemLocalLoader(getFilterPaths(MBeanServer.class));
+        DependencySpec localDependency = DependencySpec.createLocalDependencySpec(localLoader, localLoader.getExportedPaths(), true);
+        systemBuilder.addDependency(localDependency);
+        addModuleSpec(systemBuilder.create());
+
+        JavaArchive archiveB = getModuleB();
+        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
+        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(systemid));
+        addModuleSpec(specBuilderB.create());
+
+        assertLoadClass(identifierB, C.class.getName());
+        assertLoadClass(identifierB, D.class.getName());
+        assertLoadClass(identifierB, A.class.getName(), identifierA);
+        assertLoadClass(identifierB, MBeanServer.class.getName());
+    }
+
+    @Test
+    public void testDependencyNoReExport() throws Exception {
+        // ModuleX -> ModuleB -> ModuleA
+
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
+
+        JavaArchive archiveB = getModuleB();
+        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
+        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
+        addModuleSpec(specBuilderB.create());
+
+        ModuleIdentifier identifierX = ModuleIdentifier.create("dummy");
+        ModuleSpec.Builder specBuilderX = ModuleSpec.build(identifierX);
+        specBuilderX.addDependency(DependencySpec.createModuleDependencySpec(identifierB));
+        addModuleSpec(specBuilderX.create());
+
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClass(identifierA, B.class.getName());
+
+        assertLoadClass(identifierB, C.class.getName());
+        assertLoadClass(identifierB, D.class.getName());
+        assertLoadClass(identifierB, A.class.getName());
+        assertLoadClass(identifierB, B.class.getName());
+
+        assertLoadClass(identifierX, C.class.getName());
+        assertLoadClass(identifierX, D.class.getName());
+        assertLoadClassFails(identifierX, A.class.getName());
+        assertLoadClassFails(identifierX, B.class.getName());
+    }
+
+    @Test
+    public void testDependencyExplicitReExport() throws Exception {
+        // ModuleX -> ModuleB -> ModuleA
+
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
+
+        JavaArchive archiveB = getModuleB();
+        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
+        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(getPathFilter(A.class), identifierA, false));
+        addModuleSpec(specBuilderB.create());
+
+        ModuleIdentifier identifierX = ModuleIdentifier.create("dummy");
+        ModuleSpec.Builder specBuilderX = ModuleSpec.build(identifierX);
+        specBuilderX.addDependency(DependencySpec.createModuleDependencySpec(identifierB));
+        addModuleSpec(specBuilderX.create());
+
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClass(identifierA, B.class.getName());
+
+        assertLoadClass(identifierB, C.class.getName());
+        assertLoadClass(identifierB, D.class.getName());
+        assertLoadClass(identifierB, A.class.getName());
+        assertLoadClass(identifierB, B.class.getName());
+
+        assertLoadClass(identifierX, C.class.getName());
+        assertLoadClass(identifierX, D.class.getName());
+        assertLoadClass(identifierX, A.class.getName());
+        assertLoadClassFails(identifierX, B.class.getName());
+    }
+
+    @Test
+    public void testDependencyReExportAll() throws Exception {
+        // ModuleX -> ModuleB -> ModuleA
+
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(PathFilters.acceptAll(), getPathFilter(A.class)));
+        addModuleSpec(specBuilderA.create());
+
+        JavaArchive archiveB = getModuleB();
+        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA, true));
+        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderB.create());
+
+        ModuleIdentifier identifierX = ModuleIdentifier.create("dummy");
+        ModuleSpec.Builder specBuilderX = ModuleSpec.build(identifierX);
+        specBuilderX.addDependency(DependencySpec.createModuleDependencySpec(identifierB, true));
+        addModuleSpec(specBuilderX.create());
+
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClass(identifierA, B.class.getName());
+
+        assertLoadClass(identifierB, C.class.getName());
+        assertLoadClass(identifierB, D.class.getName());
+        assertLoadClass(identifierB, A.class.getName());
+        assertLoadClassFails(identifierB, B.class.getName());
+
+        assertLoadClass(identifierX, C.class.getName());
+        assertLoadClass(identifierX, D.class.getName());
+        assertLoadClass(identifierX, A.class.getName());
+        assertLoadClassFails(identifierX, B.class.getName());
+    }
+
+    class RelinkFallbackLoader implements LocalLoader {
+
+        private final ModuleIdentifier identifier;
+        private final PathFilter activationFilter;
+
+        RelinkFallbackLoader(ModuleIdentifier identifier, PathFilter activationFilter) {
+            this.identifier = identifier;
+            this.activationFilter = activationFilter;
+        }
+
+        @Override
+        public Class<?> loadClassLocal(String className, boolean resolve) {
+            if (activationFilter.accept(getPath(className)) == false)
+                return null;
+
+            try {
+                ModuleLoaderSupport moduleLoader = getModuleLoader();
+                Module module = moduleLoader.loadModule(identifier);
+                List<DependencySpec> dependencies = Collections.singletonList(DependencySpec.createLocalDependencySpec());
+                moduleLoader.setAndRelinkDependencies(module, dependencies);
+                return module.getClassLoader().loadClass(className);
+            } catch (ModuleLoadException ex) {
+                throw new IllegalStateException(ex);
+            } catch (ClassNotFoundException ex) {
+                return null;
+            }
+        }
+
+        @Override
+        public List<Resource> loadResourceLocal(String name) {
             return null;
+        }
 
-         try
-         {
-            ModuleLoaderSupport moduleLoader = getModuleLoader();
-            Module module = moduleLoader.loadModule(identifier);
-            List<DependencySpec> dependencies = Collections.singletonList(DependencySpec.createLocalDependencySpec());
-            moduleLoader.setAndRelinkDependencies(module, dependencies);
-            return module.getClassLoader().loadClass(className);
-         }
-         catch (ModuleLoadException ex)
-         {
-            throw new IllegalStateException(ex);
-         }
-         catch (ClassNotFoundException ex)
-         {
+        @Override
+        public Resource loadResourceLocal(String root, String name) {
             return null;
-         }
-      }
+        }
+    }
 
-      @Override
-      public List<Resource> loadResourceLocal(String name)
-      {
-         return null;
-      }
+    private JavaArchive getModuleA() {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
+        archive.addClasses(A.class, B.class);
+        return archive;
+    }
 
-      @Override
-      public Resource loadResourceLocal(String root, String name)
-      {
-         return null;
-      }
-   }
+    private JavaArchive getModuleB() {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
+        archive.addClasses(C.class, D.class);
+        return archive;
+    }
 
-   private JavaArchive getModuleA()
-   {
-      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-      archive.addClasses(A.class, B.class);
-      return archive;
-   }
-
-   private JavaArchive getModuleB()
-   {
-      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
-      archive.addClasses(C.class, D.class);
-      return archive;
-   }
-
-   private JavaArchive getModuleC()
-   {
-      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleC");
-      archive.addClasses(A.class, C.class);
-      return archive;
-   }
+    private JavaArchive getModuleC() {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleC");
+        archive.addClasses(A.class, C.class);
+        return archive;
+    }
 }

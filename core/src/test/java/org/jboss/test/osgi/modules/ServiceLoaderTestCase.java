@@ -44,84 +44,81 @@ import org.junit.Test;
 
 /**
  * Test usage of the java.util.ServiceLoader API
- *
+ * 
  * @author Thomas.Diesler@jboss.com
  * @since 22-Sep-2010
  */
-public class ServiceLoaderTestCase extends ModulesTestBase
-{
-   String resName = "META-INF/services/" + Foo.class.getName();
+public class ServiceLoaderTestCase extends ModulesTestBase {
 
-   @Test
-   public void testServiceLoader() throws Exception
-   {
-      JavaArchive archiveA = getArchiveA();
+    String resName = "META-INF/services/" + Foo.class.getName();
 
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
+    @Test
+    public void testServiceLoader() throws Exception {
+        JavaArchive archiveA = getArchiveA();
 
-      Module moduleA = loadModule(identifierA);
-      ModuleClassLoader classloaderA = moduleA.getClassLoader();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
 
-      URL resURL = classloaderA.getResource(resName);
-      assertNotNull("Resource found", resURL);
+        Module moduleA = loadModule(identifierA);
+        ModuleClassLoader classloaderA = moduleA.getClassLoader();
 
-      ServiceLoader<Foo> serviceLoader = ServiceLoader.load(Foo.class);
-      assertNotNull("ServiceLoader not null", serviceLoader);
-      assertFalse("ServiceLoader no next", serviceLoader.iterator().hasNext());
+        URL resURL = classloaderA.getResource(resName);
+        assertNotNull("Resource found", resURL);
 
-      serviceLoader = ServiceLoader.load(Foo.class, classloaderA);
-      assertNotNull("ServiceLoader not null", serviceLoader);
-      assertTrue("ServiceLoader next", serviceLoader.iterator().hasNext());
-   }
+        ServiceLoader<Foo> serviceLoader = ServiceLoader.load(Foo.class);
+        assertNotNull("ServiceLoader not null", serviceLoader);
+        assertFalse("ServiceLoader no next", serviceLoader.iterator().hasNext());
 
-   @Test
-   public void testLoadFromDependency() throws Exception
-   {
-      JavaArchive archiveA = getArchiveA();
+        serviceLoader = ServiceLoader.load(Foo.class, classloaderA);
+        assertNotNull("ServiceLoader not null", serviceLoader);
+        assertTrue("ServiceLoader next", serviceLoader.iterator().hasNext());
+    }
 
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
+    @Test
+    public void testLoadFromDependency() throws Exception {
+        JavaArchive archiveA = getArchiveA();
 
-      ModuleIdentifier identifierB = ModuleIdentifier.create("moduleB");
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      PathFilter importFilter = PathFilters.in(Collections.singleton("META-INF/services"));
-      PathFilter exportFilter = PathFilters.acceptAll();
-      specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, getModuleLoader(), identifierA, false));
-      addModuleSpec(specBuilderB.create());
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
 
-      Module moduleA = loadModule(identifierA);
-      ModuleClassLoader classloaderA = moduleA.getClassLoader();
+        ModuleIdentifier identifierB = ModuleIdentifier.create("moduleB");
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        PathFilter importFilter = PathFilters.in(Collections.singleton("META-INF/services"));
+        PathFilter exportFilter = PathFilters.acceptAll();
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, getModuleLoader(), identifierA, false));
+        addModuleSpec(specBuilderB.create());
 
-      URL resURL = classloaderA.getResource(resName);
-      assertNotNull("Resource found", resURL);
+        Module moduleA = loadModule(identifierA);
+        ModuleClassLoader classloaderA = moduleA.getClassLoader();
 
-      Module moduleB = loadModule(identifierB);
-      ModuleClassLoader classloaderB = moduleB.getClassLoader();
+        URL resURL = classloaderA.getResource(resName);
+        assertNotNull("Resource found", resURL);
 
-      resURL = classloaderB.getResource(resName);
-      assertNotNull("Resource found", resURL);
+        Module moduleB = loadModule(identifierB);
+        ModuleClassLoader classloaderB = moduleB.getClassLoader();
 
-      ServiceLoader<Foo> serviceLoader = ServiceLoader.load(Foo.class);
-      assertNotNull("ServiceLoader not null", serviceLoader);
-      assertFalse("ServiceLoader no next", serviceLoader.iterator().hasNext());
+        resURL = classloaderB.getResource(resName);
+        assertNotNull("Resource found", resURL);
 
-      serviceLoader = ServiceLoader.load(Foo.class, classloaderB);
-      assertNotNull("ServiceLoader not null", serviceLoader);
-      assertTrue("ServiceLoader next", serviceLoader.iterator().hasNext());
-   }
+        ServiceLoader<Foo> serviceLoader = ServiceLoader.load(Foo.class);
+        assertNotNull("ServiceLoader not null", serviceLoader);
+        assertFalse("ServiceLoader no next", serviceLoader.iterator().hasNext());
 
-   private JavaArchive getArchiveA()
-   {
-      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-      archive.addClasses(Foo.class);
-      archive.addResource("modules/" + resName, resName);
-      return archive;
-   }
+        serviceLoader = ServiceLoader.load(Foo.class, classloaderB);
+        assertNotNull("ServiceLoader not null", serviceLoader);
+        assertTrue("ServiceLoader next", serviceLoader.iterator().hasNext());
+    }
+
+    private JavaArchive getArchiveA() {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
+        archive.addClasses(Foo.class);
+        archive.addResource("modules/" + resName, resName);
+        return archive;
+    }
 }

@@ -27,37 +27,31 @@ import org.osgi.framework.BundleContext;
 /**
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public class Activator implements BundleActivator
-{
-   public void start(final BundleContext context) throws Exception
-   {
-      new Thread(new Runnable()
-      {
-         public void run()
-         {
-            try
-            {
-               // Uncomment the following line to make the test pass,
-               // the issue is that the StartLevelControl.testActivatorChangeBundleStartLevel()
-               // test in the TCK lowers the start level of a bundle in the bundle activator
-               // this causes the bundle to get stopped on a different thread, often before 
-               // the system is finished activating the bundle.
-               // Thread.sleep(5000);
-               context.getBundle().stop();
-            }
-            catch (Exception e)
-            {
-               e.printStackTrace();
-            }
-         }
-      }).start();
+public class Activator implements BundleActivator {
 
-      // Wait with exiting the activator so that the thread gets a chance to call stop() before
-      // we exit from here.
-      Thread.sleep(2000);
-   }
+    public void start(final BundleContext context) throws Exception {
+        new Thread(new Runnable() {
 
-   public void stop(BundleContext context)
-   {
-   }
+            public void run() {
+                try {
+                    // Uncomment the following line to make the test pass,
+                    // the issue is that the StartLevelControl.testActivatorChangeBundleStartLevel()
+                    // test in the TCK lowers the start level of a bundle in the bundle activator
+                    // this causes the bundle to get stopped on a different thread, often before
+                    // the system is finished activating the bundle.
+                    // Thread.sleep(5000);
+                    context.getBundle().stop();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+
+        // Wait with exiting the activator so that the thread gets a chance to call stop() before
+        // we exit from here.
+        Thread.sleep(2000);
+    }
+
+    public void stop(BundleContext context) {
+    }
 }

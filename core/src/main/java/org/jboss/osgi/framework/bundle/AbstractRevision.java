@@ -1,24 +1,24 @@
 /*
-* JBoss, Home of Professional Open Source
-* Copyright 2009, Red Hat Middleware LLC, and individual contributors
-* as indicated by the @author tags. See the copyright.txt file in the
-* distribution for a full listing of individual contributors.
-*
-* This is free software; you can redistribute it and/or modify it
-* under the terms of the GNU Lesser General Public License as
-* published by the Free Software Foundation; either version 2.1 of
-* the License, or (at your option) any later version.
-*
-* This software is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-* Lesser General Public License for more details.
-*
-* You should have received a copy of the GNU Lesser General Public
-* License along with this software; if not, write to the Free
-* Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-* 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-*/
+ * JBoss, Home of Professional Open Source
+ * Copyright 2009, Red Hat Middleware LLC, and individual contributors
+ * as indicated by the @author tags. See the copyright.txt file in the
+ * distribution for a full listing of individual contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
 package org.jboss.osgi.framework.bundle;
 
 import java.io.IOException;
@@ -41,161 +41,146 @@ import org.osgi.framework.Version;
 
 /**
  * An abstract bundle revision.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-public abstract class AbstractRevision
-{
-   static final Logger log = Logger.getLogger(AbstractRevision.class);
+public abstract class AbstractRevision {
 
-   private final int revision;
-   private final AbstractBundle bundleState;
-   private final OSGiMetaData metadata;
-   private XModule resolverModule;
-   private boolean refreshAllowed;
+    static final Logger log = Logger.getLogger(AbstractRevision.class);
 
-   // Cache commonly used plugins
-   private final ModuleManagerPlugin moduleManager;
-   private final ResolverPlugin resolverPlugin;
+    private final int revision;
+    private final AbstractBundle bundleState;
+    private final OSGiMetaData metadata;
+    private XModule resolverModule;
+    private boolean refreshAllowed;
 
-   AbstractRevision(AbstractBundle bundleState, OSGiMetaData metadata, XModule resModule, int revision) throws BundleException
-   {
-      if (bundleState == null)
-         throw new IllegalArgumentException("Null bundleState");
-      if (metadata == null)
-         throw new IllegalArgumentException("Null metadata");
+    // Cache commonly used plugins
+    private final ModuleManagerPlugin moduleManager;
+    private final ResolverPlugin resolverPlugin;
 
-      this.bundleState = bundleState;
-      this.metadata = metadata;
-      this.revision = revision;
+    AbstractRevision(AbstractBundle bundleState, OSGiMetaData metadata, XModule resModule, int revision) throws BundleException {
+        if (bundleState == null)
+            throw new IllegalArgumentException("Null bundleState");
+        if (metadata == null)
+            throw new IllegalArgumentException("Null metadata");
 
-      BundleManager bundleManager = getBundleManager();
-      this.moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
-      this.resolverPlugin = bundleManager.getPlugin(ResolverPlugin.class);
+        this.bundleState = bundleState;
+        this.metadata = metadata;
+        this.revision = revision;
 
-      // Create the resolver module
-      if (resModule == null)
-      {
-         resModule = createResolverModule(metadata);
-         refreshAllowed = true;
-      }
+        BundleManager bundleManager = getBundleManager();
+        this.moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
+        this.resolverPlugin = bundleManager.getPlugin(ResolverPlugin.class);
 
-      resModule.addAttachment(AbstractRevision.class, this);
-      resModule.addAttachment(Bundle.class, bundleState);
-      refreshRevisionInternal(resModule);
-      
-      resolverModule = resModule;
-   }
+        // Create the resolver module
+        if (resModule == null) {
+            resModule = createResolverModule(metadata);
+            refreshAllowed = true;
+        }
 
-   void refreshRevision(OSGiMetaData metadata) throws BundleException
-   {
-      // In case of an externally provided XModule, we generate dummy OSGiMetaData
-      // with considerable data loss. A new XModule cannot get created from that
-      // OSGiMetaData. An acceptable fix would be to allow refresh on the XModule
-      // or otherwise create a clone of the original XModule.
-      if (refreshAllowed == false)
-         throw new IllegalStateException("External XModule, refresh not allowed");
+        resModule.addAttachment(AbstractRevision.class, this);
+        resModule.addAttachment(Bundle.class, bundleState);
+        refreshRevisionInternal(resModule);
 
-      resolverModule = createResolverModule(metadata);
-      refreshRevisionInternal(resolverModule);
-   }
+        resolverModule = resModule;
+    }
 
-   XModule createResolverModule(OSGiMetaData metadata) throws BundleException
-   {
-      String symbolicName = metadata.getBundleSymbolicName();
-      Version version = metadata.getBundleVersion();
-      int modulerev = revision;
-      
-      // An UNINSTALLED module with active wires may still be registered in with the Resolver
-      // Make sure we have a unique module identifier
-      XModuleBuilder builder = resolverPlugin.getModuleBuilder();
-      builder.createModule(symbolicName, version, modulerev);
-      XModuleIdentity moduleId = builder.getModuleIdentity();
-      XModule resModule = resolverPlugin.getModuleById(moduleId);
-      while(resModule != null)
-      {
-         builder = resolverPlugin.getModuleBuilder();
-         builder.createModule(symbolicName, version, modulerev += 100);
-         moduleId = builder.getModuleIdentity();
-         resModule = resolverPlugin.getModuleById(moduleId);
-      }
-      
-      resModule = builder.createModule(metadata, modulerev).getModule();
-      resModule.addAttachment(AbstractRevision.class, this);
-      resModule.addAttachment(Bundle.class, bundleState);
-      return resModule;
-   }
+    void refreshRevision(OSGiMetaData metadata) throws BundleException {
+        // In case of an externally provided XModule, we generate dummy OSGiMetaData
+        // with considerable data loss. A new XModule cannot get created from that
+        // OSGiMetaData. An acceptable fix would be to allow refresh on the XModule
+        // or otherwise create a clone of the original XModule.
+        if (refreshAllowed == false)
+            throw new IllegalStateException("External XModule, refresh not allowed");
 
-   abstract void refreshRevisionInternal(XModule resModule);
+        resolverModule = createResolverModule(metadata);
+        refreshRevisionInternal(resolverModule);
+    }
 
-   public int getRevisionCount()
-   {
-      return revision;
-   }
+    XModule createResolverModule(OSGiMetaData metadata) throws BundleException {
+        String symbolicName = metadata.getBundleSymbolicName();
+        Version version = metadata.getBundleVersion();
+        int modulerev = revision;
 
-   public XModule getResolverModule()
-   {
-      return resolverModule;
-   }
+        // An UNINSTALLED module with active wires may still be registered in with the Resolver
+        // Make sure we have a unique module identifier
+        XModuleBuilder builder = resolverPlugin.getModuleBuilder();
+        builder.createModule(symbolicName, version, modulerev);
+        XModuleIdentity moduleId = builder.getModuleIdentity();
+        XModule resModule = resolverPlugin.getModuleById(moduleId);
+        while (resModule != null) {
+            builder = resolverPlugin.getModuleBuilder();
+            builder.createModule(symbolicName, version, modulerev += 100);
+            moduleId = builder.getModuleIdentity();
+            resModule = resolverPlugin.getModuleById(moduleId);
+        }
 
-   public AbstractBundle getBundleState()
-   {
-      return bundleState;
-   }
+        resModule = builder.createModule(metadata, modulerev).getModule();
+        resModule.addAttachment(AbstractRevision.class, this);
+        resModule.addAttachment(Bundle.class, bundleState);
+        return resModule;
+    }
 
-   public ModuleIdentifier getModuleIdentifier()
-   {
-      return moduleManager.getModuleIdentifier(resolverModule);
-   }
+    abstract void refreshRevisionInternal(XModule resModule);
 
-   public ModuleClassLoader getModuleClassLoader()
-   {
-      ModuleIdentifier identifier = getModuleIdentifier();
-      Module module = moduleManager.getModule(identifier);
-      return module != null ? module.getClassLoader() : null;
-   }
+    public int getRevisionCount() {
+        return revision;
+    }
 
-   BundleManager getBundleManager()
-   {
-      return bundleState.getBundleManager();
-   }
+    public XModule getResolverModule() {
+        return resolverModule;
+    }
 
-   OSGiMetaData getOSGiMetaData()
-   {
-      return metadata;
-   }
+    public AbstractBundle getBundleState() {
+        return bundleState;
+    }
 
-   String getSymbolicName()
-   {
-      return bundleState.getSymbolicName();
-   }
+    public ModuleIdentifier getModuleIdentifier() {
+        return moduleManager.getModuleIdentifier(resolverModule);
+    }
 
-   Version getVersion()
-   {
-      return metadata.getBundleVersion();
-   }
+    public ModuleClassLoader getModuleClassLoader() {
+        ModuleIdentifier identifier = getModuleIdentifier();
+        Module module = moduleManager.getModule(identifier);
+        return module != null ? module.getClassLoader() : null;
+    }
 
-   abstract Class<?> loadClass(String name) throws ClassNotFoundException;
+    BundleManager getBundleManager() {
+        return bundleState.getBundleManager();
+    }
 
-   abstract URL getResource(String name);
+    OSGiMetaData getOSGiMetaData() {
+        return metadata;
+    }
 
-   abstract Enumeration<URL> getResources(String name) throws IOException;
+    String getSymbolicName() {
+        return bundleState.getSymbolicName();
+    }
 
-   abstract Enumeration<String> getEntryPaths(String path);
+    Version getVersion() {
+        return metadata.getBundleVersion();
+    }
 
-   abstract URL getEntry(String path);
+    abstract Class<?> loadClass(String name) throws ClassNotFoundException;
 
-   abstract Enumeration<URL> findEntries(String path, String pattern, boolean recurse);
+    abstract URL getResource(String name);
 
-   abstract String getLocation();
+    abstract Enumeration<URL> getResources(String name) throws IOException;
 
-   abstract URL getLocalizationEntry(String path);
+    abstract Enumeration<String> getEntryPaths(String path);
 
-   @Override
-   public String toString()
-   {
-      return "Revision[" + resolverModule.getModuleId() + "]";
-   }
+    abstract URL getEntry(String path);
+
+    abstract Enumeration<URL> findEntries(String path, String pattern, boolean recurse);
+
+    abstract String getLocation();
+
+    abstract URL getLocalizationEntry(String path);
+
+    @Override
+    public String toString() {
+        return "Revision[" + resolverModule.getModuleId() + "]";
+    }
 }

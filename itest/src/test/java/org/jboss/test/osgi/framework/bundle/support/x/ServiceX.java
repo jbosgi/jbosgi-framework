@@ -21,20 +21,16 @@
  */
 package org.jboss.test.osgi.framework.bundle.support.x;
 
+public class ServiceX {
 
+    private String message;
 
-public class ServiceX
-{
-   private String message;
-   
-   public ServiceX(String message)
-   {
-      this.message = message;
-   }
+    public ServiceX(String message) {
+        this.message = message;
+    }
 
-   @Override
-   public String toString()
-   {
-      return "[" + message + "]";
-   }
+    @Override
+    public String toString() {
+        return "[" + message + "]";
+    }
 }

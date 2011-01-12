@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.launch;
 
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -51,103 +50,95 @@ import org.osgi.service.startlevel.StartLevel;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Apr-2010
  */
-public class FrameworkLaunchTestCase extends OSGiFrameworkTest
-{
-   @BeforeClass
-   public static void beforeClass()
-   {
-      // prevent framework creation
-   }
-   
-   @Test
-   public void testFrameworkStartStop() throws Exception
-   {
-      Map<String,String> props = new HashMap<String, String>();
-      props.put("org.osgi.framework.storage", "target/osgi-store");
-      props.put("org.osgi.framework.storage.clean", "onFirstInit");
-      
-      FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-      Framework framework = factory.newFramework(props);
-      
-      assertNotNull("Framework not null", framework);
-      
-      assertBundleState(Bundle.INSTALLED, framework.getState());
-      
-      framework.start();
-      assertBundleState(Bundle.ACTIVE, framework.getState());
-      
-      framework.stop();
-      assertBundleState(Bundle.ACTIVE, framework.getState());
-      
-      framework.waitForStop(2000);
-      assertBundleState(Bundle.RESOLVED, framework.getState());
-   }
+public class FrameworkLaunchTestCase extends OSGiFrameworkTest {
 
-   @Test
-   public void testFrameworkInit() throws Exception
-   {
-      Map<String, String> props = new HashMap<String, String>();
-      props.put("org.osgi.framework.storage", "target/osgi-store");
-      props.put("org.osgi.framework.storage.clean", "onFirstInit");
+    @BeforeClass
+    public static void beforeClass() {
+        // prevent framework creation
+    }
 
-      FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-      Framework framework = factory.newFramework(props);
+    @Test
+    public void testFrameworkStartStop() throws Exception {
+        Map<String, String> props = new HashMap<String, String>();
+        props.put("org.osgi.framework.storage", "target/osgi-store");
+        props.put("org.osgi.framework.storage.clean", "onFirstInit");
 
-      assertNotNull("Framework not null", framework);
+        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
+        Framework framework = factory.newFramework(props);
 
-      assertBundleState(Bundle.INSTALLED, framework.getState());
+        assertNotNull("Framework not null", framework);
 
-      framework.init();
-      assertBundleState(Bundle.STARTING, framework.getState());
+        assertBundleState(Bundle.INSTALLED, framework.getState());
 
-      BundleContext bc = framework.getBundleContext();
-      ServiceReference slRef = bc.getServiceReference(StartLevel.class.getName());
-      StartLevel sls = (StartLevel)bc.getService(slRef);
-      assertEquals("Framework should be at Start Level 0 on init()", 0, sls.getStartLevel());
+        framework.start();
+        assertBundleState(Bundle.ACTIVE, framework.getState());
 
-      ServiceReference paRef = bc.getServiceReference(PackageAdmin.class.getName());
-      PackageAdmin pa = (PackageAdmin)bc.getService(paRef);
-      assertNotNull("The Package Admin service should be available", pa);
-      
-      // It should be possible to install a bundle into this framework, even though it's only inited...
-      InputStream bundleStream = toInputStream(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
-      bc.installBundle("simple-bundle1", bundleStream);
+        framework.stop();
+        assertBundleState(Bundle.ACTIVE, framework.getState());
 
-      framework.stop();
-      framework.waitForStop(2000);
-   }
+        framework.waitForStop(2000);
+        assertBundleState(Bundle.RESOLVED, framework.getState());
+    }
 
-   @Test
-   public void testNativeCodeExecPermission() throws Exception
-   {
-      String tempFileName = System.getProperty("java.io.tmpdir") + 
-         "/osgi_native" + System.currentTimeMillis() + ".test";
-      File tempFile = new File(tempFileName);
-      
-      try 
-      {
-         Map<String, String> props = new HashMap<String, String>();
-         props.put("org.osgi.framework.storage", "target/osgi-store");
-         props.put("org.osgi.framework.storage.clean", "onFirstInit");
+    @Test
+    public void testFrameworkInit() throws Exception {
+        Map<String, String> props = new HashMap<String, String>();
+        props.put("org.osgi.framework.storage", "target/osgi-store");
+        props.put("org.osgi.framework.storage.clean", "onFirstInit");
 
-         // Execute this command for every native library found in the bundle
-         props.put("org.osgi.framework.command.execpermission", "cp ${abspath} " + tempFileName);
-   
-         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-         Framework framework = factory.newFramework(props);
-         framework.start();
+        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
+        Framework framework = factory.newFramework(props);
 
-         assertFalse("Precondition", tempFile.exists());
-         Bundle bundle = framework.getBundleContext().installBundle(getTestArchivePath("simple-nativecode.jar"));
-         bundle.start();
-         assertTrue(tempFile.exists());
+        assertNotNull("Framework not null", framework);
 
-         framework.stop();
-         framework.waitForStop(2000);
-      }
-      finally
-      {
-         tempFile.delete();
-      }
-   }
+        assertBundleState(Bundle.INSTALLED, framework.getState());
+
+        framework.init();
+        assertBundleState(Bundle.STARTING, framework.getState());
+
+        BundleContext bc = framework.getBundleContext();
+        ServiceReference slRef = bc.getServiceReference(StartLevel.class.getName());
+        StartLevel sls = (StartLevel) bc.getService(slRef);
+        assertEquals("Framework should be at Start Level 0 on init()", 0, sls.getStartLevel());
+
+        ServiceReference paRef = bc.getServiceReference(PackageAdmin.class.getName());
+        PackageAdmin pa = (PackageAdmin) bc.getService(paRef);
+        assertNotNull("The Package Admin service should be available", pa);
+
+        // It should be possible to install a bundle into this framework, even though it's only inited...
+        InputStream bundleStream = toInputStream(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
+        bc.installBundle("simple-bundle1", bundleStream);
+
+        framework.stop();
+        framework.waitForStop(2000);
+    }
+
+    @Test
+    public void testNativeCodeExecPermission() throws Exception {
+        String tempFileName = System.getProperty("java.io.tmpdir") + "/osgi_native" + System.currentTimeMillis() + ".test";
+        File tempFile = new File(tempFileName);
+
+        try {
+            Map<String, String> props = new HashMap<String, String>();
+            props.put("org.osgi.framework.storage", "target/osgi-store");
+            props.put("org.osgi.framework.storage.clean", "onFirstInit");
+
+            // Execute this command for every native library found in the bundle
+            props.put("org.osgi.framework.command.execpermission", "cp ${abspath} " + tempFileName);
+
+            FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
+            Framework framework = factory.newFramework(props);
+            framework.start();
+
+            assertFalse("Precondition", tempFile.exists());
+            Bundle bundle = framework.getBundleContext().installBundle(getTestArchivePath("simple-nativecode.jar"));
+            bundle.start();
+            assertTrue(tempFile.exists());
+
+            framework.stop();
+            framework.waitForStop(2000);
+        } finally {
+            tempFile.delete();
+        }
+    }
 }

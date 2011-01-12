@@ -31,57 +31,58 @@ import org.osgi.framework.BundleException;
 
 /**
  * The resolver plugin.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2009
  */
-public interface ResolverPlugin extends Plugin
-{
-   /**
-    * Get the resolver instance
-    */
-   XResolver getResolver();
+public interface ResolverPlugin extends Plugin {
 
-   /**
-    * Get a new module builder instance
-    */
-   XModuleBuilder getModuleBuilder();
+    /**
+     * Get the resolver instance
+     */
+    XResolver getResolver();
 
-   /**
-    * Add a module to the resolver.
-    *
-    * @param module the resolver module
-    */
-   void addModule(XModule module);
+    /**
+     * Get a new module builder instance
+     */
+    XModuleBuilder getModuleBuilder();
 
-   /**
-    * Remove a module from the resolver.
-    *
-    * @param module the resolver module
-    */
-   void removeModule(XModule module);
+    /**
+     * Add a module to the resolver.
+     * 
+     * @param module the resolver module
+     */
+    void addModule(XModule module);
 
-   /**
-    * Get the module for the given id
-    * @return The module or null
-    */
-   XModule getModuleById(XModuleIdentity moduleId);
+    /**
+     * Remove a module from the resolver.
+     * 
+     * @param module the resolver module
+     */
+    void removeModule(XModule module);
 
-   /**
-    * Resolve the given modules.
-    *
-    * @param module the module to resolve
-    * @return The set of resolved modules or an empty set
-    * @throws BundleException If the resolver could not resolve the module
-    */
-   void resolve(XModule module) throws BundleException;
+    /**
+     * Get the module for the given id
+     * 
+     * @return The module or null
+     */
+    XModule getModuleById(XModuleIdentity moduleId);
 
-   /**
-    * Resolve the given set of modules.
-    *
-    * @param modules the modules to resolve
-    * @return True if all modules could be resolved
-    */
-   boolean resolveAll(Set<XModule> modules);
+    /**
+     * Resolve the given modules.
+     * 
+     * @param module the module to resolve
+     * @return The set of resolved modules or an empty set
+     * @throws BundleException If the resolver could not resolve the module
+     */
+    void resolve(XModule module) throws BundleException;
+
+    /**
+     * Resolve the given set of modules.
+     * 
+     * @param modules the modules to resolve
+     * @return True if all modules could be resolved
+     */
+    boolean resolveAll(Set<XModule> modules);
 }

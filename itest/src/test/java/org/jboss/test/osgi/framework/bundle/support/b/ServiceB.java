@@ -25,14 +25,13 @@ import org.jboss.test.osgi.framework.bundle.support.x.ServiceX;
 
 /**
  * ServiceB has a dependency on SomePojo
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 02-Mar-2009
  */
-public class ServiceB
-{
-  public String doStuffInB(ServiceX obj)
-  {
-     return obj.toString();
-  }
+public class ServiceB {
+
+    public String doStuffInB(ServiceX obj) {
+        return obj.toString();
+    }
 }

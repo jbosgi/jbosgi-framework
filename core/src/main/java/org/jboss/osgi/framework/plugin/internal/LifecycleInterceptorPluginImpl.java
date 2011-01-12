@@ -40,74 +40,66 @@ import org.osgi.framework.ServiceRegistration;
 
 /**
  * A plugin that manages bundle lifecycle interceptors.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-public class LifecycleInterceptorPluginImpl extends AbstractPlugin implements LifecycleInterceptorPlugin
-{
-   // Provide logging
-   final Logger log = Logger.getLogger(LifecycleInterceptorPluginImpl.class);
+public class LifecycleInterceptorPluginImpl extends AbstractPlugin implements LifecycleInterceptorPlugin {
 
-   private AbstractLifecycleInterceptorService delegate;
-   private ServiceRegistration registration;
+    // Provide logging
+    final Logger log = Logger.getLogger(LifecycleInterceptorPluginImpl.class);
 
-   public LifecycleInterceptorPluginImpl(final BundleManager bundleManager)
-   {
-      super(bundleManager);
-   }
+    private AbstractLifecycleInterceptorService delegate;
+    private ServiceRegistration registration;
 
-   @Override
-   public void startPlugin()
-   {
-      BundleContext sysContext = getBundleManager().getSystemContext();
-      delegate = new AbstractLifecycleInterceptorService(sysContext)
-      {
-         @Override
-         protected InvocationContext getInvocationContext(Bundle bundle)
-         {
-            AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
-            if (bundleState == null)
-               throw new IllegalStateException("Cannot obtain bundleState for: " + bundle);
+    public LifecycleInterceptorPluginImpl(final BundleManager bundleManager) {
+        super(bundleManager);
+    }
 
-            AbstractUserBundle userBundle = AbstractUserBundle.assertBundleState(bundleState);
-            Deployment dep = userBundle.getDeployment();
+    @Override
+    public void startPlugin() {
+        BundleContext sysContext = getBundleManager().getSystemContext();
+        delegate = new AbstractLifecycleInterceptorService(sysContext) {
 
-            InvocationContext inv = dep.getAttachment(InvocationContext.class);
-            if (inv == null)
-            {
-               BundleContext context = userBundle.getBundleManager().getSystemContext();
-               // TODO: support multiple roots defined in Bundle-ClassPath
-               VirtualFile rootFile = userBundle.getFirstContentRoot();
-               LifecycleInterceptorAttachments att = new LifecycleInterceptorAttachments();
-               inv = new InvocationContextImpl(context, bundle, rootFile, att);
-               dep.addAttachment(InvocationContext.class, inv);
+            @Override
+            protected InvocationContext getInvocationContext(Bundle bundle) {
+                AbstractBundle bundleState = AbstractBundle.assertBundleState(bundle);
+                if (bundleState == null)
+                    throw new IllegalStateException("Cannot obtain bundleState for: " + bundle);
+
+                AbstractUserBundle userBundle = AbstractUserBundle.assertBundleState(bundleState);
+                Deployment dep = userBundle.getDeployment();
+
+                InvocationContext inv = dep.getAttachment(InvocationContext.class);
+                if (inv == null) {
+                    BundleContext context = userBundle.getBundleManager().getSystemContext();
+                    // TODO: support multiple roots defined in Bundle-ClassPath
+                    VirtualFile rootFile = userBundle.getFirstContentRoot();
+                    LifecycleInterceptorAttachments att = new LifecycleInterceptorAttachments();
+                    inv = new InvocationContextImpl(context, bundle, rootFile, att);
+                    dep.addAttachment(InvocationContext.class, inv);
+                }
+                return inv;
             }
-            return inv;
-         }
-      };
+        };
 
-      registration = sysContext.registerService(LifecycleInterceptorService.class.getName(), delegate, null);
-   }
+        registration = sysContext.registerService(LifecycleInterceptorService.class.getName(), delegate, null);
+    }
 
-   @Override
-   public void stopPlugin()
-   {
-      if (registration != null)
-      {
-         registration.unregister();
-         registration = null;
-         delegate = null;
-      }
-   }
+    @Override
+    public void stopPlugin() {
+        if (registration != null) {
+            registration.unregister();
+            registration = null;
+            delegate = null;
+        }
+    }
 
-   public void handleStateChange(int state, Bundle bundle)
-   {
-      if (delegate != null)
-         delegate.handleStateChange(state, bundle);
-   }
+    public void handleStateChange(int state, Bundle bundle) {
+        if (delegate != null)
+            delegate.handleStateChange(state, bundle);
+    }
 
-   static class LifecycleInterceptorAttachments extends AttachmentSupport
-   {
-   }
+    static class LifecycleInterceptorAttachments extends AttachmentSupport {
+    }
 }

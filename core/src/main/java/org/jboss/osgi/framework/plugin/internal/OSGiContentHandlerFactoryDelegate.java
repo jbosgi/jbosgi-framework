@@ -34,79 +34,63 @@ import org.jboss.osgi.framework.bundle.ServiceReferenceComparator;
 import org.osgi.framework.ServiceReference;
 
 /**
- * There can only ever be one ContentHandlerFactory active in the system and it can
- * only be set once, using {@link URLConnection#setContentHandlerFactory()}.
- * This delegate makes it possible to replace this factory after it has been set, which
- * is useful for testing purposes.
- *
+ * There can only ever be one ContentHandlerFactory active in the system and it can only be set once, using
+ * {@link URLConnection#setContentHandlerFactory()}. This delegate makes it possible to replace this factory after it has been
+ * set, which is useful for testing purposes.
+ * 
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @author Thomas.Diesler@jboss.com
  * @since 10-Jan-2011
  */
-class OSGiContentHandlerFactoryDelegate implements ContentHandlerFactory
-{
-   private ContentHandlerFactory delegate;
-   private ConcurrentMap<String, List<ServiceReference>> contentHandlers = new ConcurrentHashMap<String, List<ServiceReference>>();
+class OSGiContentHandlerFactoryDelegate implements ContentHandlerFactory {
 
-   public void setDelegate(OSGiContentHandlerFactory factory)
-   {
-      delegate = factory;
-   }
+    private ContentHandlerFactory delegate;
+    private ConcurrentMap<String, List<ServiceReference>> contentHandlers = new ConcurrentHashMap<String, List<ServiceReference>>();
 
-   void addHandler(String mimeType, ServiceReference reference)
-   {
-      synchronized (contentHandlers)
-      {
-         contentHandlers.putIfAbsent(mimeType, new ArrayList<ServiceReference>());
-         List<ServiceReference> list = contentHandlers.get(mimeType);
-         synchronized (list)
-         {
-            list.add(reference);
-            Collections.sort(list, Collections.reverseOrder(ServiceReferenceComparator.getInstance()));
-         }
-      }
-   }
+    public void setDelegate(OSGiContentHandlerFactory factory) {
+        delegate = factory;
+    }
 
-   List<ServiceReference> getContentHandlers(String mimetype)
-   {
-      synchronized (contentHandlers)
-      {
-         return contentHandlers.get(mimetype);
-      }
-   }
-
-   void removeHandler(ServiceReference reference)
-   {
-      synchronized (contentHandlers)
-      {
-         for (List<ServiceReference> list : contentHandlers.values())
-         {
-            for (Iterator<ServiceReference> it = list.iterator(); it.hasNext();)
-            {
-               if (it.next().equals(reference))
-               {
-                  it.remove();
-                  break;
-               }
+    void addHandler(String mimeType, ServiceReference reference) {
+        synchronized (contentHandlers) {
+            contentHandlers.putIfAbsent(mimeType, new ArrayList<ServiceReference>());
+            List<ServiceReference> list = contentHandlers.get(mimeType);
+            synchronized (list) {
+                list.add(reference);
+                Collections.sort(list, Collections.reverseOrder(ServiceReferenceComparator.getInstance()));
             }
-         }
-      }
-   }
+        }
+    }
 
-   void clearHandlers()
-   {
-      synchronized (contentHandlers)
-      {
-         for (List<ServiceReference> list : contentHandlers.values())
-         {
-            list.clear();
-         }
-      }
-   }
+    List<ServiceReference> getContentHandlers(String mimetype) {
+        synchronized (contentHandlers) {
+            return contentHandlers.get(mimetype);
+        }
+    }
 
-   @Override
-   public ContentHandler createContentHandler(String mimetype)
-   {
-      return delegate != null ? delegate.createContentHandler(mimetype) : null;
-   }
+    void removeHandler(ServiceReference reference) {
+        synchronized (contentHandlers) {
+            for (List<ServiceReference> list : contentHandlers.values()) {
+                for (Iterator<ServiceReference> it = list.iterator(); it.hasNext();) {
+                    if (it.next().equals(reference)) {
+                        it.remove();
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    void clearHandlers() {
+        synchronized (contentHandlers) {
+            for (List<ServiceReference> list : contentHandlers.values()) {
+                list.clear();
+            }
+        }
+    }
+
+    @Override
+    public ContentHandler createContentHandler(String mimetype) {
+        return delegate != null ? delegate.createContentHandler(mimetype) : null;
+    }
 }

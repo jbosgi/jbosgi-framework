@@ -26,61 +26,61 @@ import java.util.Set;
 
 /**
  * A plugin that provides the configured list of system packages.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 24-Aug-2009
  */
-public interface SystemPackagesPlugin extends Plugin
-{
-   /**
-    * Get the list of defined boot delegation packages
-    *
-    * @return The list of defined system packages
-    */
-   List<String> getBootDelegationPackages();
+public interface SystemPackagesPlugin extends Plugin {
 
-   /**
-    * Return whether the given package name is a boot delegation package.
-    *
-    * @param name The package name
-    * @return True if the given package name is a boot delegation package.
-    */
-   boolean isBootDelegationPackage(String name);
+    /**
+     * Get the list of defined boot delegation packages
+     * 
+     * @return The list of defined system packages
+     */
+    List<String> getBootDelegationPackages();
 
-   /**
-    * Get the list of defined system packages
-    *
-    * @return The list of defined system packages
-    */
-   List<String> getSystemPackages();
+    /**
+     * Return whether the given package name is a boot delegation package.
+     * 
+     * @param name The package name
+     * @return True if the given package name is a boot delegation package.
+     */
+    boolean isBootDelegationPackage(String name);
 
-   /**
-    * Return whether the given package name is a system package.
-    *
-    * @param name The package name with optional version qualifier
-    * @return True if the given package name is system package.
-    */
-   boolean isSystemPackage(String name);
+    /**
+     * Get the list of defined system packages
+     * 
+     * @return The list of defined system packages
+     */
+    List<String> getSystemPackages();
 
-   /**
-    * Get the list of packages provided by the framework
-    *
-    * @return The list of framework provided packages
-    */
-   List<String> getFrameworkPackages();
+    /**
+     * Return whether the given package name is a system package.
+     * 
+     * @param name The package name with optional version qualifier
+     * @return True if the given package name is system package.
+     */
+    boolean isSystemPackage(String name);
 
-   /**
-    * Return whether the given package name is a framework package.
-    *
-    * @param name The package name with optional version qualifier
-    * @return True if the given package name is system package.
-    */
-   boolean isFrameworkPackage(String name);
+    /**
+     * Get the list of packages provided by the framework
+     * 
+     * @return The list of framework provided packages
+     */
+    List<String> getFrameworkPackages();
 
-   /**
-    * Get the list of paths that the framework exports
-    *
-    * @return The list of framework exported paths
-    */
-   Set<String> getExportedPaths();
+    /**
+     * Return whether the given package name is a framework package.
+     * 
+     * @param name The package name with optional version qualifier
+     * @return True if the given package name is system package.
+     */
+    boolean isFrameworkPackage(String name);
+
+    /**
+     * Get the list of paths that the framework exports
+     * 
+     * @return The list of framework exported paths
+     */
+    Set<String> getExportedPaths();
 }

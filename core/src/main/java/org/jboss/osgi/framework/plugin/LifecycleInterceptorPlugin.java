@@ -31,14 +31,14 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-public interface LifecycleInterceptorPlugin extends Plugin, LifecycleInterceptorService
-{
-   /**
-    * Invoke the registered set of interceptors for the given bundle state change.
-    *  
-    * @param state The future state of the bundle
-    * @param bundle The bundle that changes state
-    * @throws LifecycleInterceptorException if the invocation of an interceptor fails 
-    */
-   void handleStateChange(int state, Bundle bundle);
+public interface LifecycleInterceptorPlugin extends Plugin, LifecycleInterceptorService {
+
+    /**
+     * Invoke the registered set of interceptors for the given bundle state change.
+     * 
+     * @param state The future state of the bundle
+     * @param bundle The bundle that changes state
+     * @throws LifecycleInterceptorException if the invocation of an interceptor fails
+     */
+    void handleStateChange(int state, Bundle bundle);
 }

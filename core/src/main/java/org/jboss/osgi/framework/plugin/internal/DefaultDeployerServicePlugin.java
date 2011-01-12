@@ -27,41 +27,38 @@ import org.jboss.osgi.deployment.deployer.SystemDeployerService;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.plugin.AbstractDeployerServicePlugin;
+import org.jboss.osgi.framework.plugin.DeployerServicePlugin;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
 /**
  * The {@link DeployerServicePlugin} that is installed by default.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 24-Nov-2010
  */
-public class DefaultDeployerServicePlugin extends AbstractDeployerServicePlugin
-{
-   public DefaultDeployerServicePlugin(BundleManager bundleManager)
-   {
-      super(bundleManager);
-   }
+public class DefaultDeployerServicePlugin extends AbstractDeployerServicePlugin {
 
-   @Override
-   protected DeployerService getDeployerService(BundleContext context)
-   {
-      DeployerService service = new SystemDeployerService(context)
-      {
-         @Override
-         protected Bundle installBundle(Deployment dep) throws BundleException
-         {
-            AbstractBundle bundleState = getBundleManager().installBundle(dep);
-            return bundleState.getBundleWrapper();
-         }
+    public DefaultDeployerServicePlugin(BundleManager bundleManager) {
+        super(bundleManager);
+    }
 
-         @Override
-         protected void uninstallBundle(Deployment dep, Bundle bundle) throws BundleException
-         {
-            getBundleManager().uninstallBundle(dep);
-         }
-      };
-      return service;
-   }
+    @Override
+    protected DeployerService getDeployerService(BundleContext context) {
+        DeployerService service = new SystemDeployerService(context) {
+
+            @Override
+            protected Bundle installBundle(Deployment dep) throws BundleException {
+                AbstractBundle bundleState = getBundleManager().installBundle(dep);
+                return bundleState.getBundleWrapper();
+            }
+
+            @Override
+            protected void uninstallBundle(Deployment dep, Bundle bundle) throws BundleException {
+                getBundleManager().uninstallBundle(dep);
+            }
+        };
+        return service;
+    }
 }

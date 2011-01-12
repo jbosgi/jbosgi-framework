@@ -23,10 +23,9 @@ package org.jboss.test.osgi.modules.c;
 
 import org.jboss.test.osgi.modules.a.A;
 
-public class C
-{
-   static
-   {
-      new A();
-   }
+public class C {
+
+    static {
+        new A();
+    }
 }

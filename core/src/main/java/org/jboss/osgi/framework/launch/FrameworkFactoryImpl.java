@@ -32,39 +32,35 @@ import org.osgi.framework.launch.FrameworkFactory;
 
 /**
  * An impementation of an OSGi FrameworkFactory
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 21-Aug-2009
  */
-public class FrameworkFactoryImpl implements FrameworkFactory
-{
-   static
-   {
-      AccessController.doPrivileged(new PrivilegedAction<Void>()
-      {
-         public Void run()
-         {
-            String cname = System.getProperty("java.util.logging.manager");
-            if (cname == null)
-               System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
-            return null;
-         }
-      });
-   }
+public class FrameworkFactoryImpl implements FrameworkFactory {
 
-   // Main entry point used by FrameworkLaunchTestCase
-   public static void main(String[] args) throws Exception
-   {
-      FrameworkFactoryImpl factory = new FrameworkFactoryImpl();
-      Framework framework = factory.newFramework(null);
-      framework.start();
-   }
+    static {
+        AccessController.doPrivileged(new PrivilegedAction<Void>() {
 
-   @SuppressWarnings({ "rawtypes", "unchecked" })
-   public Framework newFramework(Map props)
-   {
-      BundleManager bundleManager = new BundleManager(props);
-      FrameworkState frameworkState = bundleManager.getFrameworkState();
-      return frameworkState.getBundleWrapper();
-   }
+            public Void run() {
+                String cname = System.getProperty("java.util.logging.manager");
+                if (cname == null)
+                    System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+                return null;
+            }
+        });
+    }
+
+    // Main entry point used by FrameworkLaunchTestCase
+    public static void main(String[] args) throws Exception {
+        FrameworkFactoryImpl factory = new FrameworkFactoryImpl();
+        Framework framework = factory.newFramework(null);
+        framework.start();
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public Framework newFramework(Map props) {
+        BundleManager bundleManager = new BundleManager(props);
+        FrameworkState frameworkState = bundleManager.getFrameworkState();
+        return frameworkState.getBundleWrapper();
+    }
 }

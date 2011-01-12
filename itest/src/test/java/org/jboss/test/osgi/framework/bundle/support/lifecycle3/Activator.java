@@ -27,27 +27,23 @@ import org.osgi.framework.BundleContext;
 /**
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public class Activator implements BundleActivator
-{
-   private static final String COMMUNICATION_STRING = "LifecycleOrdering";
+public class Activator implements BundleActivator {
 
-   public void start(BundleContext context)
-   {
-      synchronized (COMMUNICATION_STRING)
-      {
-         String prop = System.getProperty(COMMUNICATION_STRING, "");
-         prop += "start3";
-         System.setProperty(COMMUNICATION_STRING, prop);
-      }
-   }
+    private static final String COMMUNICATION_STRING = "LifecycleOrdering";
 
-   public void stop(BundleContext context)
-   {
-      synchronized (COMMUNICATION_STRING)
-      {
-         String prop = System.getProperty(COMMUNICATION_STRING, "");
-         prop += "stop3";
-         System.setProperty(COMMUNICATION_STRING, prop);
-      }
-   }
+    public void start(BundleContext context) {
+        synchronized (COMMUNICATION_STRING) {
+            String prop = System.getProperty(COMMUNICATION_STRING, "");
+            prop += "start3";
+            System.setProperty(COMMUNICATION_STRING, prop);
+        }
+    }
+
+    public void stop(BundleContext context) {
+        synchronized (COMMUNICATION_STRING) {
+            String prop = System.getProperty(COMMUNICATION_STRING, "");
+            prop += "stop3";
+            System.setProperty(COMMUNICATION_STRING, prop);
+        }
+    }
 }

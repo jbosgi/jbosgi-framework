@@ -47,98 +47,90 @@ import org.osgi.framework.Version;
 
 /**
  * A test that deployes a bundle and verifies its state
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 20-Sep-2010
  */
-public class DeployerServiceTestCase extends OSGiFrameworkTest
-{
-   @Test
-   public void testNoMetaData() throws Exception
-   {
-      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
-      archive.addClasses(SimpleService.class);
+public class DeployerServiceTestCase extends OSGiFrameworkTest {
 
-      Deployment dep = createDeployment(archive, Version.emptyVersion);
-      try
-      {
-         getDeployerService().deploy(dep);
-         fail("BundleException expected");
-      }
-      catch (BundleException ex)
-      {
-         // expected
-      }
-   }
+    @Test
+    public void testNoMetaData() throws Exception {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
+        archive.addClasses(SimpleService.class);
 
-   @Test
-   public void testAttachedOSGiMetaData() throws Exception
-   {
-      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
-      archive.addClasses(SimpleService.class);
+        Deployment dep = createDeployment(archive, Version.emptyVersion);
+        try {
+            getDeployerService().deploy(dep);
+            fail("BundleException expected");
+        } catch (BundleException ex) {
+            // expected
+        }
+    }
 
-      Deployment dep = createDeployment(archive, Version.emptyVersion);
-      OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(archive.getName());
-      dep.addAttachment(OSGiMetaData.class, builder.getOSGiMetaData());
+    @Test
+    public void testAttachedOSGiMetaData() throws Exception {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
+        archive.addClasses(SimpleService.class);
 
-      Bundle bundle = getDeployerService().deploy(dep);
-      assertEquals("simple-bundle", bundle.getSymbolicName());
-      assertBundleState(Bundle.INSTALLED, bundle.getState());
+        Deployment dep = createDeployment(archive, Version.emptyVersion);
+        OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(archive.getName());
+        dep.addAttachment(OSGiMetaData.class, builder.getOSGiMetaData());
 
-      bundle.start();
-      assertBundleState(Bundle.ACTIVE, bundle.getState());
+        Bundle bundle = getDeployerService().deploy(dep);
+        assertEquals("simple-bundle", bundle.getSymbolicName());
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-      BundleContext context = bundle.getBundleContext();
-      assertNotNull("BundleContext not null", context);
+        bundle.start();
+        assertBundleState(Bundle.ACTIVE, bundle.getState());
 
-      bundle.stop();
-      assertBundleState(Bundle.RESOLVED, bundle.getState());
+        BundleContext context = bundle.getBundleContext();
+        assertNotNull("BundleContext not null", context);
 
-      bundle.uninstall();
-      assertBundleState(Bundle.UNINSTALLED, bundle.getState());
-   }
+        bundle.stop();
+        assertBundleState(Bundle.RESOLVED, bundle.getState());
 
-   @Test
-   public void testAttachedXModule() throws Exception
-   {
-      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
-      archive.addClasses(SimpleService.class);
+        bundle.uninstall();
+        assertBundleState(Bundle.UNINSTALLED, bundle.getState());
+    }
 
-      Deployment dep = createDeployment(archive, Version.emptyVersion);
-      XModuleBuilder builder = XResolverFactory.getInstance().newModuleBuilder();
-      builder.createModule(archive.getName(), null, 0).addBundleCapability(archive.getName(), null);
-      dep.addAttachment(XModule.class, builder.getModule());
+    @Test
+    public void testAttachedXModule() throws Exception {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
+        archive.addClasses(SimpleService.class);
 
-      Bundle bundle = getDeployerService().deploy(dep);
-      assertEquals("simple-bundle", bundle.getSymbolicName());
-      assertBundleState(Bundle.INSTALLED, bundle.getState());
+        Deployment dep = createDeployment(archive, Version.emptyVersion);
+        XModuleBuilder builder = XResolverFactory.getInstance().newModuleBuilder();
+        builder.createModule(archive.getName(), null, 0).addBundleCapability(archive.getName(), null);
+        dep.addAttachment(XModule.class, builder.getModule());
 
-      bundle.start();
-      assertBundleState(Bundle.ACTIVE, bundle.getState());
+        Bundle bundle = getDeployerService().deploy(dep);
+        assertEquals("simple-bundle", bundle.getSymbolicName());
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-      BundleContext context = bundle.getBundleContext();
-      assertNotNull("BundleContext not null", context);
+        bundle.start();
+        assertBundleState(Bundle.ACTIVE, bundle.getState());
 
-      bundle.stop();
-      assertBundleState(Bundle.RESOLVED, bundle.getState());
+        BundleContext context = bundle.getBundleContext();
+        assertNotNull("BundleContext not null", context);
 
-      bundle.uninstall();
-      assertBundleState(Bundle.UNINSTALLED, bundle.getState());
-   }
+        bundle.stop();
+        assertBundleState(Bundle.RESOLVED, bundle.getState());
 
-   private Deployment createDeployment(JavaArchive archive, Version version) throws Exception
-   {
-      String symbolicName = archive.getName();
-      VirtualFile virtualFile = toVirtualFile(archive);
-      String location = virtualFile.toURL().toExternalForm();
-      return DeploymentFactory.createDeployment(virtualFile, location, symbolicName, version);
-   }
+        bundle.uninstall();
+        assertBundleState(Bundle.UNINSTALLED, bundle.getState());
+    }
 
-   private DeployerService getDeployerService() throws BundleException
-   {
-      BundleContext systemContext = getSystemContext();
-      ServiceReference sref = systemContext.getServiceReference(DeployerService.class.getName());
-      DeployerService deployer = (DeployerService)systemContext.getService(sref);
-      return deployer;
-   }
+    private Deployment createDeployment(JavaArchive archive, Version version) throws Exception {
+        String symbolicName = archive.getName();
+        VirtualFile virtualFile = toVirtualFile(archive);
+        String location = virtualFile.toURL().toExternalForm();
+        return DeploymentFactory.createDeployment(virtualFile, location, symbolicName, version);
+    }
+
+    private DeployerService getDeployerService() throws BundleException {
+        BundleContext systemContext = getSystemContext();
+        ServiceReference sref = systemContext.getServiceReference(DeployerService.class.getName());
+        DeployerService deployer = (DeployerService) systemContext.getService(sref);
+        return deployer;
+    }
 }

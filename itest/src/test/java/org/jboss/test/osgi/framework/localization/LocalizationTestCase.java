@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.localization;
 
-
 import static org.junit.Assert.assertEquals;
 
 import java.io.InputStream;
@@ -43,106 +42,100 @@ import org.osgi.framework.Constants;
  * @author thomas.diesler@jboss.com
  * @since 25-Jan-2010
  */
-public class LocalizationTestCase extends OSGiFrameworkTest
-{
-   @Test
-   @SuppressWarnings("unchecked")
-   public void testHostLocalization() throws Exception
-   {
-      Bundle host = installBundle(getSimpleHost());
-      assertBundleState(Bundle.INSTALLED, host.getState());
+public class LocalizationTestCase extends OSGiFrameworkTest {
 
-      // Test default locale
-      Dictionary<String, String> headers = host.getHeaders();
-      String bundleName = headers.get(Constants.BUNDLE_NAME);
-      assertEquals("English Bundle Name", bundleName);
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testHostLocalization() throws Exception {
+        Bundle host = installBundle(getSimpleHost());
+        assertBundleState(Bundle.INSTALLED, host.getState());
 
-      // Test explicit default locale
-      headers = host.getHeaders(null);
-      bundleName = headers.get(Constants.BUNDLE_NAME);
-      assertEquals("English Bundle Name", bundleName);
+        // Test default locale
+        Dictionary<String, String> headers = host.getHeaders();
+        String bundleName = headers.get(Constants.BUNDLE_NAME);
+        assertEquals("English Bundle Name", bundleName);
 
-      // Test raw headers
-      headers = host.getHeaders("");
-      bundleName = headers.get(Constants.BUNDLE_NAME);
-      assertEquals("%bundle-name", bundleName);
+        // Test explicit default locale
+        headers = host.getHeaders(null);
+        bundleName = headers.get(Constants.BUNDLE_NAME);
+        assertEquals("English Bundle Name", bundleName);
 
-      host.uninstall();
-      assertBundleState(Bundle.UNINSTALLED, host.getState());
+        // Test raw headers
+        headers = host.getHeaders("");
+        bundleName = headers.get(Constants.BUNDLE_NAME);
+        assertEquals("%bundle-name", bundleName);
 
-      // Test default locale after uninstall
-      headers = host.getHeaders();
-      bundleName = headers.get(Constants.BUNDLE_NAME);
-      assertEquals("English Bundle Name", bundleName);
-   }
+        host.uninstall();
+        assertBundleState(Bundle.UNINSTALLED, host.getState());
 
-   @Test
-   @SuppressWarnings("unchecked")
-   public void testFragmentLocalization() throws Exception
-   {
-      Bundle host = installBundle(getSimpleHost());
-      Bundle frag = installBundle(getSimpleFragment());
-      
-      host.start();
-      assertBundleState(Bundle.ACTIVE, host.getState());
-      assertBundleState(Bundle.RESOLVED, frag.getState());
+        // Test default locale after uninstall
+        headers = host.getHeaders();
+        bundleName = headers.get(Constants.BUNDLE_NAME);
+        assertEquals("English Bundle Name", bundleName);
+    }
 
-      // Test explicit locale
-      Dictionary<String, String> headers = host.getHeaders(Locale.GERMAN.toString());
-      String bundleName = headers.get(Constants.BUNDLE_NAME);
-      assertEquals("Deutscher Bundle Name", bundleName);
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testFragmentLocalization() throws Exception {
+        Bundle host = installBundle(getSimpleHost());
+        Bundle frag = installBundle(getSimpleFragment());
 
-      host.uninstall();
-      assertBundleState(Bundle.UNINSTALLED, host.getState());
+        host.start();
+        assertBundleState(Bundle.ACTIVE, host.getState());
+        assertBundleState(Bundle.RESOLVED, frag.getState());
 
-      frag.uninstall();
-      assertBundleState(Bundle.UNINSTALLED, frag.getState());
+        // Test explicit locale
+        Dictionary<String, String> headers = host.getHeaders(Locale.GERMAN.toString());
+        String bundleName = headers.get(Constants.BUNDLE_NAME);
+        assertEquals("Deutscher Bundle Name", bundleName);
 
-      // Test default locale after uninstall
-      headers = host.getHeaders();
-      bundleName = headers.get(Constants.BUNDLE_NAME);
-      assertEquals("English Bundle Name", bundleName);
-   }
+        host.uninstall();
+        assertBundleState(Bundle.UNINSTALLED, host.getState());
 
-   private JavaArchive getSimpleHost()
-   {
-      // Bundle-SymbolicName: localization-simple-host
-      // Bundle-Name: %bundle-name
-      // Include-Resource: OSGI-INF/l10n/bundle_en.properties=OSGI-INF/l10n/bundle_en.properties
-      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "localization-simple-host");
-      archive.addResource(getResourceFile("localization/OSGI-INF/l10n/bundle_en.properties"), "OSGI-INF/l10n/bundle_en.properties");
-      archive.setManifest(new Asset()
-      {
-         public InputStream openStream()
-         {
-            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-            builder.addBundleManifestVersion(2);
-            builder.addBundleSymbolicName(archive.getName());
-            builder.addBundleName("%bundle-name");
-            return builder.openStream();
-         }
-      });
-      return archive;
-   }
+        frag.uninstall();
+        assertBundleState(Bundle.UNINSTALLED, frag.getState());
 
-   private JavaArchive getSimpleFragment()
-   {
-      // Bundle-SymbolicName: localization-simple-frag
-      // Fragment-Host: localization-simple-host
-      // Include-Resource: OSGI-INF/l10n/bundle_de.properties=OSGI-INF/l10n/bundle_de.properties
-      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "localization-simple-frag");
-      archive.addResource(getResourceFile("localization/OSGI-INF/l10n/bundle_de.properties"), "OSGI-INF/l10n/bundle_de.properties");
-      archive.setManifest(new Asset()
-      {
-         public InputStream openStream()
-         {
-            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-            builder.addBundleManifestVersion(2);
-            builder.addBundleSymbolicName(archive.getName());
-            builder.addFragmentHost("localization-simple-host");
-            return builder.openStream();
-         }
-      });
-      return archive;
-   }
+        // Test default locale after uninstall
+        headers = host.getHeaders();
+        bundleName = headers.get(Constants.BUNDLE_NAME);
+        assertEquals("English Bundle Name", bundleName);
+    }
+
+    private JavaArchive getSimpleHost() {
+        // Bundle-SymbolicName: localization-simple-host
+        // Bundle-Name: %bundle-name
+        // Include-Resource: OSGI-INF/l10n/bundle_en.properties=OSGI-INF/l10n/bundle_en.properties
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "localization-simple-host");
+        archive.addResource(getResourceFile("localization/OSGI-INF/l10n/bundle_en.properties"), "OSGI-INF/l10n/bundle_en.properties");
+        archive.setManifest(new Asset() {
+
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleName("%bundle-name");
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getSimpleFragment() {
+        // Bundle-SymbolicName: localization-simple-frag
+        // Fragment-Host: localization-simple-host
+        // Include-Resource: OSGI-INF/l10n/bundle_de.properties=OSGI-INF/l10n/bundle_de.properties
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "localization-simple-frag");
+        archive.addResource(getResourceFile("localization/OSGI-INF/l10n/bundle_de.properties"), "OSGI-INF/l10n/bundle_de.properties");
+        archive.setManifest(new Asset() {
+
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addFragmentHost("localization-simple-host");
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
 }

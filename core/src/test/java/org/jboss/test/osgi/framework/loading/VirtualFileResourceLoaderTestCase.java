@@ -47,91 +47,83 @@ import org.junit.Test;
 
 /**
  * Test the bundle content loader.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
-public class VirtualFileResourceLoaderTestCase
-{
-   private static VirtualFile rootFile;
+public class VirtualFileResourceLoaderTestCase {
 
-   @BeforeClass
-   public static void beforeClass() throws Exception
-   {
-      // Bundle-SymbolicName: simple-bundle
-      // Bundle-Activator: org.jboss.test.osgi.framework.loading.subA.SimpleActivator
-      // Export-Package: org.jboss.test.osgi.framework.loading.subB
-      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
-      archive.addClasses(SimpleService.class, SimpleActivator.class);
-      archive.addResource("jira-test-coverage.txt");
-      archive.setManifest(new Asset()
-      {
-         public InputStream openStream()
-         {
-            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-            builder.addBundleManifestVersion(2);
-            builder.addBundleSymbolicName(archive.getName());
-            builder.addBundleActivator(SimpleActivator.class);
-            builder.addExportPackages(SimpleService.class);
-            return builder.openStream();
-         }
-      });
+    private static VirtualFile rootFile;
 
-      rootFile = OSGiTestHelper.toVirtualFile(archive);
-   }
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        // Bundle-SymbolicName: simple-bundle
+        // Bundle-Activator: org.jboss.test.osgi.framework.loading.subA.SimpleActivator
+        // Export-Package: org.jboss.test.osgi.framework.loading.subB
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
+        archive.addClasses(SimpleService.class, SimpleActivator.class);
+        archive.addResource("jira-test-coverage.txt");
+        archive.setManifest(new Asset() {
 
-   @AfterClass
-   public static void afterClass() throws Exception
-   {
-      rootFile.close();
-   }
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleActivator(SimpleActivator.class);
+                builder.addExportPackages(SimpleService.class);
+                return builder.openStream();
+            }
+        });
 
-   @Test
-   public void testClassSpec() throws Exception
-   {
-      ResourceLoader loader = new VirtualFileResourceLoader(rootFile);
-      String fileName = SimpleActivator.class.getName();
-      fileName = fileName.replace('.', '/') + ".class";
-      ClassSpec result = loader.getClassSpec(fileName);
-      assertNotNull("ClassSpec not null", result);
-   }
+        rootFile = OSGiTestHelper.toVirtualFile(archive);
+    }
 
-   @Test
-   public void testPackageSpec() throws Exception
-   {
-      ResourceLoader loader = new VirtualFileResourceLoader(rootFile);
-      PackageSpec result = loader.getPackageSpec(SimpleActivator.class.getPackage().getName());
-      assertNotNull("PackageSpec not null", result);
-   }
+    @AfterClass
+    public static void afterClass() throws Exception {
+        rootFile.close();
+    }
 
-   @Test
-   public void testResource() throws Exception
-   {
-      ResourceLoader loader = new VirtualFileResourceLoader(rootFile);
-      Resource result = loader.getResource("META-INF/MANIFEST.MF");
-      assertNotNull("Resource not null", result);
+    @Test
+    public void testClassSpec() throws Exception {
+        ResourceLoader loader = new VirtualFileResourceLoader(rootFile);
+        String fileName = SimpleActivator.class.getName();
+        fileName = fileName.replace('.', '/') + ".class";
+        ClassSpec result = loader.getClassSpec(fileName);
+        assertNotNull("ClassSpec not null", result);
+    }
 
-      result = loader.getResource("/META-INF/MANIFEST.MF");
-      assertNotNull("Resource not null", result);
+    @Test
+    public void testPackageSpec() throws Exception {
+        ResourceLoader loader = new VirtualFileResourceLoader(rootFile);
+        PackageSpec result = loader.getPackageSpec(SimpleActivator.class.getPackage().getName());
+        assertNotNull("PackageSpec not null", result);
+    }
 
-      result = loader.getResource("jira-test-coverage.txt");
-      assertNotNull("Resource not null", result);
+    @Test
+    public void testResource() throws Exception {
+        ResourceLoader loader = new VirtualFileResourceLoader(rootFile);
+        Resource result = loader.getResource("META-INF/MANIFEST.MF");
+        assertNotNull("Resource not null", result);
 
-      result = loader.getResource("/jira-test-coverage.txt");
-      assertNotNull("Resource not null", result);
-   }
+        result = loader.getResource("/META-INF/MANIFEST.MF");
+        assertNotNull("Resource not null", result);
 
+        result = loader.getResource("jira-test-coverage.txt");
+        assertNotNull("Resource not null", result);
 
-   @Test
-   public void testPaths() throws Exception
-   {
-      VirtualFileResourceLoader loader = new VirtualFileResourceLoader(rootFile);
-      Collection<String> paths = loader.getPaths();
-      assertNotNull("Resource not null", paths);
-      assertEquals(4, paths.size());
-      assertTrue(paths.contains("org/jboss/test/osgi/framework/loading/subA"));
-      assertTrue(paths.contains("org/jboss/test/osgi/framework/loading/subB"));
-      assertTrue(paths.contains("META-INF"));
-      assertTrue(paths.contains(""));
-   }
+        result = loader.getResource("/jira-test-coverage.txt");
+        assertNotNull("Resource not null", result);
+    }
+
+    @Test
+    public void testPaths() throws Exception {
+        VirtualFileResourceLoader loader = new VirtualFileResourceLoader(rootFile);
+        Collection<String> paths = loader.getPaths();
+        assertNotNull("Resource not null", paths);
+        assertEquals(4, paths.size());
+        assertTrue(paths.contains("org/jboss/test/osgi/framework/loading/subA"));
+        assertTrue(paths.contains("org/jboss/test/osgi/framework/loading/subB"));
+        assertTrue(paths.contains("META-INF"));
+        assertTrue(paths.contains(""));
+    }
 }

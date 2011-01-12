@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.simple;
 
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -48,58 +47,55 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public class SimpleBundleTestCase extends OSGiFrameworkTest 
-{
-   @Test
-   public void testBundleLifecycle() throws Exception
-   {
-      Bundle bundle = installBundle(getBundleArchive());
-      assertEquals("simple-bundle", bundle.getSymbolicName());
-      assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
-      assertBundleState(Bundle.INSTALLED, bundle.getState());
+public class SimpleBundleTestCase extends OSGiFrameworkTest {
 
-      bundle.start();
-      assertBundleState(Bundle.ACTIVE, bundle.getState());
+    @Test
+    public void testBundleLifecycle() throws Exception {
+        Bundle bundle = installBundle(getBundleArchive());
+        assertEquals("simple-bundle", bundle.getSymbolicName());
+        assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-      BundleContext context = bundle.getBundleContext();
-      assertNotNull("BundleContext not null", context);
+        bundle.start();
+        assertBundleState(Bundle.ACTIVE, bundle.getState());
 
-      ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
-      assertNotNull("ServiceReference not null", sref);
-      
-      Object service = context.getService(sref);
-      assertEquals(SimpleService.class.getName(), service.getClass().getName());
+        BundleContext context = bundle.getBundleContext();
+        assertNotNull("BundleContext not null", context);
 
-      bundle.stop();
-      assertBundleState(Bundle.RESOLVED, bundle.getState());
-      
-      sref = getSystemContext().getServiceReference(SimpleService.class.getName());
-      assertNull("ServiceReference null", sref);
-      
-      bundle.uninstall();
-      assertBundleState(Bundle.UNINSTALLED, bundle.getState());
-   }
+        ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
+        assertNotNull("ServiceReference not null", sref);
 
-   private JavaArchive getBundleArchive()
-   {
-      // Bundle-Version: 1.0.0
-      // Bundle-SymbolicName: simple-bundle
-      // Bundle-Activator: org.jboss.osgi.msc.framework.simple.bundle.SimpleActivator
-      final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
-      archive.addClasses(SimpleService.class, SimpleActivator.class);
-      archive.setManifest(new Asset()
-      {
-         public InputStream openStream()
-         {
-            OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-            builder.addBundleManifestVersion(2);
-            builder.addBundleSymbolicName(archive.getName());
-            builder.addBundleVersion("1.0.0");
-            builder.addBundleActivator(SimpleActivator.class);
-            builder.addImportPackages(BundleActivator.class);
-            return builder.openStream();
-         }
-      });
-      return archive;
-   }
+        Object service = context.getService(sref);
+        assertEquals(SimpleService.class.getName(), service.getClass().getName());
+
+        bundle.stop();
+        assertBundleState(Bundle.RESOLVED, bundle.getState());
+
+        sref = getSystemContext().getServiceReference(SimpleService.class.getName());
+        assertNull("ServiceReference null", sref);
+
+        bundle.uninstall();
+        assertBundleState(Bundle.UNINSTALLED, bundle.getState());
+    }
+
+    private JavaArchive getBundleArchive() {
+        // Bundle-Version: 1.0.0
+        // Bundle-SymbolicName: simple-bundle
+        // Bundle-Activator: org.jboss.osgi.msc.framework.simple.bundle.SimpleActivator
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
+        archive.addClasses(SimpleService.class, SimpleActivator.class);
+        archive.setManifest(new Asset() {
+
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addBundleActivator(SimpleActivator.class);
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
 }

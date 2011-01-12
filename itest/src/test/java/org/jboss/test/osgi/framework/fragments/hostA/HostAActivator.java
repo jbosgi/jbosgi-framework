@@ -21,24 +21,21 @@
  */
 package org.jboss.test.osgi.framework.fragments.hostA;
 
-
 import org.jboss.logging.Logger;
 import org.jboss.test.osgi.framework.fragments.subA.SubBeanA;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
-public class HostAActivator implements BundleActivator
-{
-   // Provide logging
-   private static final Logger log = Logger.getLogger(HostAActivator.class);
-   
-   public void start(BundleContext context)
-   {
-      SubBeanA subBean = new SubBeanA();
-      log.infof("SubBeanA provider: %s", subBean.getProvider(context));
-   }
+public class HostAActivator implements BundleActivator {
 
-   public void stop(BundleContext context)
-   {
-   }
+    // Provide logging
+    private static final Logger log = Logger.getLogger(HostAActivator.class);
+
+    public void start(BundleContext context) {
+        SubBeanA subBean = new SubBeanA();
+        log.infof("SubBeanA provider: %s", subBean.getProvider(context));
+    }
+
+    public void stop(BundleContext context) {
+    }
 }

@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.xservice.bundleA;
 
-
 import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -33,20 +32,18 @@ import org.osgi.framework.ServiceReference;
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
-public class BundleServiceA
-{
-   private Bundle owner;
-   
-   public BundleServiceA(Bundle owner)
-   {
-      this.owner = owner;
-   }
+public class BundleServiceA {
 
-   public String echo(String msg)
-   {
-      BundleContext context = owner.getBundleContext();
-      ServiceReference sref = context.getServiceReference(ModuleServiceA.class.getName());
-      ModuleServiceA service = (ModuleServiceA)context.getService(sref);
-      return service.echo(msg + ":" + owner);
-   }
+    private Bundle owner;
+
+    public BundleServiceA(Bundle owner) {
+        this.owner = owner;
+    }
+
+    public String echo(String msg) {
+        BundleContext context = owner.getBundleContext();
+        ServiceReference sref = context.getServiceReference(ModuleServiceA.class.getName());
+        ModuleServiceA service = (ModuleServiceA) context.getService(sref);
+        return service.echo(msg + ":" + owner);
+    }
 }

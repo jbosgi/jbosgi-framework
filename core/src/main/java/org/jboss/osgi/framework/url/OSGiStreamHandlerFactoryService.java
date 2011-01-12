@@ -27,34 +27,29 @@ import java.net.URLStreamHandlerFactory;
 import org.jboss.osgi.framework.plugin.URLHandlerPlugin;
 
 /**
- * A {@link URLStreamHandlerFactory} that provides {@link URLStreamHandler} instances
- * which are backed by an OSGi service.
+ * A {@link URLStreamHandlerFactory} that provides {@link URLStreamHandler} instances which are backed by an OSGi service.
  * 
- * The returned handler instances are proxies which allow the URL Stream Handler implementation
- * to be changed at a later point in time (the JRE caches the first URL Stream Handler returned
- * for a given protocol).
- *
+ * The returned handler instances are proxies which allow the URL Stream Handler implementation to be changed at a later point
+ * in time (the JRE caches the first URL Stream Handler returned for a given protocol).
+ * 
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @author Thomas.Diesler@jboss.com
  * @since 10-Jan-2011
  */
-public class OSGiStreamHandlerFactoryService implements URLStreamHandlerFactory
-{
-   private static URLHandlerPlugin delegate;
-   
-   public static void initStreamHandlerFactory(URLHandlerPlugin handlerPlugin)
-   {
-      delegate = handlerPlugin;
-   }
+public class OSGiStreamHandlerFactoryService implements URLStreamHandlerFactory {
 
-   public static void destroyStreamHandlerFactory()
-   {
-      delegate = null;
-   }
+    private static URLHandlerPlugin delegate;
 
-   @Override
-   public URLStreamHandler createURLStreamHandler(String protocol)
-   {
-      return delegate != null ? delegate.createURLStreamHandler(protocol) : null;
-   }
+    public static void initStreamHandlerFactory(URLHandlerPlugin handlerPlugin) {
+        delegate = handlerPlugin;
+    }
+
+    public static void destroyStreamHandlerFactory() {
+        delegate = null;
+    }
+
+    @Override
+    public URLStreamHandler createURLStreamHandler(String protocol) {
+        return delegate != null ? delegate.createURLStreamHandler(protocol) : null;
+    }
 }

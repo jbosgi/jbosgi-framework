@@ -36,48 +36,45 @@ import org.junit.Test;
 
 /**
  * [MODULES-45] Unexpected class load with unwired dependency
- *
+ * 
  * @author Thomas.Diesler@jboss.com
  * @since 15-Sep-2010
  */
-public class MOD45TestCase extends ModulesTestBase
-{
-   @Test
-   @Ignore("[MODULES-45] Unexpected class load with unwired dependency")
-   public void testDependencyNotWired() throws Exception
-   {
-      JavaArchive archiveA = getModuleA();
-      ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-      ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-      specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
-      specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderA.create());
+public class MOD45TestCase extends ModulesTestBase {
 
-      JavaArchive archiveB = getModuleB();
-      ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
-      ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-      specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
-      specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-      addModuleSpec(specBuilderB.create());
+    @Test
+    @Ignore("[MODULES-45] Unexpected class load with unwired dependency")
+    public void testDependencyNotWired() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
 
-      assertLoadClass(identifierA, A.class.getName());
-      assertLoadClass(identifierA, B.class.getName());
+        JavaArchive archiveB = getModuleB();
+        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
+        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderB.create());
 
-      assertLoadClassFails(identifierB, C.class.getName());
-      assertLoadClass(identifierB, D.class.getName());
-   }
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClass(identifierA, B.class.getName());
 
-   private JavaArchive getModuleA()
-   {
-      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-      archive.addClasses(A.class, B.class);
-      return archive;
-   }
+        assertLoadClassFails(identifierB, C.class.getName());
+        assertLoadClass(identifierB, D.class.getName());
+    }
 
-   private JavaArchive getModuleB()
-   {
-      JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
-      archive.addClasses(C.class, D.class);
-      return archive;
-   }
+    private JavaArchive getModuleA() {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
+        archive.addClasses(A.class, B.class);
+        return archive;
+    }
+
+    private JavaArchive getModuleB() {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
+        archive.addClasses(C.class, D.class);
+        return archive;
+    }
 }

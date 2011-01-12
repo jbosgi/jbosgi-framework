@@ -35,63 +35,69 @@ import org.jboss.osgi.resolver.XModule;
 
 /**
  * The module manager plugin.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 06-Jul-2009
  */
-public interface ModuleManagerPlugin extends Plugin
-{
-   /** The default framework module identifier */
-   ModuleIdentifier DEFAULT_FRAMEWORK_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + "." + Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+public interface ModuleManagerPlugin extends Plugin {
 
-   /**
-    * Get the {@link OSGiModuleLoader}
-    */
-   OSGiModuleLoader getModuleLoader();
+    /** The default framework module identifier */
+    ModuleIdentifier DEFAULT_FRAMEWORK_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + "." + Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
 
-   /**
-    * Return the module identifier for a given XModule.
-    */
-   ModuleIdentifier getModuleIdentifier(XModule resModule);
+    /**
+     * Get the {@link OSGiModuleLoader}
+     */
+    OSGiModuleLoader getModuleLoader();
 
-   /**
-    * Get the set of registered module idetifiers
-    */
-   Set<ModuleIdentifier> getModuleIdentifiers();
+    /**
+     * Return the module identifier for a given XModule.
+     */
+    ModuleIdentifier getModuleIdentifier(XModule resModule);
 
-   /**
-    * Create the module in the {@link ModuleLoader}
-    * @return The module identifier
-    */
-   ModuleIdentifier addModule(XModule resModule);
+    /**
+     * Get the set of registered module idetifiers
+     */
+    Set<ModuleIdentifier> getModuleIdentifiers();
 
-   /**
-    * Get the module with the given identifier
-    * @return The module or null
-    */
-   Module getModule(ModuleIdentifier identifier);
+    /**
+     * Create the module in the {@link ModuleLoader}
+     * 
+     * @return The module identifier
+     */
+    ModuleIdentifier addModule(XModule resModule);
 
-   /**
-    * Get the bundle revision for the given identifier
-    * @return The bundle revision or null
-    */
-   AbstractRevision getBundleRevision(ModuleIdentifier identifier);
+    /**
+     * Get the module with the given identifier
+     * 
+     * @return The module or null
+     */
+    Module getModule(ModuleIdentifier identifier);
 
-   /**
-    * Get the bundle for the given identifier
-    * @return The bundle or null
-    */
-   AbstractBundle getBundleState(ModuleIdentifier identifier);
+    /**
+     * Get the bundle revision for the given identifier
+     * 
+     * @return The bundle revision or null
+     */
+    AbstractRevision getBundleRevision(ModuleIdentifier identifier);
 
-   /**
-    * Load the module for the given identifier
-    * @throws ModuleLoadException If the module cannot be loaded
-    */
-   Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException;
+    /**
+     * Get the bundle for the given identifier
+     * 
+     * @return The bundle or null
+     */
+    AbstractBundle getBundleState(ModuleIdentifier identifier);
 
-   /**
-    * Remove the module with the given identifier
-    * @return The module or null
-    */
-   Module removeModule(ModuleIdentifier identifier);
+    /**
+     * Load the module for the given identifier
+     * 
+     * @throws ModuleLoadException If the module cannot be loaded
+     */
+    Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException;
+
+    /**
+     * Remove the module with the given identifier
+     * 
+     * @return The module or null
+     */
+    Module removeModule(ModuleIdentifier identifier);
 }

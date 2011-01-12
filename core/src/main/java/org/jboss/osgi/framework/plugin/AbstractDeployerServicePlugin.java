@@ -33,75 +33,67 @@ import org.osgi.framework.ServiceRegistration;
 
 /**
  * A plugin that manages bundle deployments.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-public abstract class AbstractDeployerServicePlugin extends AbstractPlugin implements DeployerServicePlugin
-{
-   private DeployerService delegate;
-   private ServiceRegistration registration;
+public abstract class AbstractDeployerServicePlugin extends AbstractPlugin implements DeployerServicePlugin {
 
-   public AbstractDeployerServicePlugin(BundleManager bundleManager)
-   {
-      super(bundleManager);
-   }
+    private DeployerService delegate;
+    private ServiceRegistration registration;
 
-   @Override
-   public void initPlugin()
-   {
-      BundleContext context = getBundleManager().getSystemContext();
-      delegate = getDeployerService(context);
+    public AbstractDeployerServicePlugin(BundleManager bundleManager) {
+        super(bundleManager);
+    }
 
-      Properties props = new Properties();
-      props.put("provider", "system");
-      registration = context.registerService(DeployerService.class.getName(), this, props);
-   }
+    @Override
+    public void initPlugin() {
+        BundleContext context = getBundleManager().getSystemContext();
+        delegate = getDeployerService(context);
 
-   /**
-    * Overwrite to provide the DeployerService implementation
-    */
-   protected abstract DeployerService getDeployerService(BundleContext sysContext);
+        Properties props = new Properties();
+        props.put("provider", "system");
+        registration = context.registerService(DeployerService.class.getName(), this, props);
+    }
 
-   @Override
-   public void stopPlugin()
-   {
-      registration.unregister();
-      registration = null;
-      delegate = null;
-   }
+    /**
+     * Overwrite to provide the DeployerService implementation
+     */
+    protected abstract DeployerService getDeployerService(BundleContext sysContext);
 
-   @Override
-   public Bundle deploy(Deployment bundleDep) throws BundleException
-   {
-      assertServiceStarted();
-      return delegate.deploy(bundleDep);
-   }
+    @Override
+    public void stopPlugin() {
+        registration.unregister();
+        registration = null;
+        delegate = null;
+    }
 
-   @Override
-   public Bundle undeploy(Deployment bundleDep) throws BundleException
-   {
-      assertServiceStarted();
-      return delegate.undeploy(bundleDep);
-   }
+    @Override
+    public Bundle deploy(Deployment bundleDep) throws BundleException {
+        assertServiceStarted();
+        return delegate.deploy(bundleDep);
+    }
 
-   @Override
-   public void deploy(Deployment[] bundleDeps) throws BundleException
-   {
-      assertServiceStarted();
-      delegate.deploy(bundleDeps);
-   }
+    @Override
+    public Bundle undeploy(Deployment bundleDep) throws BundleException {
+        assertServiceStarted();
+        return delegate.undeploy(bundleDep);
+    }
 
-   @Override
-   public void undeploy(Deployment[] bundleDeps) throws BundleException
-   {
-      assertServiceStarted();
-      delegate.undeploy(bundleDeps);
-   }
+    @Override
+    public void deploy(Deployment[] bundleDeps) throws BundleException {
+        assertServiceStarted();
+        delegate.deploy(bundleDeps);
+    }
 
-   private void assertServiceStarted()
-   {
-      if (delegate == null)
-         throw new IllegalStateException("DeployerService not started");
-   }
+    @Override
+    public void undeploy(Deployment[] bundleDeps) throws BundleException {
+        assertServiceStarted();
+        delegate.undeploy(bundleDeps);
+    }
+
+    private void assertServiceStarted() {
+        if (delegate == null)
+            throw new IllegalStateException("DeployerService not started");
+    }
 }

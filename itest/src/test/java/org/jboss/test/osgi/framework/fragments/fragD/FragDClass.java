@@ -23,10 +23,9 @@ package org.jboss.test.osgi.framework.fragments.fragD;
 
 import org.jboss.test.osgi.framework.fragments.hostD.HostDInterface;
 
-public class FragDClass implements HostDInterface
-{
-   public String foo()
-   {
-      return "Foo!";
-   }
+public class FragDClass implements HostDInterface {
+
+    public String foo() {
+        return "Foo!";
+    }
 }

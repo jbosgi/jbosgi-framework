@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.loading.subB;
 
-
 import org.osgi.framework.BundleContext;
 
 /**
@@ -30,14 +29,12 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
-public class SimpleService
-{
-   public SimpleService(BundleContext context)
-   {
-   }
+public class SimpleService {
 
-   public String echo(String msg)
-   {
-      return msg;
-   }
+    public SimpleService(BundleContext context) {
+    }
+
+    public String echo(String msg) {
+        return msg;
+    }
 }

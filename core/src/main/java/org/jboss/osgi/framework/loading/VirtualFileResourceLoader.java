@@ -1,24 +1,24 @@
 /*
-* JBoss, Home of Professional Open Source
-* Copyright 2009, Red Hat Middleware LLC, and individual contributors
-* as indicated by the @author tags. See the copyright.txt file in the
-* distribution for a full listing of individual contributors.
-*
-* This is free software; you can redistribute it and/or modify it
-* under the terms of the GNU Lesser General Public License as
-* published by the Free Software Foundation; either version 2.1 of
-* the License, or (at your option) any later version.
-*
-* This software is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-* Lesser General Public License for more details.
-*
-* You should have received a copy of the GNU Lesser General Public
-* License along with this software; if not, write to the Free
-* Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-* 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-*/
+ * JBoss, Home of Professional Open Source
+ * Copyright 2009, Red Hat Middleware LLC, and individual contributors
+ * as indicated by the @author tags. See the copyright.txt file in the
+ * distribution for a full listing of individual contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
 package org.jboss.osgi.framework.loading;
 
 import java.io.ByteArrayOutputStream;
@@ -47,210 +47,174 @@ import org.jboss.osgi.vfs.VirtualFile;
 
 /**
  * An {@link ResourceLoader} that is backed by a {@link VirtualFile} pointing to an archive.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public final class VirtualFileResourceLoader implements ResourceLoader
-{
-   private final VirtualFile virtualFile;
-   private final Set<String> localPaths;
-   private final PathFilter exportFilter;
+public final class VirtualFileResourceLoader implements ResourceLoader {
 
-   public VirtualFileResourceLoader(VirtualFile virtualFile)
-   {
-      this(virtualFile, PathFilters.acceptAll());
-   }
+    private final VirtualFile virtualFile;
+    private final Set<String> localPaths;
+    private final PathFilter exportFilter;
 
-   public VirtualFileResourceLoader(VirtualFile virtualFile, PathFilter exportFilter)
-   {
-      if (virtualFile == null)
-         throw new IllegalArgumentException("Null virtualFile");
-      if (exportFilter == null)
-         throw new IllegalArgumentException("Null exportFilter");
+    public VirtualFileResourceLoader(VirtualFile virtualFile) {
+        this(virtualFile, PathFilters.acceptAll());
+    }
 
-      this.virtualFile = virtualFile;
-      this.exportFilter = exportFilter;
-      this.localPaths = getLocalPaths();
-   }
+    public VirtualFileResourceLoader(VirtualFile virtualFile, PathFilter exportFilter) {
+        if (virtualFile == null)
+            throw new IllegalArgumentException("Null virtualFile");
+        if (exportFilter == null)
+            throw new IllegalArgumentException("Null exportFilter");
 
-   @Override
-   public String getRootName()
-   {
-      return virtualFile.getPathName();
-   }
+        this.virtualFile = virtualFile;
+        this.exportFilter = exportFilter;
+        this.localPaths = getLocalPaths();
+    }
 
-   @Override
-   public PathFilter getExportFilter()
-   {
-      return exportFilter;
-   }
+    @Override
+    public String getRootName() {
+        return virtualFile.getPathName();
+    }
 
-   @Override
-   public ClassSpec getClassSpec(String fileName) throws IOException
-   {
-      VirtualFile child = virtualFile.getChild(fileName);
-      if (child == null)
-         return null;
+    @Override
+    public PathFilter getExportFilter() {
+        return exportFilter;
+    }
 
-      ClassSpec classSpec = new ClassSpec();
-      InputStream is = child.openStream();
-      try
-      {
-         ByteArrayOutputStream os = new ByteArrayOutputStream(1024);
-         VFSUtils.copyStream(is, os);
-         classSpec.setBytes(os.toByteArray());
-      }
-      finally
-      {
-         safeClose(is);
-      }
-
-      CodeSigner[] codeSigners = child.getCodeSigners();
-      classSpec.setCodeSource(new CodeSource(new URL("jar", null, -1, child.getName()), codeSigners));
-
-      return classSpec;
-   }
-
-   @Override
-   public PackageSpec getPackageSpec(String name) throws IOException
-   {
-      PackageSpec spec = new PackageSpec();
-      Manifest manifest = VFSUtils.getManifest(virtualFile);
-      if (manifest == null)
-      {
-         return spec;
-      }
-      Attributes mainAttribute = manifest.getAttributes(name);
-      Attributes entryAttribute = manifest.getAttributes(name);
-      spec.setSpecTitle(getDefinedAttribute(Attributes.Name.SPECIFICATION_TITLE, entryAttribute, mainAttribute));
-      spec.setSpecVersion(getDefinedAttribute(Attributes.Name.SPECIFICATION_VERSION, entryAttribute, mainAttribute));
-      spec.setSpecVendor(getDefinedAttribute(Attributes.Name.SPECIFICATION_VENDOR, entryAttribute, mainAttribute));
-      spec.setImplTitle(getDefinedAttribute(Attributes.Name.IMPLEMENTATION_TITLE, entryAttribute, mainAttribute));
-      spec.setImplVersion(getDefinedAttribute(Attributes.Name.IMPLEMENTATION_VERSION, entryAttribute, mainAttribute));
-      spec.setImplVendor(getDefinedAttribute(Attributes.Name.IMPLEMENTATION_VENDOR, entryAttribute, mainAttribute));
-      if (Boolean.parseBoolean(getDefinedAttribute(Attributes.Name.SEALED, entryAttribute, mainAttribute)))
-      {
-         spec.setSealBase(virtualFile.toURL());
-      }
-      return spec;
-   }
-
-   private static String getDefinedAttribute(Attributes.Name name, Attributes entryAttribute, Attributes mainAttribute)
-   {
-      final String value = entryAttribute == null ? null : entryAttribute.getValue(name);
-      return value == null ? mainAttribute == null ? null : mainAttribute.getValue(name) : value;
-   }
-
-   @Override
-   public Resource getResource(String name)
-   {
-      try
-      {
-         VirtualFile child = virtualFile.getChild(name);
-         if (child == null)
+    @Override
+    public ClassSpec getClassSpec(String fileName) throws IOException {
+        VirtualFile child = virtualFile.getChild(fileName);
+        if (child == null)
             return null;
 
-         return new VirtualResource(child);
-      }
-      catch (IOException ex)
-      {
-         return null;
-      }
-   }
+        ClassSpec classSpec = new ClassSpec();
+        InputStream is = child.openStream();
+        try {
+            ByteArrayOutputStream os = new ByteArrayOutputStream(1024);
+            VFSUtils.copyStream(is, os);
+            classSpec.setBytes(os.toByteArray());
+        } finally {
+            safeClose(is);
+        }
 
-   @Override
-   public String getLibrary(String name)
-   {
-      return null;
-   }
+        CodeSigner[] codeSigners = child.getCodeSigners();
+        classSpec.setCodeSource(new CodeSource(new URL("jar", null, -1, child.getName()), codeSigners));
 
-   @Override
-   public Collection<String> getPaths()
-   {
-      return localPaths;
-   }
+        return classSpec;
+    }
 
-   private Set<String> getLocalPaths()
-   {
-      Set<String> result = new HashSet<String>();
-      try
-      {
-         Enumeration<String> entryPaths = virtualFile.getEntryPaths("/");
-         while (entryPaths.hasMoreElements())
-         {
-            String entryPath = entryPaths.nextElement();
-            if (entryPath.endsWith("/"))
-               continue;
+    @Override
+    public PackageSpec getPackageSpec(String name) throws IOException {
+        PackageSpec spec = new PackageSpec();
+        Manifest manifest = VFSUtils.getManifest(virtualFile);
+        if (manifest == null) {
+            return spec;
+        }
+        Attributes mainAttribute = manifest.getAttributes(name);
+        Attributes entryAttribute = manifest.getAttributes(name);
+        spec.setSpecTitle(getDefinedAttribute(Attributes.Name.SPECIFICATION_TITLE, entryAttribute, mainAttribute));
+        spec.setSpecVersion(getDefinedAttribute(Attributes.Name.SPECIFICATION_VERSION, entryAttribute, mainAttribute));
+        spec.setSpecVendor(getDefinedAttribute(Attributes.Name.SPECIFICATION_VENDOR, entryAttribute, mainAttribute));
+        spec.setImplTitle(getDefinedAttribute(Attributes.Name.IMPLEMENTATION_TITLE, entryAttribute, mainAttribute));
+        spec.setImplVersion(getDefinedAttribute(Attributes.Name.IMPLEMENTATION_VERSION, entryAttribute, mainAttribute));
+        spec.setImplVendor(getDefinedAttribute(Attributes.Name.IMPLEMENTATION_VENDOR, entryAttribute, mainAttribute));
+        if (Boolean.parseBoolean(getDefinedAttribute(Attributes.Name.SEALED, entryAttribute, mainAttribute))) {
+            spec.setSealBase(virtualFile.toURL());
+        }
+        return spec;
+    }
 
-            int inx = entryPath.lastIndexOf("/");
-            result.add(inx > 0 ? entryPath.substring(0, inx) : "");
-         }
-      }
-      catch (IOException ex)
-      {
-         throw new IllegalArgumentException("Cannot obtain paths from: " + virtualFile, ex);
-      }
-      if (result.size() == 0)
-         throw new IllegalArgumentException("Cannot obtain paths from: " + virtualFile);
-      return Collections.unmodifiableSet(result);
-   }
+    private static String getDefinedAttribute(Attributes.Name name, Attributes entryAttribute, Attributes mainAttribute) {
+        final String value = entryAttribute == null ? null : entryAttribute.getValue(name);
+        return value == null ? mainAttribute == null ? null : mainAttribute.getValue(name) : value;
+    }
 
-   private void safeClose(final Closeable closeable)
-   {
-      if (closeable != null)
-      {
-         try
-         {
-            closeable.close();
-         }
-         catch (IOException e)
-         {
-            // ignore
-         }
-      }
-   }
+    @Override
+    public Resource getResource(String name) {
+        try {
+            VirtualFile child = virtualFile.getChild(name);
+            if (child == null)
+                return null;
 
-   static class VirtualResource implements Resource
-   {
-      VirtualFile child;
+            return new VirtualResource(child);
+        } catch (IOException ex) {
+            return null;
+        }
+    }
 
-      VirtualResource(VirtualFile child)
-      {
-         if (child == null)
-            throw new IllegalArgumentException("Null child");
-         this.child = child;
-      }
+    @Override
+    public String getLibrary(String name) {
+        return null;
+    }
 
-      @Override
-      public String getName()
-      {
-         return child.getName();
-      }
+    @Override
+    public Collection<String> getPaths() {
+        return localPaths;
+    }
 
-      @Override
-      public URL getURL()
-      {
-         try
-         {
-            return child.toURL();
-         }
-         catch (IOException ex)
-         {
-            throw new IllegalStateException("Cannot obtain URL for: " + child);
-         }
-      }
+    private Set<String> getLocalPaths() {
+        Set<String> result = new HashSet<String>();
+        try {
+            Enumeration<String> entryPaths = virtualFile.getEntryPaths("/");
+            while (entryPaths.hasMoreElements()) {
+                String entryPath = entryPaths.nextElement();
+                if (entryPath.endsWith("/"))
+                    continue;
 
-      @Override
-      public InputStream openStream() throws IOException
-      {
-         return child.openStream();
-      }
+                int inx = entryPath.lastIndexOf("/");
+                result.add(inx > 0 ? entryPath.substring(0, inx) : "");
+            }
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("Cannot obtain paths from: " + virtualFile, ex);
+        }
+        if (result.size() == 0)
+            throw new IllegalArgumentException("Cannot obtain paths from: " + virtualFile);
+        return Collections.unmodifiableSet(result);
+    }
 
-      @Override
-      public long getSize()
-      {
-         return 0;
-      }
-   }
+    private void safeClose(final Closeable closeable) {
+        if (closeable != null) {
+            try {
+                closeable.close();
+            } catch (IOException e) {
+                // ignore
+            }
+        }
+    }
+
+    static class VirtualResource implements Resource {
+
+        VirtualFile child;
+
+        VirtualResource(VirtualFile child) {
+            if (child == null)
+                throw new IllegalArgumentException("Null child");
+            this.child = child;
+        }
+
+        @Override
+        public String getName() {
+            return child.getName();
+        }
+
+        @Override
+        public URL getURL() {
+            try {
+                return child.toURL();
+            } catch (IOException ex) {
+                throw new IllegalStateException("Cannot obtain URL for: " + child);
+            }
+        }
+
+        @Override
+        public InputStream openStream() throws IOException {
+            return child.openStream();
+        }
+
+        @Override
+        public long getSize() {
+            return 0;
+        }
+    }
 }

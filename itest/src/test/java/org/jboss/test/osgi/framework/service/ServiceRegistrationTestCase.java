@@ -1,24 +1,24 @@
 /*
-* JBoss, Home of Professional Open Source
-* Copyright 2009, Red Hat Middleware LLC, and individual contributors
-* as indicated by the @author tags. See the copyright.txt file in the
-* distribution for a full listing of individual contributors.
-*
-* This is free software; you can redistribute it and/or modify it
-* under the terms of the GNU Lesser General Public License as
-* published by the Free Software Foundation; either version 2.1 of
-* the License, or (at your option) any later version.
-*
-* This software is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-* Lesser General Public License for more details.
-*
-* You should have received a copy of the GNU Lesser General Public
-* License along with this software; if not, write to the Free
-* Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-* 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-*/
+ * JBoss, Home of Professional Open Source
+ * Copyright 2009, Red Hat Middleware LLC, and individual contributors
+ * as indicated by the @author tags. See the copyright.txt file in the
+ * distribution for a full listing of individual contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
 package org.jboss.test.osgi.framework.service;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -43,329 +43,282 @@ import org.osgi.framework.ServiceRegistration;
 
 /**
  * ServiceRegistrationTest.
- *
+ * 
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author thomas.diesler@jboss.com
  * @version $Revision: 1.1 $
  */
-public class ServiceRegistrationTestCase extends OSGiFrameworkTest
-{
-   @Test
-   public void testGetReference() throws Exception
-   {
-      Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-      Bundle bundle = installBundle(assembly);
-      try
-      {
-         bundle.start();
-         BundleContext bundleContext = bundle.getBundleContext();
-         assertNotNull(bundleContext);
+public class ServiceRegistrationTestCase extends OSGiFrameworkTest {
 
-         ServiceRegistration registration = bundleContext.registerService(BundleContext.class.getName(), bundleContext, null);
-         assertNotNull(registration);
+    @Test
+    public void testGetReference() throws Exception {
+        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
+        Bundle bundle = installBundle(assembly);
+        try {
+            bundle.start();
+            BundleContext bundleContext = bundle.getBundleContext();
+            assertNotNull(bundleContext);
 
-         ServiceReference reference = registration.getReference();
-         assertNotNull(reference);
+            ServiceRegistration registration = bundleContext.registerService(BundleContext.class.getName(), bundleContext, null);
+            assertNotNull(registration);
 
-         ServiceReference reference2 = bundleContext.getServiceReference(BundleContext.class.getName());
-         assertEquals(reference, reference2);
+            ServiceReference reference = registration.getReference();
+            assertNotNull(reference);
 
-         Object object = bundleContext.getService(reference);
-         assertEquals(bundleContext, object);
+            ServiceReference reference2 = bundleContext.getServiceReference(BundleContext.class.getName());
+            assertEquals(reference, reference2);
 
-         reference2 = registration.getReference();
-         assertEquals(reference, reference2);
+            Object object = bundleContext.getService(reference);
+            assertEquals(bundleContext, object);
 
-         registration.unregister();
-         try
-         {
-            registration.getReference();
-            fail("Should not be here!");
-         }
-         catch (IllegalStateException t)
-         {
-            // expected
-         }
+            reference2 = registration.getReference();
+            assertEquals(reference, reference2);
 
-         ServiceRegistration registration2 = bundleContext.registerService(BundleContext.class.getName(), bundleContext, null);
-         assertNotNull(registration);
-         assertNotSame(registration, registration2);
+            registration.unregister();
+            try {
+                registration.getReference();
+                fail("Should not be here!");
+            } catch (IllegalStateException t) {
+                // expected
+            }
 
-         reference2 = registration2.getReference();
-         assertNotNull(reference2);
-         assertNotSame(reference, reference2);
+            ServiceRegistration registration2 = bundleContext.registerService(BundleContext.class.getName(), bundleContext, null);
+            assertNotNull(registration);
+            assertNotSame(registration, registration2);
 
-         bundle.stop();
-         try
-         {
-            registration2.getReference();
-            fail("Should not be here!");
-         }
-         catch (IllegalStateException t)
-         {
-            // expected
-         }
-      }
-      finally
-      {
-         bundle.uninstall();
-      }
-   }
+            reference2 = registration2.getReference();
+            assertNotNull(reference2);
+            assertNotSame(reference, reference2);
 
-   @Test
-   public void testSetProperties() throws Exception
-   {
-      Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-      Bundle bundle = installBundle(assembly);
-      try
-      {
-         bundle.start();
-         BundleContext bundleContext = bundle.getBundleContext();
-         assertNotNull(bundleContext);
+            bundle.stop();
+            try {
+                registration2.getReference();
+                fail("Should not be here!");
+            } catch (IllegalStateException t) {
+                // expected
+            }
+        } finally {
+            bundle.uninstall();
+        }
+    }
 
-         String propertyA = "org.jboss.osgi.test.PropertyA";
-         String propertyALower = "org.jboss.osgi.test.propertya";
+    @Test
+    public void testSetProperties() throws Exception {
+        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
+        Bundle bundle = installBundle(assembly);
+        try {
+            bundle.start();
+            BundleContext bundleContext = bundle.getBundleContext();
+            assertNotNull(bundleContext);
 
-         Hashtable<String, Object> properties = new Hashtable<String, Object>();
-         properties.put(propertyA, "testA");
-         ServiceRegistration registration = bundleContext.registerService(BundleContext.class.getName(), bundleContext, properties);
-         assertNotNull(registration);
-         ServiceReference reference = registration.getReference();
-         assertNotNull(reference);
-         assertEquals("testA", reference.getProperty(propertyA));
-         assertEquals("testA", reference.getProperty(propertyALower));
+            String propertyA = "org.jboss.osgi.test.PropertyA";
+            String propertyALower = "org.jboss.osgi.test.propertya";
 
-         Object serviceID = reference.getProperty(Constants.SERVICE_ID);
-         Object objectClass = reference.getProperty(Constants.OBJECTCLASS);
+            Hashtable<String, Object> properties = new Hashtable<String, Object>();
+            properties.put(propertyA, "testA");
+            ServiceRegistration registration = bundleContext.registerService(BundleContext.class.getName(), bundleContext, properties);
+            assertNotNull(registration);
+            ServiceReference reference = registration.getReference();
+            assertNotNull(reference);
+            assertEquals("testA", reference.getProperty(propertyA));
+            assertEquals("testA", reference.getProperty(propertyALower));
 
-         assertAllReferences(bundleContext, null, "(" + propertyA + "=testA)", reference);
-         assertAllReferences(bundleContext, null, "(" + propertyALower + "=testA)", reference);
-         assertAllReferences(bundleContext, null, "(" + Constants.SERVICE_ID + "=" + serviceID + ")", reference);
+            Object serviceID = reference.getProperty(Constants.SERVICE_ID);
+            Object objectClass = reference.getProperty(Constants.OBJECTCLASS);
 
-         bundleContext.addServiceListener(this);
+            assertAllReferences(bundleContext, null, "(" + propertyA + "=testA)", reference);
+            assertAllReferences(bundleContext, null, "(" + propertyALower + "=testA)", reference);
+            assertAllReferences(bundleContext, null, "(" + Constants.SERVICE_ID + "=" + serviceID + ")", reference);
 
-         properties = new Hashtable<String, Object>();
-         properties.put(propertyA, "testAChanged");
-         registration.setProperties(properties);
-         assertServiceEvent(ServiceEvent.MODIFIED, reference);
-         assertEquals("testAChanged", reference.getProperty(propertyA));
-         assertNoAllReferences(bundleContext, null, "(" + propertyA + "=testA)");
-         assertNoAllReferences(bundleContext, null, "(" + propertyALower + "=testA)");
-         assertAllReferences(bundleContext, null, "(" + propertyA + "=testAChanged)", reference);
-         assertAllReferences(bundleContext, null, "(" + propertyALower + "=testAChanged)", reference);
+            bundleContext.addServiceListener(this);
 
-         registration.setProperties(null);
-         assertServiceEvent(ServiceEvent.MODIFIED, reference);
-         assertNull(reference.getProperty(propertyA));
-         assertNoAllReferences(bundleContext, null, "(" + propertyA + "=testA)");
-         assertNoAllReferences(bundleContext, null, "(" + propertyALower + "=testA)");
-         assertNoAllReferences(bundleContext, null, "(" + propertyA + "=testAChanged)");
-         assertNoAllReferences(bundleContext, null, "(" + propertyALower + "=testAChanged)");
-
-         properties = new Hashtable<String, Object>();
-         properties.put(propertyA, "testA2");
-         properties.put(Constants.SERVICE_ID, "rubbish1");
-         properties.put(Constants.OBJECTCLASS, "rubbish2");
-         registration.setProperties(properties);
-         assertServiceEvent(ServiceEvent.MODIFIED, reference);
-         assertEquals("testA2", reference.getProperty(propertyA));
-         assertEquals("testA2", reference.getProperty(propertyALower));
-         assertEquals(serviceID, reference.getProperty(Constants.SERVICE_ID));
-         assertEquals(serviceID, reference.getProperty(Constants.SERVICE_ID.toLowerCase()));
-         assertEquals(objectClass, reference.getProperty(Constants.OBJECTCLASS));
-         assertEquals(objectClass, reference.getProperty(Constants.OBJECTCLASS.toLowerCase()));
-
-         try
-         {
-            assertNoAllReferences(bundleContext, null, "(" + Constants.SERVICE_ID + "=rubbish1)");
-            fail("NumberFormatException expected");
-         }
-         catch (NumberFormatException ex)
-         {
-            // expected
-         }
-
-         assertAllReferences(bundleContext, null, "(" + Constants.SERVICE_ID + "=" + serviceID + ")", reference);
-
-         properties = new Hashtable<String, Object>();
-         properties.put("a", "1");
-         properties.put("A", "2");
-         try
-         {
+            properties = new Hashtable<String, Object>();
+            properties.put(propertyA, "testAChanged");
             registration.setProperties(properties);
-            fail("Should not be here!");
-         }
-         catch (IllegalArgumentException t)
-         {
-            // expected
-         }
-         assertNoServiceEvent();
+            assertServiceEvent(ServiceEvent.MODIFIED, reference);
+            assertEquals("testAChanged", reference.getProperty(propertyA));
+            assertNoAllReferences(bundleContext, null, "(" + propertyA + "=testA)");
+            assertNoAllReferences(bundleContext, null, "(" + propertyALower + "=testA)");
+            assertAllReferences(bundleContext, null, "(" + propertyA + "=testAChanged)", reference);
+            assertAllReferences(bundleContext, null, "(" + propertyALower + "=testAChanged)", reference);
 
-         registration.unregister();
-         assertServiceEvent(ServiceEvent.UNREGISTERING, reference);
+            registration.setProperties(null);
+            assertServiceEvent(ServiceEvent.MODIFIED, reference);
+            assertNull(reference.getProperty(propertyA));
+            assertNoAllReferences(bundleContext, null, "(" + propertyA + "=testA)");
+            assertNoAllReferences(bundleContext, null, "(" + propertyALower + "=testA)");
+            assertNoAllReferences(bundleContext, null, "(" + propertyA + "=testAChanged)");
+            assertNoAllReferences(bundleContext, null, "(" + propertyALower + "=testAChanged)");
 
-         try
-         {
-            registration.setProperties(new Hashtable<String, Object>());
-            fail("Should not be here!");
-         }
-         catch (IllegalStateException t)
-         {
-            // expected
-         }
-         assertNoServiceEvent();
-      }
-      finally
-      {
-         bundle.uninstall();
-      }
-   }
+            properties = new Hashtable<String, Object>();
+            properties.put(propertyA, "testA2");
+            properties.put(Constants.SERVICE_ID, "rubbish1");
+            properties.put(Constants.OBJECTCLASS, "rubbish2");
+            registration.setProperties(properties);
+            assertServiceEvent(ServiceEvent.MODIFIED, reference);
+            assertEquals("testA2", reference.getProperty(propertyA));
+            assertEquals("testA2", reference.getProperty(propertyALower));
+            assertEquals(serviceID, reference.getProperty(Constants.SERVICE_ID));
+            assertEquals(serviceID, reference.getProperty(Constants.SERVICE_ID.toLowerCase()));
+            assertEquals(objectClass, reference.getProperty(Constants.OBJECTCLASS));
+            assertEquals(objectClass, reference.getProperty(Constants.OBJECTCLASS.toLowerCase()));
 
-   @Test
-   public void testSetPropertiesAfterStop() throws Exception
-   {
-      Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-      Bundle bundle = installBundle(assembly);
-      try
-      {
-         bundle.start();
-         BundleContext bundleContext = bundle.getBundleContext();
-         assertNotNull(bundleContext);
+            try {
+                assertNoAllReferences(bundleContext, null, "(" + Constants.SERVICE_ID + "=rubbish1)");
+                fail("NumberFormatException expected");
+            } catch (NumberFormatException ex) {
+                // expected
+            }
 
-         ServiceRegistration registration = bundleContext.registerService(BundleContext.class.getName(), bundleContext, null);
-         assertNotNull(registration);
+            assertAllReferences(bundleContext, null, "(" + Constants.SERVICE_ID + "=" + serviceID + ")", reference);
 
-         bundle.stop();
+            properties = new Hashtable<String, Object>();
+            properties.put("a", "1");
+            properties.put("A", "2");
+            try {
+                registration.setProperties(properties);
+                fail("Should not be here!");
+            } catch (IllegalArgumentException t) {
+                // expected
+            }
+            assertNoServiceEvent();
 
-         try
-         {
-            registration.setProperties(new Hashtable<String, Object>());
-            fail("Should not be here!");
-         }
-         catch (IllegalStateException t)
-         {
-            // expected
-         }
-         assertNoServiceEvent();
-      }
-      finally
-      {
-         bundle.uninstall();
-      }
-   }
+            registration.unregister();
+            assertServiceEvent(ServiceEvent.UNREGISTERING, reference);
 
-   @Test
-   public void testUnregister() throws Exception
-   {
-      Archive<?> assembly1 = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-      Bundle bundle1 = installBundle(assembly1);
-      try
-      {
-         bundle1.start();
-         BundleContext context1 = bundle1.getBundleContext();
-         assertNotNull(context1);
+            try {
+                registration.setProperties(new Hashtable<String, Object>());
+                fail("Should not be here!");
+            } catch (IllegalStateException t) {
+                // expected
+            }
+            assertNoServiceEvent();
+        } finally {
+            bundle.uninstall();
+        }
+    }
 
-         SimpleServiceFactory factory = new SimpleServiceFactory(context1, null);
-         ServiceRegistration sreg1 = context1.registerService(BundleContext.class.getName(), factory, null);
-         assertNotNull(sreg1);
+    @Test
+    public void testSetPropertiesAfterStop() throws Exception {
+        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
+        Bundle bundle = installBundle(assembly);
+        try {
+            bundle.start();
+            BundleContext bundleContext = bundle.getBundleContext();
+            assertNotNull(bundleContext);
 
-         ServiceReference sref1 = sreg1.getReference();
-         assertNotNull(sref1);
+            ServiceRegistration registration = bundleContext.registerService(BundleContext.class.getName(), bundleContext, null);
+            assertNotNull(registration);
 
-         ServiceReference sref2 = context1.getServiceReference(BundleContext.class.getName());
-         assertEquals(sref1, sref2);
+            bundle.stop();
 
-         ServiceReference[] inUse = bundle1.getServicesInUse();
-         assertNull(inUse);
+            try {
+                registration.setProperties(new Hashtable<String, Object>());
+                fail("Should not be here!");
+            } catch (IllegalStateException t) {
+                // expected
+            }
+            assertNoServiceEvent();
+        } finally {
+            bundle.uninstall();
+        }
+    }
 
-         context1.getService(sref1);
-         inUse = bundle1.getServicesInUse();
-         assertArrayEquals(new ServiceReference[] { sref1 }, inUse);
+    @Test
+    public void testUnregister() throws Exception {
+        Archive<?> assembly1 = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
+        Bundle bundle1 = installBundle(assembly1);
+        try {
+            bundle1.start();
+            BundleContext context1 = bundle1.getBundleContext();
+            assertNotNull(context1);
 
-         Archive<?> assembly2 = assembleArchive("simple2", "/bundles/simple/simple-bundle2");
-         Bundle bundle2 = installBundle(assembly2);
-         try
-         {
-            bundle2.start();
-            BundleContext context2 = bundle2.getBundleContext();
-            assertNotNull(context2);
-            context2.getService(sref1);
-            inUse = bundle2.getServicesInUse();
+            SimpleServiceFactory factory = new SimpleServiceFactory(context1, null);
+            ServiceRegistration sreg1 = context1.registerService(BundleContext.class.getName(), factory, null);
+            assertNotNull(sreg1);
+
+            ServiceReference sref1 = sreg1.getReference();
+            assertNotNull(sref1);
+
+            ServiceReference sref2 = context1.getServiceReference(BundleContext.class.getName());
+            assertEquals(sref1, sref2);
+
+            ServiceReference[] inUse = bundle1.getServicesInUse();
+            assertNull(inUse);
+
+            context1.getService(sref1);
+            inUse = bundle1.getServicesInUse();
             assertArrayEquals(new ServiceReference[] { sref1 }, inUse);
 
-            assertNull(factory.ungetBundle);
-            assertNull(factory.ungetRegistration);
-            assertNull(factory.ungetService);
+            Archive<?> assembly2 = assembleArchive("simple2", "/bundles/simple/simple-bundle2");
+            Bundle bundle2 = installBundle(assembly2);
+            try {
+                bundle2.start();
+                BundleContext context2 = bundle2.getBundleContext();
+                assertNotNull(context2);
+                context2.getService(sref1);
+                inUse = bundle2.getServicesInUse();
+                assertArrayEquals(new ServiceReference[] { sref1 }, inUse);
 
-            context1.addServiceListener(this);
-            sreg1.unregister();
+                assertNull(factory.ungetBundle);
+                assertNull(factory.ungetRegistration);
+                assertNull(factory.ungetService);
 
-            sref2 = context1.getServiceReference(BundleContext.class.getName());
-            assertNull("" + sref2, sref2);
+                context1.addServiceListener(this);
+                sreg1.unregister();
 
-            Object actual = context1.getService(sref1);
-            assertNull("" + actual, actual);
+                sref2 = context1.getServiceReference(BundleContext.class.getName());
+                assertNull("" + sref2, sref2);
 
-            assertServiceEvent(ServiceEvent.UNREGISTERING, sref1);
+                Object actual = context1.getService(sref1);
+                assertNull("" + actual, actual);
 
-            inUse = bundle1.getServicesInUse();
-            assertNull(inUse);
-            inUse = bundle2.getServicesInUse();
-            assertNull(inUse);
+                assertServiceEvent(ServiceEvent.UNREGISTERING, sref1);
 
-            assertEquals(sreg1, factory.ungetRegistration);
-            assertEquals(context1, factory.ungetService);
-         }
-         finally
-         {
-            bundle2.uninstall();
-         }
+                inUse = bundle1.getServicesInUse();
+                assertNull(inUse);
+                inUse = bundle2.getServicesInUse();
+                assertNull(inUse);
 
-         try
-         {
-            sreg1.unregister();
-            fail("Should not be here!");
-         }
-         catch (IllegalStateException t)
-         {
-            // expected
-         }
-      }
-      finally
-      {
-         bundle1.uninstall();
-      }
-   }
+                assertEquals(sreg1, factory.ungetRegistration);
+                assertEquals(context1, factory.ungetService);
+            } finally {
+                bundle2.uninstall();
+            }
 
-   @Test
-   public void testUnregisterAfterStop() throws Exception
-   {
-      Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-      Bundle bundle = installBundle(assembly);
-      try
-      {
-         bundle.start();
-         BundleContext bundleContext = bundle.getBundleContext();
-         assertNotNull(bundleContext);
+            try {
+                sreg1.unregister();
+                fail("Should not be here!");
+            } catch (IllegalStateException t) {
+                // expected
+            }
+        } finally {
+            bundle1.uninstall();
+        }
+    }
 
-         ServiceRegistration registration = bundleContext.registerService(BundleContext.class.getName(), bundleContext, null);
-         assertNotNull(registration);
+    @Test
+    public void testUnregisterAfterStop() throws Exception {
+        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
+        Bundle bundle = installBundle(assembly);
+        try {
+            bundle.start();
+            BundleContext bundleContext = bundle.getBundleContext();
+            assertNotNull(bundleContext);
 
-         bundle.stop();
+            ServiceRegistration registration = bundleContext.registerService(BundleContext.class.getName(), bundleContext, null);
+            assertNotNull(registration);
 
-         try
-         {
-            registration.unregister();
-            fail("Should not be here!");
-         }
-         catch (IllegalStateException t)
-         {
-            // expected
-         }
-      }
-      finally
-      {
-         bundle.uninstall();
-      }
-   }
+            bundle.stop();
+
+            try {
+                registration.unregister();
+                fail("Should not be here!");
+            } catch (IllegalStateException t) {
+                // expected
+            }
+        } finally {
+            bundle.uninstall();
+        }
+    }
 }

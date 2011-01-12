@@ -1,24 +1,24 @@
 /*
-* JBoss, Home of Professional Open Source
-* Copyright 2009, Red Hat Middleware LLC, and individual contributors
-* as indicated by the @author tags. See the copyright.txt file in the
-* distribution for a full listing of individual contributors.
-*
-* This is free software; you can redistribute it and/or modify it
-* under the terms of the GNU Lesser General Public License as
-* published by the Free Software Foundation; either version 2.1 of
-* the License, or (at your option) any later version.
-*
-* This software is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-* Lesser General Public License for more details.
-*
-* You should have received a copy of the GNU Lesser General Public
-* License along with this software; if not, write to the Free
-* Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-* 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-*/
+ * JBoss, Home of Professional Open Source
+ * Copyright 2009, Red Hat Middleware LLC, and individual contributors
+ * as indicated by the @author tags. See the copyright.txt file in the
+ * distribution for a full listing of individual contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
 package org.jboss.osgi.framework.bundle;
 
 import java.io.IOException;
@@ -46,244 +46,202 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public class BundleWrapper implements Bundle
-{
-   // Provide logging
-   private final Logger log = Logger.getLogger(BundleWrapper.class);
+public class BundleWrapper implements Bundle {
 
-   private final AbstractBundle bundleState;
+    // Provide logging
+    private final Logger log = Logger.getLogger(BundleWrapper.class);
 
-   public BundleWrapper(AbstractBundle bundleState)
-   {
-      if (bundleState == null)
-         throw new IllegalArgumentException("Null bundleState");
+    private final AbstractBundle bundleState;
 
-      this.bundleState = bundleState;
-   }
+    public BundleWrapper(AbstractBundle bundleState) {
+        if (bundleState == null)
+            throw new IllegalArgumentException("Null bundleState");
 
-   AbstractBundle getBundleState()
-   {
-      return bundleState;
-   }
+        this.bundleState = bundleState;
+    }
 
-   @SuppressWarnings("rawtypes")
-   public Enumeration findEntries(String path, String filePattern, boolean recurse)
-   {
-      Enumeration<URL> urls = bundleState.findEntries(path, filePattern, recurse);
-      return toBundleURLs(urls);
-   }
+    AbstractBundle getBundleState() {
+        return bundleState;
+    }
 
-   public BundleContext getBundleContext()
-   {
-      return bundleState.getBundleContext();
-   }
+    @SuppressWarnings("rawtypes")
+    public Enumeration findEntries(String path, String filePattern, boolean recurse) {
+        Enumeration<URL> urls = bundleState.findEntries(path, filePattern, recurse);
+        return toBundleURLs(urls);
+    }
 
-   public long getBundleId()
-   {
-      return bundleState.getBundleId();
-   }
+    public BundleContext getBundleContext() {
+        return bundleState.getBundleContext();
+    }
 
-   public URL getEntry(String path)
-   {
-      URL url = bundleState.getEntry(path);
-      return toBundleURL(url);
-   }
+    public long getBundleId() {
+        return bundleState.getBundleId();
+    }
 
-   @SuppressWarnings("rawtypes")
-   public Enumeration getEntryPaths(String path)
-   {
-      return bundleState.getEntryPaths(path);
-   }
+    public URL getEntry(String path) {
+        URL url = bundleState.getEntry(path);
+        return toBundleURL(url);
+    }
 
-   @SuppressWarnings("rawtypes")
-   public Dictionary getHeaders()
-   {
-      return bundleState.getHeaders();
-   }
+    @SuppressWarnings("rawtypes")
+    public Enumeration getEntryPaths(String path) {
+        return bundleState.getEntryPaths(path);
+    }
 
-   @SuppressWarnings("rawtypes")
-   public Dictionary getHeaders(String locale)
-   {
-      return bundleState.getHeaders(locale);
-   }
+    @SuppressWarnings("rawtypes")
+    public Dictionary getHeaders() {
+        return bundleState.getHeaders();
+    }
 
-   public long getLastModified()
-   {
-      return bundleState.getLastModified();
-   }
+    @SuppressWarnings("rawtypes")
+    public Dictionary getHeaders(String locale) {
+        return bundleState.getHeaders(locale);
+    }
 
-   public String getLocation()
-   {
-      return bundleState.getLocation();
-   }
+    public long getLastModified() {
+        return bundleState.getLastModified();
+    }
 
-   public ServiceReference[] getRegisteredServices()
-   {
-      return bundleState.getRegisteredServices();
-   }
+    public String getLocation() {
+        return bundleState.getLocation();
+    }
 
-   public URL getResource(String name)
-   {
-      URL url = bundleState.getResource(name);
-      return toBundleURL(url);
-   }
+    public ServiceReference[] getRegisteredServices() {
+        return bundleState.getRegisteredServices();
+    }
 
-   @SuppressWarnings("rawtypes")
-   public Enumeration getResources(String name) throws IOException
-   {
-      Enumeration<URL> urls = bundleState.getResources(name);
-      return toBundleURLs(urls);
-   }
+    public URL getResource(String name) {
+        URL url = bundleState.getResource(name);
+        return toBundleURL(url);
+    }
 
-   public ServiceReference[] getServicesInUse()
-   {
-      return bundleState.getServicesInUse();
-   }
+    @SuppressWarnings("rawtypes")
+    public Enumeration getResources(String name) throws IOException {
+        Enumeration<URL> urls = bundleState.getResources(name);
+        return toBundleURLs(urls);
+    }
 
-   public int getState()
-   {
-      return bundleState.getState();
-   }
+    public ServiceReference[] getServicesInUse() {
+        return bundleState.getServicesInUse();
+    }
 
-   public String getSymbolicName()
-   {
-      return bundleState.getSymbolicName();
-   }
+    public int getState() {
+        return bundleState.getState();
+    }
 
-   public Version getVersion()
-   {
-      return bundleState.getVersion();
-   }
+    public String getSymbolicName() {
+        return bundleState.getSymbolicName();
+    }
 
-   @SuppressWarnings("unchecked")
-   public Map<X509Certificate, List<X509Certificate>> getSignerCertificates(int signersType)
-   {
-      return bundleState.getSignerCertificates(signersType);
-   }
+    public Version getVersion() {
+        return bundleState.getVersion();
+    }
 
-   public boolean hasPermission(Object permission)
-   {
-      return bundleState.hasPermission(permission);
-   }
+    @SuppressWarnings("unchecked")
+    public Map<X509Certificate, List<X509Certificate>> getSignerCertificates(int signersType) {
+        return bundleState.getSignerCertificates(signersType);
+    }
 
-   @SuppressWarnings("rawtypes")
-   public Class loadClass(String name) throws ClassNotFoundException
-   {
-      return bundleState.loadClass(name);
-   }
+    public boolean hasPermission(Object permission) {
+        return bundleState.hasPermission(permission);
+    }
 
-   public void start() throws BundleException
-   {
-      bundleState.start();
-   }
+    @SuppressWarnings("rawtypes")
+    public Class loadClass(String name) throws ClassNotFoundException {
+        return bundleState.loadClass(name);
+    }
 
-   public void start(int options) throws BundleException
-   {
-      bundleState.start(options);
-   }
+    public void start() throws BundleException {
+        bundleState.start();
+    }
 
-   public void stop() throws BundleException
-   {
-      bundleState.stop();
-   }
+    public void start(int options) throws BundleException {
+        bundleState.start(options);
+    }
 
-   public void stop(int options) throws BundleException
-   {
-      bundleState.stop(options);
-   }
+    public void stop() throws BundleException {
+        bundleState.stop();
+    }
 
-   public void uninstall() throws BundleException
-   {
-      bundleState.uninstall();
-   }
+    public void stop(int options) throws BundleException {
+        bundleState.stop(options);
+    }
 
-   public void update() throws BundleException
-   {
-      bundleState.update();
-   }
+    public void uninstall() throws BundleException {
+        bundleState.uninstall();
+    }
 
-   public void update(InputStream in) throws BundleException
-   {
-      bundleState.update(in);
-   }
+    public void update() throws BundleException {
+        bundleState.update();
+    }
 
-   private Enumeration<URL> toBundleURLs(Enumeration<URL> urls)
-   {
-      if (urls == null)
-         return null;
+    public void update(InputStream in) throws BundleException {
+        bundleState.update(in);
+    }
 
-      Vector<URL> result = new Vector<URL>();
-      while (urls.hasMoreElements())
-         result.add(toBundleURL(urls.nextElement()));
+    private Enumeration<URL> toBundleURLs(Enumeration<URL> urls) {
+        if (urls == null)
+            return null;
 
-      return result.elements();
-   }
+        Vector<URL> result = new Vector<URL>();
+        while (urls.hasMoreElements())
+            result.add(toBundleURL(urls.nextElement()));
 
-   private URL toBundleURL(URL url)
-   {
-      if (url == null)
-         return null;
+        return result.elements();
+    }
 
-      if ("vfs".equals(url.getProtocol()) == false)
-         return url;
+    private URL toBundleURL(URL url) {
+        if (url == null)
+            return null;
 
-      URL result = url;
-      try
-      {
-         String path = url.getPath();
-         String rootPath = bundleState.getEntry("/").getPath();
-         if (path.startsWith(rootPath))
-         {
-            path = path.substring(rootPath.length());
-            result = BundleProtocolHandler.getBundleURL(bundleState, path);
-         }
-         else if (bundleState instanceof HostBundle)
-         {
-            HostBundle hostBundle = (HostBundle)bundleState;
-            outer: for (FragmentRevision fragRev : hostBundle.getCurrentRevision().getAttachedFragments())
-            {
-               for (VirtualFile root : fragRev.getContentRoots())
-               {
-                  if (path.startsWith(root.getPathName()))
-                  {
-                     path = path.substring(rootPath.length());
-                     result = BundleProtocolHandler.getBundleURL(fragRev.getBundleState(), path);
-                     break outer;
-                  }
-               }
+        if ("vfs".equals(url.getProtocol()) == false)
+            return url;
+
+        URL result = url;
+        try {
+            String path = url.getPath();
+            String rootPath = bundleState.getEntry("/").getPath();
+            if (path.startsWith(rootPath)) {
+                path = path.substring(rootPath.length());
+                result = BundleProtocolHandler.getBundleURL(bundleState, path);
+            } else if (bundleState instanceof HostBundle) {
+                HostBundle hostBundle = (HostBundle) bundleState;
+                outer: for (FragmentRevision fragRev : hostBundle.getCurrentRevision().getAttachedFragments()) {
+                    for (VirtualFile root : fragRev.getContentRoots()) {
+                        if (path.startsWith(root.getPathName())) {
+                            path = path.substring(rootPath.length());
+                            result = BundleProtocolHandler.getBundleURL(fragRev.getBundleState(), path);
+                            break outer;
+                        }
+                    }
+                }
             }
-         }
-      }
-      catch (Exception ex)
-      {
-         log.errorf(ex, "Cannot construct virtual file from: %s", url);
-      }
-      
-      if (result == url)
-         log.debugf("Cannot obtain bundle URL for: %s", url);
-      
-      return result;
-   }
+        } catch (Exception ex) {
+            log.errorf(ex, "Cannot construct virtual file from: %s", url);
+        }
 
-   @Override
-   public int hashCode()
-   {
-      return bundleState.hashCode();
-   }
+        if (result == url)
+            log.debugf("Cannot obtain bundle URL for: %s", url);
 
-   @Override
-   public boolean equals(Object obj)
-   {
-      if (!(obj instanceof BundleWrapper))
-         return false;
+        return result;
+    }
 
-      BundleWrapper other = (BundleWrapper)obj;
-      return bundleState.equals(other.bundleState);
-   }
+    @Override
+    public int hashCode() {
+        return bundleState.hashCode();
+    }
 
-   @Override
-   public String toString()
-   {
-      return bundleState.toString();
-   }
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof BundleWrapper))
+            return false;
+
+        BundleWrapper other = (BundleWrapper) obj;
+        return bundleState.equals(other.bundleState);
+    }
+
+    @Override
+    public String toString() {
+        return bundleState.toString();
+    }
 }

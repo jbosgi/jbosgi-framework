@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.fragments.hostE;
 
-public interface HostEInterface
-{
+public interface HostEInterface {
 
 }

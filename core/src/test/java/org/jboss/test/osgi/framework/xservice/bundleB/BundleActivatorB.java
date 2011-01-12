@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.xservice.bundleB;
 
-
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -31,16 +30,14 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
-public class BundleActivatorB implements BundleActivator
-{
-   public void start(BundleContext context)
-   {
-      // Register a service
-      BundleServiceB service = new BundleServiceB(context.getBundle());
-      context.registerService(BundleServiceB.class.getName(), service, null);
-   }
+public class BundleActivatorB implements BundleActivator {
 
-   public void stop(BundleContext context)
-   {
-   }
+    public void start(BundleContext context) {
+        // Register a service
+        BundleServiceB service = new BundleServiceB(context.getBundle());
+        context.registerService(BundleServiceB.class.getName(), service, null);
+    }
+
+    public void stop(BundleContext context) {
+    }
 }

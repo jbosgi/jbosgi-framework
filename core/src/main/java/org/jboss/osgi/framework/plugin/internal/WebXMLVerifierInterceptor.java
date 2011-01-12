@@ -34,85 +34,68 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
- * The lifecycle interceptor that verifies that deployments ending in '.war'
- * have a WEB-INF/web.xml descriptor.
- *
+ * The lifecycle interceptor that verifies that deployments ending in '.war' have a WEB-INF/web.xml descriptor.
+ * 
  * @author thomas.diesler@jboss.com
  * @since 20-Oct-2009
  */
-public class WebXMLVerifierInterceptor extends AbstractPlugin implements LifecycleInterceptor
-{
-   private LifecycleInterceptor delegate;
+public class WebXMLVerifierInterceptor extends AbstractPlugin implements LifecycleInterceptor {
 
-   public WebXMLVerifierInterceptor(BundleManager bundleManager)
-   {
-      super(bundleManager);
-   }
+    private LifecycleInterceptor delegate;
 
-   @Override
-   public void initPlugin()
-   {
-      delegate = new AbstractLifecycleInterceptor()
-      {
-         public void invoke(int state, InvocationContext context) throws LifecycleInterceptorException
-         {
-            if (state == Bundle.STARTING)
-            {
-               try
-               {
-                  VirtualFile root = context.getRoot();
-                  if (root != null)
-                  {
-                     VirtualFile webXML = root.getChild("/WEB-INF/web.xml");
-                     String contextPath = (String)context.getBundle().getHeaders().get("Web-ContextPath");
-                     boolean isWebApp = contextPath != null || root.getName().endsWith(".war");
-                     if (isWebApp == true && webXML == null)
-                        throw new LifecycleInterceptorException("Cannot obtain web.xml from: " + root.toURL());
-                  }
-               }
-               catch (RuntimeException rte)
-               {
-                  throw rte;
-               }
-               catch (Exception ex)
-               {
-                  throw new LifecycleInterceptorException("Cannot check for web.xml", ex);
-               }
+    public WebXMLVerifierInterceptor(BundleManager bundleManager) {
+        super(bundleManager);
+    }
+
+    @Override
+    public void initPlugin() {
+        delegate = new AbstractLifecycleInterceptor() {
+
+            public void invoke(int state, InvocationContext context) throws LifecycleInterceptorException {
+                if (state == Bundle.STARTING) {
+                    try {
+                        VirtualFile root = context.getRoot();
+                        if (root != null) {
+                            VirtualFile webXML = root.getChild("/WEB-INF/web.xml");
+                            String contextPath = (String) context.getBundle().getHeaders().get("Web-ContextPath");
+                            boolean isWebApp = contextPath != null || root.getName().endsWith(".war");
+                            if (isWebApp == true && webXML == null)
+                                throw new LifecycleInterceptorException("Cannot obtain web.xml from: " + root.toURL());
+                        }
+                    } catch (RuntimeException rte) {
+                        throw rte;
+                    } catch (Exception ex) {
+                        throw new LifecycleInterceptorException("Cannot check for web.xml", ex);
+                    }
+                }
             }
-         }
-      };
-   }
+        };
+    }
 
-   @Override
-   public void destroyPlugin()
-   {
-      delegate = null;
-   }
+    @Override
+    public void destroyPlugin() {
+        delegate = null;
+    }
 
-   @Override
-   public void startPlugin()
-   {
-      BundleContext sysContext = getBundleManager().getSystemContext();
-      sysContext.registerService(LifecycleInterceptor.class.getName(), delegate, null);
-   }
+    @Override
+    public void startPlugin() {
+        BundleContext sysContext = getBundleManager().getSystemContext();
+        sysContext.registerService(LifecycleInterceptor.class.getName(), delegate, null);
+    }
 
-   public Set<Class<?>> getInput()
-   {
-      return delegate.getInput();
-   }
+    public Set<Class<?>> getInput() {
+        return delegate.getInput();
+    }
 
-   public Set<Class<?>> getOutput()
-   {
-      return delegate.getOutput();
-   }
+    public Set<Class<?>> getOutput() {
+        return delegate.getOutput();
+    }
 
-   public int getRelativeOrder()
-   {
-      return delegate.getRelativeOrder();
-   }
+    public int getRelativeOrder() {
+        return delegate.getRelativeOrder();
+    }
 
-   public void invoke(int state, InvocationContext context) throws LifecycleInterceptorException
-   {
-      delegate.invoke(state, context);
-   }
+    public void invoke(int state, InvocationContext context) throws LifecycleInterceptorException {
+        delegate.invoke(state, context);
+    }
 }

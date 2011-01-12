@@ -29,17 +29,15 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
-public class ModuleServiceA
-{
-   Bundle owner;
-   
-   ModuleServiceA(Bundle owner)
-   {
-      this.owner = owner;
-   }
+public class ModuleServiceA {
 
-   public String echo(String msg)
-   {
-      return msg + ":" + owner.getSymbolicName();
-   }
+    Bundle owner;
+
+    ModuleServiceA(Bundle owner) {
+        this.owner = owner;
+    }
+
+    public String echo(String msg) {
+        return msg + ":" + owner.getSymbolicName();
+    }
 }

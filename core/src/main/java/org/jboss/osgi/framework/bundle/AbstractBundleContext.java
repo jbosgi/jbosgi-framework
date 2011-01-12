@@ -1,24 +1,24 @@
 /*
-* JBoss, Home of Professional Open Source
-* Copyright 2009, Red Hat Middleware LLC, and individual contributors
-* as indicated by the @author tags. See the copyright.txt file in the
-* distribution for a full listing of individual contributors.
-*
-* This is free software; you can redistribute it and/or modify it
-* under the terms of the GNU Lesser General Public License as
-* published by the Free Software Foundation; either version 2.1 of
-* the License, or (at your option) any later version.
-*
-* This software is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-* Lesser General Public License for more details.
-*
-* You should have received a copy of the GNU Lesser General Public
-* License along with this software; if not, write to the Free
-* Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
-* 02110-1301 USA, or see the FSF site: http://www.fsf.org.
-*/
+ * JBoss, Home of Professional Open Source
+ * Copyright 2009, Red Hat Middleware LLC, and individual contributors
+ * as indicated by the @author tags. See the copyright.txt file in the
+ * distribution for a full listing of individual contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
 package org.jboss.osgi.framework.bundle;
 
 import java.io.File;
@@ -57,386 +57,326 @@ import org.osgi.framework.ServiceRegistration;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public abstract class AbstractBundleContext implements BundleContext
-{
-   private final BundleManager bundleManager;
-   private final AbstractBundle bundleState;
-   private final DeployerService deployerService;
-   private final BundleStoragePlugin storagePlugin;
-   private final BundleDeploymentPlugin deploymentPlugin;
-   private BundleContext contextWrapper;
-   private boolean destroyed;
+public abstract class AbstractBundleContext implements BundleContext {
 
-   AbstractBundleContext(AbstractBundle bundleState)
-   {
-      if (bundleState == null)
-         throw new IllegalArgumentException("Null bundleState");
-      
-      this.bundleManager = bundleState.getBundleManager();
-      this.bundleState = bundleState;
-      
-      // Cache the frequently used plugins
-      this.deployerService = bundleManager.getPlugin(DeployerServicePlugin.class);
-      this.storagePlugin = bundleManager.getPlugin(BundleStoragePlugin.class);
-      this.deploymentPlugin = bundleManager.getPlugin(BundleDeploymentPlugin.class);
-   }
+    private final BundleManager bundleManager;
+    private final AbstractBundle bundleState;
+    private final DeployerService deployerService;
+    private final BundleStoragePlugin storagePlugin;
+    private final BundleDeploymentPlugin deploymentPlugin;
+    private BundleContext contextWrapper;
+    private boolean destroyed;
 
-   /**
-    * Assert that the given context is an instance of AbstractBundleContext
-    * @throws IllegalArgumentException if the given context is not an instance of AbstractBundleContext
-    */
-   public static AbstractBundleContext assertBundleContext(BundleContext context)
-   {
-      if (context == null)
-         throw new IllegalArgumentException("Null bundle");
+    AbstractBundleContext(AbstractBundle bundleState) {
+        if (bundleState == null)
+            throw new IllegalArgumentException("Null bundleState");
 
-      if (context instanceof BundleContextWrapper)
-         context = ((BundleContextWrapper)context).getInternal();
+        this.bundleManager = bundleState.getBundleManager();
+        this.bundleState = bundleState;
 
-      if (context instanceof AbstractBundleContext == false)
-         throw new IllegalArgumentException("Not an AbstractBundleContext: " + context);
+        // Cache the frequently used plugins
+        this.deployerService = bundleManager.getPlugin(DeployerServicePlugin.class);
+        this.storagePlugin = bundleManager.getPlugin(BundleStoragePlugin.class);
+        this.deploymentPlugin = bundleManager.getPlugin(BundleDeploymentPlugin.class);
+    }
 
-      return (AbstractBundleContext)context;
-   }
-   
-   public BundleManager getBundleManager()
-   {
-      return bundleManager;
-   }
+    /**
+     * Assert that the given context is an instance of AbstractBundleContext
+     * 
+     * @throws IllegalArgumentException if the given context is not an instance of AbstractBundleContext
+     */
+    public static AbstractBundleContext assertBundleContext(BundleContext context) {
+        if (context == null)
+            throw new IllegalArgumentException("Null bundle");
 
-   public AbstractBundle getBundleInternal()
-   {
-      return bundleState;
-   }
-   
-   public BundleContext getContextWrapper()
-   {
-      checkValidBundleContext();
-      if (contextWrapper == null)
-         contextWrapper = new BundleContextWrapper(this);
-      return contextWrapper;
-   }
+        if (context instanceof BundleContextWrapper)
+            context = ((BundleContextWrapper) context).getInternal();
 
-   void destroy()
-   {
-      destroyed = true;
-   }
-   
-   @Override
-   public String getProperty(String key)
-   {
-      checkValidBundleContext();
-      FrameworkState frameworkState = bundleState.getBundleManager().getFrameworkState();
-      frameworkState.assertFrameworkActive();
-      return frameworkState.getProperty(key);
-   }
+        if (context instanceof AbstractBundleContext == false)
+            throw new IllegalArgumentException("Not an AbstractBundleContext: " + context);
 
-   @Override
-   public Bundle getBundle()
-   {
-      checkValidBundleContext();
-      return bundleState.getBundleWrapper();
-   }
+        return (AbstractBundleContext) context;
+    }
 
-   @Override
-   public Bundle installBundle(String location) throws BundleException
-   {
-      return installBundleInternal(location, null);
-   }
+    public BundleManager getBundleManager() {
+        return bundleManager;
+    }
 
-   @Override
-   public Bundle installBundle(String location, InputStream input) throws BundleException
-   {
-      return installBundleInternal(location, input);
-   }
+    public AbstractBundle getBundleInternal() {
+        return bundleState;
+    }
 
-   /*
-    * This is the entry point for all bundle deployments.
-    * 
-    * #1 Construct the {@link VirtualFile} from the given parameters
-    * #2 Setup Bundle permanent storage
-    * #3 Create a Bundle {@link Deployment}
-    * #4 Deploy the Bundle through the {@link DeploymentService}
-    * 
-    * The {@link DeploymentService} is the integration point for JBossAS.
-    * 
-    * By default the {@link DeployerServicePlugin} simply delegates to {@link BundleManager#installBundle(Deployment)}
-    * In JBossAS however, the {@link DeployerServicePlugin} delegates to the management API that feeds the Bundle
-    * deployment through the DeploymentUnitProcessor chain.
-    */
-   private Bundle installBundleInternal(String location, InputStream input) throws BundleException
-   {
-      checkValidBundleContext();
-      
-      VirtualFile rootFile = null;
-      if (input != null)
-      {
-         try
-         {
-            rootFile = AbstractVFS.toVirtualFile(location, input);
-         }
-         catch (IOException ex)
-         {
-            throw new BundleException("Cannot obtain virtual file from input stream", ex);
-         }
-      }
+    public BundleContext getContextWrapper() {
+        checkValidBundleContext();
+        if (contextWrapper == null)
+            contextWrapper = new BundleContextWrapper(this);
+        return contextWrapper;
+    }
 
-      // Try location as URL
-      if (rootFile == null)
-      {
-         try
-         {
-            URL url = new URL(location);
-            if (BundleProtocolHandler.PROTOCOL_NAME.equals(url.getProtocol()))
-            {
-               rootFile = AbstractVFS.toVirtualFile(location, url.openStream());
+    void destroy() {
+        destroyed = true;
+    }
+
+    @Override
+    public String getProperty(String key) {
+        checkValidBundleContext();
+        FrameworkState frameworkState = bundleState.getBundleManager().getFrameworkState();
+        frameworkState.assertFrameworkActive();
+        return frameworkState.getProperty(key);
+    }
+
+    @Override
+    public Bundle getBundle() {
+        checkValidBundleContext();
+        return bundleState.getBundleWrapper();
+    }
+
+    @Override
+    public Bundle installBundle(String location) throws BundleException {
+        return installBundleInternal(location, null);
+    }
+
+    @Override
+    public Bundle installBundle(String location, InputStream input) throws BundleException {
+        return installBundleInternal(location, input);
+    }
+
+    /*
+     * This is the entry point for all bundle deployments.
+     * 
+     * #1 Construct the {@link VirtualFile} from the given parameters #2 Setup Bundle permanent storage #3 Create a Bundle
+     * {@link Deployment} #4 Deploy the Bundle through the {@link DeploymentService}
+     * 
+     * The {@link DeploymentService} is the integration point for JBossAS.
+     * 
+     * By default the {@link DeployerServicePlugin} simply delegates to {@link BundleManager#installBundle(Deployment)} In
+     * JBossAS however, the {@link DeployerServicePlugin} delegates to the management API that feeds the Bundle deployment
+     * through the DeploymentUnitProcessor chain.
+     */
+    private Bundle installBundleInternal(String location, InputStream input) throws BundleException {
+        checkValidBundleContext();
+
+        VirtualFile rootFile = null;
+        if (input != null) {
+            try {
+                rootFile = AbstractVFS.toVirtualFile(location, input);
+            } catch (IOException ex) {
+                throw new BundleException("Cannot obtain virtual file from input stream", ex);
             }
-            else
-            {
-               rootFile = AbstractVFS.toVirtualFile(url);
+        }
+
+        // Try location as URL
+        if (rootFile == null) {
+            try {
+                URL url = new URL(location);
+                if (BundleProtocolHandler.PROTOCOL_NAME.equals(url.getProtocol())) {
+                    rootFile = AbstractVFS.toVirtualFile(location, url.openStream());
+                } else {
+                    rootFile = AbstractVFS.toVirtualFile(url);
+                }
+            } catch (IOException ex) {
+                // Ignore, not a valid URL
             }
-         }
-         catch (IOException ex)
-         {
-            // Ignore, not a valid URL
-         }
-      }
+        }
 
-      // Try location as File
-      if (rootFile == null)
-      {
-         try
-         {
-            File file = new File(location);
-            if (file.exists())
-               rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
-         }
-         catch (IOException ex)
-         {
-            throw new BundleException("Cannot obtain virtual file from: " + location, ex);
-         }
-      }
+        // Try location as File
+        if (rootFile == null) {
+            try {
+                File file = new File(location);
+                if (file.exists())
+                    rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
+            } catch (IOException ex) {
+                throw new BundleException("Cannot obtain virtual file from: " + location, ex);
+            }
+        }
 
-      if (rootFile == null)
-         throw new BundleException("Cannot obtain virtual file from: " + location);
-      
-      BundleStorageState storageState;
-      try
-      {
-         storageState = storagePlugin.createStorageState(bundleManager.getNextBundleId(), location, rootFile);
-      }
-      catch (IOException ex)
-      {
-         throw new BundleException("Cannot setup storage for: " + rootFile, ex);
-      }
+        if (rootFile == null)
+            throw new BundleException("Cannot obtain virtual file from: " + location);
 
-      AbstractBundle bundleState;
-      try
-      {
-         Deployment dep = deploymentPlugin.createDeployment(storageState);
-         bundleState = AbstractBundle.assertBundleState(deployerService.deploy(dep));
-      }
-      catch (BundleException ex)
-      {
-         storageState.deleteBundleStorage();
-         throw ex;
-      }
-      catch (RuntimeException rte)
-      {
-         storageState.deleteBundleStorage();
-         throw new BundleException("Cannot install bundle: " + location, rte);
-      }
-      
-      return bundleState.getBundleWrapper();
-   }
+        BundleStorageState storageState;
+        try {
+            storageState = storagePlugin.createStorageState(bundleManager.getNextBundleId(), location, rootFile);
+        } catch (IOException ex) {
+            throw new BundleException("Cannot setup storage for: " + rootFile, ex);
+        }
 
-   @Override
-   public Bundle getBundle(long id)
-   {
-      checkValidBundleContext();
-      
-      AbstractBundle bundle = bundleManager.getBundleById(id);
-      if (bundle == null)
-         return null;
-      
-      return bundle.getBundleWrapper();
-   }
+        AbstractBundle bundleState;
+        try {
+            Deployment dep = deploymentPlugin.createDeployment(storageState);
+            bundleState = AbstractBundle.assertBundleState(deployerService.deploy(dep));
+        } catch (BundleException ex) {
+            storageState.deleteBundleStorage();
+            throw ex;
+        } catch (RuntimeException rte) {
+            storageState.deleteBundleStorage();
+            throw new BundleException("Cannot install bundle: " + location, rte);
+        }
 
-   @Override
-   public Bundle[] getBundles()
-   {
-      checkValidBundleContext();
-      List<Bundle> result = new ArrayList<Bundle>();
-      for (AbstractBundle bundle : bundleManager.getBundles())
-         result.add(bundle.getBundleWrapper());
-      return result.toArray(new Bundle[result.size()]);
-   }
+        return bundleState.getBundleWrapper();
+    }
 
-   @Override
-   public void addServiceListener(ServiceListener listener, String filter) throws InvalidSyntaxException
-   {
-      checkValidBundleContext();
-      getFrameworkEventsPlugin().addServiceListener(bundleState, listener, filter);
-   }
+    @Override
+    public Bundle getBundle(long id) {
+        checkValidBundleContext();
 
-   @Override
-   public void addServiceListener(ServiceListener listener)
-   {
-      checkValidBundleContext();
-      try
-      {
-         getFrameworkEventsPlugin().addServiceListener(bundleState, listener, null);
-      }
-      catch (InvalidSyntaxException ex)
-      {
-         // ignore
-      }
-   }
+        AbstractBundle bundle = bundleManager.getBundleById(id);
+        if (bundle == null)
+            return null;
 
-   @Override
-   public void removeServiceListener(ServiceListener listener)
-   {
-      checkValidBundleContext();
-      getFrameworkEventsPlugin().removeServiceListener(bundleState, listener);
-   }
+        return bundle.getBundleWrapper();
+    }
 
-   @Override
-   public void addBundleListener(BundleListener listener)
-   {
-      checkValidBundleContext();
-      getFrameworkEventsPlugin().addBundleListener(bundleState, listener);
-   }
+    @Override
+    public Bundle[] getBundles() {
+        checkValidBundleContext();
+        List<Bundle> result = new ArrayList<Bundle>();
+        for (AbstractBundle bundle : bundleManager.getBundles())
+            result.add(bundle.getBundleWrapper());
+        return result.toArray(new Bundle[result.size()]);
+    }
 
-   @Override
-   public void removeBundleListener(BundleListener listener)
-   {
-      checkValidBundleContext();
-      getFrameworkEventsPlugin().removeBundleListener(bundleState, listener);
-   }
+    @Override
+    public void addServiceListener(ServiceListener listener, String filter) throws InvalidSyntaxException {
+        checkValidBundleContext();
+        getFrameworkEventsPlugin().addServiceListener(bundleState, listener, filter);
+    }
 
-   @Override
-   public void addFrameworkListener(FrameworkListener listener)
-   {
-      checkValidBundleContext();
-      getFrameworkEventsPlugin().addFrameworkListener(bundleState, listener);
-   }
+    @Override
+    public void addServiceListener(ServiceListener listener) {
+        checkValidBundleContext();
+        try {
+            getFrameworkEventsPlugin().addServiceListener(bundleState, listener, null);
+        } catch (InvalidSyntaxException ex) {
+            // ignore
+        }
+    }
 
-   @Override
-   public void removeFrameworkListener(FrameworkListener listener)
-   {
-      checkValidBundleContext();
-      getFrameworkEventsPlugin().removeFrameworkListener(bundleState, listener);
-   }
+    @Override
+    public void removeServiceListener(ServiceListener listener) {
+        checkValidBundleContext();
+        getFrameworkEventsPlugin().removeServiceListener(bundleState, listener);
+    }
 
-   @Override
-   @SuppressWarnings("rawtypes")
-   public ServiceRegistration registerService(String clazz, Object service, Dictionary properties)
-   {
-      checkValidBundleContext();
-      return registerService(new String[] { clazz }, service, properties);
-   }
+    @Override
+    public void addBundleListener(BundleListener listener) {
+        checkValidBundleContext();
+        getFrameworkEventsPlugin().addBundleListener(bundleState, listener);
+    }
 
-   @Override
-   @SuppressWarnings("rawtypes")
-   public ServiceRegistration registerService(String[] clazzes, Object service, Dictionary properties)
-   {
-      checkValidBundleContext();
-      ServiceState serviceState = getServiceManager().registerService(bundleState, clazzes, service, properties);
-      return serviceState.getRegistration();
-   }
+    @Override
+    public void removeBundleListener(BundleListener listener) {
+        checkValidBundleContext();
+        getFrameworkEventsPlugin().removeBundleListener(bundleState, listener);
+    }
 
-   @Override
-   public ServiceReference[] getServiceReferences(String clazz, String filter) throws InvalidSyntaxException
-   {
-      checkValidBundleContext();
-      List<ServiceState> srefs = getServiceManager().getServiceReferences(bundleState, clazz, filter, true);
-      if (srefs.isEmpty())
-         return null;
-      
-      List<ServiceReference> result = new ArrayList<ServiceReference>();
-      for (ServiceState serviceState : srefs)
-         result.add(serviceState.getReference());
-      
-      return result.toArray(new ServiceReference[result.size()]);
-   }
+    @Override
+    public void addFrameworkListener(FrameworkListener listener) {
+        checkValidBundleContext();
+        getFrameworkEventsPlugin().addFrameworkListener(bundleState, listener);
+    }
 
-   @Override
-   public ServiceReference[] getAllServiceReferences(String clazz, String filter) throws InvalidSyntaxException
-   {
-      checkValidBundleContext();
-      List<ServiceReference> result = new ArrayList<ServiceReference>();
-      List<ServiceState> srefs = getServiceManager().getServiceReferences(bundleState, clazz, filter, false);
-      if (srefs.isEmpty())
-         return null;
-      
-      for (ServiceState serviceState : srefs)
-         result.add(serviceState.getReference());
-      
-      return result.toArray(new ServiceReference[result.size()]);
-   }
+    @Override
+    public void removeFrameworkListener(FrameworkListener listener) {
+        checkValidBundleContext();
+        getFrameworkEventsPlugin().removeFrameworkListener(bundleState, listener);
+    }
 
-   @Override
-   public ServiceReference getServiceReference(String clazz)
-   {
-      checkValidBundleContext();
-      ServiceState serviceState = getServiceManager().getServiceReference(bundleState, clazz);
-      if (serviceState == null)
-         return null;
-      
-      return new ServiceReferenceWrapper(serviceState);
-   }
+    @Override
+    @SuppressWarnings("rawtypes")
+    public ServiceRegistration registerService(String clazz, Object service, Dictionary properties) {
+        checkValidBundleContext();
+        return registerService(new String[] { clazz }, service, properties);
+    }
 
-   @Override
-   public Object getService(ServiceReference sref)
-   {
-      checkValidBundleContext();
-      ServiceState serviceState = ServiceState.assertServiceState(sref);
-      Object service = getServiceManager().getService(bundleState, serviceState);
-      return service;
-   }
+    @Override
+    @SuppressWarnings("rawtypes")
+    public ServiceRegistration registerService(String[] clazzes, Object service, Dictionary properties) {
+        checkValidBundleContext();
+        ServiceState serviceState = getServiceManager().registerService(bundleState, clazzes, service, properties);
+        return serviceState.getRegistration();
+    }
 
-   @Override
-   public boolean ungetService(ServiceReference sref)
-   {
-      checkValidBundleContext();
-      ServiceState serviceState = ServiceState.assertServiceState(sref);
-      return getServiceManager().ungetService(bundleState, serviceState);
-   }
+    @Override
+    public ServiceReference[] getServiceReferences(String clazz, String filter) throws InvalidSyntaxException {
+        checkValidBundleContext();
+        List<ServiceState> srefs = getServiceManager().getServiceReferences(bundleState, clazz, filter, true);
+        if (srefs.isEmpty())
+            return null;
 
-   @Override
-   public File getDataFile(String filename)
-   {
-      checkValidBundleContext();
-      BundleStoragePlugin storagePlugin = bundleManager.getOptionalPlugin(BundleStoragePlugin.class);
-      return storagePlugin != null ? storagePlugin.getDataFile(bundleState, filename) : null;
-   }
+        List<ServiceReference> result = new ArrayList<ServiceReference>();
+        for (ServiceState serviceState : srefs)
+            result.add(serviceState.getReference());
 
-   @Override
-   public Filter createFilter(String filter) throws InvalidSyntaxException
-   {
-      checkValidBundleContext();
-      return FrameworkUtil.createFilter(filter);
-   }
+        return result.toArray(new ServiceReference[result.size()]);
+    }
 
-   void checkValidBundleContext()
-   {
-      if (destroyed == true)
-         throw new IllegalStateException("Invalid bundle context: " + this);
-   }
+    @Override
+    public ServiceReference[] getAllServiceReferences(String clazz, String filter) throws InvalidSyntaxException {
+        checkValidBundleContext();
+        List<ServiceReference> result = new ArrayList<ServiceReference>();
+        List<ServiceState> srefs = getServiceManager().getServiceReferences(bundleState, clazz, filter, false);
+        if (srefs.isEmpty())
+            return null;
 
-   private ServiceManagerPlugin getServiceManager()
-   {
-      return bundleState.getServiceManagerPlugin();
-   }
+        for (ServiceState serviceState : srefs)
+            result.add(serviceState.getReference());
 
-   private FrameworkEventsPlugin getFrameworkEventsPlugin()
-   {
-      return bundleState.getFrameworkEventsPlugin();
-   }
+        return result.toArray(new ServiceReference[result.size()]);
+    }
 
-   @Override
-   public String toString()
-   {
-      return "BundleContext[" + bundleState + "]";
-   }
+    @Override
+    public ServiceReference getServiceReference(String clazz) {
+        checkValidBundleContext();
+        ServiceState serviceState = getServiceManager().getServiceReference(bundleState, clazz);
+        if (serviceState == null)
+            return null;
+
+        return new ServiceReferenceWrapper(serviceState);
+    }
+
+    @Override
+    public Object getService(ServiceReference sref) {
+        checkValidBundleContext();
+        ServiceState serviceState = ServiceState.assertServiceState(sref);
+        Object service = getServiceManager().getService(bundleState, serviceState);
+        return service;
+    }
+
+    @Override
+    public boolean ungetService(ServiceReference sref) {
+        checkValidBundleContext();
+        ServiceState serviceState = ServiceState.assertServiceState(sref);
+        return getServiceManager().ungetService(bundleState, serviceState);
+    }
+
+    @Override
+    public File getDataFile(String filename) {
+        checkValidBundleContext();
+        BundleStoragePlugin storagePlugin = bundleManager.getOptionalPlugin(BundleStoragePlugin.class);
+        return storagePlugin != null ? storagePlugin.getDataFile(bundleState, filename) : null;
+    }
+
+    @Override
+    public Filter createFilter(String filter) throws InvalidSyntaxException {
+        checkValidBundleContext();
+        return FrameworkUtil.createFilter(filter);
+    }
+
+    void checkValidBundleContext() {
+        if (destroyed == true)
+            throw new IllegalStateException("Invalid bundle context: " + this);
+    }
+
+    private ServiceManagerPlugin getServiceManager() {
+        return bundleState.getServiceManagerPlugin();
+    }
+
+    private FrameworkEventsPlugin getFrameworkEventsPlugin() {
+        return bundleState.getFrameworkEventsPlugin();
+    }
+
+    @Override
+    public String toString() {
+        return "BundleContext[" + bundleState + "]";
+    }
 }

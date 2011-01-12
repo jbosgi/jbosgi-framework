@@ -23,17 +23,15 @@ package org.jboss.test.osgi.framework.nativecode.bundleA;
 
 // 
 
-public class NativeCodeClassLoader extends ClassLoader
-{
-   public NativeCodeClassLoader(ClassLoader parent)
-   {
-      super(parent);
-   }
+public class NativeCodeClassLoader extends ClassLoader {
 
-   @Override
-   public String findLibrary(String libname)
-   {
-      String libPath = super.findLibrary(libname);
-      return libPath;
-   }
+    public NativeCodeClassLoader(ClassLoader parent) {
+        super(parent);
+    }
+
+    @Override
+    public String findLibrary(String libname) {
+        String libPath = super.findLibrary(libname);
+        return libPath;
+    }
 }

@@ -21,6 +21,5 @@
  */
 package org.jboss.test.osgi.modules.b;
 
-public interface CircularityErrorDep
-{
+public interface CircularityErrorDep {
 }
