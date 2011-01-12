@@ -23,6 +23,15 @@ package org.jboss.osgi.framework.plugin.internal;
 
 import java.net.ContentHandler;
 import java.net.ContentHandlerFactory;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import org.jboss.osgi.framework.bundle.ServiceReferenceComparator;
+import org.osgi.framework.ServiceReference;
 
 /**
  * There can only ever be one ContentHandlerFactory active in the system and it can
@@ -31,14 +40,68 @@ import java.net.ContentHandlerFactory;
  * is useful for testing purposes.
  *
  * @author <a href="david@redhat.com">David Bosschaert</a>
+ * @author Thomas.Diesler@jboss.com
+ * @since 10-Jan-2011
  */
 class OSGiContentHandlerFactoryDelegate implements ContentHandlerFactory
 {
    private ContentHandlerFactory delegate;
+   private ConcurrentMap<String, List<ServiceReference>> contentHandlers = new ConcurrentHashMap<String, List<ServiceReference>>();
 
    public void setDelegate(OSGiContentHandlerFactory factory)
    {
       delegate = factory;
+   }
+
+   void addHandler(String mimeType, ServiceReference reference)
+   {
+      synchronized (contentHandlers)
+      {
+         contentHandlers.putIfAbsent(mimeType, new ArrayList<ServiceReference>());
+         List<ServiceReference> list = contentHandlers.get(mimeType);
+         synchronized (list)
+         {
+            list.add(reference);
+            Collections.sort(list, Collections.reverseOrder(ServiceReferenceComparator.getInstance()));
+         }
+      }
+   }
+
+   List<ServiceReference> getContentHandlers(String mimetype)
+   {
+      synchronized (contentHandlers)
+      {
+         return contentHandlers.get(mimetype);
+      }
+   }
+
+   void removeHandler(ServiceReference reference)
+   {
+      synchronized (contentHandlers)
+      {
+         for (List<ServiceReference> list : contentHandlers.values())
+         {
+            for (Iterator<ServiceReference> it = list.iterator(); it.hasNext();)
+            {
+               if (it.next().equals(reference))
+               {
+                  it.remove();
+                  break;
+               }
+            }
+         }
+      }
+   }
+
+   void clearHandlers()
+   {
+      synchronized (contentHandlers)
+      {
+         for (List<ServiceReference> list : contentHandlers.values())
+         {
+            list.clear();
+         }
+      }
    }
 
    @Override

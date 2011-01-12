@@ -30,7 +30,7 @@ import java.util.Enumeration;
  * @author thomas.diesler@jboss.com
  * @since 28-Sep-2010
  */
-public interface EntriesProvider
+interface EntriesProvider
 {
    Enumeration<String> getEntryPaths(String path);
 

@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.bundle;
 
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.Vector;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
@@ -49,8 +50,15 @@ public class ModuleEntriesProvider implements EntriesProvider
    @Override
    public Enumeration<String> getEntryPaths(String path)
    {
-      log.warn("[JBOSGI-408] Bundle entry related functionality for plain modules");
-      return null;
+      Enumeration<URL> urls = module.getExportedResources(path);
+      if (urls == null)
+         return null;
+      
+      Vector<String> result = new Vector<String>();
+      while(urls.hasMoreElements())
+         result.add(urls.nextElement().getPath());
+      
+      return result.elements();
    }
 
    @Override
