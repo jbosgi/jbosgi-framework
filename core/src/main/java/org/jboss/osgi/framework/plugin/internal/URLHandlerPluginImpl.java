@@ -32,24 +32,21 @@ import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.BundleManager.IntegrationMode;
-import org.jboss.osgi.framework.bundle.ServiceReferenceComparator;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.URLHandlerPlugin;
 import org.jboss.osgi.framework.url.OSGiStreamHandlerFactory;
 import org.jboss.osgi.framework.url.OSGiStreamHandlerFactoryService;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.url.URLConstants;
 import org.osgi.service.url.URLStreamHandlerService;
 import org.osgi.service.url.URLStreamHandlerSetter;
@@ -69,8 +66,7 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
 
    private ServiceTracker streamServiceTracker;
    private ServiceTracker contentServiceTracker;
-   private ConcurrentMap<String, List<ServiceReference>> streamHandlers = new ConcurrentHashMap<String, List<ServiceReference>>();
-   private ConcurrentMap<String, List<ServiceReference>> contentHandlers = new ConcurrentHashMap<String, List<ServiceReference>>();
+   private ServiceRegistration protocolRegistration;
 
    private static OSGiContentHandlerFactoryDelegate contentHandlerDelegate;
    private static OSGiStreamHandlerFactoryDelegate streamHandlerDelegate;
@@ -133,7 +129,13 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
    @Override
    public void startPlugin()
    {
+      // Register the 'bundle' protocol
       BundleContext sysContext = getBundleManager().getSystemContext();
+      Dictionary<String, Object> props = new Hashtable<String, Object>();
+      props.put(URLConstants.URL_HANDLER_PROTOCOL, BundleProtocolHandlerService.PROTOCOL_NAME);
+      BundleProtocolHandlerService service = new BundleProtocolHandlerService(getBundleManager());
+      protocolRegistration = sysContext.registerService(URLStreamHandlerService.class.getName(), service, props);
+
       streamServiceTracker = new ServiceTracker(sysContext, URLStreamHandlerService.class.getName(), null)
       {
          @Override
@@ -145,19 +147,13 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
             {
                for (String protocol : protocols)
                {
-                  streamHandlers.putIfAbsent(protocol, new ArrayList<ServiceReference>());
-                  List<ServiceReference> list = streamHandlers.get(protocol);
-                  synchronized (list)
-                  {
-                     list.add(reference);
-                     Collections.sort(list, Collections.reverseOrder(ServiceReferenceComparator.getInstance()));
-                  }
+                  streamHandlerDelegate.addHandler(protocol, reference);
                }
             }
             else
             {
-               log.error("A non-compliant instance of " + URLStreamHandlerService.class.getName() + " has been registered for protocols: "
-                     + Arrays.toString(protocols) + " - " + svc);
+               log.errorf("A non-compliant instance of %s has been registered for protocols %s for: %s", URLStreamHandlerService.class.getName(),
+                     Arrays.asList(protocols), svc);
             }
             return svc;
          }
@@ -173,21 +169,7 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
          public void removedService(ServiceReference reference, Object service)
          {
             super.removedService(reference, service);
-
-            for (List<ServiceReference> list : streamHandlers.values())
-            {
-               synchronized (list)
-               {
-                  for (Iterator<ServiceReference> it = list.iterator(); it.hasNext();)
-                  {
-                     if (it.next().equals(reference))
-                     {
-                        it.remove();
-                        break;
-                     }
-                  }
-               }
-            }
+            streamHandlerDelegate.removeHandler(reference);
          }
       };
       streamServiceTracker.open();
@@ -203,19 +185,13 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
             {
                for (String mimeType : mimeTypes)
                {
-                  contentHandlers.putIfAbsent(mimeType, new ArrayList<ServiceReference>());
-                  List<ServiceReference> list = contentHandlers.get(mimeType);
-                  synchronized (list)
-                  {
-                     list.add(reference);
-                     Collections.sort(list, Collections.reverseOrder(ServiceReferenceComparator.getInstance()));
-                  }
+                  contentHandlerDelegate.addHandler(mimeType, reference);
                }
             }
             else
             {
-               log.error("A non-compliant instance of " + ContentHandler.class.getName() + " has been registered for mime types: " + Arrays.toString(mimeTypes)
-                     + " - " + svc);
+               log.errorf("A non-compliant instance of %s has been registered for mime types %s for %s", ContentHandler.class.getName(),
+                     Arrays.toString(mimeTypes), svc);
             }
             return svc;
          }
@@ -231,21 +207,7 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
          public void removedService(ServiceReference reference, Object service)
          {
             super.removedService(reference, service);
-
-            for (List<ServiceReference> list : contentHandlers.values())
-            {
-               synchronized (list)
-               {
-                  for (Iterator<ServiceReference> it = list.iterator(); it.hasNext();)
-                  {
-                     if (it.next().equals(reference))
-                     {
-                        it.remove();
-                        break;
-                     }
-                  }
-               }
-            }
+            contentHandlerDelegate.removeHandler(reference);
          }
       };
       contentServiceTracker.open();
@@ -254,11 +216,13 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
    @Override
    public void stopPlugin()
    {
+      protocolRegistration.unregister();
+
       streamServiceTracker.close();
-      streamHandlers.clear();
-      
+      streamHandlerDelegate.clearHandlers();
+
       contentServiceTracker.close();
-      contentHandlers.clear();
+      contentHandlerDelegate.clearHandlers();
    }
 
    @Override
@@ -272,8 +236,8 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
    @Override
    public URLStreamHandler createURLStreamHandler(String protocol)
    {
-      List<ServiceReference> refList = streamHandlers.get(protocol);
-      if (refList == null)
+      List<ServiceReference> refList = streamHandlerDelegate.getStreamHandlers(protocol);
+      if (refList == null || refList.isEmpty())
          return null;
 
       return new URLStreamHandlerProxy(protocol, refList);
@@ -282,22 +246,16 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
    @Override
    public ContentHandler createContentHandler(String mimetype)
    {
-      List<ServiceReference> refList = contentHandlers.get(mimetype);
-      if (refList == null)
+      List<ServiceReference> refList = contentHandlerDelegate.getContentHandlers(mimetype);
+      if (refList == null || refList.isEmpty())
          return null;
 
-      synchronized (refList)
-      {
-         if (refList.isEmpty())
-            return null;
+      ServiceReference ref = refList.get(0);
+      Object service = ref.getBundle().getBundleContext().getService(ref);
+      if (service instanceof ContentHandler)
+         return (ContentHandler)service;
 
-         ServiceReference ref = refList.get(0);
-         Object service = ref.getBundle().getBundleContext().getService(ref);
-         if (service instanceof ContentHandler)
-            return (ContentHandler)service;
-
-         return null;
-      }
+      return null;
    }
 
    /**
@@ -426,19 +384,16 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
 
       private URLStreamHandlerService getHandlerService()
       {
-         synchronized (serviceReferences)
-         {
-            if (serviceReferences.isEmpty())
-               throw new IllegalStateException("No handlers in the OSGi Service registry for protocol: " + protocol);
+         if (serviceReferences.isEmpty())
+            throw new IllegalStateException("No handlers in the OSGi Service registry for protocol: " + protocol);
 
-            ServiceReference ref = serviceReferences.get(0);
-            Object service = ref.getBundle().getBundleContext().getService(ref);
-            if (service instanceof URLStreamHandlerService)
-            {
-               return (URLStreamHandlerService)service;
-            }
-            throw new IllegalStateException("Problem with OSGi URL handler service " + service + " for url:" + protocol);
+         ServiceReference ref = serviceReferences.get(0);
+         Object service = ref.getBundle().getBundleContext().getService(ref);
+         if (service instanceof URLStreamHandlerService)
+         {
+            return (URLStreamHandlerService)service;
          }
+         throw new IllegalStateException("Problem with OSGi URL handler service " + service + " for url:" + protocol);
       }
    }
 }

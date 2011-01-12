@@ -235,7 +235,7 @@ public class FrameworkState extends SystemBundle implements Framework
          throw new BundleException("Cannot install persisted bundles", ex);
       }
 
-      log.debug("Framework initialized");
+      log.debugf("Framework initialized");
    }
 
    @Override
@@ -271,7 +271,7 @@ public class FrameworkState extends SystemBundle implements Framework
       FrameworkEventsPlugin plugin = getBundleManager().getPlugin(FrameworkEventsPlugin.class);
       plugin.fireFrameworkEvent(this, FrameworkEvent.STARTED, null);
 
-      log.info("Framework started");
+      log.infof("Framework started");
    }
 
    private int getBeginningStartLevel()
@@ -455,7 +455,7 @@ public class FrameworkState extends SystemBundle implements Framework
          destroyBundleContext();
          destroySystemBundleRevision();
 
-         log.info("Framework stopped");
+         log.infof("Framework stopped");
       }
       finally
       {

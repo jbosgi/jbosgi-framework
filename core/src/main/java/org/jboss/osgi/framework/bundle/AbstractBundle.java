@@ -659,15 +659,13 @@ public abstract class AbstractBundle implements Bundle
    }
 
    @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration getResources(String name) throws IOException
+   public Enumeration<URL> getResources(String name) throws IOException
    {
       return getCurrentRevision().getResources(name);
    }
 
    @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration getEntryPaths(String path)
+   public Enumeration<String> getEntryPaths(String path)
    {
       return getCurrentRevision().getEntryPaths(path);
    }
@@ -679,8 +677,7 @@ public abstract class AbstractBundle implements Bundle
    }
 
    @Override
-   @SuppressWarnings("rawtypes")
-   public Enumeration findEntries(String path, String filePattern, boolean recurse)
+   public Enumeration<URL> findEntries(String path, String filePattern, boolean recurse)
    {
       return getCurrentRevision().findEntries(path, filePattern, recurse);
    }

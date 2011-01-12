@@ -24,6 +24,15 @@ package org.jboss.osgi.framework.plugin.internal;
 import java.net.URL;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+import org.jboss.osgi.framework.bundle.ServiceReferenceComparator;
+import org.osgi.framework.ServiceReference;
 
 /**
  * There can only ever be one URLStreamHandlerFactory active in the system and it can
@@ -35,10 +44,62 @@ import java.net.URLStreamHandlerFactory;
 class OSGiStreamHandlerFactoryDelegate implements URLStreamHandlerFactory
 {
    private URLStreamHandlerFactory delegate;
+   private ConcurrentMap<String, List<ServiceReference>> streamHandlers = new ConcurrentHashMap<String, List<ServiceReference>>();
 
    public void setDelegate(URLStreamHandlerFactory factory)
    {
       delegate = factory;
+   }
+
+   void addHandler(String protocol, ServiceReference reference)
+   {
+      synchronized (streamHandlers)
+      {
+         streamHandlers.putIfAbsent(protocol, new ArrayList<ServiceReference>());
+         List<ServiceReference> list = streamHandlers.get(protocol);
+         synchronized (list)
+         {
+            list.add(reference);
+            Collections.sort(list, Collections.reverseOrder(ServiceReferenceComparator.getInstance()));
+         }
+      }
+   }
+
+   List<ServiceReference> getStreamHandlers(String protocol)
+   {
+      synchronized (streamHandlers)
+      {
+         return streamHandlers.get(protocol);
+      }
+   }
+
+   void removeHandler(ServiceReference reference)
+   {
+      synchronized (streamHandlers)
+      {
+         for (List<ServiceReference> list : streamHandlers.values())
+         {
+            for (Iterator<ServiceReference> it = list.iterator(); it.hasNext();)
+            {
+               if (it.next().equals(reference))
+               {
+                  it.remove();
+                  break;
+               }
+            }
+         }
+      }
+   }
+
+   void clearHandlers()
+   {
+      synchronized (streamHandlers)
+      {
+         for (List<ServiceReference> list : streamHandlers.values())
+         {
+            list.clear();
+         }
+      }
    }
 
    @Override
