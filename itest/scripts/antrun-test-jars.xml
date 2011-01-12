@@ -45,6 +45,9 @@
 			<fileset dir="${tests.classes.dir}">
 				<include name="**/classloader/support/b/B.class" />
 			</fileset>
+			<fileset dir="${tests.resources.dir}/bundles/classloader">
+				<include name="bundleclasspath/message.txt" />
+			</fileset>
 		</jar>
 		<jar destfile="${tests.output.dir}/test-libs/bundle-classpath-c.jar">
 			<fileset dir="${tests.classes.dir}">

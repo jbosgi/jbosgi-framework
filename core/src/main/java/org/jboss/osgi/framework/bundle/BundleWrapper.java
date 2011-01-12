@@ -32,7 +32,8 @@ import java.util.Map;
 import java.util.Vector;
 
 import org.jboss.logging.Logger;
-import org.jboss.osgi.framework.plugin.internal.BundleProtocolHandlerService;
+import org.jboss.osgi.framework.plugin.internal.BundleProtocolHandler;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -49,15 +50,14 @@ public class BundleWrapper implements Bundle
 {
    // Provide logging
    private final Logger log = Logger.getLogger(BundleWrapper.class);
-   
+
    private final AbstractBundle bundleState;
-   private String rootPath;
 
    public BundleWrapper(AbstractBundle bundleState)
    {
       if (bundleState == null)
          throw new IllegalArgumentException("Null bundleState");
-      
+
       this.bundleState = bundleState;
    }
 
@@ -65,7 +65,7 @@ public class BundleWrapper implements Bundle
    {
       return bundleState;
    }
-   
+
    @SuppressWarnings("rawtypes")
    public Enumeration findEntries(String path, String filePattern, boolean recurse)
    {
@@ -211,11 +211,11 @@ public class BundleWrapper implements Bundle
    {
       if (urls == null)
          return null;
-      
+
       Vector<URL> result = new Vector<URL>();
-      while(urls.hasMoreElements())
+      while (urls.hasMoreElements())
          result.add(toBundleURL(urls.nextElement()));
-      
+
       return result.elements();
    }
 
@@ -223,31 +223,46 @@ public class BundleWrapper implements Bundle
    {
       if (url == null)
          return null;
-      
-      String protocol = url.getProtocol();
-      if ("vfs".equals(protocol))
+
+      if ("vfs".equals(url.getProtocol()) == false)
+         return url;
+
+      URL result = url;
+      try
       {
-         try
+         String path = url.getPath();
+         String rootPath = bundleState.getEntry("/").getPath();
+         if (path.startsWith(rootPath))
          {
-            String path = url.getPath();
-            if (path.startsWith(getRootPath()))
-               path = path.substring(getRootPath().length());
-            
-            url = BundleProtocolHandlerService.getBundleURL(bundleState, path);
+            path = path.substring(rootPath.length());
+            result = BundleProtocolHandler.getBundleURL(bundleState, path);
          }
-         catch (Exception ex)
+         else if (bundleState instanceof HostBundle)
          {
-            log.errorf(ex, "Cannot construct virtual file from: %s", url);
+            HostBundle hostBundle = (HostBundle)bundleState;
+            outer: for (FragmentRevision fragRev : hostBundle.getCurrentRevision().getAttachedFragments())
+            {
+               for (VirtualFile root : fragRev.getContentRoots())
+               {
+                  if (path.startsWith(root.getPathName()))
+                  {
+                     path = path.substring(rootPath.length());
+                     result = BundleProtocolHandler.getBundleURL(fragRev.getBundleState(), path);
+                     break outer;
+                  }
+               }
+            }
          }
       }
-      return url;
-   }
-   
-   private String getRootPath()
-   {
-      if (rootPath == null)
-         rootPath = bundleState.getEntry("/").getPath();
-      return rootPath;
+      catch (Exception ex)
+      {
+         log.errorf(ex, "Cannot construct virtual file from: %s", url);
+      }
+      
+      if (result == url)
+         log.debugf("Cannot obtain bundle URL for: %s", url);
+      
+      return result;
    }
 
    @Override

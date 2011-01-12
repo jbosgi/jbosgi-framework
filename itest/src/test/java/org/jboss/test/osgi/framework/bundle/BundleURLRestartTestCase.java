@@ -27,6 +27,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 
+import org.jboss.osgi.framework.plugin.internal.BundleProtocolHandler;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.junit.BeforeClass;
@@ -58,7 +59,7 @@ public class BundleURLRestartTestCase extends OSGiFrameworkTest
          Bundle bundle = installBundle(assembly);
          
          URL url = bundle.getEntry("/resource-one.txt");
-         assertEquals("bundle://jbosgi-" + bundle.getBundleId() + "/resource-one.txt", url.toExternalForm());
+         assertEquals(BundleProtocolHandler.getBundleURL(bundle, "resource-one.txt"), url);
 
          BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
          assertEquals("resource-one", br.readLine());
@@ -74,7 +75,7 @@ public class BundleURLRestartTestCase extends OSGiFrameworkTest
          Bundle bundle = installBundle(assembly);
          
          URL url = bundle.getEntry("/resource-one.txt");
-         assertEquals("bundle://jbosgi-" + bundle.getBundleId() + "/resource-one.txt", url.toExternalForm());
+         assertEquals(BundleProtocolHandler.getBundleURL(bundle, "resource-one.txt"), url);
 
          BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
          assertEquals("resource-one", br.readLine());

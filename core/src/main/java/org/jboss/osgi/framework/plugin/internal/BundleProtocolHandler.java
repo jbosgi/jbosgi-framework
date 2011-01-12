@@ -36,43 +36,48 @@ import org.osgi.service.url.AbstractURLStreamHandlerService;
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jan-2011
  */
-public class BundleProtocolHandlerService extends AbstractURLStreamHandlerService
+public class BundleProtocolHandler extends AbstractURLStreamHandlerService
 {
    public static final String PROTOCOL_NAME = "bundle";
-   public static final String HOST_PREFIX = "jbosgi-";
-   
+
    private final BundleManager bundleManager;
-   
-   BundleProtocolHandlerService(BundleManager bundleManager)
+
+   BundleProtocolHandler(BundleManager bundleManager)
    {
       this.bundleManager = bundleManager;
    }
-   
+
    public static URL getBundleURL(Bundle bundle, String path) throws IOException
    {
       if (bundle == null)
          throw new IllegalArgumentException("Null bundle");
       if (path == null)
          throw new IllegalArgumentException("Null path");
-      
-      return new URL(PROTOCOL_NAME, HOST_PREFIX + bundle.getBundleId(), path.startsWith("/") ? path : "/" + path);
+
+      return new URL(PROTOCOL_NAME, new Long(bundle.getBundleId()).toString(), path.startsWith("/") ? path : "/" + path);
    }
 
    @Override
    public URLConnection openConnection(URL url) throws IOException
    {
-      String host = url.getHost();
-      if (host.startsWith(HOST_PREFIX) == false)
-         return url.openConnection();
+      URL vfsURL = toVirtualFileURL(url);
+      if (vfsURL == null)
+         throw new IOException("Cannot obtain virtual file URL for: " + url);
       
-      long bundleId = Long.parseLong(host.substring(HOST_PREFIX.length()));
-      AbstractBundle bundleState = bundleManager.getBundleById(bundleId);
-      if (bundleState == null)
-         throw new IOException("Cannot obtain bundle for: " + url);
-      
-      String path = url.getPath();
-      URL vfsURL = bundleState.getEntry(path);
       return vfsURL.openConnection();
    }
 
+   private URL toVirtualFileURL(URL url) throws IOException
+   {
+      if (PROTOCOL_NAME.equals(url.getProtocol()) == false)
+         throw new IllegalArgumentException("Not a bundle url: " + url);
+
+      long bundleId = Long.parseLong(url.getHost());
+      AbstractBundle bundleState = bundleManager.getBundleById(bundleId);
+      if (bundleState == null)
+         throw new IOException("Cannot obtain bundle for: " + url);
+
+      String path = url.getPath();
+      return bundleState.getEntry(path);
+   }
 }
