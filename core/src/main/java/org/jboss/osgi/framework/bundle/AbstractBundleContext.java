@@ -36,6 +36,7 @@ import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
 import org.jboss.osgi.framework.plugin.DeployerServicePlugin;
 import org.jboss.osgi.framework.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.framework.plugin.ServiceManagerPlugin;
+import org.jboss.osgi.framework.plugin.internal.BundleProtocolHandler;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -186,7 +187,14 @@ public abstract class AbstractBundleContext implements BundleContext
          try
          {
             URL url = new URL(location);
-            rootFile = AbstractVFS.toVirtualFile(url);
+            if (BundleProtocolHandler.PROTOCOL_NAME.equals(url.getProtocol()))
+            {
+               rootFile = AbstractVFS.toVirtualFile(location, url.openStream());
+            }
+            else
+            {
+               rootFile = AbstractVFS.toVirtualFile(url);
+            }
          }
          catch (IOException ex)
          {

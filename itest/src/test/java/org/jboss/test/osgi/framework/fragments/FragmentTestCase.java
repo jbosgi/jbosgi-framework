@@ -29,7 +29,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.security.ProtectionDomain;
 
@@ -95,6 +97,9 @@ public class FragmentTestCase extends OSGiFrameworkTest
       URL entryURL = fragA.getEntry("resource.txt");
       assertNotNull("Entry URL not null", entryURL);
 
+      BufferedReader br = new BufferedReader(new InputStreamReader(entryURL.openStream()));
+      assertEquals("fragment resource", br.readLine());
+      
       URL resourceURL = fragA.getResource("resource.txt");
       assertNull("Resource URL null", resourceURL);
 
@@ -131,6 +136,9 @@ public class FragmentTestCase extends OSGiFrameworkTest
       URL resourceURL = hostA.getResource("resource.txt");
       assertNotNull("Resource URL not null", resourceURL);
 
+      BufferedReader br = new BufferedReader(new InputStreamReader(resourceURL.openStream()));
+      assertEquals("fragment resource", br.readLine());
+      
       // Load class provided by the fragment
       assertLoadClass(hostA, FragBeanA.class.getName());
 

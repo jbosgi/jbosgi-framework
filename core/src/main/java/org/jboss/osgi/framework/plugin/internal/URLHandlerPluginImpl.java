@@ -132,8 +132,8 @@ public class URLHandlerPluginImpl extends AbstractPlugin implements URLHandlerPl
       // Register the 'bundle' protocol
       BundleContext sysContext = getBundleManager().getSystemContext();
       Dictionary<String, Object> props = new Hashtable<String, Object>();
-      props.put(URLConstants.URL_HANDLER_PROTOCOL, BundleProtocolHandlerService.PROTOCOL_NAME);
-      BundleProtocolHandlerService service = new BundleProtocolHandlerService(getBundleManager());
+      props.put(URLConstants.URL_HANDLER_PROTOCOL, BundleProtocolHandler.PROTOCOL_NAME);
+      BundleProtocolHandler service = new BundleProtocolHandler(getBundleManager());
       protocolRegistration = sysContext.registerService(URLStreamHandlerService.class.getName(), service, props);
 
       streamServiceTracker = new ServiceTracker(sysContext, URLStreamHandlerService.class.getName(), null)
