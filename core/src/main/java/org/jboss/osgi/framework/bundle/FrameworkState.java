@@ -376,6 +376,16 @@ public class FrameworkState extends SystemBundle implements Framework {
                 }
             }
 
+            // Close all user revisions
+            for (AbstractBundle bundleState : getBundleManager().getBundles()) {
+                if (bundleState instanceof AbstractUserBundle) {
+                    for (AbstractRevision rev : bundleState.getRevisions()) {
+                        AbstractUserRevision userRev = (AbstractUserRevision) rev;
+                        userRev.close();
+                    }
+                }
+            }
+
             // Stop Plugins Lifecycle
             List<Plugin> reversePlugins = new ArrayList<Plugin>(getBundleManager().getPlugins());
             Collections.reverse(reversePlugins);

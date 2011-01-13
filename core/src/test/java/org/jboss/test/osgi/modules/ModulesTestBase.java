@@ -57,7 +57,7 @@ public abstract class ModulesTestBase {
     private ModuleLoaderSupport moduleLoader;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         moduleLoader = new ModuleLoaderSupport("default");
     }
 

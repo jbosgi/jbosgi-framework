@@ -34,6 +34,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.vfs.AbstractVFS;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
 
@@ -104,6 +105,12 @@ public abstract class AbstractUserRevision extends AbstractRevision {
      */
     public List<VirtualFile> getContentRoots() {
         return contentRoots;
+    }
+
+    void close() {
+        for (VirtualFile vfile : contentRoots) {
+            VFSUtils.safeClose(vfile);
+        }
     }
 
     @Override

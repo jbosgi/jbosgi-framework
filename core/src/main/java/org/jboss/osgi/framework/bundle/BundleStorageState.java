@@ -26,6 +26,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Properties;
@@ -78,8 +79,10 @@ public final class BundleStorageState {
 
         VirtualFile rootFile = null;
         String vfsLocation = props.getProperty(PROPERTY_BUNDLE_FILE);
-        if (vfsLocation != null)
-            rootFile = AbstractVFS.toVirtualFile(new URL(vfsLocation));
+        if (vfsLocation != null) {
+            File revFile = new File(storageDir + "/" + vfsLocation);
+            rootFile = AbstractVFS.toVirtualFile(revFile.toURI());
+        }
 
         return new BundleStorageState(storageDir, rootFile, props);
     }
@@ -178,6 +181,7 @@ public final class BundleStorageState {
     }
 
     public void deleteBundleStorage() {
+        VFSUtils.safeClose(rootFile);
         deleteInternal(bundleDir);
     }
 

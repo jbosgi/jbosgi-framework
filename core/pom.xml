@@ -15,6 +15,7 @@
   -Djava.util.logging.manager=org.jboss.logmanager.LogManager
   -Dtest.archive.directory=${workspace_loc:jbosgi-framework-core/target}/test-libs
   -Dmodule.path=${workspace_loc:jbosgi-framework-core/target}/test-modules
+  -Djboss.osgi.vfs.leakDebugging=true
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
@@ -137,6 +138,10 @@
             <property>
               <name>module.path</name>
               <value>${project.build.directory}/test-modules</value>
+            </property>
+            <property>
+              <name>jboss.osgi.vfs.leakDebugging</name>
+              <value>true</value>
             </property>
             <property>
               <name>test.archive.directory</name>

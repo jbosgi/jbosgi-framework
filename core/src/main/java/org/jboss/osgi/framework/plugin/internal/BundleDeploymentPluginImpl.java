@@ -114,7 +114,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
             BundleStorageState storageState;
             try {
                 BundleStoragePlugin plugin = getPlugin(BundleStoragePlugin.class);
-                VirtualFile rootFile = AbstractVFS.toVirtualFile(repoFile.toURI().toURL());
+                VirtualFile rootFile = AbstractVFS.toVirtualFile(repoFile.toURI());
                 storageState = plugin.createStorageState(bundleId, location, rootFile);
             } catch (IOException ex) {
                 throw new BundleException("Cannot setup storage for: " + location, ex);

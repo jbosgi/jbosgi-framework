@@ -37,9 +37,13 @@ import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.PathFilter;
 import org.jboss.modules.PathFilters;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
+import org.jboss.osgi.vfs.VFSUtils;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.modules.a.Foo;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -52,13 +56,25 @@ public class ServiceLoaderTestCase extends ModulesTestBase {
 
     String resName = "META-INF/services/" + Foo.class.getName();
 
+    private VirtualFile virtualFileA;
+    
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        virtualFileA = toVirtualFile(getModuleA());
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        VFSUtils.safeClose(virtualFileA);
+    }
+
     @Test
     public void testServiceLoader() throws Exception {
-        JavaArchive archiveA = getArchiveA();
 
-        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
@@ -79,11 +95,10 @@ public class ServiceLoaderTestCase extends ModulesTestBase {
 
     @Test
     public void testLoadFromDependency() throws Exception {
-        JavaArchive archiveA = getArchiveA();
 
-        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
@@ -115,7 +130,7 @@ public class ServiceLoaderTestCase extends ModulesTestBase {
         assertTrue("ServiceLoader next", serviceLoader.iterator().hasNext());
     }
 
-    private JavaArchive getArchiveA() {
+    private JavaArchive getModuleA() {
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
         archive.addClasses(Foo.class);
         archive.addResource("modules/" + resName, resName);

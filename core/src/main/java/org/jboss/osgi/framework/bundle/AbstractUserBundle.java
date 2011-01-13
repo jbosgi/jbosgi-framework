@@ -218,7 +218,7 @@ public abstract class AbstractUserBundle extends AbstractBundle {
         }
 
         if (rootFile == null && input != null)
-            rootFile = AbstractVFS.toVirtualFile(getLocation(), input);
+            rootFile = AbstractVFS.toVirtualFile(input);
 
         BundleStorageState storageState;
         try {
@@ -284,10 +284,12 @@ public abstract class AbstractUserBundle extends AbstractBundle {
 
         ModuleManagerPlugin moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
         for (AbstractRevision rev : getRevisions()) {
+            AbstractUserRevision userRev = (AbstractUserRevision) rev;
             if (isFragment() == false) {
                 ModuleIdentifier identifier = rev.getModuleIdentifier();
                 moduleManager.removeModule(identifier);
             }
+            userRev.close();
         }
         fireBundleEvent(BundleEvent.UNRESOLVED);
     }
