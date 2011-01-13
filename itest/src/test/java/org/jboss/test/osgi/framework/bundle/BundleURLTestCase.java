@@ -22,7 +22,6 @@
 package org.jboss.test.osgi.framework.bundle;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -47,9 +46,6 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
         Bundle bundle = installBundle(assembly);
         try {
             URL url = bundle.getEntry("/resource-one.txt");
-            assertBundleState(Bundle.INSTALLED, bundle.getState());
-            
-            assertNotNull("Entry found", url);
             assertEquals("/resource-one.txt", url.getPath());
 
             BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
@@ -59,6 +55,9 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
             url = new URL(url.toExternalForm());
             br = new BufferedReader(new InputStreamReader(url.openStream()));
             assertEquals("resource-one", br.readLine());
+            
+            // Entry access should not resolve the bundle
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
         } finally {
             bundle.uninstall();
         }

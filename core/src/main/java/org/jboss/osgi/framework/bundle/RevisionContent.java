@@ -108,7 +108,7 @@ public final class RevisionContent implements EntriesProvider {
         VirtualFile child;
         try {
             child = virtualFile.getChild(path);
-            return child != null ? toBundleURL(child) : null;
+            return child != null ? getBundleURL(child) : null;
         } catch (IOException ex) {
             log.errorf(ex, "Cannot get entry: %s", path);
             return null;
@@ -119,7 +119,7 @@ public final class RevisionContent implements EntriesProvider {
     public Enumeration<URL> findEntries(String path, String pattern, boolean recurse) {
         try {
             Enumeration<URL> urls = virtualFile.findEntries(path, pattern, recurse);
-            return toBundleURLs(urls);
+            return getBundleURLs(urls);
         } catch (IOException ex) {
             return null;
         }
@@ -138,20 +138,20 @@ public final class RevisionContent implements EntriesProvider {
         VFSUtils.safeClose(virtualFile);
     }
 
-    private Enumeration<URL> toBundleURLs(Enumeration<URL> urls) throws IOException {
+    private Enumeration<URL> getBundleURLs(Enumeration<URL> urls) throws IOException {
         if (urls == null)
             return null;
 
         Vector<URL> result = new Vector<URL>();
         while (urls.hasMoreElements()) {
             VirtualFile child = AbstractVFS.toVirtualFile(urls.nextElement());
-            result.add(toBundleURL(child));
+            result.add(getBundleURL(child));
         }
 
         return result.elements();
     }
 
-    private URL toBundleURL(final VirtualFile child) throws IOException {
+    public URL getBundleURL(final VirtualFile child) throws IOException {
         URLStreamHandler streamHandler = new URLStreamHandler() {
             protected URLConnection openConnection(URL url) throws IOException {
                 return child.toURL().openConnection();
