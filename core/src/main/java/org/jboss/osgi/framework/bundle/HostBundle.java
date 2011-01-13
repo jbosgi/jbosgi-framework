@@ -33,7 +33,6 @@ import org.jboss.osgi.framework.plugin.StartLevelPlugin;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.modules.ModuleActivator;
 import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleEvent;
@@ -95,7 +94,7 @@ public final class HostBundle extends AbstractUserBundle {
         return (HostRevision) super.getCurrentRevision();
     }
 
-    public List<VirtualFile> getContentRoots() {
+    public List<RevisionContent> getContentRoots() {
         return getCurrentRevision().getContentRoots();
     }
 

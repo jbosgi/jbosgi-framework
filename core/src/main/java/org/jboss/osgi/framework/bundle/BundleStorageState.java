@@ -26,8 +26,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -145,7 +143,7 @@ public final class BundleStorageState {
         return bundleId;
     }
 
-    public int getRevision() {
+    public int getRevisionId() {
         return revision;
     }
 

@@ -34,7 +34,6 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.vfs.AbstractVFS;
-import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
 
@@ -50,11 +49,11 @@ public abstract class AbstractUserRevision extends AbstractRevision {
     static final Logger log = Logger.getLogger(AbstractUserRevision.class);
 
     private final Deployment deployment;
-    private List<VirtualFile> contentRoots;
+    private List<RevisionContent> contentRoots;
     private final EntriesProvider entriesProvider;
 
     AbstractUserRevision(AbstractUserBundle bundleState, Deployment dep) throws BundleException {
-        super(bundleState, getOSGiMetaData(dep), getXModule(dep), getRevision(dep));
+        super(bundleState, getOSGiMetaData(dep), getXModule(dep), getRevisionId(dep));
         this.deployment = dep;
 
         if (dep.getRoot() != null) {
@@ -74,9 +73,9 @@ public abstract class AbstractUserRevision extends AbstractRevision {
         return dep.getAttachment(XModule.class);
     }
 
-    private static int getRevision(Deployment dep) {
+    private static int getRevisionId(Deployment dep) {
         BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
-        return storageState.getRevision();
+        return storageState.getRevisionId();
     }
 
     public Deployment getDeployment() {
@@ -93,7 +92,7 @@ public abstract class AbstractUserRevision extends AbstractRevision {
      * 
      * @return The first entry in the list of content root files or null
      */
-    public VirtualFile getFirstContentRoot() {
+    public RevisionContent getFirstContentRoot() {
         return contentRoots.size() > 0 ? contentRoots.get(0) : null;
     }
 
@@ -103,13 +102,13 @@ public abstract class AbstractUserRevision extends AbstractRevision {
      * 
      * @return The list of content root files or an empty list
      */
-    public List<VirtualFile> getContentRoots() {
+    public List<RevisionContent> getContentRoots() {
         return contentRoots;
     }
 
     void close() {
-        for (VirtualFile vfile : contentRoots) {
-            VFSUtils.safeClose(vfile);
+        for (RevisionContent revContent : contentRoots) {
+            revContent.close();
         }
     }
 
@@ -131,27 +130,29 @@ public abstract class AbstractUserRevision extends AbstractRevision {
         return entriesProvider.findEntries(path, pattern, recurse);
     }
 
-    private List<VirtualFile> getBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata) {
+    private List<RevisionContent> getBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata) {
         if (rootFile == null)
             throw new IllegalArgumentException("Null rootFile");
 
         // Setup single root file list, if there is no Bundle-ClassPath
         if (metadata.getBundleClassPath().size() == 0) {
-            List<VirtualFile> rootList = new ArrayList<VirtualFile>(Collections.singleton(rootFile));
-            return Collections.unmodifiableList(rootList);
+            RevisionContent revContent = new RevisionContent(this, 0, rootFile);
+            return Collections.singletonList(revContent);
         }
 
         // Add the Bundle-ClassPath to the root virtual files
-        List<VirtualFile> rootList = new ArrayList<VirtualFile>();
+        List<RevisionContent> rootList = new ArrayList<RevisionContent>();
         for (String path : metadata.getBundleClassPath()) {
             if (path.equals(".")) {
-                rootList.add(rootFile);
+                RevisionContent revContent = new RevisionContent(this, rootList.size(), rootFile);
+                rootList.add(revContent);
             } else {
                 try {
                     VirtualFile child = rootFile.getChild(path);
                     if (child != null) {
-                        VirtualFile root = AbstractVFS.toVirtualFile(child.toURL());
-                        rootList.add(root);
+                        VirtualFile anotherRoot = AbstractVFS.toVirtualFile(child.toURL());
+                        RevisionContent revContent = new RevisionContent(this, rootList.size(), anotherRoot);
+                        rootList.add(revContent);
                     }
                 } catch (IOException ex) {
                     log.errorf(ex, "Cannot get class path element: %s", path);

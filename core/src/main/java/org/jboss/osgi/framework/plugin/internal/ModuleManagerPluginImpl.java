@@ -52,6 +52,7 @@ import org.jboss.osgi.framework.bundle.BundleManager.IntegrationMode;
 import org.jboss.osgi.framework.bundle.FragmentRevision;
 import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.OSGiModuleLoader;
+import org.jboss.osgi.framework.bundle.RevisionContent;
 import org.jboss.osgi.framework.loading.FrameworkLocalLoader;
 import org.jboss.osgi.framework.loading.HostBundleFallbackLoader;
 import org.jboss.osgi.framework.loading.HostBundleModuleClassLoader;
@@ -74,7 +75,6 @@ import org.jboss.osgi.resolver.XRequireBundleRequirement;
 import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XWire;
 import org.jboss.osgi.vfs.VFSUtils;
-import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.application.Framework;
 import org.osgi.framework.Bundle;
 
@@ -192,7 +192,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
                 identifier = createFrameworkModule(resModule);
             } else {
                 HostBundle hostBundle = HostBundle.assertBundleState(bundle);
-                List<VirtualFile> contentRoots = hostBundle.getContentRoots();
+                List<RevisionContent> contentRoots = hostBundle.getContentRoots();
                 identifier = createHostModule(resModule, contentRoots);
             }
         } else {
@@ -233,7 +233,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
     /**
      * Create a {@link ModuleSpec} from the given resolver module definition
      */
-    private ModuleIdentifier createHostModule(final XModule resModule, List<VirtualFile> contentRoots) {
+    private ModuleIdentifier createHostModule(final XModule resModule, List<RevisionContent> contentRoots) {
         ModuleSpec moduleSpec = resModule.getAttachment(ModuleSpec.class);
         if (moduleSpec == null) {
             ModuleIdentifier identifier = getModuleIdentifier(resModule);
@@ -275,16 +275,16 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
             // Process fragment local content
             for (FragmentRevision fragRev : fragRevs) {
-                for (VirtualFile contentRoot : fragRev.getContentRoots()) {
-                    VirtualFileResourceLoader resLoader = new VirtualFileResourceLoader(contentRoot);
+                for (RevisionContent revContent : fragRev.getContentRoots()) {
+                    VirtualFileResourceLoader resLoader = new VirtualFileResourceLoader(revContent.getVirtualFile());
                     specBuilder.addResourceRoot(resLoader);
                     allPaths.addAll(resLoader.getPaths());
                 }
             }
 
             // Add a local dependency for the local bundle content
-            for (VirtualFile contentRoot : contentRoots) {
-                VirtualFileResourceLoader resLoader = new VirtualFileResourceLoader(contentRoot);
+            for (RevisionContent revContent : contentRoots) {
+                VirtualFileResourceLoader resLoader = new VirtualFileResourceLoader(revContent.getVirtualFile());
                 specBuilder.addResourceRoot(resLoader);
                 allPaths.addAll(resLoader.getPaths());
             }
