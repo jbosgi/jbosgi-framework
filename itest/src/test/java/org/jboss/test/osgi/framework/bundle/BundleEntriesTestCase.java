@@ -254,7 +254,7 @@ public class BundleEntriesTestCase extends OSGiFrameworkTest {
         URL baseurl = bundle.getEntry("/");
         Set<URL> expected = new HashSet<URL>();
         for (String entry : entries)
-            expected.add(new URL(baseurl + "/" + entry));
+            expected.add(new URL(baseurl + entry));
 
         assertEquals(expected, actual);
     }

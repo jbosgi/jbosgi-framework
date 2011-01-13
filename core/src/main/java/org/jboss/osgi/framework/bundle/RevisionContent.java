@@ -159,6 +159,9 @@ public final class RevisionContent implements EntriesProvider {
         };
         String rootPath = virtualFile.getPathName();
         String pathName = child.getPathName().substring(rootPath.length());
+        if (pathName.startsWith("/") == false)
+           pathName = "/" + pathName;
+        
         return new URL(BundleProtocolHandler.PROTOCOL_NAME, identity, -1, pathName, streamHandler);
     }
 
