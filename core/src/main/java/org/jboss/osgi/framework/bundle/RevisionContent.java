@@ -66,7 +66,7 @@ public final class RevisionContent implements EntriesProvider {
         int revisionId = userRev.getRevisionId();
         identity = symbolicName + "-" + bundleId + "-" + revisionId + "-" + contentId;
     }
-    
+
     public static RevisionContent findRevisionContent(BundleManager bundleManager, String identity) {
         if (identity == null)
             throw new IllegalArgumentException("Null identity");
@@ -152,16 +152,20 @@ public final class RevisionContent implements EntriesProvider {
     }
 
     public URL getBundleURL(final VirtualFile child) throws IOException {
+        final String orgPath = child.getPathName();
         URLStreamHandler streamHandler = new URLStreamHandler() {
             protected URLConnection openConnection(URL url) throws IOException {
-                return child.toURL().openConnection();
+                String path = url.getPath();
+                VirtualFile real = (orgPath.equals(path) ? child : virtualFile.getChild(path));
+                return real.toURL().openConnection();
             }
         };
+        
         String rootPath = virtualFile.getPathName();
         String pathName = child.getPathName().substring(rootPath.length());
         if (pathName.startsWith("/") == false)
-           pathName = "/" + pathName;
-        
+            pathName = "/" + pathName;
+
         return new URL(BundleProtocolHandler.PROTOCOL_NAME, identity, -1, pathName, streamHandler);
     }
 
