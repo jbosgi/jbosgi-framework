@@ -274,6 +274,13 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             for (DependencySpec dep : moduleDependencies)
                 specBuilder.addDependency(dep);
 
+            // Add a local dependency for the local bundle content
+            for (RevisionContent revContent : contentRoots) {
+                ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
+                specBuilder.addResourceRoot(resLoader);
+                allPaths.addAll(resLoader.getPaths());
+            }
+
             // Process fragment local content
             for (FragmentRevision fragRev : fragRevs) {
                 for (RevisionContent revContent : fragRev.getContentList()) {
@@ -281,13 +288,6 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
                     specBuilder.addResourceRoot(resLoader);
                     allPaths.addAll(resLoader.getPaths());
                 }
-            }
-
-            // Add a local dependency for the local bundle content
-            for (RevisionContent revContent : contentRoots) {
-                ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
-                specBuilder.addResourceRoot(resLoader);
-                allPaths.addAll(resLoader.getPaths());
             }
 
             if (hostBundle.isActivationLazy()) {
