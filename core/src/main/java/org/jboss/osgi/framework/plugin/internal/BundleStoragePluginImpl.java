@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.plugin.internal;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,6 +34,7 @@ import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.BundleStorageState;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
@@ -69,8 +71,13 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
         String previousRev = props.getProperty(BundleStorageState.PROPERTY_BUNDLE_REV);
         int revision = (previousRev != null ? Integer.parseInt(previousRev) + 1 : 0);
 
-        if (rootFile != null)
-            props.put(BundleStorageState.PROPERTY_BUNDLE_FILE, rootFile.toURL().toExternalForm());
+        if (rootFile != null) {
+            File revFile = new File(bundlePath + "/bundle-" + bundleId + "-rev-" + revision + ".jar");
+            FileOutputStream output = new FileOutputStream(revFile);
+            VFSUtils.copyStream(rootFile.openStream(), output);
+            output.close();
+            props.put(BundleStorageState.PROPERTY_BUNDLE_FILE, revFile.getName());
+        }
 
         // Write the bundle properties
         props.put(BundleStorageState.PROPERTY_BUNDLE_LOCATION, location);

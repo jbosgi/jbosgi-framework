@@ -50,7 +50,7 @@ public class ModuleLoaderTestCase extends ModulesTestBase {
     private ModuleLoaderSupport jbosgiLoader;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         jbosgiLoader = new ModuleLoaderSupport("jbosgi");
         BundleManager bundleManager = Mockito.mock(BundleManager.class);

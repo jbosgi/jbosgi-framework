@@ -27,17 +27,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -82,35 +80,25 @@ public class FrameworkLaunchTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testFrameworkInit() throws Exception {
-        Map<String, String> props = new HashMap<String, String>();
-        props.put("org.osgi.framework.storage", "target/osgi-store");
-        props.put("org.osgi.framework.storage.clean", "onFirstInit");
-
-        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-        Framework framework = factory.newFramework(props);
-
-        assertNotNull("Framework not null", framework);
-
+        
+        Framework framework = createFramework();
         assertBundleState(Bundle.INSTALLED, framework.getState());
 
         framework.init();
         assertBundleState(Bundle.STARTING, framework.getState());
 
-        BundleContext bc = framework.getBundleContext();
-        ServiceReference slRef = bc.getServiceReference(StartLevel.class.getName());
-        StartLevel sls = (StartLevel) bc.getService(slRef);
-        assertEquals("Framework should be at Start Level 0 on init()", 0, sls.getStartLevel());
+        StartLevel startLevel = getStartLevel();
+        assertEquals("Framework should be at Start Level 0 on init()", 0, startLevel.getStartLevel());
 
-        ServiceReference paRef = bc.getServiceReference(PackageAdmin.class.getName());
-        PackageAdmin pa = (PackageAdmin) bc.getService(paRef);
-        assertNotNull("The Package Admin service should be available", pa);
+        PackageAdmin packageAdmin = getPackageAdmin();
+        assertNotNull("The Package Admin service should be available", packageAdmin);
 
         // It should be possible to install a bundle into this framework, even though it's only inited...
-        InputStream bundleStream = toInputStream(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
-        bc.installBundle("simple-bundle1", bundleStream);
+        JavaArchive archive = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
+        Bundle bundle = installBundle("simple-bundle1", toInputStream(archive));
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-        framework.stop();
-        framework.waitForStop(2000);
+        shutdownFramework();
     }
 
     @Test

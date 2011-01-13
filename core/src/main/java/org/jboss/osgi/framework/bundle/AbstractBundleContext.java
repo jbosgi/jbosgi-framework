@@ -144,8 +144,13 @@ public abstract class AbstractBundleContext implements BundleContext {
     /*
      * This is the entry point for all bundle deployments.
      * 
-     * #1 Construct the {@link VirtualFile} from the given parameters #2 Setup Bundle permanent storage #3 Create a Bundle
-     * {@link Deployment} #4 Deploy the Bundle through the {@link DeploymentService}
+     * #1 Construct the {@link VirtualFile} from the given parameters 
+     * 
+     * #2 Setup Bundle permanent storage 
+     * 
+     * #3 Create a Bundle {@link Deployment} 
+     * 
+     * #4 Deploy the Bundle through the {@link DeploymentService}
      * 
      * The {@link DeploymentService} is the integration point for JBossAS.
      * 
@@ -159,7 +164,7 @@ public abstract class AbstractBundleContext implements BundleContext {
         VirtualFile rootFile = null;
         if (input != null) {
             try {
-                rootFile = AbstractVFS.toVirtualFile(location, input);
+                rootFile = AbstractVFS.toVirtualFile(input);
             } catch (IOException ex) {
                 throw new BundleException("Cannot obtain virtual file from input stream", ex);
             }
@@ -170,7 +175,7 @@ public abstract class AbstractBundleContext implements BundleContext {
             try {
                 URL url = new URL(location);
                 if (BundleProtocolHandler.PROTOCOL_NAME.equals(url.getProtocol())) {
-                    rootFile = AbstractVFS.toVirtualFile(location, url.openStream());
+                    rootFile = AbstractVFS.toVirtualFile(url.openStream());
                 } else {
                     rootFile = AbstractVFS.toVirtualFile(url);
                 }
@@ -184,7 +189,7 @@ public abstract class AbstractBundleContext implements BundleContext {
             try {
                 File file = new File(location);
                 if (file.exists())
-                    rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
+                    rootFile = AbstractVFS.toVirtualFile(file.toURI());
             } catch (IOException ex) {
                 throw new BundleException("Cannot obtain virtual file from: " + location, ex);
             }
