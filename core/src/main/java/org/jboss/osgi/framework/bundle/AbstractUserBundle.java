@@ -99,11 +99,11 @@ public abstract class AbstractUserBundle extends AbstractBundle {
         return getCurrentRevision().getDeployment();
     }
 
-    public VirtualFile getFirstContentRoot() {
+    public RevisionContent getFirstContentRoot() {
         return getCurrentRevision().getFirstContentRoot();
     }
 
-    public List<VirtualFile> getContentRoots() {
+    public List<RevisionContent> getContentRoots() {
         return getCurrentRevision().getContentRoots();
     }
 
@@ -213,7 +213,7 @@ public abstract class AbstractUserBundle extends AbstractBundle {
                 URL updateURL = new URL(updateLocation);
                 rootFile = AbstractVFS.toVirtualFile(updateURL);
             } else {
-                rootFile = getFirstContentRoot();
+                rootFile = getFirstContentRoot().getVirtualFile();
             }
         }
 

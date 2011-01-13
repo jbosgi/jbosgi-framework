@@ -30,6 +30,7 @@ import org.jboss.osgi.deployment.internal.InvocationContextImpl;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractUserBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
+import org.jboss.osgi.framework.bundle.RevisionContent;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.LifecycleInterceptorPlugin;
 import org.jboss.osgi.spi.util.AttachmentSupport;
@@ -74,7 +75,8 @@ public class LifecycleInterceptorPluginImpl extends AbstractPlugin implements Li
                 if (inv == null) {
                     BundleContext context = userBundle.getBundleManager().getSystemContext();
                     // TODO: support multiple roots defined in Bundle-ClassPath
-                    VirtualFile rootFile = userBundle.getFirstContentRoot();
+                    RevisionContent revContent = userBundle.getFirstContentRoot();
+                    VirtualFile rootFile = revContent != null ? revContent.getVirtualFile() : null;
                     LifecycleInterceptorAttachments att = new LifecycleInterceptorAttachments();
                     inv = new InvocationContextImpl(context, bundle, rootFile, att);
                     dep.addAttachment(InvocationContext.class, inv);

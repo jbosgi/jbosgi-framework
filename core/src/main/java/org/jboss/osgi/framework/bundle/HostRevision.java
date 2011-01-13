@@ -120,9 +120,9 @@ public class HostRevision extends AbstractUserRevision {
         }
 
         // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
-        for (VirtualFile rootFile : getContentRoots()) {
+        for (RevisionContent revContent : getContentRoots()) {
             try {
-                VirtualFile child = rootFile.getChild(path);
+                VirtualFile child = revContent.getVirtualFile().getChild(path);
                 if (child == null)
                     return null;
 

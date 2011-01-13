@@ -33,7 +33,6 @@ import java.util.Vector;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.framework.plugin.internal.BundleProtocolHandler;
-import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -207,8 +206,8 @@ public class BundleWrapper implements Bundle {
             } else if (bundleState instanceof HostBundle) {
                 HostBundle hostBundle = (HostBundle) bundleState;
                 outer: for (FragmentRevision fragRev : hostBundle.getCurrentRevision().getAttachedFragments()) {
-                    for (VirtualFile root : fragRev.getContentRoots()) {
-                        if (path.startsWith(root.getPathName())) {
+                    for (RevisionContent revContent : fragRev.getContentRoots()) {
+                        if (path.startsWith(revContent.getVirtualFile().getPathName())) {
                             path = path.substring(rootPath.length());
                             result = BundleProtocolHandler.getBundleURL(fragRev.getBundleState(), path);
                             break outer;

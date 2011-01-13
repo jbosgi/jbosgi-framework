@@ -125,7 +125,7 @@ public abstract class AbstractRevision {
 
     abstract void refreshRevisionInternal(XModule resModule);
 
-    public int getRevisionCount() {
+    public int getRevisionId() {
         return revision;
     }
 
