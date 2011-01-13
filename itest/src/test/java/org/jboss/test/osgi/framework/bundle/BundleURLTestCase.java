@@ -28,7 +28,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 
-import org.jboss.osgi.framework.plugin.internal.BundleProtocolHandler;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.junit.Test;
@@ -48,12 +47,17 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
         Bundle bundle = installBundle(assembly);
         try {
             URL url = bundle.getEntry("/resource-one.txt");
-            assertNotNull("Resource found", url);
-            assertEquals(BundleProtocolHandler.PROTOCOL_NAME, url.getProtocol());
-            assertEquals(bundle.getBundleId(), Long.parseLong(url.getHost()));
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+            
+            assertNotNull("Entry found", url);
             assertEquals("/resource-one.txt", url.getPath());
 
             BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
+            assertEquals("resource-one", br.readLine());
+            
+            // Test URL reconstruction
+            url = new URL(url.toExternalForm());
+            br = new BufferedReader(new InputStreamReader(url.openStream()));
             assertEquals("resource-one", br.readLine());
         } finally {
             bundle.uninstall();

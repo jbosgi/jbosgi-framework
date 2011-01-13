@@ -275,7 +275,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
             // Process fragment local content
             for (FragmentRevision fragRev : fragRevs) {
-                for (RevisionContent revContent : fragRev.getContentRoots()) {
+                for (RevisionContent revContent : fragRev.getContentList()) {
                     VirtualFileResourceLoader resLoader = new VirtualFileResourceLoader(revContent.getVirtualFile());
                     specBuilder.addResourceRoot(resLoader);
                     allPaths.addAll(resLoader.getPaths());

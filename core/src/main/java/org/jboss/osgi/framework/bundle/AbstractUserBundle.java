@@ -100,11 +100,11 @@ public abstract class AbstractUserBundle extends AbstractBundle {
     }
 
     public RevisionContent getFirstContentRoot() {
-        return getCurrentRevision().getFirstContentRoot();
+        return getCurrentRevision().getRootContent();
     }
 
     public List<RevisionContent> getContentRoots() {
-        return getCurrentRevision().getContentRoots();
+        return getCurrentRevision().getContentList();
     }
 
     @Override
