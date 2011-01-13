@@ -58,6 +58,20 @@ public class HostRevision extends AbstractUserRevision {
         super(hostBundle, dep);
     }
 
+    /**
+     * Assert that the given bundleRev is an instance of HostRevision
+     * @throws IllegalArgumentException if the given bundleRev is not an instance of HostRevision
+     */
+    public static HostRevision assertUserRevision(AbstractRevision bundleRev) {
+        if (bundleRev == null)
+            throw new IllegalArgumentException("Null bundleRev");
+
+        if (bundleRev instanceof HostRevision == false)
+            throw new IllegalArgumentException("Not an HostRevision: " + bundleRev);
+
+        return (HostRevision) bundleRev;
+    }
+    
     @Override
     public HostBundle getBundleState() {
         return (HostBundle) super.getBundleState();
@@ -120,7 +134,7 @@ public class HostRevision extends AbstractUserRevision {
         }
 
         // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
-        for (RevisionContent revContent : getContentRoots()) {
+        for (RevisionContent revContent : getContentList()) {
             try {
                 VirtualFile child = revContent.getVirtualFile().getChild(path);
                 if (child == null)

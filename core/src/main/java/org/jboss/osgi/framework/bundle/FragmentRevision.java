@@ -51,6 +51,20 @@ public class FragmentRevision extends AbstractUserRevision {
         super(bundleState, dep);
     }
 
+    /**
+     * Assert that the given bundleRev is an instance of FragmentRevision
+     * @throws IllegalArgumentException if the given bundleRev is not an instance of FragmentRevision
+     */
+    public static FragmentRevision assertUserRevision(AbstractRevision bundleRev) {
+        if (bundleRev == null)
+            throw new IllegalArgumentException("Null bundleRev");
+
+        if (bundleRev instanceof FragmentRevision == false)
+            throw new IllegalArgumentException("Not an FragmentRevision: " + bundleRev);
+
+        return (FragmentRevision) bundleRev;
+    }
+    
     @Override
     public FragmentBundle getBundleState() {
         return (FragmentBundle) super.getBundleState();

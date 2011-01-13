@@ -27,7 +27,6 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 
-import org.jboss.osgi.framework.plugin.internal.BundleProtocolHandler;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.test.osgi.framework.classloader.support.a.A;
 import org.jboss.test.osgi.framework.classloader.support.b.B;
@@ -62,18 +61,10 @@ public class BundleClassPathTestCase extends OSGiFrameworkTest {
         Bundle bundle = installBundle(bundleURL.toExternalForm());
         try {
             URL url = bundle.getEntry("message.txt");
-            assertEquals(BundleProtocolHandler.getBundleURL(bundle, "message.txt"), url);
+            assertEquals("/message.txt", url.getPath());
 
             BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
             assertEquals("Hello from Resource", br.readLine());
-
-            /*
-             * url = bundle.getEntry("bundle-classpath-b.jar/bundleclasspath/message.txt"); assertEquals("bundle://jbosgi-" +
-             * bundle.getBundleId() + "/message.txt", url.toExternalForm());
-             * 
-             * br = new BufferedReader(new InputStreamReader(url.openStream())); assertEquals("Hello from Resource",
-             * br.readLine());
-             */
         } finally {
             bundle.uninstall();
         }

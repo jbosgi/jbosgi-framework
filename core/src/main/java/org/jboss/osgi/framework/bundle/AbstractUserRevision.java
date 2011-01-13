@@ -49,7 +49,7 @@ public abstract class AbstractUserRevision extends AbstractRevision {
     static final Logger log = Logger.getLogger(AbstractUserRevision.class);
 
     private final Deployment deployment;
-    private List<RevisionContent> contentRoots;
+    private List<RevisionContent> contentList;
     private final EntriesProvider entriesProvider;
 
     AbstractUserRevision(AbstractUserBundle bundleState, Deployment dep) throws BundleException {
@@ -57,14 +57,28 @@ public abstract class AbstractUserRevision extends AbstractRevision {
         this.deployment = dep;
 
         if (dep.getRoot() != null) {
-            entriesProvider = new VirtualFileEntriesProvider(dep.getRoot());
-            contentRoots = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
+            contentList = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
+            entriesProvider = getRootContent();
         } else {
             entriesProvider = new ModuleEntriesProvider(dep.getAttachment(Module.class));
-            contentRoots = Collections.emptyList();
+            contentList = Collections.emptyList();
         }
     }
 
+    /**
+     * Assert that the given bundleRev is an instance of AbstractUserRevision
+     * @throws IllegalArgumentException if the given bundleRev is not an instance of AbstractUserRevision
+     */
+    public static AbstractUserRevision assertUserRevision(AbstractRevision bundleRev) {
+        if (bundleRev == null)
+            throw new IllegalArgumentException("Null bundleRev");
+
+        if (bundleRev instanceof AbstractUserRevision == false)
+            throw new IllegalArgumentException("Not an AbstractUserRevision: " + bundleRev);
+
+        return (AbstractUserRevision) bundleRev;
+    }
+    
     private static OSGiMetaData getOSGiMetaData(Deployment dep) {
         return dep.getAttachment(OSGiMetaData.class);
     }
@@ -92,8 +106,8 @@ public abstract class AbstractUserRevision extends AbstractRevision {
      * 
      * @return The first entry in the list of content root files or null
      */
-    public RevisionContent getFirstContentRoot() {
-        return contentRoots.size() > 0 ? contentRoots.get(0) : null;
+    public RevisionContent getRootContent() {
+        return contentList.size() > 0 ? contentList.get(0) : null;
     }
 
     /**
@@ -102,13 +116,22 @@ public abstract class AbstractUserRevision extends AbstractRevision {
      * 
      * @return The list of content root files or an empty list
      */
-    public List<RevisionContent> getContentRoots() {
-        return contentRoots;
+    public List<RevisionContent> getContentList() {
+        return contentList;
+    }
+
+    public RevisionContent getContentById(int contentId) {
+        for (RevisionContent aux : contentList) {
+            if (aux.getContentId() == contentId) {
+                return aux;
+            }
+        }
+        return null;
     }
 
     void close() {
-        for (RevisionContent revContent : contentRoots) {
-            revContent.close();
+        for (RevisionContent aux : contentList) {
+            aux.close();
         }
     }
 

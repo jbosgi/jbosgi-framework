@@ -95,7 +95,7 @@ public final class HostBundle extends AbstractUserBundle {
     }
 
     public List<RevisionContent> getContentRoots() {
-        return getCurrentRevision().getContentRoots();
+        return getCurrentRevision().getContentList();
     }
 
     /**

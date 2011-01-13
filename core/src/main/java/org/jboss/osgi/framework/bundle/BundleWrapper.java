@@ -29,10 +29,7 @@ import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
-import org.jboss.logging.Logger;
-import org.jboss.osgi.framework.plugin.internal.BundleProtocolHandler;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -46,9 +43,6 @@ import org.osgi.framework.Version;
  * @since 29-Jun-2010
  */
 public class BundleWrapper implements Bundle {
-
-    // Provide logging
-    private final Logger log = Logger.getLogger(BundleWrapper.class);
 
     private final AbstractBundle bundleState;
 
@@ -65,8 +59,7 @@ public class BundleWrapper implements Bundle {
 
     @SuppressWarnings("rawtypes")
     public Enumeration findEntries(String path, String filePattern, boolean recurse) {
-        Enumeration<URL> urls = bundleState.findEntries(path, filePattern, recurse);
-        return toBundleURLs(urls);
+        return bundleState.findEntries(path, filePattern, recurse);
     }
 
     public BundleContext getBundleContext() {
@@ -78,8 +71,7 @@ public class BundleWrapper implements Bundle {
     }
 
     public URL getEntry(String path) {
-        URL url = bundleState.getEntry(path);
-        return toBundleURL(url);
+        return bundleState.getEntry(path);
     }
 
     @SuppressWarnings("rawtypes")
@@ -110,14 +102,12 @@ public class BundleWrapper implements Bundle {
     }
 
     public URL getResource(String name) {
-        URL url = bundleState.getResource(name);
-        return toBundleURL(url);
+        return bundleState.getResource(name);
     }
 
     @SuppressWarnings("rawtypes")
     public Enumeration getResources(String name) throws IOException {
-        Enumeration<URL> urls = bundleState.getResources(name);
-        return toBundleURLs(urls);
+        return bundleState.getResources(name);
     }
 
     public ServiceReference[] getServicesInUse() {
@@ -176,53 +166,6 @@ public class BundleWrapper implements Bundle {
 
     public void update(InputStream in) throws BundleException {
         bundleState.update(in);
-    }
-
-    private Enumeration<URL> toBundleURLs(Enumeration<URL> urls) {
-        if (urls == null)
-            return null;
-
-        Vector<URL> result = new Vector<URL>();
-        while (urls.hasMoreElements())
-            result.add(toBundleURL(urls.nextElement()));
-
-        return result.elements();
-    }
-
-    private URL toBundleURL(URL url) {
-        if (url == null)
-            return null;
-
-        if ("vfs".equals(url.getProtocol()) == false)
-            return url;
-
-        URL result = url;
-        try {
-            String path = url.getPath();
-            String rootPath = bundleState.getEntry("/").getPath();
-            if (path.startsWith(rootPath)) {
-                path = path.substring(rootPath.length());
-                result = BundleProtocolHandler.getBundleURL(bundleState, path);
-            } else if (bundleState instanceof HostBundle) {
-                HostBundle hostBundle = (HostBundle) bundleState;
-                outer: for (FragmentRevision fragRev : hostBundle.getCurrentRevision().getAttachedFragments()) {
-                    for (RevisionContent revContent : fragRev.getContentRoots()) {
-                        if (path.startsWith(revContent.getVirtualFile().getPathName())) {
-                            path = path.substring(rootPath.length());
-                            result = BundleProtocolHandler.getBundleURL(fragRev.getBundleState(), path);
-                            break outer;
-                        }
-                    }
-                }
-            }
-        } catch (Exception ex) {
-            log.errorf(ex, "Cannot construct virtual file from: %s", url);
-        }
-
-        if (result == url)
-            log.debugf("Cannot obtain bundle URL for: %s", url);
-
-        return result;
     }
 
     @Override

@@ -130,7 +130,6 @@ public abstract class AbstractBundle implements Bundle {
 
     /**
      * Assert that the given bundle is an instance of AbstractBundle
-     * 
      * @throws IllegalArgumentException if the given bundle is not an instance of AbstractBundle
      */
     public static AbstractBundle assertBundleState(Bundle bundle) {
@@ -260,6 +259,15 @@ public abstract class AbstractBundle implements Bundle {
 
     public AbstractRevision getCurrentRevision() {
         return revisions.get(0);
+    }
+
+    public AbstractRevision getRevisionById(int revisionId) {
+        for (AbstractRevision rev : revisions) {
+            if (rev.getRevisionId() == revisionId) {
+                return rev;
+            }
+        }
+        return null;
     }
 
     public List<AbstractRevision> getRevisions() {

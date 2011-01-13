@@ -25,9 +25,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 
-import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
-import org.osgi.framework.Bundle;
+import org.jboss.osgi.framework.bundle.RevisionContent;
 import org.osgi.service.url.AbstractURLStreamHandlerService;
 
 /**
@@ -46,34 +45,12 @@ public class BundleProtocolHandler extends AbstractURLStreamHandlerService {
         this.bundleManager = bundleManager;
     }
 
-    public static URL getBundleURL(Bundle bundle, String path) throws IOException {
-        if (bundle == null)
-            throw new IllegalArgumentException("Null bundle");
-        if (path == null)
-            throw new IllegalArgumentException("Null path");
-
-        return new URL(PROTOCOL_NAME, new Long(bundle.getBundleId()).toString(), path.startsWith("/") ? path : "/" + path);
-    }
-
     @Override
     public URLConnection openConnection(URL url) throws IOException {
-        URL vfsURL = toVirtualFileURL(url);
-        if (vfsURL == null)
-            throw new IOException("Cannot obtain virtual file URL for: " + url);
-
-        return vfsURL.openConnection();
-    }
-
-    private URL toVirtualFileURL(URL url) throws IOException {
-        if (PROTOCOL_NAME.equals(url.getProtocol()) == false)
-            throw new IllegalArgumentException("Not a bundle url: " + url);
-
-        long bundleId = Long.parseLong(url.getHost());
-        AbstractBundle bundleState = bundleManager.getBundleById(bundleId);
-        if (bundleState == null)
-            throw new IOException("Cannot obtain bundle for: " + url);
-
-        String path = url.getPath();
-        return bundleState.getEntry(path);
+        RevisionContent revContent = RevisionContent.findRevisionContent(bundleManager, url.getHost());
+        if (revContent == null)
+            throw new IOException("Cannot obtain revision content for: " + url);
+        URL entry = revContent.getEntry(url.getPath());
+        return entry.openConnection();
     }
 }
