@@ -92,7 +92,8 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         assertBundleState(Bundle.INSTALLED, fragA.getState());
 
         URL entryURL = fragA.getEntry("resource.txt");
-        assertNotNull("Entry URL not null", entryURL);
+        assertEquals("bundle", entryURL.getProtocol());
+        assertEquals("/resource.txt", entryURL.getPath());
 
         BufferedReader br = new BufferedReader(new InputStreamReader(entryURL.openStream()));
         assertEquals("fragment resource", br.readLine());
@@ -127,7 +128,8 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         assertNull("Entry URL null", entryURL);
 
         URL resourceURL = hostA.getResource("resource.txt");
-        assertNotNull("Resource URL not null", resourceURL);
+        assertEquals("bundle", resourceURL.getProtocol());
+        assertEquals("/resource.txt", resourceURL.getPath());
 
         BufferedReader br = new BufferedReader(new InputStreamReader(resourceURL.openStream()));
         assertEquals("fragment resource", br.readLine());

@@ -42,6 +42,7 @@ import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.PathFilter;
 import org.jboss.modules.PathFilters;
+import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
@@ -59,8 +60,8 @@ import org.jboss.osgi.framework.loading.HostBundleModuleClassLoader;
 import org.jboss.osgi.framework.loading.LazyActivationLocalLoader;
 import org.jboss.osgi.framework.loading.NativeLibraryProvider;
 import org.jboss.osgi.framework.loading.NativeResourceLoader;
+import org.jboss.osgi.framework.loading.RevisionContentResourceLoader;
 import org.jboss.osgi.framework.loading.SystemBundleModuleClassLoader;
-import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.framework.plugin.SystemPackagesPlugin;
@@ -276,7 +277,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             // Process fragment local content
             for (FragmentRevision fragRev : fragRevs) {
                 for (RevisionContent revContent : fragRev.getContentList()) {
-                    VirtualFileResourceLoader resLoader = new VirtualFileResourceLoader(revContent.getVirtualFile());
+                    ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
                     specBuilder.addResourceRoot(resLoader);
                     allPaths.addAll(resLoader.getPaths());
                 }
@@ -284,7 +285,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
             // Add a local dependency for the local bundle content
             for (RevisionContent revContent : contentRoots) {
-                VirtualFileResourceLoader resLoader = new VirtualFileResourceLoader(revContent.getVirtualFile());
+                ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
                 specBuilder.addResourceRoot(resLoader);
                 allPaths.addAll(resLoader.getPaths());
             }
