@@ -37,17 +37,28 @@ final class SecurityActions {
     }
 
     /**
-     * Set the thread context class loader
-     * @return The class loader previously associated with the current thread
+     * Get the thread context class loader
      */
-    public static ClassLoader setContextLoader(final ClassLoader classLoader) {
+    public static ClassLoader getContextLoader() {
         return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
             @Override
             public ClassLoader run() {
                 Thread currentThread = Thread.currentThread();
-                ClassLoader current = currentThread.getContextClassLoader();
+                return currentThread.getContextClassLoader();
+            }
+        });
+    }
+
+    /**
+     * Set the thread context class loader
+     */
+    public static Void setContextLoader(final ClassLoader classLoader) {
+        return AccessController.doPrivileged(new PrivilegedAction<Void>() {
+            @Override
+            public Void run() {
+                Thread currentThread = Thread.currentThread();
                 currentThread.setContextClassLoader(classLoader);
-                return current;
+                return null;
             }
         });
     }
