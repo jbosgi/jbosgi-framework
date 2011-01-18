@@ -37,6 +37,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.ModuleClassLoader;
 import org.jboss.msc.service.BatchBuilder;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
@@ -72,7 +73,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 
 /**
  * A plugin that manages OSGi services
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
@@ -270,7 +271,14 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
             if (controller == null)
                 throw new IllegalStateException("Cannot obtain service for: " + serviceName);
 
-            Object value = controller.getValue();
+            Object value;
+            ModuleClassLoader classLoader = bundleState.getCurrentRevision().getModuleClassLoader();
+            ClassLoader ctxLoader = SecurityActions.setContextLoader(classLoader);
+            try {
+                value = controller.getValue();
+            } finally {
+                SecurityActions.setContextLoader(ctxLoader);
+            }
 
             // Create the ServiceState on demand for an XService instance
             // [TODO] This should be done eagerly to keep the serviceId constant
