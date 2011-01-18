@@ -51,7 +51,7 @@ import org.osgi.framework.ServiceRegistration;
 
 /**
  * The service implementation.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
@@ -76,7 +76,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference {
     // The {@link ServiceFactory} value registry
     private Map<Long, ServiceFactoryHolder> factoryValues;
     // The service object value
-    private Object value;
+    private ValueProvider valueProvider;
 
     // The properties
     private CaseInsensitiveDictionary prevProperties;
@@ -87,15 +87,15 @@ public class ServiceState implements ServiceRegistration, ServiceReference {
     private FrameworkEventsPlugin eventsPlugin;
 
     @SuppressWarnings("unchecked")
-    public ServiceState(AbstractBundle owner, long serviceId, ServiceName[] serviceNames, String[] clazzes, Object value, Dictionary properties) {
+    public ServiceState(AbstractBundle owner, long serviceId, ServiceName[] serviceNames, String[] clazzes, ValueProvider valueProvider, Dictionary properties) {
         if (owner == null)
             throw new IllegalArgumentException("Null owner");
         if (serviceNames == null || serviceNames.length == 0)
             throw new IllegalArgumentException("Null names");
         if (clazzes == null || clazzes.length == 0)
             throw new IllegalArgumentException("Null clazzes");
-        if (value == null)
-            throw new IllegalArgumentException("Null value");
+        if (valueProvider == null)
+            throw new IllegalArgumentException("Null valueProvider");
 
         this.serviceManager = owner.getServiceManagerPlugin();
         this.eventsPlugin = owner.getFrameworkEventsPlugin();
@@ -103,9 +103,9 @@ public class ServiceState implements ServiceRegistration, ServiceReference {
         this.serviceNames = Arrays.asList(serviceNames);
         this.serviceId = serviceId;
         this.ownerBundle = owner;
-        this.value = value;
+        this.valueProvider = valueProvider;
 
-        if (checkValidClassNames(owner, clazzes, value) == false)
+        if (checkValidClassNames(owner, clazzes, valueProvider.getValue()) == false)
             throw new IllegalArgumentException("Invalid object class in: " + Arrays.asList(clazzes));
 
         if (properties == null)
@@ -122,7 +122,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference {
 
     /**
      * Assert that the given reference is an instance of ServiceState
-     * 
+     *
      * @throws IllegalArgumentException if the given reference is not an instance of ServiceState
      */
     public static ServiceState assertServiceState(ServiceReference sref) {
@@ -140,11 +140,13 @@ public class ServiceState implements ServiceRegistration, ServiceReference {
     }
 
     public Object getRawValue() {
-        return value;
+        return valueProvider.getValue();
     }
 
     public Object getScopedValue(AbstractBundle bundleState) {
+
         // For non-factory services, return the value
+        Object value = valueProvider.getValue();
         if (value instanceof ServiceFactory == false)
             return value;
 
@@ -179,6 +181,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference {
     }
 
     public void ungetScopedValue(AbstractBundle bundleState) {
+        Object value = valueProvider.getValue();
         if (value instanceof ServiceFactory) {
             try {
                 ServiceFactoryHolder factoryHolder = factoryValues.get(bundleState.getBundleId());
@@ -335,10 +338,10 @@ public class ServiceState implements ServiceRegistration, ServiceReference {
         }
 
         if (targetClass != ownerClass) {
+            Object value = valueProvider.getValue();
             log.debugf("Not assignable: %s", value.getClass().getName());
             return false;
         }
-
         return true;
     }
 
@@ -406,6 +409,10 @@ public class ServiceState implements ServiceRegistration, ServiceReference {
         String[] classes = (String[]) props.get(Constants.OBJECTCLASS);
         props.put(Constants.OBJECTCLASS, Arrays.asList(classes));
         return "ServiceState" + props;
+    }
+
+    public interface ValueProvider {
+        Object getValue();
     }
 
     class ServiceFactoryHolder {

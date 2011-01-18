@@ -114,7 +114,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
     @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public ServiceState registerService(AbstractBundle bundleState, String[] clazzes, Object serviceValue, Dictionary properties) {
+    public ServiceState registerService(final AbstractBundle bundleState, final String[] clazzes, final Object serviceValue, final Dictionary properties) {
         if (clazzes == null || clazzes.length == 0)
             throw new IllegalArgumentException("Null service classes");
 
@@ -139,7 +139,13 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
             serviceNames[i] = ServiceName.of(prefix, bundleState.getSymbolicName(), shortName, new Long(serviceId).toString());
         }
 
-        final ServiceState serviceState = new ServiceState(bundleState, serviceId, serviceNames, clazzes, serviceValue, properties);
+        ServiceState.ValueProvider valueProvider = new ServiceState.ValueProvider() {
+            public Object getValue() {
+                return serviceValue;
+            }
+        };
+
+        final ServiceState serviceState = new ServiceState(bundleState, serviceId, serviceNames, clazzes, valueProvider, properties);
         BatchBuilder batchBuilder = getBundleManager().getServiceContainer().batchBuilder();
         Service service = new Service() {
 
@@ -212,7 +218,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
             throw new IllegalArgumentException("Null clazz");
 
         boolean checkAssignable = (bundleState.getBundleId() != 0);
-        List<ServiceState> result = getServiceReferencesInternal(bundleState, clazz, null, checkAssignable);
+        List<ServiceState> result = getServiceReferencesInternal(bundleState, clazz, NoFilter.INSTANCE, checkAssignable);
         result = processFindHooks(bundleState, clazz, null, true, result);
         if (result.isEmpty())
             return null;
@@ -223,7 +229,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
     @Override
     public List<ServiceState> getServiceReferences(AbstractBundle bundleState, String clazz, String filterStr, boolean checkAssignable) throws InvalidSyntaxException {
-        Filter filter = null;
+        Filter filter = NoFilter.INSTANCE;
         if (filterStr != null)
             filter = FrameworkUtil.createFilter(filterStr);
 
@@ -232,9 +238,11 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
         return result;
     }
 
-    public List<ServiceState> getServiceReferencesInternal(AbstractBundle bundleState, String clazz, Filter filter, boolean checkAssignable) {
+    public List<ServiceState> getServiceReferencesInternal(final AbstractBundle bundleState, final String clazz, final Filter filter, boolean checkAssignable) {
         if (bundleState == null)
             throw new IllegalArgumentException("Null bundleState");
+        if (filter == null)
+            throw new IllegalArgumentException("Null filter");
 
         List<ServiceName> serviceNames;
         if (clazz != null) {
@@ -262,32 +270,36 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
         if (serviceNames.isEmpty())
             return Collections.emptyList();
 
-        if (filter == null)
-            filter = NoFilter.INSTANCE;
-
         List<ServiceState> result = new ArrayList<ServiceState>();
         for (ServiceName serviceName : serviceNames) {
-            ServiceController<?> controller = getBundleManager().getServiceContainer().getService(serviceName);
+            final ServiceController<?> controller = getBundleManager().getServiceContainer().getService(serviceName);
             if (controller == null)
                 throw new IllegalStateException("Cannot obtain service for: " + serviceName);
 
-            Object value;
-            ModuleClassLoader classLoader = bundleState.getCurrentRevision().getModuleClassLoader();
-            ClassLoader ctxLoader = SecurityActions.setContextLoader(classLoader);
-            try {
-                value = controller.getValue();
-            } finally {
-                SecurityActions.setContextLoader(ctxLoader);
-            }
+            Object value = controller.getValue();
 
             // Create the ServiceState on demand for an XService instance
             // [TODO] This should be done eagerly to keep the serviceId constant
             // [TODO] service events for XService lifecycle changes
             if (value instanceof ServiceState == false && serviceName.getCanonicalName().startsWith(Constants.JBOSGI_PREFIX)) {
-                long serviceId = getNextServiceId();
-                Bundle bundle = packageAdmin.getBundle(value.getClass());
-                AbstractBundle owner = (bundle != null ? AbstractBundle.assertBundleState(bundle) : getBundleManager().getSystemBundle());
-                value = new ServiceState(owner, serviceId, new ServiceName[] { serviceName }, new String[] { clazz }, value, null);
+                final long serviceId = getNextServiceId();
+                final Bundle bundle = packageAdmin.getBundle(value.getClass());
+                final AbstractBundle owner = (bundle != null ? AbstractBundle.assertBundleState(bundle) : getBundleManager().getSystemBundle());
+                final ServiceState.ValueProvider valueProvider = new ServiceState.ValueProvider() {
+                    @Override
+                    public Object getValue()
+                    {
+                        ModuleClassLoader classLoader = bundleState.getCurrentRevision().getModuleClassLoader();
+                        ClassLoader ctxLoader = SecurityActions.getContextLoader();
+                        try {
+                            SecurityActions.setContextLoader(classLoader);
+                            return controller.getValue();
+                        } finally {
+                            SecurityActions.setContextLoader(ctxLoader);
+                        }
+                    }
+                };
+                value = new ServiceState(owner, serviceId, new ServiceName[] { serviceName }, new String[] { clazz }, valueProvider, null);
             }
 
             ServiceState serviceState = (ServiceState) value;
@@ -420,7 +432,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
      */
     private List<ServiceState> processFindHooks(AbstractBundle bundle, String clazz, String filterStr, boolean checkAssignable, List<ServiceState> serviceStates) {
         BundleContext context = bundle.getBundleContext();
-        List<ServiceState> hookRefs = getServiceReferencesInternal(bundle, FindHook.class.getName(), null, true);
+        List<ServiceState> hookRefs = getServiceReferencesInternal(bundle, FindHook.class.getName(), NoFilter.INSTANCE, true);
         if (hookRefs.isEmpty())
             return serviceStates;
 
