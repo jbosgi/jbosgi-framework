@@ -244,6 +244,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
         if (filter == null)
             throw new IllegalArgumentException("Null filter");
 
+        ServiceName xserviceName = null;
         List<ServiceName> serviceNames;
         if (clazz != null) {
             serviceNames = serviceNameMap.get(clazz);
@@ -251,7 +252,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
                 serviceNames = new ArrayList<ServiceName>();
 
             // Add potentially registered xservcie
-            ServiceName xserviceName = ServiceName.of(Constants.JBOSGI_PREFIX, clazz);
+            xserviceName = ServiceName.of(Constants.JBOSGI_PREFIX, clazz);
             ServiceController<?> xservice = getBundleManager().getServiceContainer().getService(xserviceName);
             if (xservice != null)
                 serviceNames.add(xserviceName);
@@ -276,19 +277,17 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
             if (controller == null)
                 throw new IllegalStateException("Cannot obtain service for: " + serviceName);
 
-            Object value = controller.getValue();
+            ServiceState serviceState;
 
             // Create the ServiceState on demand for an XService instance
             // [TODO] This should be done eagerly to keep the serviceId constant
             // [TODO] service events for XService lifecycle changes
-            if (value instanceof ServiceState == false && serviceName.getCanonicalName().startsWith(Constants.JBOSGI_PREFIX)) {
-                final long serviceId = getNextServiceId();
-                final Bundle bundle = packageAdmin.getBundle(value.getClass());
-                final AbstractBundle owner = (bundle != null ? AbstractBundle.assertBundleState(bundle) : getBundleManager().getSystemBundle());
+            if (serviceName != xserviceName) {
+                serviceState = (ServiceState) controller.getValue();
+            } else {
                 final ServiceState.ValueProvider valueProvider = new ServiceState.ValueProvider() {
                     @Override
-                    public Object getValue()
-                    {
+                    public Object getValue() {
                         ModuleClassLoader classLoader = bundleState.getCurrentRevision().getModuleClassLoader();
                         ClassLoader ctxLoader = SecurityActions.getContextLoader();
                         try {
@@ -299,10 +298,13 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
                         }
                     }
                 };
-                value = new ServiceState(owner, serviceId, new ServiceName[] { serviceName }, new String[] { clazz }, valueProvider, null);
+                final long serviceId = getNextServiceId();
+                final Object value = valueProvider.getValue();
+                final Bundle bundle = packageAdmin.getBundle(value.getClass());
+                final AbstractBundle owner = (bundle != null ? AbstractBundle.assertBundleState(bundle) : getBundleManager().getSystemBundle());
+                serviceState = new ServiceState(owner, serviceId, new ServiceName[] { serviceName }, new String[] { clazz }, valueProvider, null);
             }
 
-            ServiceState serviceState = (ServiceState) value;
             if (filter.match(serviceState) == false)
                 continue;
 
