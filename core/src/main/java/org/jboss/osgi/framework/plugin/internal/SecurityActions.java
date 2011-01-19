@@ -39,7 +39,7 @@ final class SecurityActions {
     /**
      * Get the thread context class loader
      */
-    public static ClassLoader getContextLoader() {
+    public static ClassLoader getContextClassLoader() {
         return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
             @Override
             public ClassLoader run() {
@@ -52,7 +52,7 @@ final class SecurityActions {
     /**
      * Set the thread context class loader
      */
-    public static Void setContextLoader(final ClassLoader classLoader) {
+    public static Void setContextClassLoader(final ClassLoader classLoader) {
         return AccessController.doPrivileged(new PrivilegedAction<Void>() {
             @Override
             public Void run() {

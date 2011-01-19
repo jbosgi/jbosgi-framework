@@ -289,12 +289,12 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
                     @Override
                     public Object getValue() {
                         ModuleClassLoader classLoader = bundleState.getCurrentRevision().getModuleClassLoader();
-                        ClassLoader ctxLoader = SecurityActions.getContextLoader();
+                        ClassLoader ctxLoader = SecurityActions.getContextClassLoader();
                         try {
-                            SecurityActions.setContextLoader(classLoader);
+                            SecurityActions.setContextClassLoader(classLoader);
                             return controller.getValue();
                         } finally {
-                            SecurityActions.setContextLoader(ctxLoader);
+                            SecurityActions.setContextClassLoader(ctxLoader);
                         }
                     }
                 };
