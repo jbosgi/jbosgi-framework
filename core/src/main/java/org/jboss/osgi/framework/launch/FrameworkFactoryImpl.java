@@ -42,9 +42,9 @@ public class FrameworkFactoryImpl implements FrameworkFactory {
         AccessController.doPrivileged(new PrivilegedAction<Void>() {
 
             public Void run() {
-                String cname = System.getProperty("java.util.logging.manager");
+                String cname = SecurityActions.getSystemProperty("java.util.logging.manager");
                 if (cname == null)
-                    System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+                    SecurityActions.setSystemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
                 return null;
             }
         });

@@ -21,6 +21,7 @@
  */
 package org.jboss.osgi.framework.bundle;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -171,6 +172,10 @@ public final class HostBundle extends AbstractUserBundle {
 
     @Override
     void startInternal(int options) throws BundleException {
+        
+        // Assert the required start conditions
+        assertStartConditions();
+        
         // If the Framework's current start level is less than this bundle's start level
         if (hasStartLevelValidForStart() == false) {
             // If the START_TRANSIENT option is set, then a BundleException is thrown
@@ -214,6 +219,26 @@ public final class HostBundle extends AbstractUserBundle {
             }
         } finally {
             activationSemaphore.release();
+        }
+    }
+
+    private void assertStartConditions() throws BundleException {
+        
+        // The service platform may run this bundle if any of the execution environments named in the 
+        // Bundle-RequiredExecutionEnvironment header matches one of the execution environments it implements. 
+        List<String> requiredEnvs = getOSGiMetaData().getRequiredExecutionEnvironment();
+        if (requiredEnvs != null) {
+            boolean foundSupportedEnv = false;
+            String frameworkEnvProp = (String) getBundleManager().getProperty(Constants.FRAMEWORK_EXECUTIONENVIRONMENT);
+            List<String> availableEnvs = Arrays.asList(frameworkEnvProp.split("[, ]"));
+            for (String aux : requiredEnvs) {
+                if (availableEnvs.contains(aux)) {
+                    foundSupportedEnv = true;
+                    break;
+                }
+            }
+            if (foundSupportedEnv == false)
+                throw new BundleException("Unsupported execution environment " + requiredEnvs + " we have " + availableEnvs);
         }
     }
 

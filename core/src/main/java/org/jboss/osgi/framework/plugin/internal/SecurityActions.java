@@ -25,8 +25,9 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 /**
- * Privileged actions used by this package.
- *
+ * Privileged actions used by this package. 
+ * No methods in this class are to be made public under any circumstances!
+ * 
  * @author Thomas.Diesler@jboss.com
  * @since 29-Oct-2010
  */
@@ -39,7 +40,7 @@ final class SecurityActions {
     /**
      * Get the thread context class loader
      */
-    public static ClassLoader getContextClassLoader() {
+    static ClassLoader getContextClassLoader() {
         return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
             @Override
             public ClassLoader run() {
@@ -52,7 +53,7 @@ final class SecurityActions {
     /**
      * Set the thread context class loader
      */
-    public static Void setContextClassLoader(final ClassLoader classLoader) {
+    static Void setContextClassLoader(final ClassLoader classLoader) {
         return AccessController.doPrivileged(new PrivilegedAction<Void>() {
             @Override
             public Void run() {
@@ -61,5 +62,30 @@ final class SecurityActions {
                 return null;
             }
         });
+    }
+
+    static String getSystemProperty(final String key) {
+        if (System.getSecurityManager() == null) {
+            return System.getProperty(key);
+        } else {
+            return AccessController.doPrivileged(new PrivilegedAction<String>() {
+                public String run() {
+                    return System.getProperty(key);
+                }
+            });
+        }
+    }
+
+    static void setSystemProperty(final String key, final String value) {
+        if (System.getSecurityManager() == null) {
+            System.setProperty(key, value);
+        } else {
+            AccessController.doPrivileged(new PrivilegedAction<Void>() {
+                public Void run() {
+                    System.setProperty(key, value);
+                    return null;
+                }
+            });
+        }
     }
 }
