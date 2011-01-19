@@ -46,6 +46,7 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceEvent;
@@ -233,6 +234,61 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
             Dictionary headers = bundle.getHeaders();
             assertEquals(1, headers.size());
             assertEquals("1.0", headers.get("manifest-version"));
+        } finally {
+            bundle.uninstall();
+            assertBundleState(Bundle.UNINSTALLED, bundle.getState());
+        }
+    }
+
+    @Test
+    public void testExecutionEnvironment() throws Exception {
+        
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "valid-execution-env.jar");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addRequireExecutionEnvironment("JavaSE-1.6");
+                return builder.openStream();
+            }
+        });
+        
+        Bundle bundle = installBundle(archive);
+        try {
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+            bundle.start();
+            assertBundleState(Bundle.ACTIVE, bundle.getState());
+        } finally {
+            bundle.uninstall();
+            assertBundleState(Bundle.UNINSTALLED, bundle.getState());
+        }
+    }
+
+    @Test
+    public void testInvalidExecutionEnvironment() throws Exception {
+        
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "invalid-execution-env.jar");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addRequireExecutionEnvironment("UU/VV", "XX/YY");
+                return builder.openStream();
+            }
+        });
+        
+        Bundle bundle = installBundle(archive);
+        try {
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+            try {
+                bundle.start();
+                fail("BundleException expected");
+            } catch (BundleException ex) {
+                // expected
+            }
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
         } finally {
             bundle.uninstall();
             assertBundleState(Bundle.UNINSTALLED, bundle.getState());

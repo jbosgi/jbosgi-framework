@@ -102,7 +102,7 @@ public class FrameworkState extends SystemBundle implements Framework {
                 OSGi_FRAMEWORK_OS_VERSION = SysPropertyActions.getProperty("os.version", null);
                 OSGi_FRAMEWORK_PROCESSOR = SysPropertyActions.getProperty("os.arch", null);
 
-                System.setProperty("org.osgi.vendor.framework", "org.jboss.osgi.framework");
+                SecurityActions.setSystemProperty("org.osgi.vendor.framework", "org.jboss.osgi.framework");
                 return null;
             }
         });
