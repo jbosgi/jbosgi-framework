@@ -37,6 +37,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.ModuleClassLoader;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.framework.bundle.AbstractUserBundle;
@@ -47,6 +48,7 @@ import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.HostRevision;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.FrameworkEventsPlugin;
+import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.framework.plugin.PackageAdminPlugin;
 import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.framework.plugin.StartLevelPlugin;
@@ -71,7 +73,7 @@ import org.osgi.service.startlevel.StartLevel;
 
 /**
  * A plugin manages the Framework's system packages.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2010
@@ -479,14 +481,20 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
         if (clazz == null)
             throw new IllegalArgumentException("Null clazz");
 
+        Bundle result = null;
         ClassLoader loader = clazz.getClassLoader();
         if (loader instanceof BundleReference) {
             BundleReference bundleRef = (BundleReference) loader;
-            return bundleRef.getBundle();
+            result = bundleRef.getBundle();
+        } else if (loader instanceof ModuleClassLoader) {
+            ModuleClassLoader moduleCL = (ModuleClassLoader) loader;
+            ModuleManagerPlugin moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
+            AbstractBundle bundleState = moduleManager.getBundleState(moduleCL.getModule().getIdentifier());
+            result = bundleState != null ? bundleState.getBundleWrapper() : null;
         }
-
-        log.debugf("Cannot obtain bundle for: %s", clazz.getName());
-        return null;
+        if (result == null)
+            log.debugf("Cannot obtain bundle for: %s", clazz.getName());
+        return result;
     }
 
     @Override

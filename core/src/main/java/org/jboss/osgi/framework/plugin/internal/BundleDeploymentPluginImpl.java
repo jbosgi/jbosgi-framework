@@ -51,7 +51,7 @@ import org.osgi.framework.Version;
 
 /**
  * A plugin the handles Bundle deployments.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 12-Jul-2010
  */
@@ -86,23 +86,29 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
 
     @Override
     public Deployment createDeployment(ModuleIdentifier identifier) throws BundleException {
-        return createDeploymentInternal(null, identifier);
+        Module module;
+        try {
+            ModuleLoader moduleLoader = getBundleManager().getSystemModuleLoader();
+            module = moduleLoader.loadModule(identifier);
+        } catch (ModuleLoadException ex) {
+            throw new BundleException("Cannot load module: " + identifier, ex);
+        }
+        return createDeploymentInternal(module);
     }
 
     @Override
-    public Deployment createDeployment(String location, ModuleIdentifier identifier) throws BundleException {
-        return createDeploymentInternal(location, identifier);
+    public Deployment createDeployment(final Module module) throws BundleException {
+        return createDeploymentInternal(module);
     }
 
-    private Deployment createDeploymentInternal(String location, ModuleIdentifier identifier) throws BundleException {
-        if (identifier == null)
-            throw new IllegalArgumentException("Null identifier");
+    private Deployment createDeploymentInternal(final Module module) throws BundleException {
+        if (module == null)
+            throw new IllegalArgumentException("Null module");
 
-        if (location == null) {
-            location = "module:" + identifier.getName();
-            if ("main".equals(identifier.getSlot()) == false)
-                location += ":" + identifier.getSlot();
-        }
+        ModuleIdentifier identifier = module.getIdentifier();
+        String location = "module:" + identifier.getName();
+        if ("main".equals(identifier.getSlot()) == false)
+            location += ":" + identifier.getSlot();
 
         BundleStoragePlugin storagePlugin = getPlugin(BundleStoragePlugin.class);
 
@@ -125,15 +131,6 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
             } catch (Exception ex) {
                 log.debugf("Cannot process '%s' as OSGi deployment: %s", location, ex.toString());
             }
-        }
-
-        // Check if the module can be loaded
-        Module module;
-        try {
-            ModuleLoader moduleLoader = getBundleManager().getSystemModuleLoader();
-            module = moduleLoader.loadModule(identifier);
-        } catch (ModuleLoadException ex) {
-            throw new BundleException("Cannot load module: " + identifier, ex);
         }
 
         // Get the symbolic name and version
@@ -223,7 +220,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
 
     /**
      * Get virtual file for the singe jar that corresponds to the given identifier
-     * 
+     *
      * @return The file or null
      */
     private File getModuleRepositoryEntry(ModuleIdentifier identifier) {

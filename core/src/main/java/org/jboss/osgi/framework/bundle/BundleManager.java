@@ -78,7 +78,7 @@ import org.osgi.framework.FrameworkEvent;
 
 /**
  * The BundleManager is the central managing entity for OSGi bundles.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
@@ -253,9 +253,9 @@ public class BundleManager {
 
     /**
      * Get a bundle by id
-     * 
+     *
      * Note, this will get the bundle regadless of its state. i.e. The returned bundle may have been UNINSTALLED
-     * 
+     *
      * @param bundleId The identifier of the bundle
      * @return The bundle or null if there is no bundle with that id
      */
@@ -268,9 +268,9 @@ public class BundleManager {
 
     /**
      * Get a bundle by location
-     * 
+     *
      * Note, this will get the bundle regadless of its state. i.e. The returned bundle may have been UNINSTALLED
-     * 
+     *
      * @param location the location of the bundle
      * @return the bundle or null if there is no bundle with that location
      */
@@ -291,9 +291,9 @@ public class BundleManager {
 
     /**
      * Get a bundle by symbolic name and version
-     * 
+     *
      * Note, this will get the bundle regadless of its state. i.e. The returned bundle may have been UNINSTALLED
-     * 
+     *
      * @param symbolicName The bundle symbolic name
      * @param versionRange The optional bundle version
      * @return The bundle or null if there is no bundle with that name and version
@@ -326,7 +326,7 @@ public class BundleManager {
     /**
      * Get the list of bundles that are in one of the given states. If the states pattern is null, it returns all registered
      * bundles.
-     * 
+     *
      * @param states The binary or combination of states or null
      */
     public List<AbstractBundle> getBundles(Integer states) {
@@ -347,7 +347,7 @@ public class BundleManager {
 
     /**
      * Get a plugin that is registered with the bundle manager.
-     * 
+     *
      * @throws IllegalStateException if the requested plugin class is not registered
      */
     @SuppressWarnings("unchecked")
@@ -361,7 +361,7 @@ public class BundleManager {
 
     /**
      * Get an optional plugin that is registered with the bundle manager.
-     * 
+     *
      * @return The plugin instance or null if the requested plugin class is not registered
      */
     @SuppressWarnings("unchecked")
@@ -371,7 +371,7 @@ public class BundleManager {
 
     /**
      * Add a plugin to the bundle manager
-     * 
+     *
      * @return The previous plugin that was registered for the given key, or null.
      */
     @SuppressWarnings("unchecked")
@@ -380,28 +380,38 @@ public class BundleManager {
     }
 
     /**
-     * Install a bundle from a given location and {@link ModuleIdentifier}.
-     * 
-     * This method can be used to install plain modules or bundles to the {@link BundleManager}. A plain module is one that does
-     * not have a valid OSGi manifest.
-     * 
+     * Install a bundle from a given {@link ModuleIdentifier}.
+     *
+     * This method can be used to register plain modules or bundles to the {@link BundleManager}.
+     * A plain module is one that does not have a valid OSGi manifest.
+     *
      * When installing a plain module:
-     * 
-     * - module dependencies are not installed automatically - module may or may not have been loaded previously - module cannot
-     * be installed multiple times
-     */
-    public Bundle installBundle(String location, ModuleIdentifier identifier) throws BundleException {
-        BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
-        Deployment dep = plugin.createDeployment(location, identifier);
-        return installBundle(dep);
-    }
-
-    /**
-     * Install a bundle from a {@link ModuleIdentifier}.
+     *
+     * - module dependencies are not installed automatically
+     * - module may or may not have been loaded previously
+     * - module cannot be installed multiple times
      */
     public Bundle installBundle(ModuleIdentifier identifier) throws BundleException {
         BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
         Deployment dep = plugin.createDeployment(identifier);
+        return installBundle(dep);
+    }
+
+    /**
+     * Install a bundle from a given {@link Module}.
+     *
+     * This method can be used to register plain modules or bundles to the {@link BundleManager}.
+     * A plain module is one that does not have a valid OSGi manifest.
+     *
+     * When installing a plain module:
+     *
+     * - module dependencies are not installed automatically
+     * - module may or may not have been loaded previously
+     * - module cannot be installed multiple times
+     */
+    public Bundle installBundle(Module module) throws BundleException {
+        BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
+        Deployment dep = plugin.createDeployment(module);
         return installBundle(dep);
     }
 

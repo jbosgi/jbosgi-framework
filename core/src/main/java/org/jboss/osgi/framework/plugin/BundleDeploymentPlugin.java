@@ -21,6 +21,7 @@
  */
 package org.jboss.osgi.framework.plugin;
 
+import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.bundle.BundleStorageState;
@@ -29,7 +30,7 @@ import org.osgi.framework.BundleException;
 
 /**
  * A plugin that handles Bundle deployments.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 12-Jul-2010
  */
@@ -37,7 +38,7 @@ public interface BundleDeploymentPlugin extends Plugin {
 
     /**
      * Create a {@link Deployment} from the given bundle storage.
-     * 
+     *
      * @param storageState The bundle storage to be associated with the deployment
      * @throws BundleException If the given root file does not
      */
@@ -45,24 +46,22 @@ public interface BundleDeploymentPlugin extends Plugin {
 
     /**
      * Create a {@link Deployment} from the given module identifier.
-     * 
+     *
      * @param identifier The module identifier
-     * @throws BundleException If the given root file does not
+     * @throws BundleException If the module cannot be loaded
      */
     Deployment createDeployment(ModuleIdentifier identifier) throws BundleException;
 
     /**
-     * Create a {@link Deployment} from the given module identifier.
-     * 
-     * @param location The bundle location that is to be used
-     * @param identifier The module identifier
-     * @throws BundleException If the given root file does not
+     * Create a {@link Deployment} from the given module.
+     *
+     * @param module The module
      */
-    Deployment createDeployment(String location, ModuleIdentifier identifier) throws BundleException;
+    Deployment createDeployment(Module module) throws BundleException;
 
     /**
      * Creates {@link OSGiMetaData} from the deployment.
-     * 
+     *
      * @return The OSGiMetaData
      * @throws BundleException If OSGiMetaData could not be constructed from the deployment
      */
