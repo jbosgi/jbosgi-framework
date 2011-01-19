@@ -29,6 +29,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Dictionary;
@@ -37,6 +38,10 @@ import java.util.List;
 import java.util.Locale;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -204,6 +209,30 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
         try {
             assertBundleState(Bundle.INSTALLED, bundle.getState());
             assertEquals("/symbolic/location", bundle.getLocation());
+        } finally {
+            bundle.uninstall();
+            assertBundleState(Bundle.UNINSTALLED, bundle.getState());
+        }
+    }
+
+    @Test
+    @SuppressWarnings("rawtypes")
+    public void testInstallEmptyManifest() throws Exception {
+        
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "empty-manifest.jar");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                return builder.openStream();
+            }
+        });
+        
+        Bundle bundle = installBundle(archive);
+        try {
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+            Dictionary headers = bundle.getHeaders();
+            assertEquals(1, headers.size());
+            assertEquals("1.0", headers.get("manifest-version"));
         } finally {
             bundle.uninstall();
             assertBundleState(Bundle.UNINSTALLED, bundle.getState());

@@ -45,13 +45,14 @@ import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.vfs.AbstractVFS;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 
 /**
  * A plugin the handles Bundle deployments.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 12-Jul-2010
  */
@@ -178,6 +179,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
 
     @Override
     public OSGiMetaData createOSGiMetaData(Deployment dep) throws BundleException {
+        
         // #1 check if the Deployment already contains a OSGiMetaData
         OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
         if (metadata != null)
@@ -220,7 +222,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
 
     /**
      * Get virtual file for the singe jar that corresponds to the given identifier
-     *
+     * 
      * @return The file or null
      */
     private File getModuleRepositoryEntry(ModuleIdentifier identifier) {
@@ -258,6 +260,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
     }
 
     private Deployment createDeployment(String location, VirtualFile rootFile) throws BundleException {
+
         try {
             BundleInfo info = BundleInfo.createBundleInfo(rootFile, location);
             Deployment dep = DeploymentFactory.createDeployment(info);
@@ -277,6 +280,23 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
             String symbolicName = metadata.getBundleSymbolicName();
             Version version = metadata.getBundleVersion();
             Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, version);
+            dep.addAttachment(OSGiMetaData.class, metadata);
+            return dep;
+        }
+
+        
+        Manifest manifest = null;
+        try {
+            manifest = VFSUtils.getManifest(rootFile);
+        } catch (IOException ex) {
+            // ignore no manifest
+        }
+        
+        // Generate symbolic name and version for empty manifest 
+        if (manifest != null && manifest.getMainAttributes().keySet().size() < 2) {
+            String symbolicName = BundleInfo.ANONYMOUS_BUNDLE_SYMBOLIC_NAME;
+            Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, Version.emptyVersion);
+            metadata = OSGiMetaDataBuilder.load(manifest);
             dep.addAttachment(OSGiMetaData.class, metadata);
             return dep;
         }
