@@ -107,13 +107,11 @@ public abstract class AbstractBundle implements Bundle {
     AbstractBundle(BundleManager bundleManager, String symbolicName, BundleStorageState storageState) {
         if (bundleManager == null)
             throw new IllegalArgumentException("Null bundleManager");
-        if (symbolicName == null)
-            throw new IllegalArgumentException("Null symbolicName");
         if (storageState == null)
             throw new IllegalArgumentException("Null storageState");
 
         // strip-off the directives
-        if (symbolicName.indexOf(';') > 0)
+        if (symbolicName != null && symbolicName.indexOf(';') > 0)
             symbolicName = symbolicName.substring(0, symbolicName.indexOf(';'));
 
         this.bundleManager = bundleManager;
