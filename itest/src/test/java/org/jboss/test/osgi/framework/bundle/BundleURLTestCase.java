@@ -65,17 +65,21 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetEntryPaths() throws Exception {
+        // [TODO] testGetEntryPaths
     }
 
     @Test
     public void testFindEntries() throws Exception {
+        // [TODO] testFindEntries
     }
 
     @Test
     public void testGetResource() throws Exception {
+        // [TODO] testGetResource
     }
 
     @Test
     public void testGetResources() throws Exception {
+        // [TODO] testGetResources
     }
 }
