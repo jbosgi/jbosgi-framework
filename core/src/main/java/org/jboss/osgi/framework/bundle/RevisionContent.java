@@ -60,8 +60,13 @@ public final class RevisionContent implements EntriesProvider {
 
         AbstractBundle bundleState = userRev.getBundleState();
         String symbolicName = bundleState.getSymbolicName();
-        symbolicName = symbolicName.replace(':', '.');
-        symbolicName = symbolicName.replace('-', '.');
+        if (symbolicName != null) {
+            symbolicName = symbolicName.replace(':', '.');
+            symbolicName = symbolicName.replace('-', '.');
+        }
+        else {
+            symbolicName = "anonymous";
+        }
         long bundleId = bundleState.getBundleId();
         int revisionId = userRev.getRevisionId();
         identity = symbolicName + "-" + bundleId + "-" + revisionId + "-" + contentId;

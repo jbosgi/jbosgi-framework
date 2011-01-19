@@ -219,7 +219,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
     @Test
     @SuppressWarnings("rawtypes")
     public void testInstallEmptyManifest() throws Exception {
-        
+
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "empty-manifest.jar");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
@@ -227,7 +227,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
                 return builder.openStream();
             }
         });
-        
+
         Bundle bundle = installBundle(archive);
         try {
             assertBundleState(Bundle.INSTALLED, bundle.getState());
@@ -242,7 +242,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testExecutionEnvironment() throws Exception {
-        
+
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "valid-execution-env.jar");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
@@ -253,7 +253,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
                 return builder.openStream();
             }
         });
-        
+
         Bundle bundle = installBundle(archive);
         try {
             assertBundleState(Bundle.INSTALLED, bundle.getState());
@@ -267,7 +267,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testInvalidExecutionEnvironment() throws Exception {
-        
+
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "invalid-execution-env.jar");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
@@ -278,7 +278,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
                 return builder.openStream();
             }
         });
-        
+
         Bundle bundle = installBundle(archive);
         try {
             assertBundleState(Bundle.INSTALLED, bundle.getState());
@@ -289,6 +289,30 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
                 // expected
             }
             assertBundleState(Bundle.INSTALLED, bundle.getState());
+        } finally {
+            bundle.uninstall();
+            assertBundleState(Bundle.UNINSTALLED, bundle.getState());
+        }
+    }
+
+    @Test
+    public void testNullSymbolicName() throws Exception {
+
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "null-symbolic-name.jar");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleName(archive.getName());
+                return builder.openStream();
+            }
+        });
+
+        Bundle bundle = installBundle(archive);
+        try {
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+            assertNull("Null symbolic name", bundle.getSymbolicName());
+            bundle.start();
+            assertBundleState(Bundle.ACTIVE, bundle.getState());
         } finally {
             bundle.uninstall();
             assertBundleState(Bundle.UNINSTALLED, bundle.getState());

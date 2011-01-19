@@ -188,7 +188,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
         // #2 check if the Deployment contains valid BundleInfo
         BundleInfo info = dep.getAttachment(BundleInfo.class);
         if (info != null)
-            metadata = toOSGiMetaData(dep, info);
+            metadata = toOSGiMetaData(info);
 
         // #3 we support deployments that contain XModule
         XModule resModule = dep.getAttachment(XModule.class);
@@ -201,7 +201,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
             String location = dep.getLocation();
             try {
                 info = BundleInfo.createBundleInfo(rootFile, location);
-                metadata = toOSGiMetaData(dep, info);
+                metadata = toOSGiMetaData(info);
             } catch (BundleException ex) {
                 // ignore
             }
@@ -264,7 +264,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
         try {
             BundleInfo info = BundleInfo.createBundleInfo(rootFile, location);
             Deployment dep = DeploymentFactory.createDeployment(info);
-            OSGiMetaData metadata = toOSGiMetaData(dep, info);
+            OSGiMetaData metadata = toOSGiMetaData(info);
             dep.addAttachment(BundleInfo.class, info);
             dep.addAttachment(OSGiMetaData.class, metadata);
             return dep;
@@ -294,8 +294,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
         
         // Generate symbolic name and version for empty manifest 
         if (manifest != null && manifest.getMainAttributes().keySet().size() < 2) {
-            String symbolicName = BundleInfo.ANONYMOUS_BUNDLE_SYMBOLIC_NAME;
-            Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, Version.emptyVersion);
+            Deployment dep = DeploymentFactory.createDeployment(rootFile, location, null, Version.emptyVersion);
             metadata = OSGiMetaDataBuilder.load(manifest);
             dep.addAttachment(OSGiMetaData.class, metadata);
             return dep;
@@ -327,7 +326,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
         return null;
     }
 
-    private OSGiMetaData toOSGiMetaData(final Deployment dep, final BundleInfo info) {
+    private OSGiMetaData toOSGiMetaData(final BundleInfo info) {
         Manifest manifest = info.getManifest();
         return OSGiMetaDataBuilder.load(manifest);
     }
