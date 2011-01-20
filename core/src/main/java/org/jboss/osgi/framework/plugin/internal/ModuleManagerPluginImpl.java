@@ -298,6 +298,15 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
                 }
             }
 
+            // Get the set of imported paths
+            Set<String> importedPaths = new HashSet<String>();
+            for (ModuleDependencyHolder holder : specHolderMap.values()) {
+                Set<String> paths = holder.getImportPaths();
+                if (paths != null) {
+                    importedPaths.addAll(paths);
+                }
+            }
+            
             if (hostBundle.isActivationLazy()) {
                 Set<String> lazyPaths = new HashSet<String>();
                 PathFilter lazyFilter = getLazyPackagesFilter(hostBundle);
@@ -317,13 +326,6 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             else {
                 PathFilter importFilter = PathFilters.acceptAll();
                 PathFilter exportFilter = PathFilters.acceptAll();
-                Set<String> importedPaths = new HashSet<String>();
-                for (ModuleDependencyHolder holder : specHolderMap.values()) {
-                    Set<String> paths = holder.getImportPaths();
-                    if (paths != null) {
-                        importedPaths.addAll(paths);
-                    }
-                }
                 if (importedPaths.isEmpty() == false) {
                     importFilter = PathFilters.not(PathFilters.in(importedPaths));
                 }
@@ -334,7 +336,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             addNativeResourceLoader(resModule, specBuilder);
 
             specBuilder.setModuleClassLoaderFactory(new HostBundleModuleClassLoader.Factory(hostBundle));
-            specBuilder.setFallbackLoader(new HostBundleFallbackLoader(hostBundle, identifier));
+            specBuilder.setFallbackLoader(new HostBundleFallbackLoader(hostBundle, identifier, importedPaths));
 
             // Build the ModuleSpec
             moduleSpec = specBuilder.create();

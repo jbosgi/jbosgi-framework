@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
@@ -59,19 +60,24 @@ public class HostBundleFallbackLoader implements LocalLoader {
     private final ModuleManagerPlugin moduleManager;
     private final BundleManager bundleManager;
     private final ModuleIdentifier identifier;
+    private final Set<String> importedPaths;
 
-    public HostBundleFallbackLoader(HostBundle hostBundle, ModuleIdentifier identifier) {
+    public HostBundleFallbackLoader(HostBundle hostBundle, ModuleIdentifier identifier, Set<String> importedPaths) {
         if (hostBundle == null)
             throw new IllegalArgumentException("Null hostBundle");
         if (identifier == null)
             throw new IllegalArgumentException("Null identifier");
+        if (importedPaths == null)
+            throw new IllegalArgumentException("Null importedPaths");
         this.identifier = identifier;
+        this.importedPaths = importedPaths;
         bundleManager = hostBundle.getBundleManager();
         moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
     }
 
     @Override
     public Class<?> loadClassLocal(String className, boolean resolve) {
+        
         String matchingPattern = findMatchingDynamicImportPattern(className);
         if (matchingPattern == null)
             return null;
@@ -92,12 +98,13 @@ public class HostBundleFallbackLoader implements LocalLoader {
 
     @Override
     public List<Resource> loadResourceLocal(String pathName) {
+        
         String matchingPattern = findMatchingDynamicImportPattern(pathName);
         if (matchingPattern == null)
             return Collections.emptyList();
 
         Module module = findModuleDynamically(pathName);
-        if (module == null || identifier.equals(module.getIdentifier()))
+        if (module == null)
             return Collections.emptyList();
         
         URL resURL = module.getExportedResource(pathName);
@@ -117,6 +124,10 @@ public class HostBundleFallbackLoader implements LocalLoader {
 
     private Module findModuleDynamically(String pathName) {
 
+        String path = pathName.substring(0, pathName.lastIndexOf('/'));
+        if (importedPaths.contains(path))
+            return null;
+        
         if (dynamicLoadAttempts == null)
             dynamicLoadAttempts = new ThreadLocal<Map<String, AtomicInteger>>();
 
@@ -135,11 +146,11 @@ public class HostBundleFallbackLoader implements LocalLoader {
 
             if (recursiveDepth.incrementAndGet() == 1) {
                 Module module = findInResolvedModules(pathName);
-                if (module != null)
+                if (module != null && module.getIdentifier().equals(identifier) == false)
                     return module;
 
                 module = findInUnresolvedModules(pathName);
-                if (module != null)
+                if (module != null && module.getIdentifier().equals(identifier) == false)
                     return module;
             }
         } finally {
@@ -154,7 +165,7 @@ public class HostBundleFallbackLoader implements LocalLoader {
         return null;
     }
 
-    private String findMatchingDynamicImportPattern(String pathName) {
+    private String findMatchingDynamicImportPattern(String resName) {
         AbstractRevision bundleRev = moduleManager.getBundleRevision(identifier);
         XModule resModule = bundleRev.getResolverModule();
         List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
@@ -164,38 +175,41 @@ public class HostBundleFallbackLoader implements LocalLoader {
         String foundMatch = null;
 
         for (XPackageRequirement dynreq : dynamicRequirements) {
-            String pattern = dynreq.getName();
+            final String pattern = dynreq.getName();
             if (pattern.equals("*")) {
                 foundMatch = pattern;
                 break;
             }
 
+            String patternPath = pattern;
             if (pattern.endsWith(".*"))
-                pattern = pattern.substring(0, pattern.length() - 2);
+                patternPath = pattern.substring(0, pattern.length() - 2);
 
-            pattern = pattern.replace('.', '/');
-            String path = VFSUtils.getPathFromClassName(pathName);
-            if (path.startsWith(pattern)) {
+            patternPath = patternPath.replace('.', '/');
+            String pathName = resName.replace('.', '/');
+            if (pathName.startsWith(patternPath)) {
                 foundMatch = pattern;
                 break;
             }
         }
 
         if (foundMatch != null)
-            log.tracef("Found match for class [%s] with Dynamic-ImportPackage pattern: %s", pathName, foundMatch);
+            log.tracef("Found match for path [%s] with Dynamic-ImportPackage pattern: %s", resName, foundMatch);
         else
-            log.tracef("Class [%s] does not match Dynamic-ImportPackage patterns", pathName);
+            log.tracef("Class [%s] does not match Dynamic-ImportPackage patterns", resName);
 
         return foundMatch;
     }
 
     private Module findInResolvedModules(String pathName) {
         log.tracef("Attempt to find path dynamically in resolved modules ...");
-        for (ModuleIdentifier aux : moduleManager.getModuleIdentifiers()) {
+        for (ModuleIdentifier candidateId : moduleManager.getModuleIdentifiers()) {
 
-            Module candidate = moduleManager.getModule(aux);
+            Module candidate = moduleManager.getModule(candidateId);
+            if (candidate.getIdentifier().equals(identifier))
+                continue;
+            
             log.tracef("Attempt to find path dynamically [%s] in %s ...", pathName, candidate);
-
             URL resURL = candidate.getExportedResource(pathName);
             if (resURL != null) {
                 log.tracef("Found path [%s] in %s", pathName, candidate);
@@ -217,9 +231,12 @@ public class HostBundleFallbackLoader implements LocalLoader {
                 continue;
 
             // Create and load the module. This should not fail for resolved bundles.
-            ModuleIdentifier identifier = bundle.getModuleIdentifier();
-            Module candidate = moduleManager.getModule(identifier);
+            ModuleIdentifier candidateId = bundle.getModuleIdentifier();
+            Module candidate = moduleManager.getModule(candidateId);
+            if (candidate.getIdentifier().equals(identifier))
+                continue;
 
+            log.tracef("Attempt to find path dynamically [%s] in %s ...", pathName, candidate);
             URL resURL = candidate.getExportedResource(pathName);
             if (resURL != null) {
                 log.tracef("Found path [%s] in %s", pathName, candidate);
