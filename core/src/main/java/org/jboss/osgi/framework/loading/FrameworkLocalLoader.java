@@ -21,7 +21,6 @@
  */
 package org.jboss.osgi.framework.loading;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import org.jboss.modules.LocalLoader;
@@ -42,8 +41,6 @@ public class FrameworkLocalLoader extends SystemLocalLoader {
 
     private static Set<String> getExportedPaths(BundleManager bundleManager) {
         SystemPackagesPlugin plugin = bundleManager.getPlugin(SystemPackagesPlugin.class);
-        HashSet<String> paths = new HashSet<String>(plugin.getExportedPaths());
-        paths.add("META-INF/services");
-        return paths;
+        return plugin.getExportedPaths();
     }
 }

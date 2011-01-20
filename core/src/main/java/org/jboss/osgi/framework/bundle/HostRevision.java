@@ -116,7 +116,7 @@ public class HostRevision extends AbstractUserRevision {
         getBundleState().assertNotUninstalled();
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-        if (getBundleState().ensureResolved(true) == true)
+        if (getBundleState().ensureResolved(false))
             return getModuleClassLoader().getResource(path);
 
         // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource

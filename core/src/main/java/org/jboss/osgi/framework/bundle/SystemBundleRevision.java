@@ -26,7 +26,9 @@ import java.net.URL;
 import java.util.Enumeration;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.osgi.framework.BundleException;
@@ -43,8 +45,11 @@ public class SystemBundleRevision extends AbstractRevision {
 
     static final Logger log = Logger.getLogger(SystemBundleRevision.class);
 
+    private final ModuleManagerPlugin moduleManager;
+
     SystemBundleRevision(SystemBundle bundleState, OSGiMetaData metadata) throws BundleException {
         super(bundleState, metadata, null, 0);
+        moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
     }
 
     @Override
@@ -85,25 +90,33 @@ public class SystemBundleRevision extends AbstractRevision {
     }
 
     @Override
-    Class<?> loadClass(String name) throws ClassNotFoundException {
-        ClassLoader classLoader = getClass().getClassLoader();
-        return classLoader.loadClass(name);
+    Class<?> loadClass(String className) throws ClassNotFoundException {
+        ClassLoader classLoader = getFrameworkClassLoader();
+        return classLoader.loadClass(className);
     }
 
     @Override
     URL getResource(String name) {
-        ClassLoader classLoader = getClass().getClassLoader();
+        ClassLoader classLoader = getFrameworkClassLoader();
         return classLoader.getResource(name);
     }
 
     @Override
     Enumeration<URL> getResources(String name) throws IOException {
-        ClassLoader classLoader = getClass().getClassLoader();
+        ClassLoader classLoader = getFrameworkClassLoader();
         return classLoader.getResources(name);
     }
 
     @Override
     URL getLocalizationEntry(String path) {
         return null;
+    }
+
+    private ClassLoader getFrameworkClassLoader() {
+        Module frameworkModule = moduleManager.getFrameworkModule();
+        if (frameworkModule != null) {
+            return frameworkModule.getClassLoader();
+        }
+        return getClass().getClassLoader();
     }
 }
