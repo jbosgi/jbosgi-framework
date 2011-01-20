@@ -21,7 +21,11 @@
  */
 package org.jboss.test.osgi.framework.classloader;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
 import java.io.InputStream;
+import java.net.URL;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
@@ -45,6 +49,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testAllPackagesWildcard() throws Exception {
+        
         // Bundle-SymbolicName: dynamic-wildcard-a
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a
         // Import-Package: org.jboss.test.osgi.framework.classloader.support.b
@@ -103,6 +108,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testAllPackagesWildcardNotWired() throws Exception {
+        
         // Bundle-SymbolicName: dynamic-wildcard-a
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a
         // DynamicImport-Package: *
@@ -156,6 +162,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testAllPackagesWildcardNotThere() throws Exception {
+        
         // Bundle-SymbolicName: dynamic-wildcard-a
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a
         // DynamicImport-Package: *
@@ -188,6 +195,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testPackageWildcardWired() throws Exception {
+        
         // Bundle-SymbolicName: dynamic-wildcard-a
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a
         // Import-Package: org.jboss.test.osgi.framework.classloader.support.b
@@ -246,6 +254,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testPackageWildcardNotWired() throws Exception {
+        
         // Bundle-SymbolicName: dynamic-wildcard-a
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a
         // DynamicImport-Package: org.jboss.test.osgi.framework.classloader.*
@@ -299,6 +308,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testPackageWildcardNotThere() throws Exception {
+        
         // Bundle-SymbolicName: dynamic-wildcard-a
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a
         // DynamicImport-Package: org.jboss.test.osgi.framework.classloader.*
@@ -368,7 +378,50 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
         }
     }
 
+    @Test
+    public void testResourceAvailableOnInstall() throws Exception {
+        Bundle cmpd = installBundle("bundles/org.osgi.compendium.jar");
+        assertBundleState(Bundle.INSTALLED, cmpd.getState());
+        try {
+            Bundle bundleC = installBundle(getLogServiceArchive());
+            assertBundleState(Bundle.INSTALLED, bundleC.getState());
+            try {
+                String resPath = LogService.class.getName().replace('.', '/') + ".class";
+                URL resURL = bundleC.getResource(resPath);
+                assertNotNull("Resource found", resURL);
+                assertBundleState(Bundle.RESOLVED, bundleC.getState());
+            } finally {
+                bundleC.uninstall();
+            }
+        } finally {
+            cmpd.uninstall();
+        }
+    }
+
+    @Test
+    public void testResourceNotAvailableOnInstall() throws Exception {
+        Bundle bundleC = installBundle(getLogServiceArchive());
+        assertBundleState(Bundle.INSTALLED, bundleC.getState());
+        try {
+            String resPath = LogService.class.getName().replace('.', '/') + ".class";
+            URL resURL = bundleC.getResource(resPath);
+            assertNull("Resource not found", resURL);
+            assertBundleState(Bundle.RESOLVED, bundleC.getState());
+
+            Bundle cmpd = installBundle("bundles/org.osgi.compendium.jar");
+            try {
+                resURL = bundleC.getResource(resPath);
+                assertNotNull("Resource found", resURL);
+            } finally {
+                cmpd.uninstall();
+            }
+        } finally {
+            bundleC.uninstall();
+        }
+    }
+
     private JavaArchive getLogServiceArchive() {
+        
         // Bundle-SymbolicName: dynamic-log-service
         // DynamicImport-Package: org.osgi.service.log
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "dynamic-log-service");

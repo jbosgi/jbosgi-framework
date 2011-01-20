@@ -67,6 +67,13 @@ public interface ModuleManagerPlugin extends Plugin {
     ModuleIdentifier addModule(XModule resModule);
 
     /**
+     * Get the framework module
+     * 
+     * @return The module or null
+     */
+    Module getFrameworkModule();
+    
+    /**
      * Get the module with the given identifier
      * 
      * @return The module or null

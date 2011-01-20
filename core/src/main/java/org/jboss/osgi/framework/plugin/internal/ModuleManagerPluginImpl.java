@@ -167,6 +167,11 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
     }
 
     @Override
+    public Module getFrameworkModule() {
+        return frameworkModule;
+    }
+
+    @Override
     public AbstractRevision getBundleRevision(ModuleIdentifier identifier) {
         return moduleLoader.getBundleRevision(identifier);
     }
@@ -213,7 +218,6 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
         // The integration layer may provide the Framework module
         Module providedModule = (Module) getBundleManager().getProperty(Module.class.getName());
-        AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
         if (providedModule != null) {
             frameworkIdentifier = providedModule.getIdentifier();
             frameworkModule = providedModule;
@@ -222,9 +226,13 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             ModuleSpec.Builder specBuilder = ModuleSpec.build(DEFAULT_FRAMEWORK_IDENTIFIER);
 
             FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(getBundleManager());
-            specBuilder.addDependency(DependencySpec.createLocalDependencySpec(frameworkLoader, frameworkLoader.getExportedPaths(), true));
+            Set<String> exportedPaths = frameworkLoader.getExportedPaths();
+            PathFilter importFilter = PathFilters.in(exportedPaths);
+            PathFilter exportFilter = PathFilters.acceptAll();
+            specBuilder.addDependency(DependencySpec.createLocalDependencySpec(importFilter, exportFilter, frameworkLoader, exportedPaths));
             specBuilder.setModuleClassLoaderFactory(new SystemBundleModuleClassLoader.Factory(getBundleManager().getSystemBundle()));
 
+            AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
             ModuleSpec frameworkSpec = specBuilder.create();
             moduleLoader.addModule(bundleRev, frameworkSpec);
         }

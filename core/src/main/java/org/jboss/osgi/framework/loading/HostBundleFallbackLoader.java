@@ -21,6 +21,7 @@
  */
 package org.jboss.osgi.framework.loading;
 
+import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +45,7 @@ import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 
 /**
- * A fallback loader that takes care of dynamic class loads.
+ * A fallback loader that takes care of dynamic class/resource loads.
  * 
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
@@ -60,27 +61,61 @@ public class HostBundleFallbackLoader implements LocalLoader {
     private final ModuleIdentifier identifier;
 
     public HostBundleFallbackLoader(HostBundle hostBundle, ModuleIdentifier identifier) {
+        if (hostBundle == null)
+            throw new IllegalArgumentException("Null hostBundle");
+        if (identifier == null)
+            throw new IllegalArgumentException("Null identifier");
         this.identifier = identifier;
-
         bundleManager = hostBundle.getBundleManager();
         moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
     }
 
     @Override
     public Class<?> loadClassLocal(String className, boolean resolve) {
-        // Try to load the class dynamically
         String matchingPattern = findMatchingDynamicImportPattern(className);
-        if (matchingPattern != null) {
-            Class<?> result = loadClassDynamically(className);
-            if (result != null)
-                return result;
-        }
+        if (matchingPattern == null)
+            return null;
 
+        String pathName = className.replace('.', '/') + ".class";
+        Module module = findModuleDynamically(pathName);
+        if (module == null)
+            return null;
+
+        ModuleClassLoader moduleClassLoader = module.getClassLoader();
+        try {
+            return moduleClassLoader.loadClass(className);
+        } catch (ClassNotFoundException ex) {
+            log.tracef("Cannot load class [%s] from module: %s", className, module);
+            return null;
+        }
+    }
+
+    @Override
+    public List<Resource> loadResourceLocal(String pathName) {
+        String matchingPattern = findMatchingDynamicImportPattern(pathName);
+        if (matchingPattern == null)
+            return Collections.emptyList();
+
+        Module module = findModuleDynamically(pathName);
+        if (module == null || identifier.equals(module.getIdentifier()))
+            return Collections.emptyList();
+        
+        URL resURL = module.getExportedResource(pathName);
+        if (resURL == null)
+        {
+            log.tracef("Cannot load resource [%s] from module: %s", pathName, module);
+            return Collections.emptyList();
+        }
+        
+        return Collections.singletonList((Resource)new URLResource(resURL));
+    }
+
+    @Override
+    public Resource loadResourceLocal(String root, String name) {
         return null;
     }
 
-    private Class<?> loadClassDynamically(String className) {
-        Class<?> result;
+    private Module findModuleDynamically(String pathName) {
 
         if (dynamicLoadAttempts == null)
             dynamicLoadAttempts = new ThreadLocal<Map<String, AtomicInteger>>();
@@ -94,33 +129,32 @@ public class HostBundleFallbackLoader implements LocalLoader {
                 removeThreadLocalMapping = true;
             }
 
-            AtomicInteger recursiveDepth = mapping.get(className);
+            AtomicInteger recursiveDepth = mapping.get(pathName);
             if (recursiveDepth == null)
-                mapping.put(className, recursiveDepth = new AtomicInteger());
+                mapping.put(pathName, recursiveDepth = new AtomicInteger());
 
             if (recursiveDepth.incrementAndGet() == 1) {
-                result = findInResolvedModules(className);
-                if (result != null)
-                    return result;
+                Module module = findInResolvedModules(pathName);
+                if (module != null)
+                    return module;
 
-                result = findInUnresolvedModules(className);
-                if (result != null)
-                    return result;
+                module = findInUnresolvedModules(pathName);
+                if (module != null)
+                    return module;
             }
         } finally {
             if (removeThreadLocalMapping == true) {
                 dynamicLoadAttempts.remove();
             } else {
-                AtomicInteger recursiveDepth = mapping.get(className);
+                AtomicInteger recursiveDepth = mapping.get(pathName);
                 if (recursiveDepth.decrementAndGet() == 0)
-                    mapping.remove(className);
+                    mapping.remove(pathName);
             }
         }
-
         return null;
     }
 
-    private String findMatchingDynamicImportPattern(String className) {
+    private String findMatchingDynamicImportPattern(String pathName) {
         AbstractRevision bundleRev = moduleManager.getBundleRevision(identifier);
         XModule resModule = bundleRev.getResolverModule();
         List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
@@ -140,7 +174,7 @@ public class HostBundleFallbackLoader implements LocalLoader {
                 pattern = pattern.substring(0, pattern.length() - 2);
 
             pattern = pattern.replace('.', '/');
-            String path = VFSUtils.getPathFromClassName(className);
+            String path = VFSUtils.getPathFromClassName(pathName);
             if (path.startsWith(pattern)) {
                 foundMatch = pattern;
                 break;
@@ -148,42 +182,31 @@ public class HostBundleFallbackLoader implements LocalLoader {
         }
 
         if (foundMatch != null)
-            log.tracef("Found match for class [%s] with Dynamic-ImportPackage pattern: %s", className, foundMatch);
+            log.tracef("Found match for class [%s] with Dynamic-ImportPackage pattern: %s", pathName, foundMatch);
         else
-            log.tracef("Class [%s] does not match Dynamic-ImportPackage patterns", className);
+            log.tracef("Class [%s] does not match Dynamic-ImportPackage patterns", pathName);
 
         return foundMatch;
     }
 
-    private Class<?> findInResolvedModules(String className) {
-        log.tracef("Attempt to find class dynamically in resolved modules ...");
-
-        // Iterate over all registered modules
+    private Module findInResolvedModules(String pathName) {
+        log.tracef("Attempt to find path dynamically in resolved modules ...");
         for (ModuleIdentifier aux : moduleManager.getModuleIdentifiers()) {
-            // Try to load the class from the candidate
-            try {
-                Module candidate = moduleManager.getModule(aux);
 
-                log.tracef("Attempt to find class dynamically [%s] in %s ...", className, candidate);
+            Module candidate = moduleManager.getModule(aux);
+            log.tracef("Attempt to find path dynamically [%s] in %s ...", pathName, candidate);
 
-                ModuleClassLoader classLoader = candidate.getClassLoader();
-                Class<?> result = classLoader.loadClass(className);
-
-                log.tracef("Found class [%s] in %s", className, candidate);
-
-                return result;
-            } catch (ClassNotFoundException ex) {
-                // ignore
+            URL resURL = candidate.getExportedResource(pathName);
+            if (resURL != null) {
+                log.tracef("Found path [%s] in %s", pathName, candidate);
+                return candidate;
             }
         }
-
         return null;
     }
 
-    private Class<?> findInUnresolvedModules(String className) {
-        log.tracef("Attempt to find class dynamically in unresolved modules ...");
-
-        // Iteraterate over all bundles in state INSTALLED
+    private Module findInUnresolvedModules(String pathName) {
+        log.tracef("Attempt to find path dynamically in unresolved modules ...");
         for (Bundle aux : bundleManager.getBundles()) {
             if (aux.getState() != Bundle.INSTALLED)
                 continue;
@@ -197,31 +220,12 @@ public class HostBundleFallbackLoader implements LocalLoader {
             ModuleIdentifier identifier = bundle.getModuleIdentifier();
             Module candidate = moduleManager.getModule(identifier);
 
-            // Try to load the class from the now resolved module
-            try {
-                log.tracef("Attempt to find class dynamically [%s] in %s ...", className, candidate);
-
-                ModuleClassLoader classLoader = candidate.getClassLoader();
-                Class<?> result = classLoader.loadClass(className);
-
-                log.tracef("Found class [%s] in %s", className, candidate);
-
-                return result;
-            } catch (ClassNotFoundException ex) {
-                // ignore
+            URL resURL = candidate.getExportedResource(pathName);
+            if (resURL != null) {
+                log.tracef("Found path [%s] in %s", pathName, candidate);
+                return candidate;
             }
         }
-
-        return null;
-    }
-
-    @Override
-    public List<Resource> loadResourceLocal(String name) {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public Resource loadResourceLocal(String root, String name) {
         return null;
     }
 }
