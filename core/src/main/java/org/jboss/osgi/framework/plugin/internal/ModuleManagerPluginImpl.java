@@ -235,6 +235,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
      * Create a {@link ModuleSpec} from the given resolver module definition
      */
     private ModuleIdentifier createHostModule(final XModule resModule, List<RevisionContent> contentRoots) {
+
         ModuleSpec moduleSpec = resModule.getAttachment(ModuleSpec.class);
         if (moduleSpec == null) {
             ModuleIdentifier identifier = getModuleIdentifier(resModule);
@@ -242,14 +243,14 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             List<DependencySpec> moduleDependencies = new ArrayList<DependencySpec>();
 
             // Add the framework module as the first required dependency
-            PathFilter importFilter = PathFilters.acceptAll();
-            PathFilter exportFilter = PathFilters.in(getPlugin(SystemPackagesPlugin.class).getExportedPaths());
-            ModuleLoader frameworkLoader = getModule(frameworkIdentifier).getModuleLoader();
-            DependencySpec frameworkDep = DependencySpec.createModuleDependencySpec(importFilter, exportFilter, frameworkLoader, frameworkIdentifier, false);
+            PathFilter fwImports = PathFilters.acceptAll();
+            PathFilter fwExports = PathFilters.in(getPlugin(SystemPackagesPlugin.class).getExportedPaths());
+            ModuleLoader fwLoader = getModule(frameworkIdentifier).getModuleLoader();
+            DependencySpec frameworkDep = DependencySpec.createModuleDependencySpec(fwImports, fwExports, fwLoader, frameworkIdentifier, false);
             moduleDependencies.add(frameworkDep);
 
             // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
-            Map<XModule, DependencyHolder> specHolderMap = new LinkedHashMap<XModule, DependencyHolder>();
+            Map<XModule, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XModule, ModuleDependencyHolder>();
 
             HostBundle hostBundle = resModule.getAttachment(HostBundle.class);
 
@@ -260,15 +261,14 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             Set<String> allPaths = new HashSet<String>();
             List<FragmentRevision> fragRevs = hostBundle.getCurrentRevision().getAttachedFragments();
             for (FragmentRevision fragRev : fragRevs) {
-                // Process the fragment wires. This would take care of Package-Imports and Require-Bundle defined on the
-                // fragment
+                // This takes care of Package-Imports and Require-Bundle on the fragment
                 List<XWire> fragWires = fragRev.getResolverModule().getWires();
                 processModuleWires(fragWires, specHolderMap);
             }
 
             // Add the holder values to dependencies
-            for (DependencyHolder aux : specHolderMap.values())
-                moduleDependencies.add(aux.create());
+            for (ModuleDependencyHolder holder : specHolderMap.values())
+                moduleDependencies.add(holder.create());
 
             // Add the module dependencies to the builder
             for (DependencySpec dep : moduleDependencies)
@@ -302,11 +302,24 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
                 specBuilder.addDependency(DependencySpec.createLocalDependencySpec(localLoader, lazyPaths, true));
 
                 PathFilter eagerFilter = PathFilters.not(lazyFilter);
+                PathFilter exportFilter = PathFilters.acceptAll();
                 log.tracef("Module [%s] eager filter: %s", identifier, eagerFilter);
-                specBuilder.addDependency(DependencySpec.createLocalDependencySpec(eagerFilter, PathFilters.acceptAll()));
-
-            } else {
-                specBuilder.addDependency(DependencySpec.createLocalDependencySpec());
+                specBuilder.addDependency(DependencySpec.createLocalDependencySpec(eagerFilter, exportFilter));
+            } 
+            else {
+                PathFilter importFilter = PathFilters.acceptAll();
+                PathFilter exportFilter = PathFilters.acceptAll();
+                Set<String> importedPaths = new HashSet<String>();
+                for (ModuleDependencyHolder holder : specHolderMap.values()) {
+                    Set<String> paths = holder.getImportPaths();
+                    if (paths != null) {
+                        importedPaths.addAll(paths);
+                    }
+                }
+                if (importedPaths.isEmpty() == false) {
+                    importFilter = PathFilters.not(PathFilters.in(importedPaths));
+                }
+                specBuilder.addDependency(DependencySpec.createLocalDependencySpec(importFilter, exportFilter));
             }
 
             // Native - Hack
@@ -386,7 +399,18 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
         }
     }
 
-    private void processModuleWires(List<XWire> wires, Map<XModule, DependencyHolder> depBuilderMap) {
+    private void processModuleWires(List<XWire> wires, Map<XModule, ModuleDependencyHolder> depBuilderMap) {
+
+        // A bundle may both import packages (via Import-Package) and require one
+        // or more bundles (via Require-Bundle), but if a package is imported via
+        // Import-Package, it is not also visible via Require-Bundle: Import-Package
+        // takes priority over Require-Bundle, and packages which are exported by a
+        // required bundle and imported via Import-Package must not be treated as
+        // split packages.
+
+        // Collect bundle and package wires
+        List<XWire> bundleWires = new ArrayList<XWire>();
+        List<XWire> packageWires = new ArrayList<XWire>();
         for (XWire wire : wires) {
             XRequirement req = wire.getRequirement();
             XModule importer = wire.getImporter();
@@ -396,6 +420,13 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             if (exporter == importer)
                 continue;
 
+            // Skip dependencies on the host that the fragment is attached to
+            if (importer.isFragment()) {
+               XModule host = importer.getHostRequirement().getWiredCapability().getModule();
+               if (host == exporter)
+                   continue;
+            }
+            
             // Skip dependencies on the system module. This is always added as the first module dependency anyway
             // [TODO] Check if the bundle still fails to resolve when it fails to declare an import on 'org.osgi.framework'
             ModuleIdentifier exporterId = getModuleIdentifier(exporter);
@@ -404,26 +435,46 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
             // Dependency for Import-Package
             if (req instanceof XPackageRequirement) {
-                ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
-                holder.addImportPath(VFSUtils.getPathFromPackageName(req.getName()));
+                packageWires.add(wire);
                 continue;
             }
 
             // Dependency for Require-Bundle
             if (req instanceof XRequireBundleRequirement) {
-                ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
-                XRequireBundleRequirement bndreq = (XRequireBundleRequirement) req;
-                boolean reexport = Constants.VISIBILITY_REEXPORT.equals(bndreq.getVisibility());
-                if (reexport == true)
-                    holder.setExportFilter(PathFilters.acceptAll());
-
+                bundleWires.add(wire);
                 continue;
+            }
+        }
+
+        Set<String> importedPaths = new HashSet<String>();
+
+        for (XWire wire : packageWires) {
+            XModule exporter = wire.getExporter();
+            XPackageRequirement req = (XPackageRequirement) wire.getRequirement();
+            ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
+            String path = VFSUtils.getPathFromPackageName(req.getName());
+            holder.setOptional(req.isOptional());
+            holder.addImportPath(path);
+            importedPaths.add(path);
+        }
+
+        for (XWire wire : bundleWires) {
+            XModule exporter = wire.getExporter();
+            XRequireBundleRequirement req = (XRequireBundleRequirement) wire.getRequirement();
+            ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
+            holder.setOptional(req.isOptional());
+            if (importedPaths.isEmpty() == false) {
+                holder.setImportFilter(PathFilters.not(PathFilters.in(importedPaths)));
+            }
+            boolean reexport = Constants.VISIBILITY_REEXPORT.equals(req.getVisibility());
+            if (reexport == true) {
+                holder.setExportFilter(PathFilters.acceptAll());
             }
         }
     }
 
     // Get or create the dependency builder for the exporter
-    private ModuleDependencyHolder getDependencyHolder(Map<XModule, DependencyHolder> depBuilderMap, XModule exporter) {
+    private ModuleDependencyHolder getDependencyHolder(Map<XModule, ModuleDependencyHolder> depBuilderMap, XModule exporter) {
         ModuleIdentifier exporterId = getModuleIdentifier(exporter);
         ModuleDependencyHolder holder = (ModuleDependencyHolder) depBuilderMap.get(exporter);
         if (holder == null) {
@@ -449,28 +500,13 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
         return moduleLoader.removeModule(identifier);
     }
 
-    abstract class DependencyHolder {
+    private class ModuleDependencyHolder {
 
         private DependencySpec dependencySpec;
-
-        DependencySpec create() {
-            assertNotCreated();
-            return dependencySpec = createInternal();
-        }
-
-        abstract DependencySpec createInternal();
-
-        void assertNotCreated() {
-            if (dependencySpec != null)
-                throw new IllegalStateException("DependencySpec already created");
-        }
-    }
-
-    class ModuleDependencyHolder extends DependencyHolder {
-
         private ModuleIdentifier identifier;
         private Set<String> importPaths;
-        private PathFilter exportFilter = PathFilters.rejectAll();
+        private PathFilter importFilter;
+        private PathFilter exportFilter;
         private boolean optional;
 
         ModuleDependencyHolder(ModuleIdentifier identifier) {
@@ -485,6 +521,15 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             importPaths.add(path);
         }
 
+        Set<String> getImportPaths() {
+            return importPaths;
+        }
+
+        void setImportFilter(PathFilter importFilter) {
+            assertNotCreated();
+            this.importFilter = importFilter;
+        }
+
         void setExportFilter(PathFilter exportFilter) {
             assertNotCreated();
             this.exportFilter = exportFilter;
@@ -495,27 +540,19 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             this.optional = optional;
         }
 
-        DependencySpec createInternal() {
-            PathFilter importFilter = importPaths != null ? PathFilters.in(importPaths) : PathFilters.acceptAll();
+        DependencySpec create() {
+            if (exportFilter == null) {
+                exportFilter = PathFilters.rejectAll();
+            }
+            if (importFilter == null) {
+                importFilter = (importPaths != null ? PathFilters.in(importPaths) : PathFilters.acceptAll());
+            }
             return DependencySpec.createModuleDependencySpec(importFilter, exportFilter, moduleLoader, identifier, optional);
         }
-
-    }
-
-    class LocalDependencyHolder extends DependencyHolder {
-
-        private LocalLoader localLoader;
-        private Set<String> loaderPaths;
-
-        LocalDependencyHolder(LocalLoader localLoader, Set<String> loaderPaths) {
-            this.localLoader = localLoader;
-            this.loaderPaths = loaderPaths;
+        
+        private void assertNotCreated() {
+            if (dependencySpec != null)
+                throw new IllegalStateException("DependencySpec already created");
         }
-
-        DependencySpec createInternal() {
-            PathFilter importFilter = PathFilters.acceptAll();
-            PathFilter exportFilter = PathFilters.in(loaderPaths);
-            return DependencySpec.createLocalDependencySpec(importFilter, exportFilter, localLoader, loaderPaths);
-        }
-    }
+   }
 }
