@@ -41,17 +41,17 @@ import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
-import org.jboss.osgi.framework.bundle.ServiceReferenceWrapper;
 import org.jboss.osgi.framework.bundle.ServiceState;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.framework.util.NoFilter;
 import org.jboss.osgi.framework.util.RemoveOnlyCollection;
 import org.jboss.osgi.spi.util.ConstantsHelper;
-import org.osgi.framework.Bundle;
+import org.osgi.framework.AllServiceListener;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
+import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
@@ -79,16 +79,16 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
 
     /** The active state of this plugin */
     private boolean active;
-    /** The bundle listeners */
-    private final Map<Bundle, List<BundleListener>> bundleListeners = new ConcurrentHashMap<Bundle, List<BundleListener>>();
+    /** The bundleState listeners */
+    private final Map<AbstractBundle, List<BundleListener>> bundleListeners = new ConcurrentHashMap<AbstractBundle, List<BundleListener>>();
     /** The framework listeners */
-    private final Map<Bundle, List<FrameworkListener>> frameworkListeners = new ConcurrentHashMap<Bundle, List<FrameworkListener>>();
+    private final Map<AbstractBundle, List<FrameworkListener>> frameworkListeners = new ConcurrentHashMap<AbstractBundle, List<FrameworkListener>>();
     /** The service listeners */
-    private final Map<Bundle, List<ServiceListenerRegistration>> serviceListeners = new ConcurrentHashMap<Bundle, List<ServiceListenerRegistration>>();
+    private final Map<AbstractBundle, List<ServiceListenerRegistration>> serviceListeners = new ConcurrentHashMap<AbstractBundle, List<ServiceListenerRegistration>>();
 
     /** The executor service */
     private ExecutorService executorService;
-    /** The set of bundle events that are delivered to an (asynchronous) BundleListener */
+    /** The set of bundleState events that are delivered to an (asynchronous) BundleListener */
     private Set<Integer> asyncBundleEvents = new HashSet<Integer>();
     /** The set of events that are logged at INFO level */
     private Set<String> infoEvents = new HashSet<String>();
@@ -132,17 +132,15 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
     }
 
     @Override
-    public void addBundleListener(Bundle bundle, BundleListener listener) {
+    public void addBundleListener(final AbstractBundle bundleState, final BundleListener listener) {
         if (listener == null)
             throw new IllegalArgumentException("Null listener");
 
-        bundle = assertBundle(bundle);
-
         synchronized (bundleListeners) {
-            List<BundleListener> listeners = bundleListeners.get(bundle);
+            List<BundleListener> listeners = bundleListeners.get(bundleState);
             if (listeners == null) {
                 listeners = new CopyOnWriteArrayList<BundleListener>();
-                bundleListeners.put(bundle, listeners);
+                bundleListeners.put(bundleState, listeners);
             }
             if (listeners.contains(listener) == false)
                 listeners.add(listener);
@@ -150,43 +148,38 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
     }
 
     @Override
-    public void removeBundleListener(Bundle bundle, BundleListener listener) {
+    public void removeBundleListener(final AbstractBundle bundleState, final BundleListener listener) {
         if (listener == null)
             throw new IllegalArgumentException("Null listener");
 
-        bundle = assertBundle(bundle);
-
         synchronized (bundleListeners) {
-            List<BundleListener> listeners = bundleListeners.get(bundle);
+            List<BundleListener> listeners = bundleListeners.get(bundleState);
             if (listeners != null) {
                 if (listeners.size() > 1)
                     listeners.remove(listener);
                 else
-                    removeBundleListeners(bundle);
+                    removeBundleListeners(bundleState);
             }
         }
     }
 
     @Override
-    public void removeBundleListeners(Bundle bundle) {
+    public void removeBundleListeners(final AbstractBundle bundleState) {
         synchronized (bundleListeners) {
-            bundle = assertBundle(bundle);
-            bundleListeners.remove(bundle);
+            bundleListeners.remove(bundleState);
         }
     }
 
     @Override
-    public void addFrameworkListener(Bundle bundle, FrameworkListener listener) {
+    public void addFrameworkListener(final AbstractBundle bundleState, final FrameworkListener listener) {
         if (listener == null)
             throw new IllegalArgumentException("Null listener");
 
-        bundle = assertBundle(bundle);
-
         synchronized (frameworkListeners) {
-            List<FrameworkListener> listeners = frameworkListeners.get(bundle);
+            List<FrameworkListener> listeners = frameworkListeners.get(bundleState);
             if (listeners == null) {
                 listeners = new CopyOnWriteArrayList<FrameworkListener>();
-                frameworkListeners.put(bundle, listeners);
+                frameworkListeners.put(bundleState, listeners);
             }
             if (listeners.contains(listener) == false)
                 listeners.add(listener);
@@ -194,52 +187,47 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
     }
 
     @Override
-    public void removeFrameworkListener(Bundle bundle, FrameworkListener listener) {
+    public void removeFrameworkListener(final AbstractBundle bundleState, final FrameworkListener listener) {
         if (listener == null)
             throw new IllegalArgumentException("Null listener");
 
-        bundle = assertBundle(bundle);
-
         synchronized (frameworkListeners) {
-            List<FrameworkListener> listeners = frameworkListeners.get(bundle);
+            List<FrameworkListener> listeners = frameworkListeners.get(bundleState);
             if (listeners != null) {
                 if (listeners.size() > 1)
                     listeners.remove(listener);
                 else
-                    removeFrameworkListeners(bundle);
+                    removeFrameworkListeners(bundleState);
             }
         }
     }
 
     @Override
-    public void removeFrameworkListeners(Bundle bundle) {
+    public void removeFrameworkListeners(final AbstractBundle bundleState) {
         synchronized (frameworkListeners) {
-            bundle = assertBundle(bundle);
-            frameworkListeners.remove(bundle);
+            frameworkListeners.remove(bundleState);
         }
     }
 
     @Override
-    public void addServiceListener(Bundle bundle, ServiceListener listener, String filterstr) throws InvalidSyntaxException {
+    public void addServiceListener(final AbstractBundle bundleState, final ServiceListener listener, final String filterstr) throws InvalidSyntaxException {
         if (listener == null)
             throw new IllegalArgumentException("Null listener");
 
-        bundle = assertBundle(bundle);
-
         synchronized (serviceListeners) {
-            List<ServiceListenerRegistration> listeners = serviceListeners.get(bundle);
+            List<ServiceListenerRegistration> listeners = serviceListeners.get(bundleState);
             if (listeners == null) {
                 listeners = new CopyOnWriteArrayList<ServiceListenerRegistration>();
-                serviceListeners.put(bundle, listeners);
+                serviceListeners.put(bundleState, listeners);
             }
 
-            // If the context bundle's list of listeners already contains a listener l such that (l==listener),
+            // If the context bundleState's list of listeners already contains a listener l such that (l==listener),
             // then this method replaces that listener's filter (which may be null) with the specified one (which may be null).
-            removeServiceListener(bundle, listener);
+            removeServiceListener(bundleState, listener);
 
             // Create the new listener registration
             Filter filter = (filterstr != null ? FrameworkUtil.createFilter(filterstr) : NoFilter.INSTANCE);
-            ServiceListenerRegistration slreg = new ServiceListenerRegistration(bundle, listener, filter);
+            ServiceListenerRegistration slreg = new ServiceListenerRegistration(bundleState, listener, filter);
 
             // The {@link ListenerHook} added method is called to provide the hook implementation with information on newly
             // added service listeners.
@@ -258,10 +246,10 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
     }
 
     @Override
-    public Collection<ListenerInfo> getServiceListenerInfos(Bundle bundle) {
+    public Collection<ListenerInfo> getServiceListenerInfos(final AbstractBundle bundleState) {
         Collection<ListenerInfo> listeners = new ArrayList<ListenerInfo>();
-        for (Entry<Bundle, List<ServiceListenerRegistration>> entry : serviceListeners.entrySet()) {
-            if (bundle == null || assertBundle(bundle).equals(entry.getKey())) {
+        for (Entry<AbstractBundle, List<ServiceListenerRegistration>> entry : serviceListeners.entrySet()) {
+            if (bundleState == null || bundleState.equals(entry.getKey())) {
                 for (ServiceListenerRegistration aux : entry.getValue()) {
                     ListenerInfo info = aux.getListenerInfo();
                     listeners.add(info);
@@ -272,16 +260,14 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
     }
 
     @Override
-    public void removeServiceListener(Bundle bundle, ServiceListener listener) {
+    public void removeServiceListener(final AbstractBundle bundleState, final ServiceListener listener) {
         if (listener == null)
             throw new IllegalArgumentException("Null listener");
 
-        bundle = assertBundle(bundle);
-
         synchronized (serviceListeners) {
-            List<ServiceListenerRegistration> listeners = serviceListeners.get(bundle);
+            List<ServiceListenerRegistration> listeners = serviceListeners.get(bundleState);
             if (listeners != null) {
-                ServiceListenerRegistration slreg = new ServiceListenerRegistration(bundle, listener, NoFilter.INSTANCE);
+                ServiceListenerRegistration slreg = new ServiceListenerRegistration(bundleState, listener, NoFilter.INSTANCE);
                 int index = listeners.indexOf(slreg);
                 if (index >= 0) {
                     slreg = listeners.remove(index);
@@ -304,10 +290,10 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
     }
 
     @Override
-    public void removeServiceListeners(Bundle bundle) {
+    public void removeServiceListeners(final AbstractBundle bundleState) {
         synchronized (serviceListeners) {
-            Collection<ListenerInfo> listenerInfos = getServiceListenerInfos(bundle);
-            serviceListeners.remove(assertBundle(bundle));
+            Collection<ListenerInfo> listenerInfos = getServiceListenerInfos(bundleState);
+            serviceListeners.remove(bundleState);
 
             // The {@link ListenerHook} 'removed' method is called to provide the hook implementation with information on newly
             // removed service listeners.
@@ -341,22 +327,22 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
     }
 
     @Override
-    public void fireBundleEvent(final Bundle bundle, final int type) {
+    public void fireBundleEvent(final AbstractBundle bundleState, final int type) {
         // Get a snapshot of the current listeners
         final List<BundleListener> listeners = new ArrayList<BundleListener>();
         synchronized (bundleListeners) {
-            for (Entry<Bundle, List<BundleListener>> entry : bundleListeners.entrySet()) {
+            for (Entry<AbstractBundle, List<BundleListener>> entry : bundleListeners.entrySet()) {
                 for (BundleListener listener : entry.getValue()) {
                     listeners.add(listener);
                 }
             }
         }
 
-        // Expose the bundle wrapper not the state itself
-        final BundleEvent event = new BundleEventImpl(type, assertBundle(bundle));
+        // Expose the bundleState wrapper not the state itself
+        final BundleEvent event = new BundleEventImpl(type, bundleState);
         final String typeName = ConstantsHelper.bundleEvent(event.getType());
 
-        log.tracef("Bundle %s: %s", typeName, bundle);
+        log.tracef("AbstractBundle %s: %s", typeName, bundleState);
 
         // Are we active?
         if (getBundleManager().isFrameworkActive() == false)
@@ -372,14 +358,14 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
                 if (listener instanceof SynchronousBundleListener)
                     listener.bundleChanged(event);
             } catch (Throwable th) {
-                log.warnf(th, "Error while firing %s for bundle: %s", typeName, bundle);
+                log.warnf(th, "Error while firing %s for bundleState: %s", typeName, bundleState);
             }
         }
 
         Runnable runnable = new Runnable() {
 
             public void run() {
-                // BundleListeners are called with a BundleEvent object when a bundle has been
+                // BundleListeners are called with a BundleEvent object when a bundleState has been
                 // installed, resolved, started, stopped, updated, unresolved, or uninstalled
                 if (asyncBundleEvents.contains(type)) {
                     for (BundleListener listener : listeners) {
@@ -387,7 +373,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
                             if (listener instanceof SynchronousBundleListener == false)
                                 listener.bundleChanged(event);
                         } catch (Throwable th) {
-                            log.warnf(th, "Error while firing %s for bundle: ", typeName, bundle);
+                            log.warnf(th, "Error while firing %s for bundleState: ", typeName, bundleState);
                         }
                     }
                 }
@@ -399,11 +385,11 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
     }
 
     @Override
-    public void fireFrameworkEvent(final Bundle bundle, final int type, final Throwable th) {
+    public void fireFrameworkEvent(final AbstractBundle bundleState, final int type, final Throwable th) {
         // Get a snapshot of the current listeners
         final ArrayList<FrameworkListener> listeners = new ArrayList<FrameworkListener>();
         synchronized (frameworkListeners) {
-            for (Entry<Bundle, List<FrameworkListener>> entry : frameworkListeners.entrySet()) {
+            for (Entry<AbstractBundle, List<FrameworkListener>> entry : frameworkListeners.entrySet()) {
                 for (FrameworkListener listener : entry.getValue()) {
                     listeners.add(listener);
                 }
@@ -411,7 +397,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
         }
 
         // Expose the wrapper not the state itself
-        final FrameworkEvent event = new FrameworkEventImpl(type, assertBundle(bundle), th);
+        final FrameworkEvent event = new FrameworkEventImpl(type, bundleState, th);
         final String typeName = ConstantsHelper.frameworkEvent(event.getType());
 
         switch (event.getType()) {
@@ -447,7 +433,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
                         // event listener generates an unchecked exception - except when the callback
                         // happens while delivering a FrameworkEvent.ERROR
                         if (type != FrameworkEvent.ERROR) {
-                            fireFrameworkEvent(bundle, FrameworkEvent.ERROR, ex);
+                            fireFrameworkEvent(bundleState, FrameworkEvent.ERROR, ex);
                         }
                     } catch (Throwable th) {
                         log.warnf(th, "Error while firing %s for framework", typeName);
@@ -461,23 +447,23 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
     }
 
     @Override
-    public void fireServiceEvent(Bundle bundle, int type, final ServiceState serviceState) {
+    public void fireServiceEvent(final AbstractBundle bundleState, int type, final ServiceState serviceState) {
+
         // Get a snapshot of the current listeners
-        List<ServiceListenerRegistration> listeners = new ArrayList<ServiceListenerRegistration>();
+        List<ServiceListenerRegistration> listenerRegs = new ArrayList<ServiceListenerRegistration>();
         synchronized (serviceListeners) {
-            for (Entry<Bundle, List<ServiceListenerRegistration>> entry : serviceListeners.entrySet()) {
+            for (Entry<AbstractBundle, List<ServiceListenerRegistration>> entry : serviceListeners.entrySet()) {
                 for (ServiceListenerRegistration listener : entry.getValue()) {
                     BundleContext context = listener.getBundleContext();
                     if (context != null)
-                        listeners.add(listener);
+                        listenerRegs.add(listener);
                 }
             }
         }
 
         // Expose the wrapper not the state itself
-        ServiceEvent event = new ServiceEventImpl(type, new ServiceReferenceWrapper(serviceState));
+        ServiceEvent event = new ServiceEventImpl(type, serviceState);
         String typeName = ConstantsHelper.serviceEvent(event.getType());
-
         log.tracef("Service %s: %s", typeName, serviceState);
 
         // Do nothing if the Framework is not active
@@ -485,18 +471,34 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
             return;
 
         // Call the registered event hooks
-        listeners = processEventHooks(listeners, event);
+        listenerRegs = processEventHooks(listenerRegs, event);
 
         // Nobody is interested
-        if (listeners.isEmpty())
+        if (listenerRegs.isEmpty())
             return;
 
         // Call the listeners. All service events are synchronously delivered
-        for (ServiceListenerRegistration listener : listeners) {
+        for (ServiceListenerRegistration listenerReg : listenerRegs) {
+
+            // Service events must only be delivered to event listeners which can validly cast the event
+            if (listenerReg.isAllServiceListener() == false) {
+                boolean assignableToOwner = true; 
+                AbstractBundle owner = listenerReg.getBundleState();
+                String[] clazzes = (String[]) serviceState.getProperty(Constants.OBJECTCLASS);
+                for (String clazz : clazzes) {
+                    if (serviceState.isAssignableTo(owner, clazz) == false) {
+                        assignableToOwner = false;
+                        break;
+                    }
+                }
+                if (assignableToOwner == false)
+                    continue;
+            }
+
             try {
-                String filterstr = listener.filter.toString();
-                if (listener.filter.match(serviceState)) {
-                    listener.listener.serviceChanged(event);
+                String filterstr = listenerReg.filter.toString();
+                if (listenerReg.filter.match(serviceState)) {
+                    listenerReg.listener.serviceChanged(event);
                 }
 
                 // The MODIFIED_ENDMATCH event is synchronously delivered after the service properties have been modified.
@@ -504,9 +506,9 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
                 // the filter matched the service properties prior to the modification but the filter does
                 // not match the modified service properties.
                 else if (filterstr != null && ServiceEvent.MODIFIED == event.getType()) {
-                    if (listener.filter.match(serviceState.getPreviousProperties())) {
-                        event = new ServiceEventImpl(ServiceEvent.MODIFIED_ENDMATCH, new ServiceReferenceWrapper(serviceState));
-                        listener.listener.serviceChanged(event);
+                    if (listenerReg.filter.match(serviceState.getPreviousProperties())) {
+                        event = new ServiceEventImpl(ServiceEvent.MODIFIED_ENDMATCH, serviceState);
+                        listenerReg.listener.serviceChanged(event);
                     }
                 }
             } catch (Throwable th) {
@@ -568,17 +570,6 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
         return hooks;
     }
 
-    private static Bundle assertBundle(Bundle bundle) {
-        if (bundle == null)
-            throw new IllegalArgumentException("Null bundle");
-
-        // Expose the wrapper not the state itself
-        if (bundle instanceof AbstractBundle)
-            bundle = ((AbstractBundle) bundle).getBundleWrapper();
-
-        return bundle;
-    }
-
     private void fireEvent(Runnable runnable) {
         executorService.execute(runnable);
     }
@@ -588,7 +579,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
      */
     static class ServiceListenerRegistration {
 
-        private Bundle bundle;
+        private AbstractBundle bundleState;
         private ServiceListener listener;
         private Filter filter;
         private ListenerInfo info;
@@ -596,15 +587,15 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
         // Any access control context
         AccessControlContext accessControlContext;
 
-        ServiceListenerRegistration(Bundle bundle, ServiceListener listener, Filter filter) {
-            if (bundle == null)
-                throw new IllegalArgumentException("Null bundle");
+        ServiceListenerRegistration(final AbstractBundle bundleState, final ServiceListener listener, final Filter filter) {
+            if (bundleState == null)
+                throw new IllegalArgumentException("Null bundleState");
             if (listener == null)
                 throw new IllegalArgumentException("Null listener");
             if (filter == null)
                 throw new IllegalArgumentException("Null filter");
 
-            this.bundle = assertBundle(bundle);
+            this.bundleState = bundleState;
             this.listener = listener;
             this.filter = filter;
             this.info = new ListenerInfoImpl(this);
@@ -613,14 +604,22 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
                 accessControlContext = AccessController.getContext();
         }
 
-        public BundleContext getBundleContext() {
-            return bundle.getBundleContext();
+        AbstractBundle getBundleState() {
+            return bundleState;
         }
 
-        public ListenerInfo getListenerInfo() {
+        BundleContext getBundleContext() {
+            return bundleState.getBundleContext();
+        }
+
+        ListenerInfo getListenerInfo() {
             return info;
         }
 
+        boolean isAllServiceListener() {
+            return (listener instanceof AllServiceListener);
+        }
+        
         @Override
         public int hashCode() {
             return listener.hashCode();
@@ -639,7 +638,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
         @Override
         public String toString() {
             String className = listener.getClass().getName();
-            return "ServiceListener[" + bundle + "," + className + "," + filter + "]";
+            return "ServiceListener[" + bundleState + "," + className + "," + filter + "]";
         }
     }
 
@@ -650,8 +649,8 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
         private String filter;
         private boolean removed;
 
-        ListenerInfoImpl(ServiceListenerRegistration slreg) {
-            this.context = slreg.bundle.getBundleContext();
+        ListenerInfoImpl(final ServiceListenerRegistration slreg) {
+            this.context = slreg.bundleState.getBundleContext();
             this.listener = slreg.listener;
             this.filter = slreg.filter.toString();
         }
@@ -699,10 +698,8 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
 
         private static final long serialVersionUID = 6505331543651318189L;
 
-        public FrameworkEventImpl(int type, Bundle bundle, Throwable throwable) {
-            super(type, bundle, throwable);
-            if (bundle instanceof AbstractBundle)
-                throw new IllegalArgumentException("Event must expose impl details");
+        public FrameworkEventImpl(int type, AbstractBundle bundleState, Throwable throwable) {
+            super(type, bundleState.getBundleWrapper(), throwable);
         }
 
         @Override
@@ -715,10 +712,8 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
 
         private static final long serialVersionUID = -2705304702665185935L;
 
-        public BundleEventImpl(int type, Bundle bundle) {
-            super(type, bundle);
-            if (bundle instanceof AbstractBundle)
-                throw new IllegalArgumentException("Event must expose impl details");
+        public BundleEventImpl(int type, AbstractBundle bundleState) {
+            super(type, bundleState.getBundleWrapper());
         }
 
         @Override
@@ -731,10 +726,8 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
 
         private static final long serialVersionUID = 62018288275708239L;
 
-        public ServiceEventImpl(int type, ServiceReference sref) {
-            super(type, sref);
-            if (sref instanceof ServiceState)
-                throw new IllegalArgumentException("Event must expose impl details");
+        public ServiceEventImpl(int type, ServiceState serviceState) {
+            super(type, serviceState.getReference());
         }
 
         @Override

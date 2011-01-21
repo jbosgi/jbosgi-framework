@@ -82,6 +82,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
 
     @Override
     public synchronized void setStartLevel(final int level) {
+        final AbstractBundle bundleState = getBundleManager().getSystemBundle();
         if (level > getStartLevel()) {
             log.infof("About to increase start level from %s to %s", getStartLevel(), level);
             executor.execute(new Runnable() {
@@ -90,7 +91,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
                 public void run() {
                     log.infof("Increasing start level from %s to %s", getStartLevel(), level);
                     increaseStartLevel(level);
-                    eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(), FrameworkEvent.STARTLEVEL_CHANGED, null);
+                    eventsPlugin.fireFrameworkEvent(bundleState, FrameworkEvent.STARTLEVEL_CHANGED, null);
                 }
             });
         } else if (level < getStartLevel()) {
@@ -101,7 +102,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
                 public void run() {
                     log.infof("Decreasing start level from %s to %s", getStartLevel(), level);
                     decreaseStartLevel(level);
-                    eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemContext().getBundle(), FrameworkEvent.STARTLEVEL_CHANGED, null);
+                    eventsPlugin.fireFrameworkEvent(bundleState, FrameworkEvent.STARTLEVEL_CHANGED, null);
                 }
             });
         }

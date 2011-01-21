@@ -23,8 +23,8 @@ package org.jboss.osgi.framework.plugin;
 
 import java.util.Collection;
 
+import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.ServiceState;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.InvalidSyntaxException;
@@ -43,29 +43,29 @@ public interface FrameworkEventsPlugin extends Plugin {
 
     void setActive(boolean active);
 
-    void addBundleListener(Bundle bundle, BundleListener listener);
+    void addBundleListener(AbstractBundle bundle, BundleListener listener);
 
-    void removeBundleListener(Bundle bundle, BundleListener listener);
+    void removeBundleListener(AbstractBundle bundle, BundleListener listener);
 
-    void removeBundleListeners(Bundle bundle);
+    void removeBundleListeners(AbstractBundle bundle);
 
-    void addFrameworkListener(Bundle bundle, FrameworkListener listener);
+    void addFrameworkListener(AbstractBundle bundle, FrameworkListener listener);
 
-    void removeFrameworkListener(Bundle bundle, FrameworkListener listener);
+    void removeFrameworkListener(AbstractBundle bundle, FrameworkListener listener);
 
-    void removeFrameworkListeners(Bundle bundle);
+    void removeFrameworkListeners(AbstractBundle bundle);
 
-    void addServiceListener(Bundle bundle, ServiceListener listener, String filter) throws InvalidSyntaxException;
+    void addServiceListener(AbstractBundle bundle, ServiceListener listener, String filter) throws InvalidSyntaxException;
 
-    Collection<ListenerInfo> getServiceListenerInfos(Bundle bundle);
+    Collection<ListenerInfo> getServiceListenerInfos(AbstractBundle bundle);
 
-    void removeServiceListener(Bundle bundle, ServiceListener listener);
+    void removeServiceListener(AbstractBundle bundle, ServiceListener listener);
 
-    void removeServiceListeners(Bundle bundle);
+    void removeServiceListeners(AbstractBundle bundle);
 
-    void fireBundleEvent(Bundle bundle, int type);
+    void fireBundleEvent(AbstractBundle bundle, int type);
 
-    void fireFrameworkEvent(Bundle bundle, int type, Throwable throwable);
+    void fireFrameworkEvent(AbstractBundle bundle, int type, Throwable throwable);
 
-    void fireServiceEvent(Bundle bundle, int type, ServiceState service);
+    void fireServiceEvent(AbstractBundle bundle, int type, ServiceState service);
 }
