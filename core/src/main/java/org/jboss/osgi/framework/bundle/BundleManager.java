@@ -515,12 +515,12 @@ public class BundleManager {
     /**
      * Fire a framework error
      */
-    void fireError(Bundle bundle, String context, Throwable t) {
+    void fireError(AbstractBundle bundleState, String context, Throwable t) {
         FrameworkEventsPlugin plugin = getPlugin(FrameworkEventsPlugin.class);
         if (t instanceof BundleException)
-            plugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, t);
-        else if (bundle != null)
-            plugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, new BundleException("Error " + context + " bundle: " + bundle, t));
+            plugin.fireFrameworkEvent(bundleState, FrameworkEvent.ERROR, t);
+        else if (bundleState != null)
+            plugin.fireFrameworkEvent(bundleState, FrameworkEvent.ERROR, new BundleException("Error " + context + " bundle: " + bundleState, t));
         else
             plugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.ERROR, new BundleException("Error " + context, t));
     }
@@ -528,12 +528,12 @@ public class BundleManager {
     /**
      * Fire a framework warning
      */
-    void fireWarning(Bundle bundle, String context, Throwable t) {
+    void fireWarning(AbstractBundle bundleState, String context, Throwable t) {
         FrameworkEventsPlugin plugin = getPlugin(FrameworkEventsPlugin.class);
         if (t instanceof BundleException)
-            plugin.fireFrameworkEvent(bundle, FrameworkEvent.WARNING, t);
-        else if (bundle != null)
-            plugin.fireFrameworkEvent(bundle, FrameworkEvent.WARNING, new BundleException("Error " + context + " bundle: " + bundle, t));
+            plugin.fireFrameworkEvent(bundleState, FrameworkEvent.WARNING, t);
+        else if (bundleState != null)
+            plugin.fireFrameworkEvent(bundleState, FrameworkEvent.WARNING, new BundleException("Error " + context + " bundle: " + bundleState, t));
         else
             plugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.WARNING, new BundleException("Error " + context, t));
     }

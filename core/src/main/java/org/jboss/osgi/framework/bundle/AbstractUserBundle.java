@@ -178,7 +178,7 @@ public abstract class AbstractUserBundle extends AbstractBundle {
             throw be;
         }
 
-        getFrameworkEventsPlugin().fireBundleEvent(getBundleWrapper(), BundleEvent.UPDATED);
+        getFrameworkEventsPlugin().fireBundleEvent(this, BundleEvent.UPDATED);
         if (restart) {
             // If this bundle's state was originally ACTIVE or STARTING, the updated bundle is started as described in the
             // Bundle.start method.
@@ -187,7 +187,7 @@ public abstract class AbstractUserBundle extends AbstractBundle {
             try {
                 startInternal(Bundle.START_TRANSIENT);
             } catch (BundleException e) {
-                getFrameworkEventsPlugin().fireFrameworkEvent(getBundleWrapper(), FrameworkEvent.ERROR, e);
+                getFrameworkEventsPlugin().fireFrameworkEvent(this, FrameworkEvent.ERROR, e);
             }
         }
     }

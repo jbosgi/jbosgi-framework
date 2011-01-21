@@ -269,7 +269,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
             dep.addAttachment(OSGiMetaData.class, metadata);
             return dep;
         } catch (NumberFormatException nfe) {
-            throw new BundleException("Invalid OSGi version:", nfe);
+            throw new BundleException("Invalid number format: " + nfe.getMessage(), nfe);
         } catch (BundleException ex) {
             // No valid OSGi manifest. Fallback to jbosgi-xservice.properties
         }
