@@ -145,11 +145,6 @@ public class SystemBundle extends AbstractBundle {
     }
 
     @Override
-    public void removeFromResolver() {
-        getResolverPlugin().removeModule(getResolverModule());
-    }
-
-    @Override
     AbstractBundleContext createContextInternal() {
         return new SystemBundleContext(this);
     }

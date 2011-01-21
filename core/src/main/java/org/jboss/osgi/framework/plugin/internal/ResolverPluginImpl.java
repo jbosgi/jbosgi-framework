@@ -22,7 +22,7 @@
 package org.jboss.osgi.framework.plugin.internal;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -128,21 +128,25 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
     }
 
     @Override
-    public boolean resolveAll(Set<XModule> resModules) {
-        // Get the list of unresolved modules
-        Set<XModule> unresolved = new LinkedHashSet<XModule>();
-        if (resModules == null) {
-            for (AbstractBundle aux : getBundleManager().getBundles()) {
-                if (aux.getState() == Bundle.INSTALLED)
-                    unresolved.add(aux.getResolverModule());
-            }
-        } else {
-            for (XModule aux : resModules) {
-                if (!aux.isResolved())
-                    unresolved.add(aux);
+    public boolean resolveAll(Set<XModule> unresolved) {
+
+        if (unresolved == null) {
+            unresolved = new HashSet<XModule>();
+            
+            // Only bundles that are in state INSTALLED and are
+            // registered with the resolver qualify as resolvable
+            List<AbstractBundle> allBundles = getBundleManager().getBundles();
+            for (AbstractBundle bundleState : allBundles) {
+                if (bundleState.getState() == Bundle.INSTALLED) {
+                    XModule auxModule = bundleState.getResolverModule();
+                    XModuleIdentity moduleId = auxModule.getModuleId();
+                    if (getModuleById(moduleId) != null) {
+                        unresolved.add(auxModule);
+                    }
+                }
             }
         }
-
+        
         List<XModule> resolved = new ArrayList<XModule>();
         resolver.setCallbackHandler(new ResolverCallback(resolved));
 

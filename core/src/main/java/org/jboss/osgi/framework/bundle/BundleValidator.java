@@ -29,7 +29,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 19-Dec-2009
  */
-public interface BundleValidator {
+interface BundleValidator {
 
     /**
      * Validate the bundle

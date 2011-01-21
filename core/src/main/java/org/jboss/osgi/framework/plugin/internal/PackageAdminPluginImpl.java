@@ -28,11 +28,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -55,10 +55,10 @@ import org.jboss.osgi.framework.plugin.StartLevelPlugin;
 import org.jboss.osgi.resolver.XBundleCapability;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleIdentity;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XRequireBundleRequirement;
 import org.jboss.osgi.resolver.XRequirement;
-import org.jboss.osgi.resolver.XVersionRange;
 import org.jboss.osgi.resolver.XWire;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -73,7 +73,7 @@ import org.osgi.service.startlevel.StartLevel;
 
 /**
  * A plugin manages the Framework's system packages.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2010
@@ -337,18 +337,19 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
 
     @Override
     public boolean resolveBundles(Bundle[] bundles) {
-        // Get the list of unresolved bundles
-        Set<XModule> unresolved = new HashSet<XModule>();
-        if (bundles == null) {
-            for (AbstractBundle aux : getBundleManager().getBundles()) {
-                if (aux.getState() == Bundle.INSTALLED)
-                    unresolved.add(aux.getResolverModule());
-            }
-        } else {
+
+        Set<XModule> unresolved = null;
+        if (bundles != null) {
+            unresolved = new LinkedHashSet<XModule>();
+            
+            // Only bundles that are in state INSTALLED and are
+            // registered with the resolver qualify as resolvable
             for (Bundle aux : bundles) {
                 AbstractBundle bundleState = AbstractBundle.assertBundleState(aux);
-                if (bundleState.getState() == Bundle.INSTALLED)
+                XModuleIdentity moduleId = bundleState.getResolverModule().getModuleId();
+                if (bundleState.getState() == Bundle.INSTALLED && resolverPlugin.getModuleById(moduleId) != null) {
                     unresolved.add(bundleState.getResolverModule());
+                }
             }
         }
 
@@ -364,7 +365,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
         List<AbstractBundle> bundles = new ArrayList<AbstractBundle>(getBundleManager().getBundles());
         if (symbolicName != null) {
             for (AbstractBundle aux : bundles) {
-                if (aux.getSymbolicName().equals(symbolicName))
+                if (symbolicName.equals(aux.getSymbolicName()))
                     matchingBundles.put(aux, new ArrayList<AbstractBundle>());
             }
         } else {
@@ -405,34 +406,13 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
 
     @Override
     public Bundle[] getBundles(String symbolicName, String versionRange) {
-        Set<Bundle> bundles = new TreeSet<Bundle>(new Comparator<Bundle>() {
-
-            // Makes sure that the bundles are sorted correctly in the returned array
-            // Matching bundles with the highest version should come first.
-            @Override
-            public int compare(Bundle b1, Bundle b2) {
-                // Reverse the version comparison order
-                return b2.getVersion().compareTo(b1.getVersion());
-            }
-        });
-
-        XVersionRange range = null;
-        if (versionRange != null)
-            range = XVersionRange.parse(versionRange);
-
-        for (AbstractBundle ab : getBundleManager().getBundles()) {
-            Bundle b = AbstractBundle.assertBundleState(ab).getBundleWrapper();
-            if (b.getSymbolicName().equals(symbolicName)) {
-                if (range == null)
-                    bundles.add(b);
-                else if (range.isInRange(b.getVersion()))
-                    bundles.add(b);
+        List<Bundle> result = new ArrayList<Bundle>();
+        for (AbstractBundle bundleState : getBundleManager().getBundles(symbolicName, versionRange)) {
+            if (bundleState.getState() != Bundle.UNINSTALLED) {
+                result.add(bundleState.getBundleWrapper());
             }
         }
-
-        if (bundles.size() == 0)
-            return null;
-        return bundles.toArray(new Bundle[bundles.size()]);
+        return result.isEmpty() ? null : result.toArray(new Bundle[result.size()]);
     }
 
     @Override

@@ -34,7 +34,6 @@ import org.jboss.osgi.framework.plugin.ResolverPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
-import org.jboss.osgi.resolver.XModuleIdentity;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
@@ -76,7 +75,7 @@ public abstract class AbstractRevision {
 
         // Create the resolver module
         if (resModule == null) {
-            resModule = createResolverModule(metadata);
+            resModule = createResolverModule(bundleState, metadata);
             refreshAllowed = true;
         }
 
@@ -95,29 +94,28 @@ public abstract class AbstractRevision {
         if (refreshAllowed == false)
             throw new IllegalStateException("External XModule, refresh not allowed");
 
-        resolverModule = createResolverModule(metadata);
+        resolverModule = createResolverModule(bundleState, metadata);
         refreshRevisionInternal(resolverModule);
     }
 
-    XModule createResolverModule(OSGiMetaData metadata) throws BundleException {
-        String symbolicName = metadata.getBundleSymbolicName();
-        Version version = metadata.getBundleVersion();
+    XModule createResolverModule(AbstractBundle bundleState, OSGiMetaData metadata) throws BundleException {
+        final String symbolicName = metadata.getBundleSymbolicName();
+        final Version version = metadata.getBundleVersion();
+        
         int modulerev = revision;
 
         // An UNINSTALLED module with active wires may still be registered in with the Resolver
         // Make sure we have a unique module identifier
-        XModuleBuilder builder = resolverPlugin.getModuleBuilder();
-        builder.createModule(symbolicName, version, modulerev);
-        XModuleIdentity moduleId = builder.getModuleIdentity();
-        XModule resModule = resolverPlugin.getModuleById(moduleId);
-        while (resModule != null) {
-            builder = resolverPlugin.getModuleBuilder();
-            builder.createModule(symbolicName, version, modulerev += 100);
-            moduleId = builder.getModuleIdentity();
-            resModule = resolverPlugin.getModuleById(moduleId);
+        BundleManager bundleManager = bundleState.getBundleManager();
+        for (AbstractBundle aux : bundleManager.getBundles(symbolicName, version.toString())) {
+            if (aux.getState() == Bundle.UNINSTALLED) {
+                XModule resModule = aux.getResolverModule();
+                int auxrev = resModule.getModuleId().getRevision();
+                modulerev = Math.max(modulerev + 100, auxrev + 100);
+            }
         }
-
-        resModule = builder.createModule(metadata, modulerev).getModule();
+        XModuleBuilder builder = resolverPlugin.getModuleBuilder();
+        XModule resModule = builder.createModule(metadata, modulerev).getModule();
         resModule.addAttachment(AbstractRevision.class, this);
         resModule.addAttachment(Bundle.class, bundleState);
         return resModule;

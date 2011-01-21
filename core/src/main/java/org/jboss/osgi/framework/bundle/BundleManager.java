@@ -24,10 +24,13 @@ package org.jboss.osgi.framework.bundle;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
@@ -67,6 +70,7 @@ import org.jboss.osgi.framework.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.URLHandlerPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.WebXMLVerifierInterceptor;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XVersionRange;
 import org.jboss.osgi.spi.util.SysPropertyActions;
 import org.osgi.framework.Bundle;
@@ -78,7 +82,7 @@ import org.osgi.framework.FrameworkEvent;
 
 /**
  * The BundleManager is the central managing entity for OSGi bundles.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
@@ -212,6 +216,7 @@ public class BundleManager {
     }
 
     void addBundleState(AbstractBundle bundleState) {
+        
         if (bundleState == null)
             throw new IllegalArgumentException("Null bundleState");
 
@@ -220,18 +225,35 @@ public class BundleManager {
             throw new IllegalStateException("Bundle already added: " + bundleState);
 
         log.infof("Install bundle: %s", bundleState);
-
+        
         // Register the bundle with the manager
         bundleMap.put(bundleId, bundleState);
         bundleState.changeState(Bundle.INSTALLED);
-
+        
         // Add the bundle to the resolver
-        bundleState.addToResolver();
+        boolean addToResolver = true;
+        if (bundleState.isSingleton()) {
+            for (AbstractBundle aux : getBundles(bundleState.getSymbolicName(), null)) {
+                if (aux != bundleState && aux.isSingleton()) {
+                    addToResolver = false;
+                    log.infof("No resolvable singleton bundle: %s", bundleState);
+                }
+            }
+        }
+        if (addToResolver == true) {
+            ResolverPlugin resolverPlugin = getPlugin(ResolverPlugin.class);
+            XModule resModule = bundleState.getResolverModule();
+            resolverPlugin.addModule(resModule);
+        }
     }
 
     void removeBundle(AbstractBundle bundleState) {
         log.tracef("Remove bundle: %s", bundleState);
-        bundleState.removeFromResolver();
+        ResolverPlugin resolverPlugin = getPlugin(ResolverPlugin.class);
+        for (AbstractRevision abr : bundleState.getRevisions()) {
+            XModule resModule = abr.getResolverModule();
+            resolverPlugin.removeModule(resModule);
+        }
         bundleMap.remove(bundleState.getBundleId());
     }
 
@@ -253,9 +275,9 @@ public class BundleManager {
 
     /**
      * Get a bundle by id
-     *
+     * 
      * Note, this will get the bundle regadless of its state. i.e. The returned bundle may have been UNINSTALLED
-     *
+     * 
      * @param bundleId The identifier of the bundle
      * @return The bundle or null if there is no bundle with that id
      */
@@ -268,9 +290,9 @@ public class BundleManager {
 
     /**
      * Get a bundle by location
-     *
+     * 
      * Note, this will get the bundle regadless of its state. i.e. The returned bundle may have been UNINSTALLED
-     *
+     * 
      * @param location the location of the bundle
      * @return the bundle or null if there is no bundle with that location
      */
@@ -290,29 +312,37 @@ public class BundleManager {
     }
 
     /**
-     * Get a bundle by symbolic name and version
-     *
-     * Note, this will get the bundle regadless of its state. i.e. The returned bundle may have been UNINSTALLED
-     *
+     * Get the list of bundles with the given symbolic name and version
+     * 
+     * Note, this will get bundles regadless of their state. 
+     * i.e. The returned bundles may have been UNINSTALLED
+     * 
      * @param symbolicName The bundle symbolic name
      * @param versionRange The optional bundle version
-     * @return The bundle or null if there is no bundle with that name and version
+     * @return The bundles or an empty list if there is no bundle with that name and version
      */
-    public AbstractBundle getBundle(String symbolicName, String versionRange) {
-        AbstractBundle result = null;
-        for (AbstractBundle aux : getBundles()) {
-            if (aux.getSymbolicName().equals(symbolicName)) {
+    public List<AbstractBundle> getBundles(String symbolicName, String versionRange) {
+        Set<AbstractBundle> sortedSet = new TreeSet<AbstractBundle>(new Comparator<AbstractBundle>() {
+            // Makes sure that the bundles are sorted correctly in the returned array
+            // Matching bundles with the highest version should come first.
+            public int compare(AbstractBundle b1, AbstractBundle b2) {
+                return b2.getVersion().compareTo(b1.getVersion());
+            }
+        });
+        for (AbstractBundle aux : bundleMap.values()) {
+            if (symbolicName == null || symbolicName.equals(aux.getSymbolicName())) {
                 if (versionRange == null || XVersionRange.parse(versionRange).isInRange(aux.getVersion())) {
-                    result = aux;
-                    break;
+                    sortedSet.add(aux);
                 }
             }
         }
-        return result;
+        List<AbstractBundle> result = new ArrayList<AbstractBundle>(sortedSet);
+        return Collections.unmodifiableList(result);
     }
 
     /**
-     * Get the list of installed bundles. i.e. Bundles in state UNINSTALLED are not returned
+     * Get the list of installed bundles. 
+     * i.e. Bundles in state UNINSTALLED are not returned
      */
     public List<AbstractBundle> getBundles() {
         List<AbstractBundle> result = new ArrayList<AbstractBundle>();
@@ -326,7 +356,7 @@ public class BundleManager {
     /**
      * Get the list of bundles that are in one of the given states. If the states pattern is null, it returns all registered
      * bundles.
-     *
+     * 
      * @param states The binary or combination of states or null
      */
     public List<AbstractBundle> getBundles(Integer states) {
@@ -347,7 +377,7 @@ public class BundleManager {
 
     /**
      * Get a plugin that is registered with the bundle manager.
-     *
+     * 
      * @throws IllegalStateException if the requested plugin class is not registered
      */
     @SuppressWarnings("unchecked")
@@ -361,7 +391,7 @@ public class BundleManager {
 
     /**
      * Get an optional plugin that is registered with the bundle manager.
-     *
+     * 
      * @return The plugin instance or null if the requested plugin class is not registered
      */
     @SuppressWarnings("unchecked")
@@ -371,7 +401,7 @@ public class BundleManager {
 
     /**
      * Add a plugin to the bundle manager
-     *
+     * 
      * @return The previous plugin that was registered for the given key, or null.
      */
     @SuppressWarnings("unchecked")
@@ -381,15 +411,14 @@ public class BundleManager {
 
     /**
      * Install a bundle from a given {@link ModuleIdentifier}.
-     *
-     * This method can be used to register plain modules or bundles to the {@link BundleManager}.
-     * A plain module is one that does not have a valid OSGi manifest.
-     *
+     * 
+     * This method can be used to register plain modules or bundles to the {@link BundleManager}. A plain module is one that
+     * does not have a valid OSGi manifest.
+     * 
      * When installing a plain module:
-     *
-     * - module dependencies are not installed automatically
-     * - module may or may not have been loaded previously
-     * - module cannot be installed multiple times
+     * 
+     * - module dependencies are not installed automatically - module may or may not have been loaded previously - module cannot
+     * be installed multiple times
      */
     public Bundle installBundle(ModuleIdentifier identifier) throws BundleException {
         BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
@@ -399,15 +428,14 @@ public class BundleManager {
 
     /**
      * Install a bundle from a given {@link Module}.
-     *
-     * This method can be used to register plain modules or bundles to the {@link BundleManager}.
-     * A plain module is one that does not have a valid OSGi manifest.
-     *
+     * 
+     * This method can be used to register plain modules or bundles to the {@link BundleManager}. A plain module is one that
+     * does not have a valid OSGi manifest.
+     * 
      * When installing a plain module:
-     *
-     * - module dependencies are not installed automatically
-     * - module may or may not have been loaded previously
-     * - module cannot be installed multiple times
+     * 
+     * - module dependencies are not installed automatically - module may or may not have been loaded previously - module cannot
+     * be installed multiple times
      */
     public Bundle installBundle(Module module) throws BundleException {
         BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
@@ -479,7 +507,7 @@ public class BundleManager {
 
         // Create the bundle state
         boolean isFragment = metadata.getFragmentHost() != null;
-        AbstractBundle bundleState = (isFragment ? new FragmentBundle(this, dep) : new HostBundle(this, dep));
+        AbstractUserBundle bundleState = (isFragment ? new FragmentBundle(this, dep) : new HostBundle(this, dep));
         dep.addAttachment(Bundle.class, bundleState);
 
         // Validate the deployed bundle
@@ -496,20 +524,16 @@ public class BundleManager {
         return bundleState;
     }
 
-    private void validateBundle(AbstractBundle bundleState) throws BundleException {
+    private void validateBundle(AbstractUserBundle bundleState) throws BundleException {
+
         OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
-        if (osgiMetaData == null)
-            return;
-
-        BundleValidator validator;
-
-        // Delegate to the validator for the appropriate revision
-        if (osgiMetaData.getBundleManifestVersion() > 1)
-            validator = new BundleValidatorR4(this);
-        else
-            validator = new BundleValidatorR3(this);
-
-        validator.validateBundle(bundleState);
+        if (osgiMetaData != null) {
+            if (osgiMetaData.getBundleManifestVersion() > 1) {
+                new BundleValidatorR4().validateBundle(bundleState);
+            } else {
+                new BundleValidatorR3().validateBundle(bundleState);
+            }
+        }
     }
 
     /**

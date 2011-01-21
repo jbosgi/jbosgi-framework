@@ -43,25 +43,19 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @version $Revision: 1.1 $
  */
-public class BundleValidatorR4 implements BundleValidator {
-
-    private BundleManager bundleManager;
-
-    public BundleValidatorR4(BundleManager bundleManager) {
-        this.bundleManager = bundleManager;
-    }
+class BundleValidatorR4 implements BundleValidator {
 
     @SuppressWarnings("deprecation")
-    public void validateBundle(AbstractBundle bundleState) throws BundleException {
-        OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
+    public void validateBundle(final AbstractBundle bundleState) throws BundleException {
 
         // Missing Bundle-SymbolicName
-        String symbolicName = bundleState.getSymbolicName();
+        OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
+        String symbolicName = osgiMetaData.getBundleSymbolicName();
         if (symbolicName == null)
             throw new BundleException("Missing Bundle-SymbolicName in: " + bundleState);
 
-        // Bundle-ManifestVersion value not equal to 2, unless the Framework specifically recognizes the semantics of a later
-        // release.
+        // Bundle-ManifestVersion value not equal to 2, unless the Framework specifically
+        // recognizes the semantics of a later release.
         int manifestVersion = osgiMetaData.getBundleManifestVersion();
         if (manifestVersion > 2)
             throw new BundleException("Unsupported manifest version " + manifestVersion + " for " + bundleState);
@@ -97,13 +91,9 @@ public class BundleValidatorR4 implements BundleValidator {
         }
 
         // Installing a bundle that has the same symbolic name and version as an already installed bundle.
-        for (AbstractBundle bundle : bundleManager.getBundles()) {
-            OSGiMetaData other = bundle.getOSGiMetaData();
-            if (symbolicName.equals(other.getBundleSymbolicName())) {
-                if (other.isSingleton() && osgiMetaData.isSingleton())
-                    throw new BundleException("Cannot install singleton " + bundleState + " another singleton is already installed: " + bundle.getLocation());
-                if (other.getBundleVersion().equals(osgiMetaData.getBundleVersion()))
-                    throw new BundleException("Cannot install " + bundleState + " a bundle with that name and version is already installed: " + bundle.getLocation());
+        for (AbstractBundle aux : bundleState.getBundleManager().getBundles()) {
+            if (bundleState.getCanonicalName().equals(aux.getCanonicalName())) {
+                throw new BundleException("Cannot install bundle, name and version already installed: " + aux);
             }
         }
 

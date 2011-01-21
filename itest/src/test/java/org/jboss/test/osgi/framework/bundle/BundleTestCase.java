@@ -30,6 +30,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.osgi.framework.Bundle.INSTALLED;
+import static org.osgi.framework.Bundle.RESOLVED;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -414,10 +416,15 @@ public class BundleTestCase extends OSGiFrameworkTest {
         try {
             Archive<?> assemblyB = assembleArchive("bundle20", "/bundles/singleton/singleton2");
             Bundle bundleB = installBundle(assemblyB);
-            bundleB.uninstall();
-            fail("BundleException expected");
-        } catch (BundleException t) {
-            // expected
+            try {
+                boolean resolved = getPackageAdmin().resolveBundles(new Bundle[] { bundleA, bundleB });
+                assertTrue("Bundles resolved", resolved);
+                int stateA = bundleA.getState();
+                int stateB = bundleB.getState();
+                assertTrue("One Bundle resolved", stateA == INSTALLED && stateB == RESOLVED || stateA == RESOLVED && stateB == INSTALLED);
+            } finally {
+                bundleB.uninstall();
+            }
         } finally {
             bundleA.uninstall();
         }
