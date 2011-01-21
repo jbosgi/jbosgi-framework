@@ -222,18 +222,10 @@ public abstract class AbstractBundle implements Bundle {
         return getState() == Bundle.UNINSTALLED;
     }
 
-    public void addToResolver() {
-        XModule resModule = getResolverModule();
-        resolverPlugin.addModule(resModule);
+    public boolean isSingleton() {
+        return getOSGiMetaData().isSingleton();
     }
-
-    public void removeFromResolver() {
-        for (AbstractRevision abr : getRevisions()) {
-            XModule resModule = abr.getResolverModule();
-            resolverPlugin.removeModule(resModule);
-        }
-    }
-
+    
     boolean hasActiveWires() {
         XModule resModule = getResolverModule();
         if (resModule.isResolved() == false)

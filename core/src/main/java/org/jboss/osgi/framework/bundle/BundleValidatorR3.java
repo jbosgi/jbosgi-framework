@@ -30,10 +30,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 19-Dec-2009
  */
-public class BundleValidatorR3 implements BundleValidator {
-
-    public BundleValidatorR3(BundleManager bundleManager) {
-    }
+class BundleValidatorR3 implements BundleValidator {
 
     @Override
     public void validateBundle(AbstractBundle bundleState) throws BundleException {
