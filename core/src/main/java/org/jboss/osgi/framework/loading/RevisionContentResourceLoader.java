@@ -27,8 +27,6 @@ import java.util.Collection;
 
 import org.jboss.modules.ClassSpec;
 import org.jboss.modules.PackageSpec;
-import org.jboss.modules.PathFilter;
-import org.jboss.modules.PathFilters;
 import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.framework.bundle.RevisionContent;
@@ -43,31 +41,18 @@ public final class RevisionContentResourceLoader implements ResourceLoader {
 
     private final RevisionContent revContent;
     private final VirtualFileResourceLoader delegate;
-    private final PathFilter exportFilter;
 
     public RevisionContentResourceLoader(RevisionContent revContent) {
-        this(revContent, PathFilters.acceptAll());
-    }
-
-    public RevisionContentResourceLoader(RevisionContent revContent, PathFilter exportFilter) {
         if (revContent == null)
             throw new IllegalArgumentException("Null revContent");
-        if (exportFilter == null)
-            throw new IllegalArgumentException("Null exportFilter");
 
-        this.delegate = new VirtualFileResourceLoader(revContent.getVirtualFile(), exportFilter);
+        this.delegate = new VirtualFileResourceLoader(revContent.getVirtualFile());
         this.revContent = revContent;
-        this.exportFilter = exportFilter;
     }
 
     @Override
     public String getRootName() {
         return delegate.getRootName();
-    }
-
-    @Override
-    public PathFilter getExportFilter() {
-        return exportFilter;
     }
 
     @Override

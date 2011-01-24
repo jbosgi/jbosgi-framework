@@ -24,13 +24,18 @@ package org.jboss.test.osgi.modules;
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
+import org.jboss.osgi.vfs.VFSUtils;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.modules.a.A;
 import org.jboss.test.osgi.modules.b.B;
 import org.jboss.test.osgi.modules.c.C;
 import org.jboss.test.osgi.modules.d.D;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -42,20 +47,38 @@ import org.junit.Test;
  */
 public class MOD45TestCase extends ModulesTestBase {
 
+    private VirtualFile virtualFileA;
+    private VirtualFile virtualFileB;
+    
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        virtualFileA = toVirtualFile(getModuleA());
+        virtualFileB = toVirtualFile(getModuleB());
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        VFSUtils.safeClose(virtualFileA);
+        VFSUtils.safeClose(virtualFileB);
+    }
+    
     @Test
     @Ignore("[MODULES-45] Unexpected class load with unwired dependency")
     public void testDependencyNotWired() throws Exception {
         JavaArchive archiveA = getModuleA();
         ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
         JavaArchive archiveB = getModuleB();
         ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
+        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
+        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderB.create());
 

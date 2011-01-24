@@ -38,8 +38,6 @@ import java.util.jar.Manifest;
 
 import org.jboss.modules.ClassSpec;
 import org.jboss.modules.PackageSpec;
-import org.jboss.modules.PathFilter;
-import org.jboss.modules.PathFilters;
 import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -55,31 +53,18 @@ public final class VirtualFileResourceLoader implements ResourceLoader {
 
     private final VirtualFile virtualFile;
     private final Set<String> localPaths;
-    private final PathFilter exportFilter;
 
     public VirtualFileResourceLoader(VirtualFile virtualFile) {
-        this(virtualFile, PathFilters.acceptAll());
-    }
-
-    public VirtualFileResourceLoader(VirtualFile virtualFile, PathFilter exportFilter) {
         if (virtualFile == null)
             throw new IllegalArgumentException("Null virtualFile");
-        if (exportFilter == null)
-            throw new IllegalArgumentException("Null exportFilter");
 
         this.virtualFile = virtualFile;
-        this.exportFilter = exportFilter;
         this.localPaths = getLocalPaths();
     }
 
     @Override
     public String getRootName() {
         return virtualFile.getPathName();
-    }
-
-    @Override
-    public PathFilter getExportFilter() {
-        return exportFilter;
     }
 
     @Override

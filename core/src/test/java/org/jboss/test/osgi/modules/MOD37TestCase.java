@@ -24,6 +24,7 @@ package org.jboss.test.osgi.modules;
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -72,13 +73,15 @@ public class MOD37TestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("archiveB");
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(virtualFileB));
+        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
+        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderB.create());
@@ -110,13 +113,15 @@ public class MOD37TestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("archiveB");
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(virtualFileB));
+        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
+        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderB.create());

@@ -35,9 +35,10 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.modules.PathFilter;
-import org.jboss.modules.PathFilters;
 import org.jboss.modules.Resource;
+import org.jboss.modules.ResourceLoaderSpec;
+import org.jboss.modules.filter.PathFilter;
+import org.jboss.modules.filter.PathFilters;
 import org.jboss.osgi.framework.loading.SystemLocalLoader;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -94,7 +95,8 @@ public class ModulesTestCase extends ModulesTestBase {
     public void testResourceLoader() throws Exception {
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoader = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoader));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
@@ -106,7 +108,8 @@ public class ModulesTestCase extends ModulesTestBase {
     public void testExportFilterOnResourceLoader() throws Exception {
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA, getPathFilter(A.class)));
+        VirtualFileResourceLoader resourceLoader = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoader));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
@@ -119,7 +122,8 @@ public class ModulesTestCase extends ModulesTestBase {
     public void testImportFilterOnLocalDependency() throws Exception {
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoader = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoader));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(getPathFilter(A.class), PathFilters.acceptAll()));
         addModuleSpec(specBuilderA.create());
 
@@ -133,7 +137,8 @@ public class ModulesTestCase extends ModulesTestBase {
         PathFilter lazyPathsFilter = PathFilters.not(eagerPathsFilter);
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoader = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoader));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(eagerPathsFilter, PathFilters.acceptAll()));
         specBuilderA.setFallbackLoader(new RelinkFallbackLoader(identifierA, lazyPathsFilter));
         addModuleSpec(specBuilderA.create());
@@ -146,13 +151,15 @@ public class ModulesTestCase extends ModulesTestBase {
     public void testDependencyNotWired() throws Exception {
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("archiveB");
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(virtualFileB));
+        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
+        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderB.create());
 
@@ -177,13 +184,15 @@ public class ModulesTestCase extends ModulesTestBase {
     public void testDependencyWiredNoFilters() throws Exception {
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("archiveB");
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(virtualFileB));
+        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
+        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
         specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
         addModuleSpec(specBuilderB.create());
@@ -199,13 +208,15 @@ public class ModulesTestCase extends ModulesTestBase {
     public void testDependencyTwoExportersNotWired() throws Exception {
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
         ModuleIdentifier identifierC = ModuleIdentifier.create("archiveC");
         ModuleSpec.Builder specBuilderC = ModuleSpec.build(identifierC);
-        specBuilderC.addResourceRoot(new VirtualFileResourceLoader(virtualFileC));
+        VirtualFileResourceLoader resourceLoaderC = new VirtualFileResourceLoader(virtualFileC);
+        specBuilderC.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderC));
         specBuilderC.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderC.create());
 
@@ -218,13 +229,15 @@ public class ModulesTestCase extends ModulesTestBase {
         
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
         ModuleIdentifier identifierC = ModuleIdentifier.create("archiveC");
         ModuleSpec.Builder specBuilderC = ModuleSpec.build(identifierC);
-        specBuilderC.addResourceRoot(new VirtualFileResourceLoader(virtualFileC));
+        VirtualFileResourceLoader resourceLoaderC = new VirtualFileResourceLoader(virtualFileC);
+        specBuilderC.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderC));
         specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
         specBuilderC.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderC.create());
@@ -242,13 +255,15 @@ public class ModulesTestCase extends ModulesTestBase {
     public void testDependencyExportFilter() throws Exception {
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(PathFilters.acceptAll(), getPathFilter(A.class)));
         addModuleSpec(specBuilderA.create());
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("archiveB");
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(virtualFileB));
+        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
+        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
         specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
         addModuleSpec(specBuilderB.create());
@@ -268,13 +283,15 @@ public class ModulesTestCase extends ModulesTestBase {
     public void testDependencyImportFilter() throws Exception {
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("archiveB");
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(virtualFileB));
+        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
+        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
         specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(getPathFilter(A.class), PathFilters.acceptAll(), getModuleLoader(), identifierA, false));
         addModuleSpec(specBuilderB.create());
@@ -311,7 +328,8 @@ public class ModulesTestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
@@ -356,7 +374,8 @@ public class ModulesTestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
@@ -370,7 +389,8 @@ public class ModulesTestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("archiveB");
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(virtualFileB));
+        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
+        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
         specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(systemid));
         addModuleSpec(specBuilderB.create());
@@ -387,13 +407,15 @@ public class ModulesTestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("archiveB");
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(virtualFileB));
+        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
+        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
         specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
         addModuleSpec(specBuilderB.create());
@@ -423,13 +445,15 @@ public class ModulesTestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("archiveB");
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(virtualFileB));
+        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
+        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
         specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(getPathFilter(A.class), identifierA, false));
         addModuleSpec(specBuilderB.create());
@@ -459,13 +483,15 @@ public class ModulesTestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(PathFilters.acceptAll(), getPathFilter(A.class)));
         addModuleSpec(specBuilderA.create());
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("archiveB");
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(virtualFileB));
+        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
+        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA, true));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderB.create());

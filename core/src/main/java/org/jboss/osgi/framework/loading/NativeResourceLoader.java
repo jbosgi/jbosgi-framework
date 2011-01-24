@@ -31,7 +31,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.jboss.logging.Logger;
 import org.jboss.modules.ClassSpec;
 import org.jboss.modules.PackageSpec;
-import org.jboss.modules.PathFilter;
 import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoader;
 
@@ -107,15 +106,5 @@ public class NativeResourceLoader implements ResourceLoader {
     @Override
     public Collection<String> getPaths() {
         return Collections.emptyList();
-    }
-
-    @Override
-    public PathFilter getExportFilter() {
-        return new PathFilter() {
-
-            public boolean accept(String path) {
-                return false;
-            }
-        };
     }
 }

@@ -42,7 +42,6 @@ import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageRequirement;
-import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 
 /**
