@@ -34,8 +34,9 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.modules.PathFilter;
-import org.jboss.modules.PathFilters;
+import org.jboss.modules.ResourceLoaderSpec;
+import org.jboss.modules.filter.PathFilter;
+import org.jboss.modules.filter.PathFilters;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -74,7 +75,8 @@ public class ServiceLoaderTestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
@@ -98,7 +100,8 @@ public class ServiceLoaderTestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(virtualFileA));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 

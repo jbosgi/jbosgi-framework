@@ -31,12 +31,17 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.Resource;
+import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
+import org.jboss.osgi.vfs.VFSUtils;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.modules.a.CircularityError;
 import org.jboss.test.osgi.modules.b.CircularityActivator;
 import org.jboss.test.osgi.modules.b.CircularityErrorDep;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -48,6 +53,22 @@ import org.junit.Test;
  */
 public class MOD65TestCase extends ModulesTestBase {
 
+    private VirtualFile virtualFileA;
+    private VirtualFile virtualFileB;
+    
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        virtualFileA = toVirtualFile(getModuleA());
+        virtualFileB = toVirtualFile(getModuleB());
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        VFSUtils.safeClose(virtualFileA);
+        VFSUtils.safeClose(virtualFileB);
+    }
+    
     @Test
     @Ignore("[MODULES-65] Deadlock when LocalLoader attempts a circular class load")
     public void testCircularityError() throws Exception {
@@ -58,14 +79,16 @@ public class MOD65TestCase extends ModulesTestBase {
         ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
 
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        specBuilderA.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveA)));
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         LazyActivationLocalLoader localLoader = new LazyActivationLocalLoader(identifierA, identifierB);
         Set<String> lazyPaths = Collections.singleton(getPath(CircularityActivator.class.getName()));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(localLoader, lazyPaths, true));
         addModuleSpec(specBuilderA.create());
 
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        specBuilderB.addResourceRoot(new VirtualFileResourceLoader(toVirtualFile(archiveB)));
+        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
+        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderB.create());
