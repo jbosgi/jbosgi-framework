@@ -38,6 +38,7 @@ import org.jboss.osgi.vfs.VirtualFile;
  * An abstraction for the revision content
  * 
  * @author thomas.diesler@jboss.com
+ * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 13-Jan-2011
  */
 public final class RevisionContent implements EntriesProvider {
@@ -133,7 +134,11 @@ public final class RevisionContent implements EntriesProvider {
     @Override
     public Enumeration<String> getEntryPaths(String path) {
         try {
-            return virtualFile.getEntryPaths(path);
+            Enumeration<String> entryPaths = virtualFile.getEntryPaths(path);
+            if (entryPaths != null && entryPaths.hasMoreElements())
+                return entryPaths;
+            else
+                return null;
         } catch (IOException ex) {
             return null;
         }
@@ -145,6 +150,9 @@ public final class RevisionContent implements EntriesProvider {
 
     private Enumeration<URL> getBundleURLs(Enumeration<URL> urls) throws IOException {
         if (urls == null)
+            return null;
+
+        if (!urls.hasMoreElements())
             return null;
 
         Vector<URL> result = new Vector<URL>();
@@ -165,13 +173,23 @@ public final class RevisionContent implements EntriesProvider {
                 return real.toURL().openConnection();
             }
         };
-        
+
         String rootPath = virtualFile.getPathName();
         String pathName = child.getPathName().substring(rootPath.length());
-        if (pathName.startsWith("/") == false)
-            pathName = "/" + pathName;
 
-        return new URL(BundleProtocolHandler.PROTOCOL_NAME, identity, -1, pathName, streamHandler);
+        // The path can potentially be made characters longer (one leading and one trailing slash)
+        StringBuilder path = new StringBuilder(pathName.length() + 2);
+
+        if (pathName.startsWith("/") == false)
+            path.append('/');
+
+        path.append(pathName);
+
+        if (child.isDirectory() && path.charAt(path.length() - 1) != '/') {
+            path.append('/');
+        }
+
+        return new URL(BundleProtocolHandler.PROTOCOL_NAME, identity, -1, path.toString(), streamHandler);
     }
 
     @Override

@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.bundle;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
@@ -38,12 +39,12 @@ import org.osgi.framework.BundleException;
 
 /**
  * A {@link HostRevision} is responsible for the classloading and resource loading of a bundle.
- * 
+ *
  * It is associated with a {@link XModule} which holds the wiring information of the bundle.
  * <p/>
- * 
+ *
  * Every time a bundle is updated a new {@link HostRevision} is created and referenced from the {@link HostBundle}.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
@@ -71,7 +72,7 @@ public class HostRevision extends AbstractUserRevision {
 
         return (HostRevision) bundleRev;
     }
-    
+
     @Override
     public HostBundle getBundleState() {
         return (HostBundle) super.getBundleState();
@@ -109,6 +110,31 @@ public class HostRevision extends AbstractUserRevision {
         // Load the class through the module
         ModuleClassLoader loader = getModuleClassLoader();
         return loader.loadClass(className, true);
+    }
+
+    @Override
+    public Enumeration<URL> findEntries(String path, String pattern, boolean recurse) {
+        // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
+        getBundleState().ensureResolved(true);
+
+        Enumeration<URL> hostEntries = super.findEntries(path, pattern, recurse);
+
+        List<FragmentRevision> fragments = getAttachedFragments();
+        if (fragments.size() == 0)
+            return hostEntries;
+
+        // If there are attached fragments, their entries also need to be included.
+        List<URL> allEntries = (hostEntries == null ? new ArrayList<URL>() : new ArrayList<URL>(Collections.list(hostEntries)));
+        for (FragmentRevision fragmentRevision : fragments) {
+            Enumeration<URL> fragEntries = fragmentRevision.findEntries(path, pattern, recurse);
+            if (fragEntries != null)
+                allEntries.addAll(Collections.list(fragEntries));
+        }
+
+        if (allEntries.size() == 0)
+            return null;
+        else
+            return Collections.enumeration(allEntries);
     }
 
     @Override
@@ -172,3 +198,4 @@ public class HostRevision extends AbstractUserRevision {
         return null;
     }
 }
+
