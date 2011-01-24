@@ -36,6 +36,7 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.PackageAttribute;
 import org.jboss.osgi.metadata.ParameterizedAttribute;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
 
 /**
  * A bundle validator for OSGi R4.
@@ -61,8 +62,9 @@ class BundleValidatorR4 implements BundleValidator {
             throw new BundleException("Unsupported manifest version " + manifestVersion + " for " + bundleState);
 
         // Multiple imports of a given package.
+        // Specification-version and version specified together (for the same package(s)) but with different values
         List<PackageAttribute> importPackages = osgiMetaData.getImportPackages();
-        if (importPackages != null && importPackages.isEmpty() == false) {
+        if (importPackages != null) {
             Set<String> packages = new HashSet<String>();
             for (PackageAttribute packageAttribute : importPackages) {
                 String packageName = packageAttribute.getAttribute();
@@ -76,17 +78,23 @@ class BundleValidatorR4 implements BundleValidator {
                 String version = packageAttribute.getAttributeValue(VERSION_ATTRIBUTE, String.class);
                 String specificationVersion = packageAttribute.getAttributeValue(PACKAGE_SPECIFICATION_VERSION, String.class);
                 if (version != null && specificationVersion != null && version.equals(specificationVersion) == false)
-                    throw new BundleException(packageName + " version and specification version should be the same for " + bundleState);
+                    throw new BundleException(packageName + " version and specification version should be the same for: " + bundleState);
             }
         }
 
         // Export or import of java.*.
+        // Specification-version and version specified together (for the same package(s)) but with different values
         List<PackageAttribute> exportPackages = osgiMetaData.getExportPackages();
-        if (exportPackages != null && exportPackages.isEmpty() == false) {
-            for (PackageAttribute packageAttribute : exportPackages) {
-                String packageName = packageAttribute.getAttribute();
+        if (exportPackages != null) {
+            for (PackageAttribute packageAttr : exportPackages) {
+                String packageName = packageAttr.getAttribute();
                 if (packageName.startsWith("java."))
                     throw new BundleException("Not allowed to export java.* for " + bundleState);
+                
+                String version = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
+                String specification = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
+                if (version != null && specification != null && version.equals(specification) == false)
+                    throw new BundleException(packageName + " version and specification version should be the same for: " + bundleState);
             }
         }
 
@@ -122,8 +130,6 @@ class BundleValidatorR4 implements BundleValidator {
 
         // [TODO] Any syntactic error (for example, improperly formatted version or bundle symbolic name, unrecognized directive
         // value, etc.).
-
-        // [TODO] Specification-version and version specified together (for the same package(s)) but with different values.
 
         // [TODO] The manifest lists a OSGI-INF/permission.perm file but no such file is present.
 
