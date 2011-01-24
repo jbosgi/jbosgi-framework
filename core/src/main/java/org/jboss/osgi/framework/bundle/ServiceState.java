@@ -325,7 +325,7 @@ public class ServiceState implements ServiceRegistration, ServiceReference {
         } catch (ClassNotFoundException ex) {
             // If the requesting bundle does not have a wire to the
             // service package it cannot be constraint on that package.
-            log.warnf("Requesting bundle cannot load class: %s", className);
+            log.tracef("Requesting bundle [%s] cannot load class: %s", bundle, className);
             return true;
         }
 
