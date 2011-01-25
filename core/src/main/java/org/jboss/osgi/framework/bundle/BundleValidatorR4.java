@@ -107,6 +107,18 @@ class BundleValidatorR4 implements BundleValidator {
             }
         }
 
+        // A bundle with a dynamic imported package having different values for version and specification-version attributes must fail to install
+        List<PackageAttribute> dynamicImports = osgiMetaData.getDynamicImports();
+        if (dynamicImports != null) {
+            for (PackageAttribute packageAttr : dynamicImports) {
+                String packageName = packageAttr.getAttribute();
+                String versionAttr = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
+                String specificationAttr = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
+                if (versionAttr != null && specificationAttr != null && versionAttr.equals(specificationAttr) == false)
+                    throw new BundleException(packageName + " version and specification version should be the same in: " + bundleState);
+            }
+        }
+        
         // Installing a bundle that has the same symbolic name and version as an already installed bundle.
         for (AbstractBundle aux : bundleState.getBundleManager().getBundles()) {
             if (bundleState.getCanonicalName().equals(aux.getCanonicalName())) {
