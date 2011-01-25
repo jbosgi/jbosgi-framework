@@ -42,7 +42,9 @@ import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 
 /**
@@ -173,6 +175,15 @@ public class HostBundleFallbackLoader implements LocalLoader {
         XModule resModule = bundleRev.getResolverModule();
         List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
         
+        // Dynamic imports may not be used when the package is exported
+        String pathName = VFSUtils.getPathFromClassName(resName);
+        List<XPackageCapability> packageCapabilities = resModule.getPackageCapabilities();
+        for (XPackageCapability packageCap : packageCapabilities) {
+            String packagePath = packageCap.getName().replace('.', '/');
+            if (pathName.equals(packagePath))
+                return Collections.emptyList();
+        }
+       
         List<XPackageRequirement> foundMatch = new ArrayList<XPackageRequirement>();
         for (XPackageRequirement dynreq : dynamicRequirements) {
 
@@ -187,7 +198,6 @@ public class HostBundleFallbackLoader implements LocalLoader {
                 patternPath = pattern.substring(0, pattern.length() - 2);
 
             patternPath = patternPath.replace('.', '/');
-            String pathName = resName.replace('.', '/');
             if (pathName.startsWith(patternPath)) {
                 foundMatch.add(dynreq);
                 continue;
@@ -244,6 +254,8 @@ public class HostBundleFallbackLoader implements LocalLoader {
         URL resURL = candidate.getExportedResource(pathName);
         if (resURL != null) {
             AbstractRevision bundleRevision = moduleManager.getBundleRevision(candidateId);
+            
+            // Verify the bundle-symbolic-name on the import pattern
             String candidateName = bundleRevision.getBundleState().getSymbolicName();
             for (XPackageRequirement pattern : matchingPatterns) {
                 String patternName = pattern.getBundleSymbolicName();
