@@ -36,7 +36,6 @@ import org.jboss.test.osgi.modules.c.C;
 import org.jboss.test.osgi.modules.d.D;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -64,7 +63,6 @@ public class MOD45TestCase extends ModulesTestBase {
     }
     
     @Test
-    @Ignore("[MODULES-45] Unexpected class load with unwired dependency")
     public void testDependencyNotWired() throws Exception {
         JavaArchive archiveA = getModuleA();
         ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
