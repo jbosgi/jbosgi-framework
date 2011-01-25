@@ -21,8 +21,6 @@
  */
 package org.jboss.test.osgi.modules;
 
-import static org.junit.Assert.fail;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -166,17 +164,7 @@ public class ModulesTestCase extends ModulesTestBase {
         assertLoadClass(identifierA, A.class.getName());
         assertLoadClass(identifierA, B.class.getName());
 
-        // [TODO] [MODULES-45] Unexpected class load with unwired dependency
-        // assertLoadClassFails(identifierB, C.class.getName());
-
-        Class<?> clazz = loadClass(identifierB, C.class.getName());
-        try {
-            clazz.newInstance();
-            fail("NoClassDefFoundError expected");
-        } catch (NoClassDefFoundError er) {
-            // expected
-        }
-
+        assertLoadClassFails(identifierB, C.class.getName());
         assertLoadClass(identifierB, D.class.getName());
     }
 

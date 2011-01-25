@@ -35,6 +35,7 @@ import java.util.Set;
 
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
@@ -110,11 +111,16 @@ public abstract class ModulesTestBase {
             fail("ClassNotFoundException expected");
         } catch (ClassNotFoundException ex) {
             // expected
+        } catch (NoClassDefFoundError ex) {
+            // expected
         }
     }
 
     protected Class<?> loadClass(ModuleIdentifier identifier, String className) throws Exception {
-        Class<?> clazz = loadModule(identifier).getClassLoader().loadClass(className, true);
+        // ClassLoader#resolveClass() only links the class; it doesn't necessarily force it to be initialized. 
+        // To initialize the class you can do Class.forName(name, true, classLoader) 
+        ModuleClassLoader classLoader = loadModule(identifier).getClassLoader();
+        Class<?> clazz = Class.forName(className, true, classLoader);
         return clazz;
     }
 
