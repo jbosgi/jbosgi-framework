@@ -50,8 +50,8 @@ class BundleValidatorR4 implements BundleValidator {
     public void validateBundle(final AbstractBundle bundleState) throws BundleException {
 
         // Missing Bundle-SymbolicName
-        OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
-        String symbolicName = osgiMetaData.getBundleSymbolicName();
+        final OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
+        final String symbolicName = osgiMetaData.getBundleSymbolicName();
         if (symbolicName == null)
             throw new BundleException("Missing Bundle-SymbolicName in: " + bundleState);
 
@@ -78,12 +78,13 @@ class BundleValidatorR4 implements BundleValidator {
                 String version = packageAttribute.getAttributeValue(VERSION_ATTRIBUTE, String.class);
                 String specificationVersion = packageAttribute.getAttributeValue(PACKAGE_SPECIFICATION_VERSION, String.class);
                 if (version != null && specificationVersion != null && version.equals(specificationVersion) == false)
-                    throw new BundleException(packageName + " version and specification version should be the same for: " + bundleState);
+                    throw new BundleException(packageName + " version and specification version should be the same in: " + bundleState);
             }
         }
 
         // Export or import of java.*.
         // Specification-version and version specified together (for the same package(s)) but with different values
+        // The export statement must not specify an explicit bundle symbolic name nor bundle version
         List<PackageAttribute> exportPackages = osgiMetaData.getExportPackages();
         if (exportPackages != null) {
             for (PackageAttribute packageAttr : exportPackages) {
@@ -91,10 +92,18 @@ class BundleValidatorR4 implements BundleValidator {
                 if (packageName.startsWith("java."))
                     throw new BundleException("Not allowed to export java.* for " + bundleState);
                 
-                String version = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
-                String specification = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
-                if (version != null && specification != null && version.equals(specification) == false)
-                    throw new BundleException(packageName + " version and specification version should be the same for: " + bundleState);
+                String versionAttr = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
+                String specificationAttr = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
+                if (versionAttr != null && specificationAttr != null && versionAttr.equals(specificationAttr) == false)
+                    throw new BundleException(packageName + " version and specification version should be the same in: " + bundleState);
+                
+                String symbolicNameAttr = packageAttr.getAttributeValue(Constants.BUNDLE_SYMBOLICNAME_ATTRIBUTE, String.class);
+                if (symbolicNameAttr != null)
+                    throw new BundleException(packageName + " must not specify an explicit bundle symbolic name in: " + bundleState);
+                
+                String bundleVersionAttr = packageAttr.getAttributeValue(Constants.BUNDLE_VERSION_ATTRIBUTE, String.class);
+                if (bundleVersionAttr != null)
+                    throw new BundleException(packageName + " must not specify an explicit bundle version in: " + bundleState);
             }
         }
 
