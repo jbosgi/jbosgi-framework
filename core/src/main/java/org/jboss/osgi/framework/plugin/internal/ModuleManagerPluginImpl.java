@@ -72,6 +72,7 @@ import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleIdentity;
+import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XRequireBundleRequirement;
 import org.jboss.osgi.resolver.XRequirement;
@@ -479,7 +480,14 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             }
             boolean reexport = Constants.VISIBILITY_REEXPORT.equals(req.getVisibility());
             if (reexport == true) {
-                holder.setExportFilter(PathFilters.acceptAll());
+                Set<String> exportedPaths = new HashSet<String>();
+                for (XPackageCapability cap : exporter.getPackageCapabilities()) {
+                    String path = cap.getName().replace('.', '/');
+                    exportedPaths.add(path);
+                }
+                PathFilter reexportFilter = PathFilters.in(exportedPaths);
+                holder.setImportFilter(reexportFilter);
+                holder.setExportFilter(reexportFilter);
             }
         }
     }

@@ -45,7 +45,7 @@
     <version.jboss.msc>1.0.0.Beta5</version.jboss.msc>
     <version.jboss.osgi.deployment>1.0.10</version.jboss.osgi.deployment>
     <version.jboss.osgi.equinox>3.5.2</version.jboss.osgi.equinox>
-    <version.jboss.osgi.felix>3.0.1</version.jboss.osgi.felix>
+    <version.jboss.osgi.felix>3.0.4</version.jboss.osgi.felix>
     <version.jboss.osgi.jmx>1.0.9</version.jboss.osgi.jmx>
     <version.jboss.osgi.resolver>1.0.8-SNAPSHOT</version.jboss.osgi.resolver>
     <version.jboss.osgi.spi>1.0.23-SNAPSHOT</version.jboss.osgi.spi>
