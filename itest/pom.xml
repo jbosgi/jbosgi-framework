@@ -193,6 +193,12 @@
     -->
     <profile>
       <id>equinox</id>
+      <activation>
+        <property>
+          <name>framework</name>
+          <value>equinox</value>
+        </property>
+      </activation>
       <properties>
         <jboss.osgi.framework.properties>jboss-osgi-equinox.properties</jboss.osgi.framework.properties>
       </properties>
@@ -211,6 +217,12 @@
     -->
     <profile>
       <id>felix</id>
+      <activation>
+        <property>
+          <name>framework</name>
+          <value>felix</value>
+        </property>
+      </activation>
       <properties>
         <jboss.osgi.framework.properties>jboss-osgi-felix.properties</jboss.osgi.framework.properties>
       </properties>
@@ -224,13 +236,15 @@
     </profile>
 
     <!--
-      Name: jbosgi
+      Name: jboss
       Descr: Setup for MSC Framework integration testing
     -->
     <profile>
-      <id>jbosgi</id>
+      <id>jboss</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <property>
+          <name>!framework</name>
+        </property>
       </activation>
       <properties>
         <jboss.osgi.framework.properties>jboss-osgi-framework.properties</jboss.osgi.framework.properties>

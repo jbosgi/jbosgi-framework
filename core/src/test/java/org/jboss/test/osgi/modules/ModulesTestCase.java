@@ -515,7 +515,7 @@ public class ModulesTestCase extends ModulesTestBase {
 
         @Override
         public Class<?> loadClassLocal(String className, boolean resolve) {
-            if (activationFilter.accept(getPath(className)) == false)
+            if (activationFilter.accept(getPathForClassName(className)) == false)
                 return null;
 
             try {

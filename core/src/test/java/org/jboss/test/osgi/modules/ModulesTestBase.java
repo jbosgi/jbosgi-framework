@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -82,14 +83,12 @@ public abstract class ModulesTestBase {
     protected Set<String> getFilterPaths(Class<?>... classes) {
         Set<String> paths = new HashSet<String>();
         for (Class<?> clazz : classes) {
-            paths.add(getPath(clazz.getName()));
+            paths.add(getPathForClassName(clazz.getName()));
         }
         return Collections.unmodifiableSet(paths);
     }
 
-    protected String getPath(String className) {
-        if (className.endsWith(".class"))
-            className = className.substring(0, className.length() - 6);
+    protected String getPathForClassName(String className) {
         className = className.substring(0, className.lastIndexOf('.'));
         className = className.replace('.', '/');
         return className;
@@ -124,6 +123,11 @@ public abstract class ModulesTestBase {
         return clazz;
     }
 
+    protected URL getResource(ModuleIdentifier identifier, String resourcePath) throws Exception {
+        ModuleClassLoader classLoader = loadModule(identifier).getClassLoader();
+        return classLoader.getResource(resourcePath);
+    }
+    
     protected VirtualFile toVirtualFile(JavaArchive archive) throws IOException {
         return OSGiTestHelper.toVirtualFile(archive);
     }

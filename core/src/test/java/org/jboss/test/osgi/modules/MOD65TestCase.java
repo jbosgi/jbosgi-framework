@@ -82,7 +82,7 @@ public class MOD65TestCase extends ModulesTestBase {
         VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
         specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         LazyActivationLocalLoader localLoader = new LazyActivationLocalLoader(identifierA, identifierB);
-        Set<String> lazyPaths = Collections.singleton(getPath(CircularityActivator.class.getName()));
+        Set<String> lazyPaths = Collections.singleton(getPathForClassName(CircularityActivator.class.getName()));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(localLoader, lazyPaths, true));
         addModuleSpec(specBuilderA.create());
 

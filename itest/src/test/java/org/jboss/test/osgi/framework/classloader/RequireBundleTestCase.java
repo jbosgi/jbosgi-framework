@@ -21,14 +21,13 @@
  */
 package org.jboss.test.osgi.framework.classloader;
 
-// 
-
 import static org.junit.Assert.fail;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.framework.classloader.support.a.A;
 import org.jboss.test.osgi.framework.classloader.support.b.B;
+import org.jboss.test.osgi.framework.classloader.support.c.C;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -40,19 +39,20 @@ import org.osgi.framework.BundleException;
  * 
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author thomas.diesler@jboss.com
- * @version $Revision: 1.1 $
  */
 public class RequireBundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testSimpleRequireBundle() throws Exception {
+        // Bundle-Version: 1.0.0
         // Bundle-SymbolicName: classloader.bundleA
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a;version=1.0.0;test=x
-        Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/classloader/bundleA", A.class);
+        Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/classloader/bundleA", A.class, C.class);
         Bundle bundleA = installBundle(assemblyA);
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
+            assertLoadClass(bundleA, C.class.getName());
 
             // Bundle-SymbolicName: classloader.bundleB
             // Require-Bundle: classloader.bundleA
@@ -72,11 +72,17 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testSimpleRequireBundleFails() throws Exception {
+        // Bundle-Version: 1.0.0
+        // Bundle-SymbolicName: classloader.bundleA
+        // Export-Package: org.jboss.test.osgi.framework.classloader.support.a;version=1.0.0;test=x
         Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/classloader/bundleA", A.class);
         Bundle bundleA = installBundle(assemblyA);
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
+            
+            // Bundle-SymbolicName: classloader.bundleB
+            // Require-Bundle: doesnotexist
             Archive<?> assemblyB = assembleArchive("simplerequirebundlefails", "/bundles/classloader/simplerequirebundlefails", B.class);
             Bundle bundleB = installBundle(assemblyB);
             try {
@@ -94,11 +100,17 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testVersionRequireBundle() throws Exception {
+        // Bundle-Version: 1.0.0
+        // Bundle-SymbolicName: classloader.bundleA
+        // Export-Package: org.jboss.test.osgi.framework.classloader.support.a;version=1.0.0;test=x
         Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/classloader/bundleA", A.class);
         Bundle bundleA = installBundle(assemblyA);
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
+            
+            // Bundle-SymbolicName: classloader.bundleB
+            // Require-Bundle: classloader.bundleA;bundle-version="[0.0.0,1.0.0]"
             Archive<?> assemblyB = assembleArchive("versionrequirebundleA", "/bundles/classloader/versionrequirebundleA", B.class);
             Bundle bundleB = installBundle(assemblyB);
             try {
@@ -115,11 +127,17 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testVersionRequireBundleFails() throws Exception {
+        // Bundle-Version: 1.0.0
+        // Bundle-SymbolicName: classloader.bundleA
+        // Export-Package: org.jboss.test.osgi.framework.classloader.support.a;version=1.0.0;test=x
         Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/classloader/bundleA", A.class);
         Bundle bundleA = installBundle(assemblyA);
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
+            
+            // Bundle-SymbolicName: classloader.bundleB
+            // Require-Bundle: classloader.bundleA;bundle-version="[0.0.0,1.0.0)"
             Archive<?> assemblyB = assembleArchive("versionrequirebundlefails", "/bundles/classloader/versionrequirebundlefails", B.class);
             Bundle bundleB = installBundle(assemblyB);
             try {
@@ -137,11 +155,18 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testOptionalRequireBundle() throws Exception {
+        // Bundle-Version: 1.0.0
+        // Bundle-SymbolicName: classloader.bundleA
+        // Export-Package: org.jboss.test.osgi.framework.classloader.support.a;version=1.0.0;test=x
         Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/classloader/bundleA", A.class);
         Bundle bundleA = installBundle(assemblyA);
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
+            
+            
+            // Bundle-SymbolicName: classloader.bundleB
+            // Require-Bundle: classloader.bundleA;resolution:=optional
             Archive<?> assemblyB = assembleArchive("optionalrequirebundleA", "/bundles/classloader/optionalrequirebundleA", B.class);
             Bundle bundleB = installBundle(assemblyB);
             try {
@@ -158,11 +183,17 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testOptionalRequireBundleFails() throws Exception {
+        // Bundle-Version: 1.0.0
+        // Bundle-SymbolicName: classloader.bundleA
+        // Export-Package: org.jboss.test.osgi.framework.classloader.support.a;version=1.0.0;test=x
         Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/classloader/bundleA", A.class);
         Bundle bundleA = installBundle(assemblyA);
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
+            
+            // Bundle-SymbolicName: classloader.bundleB
+            // Require-Bundle: doesnotexist;resolution:=optional
             Archive<?> assemblyB = assembleArchive("optionalrequirebundlefails", "/bundles/classloader/optionalrequirebundlefails", B.class);
             Bundle bundleB = installBundle(assemblyB);
             try {
@@ -179,16 +210,16 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testReExportRequireBundle() throws Exception {
-        // Bundle-Name: BundleA
         // Bundle-Version: 1.0.0
         // Bundle-SymbolicName: classloader.bundleA;test=x
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a;version=1.0.0;test=x
-        Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/classloader/bundleA", A.class);
+        Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/classloader/bundleA", A.class, C.class);
         Bundle bundleA = installBundle(assemblyA);
 
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
+            assertLoadClass(bundleA, C.class.getName());
 
             // Bundle-Name: BundleB
             // Bundle-SymbolicName: classloader.bundleB
@@ -201,6 +232,7 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
                 bundleB.start();
                 assertLoadClass(bundleB, A.class.getName(), bundleA);
                 assertLoadClass(bundleB, B.class.getName(), bundleB);
+                assertLoadClassFail(bundleB, C.class.getName());
 
                 // Bundle-Name: BundleC
                 // Bundle-SymbolicName: classloader.bundleC
@@ -211,6 +243,7 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
                 try {
                     assertLoadClass(bundleC, A.class.getName(), bundleA);
                     assertLoadClass(bundleC, B.class.getName(), bundleB);
+                    assertLoadClassFail(bundleC, C.class.getName());
                 } finally {
                     bundleC.uninstall();
                 }
@@ -224,6 +257,7 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testNoReExportRequireBundle() throws Exception {
+        // Bundle-Version: 1.0.0
         // Bundle-SymbolicName: classloader.bundleA
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a;version=1.0.0;test=x
         Archive<?> assemblyA = assembleArchive("bundleA", "/bundles/classloader/bundleA", A.class);
@@ -231,7 +265,7 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
-
+            
             // Bundle-SymbolicName: classloader.bundleB
             // Require-Bundle: classloader.bundleA
             // Export-Package: org.jboss.test.osgi.framework.classloader.support.b
