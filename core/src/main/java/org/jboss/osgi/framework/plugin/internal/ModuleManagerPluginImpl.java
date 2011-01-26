@@ -308,7 +308,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
                     importedPaths.addAll(paths);
                 }
             }
-            
+
             if (hostBundle.isActivationLazy()) {
                 Set<String> lazyPaths = new HashSet<String>();
                 PathFilter lazyFilter = getLazyPackagesFilter(hostBundle);
@@ -324,8 +324,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
                 PathFilter exportFilter = PathFilters.acceptAll();
                 log.tracef("Module [%s] eager filter: %s", identifier, eagerFilter);
                 specBuilder.addDependency(DependencySpec.createLocalDependencySpec(eagerFilter, exportFilter));
-            } 
-            else {
+            } else {
                 PathFilter importFilter = PathFilters.acceptAll();
                 PathFilter exportFilter = PathFilters.acceptAll();
                 if (importedPaths.isEmpty() == false) {
@@ -434,11 +433,11 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
             // Skip dependencies on the host that the fragment is attached to
             if (importer.isFragment()) {
-               XModule host = importer.getHostRequirement().getWiredCapability().getModule();
-               if (host == exporter)
-                   continue;
+                XModule host = importer.getHostRequirement().getWiredCapability().getModule();
+                if (host == exporter)
+                    continue;
             }
-            
+
             // Skip dependencies on the system module. This is always added as the first module dependency anyway
             // [TODO] Check if the bundle still fails to resolve when it fails to declare an import on 'org.osgi.framework'
             ModuleIdentifier exporterId = getModuleIdentifier(exporter);
@@ -459,9 +458,10 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
         }
 
         Set<String> importedPaths = new HashSet<String>();
-
+        Set<XModule> packageExporters = new HashSet<XModule>();
         for (XWire wire : packageWires) {
             XModule exporter = wire.getExporter();
+            packageExporters.add(exporter);
             XPackageRequirement req = (XPackageRequirement) wire.getRequirement();
             ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
             String path = VFSUtils.getPathFromPackageName(req.getName());
@@ -469,25 +469,29 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             holder.addImportPath(path);
             importedPaths.add(path);
         }
+        PathFilter importedPathsFilter = PathFilters.in(importedPaths);
 
         for (XWire wire : bundleWires) {
             XModule exporter = wire.getExporter();
+            if (packageExporters.contains(exporter))
+                continue;
+            
             XRequireBundleRequirement req = (XRequireBundleRequirement) wire.getRequirement();
             ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
+            holder.setImportFilter(PathFilters.not(importedPathsFilter));
             holder.setOptional(req.isOptional());
-            if (importedPaths.isEmpty() == false) {
-                holder.setImportFilter(PathFilters.not(PathFilters.in(importedPaths)));
-            }
+            
             boolean reexport = Constants.VISIBILITY_REEXPORT.equals(req.getVisibility());
             if (reexport == true) {
                 Set<String> exportedPaths = new HashSet<String>();
                 for (XPackageCapability cap : exporter.getPackageCapabilities()) {
                     String path = cap.getName().replace('.', '/');
-                    exportedPaths.add(path);
+                    if (importedPaths.contains(path) == false)
+                        exportedPaths.add(path);
                 }
-                PathFilter reexportFilter = PathFilters.in(exportedPaths);
-                holder.setImportFilter(reexportFilter);
-                holder.setExportFilter(reexportFilter);
+                PathFilter exportedPathsFilter = PathFilters.in(exportedPaths);
+                holder.setImportFilter(exportedPathsFilter);
+                holder.setExportFilter(exportedPathsFilter);
             }
         }
     }
@@ -568,10 +572,10 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             }
             return DependencySpec.createModuleDependencySpec(importFilter, exportFilter, moduleLoader, identifier, optional);
         }
-        
+
         private void assertNotCreated() {
             if (dependencySpec != null)
                 throw new IllegalStateException("DependencySpec already created");
         }
-   }
+    }
 }
