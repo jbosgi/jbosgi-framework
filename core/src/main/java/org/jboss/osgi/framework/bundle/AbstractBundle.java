@@ -559,7 +559,7 @@ public abstract class AbstractBundle implements Bundle {
     }
 
     /**
-     * The framework must search for localization entries using the follow- ing search rules based on the bundle type:
+     * The framework must search for localization entries using the following search rules based on the bundle type:
      * 
      * fragment bundle - If the bundle is a resolved fragment, then the search for localization data must delegate to the
      * attached host bundle with the highest version. If the fragment is not resolved, then the framework must search the

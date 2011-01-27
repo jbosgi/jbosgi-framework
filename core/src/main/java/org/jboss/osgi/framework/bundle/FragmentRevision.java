@@ -53,6 +53,7 @@ public class FragmentRevision extends AbstractUserRevision {
 
     /**
      * Assert that the given bundleRev is an instance of FragmentRevision
+     * 
      * @throws IllegalArgumentException if the given bundleRev is not an instance of FragmentRevision
      */
     public static FragmentRevision assertUserRevision(AbstractRevision bundleRev) {
@@ -64,7 +65,7 @@ public class FragmentRevision extends AbstractUserRevision {
 
         return (FragmentRevision) bundleRev;
     }
-    
+
     @Override
     public FragmentBundle getBundleState() {
         return (FragmentBundle) super.getBundleState();
@@ -118,6 +119,13 @@ public class FragmentRevision extends AbstractUserRevision {
 
     @Override
     URL getLocalizationEntry(String path) {
+
+        URL result = null;
+        
+        // #Bug1867 - Finding Localization Entries for Fragments
+        // https://www.osgi.org/members/bugzilla/show_bug.cgi?id=1867
+        boolean fallbackToFragment = true;
+
         // If the bundle is a resolved fragment, then the search for localization data must
         // delegate to the attached host bundle with the highest version.
         if (getResolverModule().isResolved()) {
@@ -132,14 +140,17 @@ public class FragmentRevision extends AbstractUserRevision {
                 throw new IllegalStateException("Cannot abtain attached host for: " + this);
 
             boolean hostUninstalled = highest.getBundleState().isUninstalled();
-            URL entry = (hostUninstalled ? getEntry(path) : highest.getEntry(path));
-            return entry;
+            result = (hostUninstalled ? getEntry(path) : highest.getEntry(path));
+
+            // In contrary to the spec the TCK ManifestLocalizationTests.testGetHeaders010() 
+            // expects to find the localization files in the fragment if they were not found
+            // in the attached host
+            if (result != null || fallbackToFragment == false)
+                return result;
         }
 
         // If the fragment is not resolved, then the framework must search the fragment's JAR for the localization entry.
-        else {
-            URL entry = getEntry(path);
-            return entry;
-        }
+        result = getEntry(path);
+        return result;
     }
 }
