@@ -140,7 +140,7 @@ public class FragmentRevision extends AbstractUserRevision {
                 throw new IllegalStateException("Cannot abtain attached host for: " + this);
 
             boolean hostUninstalled = highest.getBundleState().isUninstalled();
-            result = (hostUninstalled ? getEntry(path) : highest.getEntry(path));
+            result = (hostUninstalled ? getEntry(path) : highest.getLocalizationEntry(path));
 
             // In contrary to the spec the TCK ManifestLocalizationTests.testGetHeaders010() 
             // expects to find the localization files in the fragment if they were not found
