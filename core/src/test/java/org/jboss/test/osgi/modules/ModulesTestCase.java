@@ -24,9 +24,6 @@ package org.jboss.test.osgi.modules;
 import java.util.Collections;
 import java.util.List;
 
-import javax.management.MBeanServer;
-import javax.net.SocketFactory;
-
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
@@ -37,7 +34,6 @@ import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
-import org.jboss.osgi.framework.loading.SystemLocalLoader;
 import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -50,7 +46,6 @@ import org.jboss.test.osgi.modules.d.D;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.osgi.framework.BundleActivator;
 
 /**
  * Test low level modules use cases.
@@ -293,100 +288,6 @@ public class ModulesTestCase extends ModulesTestBase {
 
         assertLoadClass(identifierB, C.class.getName());
         assertLoadClass(identifierB, D.class.getName());
-    }
-
-    @Test
-    public void testSystemLocalLoader() throws Exception {
-        ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
-        ModuleSpec.Builder systemBuilder = ModuleSpec.build(systemid);
-        SystemLocalLoader localLoader = new SystemLocalLoader(getFilterPaths(A.class, MBeanServer.class));
-        DependencySpec localDependency = DependencySpec.createLocalDependencySpec(localLoader, localLoader.getExportedPaths());
-        systemBuilder.addDependency(localDependency);
-        addModuleSpec(systemBuilder.create());
-
-        assertLoadClass(systemid, A.class.getName());
-        assertLoadClass(systemid, MBeanServer.class.getName());
-        assertLoadClassFails(systemid, SocketFactory.class.getName());
-        assertLoadClassFails(systemid, BundleActivator.class.getName());
-    }
-
-    @Test
-    public void testSystemModuleWithDependency() throws Exception {
-        // SystemModule -> ModuleA
-
-        ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
-        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
-        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
-        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-        addModuleSpec(specBuilderA.create());
-
-        ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
-        ModuleSpec.Builder systemBuilder = ModuleSpec.build(systemid);
-        systemBuilder.addDependency(DependencySpec.createModuleDependencySpec(identifierA)); // add the module dependency first
-        SystemLocalLoader localLoader = new SystemLocalLoader(getFilterPaths(A.class, MBeanServer.class));
-        DependencySpec localDependency = DependencySpec.createLocalDependencySpec(localLoader, localLoader.getExportedPaths());
-        // localDependency.setExportFilter(PathFilters.acceptAll());
-        // localDependency.setImportFilter(PathFilters.acceptAll());
-        systemBuilder.addDependency(localDependency); // add a dependency on a LocalLoader next
-        addModuleSpec(systemBuilder.create());
-
-        assertLoadClass(systemid, A.class.getName(), identifierA);
-        assertLoadClass(systemid, MBeanServer.class.getName());
-        assertLoadClassFails(systemid, SocketFactory.class.getName());
-        assertLoadClassFails(systemid, BundleActivator.class.getName());
-    }
-
-    @Test
-    public void testDependencyOnSystemModule() throws Exception {
-        // ModuleX -> SystemModule
-
-        ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
-        ModuleSpec.Builder systemBuilder = ModuleSpec.build(systemid);
-        SystemLocalLoader localLoader = new SystemLocalLoader(getFilterPaths(BundleActivator.class));
-        DependencySpec localDependency = DependencySpec.createLocalDependencySpec(localLoader, localLoader.getExportedPaths(), true);
-        systemBuilder.addDependency(localDependency);
-        addModuleSpec(systemBuilder.create());
-
-        ModuleIdentifier identifierX = ModuleIdentifier.create("dummy");
-        ModuleSpec.Builder specBuilderX = ModuleSpec.build(identifierX);
-        specBuilderX.addDependency(DependencySpec.createModuleDependencySpec(systemid));
-        addModuleSpec(specBuilderX.create());
-
-        assertLoadClass(identifierX, BundleActivator.class.getName());
-    }
-
-    @Test
-    public void testDependencyOnSystemModuleWithDependency() throws Exception {
-        // ModuleB -> SystemModule -> ModuleA
-
-        ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
-        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
-        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
-        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-        addModuleSpec(specBuilderA.create());
-
-        ModuleIdentifier systemid = ModuleIdentifier.create("jbosgi.system");
-        ModuleSpec.Builder systemBuilder = ModuleSpec.build(systemid);
-        systemBuilder.addDependency(DependencySpec.createModuleDependencySpec(identifierA, true));
-        SystemLocalLoader localLoader = new SystemLocalLoader(getFilterPaths(MBeanServer.class));
-        DependencySpec localDependency = DependencySpec.createLocalDependencySpec(localLoader, localLoader.getExportedPaths(), true);
-        systemBuilder.addDependency(localDependency);
-        addModuleSpec(systemBuilder.create());
-
-        ModuleIdentifier identifierB = ModuleIdentifier.create("archiveB");
-        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
-        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
-        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(systemid));
-        addModuleSpec(specBuilderB.create());
-
-        assertLoadClass(identifierB, C.class.getName());
-        assertLoadClass(identifierB, D.class.getName());
-        assertLoadClass(identifierB, A.class.getName(), identifierA);
-        assertLoadClass(identifierB, MBeanServer.class.getName());
     }
 
     @Test

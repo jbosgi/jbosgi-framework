@@ -22,7 +22,8 @@
 package org.jboss.osgi.framework.plugin;
 
 import java.util.List;
-import java.util.Set;
+
+import org.jboss.modules.filter.PathFilter;
 
 /**
  * A plugin that provides the configured list of system packages.
@@ -78,9 +79,9 @@ public interface SystemPackagesPlugin extends Plugin {
     boolean isFrameworkPackage(String name);
 
     /**
-     * Get the list of paths that the framework exports
+     * Get the filter that the framework exports
      * 
-     * @return The list of framework exported paths
+     * @return The filter of framework exported paths
      */
-    Set<String> getExportedPaths();
+    PathFilter getExportFilter();
 }
