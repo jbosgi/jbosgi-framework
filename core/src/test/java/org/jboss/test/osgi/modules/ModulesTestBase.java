@@ -72,6 +72,10 @@ public abstract class ModulesTestBase {
     }
 
     protected Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException {
+
+        if (ModuleIdentifier.SYSTEM.equals(identifier))
+            return Module.getSystemModule();
+
         return moduleLoader.loadModule(identifier);
     }
 
@@ -101,7 +105,10 @@ public abstract class ModulesTestBase {
 
     protected void assertLoadClass(ModuleIdentifier identifier, String className, ModuleIdentifier exporterId) throws Exception {
         Class<?> clazz = loadClass(identifier, className);
-        assertEquals(loadModule(exporterId).getClassLoader(), clazz.getClassLoader());
+        ModuleClassLoader expClassLoader = loadModule(exporterId).getClassLoader();
+        ClassLoader wasClassLoader = clazz.getClassLoader();
+        if (ModuleIdentifier.SYSTEM.equals(exporterId) == false)
+            assertEquals(expClassLoader, wasClassLoader);
     }
 
     protected void assertLoadClassFails(ModuleIdentifier identifier, String className) throws Exception {
@@ -116,8 +123,8 @@ public abstract class ModulesTestBase {
     }
 
     protected Class<?> loadClass(ModuleIdentifier identifier, String className) throws Exception {
-        // ClassLoader#resolveClass() only links the class; it doesn't necessarily force it to be initialized. 
-        // To initialize the class you can do Class.forName(name, true, classLoader) 
+        // ClassLoader#resolveClass() only links the class; it doesn't necessarily force it to be initialized.
+        // To initialize the class you can do Class.forName(name, true, classLoader)
         ModuleClassLoader classLoader = loadModule(identifier).getClassLoader();
         Class<?> clazz = Class.forName(className, true, classLoader);
         return clazz;
@@ -127,7 +134,7 @@ public abstract class ModulesTestBase {
         ModuleClassLoader classLoader = loadModule(identifier).getClassLoader();
         return classLoader.getResource(resourcePath);
     }
-    
+
     protected VirtualFile toVirtualFile(JavaArchive archive) throws IOException {
         return OSGiTestHelper.toVirtualFile(archive);
     }

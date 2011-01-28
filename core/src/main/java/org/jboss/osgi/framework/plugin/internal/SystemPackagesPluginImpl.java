@@ -23,11 +23,12 @@ package org.jboss.osgi.framework.plugin.internal;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.filter.MultiplePathFilterBuilder;
+import org.jboss.modules.filter.PathFilter;
+import org.jboss.modules.filter.PathFilters;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.BundleManager.IntegrationMode;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
@@ -50,7 +51,7 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
     // The boot delegation packages
     private List<String> bootDelegationPackages = new ArrayList<String>();
     // The list of exported paths
-    private Set<String> exportedPaths;
+    private PathFilter exportedPaths;
 
     public SystemPackagesPluginImpl(BundleManager bundleManager) {
         super(bundleManager);
@@ -203,30 +204,34 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
     }
 
     @Override
-    public Set<String> getExportedPaths() {
+    public PathFilter getExportFilter() {
         assertInitialized();
         if (exportedPaths == null) {
-            Set<String> result = new LinkedHashSet<String>();
+            MultiplePathFilterBuilder builder = PathFilters.multiplePathFilterBuilder(false);
 
             // Add bootdelegation paths
             List<String> bootDelegationPackages = getBootDelegationPackages();
             for (String packageName : bootDelegationPackages) {
-                if (packageName.endsWith(".*"))
+                if (packageName.equals("*")) {
+                    builder.addFilter(PathFilters.acceptAll(), true);
+                } else if (packageName.endsWith(".*")) {
                     packageName = packageName.substring(0, packageName.length() - 2);
-
-                result.add(packageName.replace('.', '/'));
+                    builder.addFilter(PathFilters.isChildOf(packageName.replace('.', '/')), true);
+                } else {
+                    builder.addFilter(PathFilters.is(packageName.replace('.', '/')), true);
+                }
             }
 
             // Add system packages exported by the framework
             List<String> systemPackages = getSystemPackages();
             for (String packageSpec : systemPackages) {
                 int index = packageSpec.indexOf(';');
-                if (index > 0)
+                if (index > 0) {
                     packageSpec = packageSpec.substring(0, index);
-
-                result.add(packageSpec.replace('.', '/'));
+                }
+                builder.addFilter(PathFilters.is(packageSpec.replace('.', '/')), true);
             }
-            exportedPaths = Collections.unmodifiableSet(result);
+            exportedPaths = builder.create();
         }
         return exportedPaths;
     }

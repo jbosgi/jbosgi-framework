@@ -55,7 +55,6 @@ import org.jboss.osgi.framework.bundle.FragmentRevision;
 import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.OSGiModuleLoader;
 import org.jboss.osgi.framework.bundle.RevisionContent;
-import org.jboss.osgi.framework.loading.FrameworkLocalLoader;
 import org.jboss.osgi.framework.loading.HostBundleFallbackLoader;
 import org.jboss.osgi.framework.loading.HostBundleModuleClassLoader;
 import org.jboss.osgi.framework.loading.LazyActivationLocalLoader;
@@ -225,13 +224,13 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             frameworkModule = providedModule;
         } else {
             frameworkIdentifier = DEFAULT_FRAMEWORK_IDENTIFIER;
-            ModuleSpec.Builder specBuilder = ModuleSpec.build(DEFAULT_FRAMEWORK_IDENTIFIER);
+            ModuleSpec.Builder specBuilder = ModuleSpec.build(frameworkIdentifier);
 
-            FrameworkLocalLoader frameworkLoader = new FrameworkLocalLoader(getBundleManager());
-            Set<String> exportedPaths = frameworkLoader.getExportedPaths();
-            PathFilter importFilter = PathFilters.in(exportedPaths);
+            SystemPackagesPlugin systemPackagesPlugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
+            ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
+            PathFilter importFilter = systemPackagesPlugin.getExportFilter();
             PathFilter exportFilter = PathFilters.acceptAll();
-            specBuilder.addDependency(DependencySpec.createLocalDependencySpec(importFilter, exportFilter, frameworkLoader, exportedPaths));
+            specBuilder.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getSystemModuleLoader(), systemModuleId, false));
             specBuilder.setModuleClassLoaderFactory(new SystemBundleModuleClassLoader.Factory(getBundleManager().getSystemBundle()));
 
             AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
@@ -254,7 +253,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
             // Add the framework module as the first required dependency
             PathFilter fwImports = PathFilters.acceptAll();
-            PathFilter fwExports = PathFilters.in(getPlugin(SystemPackagesPlugin.class).getExportedPaths());
+            PathFilter fwExports = PathFilters.acceptAll();
             ModuleLoader fwLoader = getModule(frameworkIdentifier).getModuleLoader();
             DependencySpec frameworkDep = DependencySpec.createModuleDependencySpec(fwImports, fwExports, fwLoader, frameworkIdentifier, false);
             moduleDependencies.add(frameworkDep);

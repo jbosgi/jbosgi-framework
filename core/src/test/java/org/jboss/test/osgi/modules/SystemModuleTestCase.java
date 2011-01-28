@@ -1,0 +1,146 @@
+/*
+ * JBoss, Home of Professional Open Source
+ * Copyright 2005, JBoss Inc., and individual contributors as indicated
+ * by the @authors tag. See the copyright.txt in the distribution for a
+ * full listing of individual contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
+package org.jboss.test.osgi.modules;
+
+import java.io.InputStream;
+
+import org.jboss.modules.DependencySpec;
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleSpec;
+import org.jboss.modules.ResourceLoaderSpec;
+import org.jboss.modules.filter.MultiplePathFilterBuilder;
+import org.jboss.modules.filter.PathFilter;
+import org.jboss.modules.filter.PathFilters;
+import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.osgi.vfs.VFSUtils;
+import org.jboss.osgi.vfs.VirtualFile;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+/**
+ * Test delegation to the system module
+ * 
+ * @author Thomas.Diesler@jboss.com
+ * @since 28-Jan-2011
+ */
+public class SystemModuleTestCase extends ModulesTestBase {
+
+    private VirtualFile virtualFileA;
+
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        virtualFileA = toVirtualFile(getModuleA());
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        VFSUtils.safeClose(virtualFileA);
+    }
+
+    @Test
+    public void testAvailableOnSystemModule() throws Exception {
+        ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
+        assertLoadClass(systemModuleId, "javax.security.auth.x500.X500Principal", systemModuleId);
+    }
+
+    @Test
+    public void testAvailableOnModule() throws Exception {
+        ModuleIdentifier identifier = ModuleIdentifier.create("moduleA");
+        ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
+        specBuilder.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilder.create());
+        assertLoadClass(identifier, "javax.security.auth.x500.X500Principal", identifier);
+    }
+
+    @Test
+    public void testDelegationToSystemModule() throws Exception {
+
+        ModuleIdentifier identifier = ModuleIdentifier.create("bootdelegation");
+        ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
+        ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
+        PathFilter importFilter = getDelegationFilter();
+        PathFilter exportFilter = PathFilters.acceptAll();
+        specBuilder.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getSystemModuleLoader(), systemModuleId, false));
+        specBuilder.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilder.create());
+
+        assertLoadClass(systemModuleId, "javax.security.auth.x500.X500Principal", systemModuleId);
+        assertLoadClass(identifier, "javax.security.auth.x500.X500Principal", systemModuleId);
+    }
+
+    @Test
+    public void testTwoHopDelegation() throws Exception {
+
+        ModuleIdentifier identifierB = ModuleIdentifier.create("moduleB");
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
+        PathFilter importFilter = getDelegationFilter();
+        PathFilter exportFilter = PathFilters.acceptAll();
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getSystemModuleLoader(), systemModuleId, false));
+        addModuleSpec(specBuilderB.create());
+        
+        ModuleIdentifier identifierA = ModuleIdentifier.create("moduleA");
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
+        specBuilderA.addDependency(DependencySpec.createModuleDependencySpec(identifierB));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderA.create());
+
+        assertLoadClass(systemModuleId, "javax.security.auth.x500.X500Principal", systemModuleId);
+        assertLoadClass(identifierB, "javax.security.auth.x500.X500Principal", systemModuleId);
+        assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal", systemModuleId);
+    }
+
+    private PathFilter getDelegationFilter() {
+        MultiplePathFilterBuilder pathBuilder = PathFilters.multiplePathFilterBuilder(false);
+        pathBuilder.addFilter(PathFilters.isChildOf("java"), true);
+        pathBuilder.addFilter(PathFilters.isChildOf("javax/security"), true);
+        PathFilter importFilter = pathBuilder.create();
+        return importFilter;
+    }
+
+    private JavaArchive getModuleA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
+        archive.addClass("javax.security.auth.x500.X500Principal");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+}
