@@ -21,19 +21,26 @@
  */
 package org.jboss.osgi.framework.plugin.internal;
 
+import static org.osgi.framework.Constants.FRAMEWORK_BOOTDELEGATION;
+import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT;
+import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT_BOOT;
+import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT_EXT;
+import static org.osgi.framework.Constants.FRAMEWORK_SYSTEMPACKAGES;
+import static org.osgi.framework.Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA;
+
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.filter.MultiplePathFilterBuilder;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.osgi.framework.bundle.BundleManager;
-import org.jboss.osgi.framework.bundle.BundleManager.IntegrationMode;
 import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.framework.plugin.SystemPackagesPlugin;
-import org.osgi.framework.Constants;
 
 /**
  * A plugin manages the Framework's system packages.
@@ -47,85 +54,79 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
     final Logger log = Logger.getLogger(SystemPackagesPluginImpl.class);
 
     // The derived combination of all system packages
-    private List<String> allPackages = new ArrayList<String>();
+    private Set<String> systemPackages = new LinkedHashSet<String>();
     // The boot delegation packages
-    private List<String> bootDelegationPackages = new ArrayList<String>();
-    // The list of exported paths
-    private PathFilter exportedPaths;
+    private Set<String> bootDelegationPackages = new LinkedHashSet<String>();
+    // The framework packages
+    private Set<String> frameworkPackages = new LinkedHashSet<String>();
 
     public SystemPackagesPluginImpl(BundleManager bundleManager) {
         super(bundleManager);
 
-        String systemPackages = (String) bundleManager.getProperty(Constants.FRAMEWORK_SYSTEMPACKAGES);
-        if (systemPackages != null) {
-            allPackages.addAll(packagesAsList(systemPackages));
+        String systemPackagesProp = (String) bundleManager.getProperty(FRAMEWORK_SYSTEMPACKAGES);
+        if (systemPackagesProp != null) {
+            systemPackages.addAll(packagesAsList(systemPackagesProp));
         } else {
             // The default system packages
-            allPackages.add("javax.imageio");
-            allPackages.add("javax.imageio.stream");
-            allPackages.add("javax.management");
-            allPackages.add("javax.management.loading");
+            systemPackages.add("javax.imageio");
+            systemPackages.add("javax.imageio.stream");
+            systemPackages.add("javax.management");
+            systemPackages.add("javax.management.loading");
 
-            allPackages.add("javax.management.modelmbean");
-            allPackages.add("javax.management.monitor");
-            allPackages.add("javax.management.openmbean");
-            allPackages.add("javax.management.relation");
-            allPackages.add("javax.management.remote");
-            allPackages.add("javax.management.remote.rmi");
-            allPackages.add("javax.management.timer");
+            systemPackages.add("javax.management.modelmbean");
+            systemPackages.add("javax.management.monitor");
+            systemPackages.add("javax.management.openmbean");
+            systemPackages.add("javax.management.relation");
+            systemPackages.add("javax.management.remote");
+            systemPackages.add("javax.management.remote.rmi");
+            systemPackages.add("javax.management.timer");
 
-            allPackages.add("javax.naming");
-            allPackages.add("javax.naming.event");
-            allPackages.add("javax.naming.spi");
+            systemPackages.add("javax.naming");
+            systemPackages.add("javax.naming.event");
+            systemPackages.add("javax.naming.spi");
 
-            allPackages.add("javax.net");
-            allPackages.add("javax.net.ssl");
+            systemPackages.add("javax.net");
+            systemPackages.add("javax.net.ssl");
 
-            allPackages.add("javax.security.cert");
+            systemPackages.add("javax.security.cert");
 
-            allPackages.add("javax.xml.datatype");
-            allPackages.add("javax.xml.namespace");
-            allPackages.add("javax.xml.parsers");
-            allPackages.add("javax.xml.validation");
-            allPackages.add("javax.xml.transform");
-            allPackages.add("javax.xml.transform.dom");
-            allPackages.add("javax.xml.transform.sax");
-            allPackages.add("javax.xml.transform.stream");
+            systemPackages.add("javax.xml.datatype");
+            systemPackages.add("javax.xml.namespace");
+            systemPackages.add("javax.xml.parsers");
+            systemPackages.add("javax.xml.validation");
+            systemPackages.add("javax.xml.transform");
+            systemPackages.add("javax.xml.transform.dom");
+            systemPackages.add("javax.xml.transform.sax");
+            systemPackages.add("javax.xml.transform.stream");
 
-            allPackages.add("org.jboss.modules");
+            systemPackages.add("org.jboss.modules");
 
-            allPackages.add("org.w3c.dom");
-            allPackages.add("org.w3c.dom.bootstrap");
-            allPackages.add("org.w3c.dom.ls");
-            allPackages.add("org.w3c.dom.events");
-            allPackages.add("org.w3c.dom.ranges");
-            allPackages.add("org.w3c.dom.views");
-            allPackages.add("org.w3c.dom.traversal");
+            systemPackages.add("org.w3c.dom");
+            systemPackages.add("org.w3c.dom.bootstrap");
+            systemPackages.add("org.w3c.dom.ls");
+            systemPackages.add("org.w3c.dom.events");
+            systemPackages.add("org.w3c.dom.ranges");
+            systemPackages.add("org.w3c.dom.views");
+            systemPackages.add("org.w3c.dom.traversal");
 
-            allPackages.add("org.xml.sax");
-            allPackages.add("org.xml.sax.ext");
-            allPackages.add("org.xml.sax.helpers");
+            systemPackages.add("org.xml.sax");
+            systemPackages.add("org.xml.sax.ext");
+            systemPackages.add("org.xml.sax.helpers");
 
             // SchemaFactoryFinder attempting to use the platform default XML Schema validator
-            allPackages.add("com.sun.org.apache.xerces.internal.jaxp.validation");
+            systemPackages.add("com.sun.org.apache.xerces.internal.jaxp.validation");
 
-            // Only add non-jdk packages when running STANDALONE
-            if (bundleManager.getIntegrationMode() == IntegrationMode.STANDALONE)
-                allPackages.addAll(getFrameworkPackages());
-
-            String asString = packagesAsString(allPackages);
-            bundleManager.setProperty(Constants.FRAMEWORK_SYSTEMPACKAGES, asString);
+            String asString = packagesAsString(systemPackages);
+            bundleManager.setProperty(FRAMEWORK_SYSTEMPACKAGES, asString);
         }
 
         // Add the extra system packages
-        String extraPackages = (String) bundleManager.getProperty(Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA);
+        String extraPackages = (String) bundleManager.getProperty(FRAMEWORK_SYSTEMPACKAGES_EXTRA);
         if (extraPackages != null)
-            allPackages.addAll(packagesAsList(extraPackages));
-
-        Collections.sort(allPackages);
+            systemPackages.addAll(packagesAsList(extraPackages));
 
         // Initialize the boot delegation package names
-        String bootDelegationProp = (String) bundleManager.getProperty(Constants.FRAMEWORK_BOOTDELEGATION);
+        String bootDelegationProp = (String) bundleManager.getProperty(FRAMEWORK_BOOTDELEGATION);
         if (bootDelegationProp != null) {
             String[] packageNames = bootDelegationProp.split(",");
             for (String packageName : packageNames) {
@@ -134,40 +135,60 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
         } else {
             bootDelegationPackages.add("sun.reflect");
         }
+        
+        // Initialize the framework package names
+        frameworkPackages.add("org.jboss.msc.service");
+        frameworkPackages.add("org.jboss.osgi.deployment.deployer");
+        frameworkPackages.add("org.jboss.osgi.deployment.interceptor");
+        frameworkPackages.add("org.jboss.osgi.framework.url");
+        frameworkPackages.add("org.jboss.osgi.modules");
+
+        frameworkPackages.add("org.osgi.framework;version=1.5");
+        frameworkPackages.add("org.osgi.framework.hooks;version=1.0");
+        frameworkPackages.add("org.osgi.framework.hooks.service;version=1.0");
+        frameworkPackages.add("org.osgi.framework.launch;version=1.0");
+        frameworkPackages.add("org.osgi.service.condpermadmin;version=1.1");
+        frameworkPackages.add("org.osgi.service.packageadmin;version=1.2");
+        frameworkPackages.add("org.osgi.service.permissionadmin;version=1.2");
+        frameworkPackages.add("org.osgi.service.startlevel;version=1.1");
+        frameworkPackages.add("org.osgi.service.url;version=1.0");
+        frameworkPackages.add("org.osgi.util.tracker;version=1.4");
     }
 
     @Override
-    public List<String> getFrameworkPackages() {
-        List<String> packages = new ArrayList<String>();
-        packages.add("org.jboss.msc.service");
-        packages.add("org.jboss.osgi.deployment.deployer");
-        packages.add("org.jboss.osgi.deployment.interceptor");
-        packages.add("org.jboss.osgi.framework.url");
-        packages.add("org.jboss.osgi.modules");
+    public Set<String> getFrameworkPackages() {
+        return Collections.unmodifiableSet(frameworkPackages);
+    }
 
-        packages.add("org.osgi.framework;version=1.5");
-        packages.add("org.osgi.framework.hooks;version=1.0");
-        packages.add("org.osgi.framework.hooks.service;version=1.0");
-        packages.add("org.osgi.framework.launch;version=1.0");
-        packages.add("org.osgi.service.condpermadmin;version=1.1");
-        packages.add("org.osgi.service.packageadmin;version=1.2");
-        packages.add("org.osgi.service.permissionadmin;version=1.2");
-        packages.add("org.osgi.service.startlevel;version=1.1");
-        packages.add("org.osgi.service.url;version=1.0");
-        packages.add("org.osgi.util.tracker;version=1.4");
-        return packages;
+    @Override
+    public Set<String> getFrameworkPaths() {
+        Set<String> paths = new LinkedHashSet<String>();
+        for (String packageSpec : getFrameworkPackages()) {
+            int index = packageSpec.indexOf(';');
+            if (index > 0) {
+                packageSpec = packageSpec.substring(0, index);
+            }
+            paths.add(packageSpec.replace('.', '/'));
+        }
+        return Collections.unmodifiableSet(paths);
     }
 
     @Override
     public boolean isFrameworkPackage(String name) {
         assertInitialized();
-        return isPackageNameInList(getFrameworkPackages(), name);
+        return isPackageNameInSet(getFrameworkPackages(), name);
     }
 
     @Override
-    public List<String> getBootDelegationPackages() {
+    public PathFilter getFrameworkPackageFilter() {
         assertInitialized();
-        return Collections.unmodifiableList(bootDelegationPackages);
+        return PathFilters.in(getFrameworkPaths());
+    }
+
+    @Override
+    public Set<String> getBootDelegationPackages() {
+        assertInitialized();
+        return Collections.unmodifiableSet(bootDelegationPackages);
     }
 
     @Override
@@ -192,51 +213,61 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
     }
 
     @Override
-    public List<String> getSystemPackages() {
+    public Set<String> getSystemPackages() {
         assertInitialized();
-        return Collections.unmodifiableList(allPackages);
+        return Collections.unmodifiableSet(systemPackages);
     }
 
     @Override
     public boolean isSystemPackage(String name) {
         assertInitialized();
-        return isPackageNameInList(allPackages, name);
+        return isPackageNameInSet(systemPackages, name);
     }
 
     @Override
-    public PathFilter getExportFilter() {
+    public PathFilter getSystemPackageFilter() {
         assertInitialized();
-        if (exportedPaths == null) {
-            MultiplePathFilterBuilder builder = PathFilters.multiplePathFilterBuilder(false);
+        MultiplePathFilterBuilder builder = PathFilters.multiplePathFilterBuilder(false);
 
-            // Add bootdelegation paths
-            List<String> bootDelegationPackages = getBootDelegationPackages();
-            for (String packageName : bootDelegationPackages) {
-                if (packageName.equals("*")) {
+        // Add bootdelegation paths
+        for (String packageName : getBootDelegationPackages()) {
+            if (packageName.equals("*")) {
+                if (doFrameworkPackageDelegation()) {
                     builder.addFilter(PathFilters.acceptAll(), true);
-                } else if (packageName.endsWith(".*")) {
-                    packageName = packageName.substring(0, packageName.length() - 2);
-                    builder.addFilter(PathFilters.isChildOf(packageName.replace('.', '/')), true);
                 } else {
-                    builder.addFilter(PathFilters.is(packageName.replace('.', '/')), true);
+                    builder.addFilter(PathFilters.all(PathFilters.acceptAll(), PathFilters.not(getFrameworkPackageFilter())), true);
                 }
+            } else if (packageName.endsWith(".*")) {
+                packageName = packageName.substring(0, packageName.length() - 2);
+                builder.addFilter(PathFilters.isChildOf(packageName.replace('.', '/')), true);
+            } else {
+                builder.addFilter(PathFilters.is(packageName.replace('.', '/')), true);
             }
-
-            // Add system packages exported by the framework
-            List<String> systemPackages = getSystemPackages();
-            for (String packageSpec : systemPackages) {
-                int index = packageSpec.indexOf(';');
-                if (index > 0) {
-                    packageSpec = packageSpec.substring(0, index);
-                }
-                builder.addFilter(PathFilters.is(packageSpec.replace('.', '/')), true);
-            }
-            exportedPaths = builder.create();
         }
-        return exportedPaths;
+
+        // Add system packages exported by the framework
+        for (String packageSpec : getSystemPackages()) {
+            int index = packageSpec.indexOf(';');
+            if (index > 0) {
+                packageSpec = packageSpec.substring(0, index);
+            }
+            builder.addFilter(PathFilters.is(packageSpec.replace('.', '/')), true);
+        }
+
+        return builder.create();
     }
 
-    private boolean isPackageNameInList(List<String> packages, String name) {
+    @Override
+    public boolean doFrameworkPackageDelegation() {
+        String property = (String) getBundleManager().getProperty(FRAMEWORK_BUNDLE_PARENT);
+        if (property == null) {
+            property = FRAMEWORK_BUNDLE_PARENT_BOOT;
+        }
+        boolean allBootDelegation = getBootDelegationPackages().contains("*");
+        return !(allBootDelegation && (FRAMEWORK_BUNDLE_PARENT_BOOT.equals(property) || FRAMEWORK_BUNDLE_PARENT_EXT.equals(property)));
+    }
+
+    private boolean isPackageNameInSet(Set<String> packages, String name) {
         if (name == null)
             throw new IllegalArgumentException("Null package name");
 
@@ -255,12 +286,14 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
         return false;
     }
 
-    private String packagesAsString(List<String> sysPackages) {
+    private String packagesAsString(Set<String> sysPackages) {
+        int i = 0;
         StringBuffer result = new StringBuffer();
-        for (int i = 0; i < sysPackages.size(); i++) {
-            if (i > 0)
+        for (String packageName : sysPackages) {
+            if (i++ > 0) {
                 result.append(",");
-            result.append(sysPackages.get(i));
+            }
+            result.append(packageName);
         }
         return result.toString();
     }
@@ -276,7 +309,7 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
     }
 
     private void assertInitialized() {
-        if (allPackages.isEmpty())
+        if (systemPackages.isEmpty())
             throw new IllegalStateException("SystemPackagesPlugin not initialized");
     }
 }

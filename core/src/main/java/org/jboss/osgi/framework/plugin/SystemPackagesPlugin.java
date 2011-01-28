@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.plugin;
 
-import java.util.List;
+import java.util.Set;
 
 import org.jboss.modules.filter.PathFilter;
 
@@ -38,7 +38,7 @@ public interface SystemPackagesPlugin extends Plugin {
      * 
      * @return The list of defined system packages
      */
-    List<String> getBootDelegationPackages();
+    Set<String> getBootDelegationPackages();
 
     /**
      * Return whether the given package name is a boot delegation package.
@@ -50,11 +50,20 @@ public interface SystemPackagesPlugin extends Plugin {
 
     /**
      * Get the list of defined system packages
+     * This does not include bootdelegation paths.
      * 
      * @return The list of defined system packages
      */
-    List<String> getSystemPackages();
+    Set<String> getSystemPackages();
 
+    /**
+     * Get the filter that the system exports
+     * This includes bootdelegation paths.
+     * 
+     * @return The filter of framework exported paths
+     */
+    PathFilter getSystemPackageFilter();
+    
     /**
      * Return whether the given package name is a system package.
      * 
@@ -68,7 +77,14 @@ public interface SystemPackagesPlugin extends Plugin {
      * 
      * @return The list of framework provided packages
      */
-    List<String> getFrameworkPackages();
+    Set<String> getFrameworkPackages();
+
+    /**
+     * Get the list of paths provided by the framework
+     * 
+     * @return The list of framework provided paths
+     */
+    Set<String> getFrameworkPaths();
 
     /**
      * Return whether the given package name is a framework package.
@@ -80,8 +96,15 @@ public interface SystemPackagesPlugin extends Plugin {
 
     /**
      * Get the filter that the framework exports
+     * This does not include system paths.
      * 
      * @return The filter of framework exported paths
      */
-    PathFilter getExportFilter();
+    PathFilter getFrameworkPackageFilter();
+
+    /**
+     * True if the framework is configured to delegate 
+     * @return
+     */
+    boolean doFrameworkPackageDelegation();
 }

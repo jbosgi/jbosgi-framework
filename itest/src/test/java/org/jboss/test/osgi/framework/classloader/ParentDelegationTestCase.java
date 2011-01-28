@@ -21,8 +21,6 @@
  */
 package org.jboss.test.osgi.framework.classloader;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
 import java.io.InputStream;
@@ -46,94 +44,71 @@ import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
 
 /**
- * Test boot delegation
+ * Test bundle parent delegation
  * 
  * @author thomas.diesler@jboss.com
  * @since 28-Jan-2011
  */
-public class BootDelegationTestCase extends OSGiTest {
-
-    private static ClassLoader bootClassLoader = new BootClassLoader();
-    private static class BootClassLoader extends ClassLoader {
-        protected BootClassLoader() {
-            super(null);
-        }
-    }
-    
-    private Class<?> vmClass;
-    
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        vmClass = bootClassLoader.loadClass("javax.security.auth.x500.X500Principal");
-    }
+public class ParentDelegationTestCase extends OSGiTest {
 
     @Test
-    public void testNoWildcard() throws Exception {
-        doTestBootDelegation("javax.security.auth.x500", true);
+    public void testNoBundleParent() throws Exception {
+        doTestParentClassLoader(null, Bundle.class.getName(), false);
     }
     
     @Test
-    public void testWildcardOne() throws Exception {
-        doTestBootDelegation("javax.security.auth.*", true);
+    public void testBundleParentBoot() throws Exception {
+        doTestParentClassLoader(Constants.FRAMEWORK_BUNDLE_PARENT_BOOT, Bundle.class.getName(), false);
     }
     
     @Test
-    public void testWildcardTwo() throws Exception {
-        doTestBootDelegation("javax.security.*", true);
+    public void testBundleParentExt() throws Exception {
+        doTestParentClassLoader(Constants.FRAMEWORK_BUNDLE_PARENT_EXT, Bundle.class.getName(), false);
     }
     
     @Test
-    public void testWildcardAll() throws Exception {
-        doTestBootDelegation("*", true);
+    public void testBundleParentApp() throws Exception {
+        // here we assume the framework jar was placed on the app class loader.
+        doTestParentClassLoader(Constants.FRAMEWORK_BUNDLE_PARENT_APP, Bundle.class.getName(), true);
     }
     
     @Test
-    public void testNullBootDelegation() throws Exception {
-        doTestBootDelegation(null, false);
+    public void testBundleParentFramework() throws Exception {
+        // here we assume the framework jar was placed on the app class loader.
+        doTestParentClassLoader(Constants.FRAMEWORK_BUNDLE_PARENT_FRAMEWORK, Bundle.class.getName(), true);
     }
 
-    @Test
-    public void testJunkBootDelegation() throws Exception {
-        doTestBootDelegation("junk.*", false);
-    }
-
-    private void doTestBootDelegation(String bootDelegation, boolean fromBoot) throws Exception {
+    private void doTestParentClassLoader(String parentType, String className, boolean pass) throws Exception {
         Map<String, String> configuration = new HashMap<String, String>();
         configuration.put("org.osgi.framework.storage", "target/osgi-store");
         configuration.put("org.osgi.framework.storage.clean", "onFirstInit");
-        if (bootDelegation != null)
-            configuration.put(Constants.FRAMEWORK_BOOTDELEGATION, bootDelegation);
-        
+        configuration.put(Constants.FRAMEWORK_BOOTDELEGATION, "*");
+        if (parentType != null)
+            configuration.put(Constants.FRAMEWORK_BUNDLE_PARENT, parentType);
+
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
         Framework framework = factory.newFramework(configuration);
         framework.start();
-        try
-        {
+        try {
             BundleContext sysContext = framework.getBundleContext();
             InputStream inputStream = OSGiTestHelper.toInputStream(getTestArchive());
-            Bundle testBundle = sysContext.installBundle("http://bootdelegation", inputStream);
-            Class<?> testClass = null;
+            Bundle testBundle = sysContext.installBundle("http://parentdelegation", inputStream);
             try {
-                testClass = testBundle.loadClass("javax.security.auth.x500.X500Principal");
+                testBundle.loadClass(className);
+                if (!pass)
+                    fail("Should not be able to load class: " + className);
             } catch (ClassNotFoundException e) {
-                fail("Unexpected ClassNotFoundException");
+                if (pass)
+                    fail("Unexpected ClassNotFoundException");
             }
-            if (fromBoot)
-                assertEquals("Unexpected class", vmClass, testClass);
-            else
-                assertFalse("Unexpected class", vmClass.equals(testClass));
-            
-        }
-        finally
-        {
+        } finally {
             framework.stop();
             framework.waitForStop(10000);
         }
     }
 
     private JavaArchive getTestArchive() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bootdelegation");
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "parentdelegation");
         archive.addClasses(X500Principal.class);
         archive.setManifest(new Asset() {
             public InputStream openStream() {

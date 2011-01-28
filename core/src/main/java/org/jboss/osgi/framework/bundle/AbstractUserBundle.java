@@ -276,10 +276,11 @@ public abstract class AbstractUserBundle extends AbstractBundle {
      * Removes uninstalled bundles
      */
     public void remove() {
+        
         BundleManager bundleManager = getBundleManager();
         bundleManager.removeBundle(this);
 
-        BundleStorageState storageState = getDeployment().getAttachment(BundleStorageState.class);
+        BundleStorageState storageState = getBundleStorageState();
         storageState.deleteBundleStorage();
 
         ModuleManagerPlugin moduleManager = bundleManager.getPlugin(ModuleManagerPlugin.class);
