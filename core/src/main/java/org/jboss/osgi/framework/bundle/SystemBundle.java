@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.jboss.osgi.framework.bundle.BundleManager.IntegrationMode;
 import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
 import org.jboss.osgi.framework.plugin.SystemPackagesPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -58,9 +57,9 @@ public class SystemBundle extends AbstractBundle {
         OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(getSymbolicName(), getVersion());
         SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
 
-        List<String> exportedPackages = new ArrayList<String>(plugin.getSystemPackages());
-        if (bundleManager.getIntegrationMode() == IntegrationMode.CONTAINER)
-            exportedPackages.addAll(plugin.getFrameworkPackages());
+        List<String> exportedPackages = new ArrayList<String>();
+        exportedPackages.addAll(plugin.getSystemPackages());
+        exportedPackages.addAll(plugin.getFrameworkPackages());
 
         if (exportedPackages.isEmpty() == true)
             throw new IllegalStateException("Framework system packages not available");

@@ -383,6 +383,9 @@ public class FrameworkState extends SystemBundle implements Framework {
                         AbstractUserRevision userRev = (AbstractUserRevision) rev;
                         userRev.close();
                     }
+                    AbstractUserBundle userBundle = (AbstractUserBundle) bundleState;
+                    BundleStorageState storageState = userBundle.getBundleStorageState();
+                    storageState.deleteRevisionStorage();
                 }
             }
 

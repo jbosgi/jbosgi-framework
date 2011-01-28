@@ -25,6 +25,7 @@ import static org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,6 +40,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoader;
 import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.modules.filter.PathFilter;
@@ -224,13 +226,10 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             frameworkModule = providedModule;
         } else {
             frameworkIdentifier = DEFAULT_FRAMEWORK_IDENTIFIER;
-            ModuleSpec.Builder specBuilder = ModuleSpec.build(frameworkIdentifier);
 
-            SystemPackagesPlugin systemPackagesPlugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
-            ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
-            PathFilter importFilter = systemPackagesPlugin.getExportFilter();
-            PathFilter exportFilter = PathFilters.acceptAll();
-            specBuilder.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getSystemModuleLoader(), systemModuleId, false));
+            ModuleSpec.Builder specBuilder = ModuleSpec.build(frameworkIdentifier);
+            specBuilder.addDependency(getFrameworkModuleDependency());
+            specBuilder.addDependency(getSystemModuleDependency());
             specBuilder.setModuleClassLoaderFactory(new SystemBundleModuleClassLoader.Factory(getBundleManager().getSystemBundle()));
 
             AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
@@ -238,6 +237,48 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             moduleLoader.addModule(bundleRev, frameworkSpec);
         }
         return frameworkIdentifier;
+    }
+
+    private DependencySpec getFrameworkModuleDependency() {
+        if (frameworkModule != null) {
+            ModuleLoader moduleLoader = frameworkModule.getModuleLoader();
+            return DependencySpec.createModuleDependencySpec(PathFilters.acceptAll(), PathFilters.acceptAll(), moduleLoader, frameworkIdentifier, false);
+        } else {
+            SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
+            PathFilter frameworkFilter = plugin.getFrameworkPackageFilter();
+
+            final ClassLoader classLoader = BundleManager.class.getClassLoader();
+            LocalLoader localLoader = new LocalLoader() {
+
+                @Override
+                public Class<?> loadClassLocal(String name, boolean resolve) {
+                    try {
+                        return classLoader.loadClass(name);
+                    } catch (ClassNotFoundException ex) {
+                        return null;
+                    }
+                }
+
+                @Override
+                public List<Resource> loadResourceLocal(String name) {
+                    return Collections.emptyList();
+                }
+
+                @Override
+                public Resource loadResourceLocal(String root, String name) {
+                    return null;
+                }
+            };
+            return DependencySpec.createLocalDependencySpec(frameworkFilter, PathFilters.acceptAll(), localLoader, plugin.getFrameworkPaths());
+        }
+    }
+
+    private DependencySpec getSystemModuleDependency() {
+        ModuleIdentifier sysModuleId = Module.getSystemModule().getIdentifier();
+        ModuleLoader sysModuleLoader = Module.getSystemModuleLoader();
+        PathFilter systemFilter = getBundleManager().getPlugin(SystemPackagesPlugin.class).getSystemPackageFilter();
+        DependencySpec dependencySpec = DependencySpec.createModuleDependencySpec(systemFilter, PathFilters.acceptAll(), sysModuleLoader, sysModuleId, false);
+        return dependencySpec;
     }
 
     /**
@@ -252,11 +293,12 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             List<DependencySpec> moduleDependencies = new ArrayList<DependencySpec>();
 
             // Add the framework module as the first required dependency
-            PathFilter fwImports = PathFilters.acceptAll();
-            PathFilter fwExports = PathFilters.acceptAll();
-            ModuleLoader fwLoader = getModule(frameworkIdentifier).getModuleLoader();
-            DependencySpec frameworkDep = DependencySpec.createModuleDependencySpec(fwImports, fwExports, fwLoader, frameworkIdentifier, false);
-            moduleDependencies.add(frameworkDep);
+            SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
+            if (plugin.doFrameworkPackageDelegation()) {
+                moduleDependencies.add(getFrameworkModuleDependency());
+            } else {
+                moduleDependencies.add(getSystemModuleDependency());
+            }
 
             // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
             Map<XModule, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XModule, ModuleDependencyHolder>();
@@ -474,12 +516,12 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             XModule exporter = wire.getExporter();
             if (packageExporters.contains(exporter))
                 continue;
-            
+
             XRequireBundleRequirement req = (XRequireBundleRequirement) wire.getRequirement();
             ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
             holder.setImportFilter(PathFilters.not(importedPathsFilter));
             holder.setOptional(req.isOptional());
-            
+
             boolean reexport = Constants.VISIBILITY_REEXPORT.equals(req.getVisibility());
             if (reexport == true) {
                 Set<String> exportedPaths = new HashSet<String>();
