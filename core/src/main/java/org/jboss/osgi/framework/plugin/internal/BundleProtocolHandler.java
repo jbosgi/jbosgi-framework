@@ -53,4 +53,7 @@ public class BundleProtocolHandler extends AbstractURLStreamHandlerService {
         URL entry = revContent.getEntry(url.getPath());
         return entry.openConnection();
     }
+
+    // [TODO] overwrite hashCode for to prevent host address resolution
+    // when offline the BundleEntriesTestCase is slow because of this 
 }

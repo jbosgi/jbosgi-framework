@@ -27,6 +27,9 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.management.MBeanServer;
+
+import org.jboss.logging.Logger;
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiTest;
@@ -39,6 +42,7 @@ import org.jboss.test.osgi.framework.simple.bundleA.SimpleActivator;
 import org.jboss.test.osgi.framework.simple.bundleA.SimpleService;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -217,7 +221,7 @@ public class SystemPackageDependencyTestCase extends OSGiTest {
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleActivator(SimpleActivator.class);
-                builder.addImportPackages("org.osgi.framework");
+                builder.addImportPackages(BundleActivator.class);
                 return builder.openStream();
             }
         });
@@ -233,7 +237,7 @@ public class SystemPackageDependencyTestCase extends OSGiTest {
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleActivator(LoggingActivator.class);
-                builder.addImportPackages("org.osgi.framework");
+                builder.addImportPackages(BundleActivator.class);
                 return builder.openStream();
             }
         });
@@ -249,7 +253,7 @@ public class SystemPackageDependencyTestCase extends OSGiTest {
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleActivator(LoggingActivator.class);
-                builder.addImportPackages("org.osgi.framework", "org.jboss.logging");
+                builder.addImportPackages(BundleActivator.class, Logger.class);
                 return builder.openStream();
             }
         });
@@ -265,7 +269,7 @@ public class SystemPackageDependencyTestCase extends OSGiTest {
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleActivator(SimpleManagementActivator.class);
-                builder.addImportPackages("org.osgi.framework");
+                builder.addImportPackages(BundleActivator.class);
                 return builder.openStream();
             }
         });
@@ -281,7 +285,7 @@ public class SystemPackageDependencyTestCase extends OSGiTest {
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleActivator(SimpleManagementActivator.class);
-                builder.addImportPackages("org.osgi.framework", "javax.management");
+                builder.addImportPackages(BundleActivator.class, MBeanServer.class);
                 return builder.openStream();
             }
         });

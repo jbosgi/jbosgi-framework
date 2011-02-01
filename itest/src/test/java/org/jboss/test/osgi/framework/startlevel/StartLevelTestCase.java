@@ -254,14 +254,12 @@ public class StartLevelTestCase extends OSGiFrameworkTest {
     private JavaArchive createTestBundle(String name, final Class<? extends BundleActivator> activator) {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, name);
         archive.setManifest(new Asset() {
-
-            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleManifestVersion(2);
                 builder.addBundleActivator(activator);
-                builder.addImportPackages("org.osgi.framework");
+                builder.addImportPackages(BundleActivator.class);
                 return builder.openStream();
             }
         });

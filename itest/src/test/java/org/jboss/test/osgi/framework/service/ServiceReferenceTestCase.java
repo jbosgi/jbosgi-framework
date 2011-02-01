@@ -440,8 +440,11 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
             Bundle bundle1 = installBundle(assembly1);
 
             try {
-
-                ServiceRegistration sreg = bundleContext2.registerService(BundleContext.class.getName(), bundleContext2, null);
+                Runnable runnable = new Runnable() {
+                    public void run() {
+                    }
+                };
+                ServiceRegistration sreg = bundleContext2.registerService(Runnable.class.getName(), runnable, null);
                 assertNotNull(sreg);
 
                 ServiceReference sref = sreg.getReference();

@@ -50,23 +50,7 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testBundleLifecycle() throws Exception {
-        // Bundle-Version: 1.0.0
-        // Bundle-SymbolicName: simple-bundle
-        // Bundle-Activator: org.jboss.test.osgi.framework.simple.bundleC.SimpleActivator
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
-        archive.addClasses(SimpleService.class, SimpleActivator.class);
-        archive.setManifest(new Asset() {
-
-            public InputStream openStream() {
-                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-                builder.addBundleManifestVersion(2);
-                builder.addBundleSymbolicName(archive.getName());
-                builder.addBundleVersion("1.0.0");
-                builder.addBundleActivator(SimpleActivator.class);
-                return builder.openStream();
-            }
-        });
-        Bundle bundle = installBundle(archive);
+        Bundle bundle = installBundle(getTestArchive());
         assertEquals("simple-bundle", bundle.getSymbolicName());
         assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
         assertBundleState(Bundle.INSTALLED, bundle.getState());
@@ -91,5 +75,22 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest {
 
         bundle.uninstall();
         assertBundleState(Bundle.UNINSTALLED, bundle.getState());
+    }
+
+    private JavaArchive getTestArchive() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
+        archive.addClasses(SimpleService.class, SimpleActivator.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addBundleActivator(SimpleActivator.class);
+                builder.addImportPackages("org.osgi.framework");
+               return builder.openStream();
+            }
+        });
+        return archive;
     }
 }

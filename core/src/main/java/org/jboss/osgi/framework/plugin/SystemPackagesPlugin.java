@@ -41,6 +41,13 @@ public interface SystemPackagesPlugin extends Plugin {
     Set<String> getBootDelegationPackages();
 
     /**
+     * Get the filter for boot delegation
+     * 
+     * @return The filter of framework exported paths
+     */
+    PathFilter getBootDelegationPackageFilter();
+    
+    /**
      * Return whether the given package name is a boot delegation package.
      * 
      * @param name The package name
@@ -84,7 +91,7 @@ public interface SystemPackagesPlugin extends Plugin {
      * 
      * @return The list of framework provided paths
      */
-    Set<String> getFrameworkPaths();
+    Set<String> getFrameworkPackagePaths();
 
     /**
      * Return whether the given package name is a framework package.
@@ -101,10 +108,4 @@ public interface SystemPackagesPlugin extends Plugin {
      * @return The filter of framework exported paths
      */
     PathFilter getFrameworkPackageFilter();
-
-    /**
-     * True if the framework is configured to delegate 
-     * @return
-     */
-    boolean doFrameworkPackageDelegation();
 }

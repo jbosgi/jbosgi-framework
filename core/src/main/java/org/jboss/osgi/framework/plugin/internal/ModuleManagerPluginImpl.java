@@ -79,7 +79,6 @@ import org.jboss.osgi.resolver.XRequireBundleRequirement;
 import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XWire;
 import org.jboss.osgi.vfs.VFSUtils;
-import org.osgi.application.Framework;
 import org.osgi.framework.Bundle;
 
 /**
@@ -95,10 +94,6 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
     // The module loader for the OSGi layer
     private OSGiModuleLoader moduleLoader;
-    // The cached framework module identifier
-    private ModuleIdentifier frameworkIdentifier;
-    // The cached framework module
-    private Module frameworkModule;
 
     public ModuleManagerPluginImpl(BundleManager bundleManager) {
         super(bundleManager);
@@ -117,7 +112,6 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
     @Override
     public void destroyPlugin() {
         moduleLoader = null;
-        frameworkModule = null;
     }
 
     @Override
@@ -138,8 +132,8 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
         ModuleIdentifier identifier = (module != null ? module.getIdentifier() : null);
         if (identifier == null) {
             XModuleIdentity moduleId = resModule.getModuleId();
-            if (frameworkIdentifier != null && SYSTEM_BUNDLE_SYMBOLICNAME.equals(moduleId.getName()))
-                identifier = frameworkIdentifier;
+            if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(moduleId.getName()))
+                identifier = FRAMEWORK_MODULE_IDENTIFIER;
 
             if (identifier == null) {
                 String slot = moduleId.getVersion().toString();
@@ -150,9 +144,8 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
                 String name = Constants.JBOSGI_PREFIX + "." + moduleId.getName();
                 identifier = ModuleIdentifier.create(name, slot);
             }
+            resModule.addAttachment(ModuleIdentifier.class, identifier);
         }
-
-        resModule.addAttachment(ModuleIdentifier.class, identifier);
         return identifier;
     }
 
@@ -163,15 +156,17 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
     @Override
     public Module getModule(ModuleIdentifier identifier) {
-        if (identifier.equals(frameworkIdentifier) && frameworkModule != null)
-            return frameworkModule;
-
         return moduleLoader.getModule(identifier);
+    }
+
+    //@Override
+    public Module getSystemModule() {
+        return moduleLoader.getModule(SYSTEM_MODULE_IDENTIFIER);
     }
 
     @Override
     public Module getFrameworkModule() {
-        return frameworkModule;
+        return moduleLoader.getModule(FRAMEWORK_MODULE_IDENTIFIER);
     }
 
     @Override
@@ -200,9 +195,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(resModule.getModuleId().getName())) {
                 identifier = createFrameworkModule(resModule);
             } else {
-                HostBundle hostBundle = HostBundle.assertBundleState(bundle);
-                List<RevisionContent> contentRoots = hostBundle.getContentRoots();
-                identifier = createHostModule(resModule, contentRoots);
+                identifier = createHostModule(resModule);
             }
         } else {
             AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
@@ -212,79 +205,73 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
         return identifier;
     }
 
-    /**
-     * Create the {@link Framework} module from the give resolver module definition.
-     */
-    private ModuleIdentifier createFrameworkModule(final XModule resModule) {
-        if (resModule == null || SYSTEM_BUNDLE_SYMBOLICNAME.equals(resModule.getName()) == false)
-            throw new IllegalArgumentException("Invalid resolver module: " + resModule);
+    private ModuleIdentifier createSystemModule(final XModule resModule) {
+        if (resModule == null)
+            throw new IllegalArgumentException("Null resModule");
 
-        // The integration layer may provide the Framework module
-        Module providedModule = (Module) getBundleManager().getProperty(Module.class.getName());
-        if (providedModule != null) {
-            frameworkIdentifier = providedModule.getIdentifier();
-            frameworkModule = providedModule;
-        } else {
-            frameworkIdentifier = DEFAULT_FRAMEWORK_IDENTIFIER;
+        ModuleSpec.Builder specBuilder = ModuleSpec.build(SYSTEM_MODULE_IDENTIFIER);
+        ModuleLoader systemLoader = Module.getSystemModuleLoader();
+        ModuleIdentifier identifier = Module.getSystemModule().getIdentifier();
+        PathFilter systemFilter = getBundleManager().getPlugin(SystemPackagesPlugin.class).getSystemPackageFilter();
+        specBuilder.addDependency(DependencySpec.createModuleDependencySpec(systemFilter, PathFilters.acceptAll(), systemLoader, identifier, false));
 
-            ModuleSpec.Builder specBuilder = ModuleSpec.build(frameworkIdentifier);
-            specBuilder.addDependency(getFrameworkModuleDependency());
-            specBuilder.addDependency(getSystemModuleDependency());
-            specBuilder.setModuleClassLoaderFactory(new SystemBundleModuleClassLoader.Factory(getBundleManager().getSystemBundle()));
-
-            AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
-            ModuleSpec frameworkSpec = specBuilder.create();
-            moduleLoader.addModule(bundleRev, frameworkSpec);
-        }
-        return frameworkIdentifier;
+        AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
+        ModuleSpec systemSpec = specBuilder.create();
+        moduleLoader.addModule(bundleRev, systemSpec);
+        return specBuilder.getIdentifier();
     }
 
-    private DependencySpec getFrameworkModuleDependency() {
-        if (frameworkModule != null) {
-            ModuleLoader moduleLoader = frameworkModule.getModuleLoader();
-            return DependencySpec.createModuleDependencySpec(PathFilters.acceptAll(), PathFilters.acceptAll(), moduleLoader, frameworkIdentifier, false);
-        } else {
-            SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
-            PathFilter frameworkFilter = plugin.getFrameworkPackageFilter();
+    private ModuleIdentifier createFrameworkModule(final XModule resModule) {
+        if (resModule == null)
+            throw new IllegalArgumentException("Null resModule");
 
-            final ClassLoader classLoader = BundleManager.class.getClassLoader();
-            LocalLoader localLoader = new LocalLoader() {
+        ModuleIdentifier identifier = createSystemModule(resModule);
+        ModuleSpec.Builder specBuilder = ModuleSpec.build(FRAMEWORK_MODULE_IDENTIFIER);
+        specBuilder.addDependency(DependencySpec.createModuleDependencySpec(PathFilters.acceptAll(), PathFilters.acceptAll(), moduleLoader, identifier, false));
 
-                @Override
-                public Class<?> loadClassLocal(String name, boolean resolve) {
-                    try {
-                        return classLoader.loadClass(name);
-                    } catch (ClassNotFoundException ex) {
-                        return null;
-                    }
-                }
+        SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
+        PathFilter frameworkFilter = plugin.getFrameworkPackageFilter();
+        final ClassLoader classLoader = BundleManager.class.getClassLoader();
+        LocalLoader localLoader = new LocalLoader() {
 
-                @Override
-                public List<Resource> loadResourceLocal(String name) {
-                    return Collections.emptyList();
-                }
-
-                @Override
-                public Resource loadResourceLocal(String root, String name) {
+            @Override
+            public Class<?> loadClassLocal(String name, boolean resolve) {
+                try {
+                    return classLoader.loadClass(name);
+                } catch (ClassNotFoundException ex) {
                     return null;
                 }
-            };
-            return DependencySpec.createLocalDependencySpec(frameworkFilter, PathFilters.acceptAll(), localLoader, plugin.getFrameworkPaths());
-        }
-    }
+            }
 
-    private DependencySpec getSystemModuleDependency() {
-        ModuleIdentifier sysModuleId = Module.getSystemModule().getIdentifier();
-        ModuleLoader sysModuleLoader = Module.getSystemModuleLoader();
-        PathFilter systemFilter = getBundleManager().getPlugin(SystemPackagesPlugin.class).getSystemPackageFilter();
-        DependencySpec dependencySpec = DependencySpec.createModuleDependencySpec(systemFilter, PathFilters.acceptAll(), sysModuleLoader, sysModuleId, false);
-        return dependencySpec;
+            @Override
+            public List<Resource> loadResourceLocal(String name) {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public Resource loadResourceLocal(String root, String name) {
+                return null;
+            }
+        };
+        specBuilder.addDependency(DependencySpec.createLocalDependencySpec(frameworkFilter, PathFilters.acceptAll(), localLoader, plugin.getFrameworkPackagePaths()));
+        specBuilder.setModuleClassLoaderFactory(new SystemBundleModuleClassLoader.Factory(getBundleManager().getSystemBundle()));
+
+        AbstractRevision bundleRev = resModule.getAttachment(AbstractRevision.class);
+        ModuleSpec frameworkSpec = specBuilder.create();
+        moduleLoader.addModule(bundleRev, frameworkSpec);
+        return specBuilder.getIdentifier();
     }
 
     /**
      * Create a {@link ModuleSpec} from the given resolver module definition
      */
-    private ModuleIdentifier createHostModule(final XModule resModule, List<RevisionContent> contentRoots) {
+    private ModuleIdentifier createHostModule(final XModule resModule) {
+        if (resModule == null)
+            throw new IllegalArgumentException("Null resModule");
+
+        Bundle bundle = resModule.getAttachment(Bundle.class);
+        HostBundle hostBundle = HostBundle.assertBundleState(bundle);
+        List<RevisionContent> contentRoots = hostBundle.getContentRoots();
 
         ModuleSpec moduleSpec = resModule.getAttachment(ModuleSpec.class);
         if (moduleSpec == null) {
@@ -292,18 +279,21 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
             List<DependencySpec> moduleDependencies = new ArrayList<DependencySpec>();
 
-            // Add the framework module as the first required dependency
+            // Add a dependency on the system module for boot delegation packages
             SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
-            if (plugin.doFrameworkPackageDelegation()) {
-                moduleDependencies.add(getFrameworkModuleDependency());
-            } else {
-                moduleDependencies.add(getSystemModuleDependency());
-            }
+            PathFilter bootDelegationFilter = plugin.getBootDelegationPackageFilter();
+            moduleDependencies.add(DependencySpec.createModuleDependencySpec(bootDelegationFilter, PathFilters.acceptAll(), moduleLoader, SYSTEM_MODULE_IDENTIFIER, false));
+            
+            // Add the framework module as the first required dependency
+//            SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
+//            if (plugin.doFrameworkPackageDelegation()) {
+//                moduleDependencies.add(getFrameworkModuleDependency());
+//            } else {
+//                moduleDependencies.add(getSystemModuleDependency());
+//            }
 
             // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
             Map<XModule, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XModule, ModuleDependencyHolder>();
-
-            HostBundle hostBundle = resModule.getAttachment(HostBundle.class);
 
             // For every {@link XWire} add a dependency on the exporter
             processModuleWires(resModule.getWires(), specHolderMap);
@@ -479,12 +469,6 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
                     continue;
             }
 
-            // Skip dependencies on the system module. This is always added as the first module dependency anyway
-            // [TODO] Check if the bundle still fails to resolve when it fails to declare an import on 'org.osgi.framework'
-            ModuleIdentifier exporterId = getModuleIdentifier(exporter);
-            if (exporterId.equals(frameworkIdentifier))
-                continue;
-
             // Dependency for Import-Package
             if (req instanceof XPackageRequirement) {
                 packageWires.add(wire);
@@ -550,13 +534,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
     @Override
     public Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException {
-        if (identifier.equals(frameworkIdentifier) == false)
-            return moduleLoader.loadModule(identifier);
-
-        if (frameworkModule == null)
-            frameworkModule = moduleLoader.loadModule(frameworkIdentifier);
-
-        return frameworkModule;
+        return moduleLoader.loadModule(identifier);
     }
 
     @Override

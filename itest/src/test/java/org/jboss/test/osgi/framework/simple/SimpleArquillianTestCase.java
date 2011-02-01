@@ -39,6 +39,7 @@ import org.jboss.test.osgi.framework.simple.bundleA.SimpleService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
@@ -55,13 +56,13 @@ public class SimpleArquillianTestCase {
     public static JavaArchive createDeployment() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-arquillian.jar");
         archive.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleManifestVersion(2);
                 builder.addBundleActivator(SimpleActivator.class.getName());
                 builder.addExportPackages(SimpleService.class);
+                builder.addImportPackages(BundleActivator.class);
                 return builder.openStream();
             }
         });
