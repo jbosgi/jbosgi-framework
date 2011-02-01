@@ -25,7 +25,6 @@ package org.jboss.test.osgi.framework.classloader.support.a;
  * A.
  * 
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
- * @version $Revision: 1.1 $
  */
 public class A {
 }

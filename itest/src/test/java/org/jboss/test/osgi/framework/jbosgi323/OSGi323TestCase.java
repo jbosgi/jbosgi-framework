@@ -154,7 +154,6 @@ public class OSGi323TestCase extends OSGiFrameworkTest {
         final JavaArchive archiveA = ShrinkWrap.create(JavaArchive.class, "jbosgi323-bundleA");
         archiveA.addClass(A.class);
         archiveA.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -170,7 +169,6 @@ public class OSGi323TestCase extends OSGiFrameworkTest {
         final JavaArchive archiveB = ShrinkWrap.create(JavaArchive.class, "jbosgi323-bundleB");
         archiveB.addClasses(A.class, B.class);
         archiveB.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

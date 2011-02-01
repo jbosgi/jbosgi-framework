@@ -148,13 +148,9 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest {
     }
 
     private JavaArchive getBundleA() {
-        // Bundle-SymbolicName: bundleA
-        // Bundle-Activator: org.jboss.test.osgi.framework.xservice.bundleA.BundleActivatorA
-        // Require-Bundle: moduleAS;bundle-version:=1.0.0
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA");
         archive.addClasses(BundleActivatorA.class, BundleServiceA.class);
         archive.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -162,6 +158,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest {
                 builder.addBundleVersion("1.0.0");
                 builder.addBundleActivator(BundleActivatorA.class);
                 builder.addRequireBundle("moduleAS;bundle-version:=1.0.0");
+                builder.addImportPackages("org.osgi.framework");
                 return builder.openStream();
             }
         });
@@ -169,14 +166,9 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest {
     }
 
     private JavaArchive getBundleB() {
-        // Bundle-Version: 1.0.0
-        // Bundle-SymbolicName: xservice.bundleB
-        // Bundle-Activator: org.jboss.test.osgi.framework.xservice.bundleB.BundleActivatorB
-        // Export-Package: org.jboss.test.osgi.framework.xservice.bundleB
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "xservice.bundleB");
         archive.addClasses(BundleActivatorB.class, BundleServiceB.class);
         archive.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -184,6 +176,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest {
                 builder.addBundleVersion("1.0.0");
                 builder.addBundleActivator(BundleActivatorB.class);
                 builder.addExportPackages(BundleServiceB.class);
+                builder.addImportPackages("org.osgi.framework");
                 return builder.openStream();
             }
         });

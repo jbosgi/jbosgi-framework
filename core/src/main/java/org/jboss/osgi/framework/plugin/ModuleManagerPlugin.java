@@ -41,8 +41,11 @@ import org.jboss.osgi.resolver.XModule;
  */
 public interface ModuleManagerPlugin extends Plugin {
 
-    /** The default framework module identifier */
-    ModuleIdentifier DEFAULT_FRAMEWORK_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + "." + Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+    /** The system module identifier */
+    ModuleIdentifier SYSTEM_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".system");
+
+    /** The framework module identifier */
+    ModuleIdentifier FRAMEWORK_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".framework");
 
     /**
      * Get the {@link OSGiModuleLoader}

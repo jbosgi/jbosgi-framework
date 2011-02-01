@@ -46,6 +46,7 @@ import org.jboss.test.osgi.framework.simple.bundleB.BeanB;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.Constants;
@@ -233,7 +234,6 @@ public class BundleActivationTestCase extends OSGiTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, LAZY_SERVICE_PROVIDER);
         archive.addClasses(SimpleActivator.class, SimpleService.class, BeanB.class);
         archive.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());
@@ -241,6 +241,7 @@ public class BundleActivationTestCase extends OSGiTest {
                 builder.addBundleActivator(SimpleActivator.class.getName());
                 builder.addBundleActivationPolicy(Constants.ACTIVATION_LAZY);
                 builder.addExportPackages(SimpleService.class);
+                builder.addImportPackages(BundleActivator.class);
                 return builder.openStream();
             }
         });
@@ -251,7 +252,6 @@ public class BundleActivationTestCase extends OSGiTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, LAZY_SERVICE_PROVIDER_INCLUDE);
         archive.addClasses(SimpleActivator.class, SimpleService.class, BeanB.class);
         archive.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());
@@ -259,6 +259,7 @@ public class BundleActivationTestCase extends OSGiTest {
                 builder.addBundleActivator(SimpleActivator.class.getName());
                 builder.addBundleActivationPolicy(Constants.ACTIVATION_LAZY + ";include:='" + SimpleService.class.getPackage().getName() + "'");
                 builder.addExportPackages(SimpleService.class);
+                builder.addImportPackages(BundleActivator.class);
                 return builder.openStream();
             }
         });
@@ -269,7 +270,6 @@ public class BundleActivationTestCase extends OSGiTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, LAZY_SERVICE_PROVIDER_EXCLUDE);
         archive.addClasses(SimpleActivator.class, SimpleService.class, BeanB.class);
         archive.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());
@@ -277,6 +277,7 @@ public class BundleActivationTestCase extends OSGiTest {
                 builder.addBundleActivator(SimpleActivator.class.getName());
                 builder.addBundleActivationPolicy(Constants.ACTIVATION_LAZY + ";exclude:='" + BeanB.class.getPackage().getName() + "'");
                 builder.addExportPackages(SimpleService.class);
+                builder.addImportPackages(BundleActivator.class);
                 return builder.openStream();
             }
         });

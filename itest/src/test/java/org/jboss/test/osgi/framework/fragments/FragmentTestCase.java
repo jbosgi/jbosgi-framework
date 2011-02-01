@@ -34,6 +34,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.security.ProtectionDomain;
 
+import org.jboss.logging.Logger;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -53,6 +54,7 @@ import org.jboss.test.osgi.framework.fragments.hostF.HostFInterface;
 import org.jboss.test.osgi.framework.fragments.subA.SubBeanA;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleException;
 import org.osgi.service.packageadmin.PackageAdmin;
 
@@ -234,7 +236,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         assertBundleState(Bundle.ACTIVE, hostA.getState());
         assertBundleState(Bundle.RESOLVED, fragB.getState());
 
-        // The fragment containsan import for a package that is also available locally
+        // The fragment contains an import for a package that is also available locally
         // SubBeanA is expected to come from HostB, which exports that package
         assertLoadClass(hostA, SubBeanA.class.getName(), hostB);
 
@@ -391,17 +393,15 @@ public class FragmentTestCase extends OSGiFrameworkTest {
     }
 
     private JavaArchive getHostA() {
-        // Bundle-SymbolicName: simple-hostA
-        // Bundle-Activator: org.jboss.test.osgi.framework.fragments.hostA.HostAActivator
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostA");
         archive.addClasses(HostAActivator.class, SubBeanA.class);
         archive.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleActivator(HostAActivator.class);
+                builder.addImportPackages(BundleActivator.class, Logger.class, PackageAdmin.class);
                 return builder.openStream();
             }
         });
@@ -409,19 +409,16 @@ public class FragmentTestCase extends OSGiFrameworkTest {
     }
 
     private JavaArchive getHostB() {
-        // Bundle-SymbolicName: simple-hostB
-        // Bundle-Activator: org.jboss.test.osgi.framework.fragments.hostB.HostBActivator
-        // Export-Package: org.jboss.test.osgi.framework.fragments.subA
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostB");
         archive.addClasses(HostBActivator.class, SubBeanA.class);
         archive.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleActivator(HostBActivator.class);
                 builder.addExportPackages(SubBeanA.class);
+                builder.addImportPackages(BundleActivator.class, PackageAdmin.class);
                 return builder.openStream();
             }
         });
@@ -429,19 +426,15 @@ public class FragmentTestCase extends OSGiFrameworkTest {
     }
 
     private JavaArchive getHostC() {
-        // Bundle-SymbolicName: simple-hostC
-        // Bundle-Activator: org.jboss.test.osgi.framework.fragments.hostC.HostCActivator
-        // Import-Package: org.osgi.framework, org.jboss.test.osgi.framework.fragments.fragA
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostC");
         archive.addClasses(HostCActivator.class);
         archive.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleActivator(HostCActivator.class);
-                builder.addImportPackages(FragBeanA.class);
+                builder.addImportPackages(BundleActivator.class, FragBeanA.class);
                 return builder.openStream();
             }
         });

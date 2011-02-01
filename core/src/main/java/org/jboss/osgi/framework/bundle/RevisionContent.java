@@ -172,6 +172,9 @@ public final class RevisionContent implements EntriesProvider {
                 VirtualFile real = (orgPath.equals(path) ? child : virtualFile.getChild(path));
                 return real.toURL().openConnection();
             }
+            
+            // [TODO] overwrite hashCode for to prevent host address resolution
+            // when offline the BundleEntriesTestCase is slow because of this 
         };
 
         String rootPath = virtualFile.getPathName();

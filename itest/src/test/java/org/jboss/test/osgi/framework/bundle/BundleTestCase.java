@@ -460,6 +460,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
             expected.put(Constants.BUNDLE_NAME, "Simple1");
             expected.put(Constants.BUNDLE_SYMBOLICNAME, "simple1");
             expected.put(Constants.BUNDLE_MANIFESTVERSION, "2");
+            expected.put(Constants.IMPORT_PACKAGE, "org.osgi.framework");
             expected.put(Attributes.Name.MANIFEST_VERSION.toString(), "1.0");
             expected.put(Attributes.Name.IMPLEMENTATION_TITLE.toString(), "JBoss OSGi tests");
             expected.put(Attributes.Name.IMPLEMENTATION_VENDOR.toString(), "jboss.org");

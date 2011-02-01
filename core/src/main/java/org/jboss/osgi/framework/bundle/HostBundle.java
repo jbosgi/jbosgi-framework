@@ -308,7 +308,7 @@ public final class HostBundle extends AbstractUserBundle {
             }
 
             // If the BundleActivator is invalid or throws an exception then
-            catch (Exception ex) {
+            catch (Throwable th) {
                 // #8.1 This bundle's state is set to STOPPING
                 // #8.2 A bundle event of type BundleEvent.STOPPING is fired
                 changeState(STOPPING);
@@ -326,10 +326,10 @@ public final class HostBundle extends AbstractUserBundle {
                 changeState(RESOLVED);
 
                 // #8.8 A BundleException is then thrown
-                if (ex instanceof BundleException)
-                    throw (BundleException) ex;
+                if (th instanceof BundleException)
+                    throw (BundleException) th;
 
-                throw new BundleException("Cannot start bundle: " + this, ex);
+                throw new BundleException("Cannot start bundle: " + this, th);
             }
         }
 

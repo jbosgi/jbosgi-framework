@@ -23,6 +23,7 @@ package org.jboss.test.osgi.framework.classloader;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.io.InputStream;
@@ -116,11 +117,12 @@ public class BootDelegationTestCase extends OSGiTest {
             Class<?> testClass = null;
             try {
                 testClass = testBundle.loadClass("javax.security.auth.x500.X500Principal");
+                assertNotNull("Test class not null", testClass);
             } catch (ClassNotFoundException e) {
                 fail("Unexpected ClassNotFoundException");
             }
             if (fromBoot)
-                assertEquals("Unexpected class", vmClass, testClass);
+                assertEquals("Unexpected class", vmClass.getClassLoader(), testClass.getClassLoader());
             else
                 assertFalse("Unexpected class", vmClass.equals(testClass));
             

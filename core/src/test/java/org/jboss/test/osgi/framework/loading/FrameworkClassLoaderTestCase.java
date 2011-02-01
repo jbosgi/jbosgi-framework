@@ -53,7 +53,7 @@ public class FrameworkClassLoaderTestCase extends AbstractFrameworkTest {
     public void before() throws Exception {
         BundleManager bundleManager = getBundleManager();
         ModuleManagerPlugin plugin = bundleManager.getPlugin(ModuleManagerPlugin.class);
-        Module module = plugin.getModule(ModuleManagerPlugin.DEFAULT_FRAMEWORK_IDENTIFIER);
+        Module module = plugin.getModule(ModuleManagerPlugin.FRAMEWORK_MODULE_IDENTIFIER);
         classLoader = module.getClassLoader();
     }
 

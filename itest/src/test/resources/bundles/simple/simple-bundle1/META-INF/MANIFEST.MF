@@ -5,3 +5,4 @@ Implementation-Vendor: jboss.org
 Bundle-ManifestVersion: 2
 Bundle-Name: Simple1
 Bundle-SymbolicName: simple1
+Import-Package: org.osgi.framework

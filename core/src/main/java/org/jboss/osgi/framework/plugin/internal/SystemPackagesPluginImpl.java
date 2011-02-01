@@ -161,7 +161,7 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
     }
 
     @Override
-    public Set<String> getFrameworkPaths() {
+    public Set<String> getFrameworkPackagePaths() {
         Set<String> paths = new LinkedHashSet<String>();
         for (String packageSpec : getFrameworkPackages()) {
             int index = packageSpec.indexOf(';');
@@ -182,13 +182,36 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
     @Override
     public PathFilter getFrameworkPackageFilter() {
         assertInitialized();
-        return PathFilters.in(getFrameworkPaths());
+        return PathFilters.in(getFrameworkPackagePaths());
     }
 
     @Override
     public Set<String> getBootDelegationPackages() {
         assertInitialized();
         return Collections.unmodifiableSet(bootDelegationPackages);
+    }
+
+    @Override
+    public PathFilter getBootDelegationPackageFilter() {
+        assertInitialized();
+        MultiplePathFilterBuilder builder = PathFilters.multiplePathFilterBuilder(false);
+
+        // Add bootdelegation paths
+        for (String packageName : getBootDelegationPackages()) {
+            if (packageName.equals("*")) {
+                if (doFrameworkPackageDelegation()) {
+                    builder.addFilter(PathFilters.acceptAll(), true);
+                } else {
+                    builder.addFilter(PathFilters.all(PathFilters.acceptAll(), PathFilters.not(getFrameworkPackageFilter())), true);
+                }
+            } else if (packageName.endsWith(".*")) {
+                packageName = packageName.substring(0, packageName.length() - 2);
+                builder.addFilter(PathFilters.isChildOf(packageName.replace('.', '/')), true);
+            } else {
+                builder.addFilter(PathFilters.is(packageName.replace('.', '/')), true);
+            }
+        }
+        return builder.create();
     }
 
     @Override
@@ -228,37 +251,24 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
     public PathFilter getSystemPackageFilter() {
         assertInitialized();
         MultiplePathFilterBuilder builder = PathFilters.multiplePathFilterBuilder(false);
-
-        // Add bootdelegation paths
-        for (String packageName : getBootDelegationPackages()) {
-            if (packageName.equals("*")) {
-                if (doFrameworkPackageDelegation()) {
-                    builder.addFilter(PathFilters.acceptAll(), true);
-                } else {
-                    builder.addFilter(PathFilters.all(PathFilters.acceptAll(), PathFilters.not(getFrameworkPackageFilter())), true);
-                }
-            } else if (packageName.endsWith(".*")) {
-                packageName = packageName.substring(0, packageName.length() - 2);
-                builder.addFilter(PathFilters.isChildOf(packageName.replace('.', '/')), true);
-            } else {
-                builder.addFilter(PathFilters.is(packageName.replace('.', '/')), true);
-            }
-        }
+        builder.addFilter(getBootDelegationPackageFilter(), true);
 
         // Add system packages exported by the framework
+        Set<String> paths = new LinkedHashSet<String>();
         for (String packageSpec : getSystemPackages()) {
             int index = packageSpec.indexOf(';');
             if (index > 0) {
                 packageSpec = packageSpec.substring(0, index);
             }
-            builder.addFilter(PathFilters.is(packageSpec.replace('.', '/')), true);
+            String path = packageSpec.replace('.', '/');
+            paths.add(path);
         }
+        builder.addFilter(PathFilters.in(paths), true);
 
         return builder.create();
     }
 
-    @Override
-    public boolean doFrameworkPackageDelegation() {
+    private boolean doFrameworkPackageDelegation() {
         String property = (String) getBundleManager().getProperty(FRAMEWORK_BUNDLE_PARENT);
         if (property == null) {
             property = FRAMEWORK_BUNDLE_PARENT_BOOT;
