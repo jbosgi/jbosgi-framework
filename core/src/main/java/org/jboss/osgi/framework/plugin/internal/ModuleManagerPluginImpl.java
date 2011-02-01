@@ -281,17 +281,9 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
             // Add a dependency on the system module for boot delegation packages
             SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
-            PathFilter bootDelegationFilter = plugin.getBootDelegationPackageFilter();
-            moduleDependencies.add(DependencySpec.createModuleDependencySpec(bootDelegationFilter, PathFilters.acceptAll(), moduleLoader, SYSTEM_MODULE_IDENTIFIER, false));
+            PathFilter systemPackagesFilter = plugin.getSystemPackageFilter();
+            moduleDependencies.add(DependencySpec.createModuleDependencySpec(systemPackagesFilter, PathFilters.acceptAll(), moduleLoader, SYSTEM_MODULE_IDENTIFIER, false));
             
-            // Add the framework module as the first required dependency
-//            SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
-//            if (plugin.doFrameworkPackageDelegation()) {
-//                moduleDependencies.add(getFrameworkModuleDependency());
-//            } else {
-//                moduleDependencies.add(getSystemModuleDependency());
-//            }
-
             // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
             Map<XModule, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XModule, ModuleDependencyHolder>();
 

@@ -70,9 +70,9 @@ public class SystemPackagesPluginImpl extends AbstractPlugin implements SystemPa
             // The default system packages
             systemPackages.add("javax.imageio");
             systemPackages.add("javax.imageio.stream");
+            
             systemPackages.add("javax.management");
             systemPackages.add("javax.management.loading");
-
             systemPackages.add("javax.management.modelmbean");
             systemPackages.add("javax.management.monitor");
             systemPackages.add("javax.management.openmbean");
