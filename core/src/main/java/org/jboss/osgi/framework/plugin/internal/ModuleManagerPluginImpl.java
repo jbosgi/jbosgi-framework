@@ -279,7 +279,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
             List<DependencySpec> moduleDependencies = new ArrayList<DependencySpec>();
 
-            // Add a dependency on the system module for boot delegation packages
+            // Add a dependency on the system module
             SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
             PathFilter systemPackagesFilter = plugin.getSystemPackageFilter();
             moduleDependencies.add(DependencySpec.createModuleDependencySpec(systemPackagesFilter, PathFilters.acceptAll(), moduleLoader, SYSTEM_MODULE_IDENTIFIER, false));
