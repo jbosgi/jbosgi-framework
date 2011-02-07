@@ -67,7 +67,7 @@ import org.jboss.osgi.framework.plugin.internal.PackageAdminPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.ResolverPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.ServiceManagerPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.StartLevelPluginImpl;
-import org.jboss.osgi.framework.plugin.internal.SystemModuleProviderPluginImpl;
+import org.jboss.osgi.framework.plugin.internal.DefaultFrameworkModuleProvider;
 import org.jboss.osgi.framework.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.URLHandlerPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.WebXMLVerifierInterceptor;
@@ -147,7 +147,7 @@ public class BundleManager {
         plugins.put(ResolverPlugin.class, new ResolverPluginImpl(this));
         plugins.put(ServiceManagerPlugin.class, new ServiceManagerPluginImpl(this));
         plugins.put(SystemPackagesPlugin.class, new SystemPackagesPluginImpl(this));
-        plugins.put(SystemModuleProviderPlugin.class, new SystemModuleProviderPluginImpl(this));
+        plugins.put(SystemModuleProviderPlugin.class, new DefaultFrameworkModuleProvider(this));
 
         // Register system service plugins
         plugins.put(DeployerServicePlugin.class, new DefaultDeployerServicePlugin(this));

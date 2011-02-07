@@ -30,7 +30,6 @@ import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.Resource;
 import org.jboss.modules.filter.PathFilter;
@@ -38,48 +37,31 @@ import org.jboss.modules.filter.PathFilters;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.OSGiModuleLoader;
+import org.jboss.osgi.framework.bundle.SystemBundle;
 import org.jboss.osgi.framework.loading.SystemBundleModuleClassLoader;
-import org.jboss.osgi.framework.plugin.AbstractPlugin;
-import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
-import org.jboss.osgi.framework.plugin.SystemModuleProviderPlugin;
 import org.jboss.osgi.framework.plugin.SystemPackagesPlugin;
 
 /**
  * The system module provider plugin.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 04-Feb-2011
  */
-public class SystemModuleProviderPluginImpl extends AbstractPlugin implements SystemModuleProviderPlugin {
+public class DefaultFrameworkModuleProvider extends AbstractSystemModuleProviderPlugin {
 
     // Provide logging
-    final Logger log = Logger.getLogger(SystemModuleProviderPluginImpl.class);
+    final Logger log = Logger.getLogger(DefaultFrameworkModuleProvider.class);
 
-    private OSGiModuleLoader moduleLoader;
     private Module frameworkModule;
-    private Module systemModule;
 
-    public SystemModuleProviderPluginImpl(BundleManager bundleManager) {
+    public DefaultFrameworkModuleProvider(BundleManager bundleManager) {
         super(bundleManager);
     }
 
     @Override
-    public void initPlugin() {
-        ModuleManagerPlugin moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
-        moduleLoader = moduleManager.getModuleLoader();
-        systemModule = createSystemModule();
-        frameworkModule = createFrameworkModule();
-    }
-    
-    @Override
     public void destroyPlugin() {
+        super.destroyPlugin();
         frameworkModule = null;
-        systemModule = null;
-    }
-
-    @Override
-    public Module getSystemModule() {
-        return systemModule;
     }
 
     @Override
@@ -88,30 +70,10 @@ public class SystemModuleProviderPluginImpl extends AbstractPlugin implements Sy
     }
 
     @Override
-    public Module createSystemModule() {
-        if (systemModule != null)
-            throw new IllegalStateException("System module already created");
-        ModuleSpec.Builder specBuilder = ModuleSpec.build(ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".system"));
-        ModuleLoader systemLoader = Module.getSystemModuleLoader();
-        ModuleIdentifier identifier = Module.getSystemModule().getIdentifier();
-        PathFilter systemFilter = getBundleManager().getPlugin(SystemPackagesPlugin.class).getSystemPackageFilter();
-        specBuilder.addDependency(DependencySpec.createModuleDependencySpec(systemFilter, PathFilters.acceptAll(), systemLoader, identifier, false));
-
-        ModuleSpec moduleSpec = specBuilder.create();
-        moduleLoader.addModule(getBundleManager().getSystemBundle().getCurrentRevision(), moduleSpec);
-        try {
-            systemModule = moduleLoader.loadModule(specBuilder.getIdentifier());
-            return systemModule; 
-        } catch (ModuleLoadException ex) {
-            throw new IllegalStateException(ex);
-        }
-    }
-
-    @Override
-    public Module createFrameworkModule() {
+    public Module createFrameworkModule(OSGiModuleLoader moduleLoader, SystemBundle systemBundle) {
         if (frameworkModule != null)
             throw new IllegalStateException("Framework module already created");
-        
+
         ModuleIdentifier systemIdentifier = getSystemModule().getIdentifier();
         ModuleSpec.Builder specBuilder = ModuleSpec.build(ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".framework"));
         specBuilder.addDependency(DependencySpec.createModuleDependencySpec(PathFilters.acceptAll(), PathFilters.acceptAll(), moduleLoader, systemIdentifier, false));
@@ -144,10 +106,10 @@ public class SystemModuleProviderPluginImpl extends AbstractPlugin implements Sy
         specBuilder.setModuleClassLoaderFactory(new SystemBundleModuleClassLoader.Factory(getBundleManager().getSystemBundle()));
 
         ModuleSpec moduleSpec = specBuilder.create();
-        moduleLoader.addModule(getBundleManager().getSystemBundle().getCurrentRevision(), moduleSpec);
+        moduleLoader.addModule(systemBundle.getCurrentRevision(), moduleSpec);
         try {
             frameworkModule = moduleLoader.loadModule(specBuilder.getIdentifier());
-            return frameworkModule; 
+            return frameworkModule;
         } catch (ModuleLoadException ex) {
             throw new IllegalStateException(ex);
         }

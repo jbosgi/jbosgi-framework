@@ -35,6 +35,7 @@ import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.ResourceLoader;
 import org.jboss.modules.ResourceLoaderSpec;
@@ -52,6 +53,7 @@ import org.jboss.osgi.framework.bundle.FragmentRevision;
 import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.OSGiModuleLoader;
 import org.jboss.osgi.framework.bundle.RevisionContent;
+import org.jboss.osgi.framework.bundle.SystemBundle;
 import org.jboss.osgi.framework.loading.HostBundleFallbackLoader;
 import org.jboss.osgi.framework.loading.HostBundleModuleClassLoader;
 import org.jboss.osgi.framework.loading.LazyActivationLocalLoader;
@@ -78,7 +80,7 @@ import org.osgi.framework.Bundle;
 
 /**
  * The module manager plugin.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 06-Jul-2009
  */
@@ -96,12 +98,22 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
     @Override
     public void initPlugin() {
-        // Setup the OSGiModuleLoader
-        moduleLoader = new OSGiModuleLoader(getBundleManager());
-
         // Setup the Module system when running STANDALONE
         if (getBundleManager().getIntegrationMode() == IntegrationMode.STANDALONE)
             Module.setModuleLogger(new JDKModuleLogger());
+
+        // Setup the OSGiModuleLoader
+        moduleLoader = new OSGiModuleLoader(getBundleManager());
+
+        // Setup the system/framework modules
+        SystemModuleProviderPlugin plugin = getBundleManager().getPlugin(SystemModuleProviderPlugin.class);
+        SystemBundle systemBundle = getBundleManager().getSystemBundle();
+        try {
+            plugin.createSystemModule(moduleLoader, systemBundle);
+            plugin.createFrameworkModule(moduleLoader, systemBundle);
+        } catch (ModuleLoadException ex) {
+            throw new IllegalStateException("Cannot create system/framework module", ex);
+        }
     }
 
     @Override
@@ -180,7 +192,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
             moduleLoader.addModule(bundleRev, module);
             return  module.getIdentifier();
         }
-        
+
         ModuleIdentifier identifier;
         if (Constants.SYSTEM_BUNDLE_SYMBOLICNAME.equals(resModule.getModuleId().getName())) {
             identifier = getFrameworkModule().getIdentifier();
@@ -209,10 +221,12 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
 
             // Add a dependency on the system module
             SystemPackagesPlugin plugin = getBundleManager().getPlugin(SystemPackagesPlugin.class);
+            Module systemModule = getSystemModule();
+            ModuleIdentifier systemIdentifier = systemModule.getIdentifier();
+            ModuleLoader systemModuleLoader = systemModule.getModuleLoader();
             PathFilter systemPackagesFilter = plugin.getSystemPackageFilter();
-            ModuleIdentifier systemIdentifier = getSystemModule().getIdentifier();
-            moduleDependencies.add(DependencySpec.createModuleDependencySpec(systemPackagesFilter, PathFilters.acceptAll(), moduleLoader, systemIdentifier, false));
-            
+            moduleDependencies.add(DependencySpec.createModuleDependencySpec(systemPackagesFilter, PathFilters.acceptAll(), systemModuleLoader, systemIdentifier, false));
+
             // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
             Map<XModule, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XModule, ModuleDependencyHolder>();
 

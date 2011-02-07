@@ -22,10 +22,13 @@
 package org.jboss.osgi.framework.plugin;
 
 import org.jboss.modules.Module;
+import org.jboss.modules.ModuleLoadException;
+import org.jboss.osgi.framework.bundle.OSGiModuleLoader;
+import org.jboss.osgi.framework.bundle.SystemBundle;
 
 /**
  * The system module provider plugin.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 04-Feb-2011
  */
@@ -34,8 +37,8 @@ public interface SystemModuleProviderPlugin extends Plugin {
     /**
      * Create teh system module
      */
-    Module createSystemModule();
-    
+    Module createSystemModule(OSGiModuleLoader moduleLoader, SystemBundle systemBundle) throws ModuleLoadException;
+
     /**
      * Get the system module
      */
@@ -44,8 +47,8 @@ public interface SystemModuleProviderPlugin extends Plugin {
     /**
      * Create the framework module
      */
-    Module createFrameworkModule();
-    
+    Module createFrameworkModule(OSGiModuleLoader moduleLoader, SystemBundle systemBundle) throws ModuleLoadException;
+
     /**
      * Get the framework module
      */
