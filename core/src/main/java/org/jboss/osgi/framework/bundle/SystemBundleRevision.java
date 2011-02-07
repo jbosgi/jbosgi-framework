@@ -28,7 +28,7 @@ import java.util.Enumeration;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
+import org.jboss.osgi.framework.plugin.SystemModuleProviderPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.osgi.framework.BundleException;
@@ -45,11 +45,10 @@ public class SystemBundleRevision extends AbstractRevision {
 
     static final Logger log = Logger.getLogger(SystemBundleRevision.class);
 
-    private final ModuleManagerPlugin moduleManager;
+    private ClassLoader classLoader;
 
     SystemBundleRevision(SystemBundle bundleState, OSGiMetaData metadata) throws BundleException {
         super(bundleState, metadata, null, 0);
-        moduleManager = getBundleManager().getPlugin(ModuleManagerPlugin.class);
     }
 
     @Override
@@ -113,10 +112,14 @@ public class SystemBundleRevision extends AbstractRevision {
     }
 
     private ClassLoader getFrameworkClassLoader() {
-        Module frameworkModule = moduleManager.getFrameworkModule();
-        if (frameworkModule != null) {
-            return frameworkModule.getClassLoader();
+        if (classLoader == null) {
+            SystemModuleProviderPlugin plugin = getBundleManager().getPlugin(SystemModuleProviderPlugin.class);
+            Module frameworkModule = plugin.getFrameworkModule();
+            if (frameworkModule == null) {
+                throw new IllegalStateException("Framework module not created");
+            }
+            classLoader = frameworkModule.getClassLoader();
         }
-        return getClass().getClassLoader();
+        return classLoader;
     }
 }
