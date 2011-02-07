@@ -30,9 +30,8 @@ import java.util.HashMap;
 import javax.management.MBeanServer;
 import javax.transaction.xa.XAResource;
 
-import org.jboss.modules.Module;
 import org.jboss.osgi.framework.bundle.BundleManager;
-import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
+import org.jboss.osgi.framework.plugin.SystemModuleProviderPlugin;
 import org.jboss.test.osgi.framework.AbstractFrameworkTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,9 +51,8 @@ public class FrameworkClassLoaderTestCase extends AbstractFrameworkTest {
     @Before
     public void before() throws Exception {
         BundleManager bundleManager = getBundleManager();
-        ModuleManagerPlugin plugin = bundleManager.getPlugin(ModuleManagerPlugin.class);
-        Module module = plugin.getModule(ModuleManagerPlugin.FRAMEWORK_MODULE_IDENTIFIER);
-        classLoader = module.getClassLoader();
+        SystemModuleProviderPlugin plugin = bundleManager.getPlugin(SystemModuleProviderPlugin.class);
+        classLoader = plugin.getFrameworkModule().getClassLoader();
     }
 
     @Test

@@ -230,6 +230,7 @@ public class FrameworkState extends SystemBundle implements Framework {
 
     @Override
     public void start(int options) throws BundleException {
+        
         // If this Framework is not in the STARTING state, initialize this Framework
         if (getState() != Bundle.STARTING)
             init();
@@ -237,7 +238,7 @@ public class FrameworkState extends SystemBundle implements Framework {
         // Resolve the system bundle
         ResolverPlugin resolver = getBundleManager().getPlugin(ResolverPlugin.class);
         resolver.resolve(getResolverModule());
-
+        
         // This Framework's state is set to ACTIVE
         changeState(Bundle.ACTIVE);
 

@@ -169,7 +169,7 @@ public class SystemBundle extends AbstractBundle {
     }
 
     @Override
-    public AbstractRevision getCurrentRevision() {
+    public SystemBundleRevision getCurrentRevision() {
         return systemRevision;
     }
 

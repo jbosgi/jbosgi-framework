@@ -27,7 +27,6 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
-import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.framework.bundle.OSGiModuleLoader;
@@ -40,12 +39,6 @@ import org.jboss.osgi.resolver.XModule;
  * @since 06-Jul-2009
  */
 public interface ModuleManagerPlugin extends Plugin {
-
-    /** The system module identifier */
-    ModuleIdentifier SYSTEM_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".system");
-
-    /** The framework module identifier */
-    ModuleIdentifier FRAMEWORK_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".framework");
 
     /**
      * Get the {@link OSGiModuleLoader}
@@ -69,13 +62,6 @@ public interface ModuleManagerPlugin extends Plugin {
      */
     ModuleIdentifier addModule(XModule resModule);
 
-    /**
-     * Get the framework module
-     * 
-     * @return The module or null
-     */
-    Module getFrameworkModule();
-    
     /**
      * Get the module with the given identifier
      * 
