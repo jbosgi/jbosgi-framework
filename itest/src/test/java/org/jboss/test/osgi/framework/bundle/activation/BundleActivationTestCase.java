@@ -32,11 +32,10 @@ import java.util.List;
 import javax.inject.Inject;
 
 import org.jboss.arquillian.api.ArchiveProvider;
+import org.jboss.arquillian.jmx.DeploymentProvider;
 import org.jboss.arquillian.junit.Arquillian;
-import org.jboss.arquillian.osgi.OSGiContainer;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiTest;
-import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -68,7 +67,7 @@ public class BundleActivationTestCase extends OSGiTest {
     private static final String LAZY_SERVICE_CONSUMER = "lazy-service-consumer";
 
     @Inject
-    public OSGiContainer container;
+    public DeploymentProvider provider;
 
     @Inject
     public BundleContext context;
@@ -79,8 +78,8 @@ public class BundleActivationTestCase extends OSGiTest {
     public void testLazyActivation() throws Exception {
         context.addBundleListener(new ActivationListener());
 
-        Archive<?> providerArchive = container.getTestArchive(LAZY_SERVICE_PROVIDER);
-        Bundle providerBundle = container.installBundle(providerArchive);
+        InputStream providerArchive = provider.getClientDeploymentAsStream(LAZY_SERVICE_PROVIDER);
+        Bundle providerBundle = context.installBundle(LAZY_SERVICE_PROVIDER, providerArchive);
         try {
             assertBundleState(Bundle.INSTALLED, providerBundle.getState());
 
@@ -112,8 +111,8 @@ public class BundleActivationTestCase extends OSGiTest {
     public void testLoadClassActivation() throws Exception {
         context.addBundleListener(new ActivationListener());
 
-        Archive<?> providerArchive = container.getTestArchive(LAZY_SERVICE_PROVIDER);
-        Bundle providerBundle = container.installBundle(providerArchive);
+        InputStream providerArchive = provider.getClientDeploymentAsStream(LAZY_SERVICE_PROVIDER);
+        Bundle providerBundle = context.installBundle(LAZY_SERVICE_PROVIDER, providerArchive);
         try {
             assertBundleState(Bundle.INSTALLED, providerBundle.getState());
 
@@ -133,8 +132,8 @@ public class BundleActivationTestCase extends OSGiTest {
     public void testLoadClassActivationWithInclude() throws Exception {
         context.addBundleListener(new ActivationListener());
 
-        Archive<?> providerArchive = container.getTestArchive(LAZY_SERVICE_PROVIDER_INCLUDE);
-        Bundle providerBundle = container.installBundle(providerArchive);
+        InputStream providerArchive = provider.getClientDeploymentAsStream(LAZY_SERVICE_PROVIDER_INCLUDE);
+        Bundle providerBundle = context.installBundle(LAZY_SERVICE_PROVIDER_INCLUDE, providerArchive);
         try {
             assertBundleState(Bundle.INSTALLED, providerBundle.getState());
 
@@ -154,8 +153,8 @@ public class BundleActivationTestCase extends OSGiTest {
     public void testLoadClassActivationWithExclude() throws Exception {
         context.addBundleListener(new ActivationListener());
 
-        Archive<?> providerArchive = container.getTestArchive(LAZY_SERVICE_PROVIDER_EXCLUDE);
-        Bundle providerBundle = container.installBundle(providerArchive);
+        InputStream providerArchive = provider.getClientDeploymentAsStream(LAZY_SERVICE_PROVIDER_EXCLUDE);
+        Bundle providerBundle = context.installBundle(LAZY_SERVICE_PROVIDER_EXCLUDE, providerArchive);
         try {
             assertBundleState(Bundle.INSTALLED, providerBundle.getState());
 
@@ -183,13 +182,13 @@ public class BundleActivationTestCase extends OSGiTest {
     public void testTransitiveActivation() throws Exception {
         context.addBundleListener(new ActivationListener());
 
-        Archive<?> providerArchive = container.getTestArchive(LAZY_SERVICE_PROVIDER);
-        Bundle providerBundle = container.installBundle(providerArchive);
+        InputStream providerArchive = provider.getClientDeploymentAsStream(LAZY_SERVICE_PROVIDER);
+        Bundle providerBundle = context.installBundle(LAZY_SERVICE_PROVIDER, providerArchive);
         try {
             assertBundleState(Bundle.INSTALLED, providerBundle.getState());
 
-            Archive<?> consumerArchive = container.getTestArchive(LAZY_SERVICE_CONSUMER);
-            Bundle consumerBundle = container.installBundle(consumerArchive);
+            InputStream consumerArchive = provider.getClientDeploymentAsStream(LAZY_SERVICE_CONSUMER);
+            Bundle consumerBundle = context.installBundle(LAZY_SERVICE_CONSUMER, consumerArchive);
             try {
                 assertBundleState(Bundle.INSTALLED, consumerBundle.getState());
 
