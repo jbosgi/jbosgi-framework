@@ -1,0 +1,14 @@
+Bundle-Version: 2.0
+Bundle-Activator: org.jboss.test.osgi.framework.nativecode.bundleA.NativeCodeActivatorA
+Private-Package: org.jboss.test.osgi.framework.nativecode.bundleA
+Bundle-NativeCode: \
+ linux_x86/libNative.so; osname=Linux; processor=x86; selection-filter="(org.jboss.test.osgi.framework.nativecode=foo)", \
+ linux_x86-64/libNative.so; osname=Linux; processor=x86-64; selection-filter="(org.jboss.test.osgi.framework.nativecode=foo)", \
+ macosx_x86/libNative.jnilib; osname="mac os x"; processor=x86_64; processor=ppc; selection-filter="(org.jboss.test.osgi.framework.nativecode=foo)", \
+ windows_x86/Native.dll; osname=Win32; osname=WindowsXP; osname=Windows7; selection-filter="(org.jboss.test.osgi.framework.nativecode=foo)"
+Include-Resource: libs
+
+-removeheaders: Include-Resource
+
+
+

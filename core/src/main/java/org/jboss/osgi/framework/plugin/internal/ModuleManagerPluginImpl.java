@@ -47,10 +47,12 @@ import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractRevision;
 import org.jboss.osgi.framework.bundle.AbstractUserBundle;
+import org.jboss.osgi.framework.bundle.AbstractUserRevision;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.BundleManager.IntegrationMode;
 import org.jboss.osgi.framework.bundle.FragmentRevision;
 import org.jboss.osgi.framework.bundle.HostBundle;
+import org.jboss.osgi.framework.bundle.HostRevision;
 import org.jboss.osgi.framework.bundle.OSGiModuleLoader;
 import org.jboss.osgi.framework.bundle.RevisionContent;
 import org.jboss.osgi.framework.bundle.SystemBundle;
@@ -352,6 +354,17 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
         AbstractUserBundle bundleState = AbstractUserBundle.assertBundleState(bundle);
         Deployment deployment = bundleState.getDeployment();
 
+        addNativeResourceLoader(specBuilder, bundleState, deployment);
+
+        AbstractUserRevision rev = bundleState.getCurrentRevision();
+        if (rev instanceof HostRevision) {
+            for (FragmentRevision fragRev : ((HostRevision) rev).getAttachedFragments()) {
+                addNativeResourceLoader(specBuilder, bundleState, fragRev.getDeployment());
+            }
+        }
+    }
+
+    private void addNativeResourceLoader(ModuleSpec.Builder specBuilder, AbstractUserBundle bundleState, Deployment deployment) {
         NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
         if (libMetaData != null) {
             NativeResourceLoader nativeLoader = new NativeResourceLoader();
@@ -459,7 +472,7 @@ public class ModuleManagerPluginImpl extends AbstractPlugin implements ModuleMan
     // Get or create the dependency builder for the exporter
     private ModuleDependencyHolder getDependencyHolder(Map<XModule, ModuleDependencyHolder> depBuilderMap, XModule exporter) {
         ModuleIdentifier exporterId = getModuleIdentifier(exporter);
-        ModuleDependencyHolder holder = (ModuleDependencyHolder) depBuilderMap.get(exporter);
+        ModuleDependencyHolder holder = depBuilderMap.get(exporter);
         if (holder == null) {
             holder = new ModuleDependencyHolder(exporterId);
             depBuilderMap.put(exporter, holder);

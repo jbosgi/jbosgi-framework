@@ -55,7 +55,7 @@ import org.osgi.framework.BundleException;
  * The resolver plugin.
  * 
  * @author thomas.diesler@jboss.com
- * @author <a href="david@redhat.com">David Bosschaert</a>
+ * @author David Bosschaert
  * @since 06-Jul-2009
  */
 public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin {
@@ -132,7 +132,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
 
         if (unresolved == null) {
             unresolved = new HashSet<XModule>();
-            
+
             // Only bundles that are in state INSTALLED and are
             // registered with the resolver qualify as resolvable
             List<AbstractBundle> allBundles = getBundleManager().getBundles();
@@ -146,7 +146,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
                 }
             }
         }
-        
+
         List<XModule> resolved = new ArrayList<XModule>();
         resolver.setCallbackHandler(new ResolverCallback(resolved));
 
@@ -165,23 +165,28 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
         }
 
         // Apply resolver results
-        applyResolverResults(resolved);
+        try {
+            applyResolverResults(resolved);
+        } catch (BundleException e) {
+            log.debug("Exception when applying resolver results.", e);
+            allResolved = false;
+        }
 
         return allResolved;
     }
 
-    private void applyResolverResults(List<XModule> resolved) {
+    private void applyResolverResults(List<XModule> resolved) throws BundleException {
         // Attach the fragments to host
         attachFragmentsToHost(resolved);
+
+        // Resolve native code libraries if there are any
+        resolveNativeCodeLibraries(resolved);
 
         // For every resolved host bundle create the {@link ModuleSpec}
         addModules(resolved);
 
         // For every resolved host bundle load the module. This creates the {@link ModuleClassLoader}
         loadModules(resolved);
-
-        // Resolve native code libraries if there are any
-        resolveNativeCodeLibraries(resolved);
 
         // Change the bundle state to RESOLVED
         setBundleToResolved(resolved);
@@ -217,7 +222,7 @@ public class ResolverPluginImpl extends AbstractPlugin implements ResolverPlugin
         }
     }
 
-    private void resolveNativeCodeLibraries(List<XModule> resolved) {
+    private void resolveNativeCodeLibraries(List<XModule> resolved) throws BundleException {
         XModule systemModule = getBundleManager().getSystemBundle().getResolverModule();
         for (XModule aux : resolved) {
             if (aux != systemModule) {
