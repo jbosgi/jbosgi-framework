@@ -1,0 +1,8 @@
+Bundle-Version: 2.0
+Bundle-Activator: org.jboss.test.osgi.framework.nativecode.bundleA.NativeCodeActivatorA
+Private-Package: org.jboss.test.osgi.framework.nativecode.bundleA
+
+-removeheaders: Include-Resource
+
+
+

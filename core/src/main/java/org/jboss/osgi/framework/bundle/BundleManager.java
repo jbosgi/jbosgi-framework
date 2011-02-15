@@ -59,6 +59,7 @@ import org.jboss.osgi.framework.plugin.internal.AutoInstallPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.BundleDeploymentPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.BundleStoragePluginImpl;
 import org.jboss.osgi.framework.plugin.internal.DefaultDeployerServicePlugin;
+import org.jboss.osgi.framework.plugin.internal.DefaultFrameworkModuleProvider;
 import org.jboss.osgi.framework.plugin.internal.FrameworkEventsPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.LifecycleInterceptorPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.ModuleManagerPluginImpl;
@@ -67,7 +68,6 @@ import org.jboss.osgi.framework.plugin.internal.PackageAdminPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.ResolverPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.ServiceManagerPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.StartLevelPluginImpl;
-import org.jboss.osgi.framework.plugin.internal.DefaultFrameworkModuleProvider;
 import org.jboss.osgi.framework.plugin.internal.SystemPackagesPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.URLHandlerPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.WebXMLVerifierInterceptor;
@@ -86,7 +86,7 @@ import org.osgi.framework.FrameworkEvent;
  * The BundleManager is the central managing entity for OSGi bundles.
  * 
  * @author thomas.diesler@jboss.com
- * @author <a href="david@redhat.com">David Bosschaert</a>
+ * @author David Bosschaert
  * @since 29-Jun-2010
  */
 public class BundleManager {
@@ -202,8 +202,20 @@ public class BundleManager {
         return value;
     }
 
+    /**
+     * Returns the framework properties merged with the System properties. The returned map is consistent with the
+     * {@link #getProperty(String)} API.
+     *
+     * @return The effective framework properties in a map. The returned map is a copy, so the client can take ownership of it.
+     */
     public Map<String, Object> getProperties() {
-        return Collections.unmodifiableMap(properties);
+        Map<String, Object> m = new HashMap<String, Object>();
+        for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
+            m.put(entry.getKey().toString(), entry.getValue());
+        }
+
+        m.putAll(properties);
+        return m;
     }
 
     public void setProperty(String key, Object value) {
@@ -219,7 +231,7 @@ public class BundleManager {
     }
 
     void addBundleState(AbstractBundle bundleState) {
-        
+
         if (bundleState == null)
             throw new IllegalArgumentException("Null bundleState");
 
@@ -228,11 +240,11 @@ public class BundleManager {
             throw new IllegalStateException("Bundle already added: " + bundleState);
 
         log.infof("Install bundle: %s", bundleState);
-        
+
         // Register the bundle with the manager
         bundleMap.put(bundleId, bundleState);
         bundleState.changeState(Bundle.INSTALLED);
-        
+
         // Add the bundle to the resolver
         boolean addToResolver = true;
         if (bundleState.isSingleton()) {
@@ -278,9 +290,9 @@ public class BundleManager {
 
     /**
      * Get a bundle by id
-     * 
+     *
      * Note, this will get the bundle regadless of its state. i.e. The returned bundle may have been UNINSTALLED
-     * 
+     *
      * @param bundleId The identifier of the bundle
      * @return The bundle or null if there is no bundle with that id
      */
@@ -293,9 +305,9 @@ public class BundleManager {
 
     /**
      * Get a bundle by location
-     * 
+     *
      * Note, this will get the bundle regadless of its state. i.e. The returned bundle may have been UNINSTALLED
-     * 
+     *
      * @param location the location of the bundle
      * @return the bundle or null if there is no bundle with that location
      */
@@ -316,10 +328,10 @@ public class BundleManager {
 
     /**
      * Get the list of bundles with the given symbolic name and version
-     * 
-     * Note, this will get bundles regadless of their state. 
+     *
+     * Note, this will get bundles regadless of their state.
      * i.e. The returned bundles may have been UNINSTALLED
-     * 
+     *
      * @param symbolicName The bundle symbolic name
      * @param versionRange The optional bundle version
      * @return The bundles or an empty list if there is no bundle with that name and version
@@ -344,7 +356,7 @@ public class BundleManager {
     }
 
     /**
-     * Get the list of installed bundles. 
+     * Get the list of installed bundles.
      * i.e. Bundles in state UNINSTALLED are not returned
      */
     public List<AbstractBundle> getBundles() {
@@ -359,7 +371,7 @@ public class BundleManager {
     /**
      * Get the list of bundles that are in one of the given states. If the states pattern is null, it returns all registered
      * bundles.
-     * 
+     *
      * @param states The binary or combination of states or null
      */
     public List<AbstractBundle> getBundles(Integer states) {
@@ -380,7 +392,7 @@ public class BundleManager {
 
     /**
      * Get a plugin that is registered with the bundle manager.
-     * 
+     *
      * @throws IllegalStateException if the requested plugin class is not registered
      */
     @SuppressWarnings("unchecked")
@@ -394,7 +406,7 @@ public class BundleManager {
 
     /**
      * Get an optional plugin that is registered with the bundle manager.
-     * 
+     *
      * @return The plugin instance or null if the requested plugin class is not registered
      */
     @SuppressWarnings("unchecked")
@@ -404,7 +416,7 @@ public class BundleManager {
 
     /**
      * Add a plugin to the bundle manager
-     * 
+     *
      * @return The previous plugin that was registered for the given key, or null.
      */
     @SuppressWarnings("unchecked")
@@ -414,12 +426,12 @@ public class BundleManager {
 
     /**
      * Install a bundle from a given {@link ModuleIdentifier}.
-     * 
+     *
      * This method can be used to register plain modules or bundles to the {@link BundleManager}. A plain module is one that
      * does not have a valid OSGi manifest.
-     * 
+     *
      * When installing a plain module:
-     * 
+     *
      * - module dependencies are not installed automatically - module may or may not have been loaded previously - module cannot
      * be installed multiple times
      */
@@ -431,12 +443,12 @@ public class BundleManager {
 
     /**
      * Install a bundle from a given {@link Module}.
-     * 
+     *
      * This method can be used to register plain modules or bundles to the {@link BundleManager}. A plain module is one that
      * does not have a valid OSGi manifest.
-     * 
+     *
      * When installing a plain module:
-     * 
+     *
      * - module dependencies are not installed automatically - module may or may not have been loaded previously - module cannot
      * be installed multiple times
      */

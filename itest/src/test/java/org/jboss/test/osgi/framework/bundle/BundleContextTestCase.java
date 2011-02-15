@@ -56,7 +56,7 @@ import org.osgi.framework.SynchronousBundleListener;
 
 /**
  * BundleContextTest.
- * 
+ *
  * @author thomas.diesler@jboss.com
  */
 public class BundleContextTestCase extends OSGiFrameworkTest {
@@ -158,9 +158,11 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
             assertNotNull(bundleContext);
             assertEquals("1.5", bundleContext.getProperty(Constants.FRAMEWORK_VERSION));
             assertEquals("jboss.org", bundleContext.getProperty(Constants.FRAMEWORK_VENDOR));
-            assertEquals(Locale.getDefault().getISO3Language(), bundleContext.getProperty(Constants.FRAMEWORK_LANGUAGE));
+            assertEquals(Locale.getDefault().getLanguage(), bundleContext.getProperty(Constants.FRAMEWORK_LANGUAGE));
             assertSystemProperty(bundleContext, "os.name", Constants.FRAMEWORK_OS_NAME);
-            assertSystemProperty(bundleContext, "os.version", Constants.FRAMEWORK_OS_VERSION);
+            String fwOSVersion = bundleContext.getProperty(Constants.FRAMEWORK_OS_VERSION);
+            assertTrue(fwOSVersion.length() > 0);
+            assertTrue(System.getProperty("os.version").startsWith(fwOSVersion));
             assertSystemProperty(bundleContext, "os.arch", Constants.FRAMEWORK_PROCESSOR);
 
             assertNull(bundleContext.getProperty(getClass().getName()));

@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source
- * Copyright 2005, JBoss Inc., and individual contributors as indicated
+ * Copyright 2011, JBoss Inc., and individual contributors as indicated
  * by the @authors tag. See the copyright.txt in the distribution for a
  * full listing of individual contributors.
  *
@@ -27,14 +27,17 @@ import java.io.IOException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Dictionary;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.AbstractUserBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.FrameworkState;
@@ -47,20 +50,23 @@ import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.Parameter;
 import org.jboss.osgi.metadata.ParameterizedAttribute;
+import org.jboss.osgi.metadata.VersionRange;
 import org.jboss.osgi.vfs.VFSUtils;
-import org.jboss.osgi.vfs.VirtualFile;
-import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
+import org.osgi.framework.Filter;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.Version;
 
 /**
  * The bundle native code plugin
- * 
+ *
  * @author thomas.diesler@jboss.com
- * @author <a href="david@redhat.com">David Bosschaert</a>
+ * @author David Bosschaert
  * @since 11-Aug-2010
  */
 public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePlugin {
-
     /**
      * The string that is to be replaced with the absolute path of the native library as specified by the core spec with the
      * org.osgi.framework.command.execpermission framework property.
@@ -115,16 +121,23 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void deployNativeCode(Deployment dep) {
-        AbstractBundle bundleState = AbstractBundle.assertBundleState(dep.getAttachment(Bundle.class));
-        if (bundleState == null)
-            throw new IllegalStateException("Cannot obtain Bundle from: " + dep);
+        // Core 4.2 spec section 3.9: a bundle can be installed if the Bundle-NativeCode code header
+        // doesn't match. Errors are reported during the resolution phase.
 
+        // Add NativeLibraryMetaData to the deployment as a marker that the deployment contains
+        // Native Code which needs to be processed. The actual processing of it happens in the
+        // resolveNativeCode() method.
+        NativeLibraryMetaData nativeLibraries = new NativeLibraryMetaData();
+        dep.addAttachment(NativeLibraryMetaData.class, nativeLibraries);
+    }
+
+    @Override
+    public void resolveNativeCode(AbstractUserBundle bundleState) throws BundleException {
         OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
         List<ParameterizedAttribute> nativeCodeParams = osgiMetaData.getBundleNativeCode();
         if (nativeCodeParams == null)
-            throw new IllegalArgumentException("Cannot find Bundle-NativeCode header for: " + bundleState);
+            throw new BundleException("Cannot find Bundle-NativeCode header for: " + bundleState);
 
         // Find the matching parameters
         List<ParameterizedAttribute> matchedParams = new ArrayList<ParameterizedAttribute>();
@@ -133,101 +146,52 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
                 matchedParams.add(param);
         }
 
+        Deployment dep = bundleState.getDeployment();
+        NativeLibraryMetaData nativeLibraries = dep.getAttachment(NativeLibraryMetaData.class);
+
         // If no native clauses were selected in step 1, this algorithm is terminated
         // and a BundleException is thrown if the optional clause is not present
         if (matchedParams.size() == 0) {
-            // [TODO] optional
-            throw new IllegalStateException("No native clauses selected from: " + nativeCodeParams);
+            if (nativeCodeParams.size() > 0 && "*".equals(nativeCodeParams.get(nativeCodeParams.size() - 1).getAttribute())) {
+                // This Bundle-NativeCode clause is optional but we're not selecting any native code clauses
+                // so remove the marker deployment attachment
+                dep.removeAttachment(NativeLibraryMetaData.class);
+
+                return;
+            }
+
+            throw new BundleException("No native clauses selected from: " + nativeCodeParams);
         }
 
         // The selected clauses are now sorted in the following priority order:
         // * osversion: floor of the osversion range in descending order, osversion not specified
         // * language: language specified, language not specified
         // * Position in the Bundle-NativeCode manifest header: lexical left to right
-        if (matchedParams.size() > 1) {
-            // [TODO] selected clauses are now sorted
-        }
-
-        NativeLibraryMetaData nativeLibraries = new NativeLibraryMetaData();
-        dep.addAttachment(NativeLibraryMetaData.class, nativeLibraries);
+        // [TODO] sort the clauses
 
         for (ParameterizedAttribute param : matchedParams) {
-            Parameter osnameParam = param.getAttribute(Constants.BUNDLE_NATIVECODE_OSNAME);
-            Parameter procParam = param.getAttribute(Constants.BUNDLE_NATIVECODE_PROCESSOR);
-            // Parameter osversionParam = param.getAttribute(Constants.BUNDLE_NATIVECODE_OSVERSION);
-
-            List<String> osNames;
-            if (osnameParam.isCollection())
-                osNames = (List<String>) osnameParam.getValue();
-            else
-                osNames = Collections.singletonList((String) osnameParam.getValue());
-
             String libpath = param.getAttribute();
-            String libsource = bundleState.getCanonicalName();
-
-            NativeLibrary library = new NativeLibrary(osNames, libpath, libsource);
-
-            // Processors
-            if (procParam != null) {
-                List<String> processors;
-                if (procParam.isCollection())
-                    processors = (List<String>) procParam.getValue();
-                else
-                    processors = Collections.singletonList((String) procParam.getValue());
-
-                library.setProcessors(processors);
-            }
-
-            // [TODO] osVersions, languages, selectionFilter, optional
-            // library.setOsVersions(osVersions);
-            // library.setLanguages(languages);
-            // library.setSelectionFilter(selectionFilter);
-            // library.setOptional(optional);
-
+            NativeLibrary library = new NativeLibrary(libpath);
             nativeLibraries.addNativeLibrary(library);
         }
     }
 
-    @Override
-    public void resolveNativeCode(AbstractUserBundle depBundle) {
-        // Deployment dep = depBundle.getDeployment();
-        // NativeLibraryMetaData libMetaData = dep.getAttachment(NativeLibraryMetaData.class);
-        // if (libMetaData == null)
-        // throw new IllegalStateException("Cannot obtain NativeLibraryMetaData from: " + dep);
-        //
-        // ModuleClassLoaderExt moduleClassLoader = (ModuleClassLoaderExt)depBundle.getModuleClassLoader();
-        // if (moduleClassLoader == null)
-        // throw new IllegalStateException("Cannot obtain ModuleClassLoader from: " + depBundle);
-        //
-        // // Add the native library mappings to the OSGiClassLoaderPolicy
-        // for (NativeLibrary library : libMetaData.getNativeLibraries())
-        // {
-        // String libpath = library.getLibraryPath();
-        // String libfile = new File(libpath).getName();
-        // String libname = libfile.substring(0, libfile.lastIndexOf('.'));
-        //
-        // // Add the library provider to the policy
-        // NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(depBundle, libname, libpath);
-        // moduleClassLoader.addNativeLibrary(libProvider);
-        //
-        // // [TODO] why does the TCK use 'Native' to mean 'libNative' ?
-        // if (libname.startsWith("lib"))
-        // {
-        // libname = libname.substring(3);
-        // libProvider = new BundleNativeLibraryProvider(depBundle, libname, libpath);
-        // moduleClassLoader.addNativeLibrary(libProvider);
-        // }
-        // }
+    @SuppressWarnings({ "unchecked" })
+    private List<String> getCollection(Object value) {
+        if (value == null)
+            return Collections.emptyList();
+
+        if (value instanceof Collection)
+            return new ArrayList<String>((Collection<String>) value);
+
+        return Collections.singletonList(value.toString());
     }
 
-    @SuppressWarnings("unchecked")
-    private boolean matchParameter(ParameterizedAttribute param) {
+    private boolean matchParameter(ParameterizedAttribute param) throws BundleException {
         FrameworkState frameworkState = getBundleManager().getFrameworkState();
-        String fwOSName = frameworkState.getProperty(Constants.FRAMEWORK_OS_NAME);
-        String fwProcessor = frameworkState.getProperty(Constants.FRAMEWORK_PROCESSOR);
-        // String fwOSVersion = frameworkState(Constants.FRAMEWORK_OS_VERSION);
 
         // Only select the native code clauses for which the following expressions all evaluate to true
+        // ('~=' stands for 'matches').
         // * osname ~= [org.osgi.framework.os.name]
         // * processor ~= [org.osgi.framework.processor]
         // * osversion range includes [org.osgi.framework.os.version] or osversion is not specified
@@ -235,21 +199,14 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
         // * selection-filter evaluates to true when using the values of the system properties or selection-filter is not
         // specified
 
-        Parameter osnameParam = param.getAttribute(Constants.BUNDLE_NATIVECODE_OSNAME);
-        Parameter procParam = param.getAttribute(Constants.BUNDLE_NATIVECODE_PROCESSOR);
-        // Parameter osversionParam = param.getAttribute(Constants.BUNDLE_NATIVECODE_OSVERSION);
-
-        boolean match = (osnameParam != null);
-
         // osname ~= [org.osgi.framework.os.name]
+        Parameter osnameParam = param.getAttribute(Constants.BUNDLE_NATIVECODE_OSNAME);
+        boolean match = (osnameParam != null);
         if (match == true && osnameParam != null) {
-            List<String> osNames;
-            if (osnameParam.isCollection())
-                osNames = (List<String>) osnameParam.getValue();
-            else
-                osNames = Collections.singletonList((String) osnameParam.getValue());
+            String fwOSName = frameworkState.getProperty(Constants.FRAMEWORK_OS_NAME);
 
             boolean osmatch = false;
+            Collection<String> osNames = getCollection(osnameParam.getValue());
             for (String osname : osNames) {
                 osmatch = (osname.equalsIgnoreCase(fwOSName) || osname.equalsIgnoreCase(osAlias.get(fwOSName)));
                 if (osmatch == true)
@@ -260,15 +217,13 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
         }
 
         // processor ~= [org.osgi.framework.processor]
+        Parameter procParam = param.getAttribute(Constants.BUNDLE_NATIVECODE_PROCESSOR);
         match &= (procParam != null);
         if (match && procParam != null) {
-            List<String> processors;
-            if (procParam.isCollection())
-                processors = (List<String>) procParam.getValue();
-            else
-                processors = Collections.singletonList((String) procParam.getValue());
+            String fwProcessor = frameworkState.getProperty(Constants.FRAMEWORK_PROCESSOR);
 
             boolean procmatch = false;
+            List<String> processors = getCollection(procParam.getValue());
             for (String proc : processors) {
                 procmatch = (proc.equals(fwProcessor) || proc.equals(processorAlias.get(fwProcessor)));
                 if (procmatch == true)
@@ -278,18 +233,71 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
             match &= procmatch;
         }
 
-        // [TODO] osversion range includes [org.osgi.framework.os.version] or osversion is not specified
-        // [TODO] language ~= [org.osgi.framework.language] or language is not specified
-        // [TODO] selection-filter evaluates to true when using the values of the system properties or selection-filter is not
-        // specified
+        // osversion range includes [org.osgi.framework.os.version] or osversion is not specified
+        Parameter osversionParam = param.getAttribute(Constants.BUNDLE_NATIVECODE_OSVERSION);
+        if (match && osversionParam != null) {
+            String fwOSVersion = frameworkState.getProperty(Constants.FRAMEWORK_OS_VERSION);
+
+            boolean versionMatch = false;
+            Version currentVersion = Version.parseVersion(fwOSVersion);
+
+            for (String versionRange : getCollection(osversionParam.getValue())) {
+                VersionRange vr;
+                vr = VersionRange.parse(versionRange);
+                if (vr.isInRange(currentVersion)) {
+                    versionMatch = true;
+                    break;
+                }
+            }
+
+            match &= versionMatch;
+        }
+
+        // language ~= [org.osgi.framework.language] or language is not specified
+        Parameter languageParam = param.getAttribute(Constants.BUNDLE_NATIVECODE_LANGUAGE);
+        if (match && languageParam != null) {
+            String fwLanguage = frameworkState.getProperty(Constants.FRAMEWORK_LANGUAGE);
+
+            boolean languageMatch = false;
+            for (String language : getCollection(languageParam.getValue())) {
+                if (language.equals(fwLanguage)) {
+                    languageMatch = true;
+                    break;
+                }
+            }
+
+            match &= languageMatch;
+        }
+
+        // selection-filter evaluates to true when using the values of the system properties or selection-filter is not specified
+        Parameter filterSelectionParam = param.getAttribute(Constants.SELECTION_FILTER_ATTRIBUTE);
+        if (match && filterSelectionParam != null) {
+            boolean filterMatch = false;
+            Dictionary<String, Object> frameworkProps = new Hashtable<String, Object>(frameworkState.getProperties());
+            for (String f : getCollection(filterSelectionParam.getValue())) {
+                try {
+                    Filter filter = FrameworkUtil.createFilter(f);
+                    if (filter.match(frameworkProps)) {
+                        filterMatch = true;
+                        break;
+                    }
+
+                } catch (InvalidSyntaxException e) {
+                    throw new BundleException("Illegal filter expression: " + f, e);
+                }
+            }
+
+            match &= filterMatch;
+        }
+
         return match;
     }
 
     public static class BundleNativeLibraryProvider implements NativeLibraryProvider {
-
-        private AbstractUserBundle bundleState;
-        private String libpath;
-        private String libname;
+        private final AbstractUserBundle bundleState;
+        private final String libname;
+        private final String libpath;
+        private final URL libURL;
         private File libraryFile;
 
         public BundleNativeLibraryProvider(AbstractUserBundle bundleState, String libname, String libpath) {
@@ -298,10 +306,22 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
             this.libname = libname;
 
             // If a native code library in a selected native code clause cannot be found
-            // within the bundle then the bundle must fail to resolve
-            URL entryURL = bundleState.getEntry(libpath);
-            if (entryURL == null)
+            // within the bundle or its fragments then the bundle must fail to resolve
+            String path;
+            String filename;
+            int idx = libpath.lastIndexOf('/');
+            if (idx >= 0) {
+                path = libpath.substring(0, idx);
+                filename = libpath.substring(idx + 1);
+            } else {
+                path = "";
+                filename = libpath;
+            }
+            Enumeration<URL> urls = bundleState.findEntries(path, filename, false);
+            if (urls == null || urls.hasMoreElements() == false)
                 throw new IllegalStateException("Cannot find native library: " + libpath);
+
+            this.libURL = urls.nextElement();
         }
 
         @Override
@@ -316,18 +336,14 @@ public class NativeCodePluginImpl extends AbstractPlugin implements NativeCodePl
 
         @Override
         public File getLibraryLocation() throws IOException {
-            VirtualFile contentRoot = bundleState.getFirstContentRoot().getVirtualFile();
-            if (libraryFile == null && contentRoot != null) {
-                // Get the virtual file for entry for the library
-                VirtualFile fileSource = contentRoot.getChild(libpath);
-
+            if (libraryFile == null) {
                 // Create a unique local file location
                 libraryFile = getUniqueLibraryFile(bundleState, libpath);
                 libraryFile.deleteOnExit();
 
                 // Copy the native library to the bundle storage area
                 FileOutputStream fos = new FileOutputStream(libraryFile);
-                VFSUtils.copyStream(fileSource.openStream(), fos);
+                VFSUtils.copyStream(libURL.openStream(), fos);
                 fos.close();
 
                 handleExecPermission();

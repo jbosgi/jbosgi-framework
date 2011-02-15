@@ -51,8 +51,9 @@ import org.osgi.framework.launch.Framework;
 
 /**
  * The Framework state.
- * 
+ *
  * @author thomas.diesler@jboss.com
+ * @author David Bosschaert
  * @since 21-Aug-2009
  */
 public class FrameworkState extends SystemBundle implements Framework {
@@ -63,7 +64,7 @@ public class FrameworkState extends SystemBundle implements Framework {
     // The framework execution environment
     private static String OSGi_FRAMEWORK_EXECUTIONENVIRONMENT;
     // The framework language
-    private static String OSGi_FRAMEWORK_LANGUAGE = Locale.getDefault().getISO3Language(); // REVIEW correct?
+    private static String OSGi_FRAMEWORK_LANGUAGE = Locale.getDefault().getLanguage();
     // The os name
     private static String OSGi_FRAMEWORK_OS_NAME;
     // The os version
@@ -99,13 +100,43 @@ public class FrameworkState extends SystemBundle implements Framework {
                 OSGi_FRAMEWORK_EXECUTIONENVIRONMENT = envlist;
 
                 OSGi_FRAMEWORK_OS_NAME = SysPropertyActions.getProperty("os.name", null);
-                OSGi_FRAMEWORK_OS_VERSION = SysPropertyActions.getProperty("os.version", null);
+                OSGi_FRAMEWORK_OS_VERSION = FrameworkState.getOSVersionInOSGiFormat();
                 OSGi_FRAMEWORK_PROCESSOR = SysPropertyActions.getProperty("os.arch", null);
 
                 SecurityActions.setSystemProperty("org.osgi.vendor.framework", "org.jboss.osgi.framework");
                 return null;
             }
         });
+    }
+
+    // Turn the OS version into an OSGi-compatible version. The spec says that an external operator
+    // should do this by changing the framework properties, but this is pretty inconvenient and other
+    // OSGi frameworks seem to automatically fix this too. The original os version is still available
+    // in the "os.version" system property.
+    private static String getOSVersionInOSGiFormat() {
+        StringBuilder osgiVersion = new StringBuilder();
+
+        String sysVersion = SysPropertyActions.getProperty("os.version", null);
+        String[] elements = sysVersion.split("\\.");
+        int i = 0;
+        for (; i < 3 && i < elements.length; i++) {
+            try {
+                Integer.parseInt(elements[i]);
+                if (i > 0)
+                    osgiVersion.append('.');
+                osgiVersion.append(elements[i]);
+            } catch (NumberFormatException nfe) {
+                break;
+            }
+        }
+
+        if (i == 3 && elements.length > 3) {
+            // All the parts were ok so far, now add the qualifier
+            osgiVersion.append('.');
+            osgiVersion.append(elements[3]);
+        }
+
+        return osgiVersion.toString();
     }
 
     FrameworkState(BundleManager bundleManager) {
@@ -161,7 +192,7 @@ public class FrameworkState extends SystemBundle implements Framework {
 
     /**
      * Assert that the {@link this} is active.
-     * 
+     *
      * @throws IllegalStateException if not
      */
     void assertFrameworkActive() {
@@ -172,13 +203,13 @@ public class FrameworkState extends SystemBundle implements Framework {
 
     /**
      * Initialize this Framework.
-     * 
+     *
      * After calling this method, this Framework must: - Be in the Bundle.STARTING state. - Have a valid Bundle Context. - Be at
      * start level 0. - Have event handling enabled. - Have reified Bundle objects for all installed bundles. - Have registered
      * any framework services. For example, PackageAdmin, ConditionalPermissionAdmin, StartLevel.
-     * 
+     *
      * This Framework will not actually be started until start is called.
-     * 
+     *
      * This method does nothing if called when this Framework is in the Bundle.STARTING, Bundle.ACTIVE or Bundle.STOPPING
      * states.
      */
@@ -230,7 +261,7 @@ public class FrameworkState extends SystemBundle implements Framework {
 
     @Override
     public void start(int options) throws BundleException {
-        
+
         // If this Framework is not in the STARTING state, initialize this Framework
         if (getState() != Bundle.STARTING)
             init();
@@ -238,7 +269,7 @@ public class FrameworkState extends SystemBundle implements Framework {
         // Resolve the system bundle
         ResolverPlugin resolver = getBundleManager().getPlugin(ResolverPlugin.class);
         resolver.resolve(getResolverModule());
-        
+
         // This Framework's state is set to ACTIVE
         changeState(Bundle.ACTIVE);
 
@@ -278,15 +309,15 @@ public class FrameworkState extends SystemBundle implements Framework {
 
     /**
      * Stop this Framework.
-     * 
+     *
      * The method returns immediately to the caller after initiating the following steps to be taken on another thread.
-     * 
+     *
      * 1. This Framework's state is set to Bundle.STOPPING. 2. All installed bundles must be stopped without changing each
      * bundle's persistent autostart setting. 3. Unregister all services registered by this Framework. 4. Event handling is
      * disabled. 5. This Framework's state is set to Bundle.RESOLVED. 6. All resources held by this Framework are released. This
      * includes threads, bundle class loaders, open files, etc. 7. Notify all threads that are waiting at waitForStop that the
      * stop operation has completed.
-     * 
+     *
      * After being stopped, this Framework may be discarded, initialized or started.
      */
     @Override
@@ -425,11 +456,11 @@ public class FrameworkState extends SystemBundle implements Framework {
 
     /**
      * Wait until this Framework has completely stopped.
-     * 
+     *
      * The stop and update methods on a Framework performs an asynchronous stop of the Framework. This method can be used to
      * wait until the asynchronous stop of this Framework has completed. This method will only wait if called when this
      * Framework is in the Bundle.STARTING, Bundle.ACTIVE, or Bundle.STOPPING states. Otherwise it will return immediately.
-     * 
+     *
      * A Framework Event is returned to indicate why this Framework has stopped.
      */
     @Override
