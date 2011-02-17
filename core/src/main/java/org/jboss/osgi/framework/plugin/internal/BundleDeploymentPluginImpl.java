@@ -29,8 +29,6 @@ import java.util.jar.Manifest;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
-import org.jboss.modules.ModuleLoader;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.bundle.BundleManager;
@@ -52,7 +50,7 @@ import org.osgi.framework.Version;
 
 /**
  * A plugin the handles Bundle deployments.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 12-Jul-2010
  */
@@ -86,23 +84,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
     }
 
     @Override
-    public Deployment createDeployment(ModuleIdentifier identifier) throws BundleException {
-        Module module;
-        try {
-            ModuleLoader moduleLoader = getBundleManager().getSystemModuleLoader();
-            module = moduleLoader.loadModule(identifier);
-        } catch (ModuleLoadException ex) {
-            throw new BundleException("Cannot load module: " + identifier, ex);
-        }
-        return createDeploymentInternal(module);
-    }
-
-    @Override
     public Deployment createDeployment(final Module module) throws BundleException {
-        return createDeploymentInternal(module);
-    }
-
-    private Deployment createDeploymentInternal(final Module module) throws BundleException {
         if (module == null)
             throw new IllegalArgumentException("Null module");
 
@@ -179,7 +161,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
 
     @Override
     public OSGiMetaData createOSGiMetaData(Deployment dep) throws BundleException {
-        
+
         // #1 check if the Deployment already contains a OSGiMetaData
         OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
         if (metadata != null)
@@ -222,7 +204,7 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
 
     /**
      * Get virtual file for the singe jar that corresponds to the given identifier
-     * 
+     *
      * @return The file or null
      */
     private File getModuleRepositoryEntry(ModuleIdentifier identifier) {
@@ -284,15 +266,15 @@ public class BundleDeploymentPluginImpl extends AbstractPlugin implements Bundle
             return dep;
         }
 
-        
+
         Manifest manifest = null;
         try {
             manifest = VFSUtils.getManifest(rootFile);
         } catch (IOException ex) {
             // ignore no manifest
         }
-        
-        // Generate symbolic name and version for empty manifest 
+
+        // Generate symbolic name and version for empty manifest
         if (manifest != null && manifest.getMainAttributes().keySet().size() < 2) {
             Deployment dep = DeploymentFactory.createDeployment(rootFile, location, null, Version.emptyVersion);
             metadata = OSGiMetaDataBuilder.load(manifest);
