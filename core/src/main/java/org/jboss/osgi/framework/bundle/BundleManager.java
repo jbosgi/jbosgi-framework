@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoader;
+import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.plugin.AutoInstallPlugin;
@@ -45,6 +45,7 @@ import org.jboss.osgi.framework.plugin.BundleStoragePlugin;
 import org.jboss.osgi.framework.plugin.DeployerServicePlugin;
 import org.jboss.osgi.framework.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.framework.plugin.LifecycleInterceptorPlugin;
+import org.jboss.osgi.framework.plugin.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.framework.plugin.NativeCodePlugin;
 import org.jboss.osgi.framework.plugin.PackageAdminPlugin;
@@ -62,6 +63,7 @@ import org.jboss.osgi.framework.plugin.internal.DefaultDeployerServicePlugin;
 import org.jboss.osgi.framework.plugin.internal.DefaultFrameworkModuleProvider;
 import org.jboss.osgi.framework.plugin.internal.FrameworkEventsPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.LifecycleInterceptorPluginImpl;
+import org.jboss.osgi.framework.plugin.internal.ModuleLoaderPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.ModuleManagerPluginImpl;
 import org.jboss.osgi.framework.plugin.internal.NativeCodePluginImpl;
 import org.jboss.osgi.framework.plugin.internal.PackageAdminPluginImpl;
@@ -84,7 +86,7 @@ import org.osgi.framework.FrameworkEvent;
 
 /**
  * The BundleManager is the central managing entity for OSGi bundles.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author David Bosschaert
  * @since 29-Jun-2010
@@ -102,8 +104,6 @@ public class BundleManager {
     private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
     // The registered plugins
     private Map<Class<? extends Plugin>, Plugin> plugins = new LinkedHashMap<Class<? extends Plugin>, Plugin>();
-    // The default ModuleLoader
-    private final ModuleLoader systemModuleLoader;
     // The ServiceContainer
     private ServiceContainer serviceContainer;
     // The Framework state
@@ -130,10 +130,6 @@ public class BundleManager {
         // Register the URL handler plugin
         plugins.put(URLHandlerPlugin.class, new URLHandlerPluginImpl(this));
 
-        // Initialize the default module loader
-        ModuleLoader mlProp = (ModuleLoader) getProperty(ModuleLoader.class.getName());
-        systemModuleLoader = mlProp != null ? mlProp : Module.getSystemModuleLoader();
-
         // Get/Create the service container
         ServiceContainer scProp = (ServiceContainer) getProperty(ServiceContainer.class.getName());
         serviceContainer = scProp != null ? scProp : ServiceContainer.Factory.create();
@@ -142,6 +138,7 @@ public class BundleManager {
         plugins.put(BundleDeploymentPlugin.class, new BundleDeploymentPluginImpl(this));
         plugins.put(BundleStoragePlugin.class, new BundleStoragePluginImpl(this));
         plugins.put(FrameworkEventsPlugin.class, new FrameworkEventsPluginImpl(this));
+        plugins.put(ModuleLoaderPlugin.class, new ModuleLoaderPluginImpl(this));
         plugins.put(ModuleManagerPlugin.class, new ModuleManagerPluginImpl(this));
         plugins.put(NativeCodePlugin.class, new NativeCodePluginImpl(this));
         plugins.put(ResolverPlugin.class, new ResolverPluginImpl(this));
@@ -176,10 +173,6 @@ public class BundleManager {
 
     public SystemBundle getSystemBundle() {
         return frameworkState;
-    }
-
-    public ModuleLoader getSystemModuleLoader() {
-        return systemModuleLoader;
     }
 
     public ServiceContainer getServiceContainer() {
@@ -436,8 +429,15 @@ public class BundleManager {
      * be installed multiple times
      */
     public Bundle installBundle(ModuleIdentifier identifier) throws BundleException {
-        BundleDeploymentPlugin plugin = getPlugin(BundleDeploymentPlugin.class);
-        Deployment dep = plugin.createDeployment(identifier);
+        Module module;
+        try {
+            ModuleLoaderPlugin loaderPlugin = getPlugin(ModuleLoaderPlugin.class);
+            module = loaderPlugin.loadModule(identifier);
+        } catch (ModuleLoadException ex) {
+            throw new BundleException("Cannot load module: " + identifier, ex);
+        }
+        BundleDeploymentPlugin deploymentPlugin = getPlugin(BundleDeploymentPlugin.class);
+        Deployment dep = deploymentPlugin.createDeployment(module);
         return installBundle(dep);
     }
 
