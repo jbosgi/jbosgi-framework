@@ -70,7 +70,7 @@ public abstract class AbstractSystemModuleProviderPlugin extends AbstractPlugin 
         if (systemModule != null)
             throw new IllegalStateException("System module already created");
         ModuleSpec.Builder specBuilder = ModuleSpec.build(ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".system"));
-        ModuleLoader systemLoader = Module.getSystemModuleLoader();
+        ModuleLoader systemLoader = Module.getBootModuleLoader();
         ModuleIdentifier identifier = Module.getSystemModule().getIdentifier();
         PathFilter systemFilter = getBundleManager().getPlugin(SystemPackagesPlugin.class).getSystemPackageFilter();
         specBuilder.addDependency(DependencySpec.createModuleDependencySpec(systemFilter, PathFilters.acceptAll(), systemLoader, identifier, false));

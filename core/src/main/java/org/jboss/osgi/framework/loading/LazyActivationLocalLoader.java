@@ -119,9 +119,4 @@ public class LazyActivationLocalLoader implements LocalLoader {
     public List<Resource> loadResourceLocal(String name) {
         return Collections.emptyList();
     }
-
-    @Override
-    public Resource loadResourceLocal(String root, String name) {
-        return null;
-    }
 }
