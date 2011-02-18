@@ -96,11 +96,6 @@ public class DefaultFrameworkModuleProvider extends AbstractSystemModuleProvider
             public List<Resource> loadResourceLocal(String name) {
                 return Collections.emptyList();
             }
-
-            @Override
-            public Resource loadResourceLocal(String root, String name) {
-                return null;
-            }
         };
         specBuilder.addDependency(DependencySpec.createLocalDependencySpec(frameworkFilter, PathFilters.acceptAll(), localLoader, plugin.getFrameworkPackagePaths()));
         specBuilder.setModuleClassLoaderFactory(new SystemBundleModuleClassLoader.Factory(getBundleManager().getSystemBundle()));

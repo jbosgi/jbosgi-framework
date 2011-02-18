@@ -92,7 +92,7 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
         ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
         PathFilter importFilter = getSystemExportFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderA.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getSystemModuleLoader(), systemModuleId, false));
+        specBuilderA.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getBootModuleLoader(), systemModuleId, false));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
         
@@ -121,7 +121,7 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
         ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
         PathFilter importFilter = getSystemExportFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderF.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getSystemModuleLoader(), systemModuleId, false));
+        specBuilderF.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getBootModuleLoader(), systemModuleId, false));
         importFilter = PathFilters.in(getFrameworkExportPaths());
         exportFilter = PathFilters.acceptAll();
         FrameworkLocalLoader localLoader = new FrameworkLocalLoader(Bundle.class.getClassLoader());
@@ -139,7 +139,7 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
         ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
         PathFilter importFilter = getSystemExportFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderF.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getSystemModuleLoader(), systemModuleId, false));
+        specBuilderF.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getBootModuleLoader(), systemModuleId, false));
         importFilter = PathFilters.in(getFrameworkExportPaths());
         exportFilter = PathFilters.acceptAll();
         FrameworkLocalLoader localLoader = new FrameworkLocalLoader(Bundle.class.getClassLoader());
@@ -208,11 +208,6 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
         @Override
         public List<Resource> loadResourceLocal(String name) {
             return Collections.emptyList();
-        }
-
-        @Override
-        public Resource loadResourceLocal(String root, String name) {
-            return null;
         }
     }
 }

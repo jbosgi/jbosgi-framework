@@ -121,11 +121,6 @@ public class HostBundleFallbackLoader implements LocalLoader {
         return Collections.singletonList((Resource) new URLResource(resURL));
     }
 
-    @Override
-    public Resource loadResourceLocal(String root, String name) {
-        return null;
-    }
-
     private Module findModuleDynamically(String resName, List<XPackageRequirement> matchingPatterns) {
 
         String path = resName.substring(0, resName.lastIndexOf('/'));

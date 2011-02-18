@@ -436,11 +436,6 @@ public class ModulesTestCase extends ModulesTestBase {
         public List<Resource> loadResourceLocal(String name) {
             return null;
         }
-
-        @Override
-        public Resource loadResourceLocal(String root, String name) {
-            return null;
-        }
     }
 
     private JavaArchive getModuleA() {

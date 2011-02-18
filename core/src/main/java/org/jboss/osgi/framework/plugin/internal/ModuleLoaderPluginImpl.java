@@ -43,7 +43,7 @@ public class ModuleLoaderPluginImpl extends AbstractPlugin implements ModuleLoad
 
     @Override
     public Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException {
-        ModuleLoader moduleLoader = Module.getSystemModuleLoader();
+        ModuleLoader moduleLoader = Module.getBootModuleLoader();
         return moduleLoader.loadModule(identifier);
     }
 }

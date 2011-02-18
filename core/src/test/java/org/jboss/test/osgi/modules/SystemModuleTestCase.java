@@ -90,7 +90,7 @@ public class SystemModuleTestCase extends ModulesTestBase {
         ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
         PathFilter importFilter = getSystemDelegationFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderA.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getSystemModuleLoader(), systemModuleId, false));
+        specBuilderA.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getBootModuleLoader(), systemModuleId, false));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
@@ -106,7 +106,7 @@ public class SystemModuleTestCase extends ModulesTestBase {
         ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
         PathFilter importFilter = getSystemDelegationFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getSystemModuleLoader(), systemModuleId, false));
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getBootModuleLoader(), systemModuleId, false));
         addModuleSpec(specBuilderB.create());
         
         ModuleIdentifier identifierA = ModuleIdentifier.create("moduleA");
