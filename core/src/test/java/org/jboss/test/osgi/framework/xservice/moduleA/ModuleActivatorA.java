@@ -22,13 +22,12 @@
 package org.jboss.test.osgi.framework.xservice.moduleA;
 
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.msc.service.BatchBuilder;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceRegistryException;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
@@ -47,7 +46,7 @@ public class ModuleActivatorA implements ModuleActivator {
 
     @Override
     public void start(final ModuleContext context) throws ModuleLoadException {
-        BatchBuilder batchBuilder = context.getServiceContainer().batchBuilder();
+        ServiceTarget serviceTarget = context.getServiceContainer().subTarget();
         serviceName = context.getServiceName(ModuleServiceA.class);
 
         Service<ModuleServiceA> service = new Service<ModuleServiceA>() {
@@ -68,13 +67,8 @@ public class ModuleActivatorA implements ModuleActivator {
             }
         };
 
-        ServiceBuilder<ModuleServiceA> serviceBuilder = batchBuilder.addService(serviceName, service);
+        ServiceBuilder<ModuleServiceA> serviceBuilder = serviceTarget.addService(serviceName, service);
         serviceBuilder.setInitialMode(Mode.PASSIVE).install();
-        try {
-            batchBuilder.install();
-        } catch (ServiceRegistryException ex) {
-            throw new ModuleLoadException("Cannot register service: " + serviceName);
-        }
     }
 
     @Override

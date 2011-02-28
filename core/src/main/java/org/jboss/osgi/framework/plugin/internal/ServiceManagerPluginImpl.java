@@ -38,13 +38,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.msc.service.BatchBuilder;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistryException;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
@@ -146,7 +146,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
         };
 
         final ServiceState serviceState = new ServiceState(bundleState, serviceId, serviceNames, clazzes, valueProvider, properties);
-        BatchBuilder batchBuilder = getBundleManager().getServiceContainer().batchBuilder();
+        ServiceTarget serviceTarget = getBundleManager().getServiceContainer().subTarget();
         Service service = new Service() {
 
             @Override
@@ -167,7 +167,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
         log.debugf("Register service: %s", serviceState);
 
         ServiceName rootServiceName = serviceNames[0];
-        ServiceBuilder<?> serviceBuilder = batchBuilder.addService(rootServiceName, service);
+        ServiceBuilder<?> serviceBuilder = serviceTarget.addService(rootServiceName, service);
         associations.put(rootServiceName, clazzes[0]);
 
         // Set the startup mode
@@ -183,8 +183,6 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
         serviceBuilder.install();
 
         try {
-            batchBuilder.install();
-
             // Register the name association. We do this here
             // in case anything went wrong during the install
             for (Entry<ServiceName, String> aux : associations.entrySet()) {
