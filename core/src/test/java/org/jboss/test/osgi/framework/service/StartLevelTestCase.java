@@ -25,10 +25,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.util.concurrent.Executor;
+import java.util.List;
+import java.util.concurrent.AbstractExecutorService;
+import java.util.concurrent.TimeUnit;
 
-import org.jboss.osgi.framework.plugin.internal.StartLevelPluginImpl;
+import org.jboss.osgi.framework.plugin.StartLevelPlugin;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -147,9 +148,8 @@ public class StartLevelTestCase extends OSGiFrameworkTest {
     }
 
     private void setTestExecutor(StartLevel sls) throws Exception {
-        Field ef = StartLevelPluginImpl.class.getDeclaredField("executor");
-        ef.setAccessible(true);
-        ef.set(sls, new CurrentThreadExecutor());
+        StartLevelPlugin plugin = (StartLevelPlugin) sls;
+        plugin.setExecutorService(new ImmediateExecutorService());
     }
 
     private JavaArchive createTestBundle(String name) {
@@ -168,11 +168,35 @@ public class StartLevelTestCase extends OSGiFrameworkTest {
         return archive;
     }
 
-    private static class CurrentThreadExecutor implements Executor {
+    private static class ImmediateExecutorService extends AbstractExecutorService {
 
         @Override
         public void execute(Runnable command) {
             command.run();
+        }
+
+        @Override
+        public void shutdown() {
+        }
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            return null;
+        }
+
+        @Override
+        public boolean isShutdown() {
+            return false;
+        }
+
+        @Override
+        public boolean isTerminated() {
+            return false;
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            return false;
         }
     }
 }

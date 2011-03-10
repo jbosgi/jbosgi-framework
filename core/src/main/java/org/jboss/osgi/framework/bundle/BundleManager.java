@@ -37,7 +37,6 @@ import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.msc.service.ServiceContainer;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.plugin.AutoInstallPlugin;
 import org.jboss.osgi.framework.plugin.BundleDeploymentPlugin;
@@ -104,8 +103,6 @@ public class BundleManager {
     private Map<Long, AbstractBundle> bundleMap = Collections.synchronizedMap(new LinkedHashMap<Long, AbstractBundle>());
     // The registered plugins
     private Map<Class<? extends Plugin>, Plugin> plugins = new LinkedHashMap<Class<? extends Plugin>, Plugin>();
-    // The ServiceContainer
-    private ServiceContainer serviceContainer;
     // The Framework state
     private FrameworkState frameworkState;
     // Flag that indicates the first init of this instance
@@ -129,10 +126,6 @@ public class BundleManager {
 
         // Register the URL handler plugin
         plugins.put(URLHandlerPlugin.class, new URLHandlerPluginImpl(this));
-
-        // Get/Create the service container
-        ServiceContainer scProp = (ServiceContainer) getProperty(ServiceContainer.class.getName());
-        serviceContainer = scProp != null ? scProp : ServiceContainer.Factory.create();
 
         // Register the framework plugins
         plugins.put(BundleDeploymentPlugin.class, new BundleDeploymentPluginImpl(this));
@@ -173,10 +166,6 @@ public class BundleManager {
 
     public SystemBundle getSystemBundle() {
         return frameworkState;
-    }
-
-    public ServiceContainer getServiceContainer() {
-        return serviceContainer;
     }
 
     public IntegrationMode getIntegrationMode() {

@@ -33,8 +33,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleClassLoader;
@@ -46,7 +44,7 @@ import org.jboss.osgi.framework.bundle.FragmentBundle;
 import org.jboss.osgi.framework.bundle.FragmentRevision;
 import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.HostRevision;
-import org.jboss.osgi.framework.plugin.AbstractPlugin;
+import org.jboss.osgi.framework.plugin.AbstractExecutorServicePlugin;
 import org.jboss.osgi.framework.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
 import org.jboss.osgi.framework.plugin.PackageAdminPlugin;
@@ -78,17 +76,16 @@ import org.osgi.service.startlevel.StartLevel;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2010
  */
-public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdminPlugin {
+public class PackageAdminPluginImpl extends AbstractExecutorServicePlugin implements PackageAdminPlugin {
 
     // Provide logging
     final Logger log = Logger.getLogger(PackageAdminPluginImpl.class);
 
-    private Executor executor;
     private ResolverPlugin resolverPlugin;
     private ServiceRegistration registration;
 
     public PackageAdminPluginImpl(BundleManager bundleManager) {
-        super(bundleManager);
+        super(bundleManager, "PackageAdmin");
     }
 
     @Override
@@ -326,13 +323,7 @@ public class PackageAdminPluginImpl extends AbstractPlugin implements PackageAdm
                 eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
             }
         };
-        getExecutor().execute(runner);
-    }
-
-    private Executor getExecutor() {
-        if (executor == null)
-            executor = Executors.newSingleThreadExecutor();
-        return executor;
+        getExecutorService().execute(runner);
     }
 
     @Override

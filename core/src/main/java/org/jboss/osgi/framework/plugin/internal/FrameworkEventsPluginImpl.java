@@ -35,14 +35,12 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.ServiceState;
-import org.jboss.osgi.framework.plugin.AbstractPlugin;
+import org.jboss.osgi.framework.plugin.AbstractExecutorServicePlugin;
 import org.jboss.osgi.framework.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.framework.util.NoFilter;
 import org.jboss.osgi.framework.util.RemoveOnlyCollection;
@@ -72,7 +70,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public class FrameworkEventsPluginImpl extends AbstractPlugin implements FrameworkEventsPlugin {
+public class FrameworkEventsPluginImpl extends AbstractExecutorServicePlugin implements FrameworkEventsPlugin {
 
     // Provide logging
     final Logger log = Logger.getLogger(FrameworkEventsPluginImpl.class);
@@ -86,16 +84,13 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
     /** The service listeners */
     private final Map<AbstractBundle, List<ServiceListenerRegistration>> serviceListeners = new ConcurrentHashMap<AbstractBundle, List<ServiceListenerRegistration>>();
 
-    /** The executor service */
-    private ExecutorService executorService;
     /** The set of bundleState events that are delivered to an (asynchronous) BundleListener */
     private Set<Integer> asyncBundleEvents = new HashSet<Integer>();
     /** The set of events that are logged at INFO level */
     private Set<String> infoEvents = new HashSet<String>();
 
     public FrameworkEventsPluginImpl(BundleManager bundleManager) {
-        super(bundleManager);
-        executorService = Executors.newCachedThreadPool();
+        super(bundleManager, "Event");
         asyncBundleEvents.add(new Integer(BundleEvent.INSTALLED));
         asyncBundleEvents.add(new Integer(BundleEvent.RESOLVED));
         asyncBundleEvents.add(new Integer(BundleEvent.STARTED));
@@ -571,7 +566,7 @@ public class FrameworkEventsPluginImpl extends AbstractPlugin implements Framewo
     }
 
     private void fireEvent(Runnable runnable) {
-        executorService.execute(runnable);
+        getExecutorService().execute(runnable);
     }
 
     /**

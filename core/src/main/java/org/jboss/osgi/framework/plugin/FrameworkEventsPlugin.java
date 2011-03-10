@@ -37,7 +37,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
  * @author thomas.diesler@jboss.com
  * @since 27-Aug-2009
  */
-public interface FrameworkEventsPlugin extends Plugin {
+public interface FrameworkEventsPlugin extends ExecutorServicePlugin {
 
     boolean isActive();
 

@@ -22,8 +22,6 @@
 package org.jboss.osgi.framework.plugin.internal;
 
 import java.util.Collection;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
@@ -31,7 +29,7 @@ import org.jboss.osgi.framework.bundle.BundleManager;
 import org.jboss.osgi.framework.bundle.BundleStorageState;
 import org.jboss.osgi.framework.bundle.HostBundle;
 import org.jboss.osgi.framework.bundle.SystemBundle;
-import org.jboss.osgi.framework.plugin.AbstractPlugin;
+import org.jboss.osgi.framework.plugin.AbstractExecutorServicePlugin;
 import org.jboss.osgi.framework.plugin.FrameworkEventsPlugin;
 import org.jboss.osgi.framework.plugin.StartLevelPlugin;
 import org.osgi.framework.Bundle;
@@ -45,18 +43,17 @@ import org.osgi.service.startlevel.StartLevel;
 /**
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPlugin {
+public class StartLevelPluginImpl extends AbstractExecutorServicePlugin implements StartLevelPlugin {
 
     final Logger log = Logger.getLogger(StartLevelPluginImpl.class);
 
     private final FrameworkEventsPlugin eventsPlugin;
-    private Executor executor = Executors.newSingleThreadExecutor();
     private int initialBundleStartLevel = 1; // Synchronized on this
     private ServiceRegistration registration;
     private int startLevel = 0; // Synchronized on this
 
     public StartLevelPluginImpl(BundleManager bundleManager) {
-        super(bundleManager);
+        super(bundleManager, "StartLevel");
         eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
     }
 
@@ -85,7 +82,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
         final AbstractBundle bundleState = getBundleManager().getSystemBundle();
         if (level > getStartLevel()) {
             log.infof("About to increase start level from %s to %s", getStartLevel(), level);
-            executor.execute(new Runnable() {
+            getExecutorService().execute(new Runnable() {
 
                 @Override
                 public void run() {
@@ -96,7 +93,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
             });
         } else if (level < getStartLevel()) {
             log.infof("About to decrease start level from %s to %s", getStartLevel(), level);
-            executor.execute(new Runnable() {
+            getExecutorService().execute(new Runnable() {
 
                 @Override
                 public void run() {
@@ -136,7 +133,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
                 return;
 
             log.infof("Start Level Service about to start: %s", hostBundle);
-            executor.execute(new Runnable() {
+            getExecutorService().execute(new Runnable() {
 
                 @Override
                 public void run() {
@@ -158,7 +155,7 @@ public class StartLevelPluginImpl extends AbstractPlugin implements StartLevelPl
                 return;
 
             log.infof("Start Level Service about to stop: %s", hostBundle);
-            executor.execute(new Runnable() {
+            getExecutorService().execute(new Runnable() {
 
                 @Override
                 public void run() {

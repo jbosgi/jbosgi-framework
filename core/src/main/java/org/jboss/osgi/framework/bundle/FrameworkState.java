@@ -30,8 +30,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
@@ -82,8 +80,6 @@ public class FrameworkState extends SystemBundle implements Framework {
     private AtomicBoolean stopMonitor = new AtomicBoolean(false);
     // The framework stopped event
     private int stoppedEvent = FrameworkEvent.STOPPED;
-    // The framework executor
-    private Executor executor = Executors.newFixedThreadPool(10);
 
     static {
         AccessController.doPrivileged(new PrivilegedAction<Object>() {
@@ -336,7 +332,7 @@ public class FrameworkState extends SystemBundle implements Framework {
                 }
             }
         };
-        executor.execute(cmd);
+        new Thread(cmd, "OSGi Framework stop").run();
     }
 
     @Override
@@ -353,6 +349,7 @@ public class FrameworkState extends SystemBundle implements Framework {
 
     @Override
     public void update() {
+        
         int state = getState();
         if (state != Bundle.STARTING && state != Bundle.ACTIVE)
             return;
@@ -372,7 +369,7 @@ public class FrameworkState extends SystemBundle implements Framework {
                 }
             }
         };
-        executor.execute(cmd);
+        new Thread(cmd, "OSGi Framework update").run();
     }
 
     private void stopInternal(boolean stopForUpdate) {
@@ -387,14 +384,16 @@ public class FrameworkState extends SystemBundle implements Framework {
                 changeState(Bundle.STOPPING);
             }
 
+            BundleManager bundleManager = getBundleManager();
+            
             // Move to start level 0 in the current thread
-            StartLevelPlugin startLevel = getBundleManager().getOptionalPlugin(StartLevelPlugin.class);
+            StartLevelPlugin startLevel = bundleManager.getOptionalPlugin(StartLevelPlugin.class);
             if (startLevel != null) {
                 startLevel.decreaseStartLevel(0);
             } else {
                 // No Start Level Service available, stop all bundles individually...
                 // All installed bundles must be stopped without changing each bundle's persistent autostart setting
-                for (AbstractBundle bundleState : getBundleManager().getBundles()) {
+                for (AbstractBundle bundleState : bundleManager.getBundles()) {
                     if (bundleState != this) {
                         try {
                             // [TODO] don't change the persistent state
@@ -402,14 +401,14 @@ public class FrameworkState extends SystemBundle implements Framework {
                         } catch (Exception ex) {
                             // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then
                             // published as a framework event of type FrameworkEvent.ERROR
-                            getBundleManager().fireError(bundleState, "stopping bundle", ex);
+                            bundleManager.fireError(bundleState, "stopping bundle", ex);
                         }
                     }
                 }
             }
 
             // Close all user revisions
-            for (AbstractBundle bundleState : getBundleManager().getBundles()) {
+            for (AbstractBundle bundleState : bundleManager.getBundles()) {
                 if (bundleState instanceof AbstractUserBundle) {
                     for (AbstractRevision rev : bundleState.getRevisions()) {
                         AbstractUserRevision userRev = (AbstractUserRevision) rev;
@@ -422,7 +421,7 @@ public class FrameworkState extends SystemBundle implements Framework {
             }
 
             // Stop Plugins Lifecycle
-            List<Plugin> reversePlugins = new ArrayList<Plugin>(getBundleManager().getPlugins());
+            List<Plugin> reversePlugins = new ArrayList<Plugin>(bundleManager.getPlugins());
             Collections.reverse(reversePlugins);
             for (Plugin plugin : reversePlugins) {
                 try {
@@ -433,14 +432,14 @@ public class FrameworkState extends SystemBundle implements Framework {
             }
 
             // Event handling is disabled
-            FrameworkEventsPlugin eventsPlugin = getBundleManager().getPlugin(FrameworkEventsPlugin.class);
+            FrameworkEventsPlugin eventsPlugin = bundleManager.getPlugin(FrameworkEventsPlugin.class);
             eventsPlugin.setActive(false);
 
             // This Framework's state is set to Bundle.RESOLVED
             changeState(Bundle.RESOLVED);
 
             // Destroy the BundeleManager
-            getBundleManager().destroy();
+            bundleManager.destroy();
 
             // All resources held by this Framework are released
             destroyBundleContext();
