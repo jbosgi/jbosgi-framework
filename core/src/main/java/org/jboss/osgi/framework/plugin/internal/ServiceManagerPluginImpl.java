@@ -34,6 +34,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
@@ -42,6 +43,7 @@ import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistryException;
 import org.jboss.msc.service.ServiceTarget;
@@ -73,7 +75,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 
 /**
  * A plugin that manages OSGi services
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
@@ -86,6 +88,10 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
     private AtomicLong identityGenerator = new AtomicLong();
     // Maps the service interface to the list of registered service names
     private Map<String, List<ServiceName>> serviceNameMap = new ConcurrentHashMap<String, List<ServiceName>>();
+    // The ServiceContainer
+    private ServiceContainer serviceContainer;
+    // Flag to indicate container shutdown
+    private boolean serviceContainerShutdown;
 
     // Cache commonly used plugins
     private FrameworkEventsPlugin eventsPlugin;
@@ -99,12 +105,33 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
     public void initPlugin() {
         eventsPlugin = getPlugin(FrameworkEventsPlugin.class);
         packageAdmin = getPlugin(PackageAdminPlugin.class);
+
+        // Get/Create the service container
+        serviceContainer = (ServiceContainer) getBundleManager().getProperty(ServiceContainer.class.getName());
+        if (serviceContainer == null) {
+            serviceContainer = ServiceContainer.Factory.create();
+            serviceContainerShutdown = true;
+        }
     }
 
     @Override
     public void destroyPlugin() {
         // Clear all servie names
         serviceNameMap.clear();
+
+        // Shutdown the service container
+        if (serviceContainerShutdown == true) {
+            serviceContainer.shutdown();
+            try {
+                serviceContainer.awaitTermination(10, TimeUnit.SECONDS);
+            } catch (InterruptedException ex) {
+                // ignore
+            }
+        }
+    }
+
+    public ServiceContainer getServiceContainer() {
+        return serviceContainer;
     }
 
     @Override
@@ -146,7 +173,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
         };
 
         final ServiceState serviceState = new ServiceState(bundleState, serviceId, serviceNames, clazzes, valueProvider, properties);
-        ServiceTarget serviceTarget = getBundleManager().getServiceContainer().subTarget();
+        ServiceTarget serviceTarget = getServiceContainer().subTarget();
         Service service = new Service() {
 
             @Override
@@ -251,7 +278,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
             // Add potentially registered xservcie
             xserviceName = ServiceName.of(Constants.JBOSGI_PREFIX, clazz);
-            ServiceController<?> xservice = getBundleManager().getServiceContainer().getService(xserviceName);
+            ServiceController<?> xservice = getServiceContainer().getService(xserviceName);
             if (xservice != null)
                 serviceNames.add(xserviceName);
         } else {
@@ -271,7 +298,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
 
         List<ServiceState> result = new ArrayList<ServiceState>();
         for (ServiceName serviceName : serviceNames) {
-            final ServiceController<?> controller = getBundleManager().getServiceContainer().getService(serviceName);
+            final ServiceController<?> controller = getServiceContainer().getService(serviceName);
             if (controller == null)
                 throw new IllegalStateException("Cannot obtain service for: " + serviceName);
 
@@ -416,7 +443,7 @@ public class ServiceManagerPluginImpl extends AbstractPlugin implements ServiceM
         // Remove from controller
         ServiceName rootServiceName = serviceNames.get(0);
         try {
-            ServiceController<?> controller = getBundleManager().getServiceContainer().getService(rootServiceName);
+            ServiceController<?> controller = getServiceContainer().getService(rootServiceName);
             if (controller != null)
                 controller.setMode(Mode.REMOVE);
         } catch (RuntimeException ex) {

@@ -21,13 +21,17 @@
  */
 package org.jboss.osgi.framework.plugin;
 
-import org.osgi.service.packageadmin.PackageAdmin;
+import java.util.concurrent.ExecutorService;
 
 /**
- * The PackageAdmin service plugin
+ * Plugin that provides an ExecutorService.
  * 
  * @author thomas.diesler@jboss.com
- * @since 07-Sep-2009
+ * @since 10-Mar-2011
  */
-public interface PackageAdminPlugin extends ExecutorServicePlugin, PackageAdmin {
+public interface ExecutorServicePlugin extends Plugin {
+
+    ExecutorService getExecutorService();
+
+    void setExecutorService(ExecutorService executorService);
 }

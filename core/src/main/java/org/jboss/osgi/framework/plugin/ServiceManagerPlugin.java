@@ -25,6 +25,7 @@ import java.util.Dictionary;
 import java.util.List;
 import java.util.Set;
 
+import org.jboss.msc.service.ServiceContainer;
 import org.jboss.osgi.framework.bundle.AbstractBundle;
 import org.jboss.osgi.framework.bundle.ServiceState;
 import org.osgi.framework.Bundle;
@@ -38,6 +39,11 @@ import org.osgi.framework.ServiceReference;
  * @since 20-Jan-2010
  */
 public interface ServiceManagerPlugin extends Plugin {
+
+    /**
+     * Get the {@link ServiceContainer}
+     */
+    ServiceContainer getServiceContainer();
 
     /**
      * Get the next service is from the manager

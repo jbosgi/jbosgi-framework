@@ -29,7 +29,7 @@ import org.osgi.service.startlevel.StartLevel;
  * 
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public interface StartLevelPlugin extends Plugin, StartLevel {
+public interface StartLevelPlugin extends ExecutorServicePlugin, StartLevel {
 
     static final int BUNDLE_STARTLEVEL_UNSPECIFIED = -1;
 

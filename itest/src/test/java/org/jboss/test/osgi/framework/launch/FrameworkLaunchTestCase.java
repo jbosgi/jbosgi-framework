@@ -72,8 +72,6 @@ public class FrameworkLaunchTestCase extends OSGiFrameworkTest {
         assertBundleState(Bundle.ACTIVE, framework.getState());
 
         framework.stop();
-        assertBundleState(Bundle.ACTIVE, framework.getState());
-
         framework.waitForStop(2000);
         assertBundleState(Bundle.RESOLVED, framework.getState());
     }

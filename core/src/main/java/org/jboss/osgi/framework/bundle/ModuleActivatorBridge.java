@@ -27,6 +27,7 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.plugin.ModuleManagerPlugin;
+import org.jboss.osgi.framework.plugin.ServiceManagerPlugin;
 import org.jboss.osgi.modules.ModuleActivator;
 import org.jboss.osgi.modules.ModuleContext;
 import org.osgi.framework.Bundle;
@@ -58,7 +59,8 @@ public class ModuleActivatorBridge implements BundleActivator {
         ModuleIdentifier identifier = bundleState.getModuleIdentifier();
         Module module = moduleManager.getModule(identifier);
 
-        ServiceContainer serviceContainer = bundleManager.getServiceContainer();
+        ServiceManagerPlugin serviceManager = bundleManager.getPlugin(ServiceManagerPlugin.class);
+        ServiceContainer serviceContainer = serviceManager.getServiceContainer();
         BundleContext systemContext = bundleManager.getSystemContext();
 
         moduleContext = new ModuleContextImpl(serviceContainer, module, systemContext, context.getBundle());
