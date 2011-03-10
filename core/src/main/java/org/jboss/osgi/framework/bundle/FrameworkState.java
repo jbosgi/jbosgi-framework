@@ -438,7 +438,16 @@ public class FrameworkState extends SystemBundle implements Framework {
             // This Framework's state is set to Bundle.RESOLVED
             changeState(Bundle.RESOLVED);
 
-            // Destroy the BundeleManager
+            // Destroy Plugins Lifecycle
+            for (Plugin plugin : reversePlugins) {
+                try {
+                    plugin.destroyPlugin();
+                } catch (RuntimeException ex) {
+                    log.errorf(ex, "Cannot destroy plugin: %s", plugin);
+                }
+            }
+            
+            // Destroy the BundleManager
             bundleManager.destroy();
 
             // All resources held by this Framework are released

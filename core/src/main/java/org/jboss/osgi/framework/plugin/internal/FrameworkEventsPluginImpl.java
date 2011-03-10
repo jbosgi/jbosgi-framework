@@ -114,6 +114,7 @@ public class FrameworkEventsPluginImpl extends AbstractExecutorServicePlugin imp
         bundleListeners.clear();
         serviceListeners.clear();
         frameworkListeners.clear();
+        super.destroyPlugin();
     }
 
     @Override

@@ -90,6 +90,7 @@ public class PackageAdminPluginImpl extends AbstractExecutorServicePlugin implem
 
     @Override
     public void initPlugin() {
+        super.initPlugin();
         // Package Admin service needs to be registered when the Framework.init() is called
         BundleContext sysContext = getBundleManager().getSystemContext();
         registration = sysContext.registerService(PackageAdmin.class.getName(), this, null);
