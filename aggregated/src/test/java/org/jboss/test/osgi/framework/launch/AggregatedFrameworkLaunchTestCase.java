@@ -24,12 +24,9 @@ package org.jboss.test.osgi.framework.launch;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.InputStreamReader;
 import java.util.Arrays;
 
 import org.jboss.osgi.framework.launch.FrameworkFactoryImpl;
@@ -63,8 +60,6 @@ public class AggregatedFrameworkLaunchTestCase extends OSGiFrameworkTest {
         assertBundleState(Bundle.ACTIVE, framework.getState());
 
         framework.stop();
-        assertBundleState(Bundle.ACTIVE, framework.getState());
-
         framework.waitForStop(2000);
         assertBundleState(Bundle.RESOLVED, framework.getState());
     }
@@ -87,32 +82,20 @@ public class AggregatedFrameworkLaunchTestCase extends OSGiFrameworkTest {
         String alljar = files[0].getAbsolutePath();
         String cmd = "java -cp " + alljar + " " + FrameworkFactoryImpl.class.getName();
         Process proc = Runtime.getRuntime().exec(cmd);
-        int exitValue = proc.waitFor();
+        Thread.sleep(3000);
+        proc.destroy();
 
-        if (exitValue == 0) {
-            File logfile = new File("./generated/jboss-osgi.log");
-            assertTrue("Logfile exists", logfile.exists());
+        File logfile = new File("./generated/jboss-osgi.log");
+        assertTrue("Logfile exists", logfile.exists());
 
-            // Delete/move the jboss-osgi-framework.log
-            File logdir = logfile.getParentFile();
-            File targetdir = new File("./target");
-            if (targetdir.exists())
-                logfile.renameTo(new File("./target/jboss-osgi.log"));
-            else
-                logfile.delete();
-
-            logdir.delete();
+        // Delete/move the jboss-osgi-framework.log
+        File logdir = logfile.getParentFile();
+        File targetdir = new File("./target");
+        if (targetdir.exists()) {
+            logfile.renameTo(new File("./target/jboss-osgi.log"));
         } else {
-            // Generate the error message and fail
-            StringBuffer failmsg = new StringBuffer("Error running command: " + cmd + "\n");
-            BufferedReader errReader = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-            String line = errReader.readLine();
-            while (line != null) {
-                failmsg.append("\n" + line);
-                line = errReader.readLine();
-            }
-
-            fail(failmsg.toString());
+            logfile.delete();
         }
+        logdir.delete();
     }
 }
