@@ -32,6 +32,7 @@ import org.jboss.osgi.framework.plugin.AbstractPlugin;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * The lifecycle interceptor that verifies that deployments ending in '.war' have a WEB-INF/web.xml descriptor.
@@ -42,6 +43,7 @@ import org.osgi.framework.BundleContext;
 public class WebXMLVerifierInterceptor extends AbstractPlugin implements LifecycleInterceptor {
 
     private LifecycleInterceptor delegate;
+    private ServiceRegistration registration;
 
     public WebXMLVerifierInterceptor(BundleManager bundleManager) {
         super(bundleManager);
@@ -73,14 +75,20 @@ public class WebXMLVerifierInterceptor extends AbstractPlugin implements Lifecyc
     }
 
     @Override
-    public void destroyPlugin() {
-        delegate = null;
+    public void startPlugin() {
+        BundleContext sysContext = getBundleManager().getSystemContext();
+        registration = sysContext.registerService(LifecycleInterceptor.class.getName(), delegate, null);
     }
 
     @Override
-    public void startPlugin() {
-        BundleContext sysContext = getBundleManager().getSystemContext();
-        sysContext.registerService(LifecycleInterceptor.class.getName(), delegate, null);
+    public void stopPlugin() {
+        registration.unregister();
+    }
+
+    @Override
+    public void destroyPlugin() {
+        delegate = null;
+        registration = null;
     }
 
     public Set<Class<?>> getInput() {
