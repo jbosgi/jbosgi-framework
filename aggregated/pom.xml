@@ -26,7 +26,7 @@
   <parent>
     <groupId>org.jboss.osgi.framework</groupId>
     <artifactId>jbosgi-framework-parent</artifactId>
-    <version>1.0.0.Alpha20-SNAPSHOT</version>
+    <version>1.0.0.Alpha21-SNAPSHOT</version>
   </parent>
   
   <!-- Properties -->
@@ -79,7 +79,7 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>-da</argLine>
+          <argLine>-da ${surefire.system.args}</argLine>
           <systemProperties>
             <property>
               <name>test.archive.directory</name>
