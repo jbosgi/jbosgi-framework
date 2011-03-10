@@ -567,17 +567,6 @@ public class BundleManager {
     }
 
     void destroy() {
-        // Destroy Plugins Lifecycle
-        List<Plugin> reversePlugins = new ArrayList<Plugin>(getPlugins());
-        Collections.reverse(reversePlugins);
-        for (Plugin plugin : reversePlugins) {
-            try {
-                plugin.destroyPlugin();
-            } catch (RuntimeException ex) {
-                log.errorf(ex, "Cannot destroy plugin: %s", plugin);
-            }
-        }
-
         // Clear out the bundles
         bundleMap.clear();
     }

@@ -24,7 +24,6 @@ package org.jboss.osgi.framework.plugin;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.osgi.framework.bundle.BundleManager;
@@ -47,29 +46,21 @@ public abstract class AbstractExecutorServicePlugin extends AbstractPlugin imple
     }
 
     @Override
-    public void startPlugin() {
-        if (executorService == null) {
-            executorService = Executors.newCachedThreadPool(new ThreadFactory() {
-                @Override
-                public Thread newThread(Runnable run) {
-                    Thread thread = new Thread(run);
-                    thread.setName(String.format("OSGi " + typeName + " Thread-%d", threadCount.incrementAndGet()));
-                    thread.setDaemon(true);
-                    return thread;
-                }
-            });
-        }
+    public void initPlugin() {
+        executorService = Executors.newCachedThreadPool(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable run) {
+                Thread thread = new Thread(run);
+                thread.setName(String.format("OSGi " + typeName + " Thread-%d", threadCount.incrementAndGet()));
+                thread.setDaemon(true);
+                return thread;
+            }
+        });
     }
 
     @Override
-    public void stopPlugin() {
-        try {
-            executorService.shutdown();
-            executorService.awaitTermination(10, TimeUnit.SECONDS);
-            executorService = null;
-        } catch (InterruptedException e) {
-            // ignore
-        }
+    public void destroyPlugin() {
+        executorService.shutdown();
     }
 
     public ExecutorService getExecutorService() {
