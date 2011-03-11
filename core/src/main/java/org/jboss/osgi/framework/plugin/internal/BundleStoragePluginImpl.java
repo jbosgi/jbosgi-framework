@@ -24,6 +24,7 @@ package org.jboss.osgi.framework.plugin.internal;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,7 +42,7 @@ import org.osgi.framework.Constants;
 
 /**
  * A simple implementation of a BundleStorage
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
@@ -74,8 +75,13 @@ public class BundleStoragePluginImpl extends AbstractPlugin implements BundleSto
         if (rootFile != null) {
             File revFile = new File(bundlePath + "/bundle-" + bundleId + "-rev-" + revision + ".jar");
             FileOutputStream output = new FileOutputStream(revFile);
-            VFSUtils.copyStream(rootFile.openStream(), output);
-            output.close();
+            InputStream input = rootFile.openStream();
+            try {
+                VFSUtils.copyStream(input, output);
+            } finally {
+                input.close();
+                output.close();
+            }
             props.put(BundleStorageState.PROPERTY_BUNDLE_FILE, revFile.getName());
         }
 
