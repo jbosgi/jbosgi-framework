@@ -29,7 +29,7 @@
   <parent>
     <groupId>org.jboss.osgi.framework</groupId>
     <artifactId>jbosgi-framework-parent</artifactId>
-    <version>1.0.0.Alpha21</version>
+    <version>1.0.0.Alpha22-SNAPSHOT</version>
   </parent>
   
   <!-- Dependencies -->
