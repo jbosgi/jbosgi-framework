@@ -115,14 +115,14 @@ public final class FrameworkBuilder {
     }
 
     void createFrameworkServicesInternal(ServiceTarget serviceTarget, boolean firstInit) {
+        
+        // Do this first so this URLStreamHandlerFactory gets installed 
         URLHandlerPlugin.addService(serviceTarget);
-
+        
         BundleManager bundleManager = BundleManager.addService(serviceTarget, this);
         FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
-        FrameworkInit.addService(serviceTarget);
-        FrameworkActive.addService(serviceTarget);
-        SystemBundleService.addService(serviceTarget, frameworkState);
-
+        
+        AutoInstallProcessor.addService(serviceTarget);
         BundleDeploymentPlugin.addService(serviceTarget);
         BundleStoragePlugin.addService(serviceTarget, firstInit);
         CoreServices.addService(serviceTarget);
@@ -131,7 +131,9 @@ public final class FrameworkBuilder {
         DefaultFrameworkModuleProvider.addService(serviceTarget);
         DefaultModuleLoaderProvider.addService(serviceTarget);
         DefaultSystemModuleProvider.addService(serviceTarget);
+        FrameworkActive.addService(serviceTarget);
         FrameworkEventsPlugin.addService(serviceTarget);
+        FrameworkInit.addService(serviceTarget);
         LifecycleInterceptorPlugin.addService(serviceTarget);
         ModuleManagerPlugin.addService(serviceTarget);
         NativeCodePlugin.addService(serviceTarget);
@@ -139,6 +141,7 @@ public final class FrameworkBuilder {
         ResolverPlugin.addService(serviceTarget);
         ServiceManagerPlugin.addService(serviceTarget);
         StartLevelPlugin.addService(serviceTarget);
+        SystemBundleService.addService(serviceTarget, frameworkState);
         SystemContextService.addService(serviceTarget);
         SystemPackagesPlugin.addService(serviceTarget, this);
         WebXMLVerifierInterceptor.addService(serviceTarget);
