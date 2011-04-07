@@ -43,18 +43,18 @@ import org.osgi.framework.launch.Framework;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class FrameworkInit extends FrameworkService<FrameworkInit> {
+final class FrameworkInit extends FrameworkService {
 
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkInit.class);
 
-    private final InjectedValue<FrameworkCreate> injectedFramework = new InjectedValue<FrameworkCreate>();
+    private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     private final InjectedValue<CoreServices> injectedCoreServices = new InjectedValue<CoreServices>();
 
     static void addService(ServiceTarget serviceTarget) {
         FrameworkInit service = new FrameworkInit();
-        ServiceBuilder<FrameworkInit> builder = serviceTarget.addService(Services.FRAMEWORK_INIT, service);
-        builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkCreate.class, service.injectedFramework);
+        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_INIT, service);
+        builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
         builder.addDependency(Services.CORE_SERVICES, CoreServices.class, service.injectedCoreServices);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
@@ -74,13 +74,8 @@ final class FrameworkInit extends FrameworkService<FrameworkInit> {
     }
 
     @Override
-    public FrameworkInit getValue() throws IllegalStateException, IllegalArgumentException {
-        return this;
-    }
-
-    @Override
     FrameworkState getFrameworkState() {
-        return injectedFramework.getValue().getFrameworkState();
+        return injectedFramework.getValue();
     }
 
     CoreServices getCoreServices() {

@@ -42,17 +42,17 @@ import org.osgi.framework.launch.Framework;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class FrameworkActive extends FrameworkService<FrameworkActive> {
+final class FrameworkActive extends FrameworkService {
 
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkActive.class);
 
-    private final InjectedValue<FrameworkInit> injectedFramework = new InjectedValue<FrameworkInit>();
+    private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     
     static void addService(ServiceTarget serviceTarget) {
         FrameworkActive service = new FrameworkActive();
-        ServiceBuilder<FrameworkActive> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
-        builder.addDependency(Services.FRAMEWORK_INIT, FrameworkInit.class, service.injectedFramework);
+        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
+        builder.addDependency(Services.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -102,13 +102,8 @@ final class FrameworkActive extends FrameworkService<FrameworkActive> {
     }
 
     @Override
-    public FrameworkActive getValue() throws IllegalStateException, IllegalArgumentException {
-        return this;
-    }
-
-    @Override
     FrameworkState getFrameworkState() {
-        return injectedFramework.getValue().getFrameworkState();
+        return injectedFramework.getValue();
     }
 
     private int getBeginningStartLevel() {

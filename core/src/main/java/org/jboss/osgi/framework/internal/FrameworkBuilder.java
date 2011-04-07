@@ -126,11 +126,13 @@ public final class FrameworkBuilder {
         BundleDeploymentPlugin.addService(serviceTarget);
         BundleStoragePlugin.addService(serviceTarget, firstInit);
         CoreServices.addService(serviceTarget);
+        DefaultAutoInstallProvider.addService(serviceTarget);
         DefaultDeployerServiceProvider.addService(serviceTarget);
         DefaultFrameworkModuleProvider.addService(serviceTarget);
         DefaultModuleLoaderProvider.addService(serviceTarget);
         DefaultSystemModuleProvider.addService(serviceTarget);
         FrameworkEventsPlugin.addService(serviceTarget);
+        LifecycleInterceptorPlugin.addService(serviceTarget);
         ModuleManagerPlugin.addService(serviceTarget);
         NativeCodePlugin.addService(serviceTarget);
         PackageAdminPlugin.addService(serviceTarget);

@@ -43,7 +43,7 @@ final class CoreServices extends AbstractService<CoreServices> {
     // Provide logging
     static final Logger log = Logger.getLogger(CoreServices.class);
 
-    private final InjectedValue<FrameworkCreate> injectedFramework = new InjectedValue<FrameworkCreate>();
+    private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     private final InjectedValue<DeployerService> injectedDeployerService = new InjectedValue<DeployerService>();
     private final InjectedValue<PackageAdminPlugin> injectedPackageAdmin = new InjectedValue<PackageAdminPlugin>();
     private final InjectedValue<StartLevelPlugin> injectedStartLevel = new InjectedValue<StartLevelPlugin>();
@@ -53,10 +53,11 @@ final class CoreServices extends AbstractService<CoreServices> {
         CoreServices service = new CoreServices();
         ServiceBuilder<CoreServices> builder = serviceTarget.addService(Services.CORE_SERVICES, service);
         builder.addDependency(DeployerServiceProvider.SERVICE_NAME, DeployerService.class, service.injectedDeployerService);
-        builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkCreate.class, service.injectedFramework);
+        builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
         builder.addDependency(Services.PACKAGE_ADMIN_PLUGIN, PackageAdminPlugin.class, service.injectedPackageAdmin);
         builder.addDependency(Services.START_LEVEL_PLUGIN, StartLevelPlugin.class, service.injectedStartLevel);
         builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
+        builder.addDependency(Services.LIFECYCLE_INTERCEPTOR_PLUGIN);
         builder.addDependency(Services.URL_HANDLER_PLUGIN);
         builder.install();
     }
@@ -86,7 +87,7 @@ final class CoreServices extends AbstractService<CoreServices> {
     }
 
     FrameworkState getFrameworkState() {
-        return injectedFramework.getValue().getFrameworkState();
+        return injectedFramework.getValue();
     }
 
     PackageAdminPlugin getPackageAdmin() {

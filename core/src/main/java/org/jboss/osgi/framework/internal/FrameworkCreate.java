@@ -39,7 +39,7 @@ import org.osgi.framework.launch.Framework;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class FrameworkCreate extends FrameworkService<FrameworkCreate> {
+final class FrameworkCreate extends FrameworkService {
 
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkCreate.class);
@@ -49,7 +49,7 @@ final class FrameworkCreate extends FrameworkService<FrameworkCreate> {
     static FrameworkState addService(ServiceTarget serviceTarget, BundleManager bundleManager) {
         FrameworkState frameworkState = new FrameworkState(bundleManager);
         FrameworkCreate service = new FrameworkCreate(frameworkState);
-        ServiceBuilder<FrameworkCreate> builder = serviceTarget.addService(Services.FRAMEWORK_CREATE, service);
+        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_CREATE, service);
         builder.addDependency(Services.BUNDLE_DEPLOYMENT_PLUGIN, BundleDeploymentPlugin.class, frameworkState.injectedBundleDeployment);
         builder.addDependency(Services.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, frameworkState.injectedBundleStorage);
         builder.addDependency(Services.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, frameworkState.injectedFrameworkEvents);
@@ -62,7 +62,6 @@ final class FrameworkCreate extends FrameworkService<FrameworkCreate> {
         builder.install();
         return frameworkState;
     }
-
     
     private FrameworkCreate(FrameworkState frameworkState) {
         this.frameworkState = frameworkState;
@@ -71,19 +70,13 @@ final class FrameworkCreate extends FrameworkService<FrameworkCreate> {
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        getBundleManager().injectedFramework.inject(this);
+        getBundleManager().injectedFramework.inject(frameworkState);
     }
 
     @Override
     public void stop(StopContext context) {
         super.stop(context);
         getBundleManager().injectedFramework.uninject();
-    }
-
-
-    @Override
-    public FrameworkCreate getValue() throws IllegalStateException, IllegalArgumentException {
-        return this;
     }
 
     @Override

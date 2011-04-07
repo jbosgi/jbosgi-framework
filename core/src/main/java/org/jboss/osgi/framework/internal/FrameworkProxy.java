@@ -176,7 +176,7 @@ final class FrameworkProxy implements Framework {
             init();
 
         try {
-            FrameworkState frameworkState = awaitFrameworkInit().getFrameworkState();
+            FrameworkState frameworkState = awaitFrameworkInit();
             frameworkState.setStartStopOptions(options);
             awaitActiveFramework();
         } catch (IllegalStateException ex) {
@@ -216,9 +216,9 @@ final class FrameworkProxy implements Framework {
         if (state != Bundle.STARTING && state != Bundle.ACTIVE)
             return;
 
-        FrameworkInit frameworkInit = awaitFrameworkInit();
-        CoreServices coreServices = frameworkInit.getCoreServices();
-        SystemBundleState systemBundle = frameworkInit.getSystemBundle();
+        FrameworkState frameworkState = awaitFrameworkInit();
+        CoreServices coreServices = frameworkState.getCoreServices();
+        SystemBundleState systemBundle = frameworkState.getSystemBundle();
 
         stoppedEvent = stopForUpdate ? FrameworkEvent.STOPPED_UPDATE : FrameworkEvent.STOPPED;
         systemBundle.changeState(Bundle.STOPPING);
@@ -422,15 +422,15 @@ final class FrameworkProxy implements Framework {
             throw new IllegalStateException("Framework already stopped");
     }
     
-    private FrameworkInit frameworkInit;
+    private FrameworkState frameworkInit;
 
     @SuppressWarnings("unchecked")
-    private FrameworkInit awaitFrameworkInit() {
+    private FrameworkState awaitFrameworkInit() {
         if (frameworkInit == null) {
-            ServiceController<FrameworkInit> controller = (ServiceController<FrameworkInit>) serviceContainer.getRequiredService(Services.FRAMEWORK_INIT);
-            controller.addListener(new AbstractServiceListener<FrameworkInit>() {
+            ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) serviceContainer.getRequiredService(Services.FRAMEWORK_INIT);
+            controller.addListener(new AbstractServiceListener<FrameworkState>() {
                 @Override
-                public void serviceStopped(ServiceController<? extends FrameworkInit> controller) {
+                public void serviceStopped(ServiceController<? extends FrameworkState> controller) {
                     controller.removeListener(this);
                     frameworkBundleState = Bundle.RESOLVED;
                     serviceStopped = true;
@@ -438,7 +438,7 @@ final class FrameworkProxy implements Framework {
                 }
             });
             controller.setMode(Mode.ACTIVE);
-            FutureServiceValue<FrameworkInit> future = new FutureServiceValue<FrameworkInit>(controller);
+            FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
             try {
                 Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_INIT_TIMEOUT, new Integer(2000));
                 frameworkInit = future.get(timeout, TimeUnit.MILLISECONDS);
@@ -452,21 +452,21 @@ final class FrameworkProxy implements Framework {
         return frameworkInit;
     }
 
-    private FrameworkActive activeFramework;
+    private FrameworkState activeFramework;
 
     @SuppressWarnings("unchecked")
-    private FrameworkActive awaitActiveFramework() {
+    private FrameworkState awaitActiveFramework() {
         if (activeFramework == null) {
-            ServiceController<FrameworkActive> controller = (ServiceController<FrameworkActive>) serviceContainer.getRequiredService(Services.FRAMEWORK_ACTIVE);
-            controller.addListener(new AbstractServiceListener<FrameworkActive>() {
+            ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) serviceContainer.getRequiredService(Services.FRAMEWORK_ACTIVE);
+            controller.addListener(new AbstractServiceListener<FrameworkState>() {
                 @Override
-                public void serviceStopped(ServiceController<? extends FrameworkActive> controller) {
+                public void serviceStopped(ServiceController<? extends FrameworkState> controller) {
                     controller.removeListener(this);
                     activeFramework = null;
                 }
             });
             controller.setMode(Mode.ACTIVE);
-            FutureServiceValue<FrameworkActive> future = new FutureServiceValue<FrameworkActive>(controller);
+            FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
             try {
                 Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_START_TIMEOUT, new Integer(2000));
                 activeFramework = future.get(timeout, TimeUnit.MILLISECONDS);
