@@ -419,12 +419,12 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
             bundleB.start();
             bundleR.start();
 
-            RequiredBundle[] rqbs = pa.getRequiredBundles("Exporter");
-            assertEquals(2, rqbs.length);
+            RequiredBundle[] reqBundles = pa.getRequiredBundles("Exporter");
+            assertEquals(2, reqBundles.length);
 
             Set<String> bsns = new HashSet<String>();
             Set<Bundle> actualBundles = new HashSet<Bundle>();
-            for (RequiredBundle rb : rqbs) {
+            for (RequiredBundle rb : reqBundles) {
                 bsns.add(rb.getSymbolicName());
                 actualBundles.add(rb.getBundle());
             }
@@ -437,18 +437,18 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
             expectedBundles.add(bundleA);
             expectedBundles.add(bundleB);
             assertEquals(expectedBundles, actualBundles);
-            for (RequiredBundle b : rqbs) {
-                if (b.getSymbolicName().equals(bundleA.getSymbolicName()) && b.getVersion().equals(bundleA.getVersion())) {
-                    assertEquals(Version.parseVersion("1"), b.getVersion());
-                    assertEquals(b.getBundle(), bundleA);
-                    assertEquals(1, b.getRequiringBundles().length);
-                    assertEquals(bundleR, b.getRequiringBundles()[0]);
-                    assertFalse(b.isRemovalPending());
-                } else if (b.getSymbolicName().equals(bundleB.getSymbolicName()) && b.getVersion().equals(bundleB.getVersion())) {
-                    assertEquals(Version.parseVersion("2"), b.getVersion());
-                    assertNull(b.getBundle());
-                    assertNull(b.getRequiringBundles());
-                    assertTrue(b.isRemovalPending());
+            for (RequiredBundle reqBundle : reqBundles) {
+                if (reqBundle.getSymbolicName().equals(bundleA.getSymbolicName()) && reqBundle.getVersion().equals(bundleA.getVersion())) {
+                    assertEquals(Version.parseVersion("1"), reqBundle.getVersion());
+                    assertEquals(reqBundle.getBundle(), bundleA);
+                    assertEquals(1, reqBundle.getRequiringBundles().length);
+                    assertEquals(bundleR, reqBundle.getRequiringBundles()[0]);
+                    assertFalse(reqBundle.isRemovalPending());
+                } else if (reqBundle.getSymbolicName().equals(bundleB.getSymbolicName()) && reqBundle.getVersion().equals(bundleB.getVersion())) {
+                    assertEquals(Version.parseVersion("2"), reqBundle.getVersion());
+                    assertNull(reqBundle.getBundle());
+                    assertNull(reqBundle.getRequiringBundles());
+                    assertTrue(reqBundle.isRemovalPending());
                 } else
                     fail("Unexpected bundle");
             }

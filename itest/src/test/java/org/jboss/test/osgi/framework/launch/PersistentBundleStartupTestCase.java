@@ -86,7 +86,6 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
         framework.stop();
         framework.waitForStop(2000);
         assertBundleState(Bundle.RESOLVED, framework.getState());
-        assertBundleState(Bundle.INSTALLED, bundle.getState());
 
         // Check that the storage dirs are still there
         assertTrue("File exists: " + systemStorageDir, systemStorageDir.exists());
@@ -132,7 +131,6 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
         framework.stop();
         framework.waitForStop(2000);
         assertBundleState(Bundle.RESOLVED, framework.getState());
-        assertBundleState(Bundle.RESOLVED, bundle.getState());
 
         // Restart the Framework
         framework.start();

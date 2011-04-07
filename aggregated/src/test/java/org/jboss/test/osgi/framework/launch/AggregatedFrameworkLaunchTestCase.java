@@ -29,7 +29,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Arrays;
 
-import org.jboss.osgi.framework.launch.FrameworkFactoryImpl;
+import org.jboss.osgi.framework.internal.FrameworkFactoryImpl;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.BeforeClass;
 import org.junit.Test;

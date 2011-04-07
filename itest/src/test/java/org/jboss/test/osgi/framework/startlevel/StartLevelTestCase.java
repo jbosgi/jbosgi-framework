@@ -63,11 +63,7 @@ public class StartLevelTestCase extends OSGiFrameworkTest {
         Framework framework = createFramework();
         try {
             framework.start();
-
-            BundleContext bc = framework.getBundleContext();
-            ServiceReference sref = bc.getServiceReference(StartLevel.class.getName());
-            StartLevel sl = (StartLevel) bc.getService(sref);
-            assertEquals(1, sl.getStartLevel());
+            assertEquals(1, getStartLevel().getStartLevel());
         } finally {
             framework.stop();
             framework.waitForStop(2000);
@@ -137,23 +133,19 @@ public class StartLevelTestCase extends OSGiFrameworkTest {
             synchronized ("LifecycleOrdering") {
                 assertEquals("start1start3start2", System.getProperty("LifecycleOrdering"));
             }
-
-            framework.stop();
-            framework.waitForStop(2000);
-
-            synchronized ("LifecycleOrdering") {
-                assertEquals("start1start3start2stop2stop3stop1", System.getProperty("LifecycleOrdering"));
-            }
         } finally {
             framework.stop();
             framework.waitForStop(2000);
+            
+            synchronized ("LifecycleOrdering") {
+                assertEquals("start1start3start2stop2stop3stop1", System.getProperty("LifecycleOrdering"));
+            }
         }
     }
 
     @Test
     public void testChangingStartLevel() throws Exception {
         JavaArchive archive1 = createTestBundle("b1.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle1.Activator.class);
-
         Framework framework = createFramework();
         try {
             framework.start();

@@ -32,7 +32,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoaderSpec;
-import org.jboss.osgi.framework.loading.VirtualFileResourceLoader;
+import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
