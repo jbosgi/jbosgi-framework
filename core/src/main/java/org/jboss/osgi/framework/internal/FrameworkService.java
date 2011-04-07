@@ -47,12 +47,10 @@ import org.osgi.framework.launch.Framework;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class FrameworkService<T extends Framework> implements Service<T>, Framework {
+abstract class FrameworkService implements Service<FrameworkState>, Framework {
 
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkService.class);
-
-    abstract FrameworkState getFrameworkState();
 
     @Override
     public void start(StartContext context) throws StartException {
@@ -63,6 +61,13 @@ abstract class FrameworkService<T extends Framework> implements Service<T>, Fram
     public void stop(StopContext context) {
         log.debugf("Stopping: %s", context.getController().getName());
     }
+    
+    @Override
+    public FrameworkState getValue() {
+        return getFrameworkState();
+    }
+
+    abstract FrameworkState getFrameworkState();
     
     BundleManager getBundleManager() {
         return getFrameworkState().getBundleManager();

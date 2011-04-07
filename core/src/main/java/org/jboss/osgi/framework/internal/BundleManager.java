@@ -97,7 +97,7 @@ final class BundleManager extends AbstractService<BundleManager> {
     }
 
     final InjectedValue<ModuleLoader> injectedModuleLoader = new InjectedValue<ModuleLoader>();
-    final InjectedValue<FrameworkCreate> injectedFramework = new InjectedValue<FrameworkCreate>();
+    final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
 
     private final FrameworkBuilder frameworkBuilder;
@@ -179,8 +179,7 @@ final class BundleManager extends AbstractService<BundleManager> {
     }
 
     FrameworkState getFrameworkState() {
-        FrameworkCreate framework = injectedFramework.getOptionalValue();
-        return framework != null ? framework.getFrameworkState() : null;
+        return injectedFramework.getOptionalValue();
     }
 
     Object getProperty(String key) {

@@ -62,6 +62,8 @@ public interface Services {
     ServiceName BUNDLE_STORAGE_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("storage");
     /** The {@link FrameworkEventsPlugin} service name */
     ServiceName FRAMEWORK_EVENTS_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("frameworkevents");
+    /** The {@link LifecycleInterceptorPlugin} service name */
+    ServiceName LIFECYCLE_INTERCEPTOR_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("lifecycle");
     /** The {@link ModuleManagerPlugin} service name */
     ServiceName MODULE_MANGER_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("modulemanager");
     /** The {@link NativeCodePlugin} service name */
