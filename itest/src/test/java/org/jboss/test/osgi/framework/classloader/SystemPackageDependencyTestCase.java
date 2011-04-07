@@ -51,7 +51,7 @@ import org.osgi.framework.launch.FrameworkFactory;
 
 /**
  * Test requirements on the system bundle
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 01-Feb-2011
  */
@@ -113,6 +113,7 @@ public class SystemPackageDependencyTestCase extends OSGiTest {
                 // expected
             }
             assertBundleState(Bundle.RESOLVED, bundle.getState());
+            bundle.uninstall();
         } finally {
             shutdownFramework(framework);
         }
@@ -168,11 +169,11 @@ public class SystemPackageDependencyTestCase extends OSGiTest {
             BundleContext context = framework.getBundleContext();
             Bundle bundle = context.installBundle(archive.getName(), toInputStream(archive));
             assertBundleState(Bundle.INSTALLED, bundle.getState());
-            
+
             // Note: Apache Felix does not support this, Equinox does.
             bundle.start();
             assertBundleState(Bundle.ACTIVE, bundle.getState());
-            
+
             /*
             try {
                 bundle.start();
@@ -182,7 +183,7 @@ public class SystemPackageDependencyTestCase extends OSGiTest {
             }
             assertBundleState(Bundle.RESOLVED, bundle.getState());
             */
-            
+
         } finally {
             shutdownFramework(framework);
         }

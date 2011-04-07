@@ -45,7 +45,7 @@ import org.osgi.framework.launch.FrameworkFactory;
 
 /**
  * Test bundle parent delegation
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 28-Jan-2011
  */
@@ -55,23 +55,23 @@ public class ParentDelegationTestCase extends OSGiTest {
     public void testNoBundleParent() throws Exception {
         doTestParentClassLoader(null, Bundle.class.getName(), false);
     }
-    
+
     @Test
     public void testBundleParentBoot() throws Exception {
         doTestParentClassLoader(Constants.FRAMEWORK_BUNDLE_PARENT_BOOT, Bundle.class.getName(), false);
     }
-    
+
     @Test
     public void testBundleParentExt() throws Exception {
         doTestParentClassLoader(Constants.FRAMEWORK_BUNDLE_PARENT_EXT, Bundle.class.getName(), false);
     }
-    
+
     @Test
     public void testBundleParentApp() throws Exception {
         // here we assume the framework jar was placed on the app class loader.
         doTestParentClassLoader(Constants.FRAMEWORK_BUNDLE_PARENT_APP, Bundle.class.getName(), true);
     }
-    
+
     @Test
     public void testBundleParentFramework() throws Exception {
         // here we assume the framework jar was placed on the app class loader.
@@ -100,6 +100,10 @@ public class ParentDelegationTestCase extends OSGiTest {
             } catch (ClassNotFoundException e) {
                 if (pass)
                     fail("Unexpected ClassNotFoundException");
+            }
+            finally
+            {
+                testBundle.uninstall();
             }
         } finally {
             framework.stop();

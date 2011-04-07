@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
@@ -73,8 +74,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
             Bundle[] bundles = context1.getBundles();
             assertEquals(2, bundles.length);
-            assertEquals(context1.getBundle(0), bundles[0]);
-            assertEquals(bundle1, bundles[1]);
+            assertTrue(Arrays.asList(bundles).contains(bundle1));
 
             Bundle bundle2 = installBundle(assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2"));
             BundleContext context2 = null;
@@ -85,9 +85,8 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
                 bundles = context1.getBundles();
                 assertEquals(3, bundles.length);
-                assertEquals(context1.getBundle(0), bundles[0]);
-                assertEquals(bundle1, bundles[1]);
-                assertEquals(bundle2, bundles[2]);
+                assertTrue(Arrays.asList(bundles).contains(bundle1));
+                assertTrue(Arrays.asList(bundles).contains(bundle2));
 
                 assertEquals(bundle1, context2.getBundle(bundle1.getBundleId()));
                 assertEquals(bundle2, context1.getBundle(bundle2.getBundleId()));
@@ -100,8 +99,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
             bundles = context1.getBundles();
             assertEquals(2, bundles.length);
-            assertEquals(context1.getBundle(0), bundles[0]);
-            assertEquals(bundle1, bundles[1]);
+            assertTrue(Arrays.asList(bundles).contains(bundle1));
 
             try {
                 context2.getBundle();
