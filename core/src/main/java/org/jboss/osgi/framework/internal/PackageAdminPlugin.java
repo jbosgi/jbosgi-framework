@@ -41,7 +41,9 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.resolver.XBundleCapability;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
@@ -66,7 +68,7 @@ import org.osgi.service.packageadmin.RequiredBundle;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2010
  */
-final class PackageAdminPlugin extends AbstractExecutorService<PackageAdmin> implements PackageAdmin {
+public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdmin> implements PackageAdmin {
 
     // Provide logging
     static final Logger log = Logger.getLogger(PackageAdminPlugin.class);
@@ -80,13 +82,14 @@ final class PackageAdminPlugin extends AbstractExecutorService<PackageAdmin> imp
 
     static void addService(ServiceTarget serviceTarget) {
         PackageAdminPlugin service = new PackageAdminPlugin();
-        ServiceBuilder<PackageAdmin> builder = serviceTarget.addService(Services.PACKAGE_ADMIN_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(Services.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
-        builder.addDependency(Services.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
-        builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(Services.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolver);
-        builder.addDependency(Services.FRAMEWORK_CREATE);
+        ServiceBuilder<PackageAdmin> builder = serviceTarget.addService(ServiceNames.PACKAGE_ADMIN, service);
+        builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
+        builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
+        builder.addDependency(ServiceNames.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
+        builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolver);
+        builder.addDependency(ServiceNames.FRAMEWORK_CREATE);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
@@ -420,10 +423,10 @@ final class PackageAdminPlugin extends AbstractExecutorService<PackageAdmin> imp
      * version range are returned. The returned bundles are ordered by version
      * in descending version order so that the first element of the array
      * contains the bundle with the highest version.
-     * 
+     *
      * @param symbolicName The symbolic name of the desired bundles.
      * @param versionRange The version range of the desired bundles, or <code>null</code> if all versions are desired.
-     * @return An array of bundles with the specified name belonging to the specified version range ordered in descending version order, 
+     * @return An array of bundles with the specified name belonging to the specified version range ordered in descending version order,
      *         or <code>null</code> if no bundles are found.
      */
     @Override
@@ -443,7 +446,7 @@ final class PackageAdminPlugin extends AbstractExecutorService<PackageAdmin> imp
         }
         if (sortedSet.isEmpty())
             return null;
-        
+
         return sortedSet.toArray(new Bundle[sortedSet.size()]);
     }
 

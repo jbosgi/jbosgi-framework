@@ -40,7 +40,7 @@ final class HostBundleService extends UserBundleService<HostBundleState> {
         HostBundleService service = new HostBundleService(bundleState, dep);
         ServiceName serviceName = bundleState.getServiceName();
         ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, service);
-        builder.addDependency(Services.CORE_SERVICES);
+        builder.addDependency(InternalServices.CORE_SERVICES);
         builder.install();
         return serviceName;
     }

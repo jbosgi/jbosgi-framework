@@ -42,6 +42,7 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -53,10 +54,10 @@ import org.osgi.framework.launch.Framework;
 
 /**
  * The proxy that represents the {@link Framework}.
- * 
- * The {@link FrameworkProxy} uses the respective {@link FrameworkService}s. 
- * It never interacts with the {@link FrameworkState} directly. 
- * The client may hold a reference to the {@link FrameworkProxy}. 
+ *
+ * The {@link FrameworkProxy} uses the respective {@link FrameworkService}s.
+ * It never interacts with the {@link FrameworkState} directly.
+ * The client may hold a reference to the {@link FrameworkProxy}.
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
@@ -106,11 +107,11 @@ final class FrameworkProxy implements Framework {
      *
      * After calling this method, this Framework must:
      *
-     * - Be in the Bundle.STARTING state. 
-     * - Have a valid Bundle Context. 
-     * - Be at start level 0. 
-     * - Have event handling enabled. 
-     * - Have reified Bundle objects for all installed bundles. 
+     * - Be in the Bundle.STARTING state.
+     * - Have a valid Bundle Context.
+     * - Be at start level 0.
+     * - Have event handling enabled.
+     * - Have reified Bundle objects for all installed bundles.
      * - Have registered any framework services (e.g. PackageAdmin, ConditionalPermissionAdmin, StartLevel)
      *
      * This Framework will not actually be started until start is called.
@@ -139,7 +140,7 @@ final class FrameworkProxy implements Framework {
             if (serviceTarget == null)
                 serviceTarget = serviceContainer.subTarget();
 
-            frameworkBuilder.createFrameworkServicesInternal(serviceTarget, firstInit);
+            frameworkBuilder.createFrameworkServicesInternal(serviceTarget, Mode.ACTIVE, firstInit);
             awaitFrameworkInit();
             firstInit = false;
 
@@ -158,14 +159,14 @@ final class FrameworkProxy implements Framework {
      *
      * The following steps are taken to start this Framework:
      *
-     * - If this Framework is not in the {@link #STARTING} state, {@link #init()} is called 
-     * - All installed bundles must be started 
+     * - If this Framework is not in the {@link #STARTING} state, {@link #init()} is called
+     * - All installed bundles must be started
      * - The start level of this Framework is moved to the FRAMEWORK_BEGINNING_STARTLEVEL
      *
      * Any exceptions that occur during bundle starting must be wrapped in a {@link BundleException} and then published as a
      * framework event of type {@link FrameworkEvent#ERROR}
      *
-     * - This Framework's state is set to {@link #ACTIVE}. 
+     * - This Framework's state is set to {@link #ACTIVE}.
      * - A framework event of type {@link FrameworkEvent#STARTED} is fired
      */
     @Override
@@ -194,12 +195,12 @@ final class FrameworkProxy implements Framework {
      *
      * The method returns immediately to the caller after initiating the following steps to be taken on another thread.
      *
-     * 1. This Framework's state is set to Bundle.STOPPING. 
-     * 2. All installed bundles must be stopped without changing each bundle's persistent autostart setting. 
-     * 3. Unregister all services registered by this Framework. 
-     * 4. Event handling is disabled. 
-     * 5. This Framework's state is set to Bundle.RESOLVED. 
-     * 6. All resources held by this Framework are released. This includes threads, bundle class loaders, open files, etc. 
+     * 1. This Framework's state is set to Bundle.STOPPING.
+     * 2. All installed bundles must be stopped without changing each bundle's persistent autostart setting.
+     * 3. Unregister all services registered by this Framework.
+     * 4. Event handling is disabled.
+     * 5. This Framework's state is set to Bundle.RESOLVED.
+     * 6. All resources held by this Framework are released. This includes threads, bundle class loaders, open files, etc.
      * 7. Notify all threads that are waiting at waitForStop that the stop operation has completed.
      *
      * After being stopped, this Framework may be discarded, initialized or started.
@@ -247,7 +248,7 @@ final class FrameworkProxy implements Framework {
         if (shutdownContainer == true) {
             serviceContainer.shutdown();
         } else {
-            ServiceController<?> controller = serviceContainer.getRequiredService(Services.BUNDLE_MANAGER);
+            ServiceController<?> controller = serviceContainer.getRequiredService(ServiceNames.BUNDLE_MANAGER);
             controller.setMode(Mode.REMOVE);
         }
     }
@@ -271,7 +272,7 @@ final class FrameworkProxy implements Framework {
             }
         } else {
             final CountDownLatch latch = new CountDownLatch(1);
-            ServiceController<BundleManager> controller = (ServiceController<BundleManager>) serviceContainer.getRequiredService(Services.BUNDLE_MANAGER);
+            ServiceController<BundleManager> controller = (ServiceController<BundleManager>) serviceContainer.getRequiredService(ServiceNames.BUNDLE_MANAGER);
             controller.addListener(new AbstractServiceListener<BundleManager>() {
                 @Override
                 public void serviceRemoved(ServiceController<? extends BundleManager> controller) {
@@ -421,13 +422,13 @@ final class FrameworkProxy implements Framework {
         if (serviceStopped == true)
             throw new IllegalStateException("Framework already stopped");
     }
-    
+
     private FrameworkState frameworkInit;
 
     @SuppressWarnings("unchecked")
     private FrameworkState awaitFrameworkInit() {
         if (frameworkInit == null) {
-            ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) serviceContainer.getRequiredService(Services.FRAMEWORK_INIT);
+            ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) serviceContainer.getRequiredService(ServiceNames.FRAMEWORK_INIT);
             controller.addListener(new AbstractServiceListener<FrameworkState>() {
                 @Override
                 public void serviceStopped(ServiceController<? extends FrameworkState> controller) {
@@ -457,7 +458,7 @@ final class FrameworkProxy implements Framework {
     @SuppressWarnings("unchecked")
     private FrameworkState awaitActiveFramework() {
         if (activeFramework == null) {
-            ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) serviceContainer.getRequiredService(Services.FRAMEWORK_ACTIVE);
+            ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) serviceContainer.getRequiredService(ServiceNames.FRAMEWORK_ACTIVE);
             controller.addListener(new AbstractServiceListener<FrameworkState>() {
                 @Override
                 public void serviceStopped(ServiceController<? extends FrameworkState> controller) {

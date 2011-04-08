@@ -33,6 +33,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
+import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.resolver.XModule;
@@ -45,7 +46,7 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class SystemBundleService extends BundleService<SystemBundleState> {
+public final class SystemBundleService extends BundleService<SystemBundleState> {
 
     // Provide logging
     static final Logger log = Logger.getLogger(SystemBundleService.class);
@@ -57,11 +58,11 @@ final class SystemBundleService extends BundleService<SystemBundleState> {
     static void addService(ServiceTarget serviceTarget, FrameworkState frameworkState) {
         SystemBundleState bundleState = new SystemBundleState(frameworkState);
         SystemBundleService service = new SystemBundleService(bundleState);
-        ServiceBuilder<SystemBundleState> builder = serviceTarget.addService(Services.SYSTEM_BUNDLE, service);
-        builder.addDependency(FrameworkModuleProvider.SERVICE_NAME, FrameworkModuleProvider.class, bundleState.injectedModuleProvider);
-        builder.addDependency(Services.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
-        builder.addDependency(Services.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
-        builder.addDependency(Services.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolverPlugin);
+        ServiceBuilder<SystemBundleState> builder = serviceTarget.addService(ServiceNames.SYSTEM_BUNDLE, service);
+        builder.addDependency(ServiceNames.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, bundleState.injectedModuleProvider);
+        builder.addDependency(InternalServices.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
+        builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
+        builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolverPlugin);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

@@ -28,41 +28,42 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.osgi.framework.ServiceNames;
 import org.osgi.framework.launch.Framework;
 
 /**
  * A service that represents the CREATED state of the {@link Framework}.
- * 
+ *
  * When this services has started, the system bundle context is availbale as
  * well as the basic infrastructure to register OSGi services.
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class FrameworkCreate extends FrameworkService {
+public final class FrameworkCreate extends FrameworkService {
 
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkCreate.class);
 
     private final FrameworkState frameworkState;
-    
-    static FrameworkState addService(ServiceTarget serviceTarget, BundleManager bundleManager) {
+
+    static FrameworkState addService(ServiceTarget serviceTarget, BundleManager bundleManager, Mode initialMode) {
         FrameworkState frameworkState = new FrameworkState(bundleManager);
         FrameworkCreate service = new FrameworkCreate(frameworkState);
-        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_CREATE, service);
-        builder.addDependency(Services.BUNDLE_DEPLOYMENT_PLUGIN, BundleDeploymentPlugin.class, frameworkState.injectedBundleDeployment);
-        builder.addDependency(Services.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, frameworkState.injectedBundleStorage);
-        builder.addDependency(Services.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, frameworkState.injectedFrameworkEvents);
-        builder.addDependency(Services.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, frameworkState.injectedModuleManager);
-        builder.addDependency(Services.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, frameworkState.injectedNativeCode);
-        builder.addDependency(Services.RESOLVER_PLUGIN, ResolverPlugin.class, frameworkState.injectedResolverPlugin);
-        builder.addDependency(Services.SERVICE_MANAGER_PLUGIN, ServiceManagerPlugin.class, frameworkState.injectedServiceManager);
-        builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, frameworkState.injectedSystemBundle);
-        builder.setInitialMode(Mode.ON_DEMAND);
+        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(ServiceNames.FRAMEWORK_CREATE, service);
+        builder.addDependency(InternalServices.BUNDLE_DEPLOYMENT_PLUGIN, BundleDeploymentPlugin.class, frameworkState.injectedBundleDeployment);
+        builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, frameworkState.injectedBundleStorage);
+        builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, frameworkState.injectedFrameworkEvents);
+        builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, frameworkState.injectedModuleManager);
+        builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, frameworkState.injectedNativeCode);
+        builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, frameworkState.injectedResolverPlugin);
+        builder.addDependency(InternalServices.SERVICE_MANAGER_PLUGIN, ServiceManagerPlugin.class, frameworkState.injectedServiceManager);
+        builder.addDependency(ServiceNames.SYSTEM_BUNDLE, SystemBundleState.class, frameworkState.injectedSystemBundle);
+        builder.setInitialMode(initialMode);
         builder.install();
         return frameworkState;
     }
-    
+
     private FrameworkCreate(FrameworkState frameworkState) {
         this.frameworkState = frameworkState;
     }

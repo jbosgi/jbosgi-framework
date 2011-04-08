@@ -21,10 +21,7 @@
  */
 package org.jboss.osgi.framework;
 
-import static org.jboss.osgi.framework.Constants.JBOSGI_NAME;
-
 import org.jboss.msc.service.Service;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.DeployerService;
 
 /**
@@ -34,7 +31,5 @@ import org.jboss.osgi.deployment.deployer.DeployerService;
  * @since 29-Mar-2011
  */
 public interface DeployerServiceProvider extends Service<DeployerService> {
-
-    static final ServiceName SERVICE_NAME = JBOSGI_NAME.append("deployerservice");
 
 }

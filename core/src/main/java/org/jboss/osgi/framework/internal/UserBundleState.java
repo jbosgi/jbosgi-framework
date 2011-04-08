@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.Constants.JBOSGI_BUNDLE_NAME;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -41,6 +39,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.DeployerService;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
@@ -80,7 +79,7 @@ abstract class UserBundleState extends BundleState {
     }
 
     static ServiceName getServiceName(long bundleId) {
-        return JBOSGI_BUNDLE_NAME.append(new Long(bundleId).toString()).append("INSTALLED");
+        return ServiceNames.BUNDLE_BASE_NAME.append(new Long(bundleId).toString()).append("INSTALLED");
     }
 
     /**

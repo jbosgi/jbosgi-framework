@@ -39,6 +39,7 @@ import java.util.Map;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.NativeLibrary;
@@ -118,8 +119,9 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
 
     static void addService(ServiceTarget serviceTarget) {
         NativeCodePlugin service = new NativeCodePlugin();
-        ServiceBuilder<NativeCodePlugin> builder = serviceTarget.addService(Services.NATIVE_CODE_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        ServiceBuilder<NativeCodePlugin> builder = serviceTarget.addService(InternalServices.NATIVE_CODE_PLUGIN, service);
+        builder.addDependency(org.jboss.osgi.framework.ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 

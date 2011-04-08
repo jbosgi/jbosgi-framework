@@ -21,11 +21,8 @@
  */
 package org.jboss.osgi.framework;
 
-import static org.jboss.osgi.framework.Constants.JBOSGI_NAME;
-
 import org.jboss.modules.Module;
 import org.jboss.msc.service.Service;
-import org.jboss.msc.service.ServiceName;
 
 /**
  * The system module provider.
@@ -34,6 +31,4 @@ import org.jboss.msc.service.ServiceName;
  * @since 25-Mar-2011
  */
 public interface SystemModuleProvider extends Service<Module> {
-
-    ServiceName SERVICE_NAME = JBOSGI_NAME.append("systemmodule");
 }

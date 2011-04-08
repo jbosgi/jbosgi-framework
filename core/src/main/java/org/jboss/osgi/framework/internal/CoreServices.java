@@ -28,17 +28,18 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.DeployerService;
-import org.jboss.osgi.framework.DeployerServiceProvider;
+import org.jboss.osgi.framework.ServiceNames;
 
 /**
  * An injection point for framework core services. Other services can depend on this.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 28-Mar-2011
  */
-final class CoreServices extends AbstractService<CoreServices> {
+public final class CoreServices extends AbstractService<CoreServices> {
 
     // Provide logging
     static final Logger log = Logger.getLogger(CoreServices.class);
@@ -52,14 +53,15 @@ final class CoreServices extends AbstractService<CoreServices> {
 
     static void addService(ServiceTarget serviceTarget) {
         CoreServices service = new CoreServices();
-        ServiceBuilder<CoreServices> builder = serviceTarget.addService(Services.CORE_SERVICES, service);
-        builder.addDependency(DeployerServiceProvider.SERVICE_NAME, DeployerService.class, service.injectedDeployerService);
-        builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
-        builder.addDependency(Services.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, service.injectedLifecycleInterceptor);
-        builder.addDependency(Services.PACKAGE_ADMIN_PLUGIN, PackageAdminPlugin.class, service.injectedPackageAdmin);
-        builder.addDependency(Services.START_LEVEL_PLUGIN, StartLevelPlugin.class, service.injectedStartLevel);
-        builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
-        builder.addDependency(Services.URL_HANDLER_PLUGIN);
+        ServiceBuilder<CoreServices> builder = serviceTarget.addService(InternalServices.CORE_SERVICES, service);
+        builder.addDependency(ServiceNames.DEPLOYERSERVICE_PROVIDER, DeployerService.class, service.injectedDeployerService);
+        builder.addDependency(ServiceNames.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
+        builder.addDependency(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, service.injectedLifecycleInterceptor);
+        builder.addDependency(ServiceNames.PACKAGE_ADMIN, PackageAdminPlugin.class, service.injectedPackageAdmin);
+        builder.addDependency(ServiceNames.START_LEVEL, StartLevelPlugin.class, service.injectedStartLevel);
+        builder.addDependency(ServiceNames.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
+        builder.addDependencies(InternalServices.URL_HANDLER_PLUGIN, InternalServices.WEBXML_VERIFIER_PLUGIN);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 

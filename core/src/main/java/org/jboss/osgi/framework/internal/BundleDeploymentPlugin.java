@@ -29,9 +29,11 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
+import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.resolver.XModule;
@@ -58,9 +60,10 @@ final class BundleDeploymentPlugin extends AbstractPluginService<BundleDeploymen
 
     static void addService(ServiceTarget serviceTarget) {
         BundleDeploymentPlugin service = new BundleDeploymentPlugin();
-        ServiceBuilder<BundleDeploymentPlugin> builder = serviceTarget.addService(Services.BUNDLE_DEPLOYMENT_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(Services.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolver);
+        ServiceBuilder<BundleDeploymentPlugin> builder = serviceTarget.addService(InternalServices.BUNDLE_DEPLOYMENT_PLUGIN, service);
+        builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolver);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 

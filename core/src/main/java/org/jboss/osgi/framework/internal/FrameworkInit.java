@@ -32,18 +32,19 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.ServiceNames;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.launch.Framework;
 
 /**
  * A service that represents the INIT state of the {@link Framework}.
- * 
+ *
  *  See {@link Framework#init()} for details.
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class FrameworkInit extends FrameworkService {
+public final class FrameworkInit extends FrameworkService {
 
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkInit.class);
@@ -53,9 +54,9 @@ final class FrameworkInit extends FrameworkService {
 
     static void addService(ServiceTarget serviceTarget) {
         FrameworkInit service = new FrameworkInit();
-        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_INIT, service);
-        builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
-        builder.addDependency(Services.CORE_SERVICES, CoreServices.class, service.injectedCoreServices);
+        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(ServiceNames.FRAMEWORK_INIT, service);
+        builder.addDependency(ServiceNames.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
+        builder.addDependency(InternalServices.CORE_SERVICES, CoreServices.class, service.injectedCoreServices);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -68,6 +69,7 @@ final class FrameworkInit extends FrameworkService {
         super.start(context);
         try {
             installPersistedBundles();
+            log.debugf("OSGi Framework initilized");
         } catch (BundleException ex) {
             throw new StartException(ex);
         }

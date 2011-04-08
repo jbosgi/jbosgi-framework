@@ -29,7 +29,9 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.ServiceNames;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -40,10 +42,10 @@ import org.osgi.service.startlevel.StartLevel;
 
 /**
  * An implementation of the {@link StartLevel} service.
- * 
+ *
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-final class StartLevelPlugin extends AbstractExecutorService<StartLevel> implements StartLevel {
+public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> implements StartLevel {
 
     static final int BUNDLE_STARTLEVEL_UNSPECIFIED = -1;
 
@@ -52,18 +54,19 @@ final class StartLevelPlugin extends AbstractExecutorService<StartLevel> impleme
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
-    
+
     private int initialBundleStartLevel = 1; // Synchronized on this
     private ServiceRegistration registration;
     private int startLevel = 0; // Synchronized on this
 
     static void addService(ServiceTarget serviceTarget) {
         StartLevelPlugin service = new StartLevelPlugin();
-        ServiceBuilder<StartLevel> builder = serviceTarget.addService(Services.START_LEVEL_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(Services.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
-        builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
-        builder.addDependency(Services.FRAMEWORK_CREATE);
+        ServiceBuilder<StartLevel> builder = serviceTarget.addService(ServiceNames.START_LEVEL, service);
+        builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
+        builder.addDependency(ServiceNames.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
+        builder.addDependency(ServiceNames.FRAMEWORK_CREATE);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 

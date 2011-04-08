@@ -21,13 +21,10 @@
  */
 package org.jboss.osgi.framework;
 
-import static org.jboss.osgi.framework.Constants.JBOSGI_NAME;
-
 import java.net.URL;
 import java.util.List;
 
 import org.jboss.msc.service.Service;
-import org.jboss.msc.service.ServiceName;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -37,8 +34,6 @@ import org.osgi.framework.BundleContext;
  * @since 30-Mar-2011
  */
 public interface AutoInstallProvider extends Service<AutoInstallProvider> {
-
-    static final ServiceName SERVICE_NAME = JBOSGI_NAME.append("autoinstall");
 
     List<URL> getAutoInstallList(BundleContext context);
 

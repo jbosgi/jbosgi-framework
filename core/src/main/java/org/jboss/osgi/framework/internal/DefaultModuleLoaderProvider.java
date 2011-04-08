@@ -25,7 +25,9 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.framework.ModuleLoaderProvider;
+import org.jboss.osgi.framework.ServiceNames;
 
 /**
  * A plugin that handles module loading.
@@ -37,7 +39,8 @@ final class DefaultModuleLoaderProvider extends AbstractPluginService<ModuleLoad
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultModuleLoaderProvider service = new DefaultModuleLoaderProvider();
-        ServiceBuilder<ModuleLoader> builder = serviceTarget.addService(SERVICE_NAME, service);
+        ServiceBuilder<ModuleLoader> builder = serviceTarget.addService(ServiceNames.MODULE_LOADER_PROVIDER, service);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 

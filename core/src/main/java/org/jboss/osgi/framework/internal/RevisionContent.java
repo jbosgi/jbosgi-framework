@@ -29,7 +29,6 @@ import java.util.Enumeration;
 import java.util.Vector;
 
 import org.jboss.logging.Logger;
-import org.jboss.osgi.framework.internal.BundleProtocolHandler;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;

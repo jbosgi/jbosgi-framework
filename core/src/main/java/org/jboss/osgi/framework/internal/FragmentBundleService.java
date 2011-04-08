@@ -42,7 +42,7 @@ final class FragmentBundleService extends UserBundleService<FragmentBundleState>
         FragmentBundleService service = new FragmentBundleService(bundleState, dep);
         ServiceName serviceName = bundleState.getServiceName();
         ServiceBuilder<FragmentBundleState> builder = serviceTarget.addService(serviceName, service);
-        builder.addDependency(Services.CORE_SERVICES);
+        builder.addDependency(InternalServices.CORE_SERVICES);
         builder.install();
         return serviceName;
     }
