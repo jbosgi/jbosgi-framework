@@ -183,10 +183,17 @@ abstract class BundleState implements Bundle {
 
     void changeState(int state, int eventType) {
 
+        // Invoke the lifecycle interceptors
+        boolean frameworkActive = getBundleManager().isFrameworkActive();
+        if (frameworkActive && bundleId > 0) {
+           LifecycleInterceptorPlugin plugin = getCoreServices().getLifecycleInterceptorPlugin();
+           plugin.handleStateChange(state, this);
+        }
+        
         bundleState.set(state);
 
         // Fire the bundle event
-        if (eventType != 0 && getBundleManager().isFrameworkActive()) {
+        if (frameworkActive && eventType != 0) {
             FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
             eventsPlugin.fireBundleEvent(this, eventType);
         }
