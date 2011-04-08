@@ -22,40 +22,24 @@
 package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.ServiceNames;
 
 /**
- * The collection of public service names.
- * 
+ * The collection of internal service names.
+ *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-public interface Services {
+interface InternalServices {
 
-    /** The base name of all framework services */
-    ServiceName FRAMEWORK_BASE = ServiceName.of(Constants.JBOSGI_PREFIX, "framework");
-    /** The base name of all framework OSGi services */
-    ServiceName FRAMEWORK_SERVICE_BASE = ServiceName.of(Constants.JBOSGI_PREFIX, "service");
-    /** The base name of all framework OSGi services that were registered outside the OSGi layer */
-    ServiceName FRAMEWORK_XSERVICE_BASE = ServiceName.of(Constants.JBOSGI_PREFIX, "xservice");
     /** The base name of all framnework plugin services */
-    ServiceName FRAMEWORK_PLUGIN_BASE = FRAMEWORK_BASE.append("plugin");
-    
-    /** The {@link BundleManager} service name. */
-    ServiceName BUNDLE_MANAGER = FRAMEWORK_BASE.append("bundlemanager");
+    ServiceName FRAMEWORK_PLUGIN_BASE = ServiceNames.FRAMEWORK_BASE_NAME.append("plugin");
+
     /** The {@link CoreServices} service name. */
-    ServiceName CORE_SERVICES = FRAMEWORK_BASE.append("coreservices");
-    /** The {@link FrameworkCreate} service name */
-    ServiceName FRAMEWORK_CREATE = FRAMEWORK_BASE.append("CREATED");
-    /** The {@link FrameworkInit} service name */
-    ServiceName FRAMEWORK_INIT = FRAMEWORK_BASE.append("INITIAL");
-    /** The {@link FrameworkActive} service name */
-    ServiceName FRAMEWORK_ACTIVE = FRAMEWORK_BASE.append("ACTIVE");
-    /** The {@link SystemBundleService} service name */
-    ServiceName SYSTEM_BUNDLE = FRAMEWORK_BASE.append("systembundle");
-    /** The {@link SystemContextService} service name */
-    ServiceName SYSTEM_CONTEXT = FRAMEWORK_BASE.append("systemcontext");
-    
+    ServiceName CORE_SERVICES = ServiceNames.FRAMEWORK_BASE_NAME.append("coreservices");
+
+    /** The {@link BundleDeploymentPlugin} service name */
+    ServiceName AUTOINSTALL_PROCESSOR = FRAMEWORK_PLUGIN_BASE.append("autoinstallprocessor");
     /** The {@link BundleDeploymentPlugin} service name */
     ServiceName BUNDLE_DEPLOYMENT_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("deployment");
     /** The {@link BundleStoragePlugin} service name */
@@ -68,17 +52,14 @@ public interface Services {
     ServiceName MODULE_MANGER_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("modulemanager");
     /** The {@link NativeCodePlugin} service name */
     ServiceName NATIVE_CODE_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("nativecode");
-    /** The {@link PackageAdminPlugin} service name */
-    ServiceName PACKAGE_ADMIN_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("packageadmin");
     /** The {@link ResolverPlugin} service name */
     ServiceName RESOLVER_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("resolver");
     /** The {@link ServiceManagerPlugin} service name */
     ServiceName SERVICE_MANAGER_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("servicemanager");
-    /** The {@link StartLevelPlugin} service name */
-    ServiceName START_LEVEL_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("startlevel");
     /** The {@link SystemPackagesPlugin} service name */
     ServiceName SYSTEM_PACKAGES_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("systempackages");
+    /** The {@link WebXMLVerifierInterceptor} service name */
+    ServiceName WEBXML_VERIFIER_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("webxmlverifier");
     /** The {@link URLHandler} service name */
     ServiceName URL_HANDLER_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("urlhandler");
-
 }

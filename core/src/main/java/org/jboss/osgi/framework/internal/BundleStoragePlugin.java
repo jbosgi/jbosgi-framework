@@ -35,6 +35,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -58,11 +59,12 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
 
     static void addService(ServiceTarget serviceTarget, boolean firstInit) {
         BundleStoragePlugin service = new BundleStoragePlugin(firstInit);
-        ServiceBuilder<BundleStoragePlugin> builder = serviceTarget.addService(Services.BUNDLE_STORAGE_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        ServiceBuilder<BundleStoragePlugin> builder = serviceTarget.addService(InternalServices.BUNDLE_STORAGE_PLUGIN, service);
+        builder.addDependency(org.jboss.osgi.framework.ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
-    
+
     private BundleStoragePlugin(boolean firstInit) {
         this.firstInit = firstInit;
     }
@@ -75,7 +77,7 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
         String storageClean = (String) bundleManager.getProperty(Constants.FRAMEWORK_STORAGE_CLEAN);
         if (firstInit == true && Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT.equals(storageClean))
             cleanStorage();
-        
+
     }
 
     @Override

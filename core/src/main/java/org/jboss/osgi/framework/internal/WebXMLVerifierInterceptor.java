@@ -21,21 +21,20 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.Constants.JBOSGI_INTERNAL_NAME;
-
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.interceptor.AbstractLifecycleInterceptor;
 import org.jboss.osgi.deployment.interceptor.InvocationContext;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptor;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
+import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -43,26 +42,25 @@ import org.osgi.framework.ServiceRegistration;
 
 /**
  * The lifecycle interceptor that verifies that deployments ending in '.war' have a WEB-INF/web.xml descriptor.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 20-Oct-2009
  */
 final class WebXMLVerifierInterceptor extends AbstractPluginService<WebXMLVerifierInterceptor> implements LifecycleInterceptor {
 
-    static final ServiceName SERVICE_NAME = JBOSGI_INTERNAL_NAME.append("webxmlverifier");
-    
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private LifecycleInterceptor delegate;
     private ServiceRegistration registration;
 
     static void addService(ServiceTarget serviceTarget) {
         WebXMLVerifierInterceptor service = new WebXMLVerifierInterceptor();
-        ServiceBuilder<WebXMLVerifierInterceptor> builder = serviceTarget.addService(SERVICE_NAME, service);
-        builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(Services.FRAMEWORK_CREATE);
+        ServiceBuilder<WebXMLVerifierInterceptor> builder = serviceTarget.addService(InternalServices.WEBXML_VERIFIER_PLUGIN, service);
+        builder.addDependency(ServiceNames.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
+        builder.addDependency(ServiceNames.FRAMEWORK_CREATE);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
-    
+
     private WebXMLVerifierInterceptor() {
     }
 

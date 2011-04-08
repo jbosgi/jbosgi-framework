@@ -32,6 +32,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
+import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
@@ -108,7 +109,7 @@ final class SystemBundleState extends BundleState {
     
     @Override
     ServiceName getServiceName() {
-        return Services.SYSTEM_BUNDLE;
+        return ServiceNames.SYSTEM_BUNDLE;
     }
 
     @Override

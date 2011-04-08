@@ -24,11 +24,8 @@ package org.jboss.test.osgi.framework;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
@@ -36,13 +33,12 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
-import org.osgi.framework.launch.FrameworkFactory;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.startlevel.StartLevel;
 
 /**
  * Test framework bootstrap options.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
@@ -54,48 +50,69 @@ public class FrameworkLaunchTestCase extends OSGiFrameworkTest {
     }
 
     @Test
+    public void testFrameworkInit() throws Exception {
+
+        Framework framework = createFramework();
+        try {
+            assertBundleState(Bundle.INSTALLED, framework.getState());
+
+            framework.init();
+            assertBundleState(Bundle.STARTING, framework.getState());
+
+            StartLevel startLevel = getStartLevel();
+            assertEquals("Framework should be at Start Level 0 on init()", 0, startLevel.getStartLevel());
+
+            PackageAdmin packageAdmin = getPackageAdmin();
+            assertNotNull("The Package Admin service should be available", packageAdmin);
+
+            // It should be possible to install a bundle into this framework, even though it's only inited...
+            JavaArchive archive = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
+            Bundle bundle = installBundle("simple-bundle1", toInputStream(archive));
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+        } finally {
+            shutdownFramework();
+        }
+    }
+
+    @Test
     public void testFrameworkStartStop() throws Exception {
-        Map<String, String> props = new HashMap<String, String>();
-        props.put("org.osgi.framework.storage", "target/osgi-store");
-        props.put("org.osgi.framework.storage.clean", "onFirstInit");
+        Framework framework = createFramework();
+        try {
+            assertNotNull("Framework not null", framework);
+            assertBundleState(Bundle.INSTALLED, framework.getState());
 
-        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-        Framework framework = factory.newFramework(props);
+            framework.init();
+            assertBundleState(Bundle.STARTING, framework.getState());
 
-        assertNotNull("Framework not null", framework);
-        assertBundleState(Bundle.INSTALLED, framework.getState());
+            BundleContext systemContext = framework.getBundleContext();
+            assertNotNull("BundleContext not null", systemContext);
+            Bundle systemBundle = systemContext.getBundle();
+            assertNotNull("Bundle not null", systemBundle);
+            assertEquals("System bundle id", 0, systemBundle.getBundleId());
+            assertEquals("System bundle name", Constants.SYSTEM_BUNDLE_SYMBOLICNAME, systemBundle.getSymbolicName());
+            assertEquals("System bundle location", Constants.SYSTEM_BUNDLE_LOCATION, systemBundle.getLocation());
 
-        framework.init();
-        assertBundleState(Bundle.STARTING, framework.getState());
-        
-        BundleContext systemContext = framework.getBundleContext();
-        assertNotNull("BundleContext not null", systemContext);
-        Bundle systemBundle = systemContext.getBundle();
-        assertNotNull("Bundle not null", systemBundle);
-        assertEquals("System bundle id", 0, systemBundle.getBundleId());
-        assertEquals("System bundle name", Constants.SYSTEM_BUNDLE_SYMBOLICNAME, systemBundle.getSymbolicName());
-        assertEquals("System bundle location", Constants.SYSTEM_BUNDLE_LOCATION, systemBundle.getLocation());
-        
-        Bundle[] bundles = systemContext.getBundles();
-        assertEquals("System bundle available", 1, bundles.length);
-        assertEquals("System bundle id", 0, bundles[0].getBundleId());
-        assertEquals("System bundle name", Constants.SYSTEM_BUNDLE_SYMBOLICNAME, bundles[0].getSymbolicName());
-        assertEquals("System bundle location", Constants.SYSTEM_BUNDLE_LOCATION, bundles[0].getLocation());
-        
-        ServiceReference paRef = systemContext.getServiceReference(PackageAdmin.class.getName());
-        PackageAdmin packageAdmin = (PackageAdmin) systemContext.getService(paRef);
-        assertNotNull("PackageAdmin not null", packageAdmin);
+            Bundle[] bundles = systemContext.getBundles();
+            assertEquals("System bundle available", 1, bundles.length);
+            assertEquals("System bundle id", 0, bundles[0].getBundleId());
+            assertEquals("System bundle name", Constants.SYSTEM_BUNDLE_SYMBOLICNAME, bundles[0].getSymbolicName());
+            assertEquals("System bundle location", Constants.SYSTEM_BUNDLE_LOCATION, bundles[0].getLocation());
 
-        ServiceReference slRef = systemContext.getServiceReference(StartLevel.class.getName());
-        StartLevel startLevel = (StartLevel) systemContext.getService(slRef);
-        assertNotNull("StartLevel not null", startLevel);
-        assertEquals("Framework start level", 0, startLevel.getStartLevel());
-        
-        framework.start();
-        assertBundleState(Bundle.ACTIVE, framework.getState());
+            ServiceReference paRef = systemContext.getServiceReference(PackageAdmin.class.getName());
+            PackageAdmin packageAdmin = (PackageAdmin) systemContext.getService(paRef);
+            assertNotNull("PackageAdmin not null", packageAdmin);
 
-        framework.stop();
-        framework.waitForStop(2000);
-        assertBundleState(Bundle.RESOLVED, framework.getState());
+            ServiceReference slRef = systemContext.getServiceReference(StartLevel.class.getName());
+            StartLevel startLevel = (StartLevel) systemContext.getService(slRef);
+            assertNotNull("StartLevel not null", startLevel);
+            assertEquals("Framework start level", 0, startLevel.getStartLevel());
+
+            framework.start();
+            assertBundleState(Bundle.ACTIVE, framework.getState());
+        } finally {
+            framework.stop();
+            framework.waitForStop(2000);
+            assertBundleState(Bundle.RESOLVED, framework.getState());
+        }
     }
 }

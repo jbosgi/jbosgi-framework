@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
@@ -50,7 +51,8 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.ModuleLoaderProvider;
+import org.jboss.osgi.framework.BundleManagement;
+import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.framework.util.Java;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
@@ -69,7 +71,7 @@ import org.osgi.framework.FrameworkEvent;
  * @author David Bosschaert
  * @since 29-Jun-2010
  */
-final class BundleManager extends AbstractService<BundleManager> {
+public final class BundleManager extends AbstractService<BundleManager> implements BundleManagement {
 
     // Provide logging
     static final Logger log = Logger.getLogger(BundleManager.class);
@@ -109,8 +111,9 @@ final class BundleManager extends AbstractService<BundleManager> {
 
     static BundleManager addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
         BundleManager service = new BundleManager(frameworkBuilder);
-        ServiceBuilder<BundleManager> builder = serviceTarget.addService(Services.BUNDLE_MANAGER, service);
-        builder.addDependency(ModuleLoaderProvider.SERVICE_NAME, ModuleLoader.class, service.injectedModuleLoader);
+        ServiceBuilder<BundleManager> builder = serviceTarget.addService(org.jboss.osgi.framework.ServiceNames.BUNDLE_MANAGER, service);
+        builder.addDependency(ServiceNames.MODULE_LOADER_PROVIDER, ModuleLoader.class, service.injectedModuleLoader);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
         return service;
     }
@@ -225,7 +228,7 @@ final class BundleManager extends AbstractService<BundleManager> {
     }
 
     /**
-     * Get the set of installed bundles. 
+     * Get the set of installed bundles.
      * Bundles in state UNINSTALLED are not returned.
      */
     Set<BundleState> getBundles() {
@@ -292,7 +295,7 @@ final class BundleManager extends AbstractService<BundleManager> {
     }
 
     /**
-     * Get the set of bundles that are in one of the given states. 
+     * Get the set of bundles that are in one of the given states.
      * If the states pattern is null, it returns all registered bundles.
      *
      * @param states The binary or combination of states or null
@@ -308,7 +311,7 @@ final class BundleManager extends AbstractService<BundleManager> {
 
     @SuppressWarnings("unchecked")
     UserBundleState installBundle(Deployment dep) throws BundleException {
-        ServiceName serviceName = installBundleInternal(serviceTarget, dep);
+        ServiceName serviceName = installBundle(serviceTarget, dep);
         ServiceController<UserBundleState> controller = (ServiceController<UserBundleState>) serviceContainer.getService(serviceName);
         FutureServiceValue<UserBundleState> future = new FutureServiceValue<UserBundleState>(controller);
         try {
@@ -318,6 +321,95 @@ final class BundleManager extends AbstractService<BundleManager> {
             if (cause instanceof BundleException)
                 throw (BundleException) cause;
             throw new BundleException("Cannot install bundle: " + dep.getLocation(), ex);
+        }
+    }
+
+    @Override
+    public ServiceName installBundle(ServiceTarget serviceTarget, Module module) throws BundleException {
+        BundleDeploymentPlugin plugin = getFrameworkState().getBundleDeploymentPlugin();
+        Deployment dep = plugin.createDeployment(module);
+        plugin.createOSGiMetaData(dep);
+        return installBundle(serviceTarget, dep);
+    }
+
+    @Override
+    public ServiceName installBundle(ServiceTarget serviceTarget, ModuleIdentifier moduleid) throws BundleException {
+        Module module;
+        try {
+            ModuleLoader moduleLoader = injectedModuleLoader.getValue();
+            module = moduleLoader.loadModule(moduleid);
+        } catch (ModuleLoadException ex) {
+            throw new BundleException("Cannot load module: " + moduleid, ex);
+        }
+        return installBundle(serviceTarget, module);
+    }
+
+    @Override
+    public ServiceName installBundle(ServiceTarget serviceTarget, Deployment dep) throws BundleException {
+        if (dep == null)
+            throw new IllegalArgumentException("Null deployment");
+
+        // If a bundle containing the same location identifier is already installed,
+        // the Bundle object for that bundle is returned.
+        BundleState bundleState = getBundleByLocation(dep.getLocation());
+        if (bundleState != null) {
+            return bundleState.getServiceName();
+        }
+
+        ServiceName serviceName;
+        try {
+            // The storage state exists when we re-create the bundle from persistent storage
+            BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
+            long bundleId = storageState != null ? storageState.getBundleId() : getNextBundleId();
+
+            // Check that we have valid metadata
+            OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
+            if (metadata == null) {
+                BundleDeploymentPlugin plugin = getFrameworkState().getBundleDeploymentPlugin();
+                metadata = plugin.createOSGiMetaData(dep);
+            }
+
+            // Create the bundle state
+            if (metadata.getFragmentHost() == null) {
+                serviceName = HostBundleService.addService(serviceTarget, getFrameworkState(), bundleId, dep);
+            } else {
+                serviceName = FragmentBundleService.addService(serviceTarget, getFrameworkState(), bundleId, dep);
+            }
+        } catch (RuntimeException rte) {
+            VFSUtils.safeClose(dep.getRoot());
+            throw rte;
+        } catch (BundleException ex) {
+            VFSUtils.safeClose(dep.getRoot());
+            throw ex;
+        }
+        return serviceName;
+    }
+
+    long getNextBundleId() {
+        return identityGenerator.incrementAndGet();
+    }
+
+    @Override
+    public void uninstallBundle(Deployment dep) {
+        Bundle bundle = dep.getAttachment(Bundle.class);
+        UserBundleState bundleState = UserBundleState.assertBundleState(bundle);
+        uninstallBundle(bundleState, 0);
+    }
+
+    @Override
+    public void uninstallBundle(Module module) {
+        ModuleIdentifier moduleid = module.getIdentifier();
+        uninstallBundle(moduleid);
+    }
+
+    @Override
+    public void uninstallBundle(ModuleIdentifier moduleid) {
+        try {
+            ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
+            BundleState bundleState = moduleManager.getBundleState(moduleid);
+            bundleState.uninstall();
+        } catch (BundleException ex) {
+            log.errorf("Cannot uninstall module: " + moduleid, ex);
         }
     }
 
@@ -406,78 +498,6 @@ final class BundleManager extends AbstractService<BundleManager> {
         bundleMap.remove(userBundle.getBundleId());
     }
 
-    ServiceName installBundle(ServiceTarget serviceTarget, Module module) throws BundleException {
-        BundleDeploymentPlugin plugin = getFrameworkState().getBundleDeploymentPlugin();
-        Deployment dep = plugin.createDeployment(module);
-        plugin.createOSGiMetaData(dep);
-        return installBundleInternal(serviceTarget, dep);
-    }
-
-    private ServiceName installBundleInternal(ServiceTarget serviceTarget, Deployment dep) throws BundleException {
-        if (dep == null)
-            throw new IllegalArgumentException("Null deployment");
-
-        // If a bundle containing the same location identifier is already installed,
-        // the Bundle object for that bundle is returned.
-        BundleState bundleState = getBundleByLocation(dep.getLocation());
-        if (bundleState != null) {
-            return bundleState.getServiceName();
-        }
-
-        ServiceName serviceName;
-        try {
-            // The storage state exists when we re-create the bundle from persistent storage
-            BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
-            long bundleId = storageState != null ? storageState.getBundleId() : getNextBundleId();
-            
-            // Check that we have valid metadata
-            OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
-            if (metadata == null) {
-                BundleDeploymentPlugin plugin = getFrameworkState().getBundleDeploymentPlugin();
-                metadata = plugin.createOSGiMetaData(dep);
-            }
-            
-            // Create the bundle state
-            if (metadata.getFragmentHost() == null) {
-                serviceName = HostBundleService.addService(serviceTarget, getFrameworkState(), bundleId, dep);
-            } else {
-                serviceName = FragmentBundleService.addService(serviceTarget, getFrameworkState(), bundleId, dep);
-            }
-        } catch (RuntimeException rte) {
-            VFSUtils.safeClose(dep.getRoot());
-            throw rte;
-        } catch (BundleException ex) {
-            VFSUtils.safeClose(dep.getRoot());
-            throw ex;
-        }
-        return serviceName;
-    }
-
-    long getNextBundleId() {
-        return identityGenerator.incrementAndGet();
-    }
-
-    void uninstallBundle(Deployment dep) {
-        Bundle bundle = dep.getAttachment(Bundle.class);
-        UserBundleState bundleState = UserBundleState.assertBundleState(bundle);
-        uninstallBundle(bundleState, 0);
-    }
-
-    void uninstallBundle(Module module) {
-        ModuleIdentifier identifier = module.getIdentifier();
-        uninstallBundle(identifier);
-    }
-
-    void uninstallBundle(ModuleIdentifier identifier) {
-        try {
-            ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-            BundleState bundleState = moduleManager.getBundleState(identifier);
-            bundleState.uninstall();
-        } catch (BundleException ex) {
-            log.errorf("Cannot uninstall module: " + identifier, ex);
-        }
-    }
-    
     /**
      * Fire a framework error
      */
@@ -531,7 +551,7 @@ final class BundleManager extends AbstractService<BundleManager> {
             }
         });
     }
-    
+
     // Turn the OS version into an OSGi-compatible version. The spec says that an external operator
     // should do this by changing the framework properties, but this is pretty inconvenient and other
     // OSGi frameworks seem to automatically fix this too. The original os version is still available

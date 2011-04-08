@@ -21,9 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.Services.FRAMEWORK_SERVICE_BASE;
-import static org.jboss.osgi.framework.internal.Services.FRAMEWORK_XSERVICE_BASE;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
@@ -100,7 +98,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         for (int i = 0; i < clazzes.length; i++) {
             if (clazzes[i] == null)
                 throw new IllegalArgumentException("Null service class at index: " + i);
-            
+
             ServiceName serviceName = createServiceName(clazzes[i]);
             serviceNames.add(serviceName);
         }
@@ -118,11 +116,11 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     }
 
     static ServiceName createServiceName(String clazz) {
-        return FRAMEWORK_SERVICE_BASE.append(clazz);
+        return ServiceNames.JBOSGI_SERVICE_BASE_NAME.append(clazz);
     }
 
     static ServiceName createXServiceName(String clazz) {
-        return FRAMEWORK_XSERVICE_BASE.append(clazz);
+        return ServiceNames.JBOSGI_XSERVICE_BASE_NAME.append(clazz);
     }
 
     /**

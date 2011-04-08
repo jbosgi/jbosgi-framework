@@ -21,34 +21,21 @@
  */
 package org.jboss.osgi.framework;
 
-import org.jboss.msc.service.ServiceName;
 
 /**
- * The module manager plugin.
- * 
+ * A collection of propriatary constants.
+ *
  * @author thomas.diesler@jboss.com
- * @since 06Jul2009
+ * @since 06-Jul-2009
  */
 public interface Constants extends org.osgi.framework.Constants {
 
     /** The prefix for modules/services managed by the OSGi layer */
     String JBOSGI_PREFIX = "jbosgi";
-    
+
     /** The timeout in millisecons for the framework to initialize */
     String PROPERTY_FRAMEWORK_INIT_TIMEOUT = "org.jboss.osgi.framework.init.timeout";
-    
+
     /** The timeout in millisecons for the framework to start */
     String PROPERTY_FRAMEWORK_START_TIMEOUT = "org.jboss.osgi.framework.start.timeout";
-    
-    /** The prefix for all OSGi Framework services */
-    ServiceName JBOSGI_NAME = ServiceName.of(JBOSGI_PREFIX, "framework");
-    
-    /** The prefix for all OSGi Framework plugin services */
-    ServiceName JBOSGI_INTERNAL_NAME = JBOSGI_NAME.append("internal");
-    
-    /** The prefix for all OSGi services */
-    ServiceName JBOSGI_SERVICE_NAME = ServiceName.of(JBOSGI_PREFIX, "service");
-    
-    /** The prefix for all OSGi bundle services */
-    ServiceName JBOSGI_BUNDLE_NAME = ServiceName.of(JBOSGI_PREFIX, "bundle");
 }

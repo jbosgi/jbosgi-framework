@@ -34,8 +34,10 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
@@ -50,7 +52,7 @@ import org.osgi.framework.BundleException;
 
 /**
  * The resolver plugin.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author David Bosschaert
  * @since 06-Jul-2009
@@ -66,16 +68,17 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
     private final XResolverFactory factory;
     private XResolver resolver;
 
-    
+
     static void addService(ServiceTarget serviceTarget) {
         ResolverPlugin service = new ResolverPlugin();
-        ServiceBuilder<ResolverPlugin> builder = serviceTarget.addService(Services.RESOLVER_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(Services.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
-        builder.addDependency(Services.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
+        ServiceBuilder<ResolverPlugin> builder = serviceTarget.addService(InternalServices.RESOLVER_PLUGIN, service);
+        builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
+        builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
-    
+
     private ResolverPlugin() {
         factory = XResolverFactory.getInstance(getClass().getClassLoader());
     }
@@ -113,7 +116,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
 
     /**
      * Add a module to the resolver.
-     * 
+     *
      * @param module the resolver module
      */
     void addModule(XModule resModule) {
@@ -122,7 +125,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
 
     /**
      * Remove a module from the resolver.
-     * 
+     *
      * @param module the resolver module
      */
     void removeModule(XModule resModule) {
@@ -131,7 +134,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
 
     /**
      * Get the module for the given id
-     * 
+     *
      * @return The module or null
      */
     XModule getModuleById(XModuleIdentity moduleId) {
@@ -140,7 +143,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
 
     /**
      * Resolve the given modules.
-     * 
+     *
      * @param module the module to resolve
      * @return The set of resolved modules or an empty set
      * @throws BundleException If the resolver could not resolve the module
@@ -160,7 +163,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
 
     /**
      * Resolve the given set of modules.
-     * 
+     *
      * @param modules the modules to resolve
      * @return True if all modules could be resolved
      */

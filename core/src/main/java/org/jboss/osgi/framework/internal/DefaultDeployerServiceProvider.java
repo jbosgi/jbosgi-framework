@@ -28,11 +28,13 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.DeployerService;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.SystemDeployerService;
 import org.jboss.osgi.framework.DeployerServiceProvider;
+import org.jboss.osgi.framework.ServiceNames;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -51,11 +53,12 @@ final class DefaultDeployerServiceProvider extends AbstractPluginService<Deploye
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultDeployerServiceProvider service = new DefaultDeployerServiceProvider();
-        ServiceBuilder<DeployerService> builder = serviceTarget.addService(SERVICE_NAME, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
-        builder.addDependency(Services.SERVICE_MANAGER_PLUGIN, ServiceManagerPlugin.class, service.injectedServiceManager);
-        builder.addDependency(Services.FRAMEWORK_CREATE);
+        ServiceBuilder<DeployerService> builder = serviceTarget.addService(ServiceNames.DEPLOYERSERVICE_PROVIDER, service);
+        builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(ServiceNames.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
+        builder.addDependency(InternalServices.SERVICE_MANAGER_PLUGIN, ServiceManagerPlugin.class, service.injectedServiceManager);
+        builder.addDependency(ServiceNames.FRAMEWORK_CREATE);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 

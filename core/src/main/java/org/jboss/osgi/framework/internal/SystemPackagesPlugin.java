@@ -42,6 +42,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.ServiceController.Mode;
 
 /**
  * A plugin manages the Framework's system packages.
@@ -64,7 +65,8 @@ final class SystemPackagesPlugin extends AbstractPluginService<SystemPackagesPlu
 
     static void addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
         SystemPackagesPlugin service = new SystemPackagesPlugin(frameworkBuilder);
-        ServiceBuilder<SystemPackagesPlugin> builder = serviceTarget.addService(Services.SYSTEM_PACKAGES_PLUGIN, service);
+        ServiceBuilder<SystemPackagesPlugin> builder = serviceTarget.addService(InternalServices.SYSTEM_PACKAGES_PLUGIN, service);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 

@@ -36,27 +36,27 @@ import org.osgi.framework.launch.Framework;
 
 /**
  * A service that represents the ACTIVE state of the {@link Framework}.
- * 
+ *
  *  See {@link Framework#start()} for details.
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class FrameworkActive extends FrameworkService {
+public final class FrameworkActive extends FrameworkService {
 
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkActive.class);
 
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
-    
+
     static void addService(ServiceTarget serviceTarget) {
         FrameworkActive service = new FrameworkActive();
-        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
-        builder.addDependency(Services.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
+        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(org.jboss.osgi.framework.ServiceNames.FRAMEWORK_ACTIVE, service);
+        builder.addDependency(org.jboss.osgi.framework.ServiceNames.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
-    
+
     private FrameworkActive() {
     }
 
@@ -65,14 +65,14 @@ final class FrameworkActive extends FrameworkService {
      *
      * The following steps are taken to start this Framework:
      *
-     * - If this Framework is not in the {@link #STARTING} state, {@link #init()} is called 
-     * - All installed bundles must be started 
+     * - If this Framework is not in the {@link #STARTING} state, {@link #init()} is called
+     * - All installed bundles must be started
      * - The start level of this Framework is moved to the FRAMEWORK_BEGINNING_STARTLEVEL
      *
      * Any exceptions that occur during bundle starting must be wrapped in a {@link BundleException} and then published as a
      * framework event of type {@link FrameworkEvent#ERROR}
      *
-     * - This Framework's state is set to {@link #ACTIVE}. 
+     * - This Framework's state is set to {@link #ACTIVE}.
      * - A framework event of type {@link FrameworkEvent#STARTED} is fired
      */
     @Override
@@ -95,7 +95,7 @@ final class FrameworkActive extends FrameworkService {
             FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
             eventsPlugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
 
-            log.infof("Framework started");
+            log.infof("OSGi Framework started");
         } catch (BundleException ex) {
             throw new StartException(ex);
         }

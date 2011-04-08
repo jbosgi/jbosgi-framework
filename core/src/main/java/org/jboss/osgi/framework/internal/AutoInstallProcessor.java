@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.Constants.JBOSGI_INTERNAL_NAME;
+import static org.jboss.osgi.framework.internal.InternalServices.AUTOINSTALL_PROCESSOR;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -33,15 +33,15 @@ import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.AutoInstallProvider;
-import org.jboss.osgi.framework.SystemServicesProvider;
+import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.spi.util.BundleInfo;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -55,35 +55,32 @@ import org.osgi.framework.BundleException;
  */
 final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProcessor> {
 
-    static final ServiceName SERVICE_NAME = JBOSGI_INTERNAL_NAME.append("autoinstall");
-
     // Provide logging
     final Logger log = Logger.getLogger(AutoInstallProcessor.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     private final InjectedValue<AutoInstallProvider> injectedProvider = new InjectedValue<AutoInstallProvider>();
-    private final InjectedValue<SystemServicesProvider> injectedSystemServices = new InjectedValue<SystemServicesProvider>();
 
     static void addService(ServiceTarget serviceTarget) {
         AutoInstallProcessor service = new AutoInstallProcessor();
-        ServiceBuilder<AutoInstallProcessor> builder = serviceTarget.addService(SERVICE_NAME, service);
-        builder.addDependency(AutoInstallProvider.SERVICE_NAME, AutoInstallProvider.class, service.injectedProvider);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
-        builder.addDependency(SystemServicesProvider.SERVICE_NAME, SystemServicesProvider.class, service.injectedSystemServices);
-        builder.addDependency(Services.FRAMEWORK_INIT);
+        ServiceBuilder<AutoInstallProcessor> builder = serviceTarget.addService(AUTOINSTALL_PROCESSOR, service);
+        builder.addDependency(ServiceNames.AUTOINSTALL_PROVIDER, AutoInstallProvider.class, service.injectedProvider);
+        builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(ServiceNames.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
+        builder.addDependency(ServiceNames.FRAMEWORK_INIT);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
     static void awaitStartup(ServiceContainer serviceContainer, long timeout, TimeUnit unit) throws BundleException {
         @SuppressWarnings("unchecked")
-        ServiceController<AutoInstallProcessor> controller = (ServiceController<AutoInstallProcessor>) serviceContainer.getRequiredService(SERVICE_NAME);
+        ServiceController<AutoInstallProcessor> controller = (ServiceController<AutoInstallProcessor>) serviceContainer.getRequiredService(AUTOINSTALL_PROCESSOR);
         FutureServiceValue<AutoInstallProcessor> future = new FutureServiceValue<AutoInstallProcessor>(controller);
         try {
             future.get(timeout, unit);
         } catch (Exception ex) {
-            throw new BundleException("Cannot start " + SERVICE_NAME, ex);
+            throw new BundleException("Cannot start " + AUTOINSTALL_PROCESSOR, ex);
         }
     }
 
@@ -95,11 +92,7 @@ final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProces
         super.start(context);
 
         try {
-            // Register additional system services
             BundleContext systemContext = injectedSystemBundle.getValue().getBundleContext();
-            SystemServicesProvider servicesProvider = injectedSystemServices.getValue();
-            servicesProvider.registerSystemServices(systemContext);
-
             AutoInstallProvider provider = injectedProvider.getValue();
             List<URL> autoInstall = new ArrayList<URL>(provider.getAutoInstallList(systemContext));
             List<URL> autoStart = new ArrayList<URL>(provider.getAutoStartList(systemContext));

@@ -28,13 +28,14 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.osgi.framework.ServiceNames;
 import org.osgi.framework.launch.Framework;
 
 /**
- * A builder for the {@link Framework} implementation.
- * Provides hooks for various integration aspects.
+ * A builder for the {@link Framework} implementation. Provides hooks for various integration aspects.
  *
  * @author thomas.diesler@jboss.com
  * @since 24-Mar-2011
@@ -105,32 +106,27 @@ public final class FrameworkBuilder {
         }
     }
 
-    public void createFrameworkServices(ServiceTarget serviceTarget) {
+    public void createFrameworkServices(Mode initialMode, boolean firstInit) {
         assertNotClosed();
         try {
-            createFrameworkServicesInternal(serviceTarget, true);
+            createFrameworkServicesInternal(serviceTarget, initialMode, firstInit);
         } finally {
             closed = true;
         }
     }
 
-    void createFrameworkServicesInternal(ServiceTarget serviceTarget, boolean firstInit) {
-        
-        // Do this first so this URLStreamHandlerFactory gets installed 
+    void createFrameworkServicesInternal(ServiceTarget serviceTarget, Mode initialMode, boolean firstInit) {
+
+        // Do this first so this URLStreamHandlerFactory gets installed
         URLHandlerPlugin.addService(serviceTarget);
-        
+
         BundleManager bundleManager = BundleManager.addService(serviceTarget, this);
-        FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
-        
+        FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager, initialMode);
+
         AutoInstallProcessor.addService(serviceTarget);
         BundleDeploymentPlugin.addService(serviceTarget);
         BundleStoragePlugin.addService(serviceTarget, firstInit);
         CoreServices.addService(serviceTarget);
-        DefaultAutoInstallProvider.addService(serviceTarget);
-        DefaultDeployerServiceProvider.addService(serviceTarget);
-        DefaultFrameworkModuleProvider.addService(serviceTarget);
-        DefaultModuleLoaderProvider.addService(serviceTarget);
-        DefaultSystemModuleProvider.addService(serviceTarget);
         FrameworkActive.addService(serviceTarget);
         FrameworkEventsPlugin.addService(serviceTarget);
         FrameworkInit.addService(serviceTarget);
@@ -145,6 +141,17 @@ public final class FrameworkBuilder {
         SystemContextService.addService(serviceTarget);
         SystemPackagesPlugin.addService(serviceTarget, this);
         WebXMLVerifierInterceptor.addService(serviceTarget);
+
+        if (isProvidedService(ServiceNames.AUTOINSTALL_PROVIDER) == false)
+            DefaultAutoInstallProvider.addService(serviceTarget);
+        if (isProvidedService(ServiceNames.DEPLOYERSERVICE_PROVIDER) == false)
+            DefaultDeployerServiceProvider.addService(serviceTarget);
+        if (isProvidedService(ServiceNames.FRAMEWORK_MODULE_PROVIDER) == false)
+            DefaultFrameworkModuleProvider.addService(serviceTarget);
+        if (isProvidedService(ServiceNames.MODULE_LOADER_PROVIDER) == false)
+            DefaultModuleLoaderProvider.addService(serviceTarget);
+        if (isProvidedService(ServiceNames.SYSTEM_MODULE_PROVIDER) == false)
+            DefaultSystemModuleProvider.addService(serviceTarget);
     }
 
     private void assertNotClosed() {

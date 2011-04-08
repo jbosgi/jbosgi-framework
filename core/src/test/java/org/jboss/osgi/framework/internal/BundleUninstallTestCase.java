@@ -30,7 +30,7 @@ import java.util.List;
 
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
@@ -54,7 +54,7 @@ public class BundleUninstallTestCase extends AbstractFrameworkTest {
         List<ServiceName> initialNames = getServiceNameDelta(null);
 
         Bundle bundle = installBundle(getTestArchive());
-        ServiceName bundleName = Constants.JBOSGI_BUNDLE_NAME.append("1");
+        ServiceName bundleName = ServiceNames.BUNDLE_BASE_NAME.append("1");
 
         List<ServiceName> additionalNames = getServiceNameDelta(initialNames);
         assertTrue("Contains INSTALLED", additionalNames.contains(bundleName.append("INSTALLED")));

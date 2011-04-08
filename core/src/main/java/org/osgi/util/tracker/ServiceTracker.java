@@ -173,7 +173,7 @@ public class ServiceTracker implements ServiceTrackerCustomizer {
 	 * Create a <code>ServiceTracker</code> on the specified class name.
 	 * 
 	 * <p>
-	 * Services registered under the specified class name will be tracked by
+	 * InternalServices registered under the specified class name will be tracked by
 	 * this <code>ServiceTracker</code>.
 	 * 
 	 * @param context The <code>BundleContext</code> against which the tracking
@@ -216,7 +216,7 @@ public class ServiceTracker implements ServiceTrackerCustomizer {
 	 * object.
 	 * 
 	 * <p>
-	 * Services which match the specified <code>Filter</code> object will be
+	 * InternalServices which match the specified <code>Filter</code> object will be
 	 * tracked by this <code>ServiceTracker</code>.
 	 * 
 	 * @param context The <code>BundleContext</code> against which the tracking
@@ -277,7 +277,7 @@ public class ServiceTracker implements ServiceTrackerCustomizer {
 	 * Open this <code>ServiceTracker</code> and begin tracking services.
 	 * 
 	 * <p>
-	 * Services which match the search criteria specified when this
+	 * InternalServices which match the search criteria specified when this
 	 * <code>ServiceTracker</code> was created are now tracked by this
 	 * <code>ServiceTracker</code>.
 	 * 

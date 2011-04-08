@@ -33,8 +33,10 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.AutoInstallProvider;
+import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.spi.util.StringPropertyReplacer;
 import org.jboss.osgi.spi.util.StringPropertyReplacer.PropertyProvider;
 import org.osgi.framework.BundleContext;
@@ -59,8 +61,9 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultAutoInstallProvider service = new DefaultAutoInstallProvider();
-        ServiceBuilder<AutoInstallProvider> builder = serviceTarget.addService(SERVICE_NAME, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        ServiceBuilder<AutoInstallProvider> builder = serviceTarget.addService(ServiceNames.AUTOINSTALL_PROVIDER, service);
+        builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 

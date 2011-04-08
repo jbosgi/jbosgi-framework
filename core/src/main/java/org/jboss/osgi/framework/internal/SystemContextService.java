@@ -30,6 +30,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.ServiceNames;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
@@ -39,7 +40,7 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class SystemContextService implements Service<BundleContext> {
+public final class SystemContextService implements Service<BundleContext> {
 
     // Provide logging
     static final Logger log = Logger.getLogger(SystemContextService.class);
@@ -48,8 +49,8 @@ final class SystemContextService implements Service<BundleContext> {
 
     static void addService(ServiceTarget serviceTarget) {
         SystemContextService service = new SystemContextService();
-        ServiceBuilder<BundleContext> builder = serviceTarget.addService(Services.SYSTEM_CONTEXT, service);
-        builder.addDependency(Services.SYSTEM_BUNDLE, Bundle.class, service.injectedSystemBundle);
+        ServiceBuilder<BundleContext> builder = serviceTarget.addService(ServiceNames.SYSTEM_CONTEXT, service);
+        builder.addDependency(ServiceNames.SYSTEM_BUNDLE, Bundle.class, service.injectedSystemBundle);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

@@ -41,11 +41,12 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.BundleReferenceClassLoader;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
-import org.jboss.osgi.framework.SystemModuleProvider;
+import org.jboss.osgi.framework.ServiceNames;
 import org.osgi.framework.Bundle;
 
 /**
@@ -67,9 +68,10 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultFrameworkModuleProvider service = new DefaultFrameworkModuleProvider();
-        ServiceBuilder<FrameworkModuleProvider> builder = serviceTarget.addService(SERVICE_NAME, service);
-        builder.addDependency(Services.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
-        builder.addDependency(SystemModuleProvider.SERVICE_NAME, Module.class, service.injectedSystemModule);
+        ServiceBuilder<FrameworkModuleProvider> builder = serviceTarget.addService(ServiceNames.FRAMEWORK_MODULE_PROVIDER, service);
+        builder.addDependency(InternalServices.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
+        builder.addDependency(ServiceNames.SYSTEM_MODULE_PROVIDER, Module.class, service.injectedSystemModule);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 

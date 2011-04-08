@@ -21,11 +21,8 @@
  */
 package org.jboss.osgi.framework;
 
-import static org.jboss.osgi.framework.Constants.JBOSGI_NAME;
-
 import org.jboss.modules.ModuleLoader;
 import org.jboss.msc.service.Service;
-import org.jboss.msc.service.ServiceName;
 
 /**
  * The ModuleLoader provider.
@@ -34,7 +31,5 @@ import org.jboss.msc.service.ServiceName;
  * @since 29-Mar-2011
  */
 public interface ModuleLoaderProvider extends Service<ModuleLoader> {
-
-    ServiceName SERVICE_NAME = JBOSGI_NAME.append("moduleloader");
 
 }
