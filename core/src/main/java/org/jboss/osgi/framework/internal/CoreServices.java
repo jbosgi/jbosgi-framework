@@ -34,7 +34,7 @@ import org.jboss.osgi.framework.DeployerServiceProvider;
 
 /**
  * An injection point for framework core services. Other services can depend on this.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 28-Mar-2011
  */
@@ -45,6 +45,7 @@ final class CoreServices extends AbstractService<CoreServices> {
 
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     private final InjectedValue<DeployerService> injectedDeployerService = new InjectedValue<DeployerService>();
+    private final InjectedValue<LifecycleInterceptorPlugin> injectedLifecycleInterceptor = new InjectedValue<LifecycleInterceptorPlugin>();
     private final InjectedValue<PackageAdminPlugin> injectedPackageAdmin = new InjectedValue<PackageAdminPlugin>();
     private final InjectedValue<StartLevelPlugin> injectedStartLevel = new InjectedValue<StartLevelPlugin>();
     private final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
@@ -54,10 +55,10 @@ final class CoreServices extends AbstractService<CoreServices> {
         ServiceBuilder<CoreServices> builder = serviceTarget.addService(Services.CORE_SERVICES, service);
         builder.addDependency(DeployerServiceProvider.SERVICE_NAME, DeployerService.class, service.injectedDeployerService);
         builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
+        builder.addDependency(Services.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, service.injectedLifecycleInterceptor);
         builder.addDependency(Services.PACKAGE_ADMIN_PLUGIN, PackageAdminPlugin.class, service.injectedPackageAdmin);
         builder.addDependency(Services.START_LEVEL_PLUGIN, StartLevelPlugin.class, service.injectedStartLevel);
         builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
-        builder.addDependency(Services.LIFECYCLE_INTERCEPTOR_PLUGIN);
         builder.addDependency(Services.URL_HANDLER_PLUGIN);
         builder.install();
     }
@@ -90,6 +91,10 @@ final class CoreServices extends AbstractService<CoreServices> {
         return injectedFramework.getValue();
     }
 
+    LifecycleInterceptorPlugin getLifecycleInterceptorPlugin() {
+        return injectedLifecycleInterceptor.getValue();
+    }
+
     PackageAdminPlugin getPackageAdmin() {
         return injectedPackageAdmin.getValue();
     }
@@ -97,7 +102,7 @@ final class CoreServices extends AbstractService<CoreServices> {
     StartLevelPlugin getStartLevelPlugin() {
         return injectedStartLevel.getValue();
     }
-    
+
     SystemBundleState getSystemBundle() {
         return injectedSystemBundle.getValue();
     }
