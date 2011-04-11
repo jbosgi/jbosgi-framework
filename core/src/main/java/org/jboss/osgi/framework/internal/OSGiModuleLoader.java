@@ -45,7 +45,7 @@ final class OSGiModuleLoader extends ModuleLoader {
         return module;
     }
 
-    void addModule(BundleRevision bundleRev, ModuleSpec moduleSpec) {
+    void addModule(AbstractBundleRevision bundleRev, ModuleSpec moduleSpec) {
         log.tracef("addModule: %s", moduleSpec.getModuleIdentifier());
         ModuleIdentifier identifier = moduleSpec.getModuleIdentifier();
         if (modules.get(identifier) != null)
@@ -53,7 +53,7 @@ final class OSGiModuleLoader extends ModuleLoader {
         modules.put(identifier, new ModuleHolder(bundleRev, moduleSpec));
     }
 
-    void addModule(BundleRevision bundleRev, Module module) {
+    void addModule(AbstractBundleRevision bundleRev, Module module) {
         ModuleIdentifier identifier = module.getIdentifier();
         if (modules.get(identifier) != null)
             throw new IllegalStateException("Module already exists: " + identifier);
@@ -78,13 +78,13 @@ final class OSGiModuleLoader extends ModuleLoader {
         return Collections.unmodifiableSet(modules.keySet());
     }
 
-    BundleRevision getBundleRevision(ModuleIdentifier identifier) {
+    AbstractBundleRevision getBundleRevision(ModuleIdentifier identifier) {
         ModuleHolder holder = getModuleHolder(identifier);
         return holder != null ? holder.getBundleRevision() : null;
     }
 
-    BundleState getBundleState(ModuleIdentifier identifier) {
-        BundleRevision bundleRev = getBundleRevision(identifier);
+    AbstractBundleState getBundleState(ModuleIdentifier identifier) {
+        AbstractBundleRevision bundleRev = getBundleRevision(identifier);
         return bundleRev != null ? bundleRev.getBundleState() : null;
     }
 
@@ -111,11 +111,11 @@ final class OSGiModuleLoader extends ModuleLoader {
     // A holder for the {@link ModuleSpec} @{link Module} tuple
     static class ModuleHolder {
 
-        private final BundleRevision bundleRev;
+        private final AbstractBundleRevision bundleRev;
         private ModuleSpec moduleSpec;
         private Module module;
 
-        ModuleHolder(BundleRevision bundleRev, ModuleSpec moduleSpec) {
+        ModuleHolder(AbstractBundleRevision bundleRev, ModuleSpec moduleSpec) {
             if (bundleRev == null)
                 throw new IllegalArgumentException("Null bundleRev");
             if (moduleSpec == null)
@@ -124,7 +124,7 @@ final class OSGiModuleLoader extends ModuleLoader {
             this.moduleSpec = moduleSpec;
         }
 
-        ModuleHolder(BundleRevision bundleRev, Module module) {
+        ModuleHolder(AbstractBundleRevision bundleRev, Module module) {
             if (bundleRev == null)
                 throw new IllegalArgumentException("Null bundleRev");
             if (module == null)
@@ -133,7 +133,7 @@ final class OSGiModuleLoader extends ModuleLoader {
             this.module = module;
         }
 
-        BundleRevision getBundleRevision() {
+        AbstractBundleRevision getBundleRevision() {
             return bundleRev;
         }
 

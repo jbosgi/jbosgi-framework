@@ -45,14 +45,14 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class BundleService<T extends BundleState> implements Service<T>, Bundle {
+abstract class AbstractBundleService<T extends AbstractBundleState> implements Service<T>, Bundle {
 
     // Provide logging
-    static final Logger log = Logger.getLogger(BundleService.class);
+    static final Logger log = Logger.getLogger(AbstractBundleService.class);
 
     private final T bundleState;
 
-    BundleService(T bundleState) {
+    AbstractBundleService(T bundleState) {
         this.bundleState = bundleState;
     }
 

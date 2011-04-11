@@ -60,16 +60,16 @@ import org.osgi.framework.Version;
 /**
  * An abstract representation of a {@link Bundle} state.
  *  
- * It is used by the various {@link BundleService}s as well as the {@link BundleProxy}s.
+ * It is used by the various {@link AbstractBundleService}s as well as the {@link BundleProxy}s.
  * The state is never given to the client. 
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class BundleState implements Bundle {
+abstract class AbstractBundleState implements Bundle {
 
     // Provide logging
-    static final Logger log = Logger.getLogger(BundleState.class);
+    static final Logger log = Logger.getLogger(AbstractBundleState.class);
 
     private final long bundleId;
     private final String symbolicName;
@@ -80,7 +80,7 @@ abstract class BundleState implements Bundle {
     private AbstractBundleContext bundleContext;
     private Bundle bundleProxy;
 
-    BundleState(FrameworkState frameworkState, long bundleId, String symbolicName) {
+    AbstractBundleState(FrameworkState frameworkState, long bundleId, String symbolicName) {
         if (frameworkState == null)
             throw new IllegalStateException("Null frameworkState");
 
@@ -136,9 +136,9 @@ abstract class BundleState implements Bundle {
 
     abstract AbstractBundleContext createContextInternal();
     
-    abstract BundleRevision getCurrentRevision();
+    abstract AbstractBundleRevision getCurrentRevision();
     
-    abstract BundleRevision getRevisionById(int revisionId);
+    abstract AbstractBundleRevision getRevisionById(int revisionId);
     
     abstract ServiceName getServiceName();
     
@@ -577,17 +577,17 @@ abstract class BundleState implements Bundle {
      * Assert that the given bundle is an instance of AbstractBundleState
      * @throws IllegalArgumentException if the given bundle is not an instance of AbstractBundleState
      */
-    static BundleState assertBundleState(Bundle bundle) {
+    static AbstractBundleState assertBundleState(Bundle bundle) {
         if (bundle == null)
             throw new IllegalArgumentException("Null bundle");
 
         if (bundle instanceof BundleProxy<?>)
           bundle = ((BundleProxy<?>) bundle).getBundleState();
 
-        if (bundle instanceof BundleState == false)
+        if (bundle instanceof AbstractBundleState == false)
             throw new IllegalArgumentException("Not a BundleState: " + bundle);
 
-        return (BundleState) bundle;
+        return (AbstractBundleState) bundle;
     }
 
     String getCanonicalName() {
@@ -601,12 +601,12 @@ abstract class BundleState implements Bundle {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof BundleState == false)
+        if (obj instanceof AbstractBundleState == false)
             return false;
         if (obj == this)
             return true;
 
-        BundleState other = (BundleState) obj;
+        AbstractBundleState other = (AbstractBundleState) obj;
         return getBundleId() == other.getBundleId();
     }
 

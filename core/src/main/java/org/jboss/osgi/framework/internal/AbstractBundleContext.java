@@ -28,9 +28,14 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import org.jboss.osgi.deployment.deployer.DeployerService;
+import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.InstallHandler;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -54,11 +59,11 @@ import org.osgi.framework.ServiceRegistration;
  */
 abstract class AbstractBundleContext implements BundleContext {
 
-    private final BundleState bundleState;
+    private final AbstractBundleState bundleState;
     private BundleContext contextWrapper;
     private boolean destroyed;
 
-    AbstractBundleContext(BundleState bundleState) {
+    AbstractBundleContext(AbstractBundleState bundleState) {
         if (bundleState == null)
             throw new IllegalArgumentException("Null bundleState");
 
@@ -76,13 +81,13 @@ abstract class AbstractBundleContext implements BundleContext {
 
         if (context instanceof BundleContextWrapper)
             context = ((BundleContextWrapper<?>) context).getWrappedContext();
-        
+
         if (context instanceof AbstractBundleContext == false)
             throw new IllegalArgumentException("Not an AbstractBundleContext: " + context);
 
         return (AbstractBundleContext) context;
     }
-    
+
     BundleContext getContextWrapper() {
         checkValidBundleContext();
         if (contextWrapper == null)
@@ -91,12 +96,12 @@ abstract class AbstractBundleContext implements BundleContext {
     }
 
     abstract BundleContext createContextWrapper();
-    
+
     void destroy() {
         destroyed = true;
     }
 
-    BundleState getBundleState() {
+    AbstractBundleState getBundleState() {
         return bundleState;
     }
 
@@ -139,12 +144,12 @@ abstract class AbstractBundleContext implements BundleContext {
      *
      * #2 Create a Bundle {@link Deployment}
      *
-     * #3 Deploy the Bundle through the {@link DeploymentService}
+     * #3 Deploy the Bundle through the {@link InstallHandler}
      *
-     * The {@link DeploymentService} is the integration point for JBossAS.
+     * The {@link InstallHandler} is the integration point for JBossAS.
      *
-     * By default the {@link DefaultDeployerServiceProvider} simply delegates to {@link BundleManager#installBundle(Deployment)} In
-     * JBossAS however, the {@link DefaultDeployerServiceProvider} delegates to the management API that feeds the Bundle deployment
+     * The {@link DefaultInstallHandler} simply delegates to {@link BundleManager#installBundle(Deployment)} In
+     * JBossAS however, the {@link InstallHandler} delegates to the management API that feeds the Bundle deployment
      * through the DeploymentUnitProcessor chain.
      */
     private Bundle installBundleInternal(String location, InputStream input) throws BundleException {
@@ -152,6 +157,7 @@ abstract class AbstractBundleContext implements BundleContext {
 
         Deployment dep;
         VirtualFile rootFile = null;
+        FrameworkState frameworkState = getFrameworkState();
         try {
             if (input != null) {
                 try {
@@ -189,8 +195,11 @@ abstract class AbstractBundleContext implements BundleContext {
             if (rootFile == null)
                 throw new BundleException("Cannot obtain virtual file from: " + location);
 
-            BundleDeploymentPlugin deploymentPlugin = getFrameworkState().getBundleDeploymentPlugin();
+            DeploymentFactoryPlugin deploymentPlugin = frameworkState.getDeploymentFactoryPlugin();
             dep = deploymentPlugin.createDeployment(location, rootFile);
+
+            return installBundle(dep);
+
         } catch (RuntimeException rte) {
             VFSUtils.safeClose(rootFile);
             throw rte;
@@ -198,16 +207,43 @@ abstract class AbstractBundleContext implements BundleContext {
             VFSUtils.safeClose(rootFile);
             throw ex;
         }
+    }
 
-        DeployerService deployerService = getFrameworkState().getCoreServices().getDeployerService();
-        BundleState installedBundle = BundleState.assertBundleState(deployerService.deploy(dep));
-        return installedBundle.getBundleProxy();
+    @SuppressWarnings("unchecked")
+    Bundle installBundle(Deployment dep) throws BundleException {
+        checkValidBundleContext();
+
+        FrameworkState frameworkState = getFrameworkState();
+        BundleManager bundleManager = frameworkState.getBundleManager();
+        ServiceTarget serviceTarget = bundleManager.getServiceTarget();
+
+        //BundleService.addService(serviceTarget, dep);
+
+        InstallHandler installProvider = frameworkState.getCoreServices().getInstallProvider();
+        installProvider.installBundle(serviceTarget, dep);
+
+        ServiceName serviceName = dep.getAttachment(ServiceName.class);
+        if (serviceName == null)
+            throw new IllegalArgumentException("Cannot obtain service name for installed bundle: " + dep);
+
+        ServiceContainer serviceContainer = bundleManager.getServiceContainer();
+        ServiceController<UserBundleState> controller = (ServiceController<UserBundleState>) serviceContainer.getService(serviceName);
+        FutureServiceValue<UserBundleState> future = new FutureServiceValue<UserBundleState>(controller);
+        try {
+            UserBundleState userBundle = future.get(5, TimeUnit.SECONDS);
+            return userBundle.getBundleProxy();
+        } catch (Exception ex) {
+            Throwable cause = ex.getCause();
+            if (cause instanceof BundleException)
+                throw (BundleException) cause;
+            throw new BundleException("Cannot install bundle: " + dep.getLocation(), ex);
+        }
     }
 
     @Override
     public Bundle getBundle(long id) {
         checkValidBundleContext();
-        BundleState bundleState = getBundleManager().getBundleById(id);
+        AbstractBundleState bundleState = getBundleManager().getBundleById(id);
         return (bundleState != null ? bundleState.getBundleProxy() : null);
     }
 
@@ -215,7 +251,7 @@ abstract class AbstractBundleContext implements BundleContext {
     public Bundle[] getBundles() {
         checkValidBundleContext();
         List<Bundle> result = new ArrayList<Bundle>();
-        for (BundleState bundle : getBundleManager().getBundles())
+        for (AbstractBundleState bundle : getBundleManager().getBundles())
             result.add(bundle.getBundleProxy());
         return result.toArray(new Bundle[result.size()]);
     }

@@ -38,12 +38,12 @@ interface InternalServices {
     /** The {@link CoreServices} service name. */
     ServiceName CORE_SERVICES = ServiceNames.FRAMEWORK_BASE_NAME.append("coreservices");
 
-    /** The {@link BundleDeploymentPlugin} service name */
+    /** The {@link DeploymentFactoryPlugin} service name */
     ServiceName AUTOINSTALL_PROCESSOR = FRAMEWORK_PLUGIN_BASE.append("autoinstallprocessor");
-    /** The {@link BundleDeploymentPlugin} service name */
-    ServiceName BUNDLE_DEPLOYMENT_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("deployment");
     /** The {@link BundleStoragePlugin} service name */
     ServiceName BUNDLE_STORAGE_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("storage");
+    /** The {@link DeploymentFactoryPlugin} service name */
+    ServiceName DEPLOYMENT_FACTORY_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("deployment");
     /** The {@link FrameworkEventsPlugin} service name */
     ServiceName FRAMEWORK_EVENTS_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("frameworkevents");
     /** The {@link LifecycleInterceptorPlugin} service name */

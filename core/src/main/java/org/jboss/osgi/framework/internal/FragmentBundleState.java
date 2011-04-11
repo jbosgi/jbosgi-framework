@@ -41,7 +41,7 @@ final class FragmentBundleState extends UserBundleState {
     }
 
     static FragmentBundleState assertBundleState(Bundle bundle) {
-        BundleState bundleState = BundleState.assertBundleState(bundle);
+        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
 
         if (bundleState instanceof FragmentBundleState == false)
             throw new IllegalArgumentException("Not a FragmentBundleState: " + bundleState);

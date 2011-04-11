@@ -56,7 +56,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
      *
      * @throws IllegalArgumentException if the given bundleRev is not an instance of FragmentRevision
      */
-    static FragmentBundleRevision assertUserRevision(BundleRevision bundleRev) {
+    static FragmentBundleRevision assertUserRevision(AbstractBundleRevision bundleRev) {
         if (bundleRev == null)
             throw new IllegalArgumentException("Null bundleRev");
 
@@ -107,7 +107,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
             XRequirement req = wire.getRequirement();
             if (req instanceof XFragmentHostRequirement) {
                 XModule hostModule = wire.getExporter();
-                HostBundleRevision hostRev = (HostBundleRevision) hostModule.getAttachment(BundleRevision.class);
+                HostBundleRevision hostRev = (HostBundleRevision) hostModule.getAttachment(AbstractBundleRevision.class);
                 hostRev.attachFragment(this);
                 attachedHosts.add(hostRev);
             }

@@ -123,7 +123,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         // A bundle is destroyed if it is no longer known to the system. An uninstalled bundle can potentially live on if there are
         // other bundles depending on it. Only after a call to {@link PackageAdmin#refreshPackages(Bundle[])} the bundle gets
         // destroyed.
-        BundleState bundleState = BundleState.assertBundleState(bundle);
+        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
         BundleManager bundleManager = injectedBundleManager.getValue();
         if (bundleManager.getBundleById(bundle.getBundleId()) == null)
             return null;
@@ -146,7 +146,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     private ExportedPackage[] getAllExportedPackages() {
         List<ExportedPackage> result = new ArrayList<ExportedPackage>();
         BundleManager bundleManager = injectedBundleManager.getValue();
-        for (BundleState ab : bundleManager.getBundles()) {
+        for (AbstractBundleState ab : bundleManager.getBundles()) {
             ExportedPackage[] pkgs = getExportedPackages(ab);
             if (pkgs != null)
                 result.addAll(Arrays.asList(pkgs));
@@ -213,7 +213,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     private boolean isWired(XPackageCapability capability) {
         BundleManager bundleManager = injectedBundleManager.getValue();
-        for (BundleState ab : bundleManager.getBundles()) {
+        for (AbstractBundleState ab : bundleManager.getBundles()) {
             for (XModule module : ab.getAllResolverModules()) {
                 for (XWire wire : module.getWires()) {
                     if (wire.getCapability().equals(capability))
@@ -238,7 +238,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                     // all bundles updated or uninstalled since the last call to this method.
 
                     List<UserBundleState> bundlesToRefresh = new ArrayList<UserBundleState>();
-                    for (BundleState aux : bundleManager.getBundles(null)) {
+                    for (AbstractBundleState aux : bundleManager.getBundles(null)) {
                         if (aux.getBundleId() != 0) {
                             UserBundleState userBundle = (UserBundleState) aux;
                             // a bundle with more than 1 revision has been updated since the last refresh packages call
@@ -251,7 +251,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
                 Map<XModule, UserBundleState> refreshMap = new HashMap<XModule, UserBundleState>();
                 for (Bundle aux : bundles) {
-                    BundleState bundleState = BundleState.assertBundleState(aux);
+                    AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
                     if (bundleState instanceof UserBundleState == false)
                         continue;
 
@@ -271,7 +271,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 }
 
                 // Compute all depending bundles that need to be stopped and unresolved.
-                for (BundleState aux : bundleManager.getBundles()) {
+                for (AbstractBundleState aux : bundleManager.getBundles()) {
                     if (aux instanceof HostBundleState == false)
                         continue;
 
@@ -355,7 +355,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             // Only bundles that are in state INSTALLED and are
             // registered with the resolver qualify as resolvable
             for (Bundle aux : bundles) {
-                BundleState bundleState = BundleState.assertBundleState(aux);
+                AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
                 XModuleIdentity moduleId = bundleState.getResolverModule().getModuleId();
                 if (bundleState.getState() == Bundle.INSTALLED && resolverPlugin.getModuleById(moduleId) != null) {
                     unresolved.add(bundleState.getResolverModule());
@@ -370,25 +370,25 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     @Override
     public RequiredBundle[] getRequiredBundles(String symbolicName) {
         BundleManager bundleManager = injectedBundleManager.getValue();
-        Map<BundleState, Collection<BundleState>> matchingBundles = new HashMap<BundleState, Collection<BundleState>>();
+        Map<AbstractBundleState, Collection<AbstractBundleState>> matchingBundles = new HashMap<AbstractBundleState, Collection<AbstractBundleState>>();
         // Make a defensive copy to ensure thread safety as we are running through the list twice
-        List<BundleState> bundles = new ArrayList<BundleState>(bundleManager.getBundles());
+        List<AbstractBundleState> bundles = new ArrayList<AbstractBundleState>(bundleManager.getBundles());
         if (symbolicName != null) {
-            for (BundleState aux : bundles) {
+            for (AbstractBundleState aux : bundles) {
                 if (symbolicName.equals(aux.getSymbolicName()))
-                    matchingBundles.put(aux, new ArrayList<BundleState>());
+                    matchingBundles.put(aux, new ArrayList<AbstractBundleState>());
             }
         } else {
-            for (BundleState aux : bundles) {
+            for (AbstractBundleState aux : bundles) {
                 if (!aux.isFragment())
-                    matchingBundles.put(aux, new ArrayList<BundleState>());
+                    matchingBundles.put(aux, new ArrayList<AbstractBundleState>());
             }
         }
 
         if (matchingBundles.size() == 0)
             return null;
 
-        for (BundleState aux : bundles) {
+        for (AbstractBundleState aux : bundles) {
             XModule resModule = aux.getResolverModule();
             for (XRequireBundleRequirement req : resModule.getBundleRequirements()) {
                 if (req.getName().equals(symbolicName)) {
@@ -397,8 +397,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                             XCapability wiredCap = wire.getCapability();
                             XModule module = wiredCap.getModule();
                             Bundle bundle = module.getAttachment(Bundle.class);
-                            BundleState bundleState = BundleState.assertBundleState(bundle);
-                            Collection<BundleState> requiring = matchingBundles.get(bundleState);
+                            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+                            Collection<AbstractBundleState> requiring = matchingBundles.get(bundleState);
                             if (requiring != null)
                                 requiring.add(aux);
                         }
@@ -408,7 +408,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         }
 
         List<RequiredBundle> result = new ArrayList<RequiredBundle>(matchingBundles.size());
-        for (Map.Entry<BundleState, Collection<BundleState>> entry : matchingBundles.entrySet())
+        for (Map.Entry<AbstractBundleState, Collection<AbstractBundleState>> entry : matchingBundles.entrySet())
             result.add(new RequiredBundleImpl(entry.getKey(), entry.getValue()));
 
         return result.toArray(new RequiredBundle[matchingBundles.size()]);
@@ -439,7 +439,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             }
         });
         BundleManager bundleManager = injectedBundleManager.getValue();
-        for (BundleState bundleState : bundleManager.getBundles(symbolicName, versionRange)) {
+        for (AbstractBundleState bundleState : bundleManager.getBundles(symbolicName, versionRange)) {
             if (bundleState.getState() != Bundle.UNINSTALLED) {
                 sortedSet.add(bundleState.getBundleProxy());
             }
@@ -454,7 +454,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     public Bundle[] getFragments(Bundle bundle) {
         // If the specified bundle is a fragment then null is returned.
         // If the specified bundle is not resolved then null is returned
-        BundleState bundleState = BundleState.assertBundleState(bundle);
+        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
         if (bundle.getBundleId() == 0 || bundleState.isFragment() || !bundleState.isResolved())
             return null;
 
@@ -473,7 +473,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     @Override
     public Bundle[] getHosts(Bundle bundle) {
-        BundleState bundleState = BundleState.assertBundleState(bundle);
+        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
         if (bundleState.isFragment() == false)
             return null;
 
@@ -494,13 +494,13 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     @SuppressWarnings("rawtypes")
     public Bundle getBundle(Class clazz) {
         ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
-        BundleState bundleState = moduleManager.getBundleState(clazz);
+        AbstractBundleState bundleState = moduleManager.getBundleState(clazz);
         return bundleState != null ? bundleState.getBundleProxy() : null;
     }
 
     @Override
     public int getBundleType(Bundle bundle) {
-        BundleState bundleState = BundleState.assertBundleState(bundle);
+        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
         return bundleState.isFragment() ? BUNDLE_TYPE_FRAGMENT : 0;
     }
 
@@ -520,7 +520,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         @Override
         public Bundle getExportingBundle() {
             Bundle bundle = capability.getModule().getAttachment(Bundle.class);
-            BundleState bundleState = BundleState.assertBundleState(bundle);
+            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
             return bundleState.getBundleProxy();
         }
 
@@ -550,13 +550,13 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             for (XRequirement req : reqset) {
                 XModule reqmod = req.getModule();
                 Bundle bundle = reqmod.getAttachment(Bundle.class);
-                BundleState bundleState = BundleState.assertBundleState(bundle);
+                AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
                 bundles.add(bundleState.getBundleProxy());
             }
 
             // Remove the exporting bundle from the result
             Bundle capBundle = capModule.getAttachment(Bundle.class);
-            BundleState capAbstractBundle = BundleState.assertBundleState(capBundle);
+            AbstractBundleState capAbstractBundle = AbstractBundleState.assertBundleState(capBundle);
             bundles.remove(capAbstractBundle.getBundleProxy());
 
             return bundles.toArray(new Bundle[bundles.size()]);
@@ -575,9 +575,9 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         @Override
         public boolean isRemovalPending() {
             XModule module = capability.getModule();
-            BundleRevision rev = module.getAttachment(BundleRevision.class);
+            AbstractBundleRevision rev = module.getAttachment(AbstractBundleRevision.class);
             Bundle b = module.getAttachment(Bundle.class);
-            BundleState ab = BundleState.assertBundleState(b);
+            AbstractBundleState ab = AbstractBundleState.assertBundleState(b);
             return !ab.getCurrentRevision().equals(rev) || ab.getState() == Bundle.UNINSTALLED;
         }
 
@@ -590,15 +590,15 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         private final Bundle requiredBundle;
         private final Bundle[] requiringBundles;
-        private final BundleRevision bundleRevision;
+        private final AbstractBundleRevision bundleRevision;
 
-        public RequiredBundleImpl(BundleState requiredBundle, Collection<BundleState> requiringBundles) {
-            this.requiredBundle = BundleState.assertBundleState(requiredBundle).getBundleProxy();
+        public RequiredBundleImpl(AbstractBundleState requiredBundle, Collection<AbstractBundleState> requiringBundles) {
+            this.requiredBundle = AbstractBundleState.assertBundleState(requiredBundle).getBundleProxy();
             this.bundleRevision = requiredBundle.getCurrentRevision();
 
             List<Bundle> bundles = new ArrayList<Bundle>(requiringBundles.size());
-            for (BundleState ab : requiringBundles) {
-                bundles.add(BundleState.assertBundleState(ab).getBundleProxy());
+            for (AbstractBundleState ab : requiringBundles) {
+                bundles.add(AbstractBundleState.assertBundleState(ab).getBundleProxy());
             }
             this.requiringBundles = bundles.toArray(new Bundle[bundles.size()]);
         }

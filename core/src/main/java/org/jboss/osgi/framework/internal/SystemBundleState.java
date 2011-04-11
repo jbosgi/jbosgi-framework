@@ -48,7 +48,7 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class SystemBundleState extends BundleState {
+final class SystemBundleState extends AbstractBundleState {
 
     // Provide logging
     static final Logger log = Logger.getLogger(SystemBundleState.class);
@@ -67,7 +67,7 @@ final class SystemBundleState extends BundleState {
      * @throws IllegalArgumentException if the given bundle is not an instance of {@link UserBundleState}
      */
     static SystemBundleState assertBundleState(Bundle bundle) {
-        bundle = BundleState.assertBundleState(bundle);
+        bundle = AbstractBundleState.assertBundleState(bundle);
         if (bundle instanceof BundleProxy<?>)
             bundle = ((BundleProxy<?>) bundle).getBundleState();
 

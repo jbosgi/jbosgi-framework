@@ -46,7 +46,7 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-public final class SystemBundleService extends BundleService<SystemBundleState> {
+public final class SystemBundleService extends AbstractBundleService<SystemBundleState> {
 
     // Provide logging
     static final Logger log = Logger.getLogger(SystemBundleService.class);

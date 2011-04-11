@@ -44,16 +44,16 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
 
 /**
- * The proxy that represents a {@link BundleService}.
+ * The proxy that represents a {@link AbstractBundleService}.
  * 
- * The {@link BundleProxy} uses the respective {@link BundleService}s. 
- * It never interacts with the {@link BundleState} directly. 
+ * The {@link BundleProxy} uses the respective {@link AbstractBundleService}s. 
+ * It never interacts with the {@link AbstractBundleState} directly. 
  * The client may hold a reference to the {@link BundleProxy}. 
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class BundleProxy<T extends BundleState> implements Bundle {
+abstract class BundleProxy<T extends AbstractBundleState> implements Bundle {
 
     // Provide logging
     static final Logger log = Logger.getLogger(BundleProxy.class);

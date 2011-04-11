@@ -175,8 +175,8 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
             // Only bundles that are in state INSTALLED and are
             // registered with the resolver qualify as resolvable
             BundleManager bundleManager = injectedBundleManager.getValue();
-            Set<BundleState> allBundles = bundleManager.getBundles();
-            for (BundleState bundleState : allBundles) {
+            Set<AbstractBundleState> allBundles = bundleManager.getBundles();
+            for (AbstractBundleState bundleState : allBundles) {
                 if (bundleState.getState() == Bundle.INSTALLED) {
                     XModule auxModule = bundleState.getResolverModule();
                     XModuleIdentity moduleId = auxModule.getModuleId();
@@ -235,7 +235,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
     private void attachFragmentsToHost(List<XModule> resolved) {
         for (XModule aux : resolved) {
             if (aux.isFragment() == true) {
-                FragmentBundleRevision fragRev = (FragmentBundleRevision) aux.getAttachment(BundleRevision.class);
+                FragmentBundleRevision fragRev = (FragmentBundleRevision) aux.getAttachment(AbstractBundleRevision.class);
                 fragRev.attachToHost();
             }
         }
@@ -270,14 +270,14 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         for (XModule aux : resolved) {
             if (aux != systemModule) {
                 Bundle bundle = aux.getAttachment(Bundle.class);
-                UserBundleState bundleState = UserBundleState.assertBundleState(bundle);
-                Deployment deployment = bundleState.getDeployment();
+                UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
+                Deployment deployment = userBundle.getDeployment();
 
                 // Resolve the native code libraries, if there are any
                 NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
                 if (libMetaData != null) {
                     NativeCodePlugin nativeCodePlugin = injectedNativeCode.getValue();
-                    nativeCodePlugin.resolveNativeCode(bundleState);
+                    nativeCodePlugin.resolveNativeCode(userBundle);
                 }
             }
         }
@@ -286,7 +286,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
     private void setBundleToResolved(List<XModule> resolved) {
         for (XModule aux : resolved) {
             Bundle bundle = aux.getAttachment(Bundle.class);
-            BundleState bundleState = BundleState.assertBundleState(bundle);
+            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
             bundleState.changeState(Bundle.RESOLVED);
         }
     }

@@ -33,9 +33,9 @@ import org.osgi.framework.BundleException;
 final class BundleValidatorR3 implements BundleValidator {
 
     @Override
-    public void validateBundle(UserBundleState bundleState, OSGiMetaData osgiMetaData) throws BundleException {
+    public void validateBundle(UserBundleState userBundle, OSGiMetaData osgiMetaData) throws BundleException {
         int manifestVersion = osgiMetaData.getBundleManifestVersion();
         if (manifestVersion != 1)
-            throw new BundleException("Unsupported manifest version " + manifestVersion + " for " + bundleState);
+            throw new BundleException("Unsupported manifest version " + manifestVersion + " for " + userBundle);
     }
 }

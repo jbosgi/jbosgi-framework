@@ -135,7 +135,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
      * @return A <code>ServiceRegistration</code> object for use by the bundle registering the service
      */
     @SuppressWarnings({ "rawtypes" })
-    ServiceState registerService(final BundleState bundleState, final String[] clazzes, final Object serviceValue, final Dictionary properties) {
+    ServiceState registerService(final AbstractBundleState bundleState, final String[] clazzes, final Object serviceValue, final Dictionary properties) {
         if (clazzes == null || clazzes.length == 0)
             throw new IllegalArgumentException("Null service classes");
 
@@ -197,7 +197,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
      * @param clazz The class name with which the service was registered.
      * @return A <code>ServiceReference</code> object, or <code>null</code>
      */
-    ServiceState getServiceReference(BundleState bundleState, String clazz) {
+    ServiceState getServiceReference(AbstractBundleState bundleState, String clazz) {
         if (clazz == null)
             throw new IllegalArgumentException("Null clazz");
 
@@ -223,7 +223,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
      * @param filter The filter expression or <code>null</code> for all services.
      * @return A potentially empty list of <code>ServiceReference</code> objects.
      */
-    List<ServiceState> getServiceReferences(BundleState bundleState, String clazz, String filterStr, boolean checkAssignable) throws InvalidSyntaxException {
+    List<ServiceState> getServiceReferences(AbstractBundleState bundleState, String clazz, String filterStr, boolean checkAssignable) throws InvalidSyntaxException {
         Filter filter = NoFilter.INSTANCE;
         if (filterStr != null)
             filter = FrameworkUtil.createFilter(filterStr);
@@ -234,7 +234,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
     }
 
     @SuppressWarnings("unchecked")
-    private List<ServiceState> getServiceReferencesInternal(final BundleState bundleState, final String clazz, final Filter filter, boolean checkAssignable) {
+    private List<ServiceState> getServiceReferencesInternal(final AbstractBundleState bundleState, final String clazz, final Filter filter, boolean checkAssignable) {
         if (bundleState == null)
             throw new IllegalArgumentException("Null bundleState");
         if (filter == null)
@@ -294,8 +294,8 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                     };
                     final long serviceId = getNextServiceId();
                     final Object value = valueProvider.getValue();
-                    final BundleState aux = injectedModuleManager.getValue().getBundleState(value.getClass());
-                    final BundleState owner = (aux != null ? aux : injectedBundleManager.getValue().getSystemBundle());
+                    final AbstractBundleState aux = injectedModuleManager.getValue().getBundleState(value.getClass());
+                    final AbstractBundleState owner = (aux != null ? aux : injectedBundleManager.getValue().getSystemBundle());
                     ServiceState serviceState = new ServiceState(this, owner, serviceId, new String[] { clazz }, valueProvider, null);
                     if (filter.match(serviceState)) {
                         Object rawValue = serviceState.getRawValue();
@@ -323,7 +323,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
      * @param reference A reference to the service.
      * @return A service object for the service associated with <code>reference</code> or <code>null</code>
      */
-    Object getService(BundleState bundleState, ServiceState serviceState) {
+    Object getService(AbstractBundleState bundleState, ServiceState serviceState) {
         // If the service has been unregistered, null is returned.
         if (serviceState.isUnregistered())
             return null;
@@ -370,14 +370,14 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                 }
             }
 
-            BundleState serviceOwner = serviceState.getServiceOwner();
+            AbstractBundleState serviceOwner = serviceState.getServiceOwner();
 
             // This event is synchronously delivered before the service has completed unregistering.
             FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
             eventsPlugin.fireServiceEvent(serviceOwner, ServiceEvent.UNREGISTERING, serviceState);
 
             // Remove from using bundles
-            for (BundleState bundleState : serviceState.getUsingBundlesInternal()) {
+            for (AbstractBundleState bundleState : serviceState.getUsingBundlesInternal()) {
                 while (ungetService(bundleState, serviceState)) {
                 }
             }
@@ -396,7 +396,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
      * @return <code>false</code> if the context bundle's use count for the service is zero or if the service has been
      *         unregistered; <code>true</code> otherwise.
      */
-    boolean ungetService(BundleState bundleState, ServiceState serviceState) {
+    boolean ungetService(AbstractBundleState bundleState, ServiceState serviceState) {
         serviceState.ungetScopedValue(bundleState);
 
         int useCount = bundleState.removeServiceInUse(serviceState);
@@ -412,7 +412,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
      * references and can optionally shrink the set of returned services. The order in which the find hooks are called is the
      * reverse compareTo ordering of their Service References.
      */
-    private List<ServiceState> processFindHooks(BundleState bundle, String clazz, String filterStr, boolean checkAssignable, List<ServiceState> serviceStates) {
+    private List<ServiceState> processFindHooks(AbstractBundleState bundle, String clazz, String filterStr, boolean checkAssignable, List<ServiceState> serviceStates) {
         BundleContext context = bundle.getBundleContext();
         List<ServiceState> hookRefs = getServiceReferencesInternal(bundle, FindHook.class.getName(), NoFilter.INSTANCE, true);
         if (hookRefs.isEmpty())

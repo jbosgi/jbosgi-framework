@@ -64,6 +64,9 @@ public interface ServiceNames {
     /** The service name for the started {@link Framework} */
     ServiceName FRAMEWORK_ACTIVE = FRAMEWORK_BASE_NAME.append("ACTIVE");
 
+    /** The service name for the {@link InstallHandler} */
+    ServiceName INSTALL_HANDLER = JBOSGI_BASE_NAME.append("installhandler");
+
     /** The service name for the {@link PackageAdmin} service */
     ServiceName PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("packageadmin");
 
@@ -77,17 +80,14 @@ public interface ServiceNames {
     ServiceName SYSTEM_CONTEXT = JBOSGI_BASE_NAME.append("systemcontext");
 
     /** The service name for the {@link FrameworkModuleProvider} */
-    ServiceName FRAMEWORK_MODULE_PROVIDER = JBOSGI_BASE_NAME.append("frameworkmodule");
+    ServiceName FRAMEWORK_MODULE_PROVIDER = JBOSGI_BASE_NAME.append("frameworkmoduleprovider");
 
     /** The service name for the {@link ModuleLoaderProvider} */
-    ServiceName MODULE_LOADER_PROVIDER = JBOSGI_BASE_NAME.append("moduleloader");
+    ServiceName MODULE_LOADER_PROVIDER = JBOSGI_BASE_NAME.append("moduleloaderprovider");
 
     /** The service name for the {@link SystemModuleProvider} */
-    ServiceName SYSTEM_MODULE_PROVIDER = JBOSGI_BASE_NAME.append("systemmodule");
-
-    /** The service name for the {@link DeployerServiceProvider} */
-    ServiceName DEPLOYERSERVICE_PROVIDER = JBOSGI_BASE_NAME.append("deployerservice");
+    ServiceName SYSTEM_MODULE_PROVIDER = JBOSGI_BASE_NAME.append("systemmoduleprovider");
 
     /** The service name for the {@link AutoInstallProvider} */
-    ServiceName AUTOINSTALL_PROVIDER = JBOSGI_BASE_NAME.append("autoinstall");
+    ServiceName AUTOINSTALL_PROVIDER = JBOSGI_BASE_NAME.append("autoinstallprovider");
 }

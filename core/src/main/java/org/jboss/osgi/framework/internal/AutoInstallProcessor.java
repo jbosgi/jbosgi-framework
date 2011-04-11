@@ -33,10 +33,10 @@ import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
@@ -59,7 +59,7 @@ final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProces
     final Logger log = Logger.getLogger(AutoInstallProcessor.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-    private final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
+    private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private final InjectedValue<AutoInstallProvider> injectedProvider = new InjectedValue<AutoInstallProvider>();
 
     static void addService(ServiceTarget serviceTarget) {
@@ -67,7 +67,7 @@ final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProces
         ServiceBuilder<AutoInstallProcessor> builder = serviceTarget.addService(AUTOINSTALL_PROCESSOR, service);
         builder.addDependency(ServiceNames.AUTOINSTALL_PROVIDER, AutoInstallProvider.class, service.injectedProvider);
         builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(ServiceNames.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
+        builder.addDependency(ServiceNames.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
         builder.addDependency(ServiceNames.FRAMEWORK_INIT);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
@@ -92,8 +92,8 @@ final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProces
         super.start(context);
 
         try {
-            BundleContext systemContext = injectedSystemBundle.getValue().getBundleContext();
             AutoInstallProvider provider = injectedProvider.getValue();
+            BundleContext systemContext = injectedSystemContext.getValue();
             List<URL> autoInstall = new ArrayList<URL>(provider.getAutoInstallList(systemContext));
             List<URL> autoStart = new ArrayList<URL>(provider.getAutoStartList(systemContext));
             installBundles(autoInstall, autoStart);
@@ -117,12 +117,14 @@ final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProces
         HashMap<URL, Bundle> autoBundles = new HashMap<URL, Bundle>();
 
         // Install autoInstall bundles
-        BundleManager bundleManager = injectedBundleManager.getValue();
+        BundleContext systemContext = injectedSystemContext.getValue();
+        AbstractBundleContext abstractContext = AbstractBundleContext.assertBundleContext(systemContext);
         for (URL url : autoInstall) {
             BundleInfo info = BundleInfo.createBundleInfo(url);
             Deployment dep = DeploymentFactory.createDeployment(info);
             dep.setAutoStart(autoStart.contains(url));
-            Bundle bundle = bundleManager.installBundle(dep);
+            
+            Bundle bundle = abstractContext.installBundle(dep);
             autoBundles.put(url, bundle);
         }
 
