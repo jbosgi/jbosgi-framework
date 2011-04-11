@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
@@ -105,7 +104,7 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
     private final FrameworkBuilder frameworkBuilder;
     private final Map<String, Object> properties = new HashMap<String, Object>();
     private final AtomicLong identityGenerator = new AtomicLong();
-    private final Map<Long, BundleState> bundleMap = Collections.synchronizedMap(new HashMap<Long, BundleState>());
+    private final Map<Long, AbstractBundleState> bundleMap = Collections.synchronizedMap(new HashMap<Long, AbstractBundleState>());
     private ServiceContainer serviceContainer;
     private ServiceTarget serviceTarget;
 
@@ -168,6 +167,10 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
         return serviceContainer;
     }
 
+    ServiceTarget getServiceTarget() {
+        return serviceTarget;
+    }
+
     SystemBundleState getSystemBundle() {
         return injectedSystemBundle.getValue();
     }
@@ -215,7 +218,7 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
         properties.put(key, value);
     }
 
-    void addBundle(BundleState bundleState) {
+    void addBundle(AbstractBundleState bundleState) {
         if (bundleState == null)
             throw new IllegalArgumentException("Null bundleState");
 
@@ -231,9 +234,9 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
      * Get the set of installed bundles.
      * Bundles in state UNINSTALLED are not returned.
      */
-    Set<BundleState> getBundles() {
-        Set<BundleState> result = new HashSet<BundleState>();
-        for (BundleState aux : bundleMap.values()) {
+    Set<AbstractBundleState> getBundles() {
+        Set<AbstractBundleState> result = new HashSet<AbstractBundleState>();
+        for (AbstractBundleState aux : bundleMap.values()) {
             if (aux.getState() != Bundle.UNINSTALLED)
                 result.add(aux);
         }
@@ -248,7 +251,7 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
      * @param bundleId The identifier of the bundle
      * @return The bundle or null if there is no bundle with that id
      */
-    BundleState getBundleById(long bundleId) {
+    AbstractBundleState getBundleById(long bundleId) {
         return bundleId == 0 ? getFrameworkState().getSystemBundle() : bundleMap.get(bundleId);
     }
 
@@ -260,11 +263,11 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
      * @param location the location of the bundle
      * @return the bundle or null if there is no bundle with that location
      */
-    BundleState getBundleByLocation(String location) {
+    AbstractBundleState getBundleByLocation(String location) {
         if (location == null)
             throw new IllegalArgumentException("Null location");
 
-        for (BundleState aux : getBundles()) {
+        for (AbstractBundleState aux : getBundles()) {
             String auxLocation = aux.getLocation();
             if (location.equals(auxLocation)) {
                 return aux;
@@ -282,9 +285,9 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
      * @param versionRange The optional bundle version
      * @return The bundles or an empty list if there is no bundle with that name and version
      */
-    Set<BundleState> getBundles(String symbolicName, String versionRange) {
-        Set<BundleState> resultSet = new HashSet<BundleState>();
-        for (BundleState aux : bundleMap.values()) {
+    Set<AbstractBundleState> getBundles(String symbolicName, String versionRange) {
+        Set<AbstractBundleState> resultSet = new HashSet<AbstractBundleState>();
+        for (AbstractBundleState aux : bundleMap.values()) {
             if (symbolicName == null || symbolicName.equals(aux.getSymbolicName())) {
                 if (versionRange == null || XVersionRange.parse(versionRange).isInRange(aux.getVersion())) {
                     resultSet.add(aux);
@@ -300,33 +303,18 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
      *
      * @param states The binary or combination of states or null
      */
-    Set<BundleState> getBundles(Integer states) {
-        Set<BundleState> result = new HashSet<BundleState>();
-        for (BundleState aux : bundleMap.values()) {
+    Set<AbstractBundleState> getBundles(Integer states) {
+        Set<AbstractBundleState> result = new HashSet<AbstractBundleState>();
+        for (AbstractBundleState aux : bundleMap.values()) {
             if (states == null || (aux.getState() & states.intValue()) != 0)
                 result.add(aux);
         }
         return Collections.unmodifiableSet(result);
     }
 
-    @SuppressWarnings("unchecked")
-    UserBundleState installBundle(Deployment dep) throws BundleException {
-        ServiceName serviceName = installBundle(serviceTarget, dep);
-        ServiceController<UserBundleState> controller = (ServiceController<UserBundleState>) serviceContainer.getService(serviceName);
-        FutureServiceValue<UserBundleState> future = new FutureServiceValue<UserBundleState>(controller);
-        try {
-            return future.get(5, TimeUnit.SECONDS);
-        } catch (Exception ex) {
-            Throwable cause = ex.getCause();
-            if (cause instanceof BundleException)
-                throw (BundleException) cause;
-            throw new BundleException("Cannot install bundle: " + dep.getLocation(), ex);
-        }
-    }
-
     @Override
     public ServiceName installBundle(ServiceTarget serviceTarget, Module module) throws BundleException {
-        BundleDeploymentPlugin plugin = getFrameworkState().getBundleDeploymentPlugin();
+        DeploymentFactoryPlugin plugin = getFrameworkState().getDeploymentFactoryPlugin();
         Deployment dep = plugin.createDeployment(module);
         plugin.createOSGiMetaData(dep);
         return installBundle(serviceTarget, dep);
@@ -349,39 +337,43 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
         if (dep == null)
             throw new IllegalArgumentException("Null deployment");
 
+        ServiceName serviceName;
+
         // If a bundle containing the same location identifier is already installed,
         // the Bundle object for that bundle is returned.
-        BundleState bundleState = getBundleByLocation(dep.getLocation());
+        AbstractBundleState bundleState = getBundleByLocation(dep.getLocation());
         if (bundleState != null) {
-            return bundleState.getServiceName();
+            serviceName = bundleState.getServiceName();
+        }
+        else {
+            try {
+                // The storage state exists when we re-create the bundle from persistent storage
+                BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
+                long bundleId = storageState != null ? storageState.getBundleId() : getNextBundleId();
+
+                // Check that we have valid metadata
+                OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
+                if (metadata == null) {
+                    DeploymentFactoryPlugin plugin = getFrameworkState().getDeploymentFactoryPlugin();
+                    metadata = plugin.createOSGiMetaData(dep);
+                }
+
+                // Create the bundle state
+                if (metadata.getFragmentHost() == null) {
+                    serviceName = HostBundleInstalled.addService(serviceTarget, getFrameworkState(), bundleId, dep);
+                } else {
+                    serviceName = FragmentBundleInstalled.addService(serviceTarget, getFrameworkState(), bundleId, dep);
+                }
+            } catch (RuntimeException rte) {
+                VFSUtils.safeClose(dep.getRoot());
+                throw rte;
+            } catch (BundleException ex) {
+                VFSUtils.safeClose(dep.getRoot());
+                throw ex;
+            }
         }
 
-        ServiceName serviceName;
-        try {
-            // The storage state exists when we re-create the bundle from persistent storage
-            BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
-            long bundleId = storageState != null ? storageState.getBundleId() : getNextBundleId();
-
-            // Check that we have valid metadata
-            OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
-            if (metadata == null) {
-                BundleDeploymentPlugin plugin = getFrameworkState().getBundleDeploymentPlugin();
-                metadata = plugin.createOSGiMetaData(dep);
-            }
-
-            // Create the bundle state
-            if (metadata.getFragmentHost() == null) {
-                serviceName = HostBundleService.addService(serviceTarget, getFrameworkState(), bundleId, dep);
-            } else {
-                serviceName = FragmentBundleService.addService(serviceTarget, getFrameworkState(), bundleId, dep);
-            }
-        } catch (RuntimeException rte) {
-            VFSUtils.safeClose(dep.getRoot());
-            throw rte;
-        } catch (BundleException ex) {
-            VFSUtils.safeClose(dep.getRoot());
-            throw ex;
-        }
+        dep.addAttachment(ServiceName.class, serviceName);
         return serviceName;
     }
 
@@ -392,8 +384,8 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
     @Override
     public void uninstallBundle(Deployment dep) {
         Bundle bundle = dep.getAttachment(Bundle.class);
-        UserBundleState bundleState = UserBundleState.assertBundleState(bundle);
-        uninstallBundle(bundleState, 0);
+        UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
+        uninstallBundle(userBundle, 0);
     }
 
     @Override
@@ -406,64 +398,69 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
     public void uninstallBundle(ModuleIdentifier moduleid) {
         try {
             ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-            BundleState bundleState = moduleManager.getBundleState(moduleid);
+            AbstractBundleState bundleState = moduleManager.getBundleState(moduleid);
             bundleState.uninstall();
         } catch (BundleException ex) {
             log.errorf("Cannot uninstall module: " + moduleid, ex);
         }
     }
 
-    void uninstallBundle(UserBundleState bundleState, int options) {
-        if (bundleState.aquireUninstallLock()) {
+    void uninstallBundle(UserBundleState userBundle, int options) {
+        if (userBundle.aquireUninstallLock()) {
             try {
-                int state = bundleState.getState();
+                int state = userBundle.getState();
                 if (state == Bundle.UNINSTALLED)
                     return;
 
                 // #2 If the bundle's state is ACTIVE, STARTING or STOPPING, the bundle is stopped
-                if (bundleState.isFragment() == false) {
+                if (userBundle.isFragment() == false) {
                     if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING) {
                         try {
-                            bundleState.stopInternal(options);
+                            userBundle.stopInternal(options);
                         } catch (Exception ex) {
                             // If Bundle.stop throws an exception, a Framework event of type FrameworkEvent.ERROR is fired containing the
                             // exception
-                            fireFrameworkError(bundleState, "Error stopping bundle: " + bundleState, ex);
+                            fireFrameworkError(userBundle, "Error stopping bundle: " + userBundle, ex);
                         }
                     }
                 }
 
                 // #3 This bundle's state is set to UNINSTALLED
-                FrameworkEventsPlugin eventsPlugin = bundleState.getFrameworkState().getFrameworkEventsPlugin();
-                bundleState.changeState(Bundle.UNINSTALLED, 0);
+                FrameworkEventsPlugin eventsPlugin = userBundle.getFrameworkState().getFrameworkEventsPlugin();
+                userBundle.changeState(Bundle.UNINSTALLED, 0);
+
+                // Remove the bundle INSTALLED services
+                ServiceName serviceName = UserBundleState.getServiceName(userBundle.getBundleId());
+                ServiceController<?> controller = getServiceContainer().getService(serviceName);
+                if (controller != null)
+                    controller.setMode(Mode.REMOVE);
+
+                // Remove the bundle DEPLOYED services
+                //serviceName = BundleService.getServiceName(userBundle.getDeployment(), State.DEPLOYED);
+                //controller = getServiceContainer().getService(serviceName);
+                //if (controller != null)
+                //    controller.setMode(Mode.REMOVE);
 
                 // Check if the bundle has still active wires
-                boolean hasActiveWires = bundleState.hasActiveWires();
+                boolean hasActiveWires = userBundle.hasActiveWires();
                 if (hasActiveWires == false) {
                     // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
-                    removeBundle(bundleState, options);
+                    removeBundle(userBundle, options);
                 }
 
                 // #4 A bundle event of type BundleEvent.UNINSTALLED is fired
-                eventsPlugin.fireBundleEvent(bundleState, BundleEvent.UNINSTALLED);
-
-                if (hasActiveWires == false) {
-                    // Remove the INSTALLED service
-                    ServiceName serviceName = UserBundleState.getServiceName(bundleState.getBundleId());
-                    ServiceController<?> controller = getServiceContainer().getService(serviceName);
-                    controller.setMode(Mode.REMOVE);
-                }
+                eventsPlugin.fireBundleEvent(userBundle, BundleEvent.UNINSTALLED);
 
                 // Remove other uninstalled bundles that now also have no active wires any more
-                Set<BundleState> uninstalled = getBundles(Bundle.UNINSTALLED);
-                for (BundleState aux : uninstalled) {
-                    UserBundleState userBundle = UserBundleState.assertBundleState(aux);
-                    if (userBundle.hasActiveWires() == false) {
-                        removeBundle(userBundle, options);
+                Set<AbstractBundleState> uninstalled = getBundles(Bundle.UNINSTALLED);
+                for (AbstractBundleState auxState : uninstalled) {
+                    UserBundleState auxUser = UserBundleState.assertBundleState(auxState);
+                    if (auxUser.hasActiveWires() == false) {
+                        removeBundle(auxUser, options);
                     }
                 }
             } finally {
-                bundleState.releaseUninstallLock();
+                userBundle.releaseUninstallLock();
             }
         }
     }
@@ -477,7 +474,7 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
         }
 
         ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
-        for (BundleRevision abr : userBundle.getRevisions()) {
+        for (AbstractBundleRevision abr : userBundle.getRevisions()) {
             XModule resModule = abr.getResolverModule();
             resolverPlugin.removeModule(resModule);
         }
@@ -486,7 +483,7 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
         eventsPlugin.fireBundleEvent(userBundle, BundleEvent.UNRESOLVED);
 
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        for (BundleRevision rev : userBundle.getRevisions()) {
+        for (AbstractBundleRevision rev : userBundle.getRevisions()) {
             UserBundleRevision userRev = (UserBundleRevision) rev;
             if (userBundle.isFragment() == false) {
                 ModuleIdentifier identifier = moduleManager.getModuleIdentifier(rev.getResolverModule());
@@ -501,7 +498,7 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
     /**
      * Fire a framework error
      */
-    void fireFrameworkError(BundleState bundleState, String context, Throwable t) {
+    void fireFrameworkError(AbstractBundleState bundleState, String context, Throwable t) {
         FrameworkEventsPlugin plugin = getFrameworkState().getFrameworkEventsPlugin();
         if (t instanceof BundleException) {
             plugin.fireFrameworkEvent(bundleState, FrameworkEvent.ERROR, t);
@@ -516,7 +513,7 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
     /**
      * Fire a framework warning
      */
-    void fireFrameworkWarning(BundleState bundleState, String context, Throwable t) {
+    void fireFrameworkWarning(AbstractBundleState bundleState, String context, Throwable t) {
         FrameworkEventsPlugin plugin = getFrameworkState().getFrameworkEventsPlugin();
         if (t instanceof BundleException) {
             plugin.fireFrameworkEvent(bundleState, FrameworkEvent.WARNING, t);

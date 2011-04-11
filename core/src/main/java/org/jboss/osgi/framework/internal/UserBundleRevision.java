@@ -44,7 +44,7 @@ import org.osgi.framework.BundleException;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-abstract class UserBundleRevision extends BundleRevision {
+abstract class UserBundleRevision extends AbstractBundleRevision {
 
     static final Logger log = Logger.getLogger(UserBundleRevision.class);
 
@@ -52,8 +52,8 @@ abstract class UserBundleRevision extends BundleRevision {
     private List<RevisionContent> contentList;
     private final EntriesProvider entriesProvider;
 
-    UserBundleRevision(UserBundleState bundleState, Deployment dep) throws BundleException {
-        super(bundleState, getOSGiMetaData(dep), getXModule(dep), getRevisionId(dep));
+    UserBundleRevision(UserBundleState userBundle, Deployment dep) throws BundleException {
+        super(userBundle, getOSGiMetaData(dep), getXModule(dep), getRevisionId(dep));
         this.deployment = dep;
 
         if (dep.getRoot() != null) {

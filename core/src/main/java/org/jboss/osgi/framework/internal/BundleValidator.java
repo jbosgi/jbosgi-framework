@@ -35,5 +35,5 @@ interface BundleValidator {
     /**
      * Validate the bundle
      */
-    void validateBundle(UserBundleState bundleState, OSGiMetaData osgiMetaData) throws BundleException;
+    void validateBundle(UserBundleState userBundle, OSGiMetaData osgiMetaData) throws BundleException;
 }

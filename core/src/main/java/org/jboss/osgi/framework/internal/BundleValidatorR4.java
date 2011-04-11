@@ -47,18 +47,18 @@ import org.osgi.framework.Constants;
 final class BundleValidatorR4 implements BundleValidator {
 
     @SuppressWarnings("deprecation")
-    public void validateBundle(UserBundleState bundleState, OSGiMetaData osgiMetaData) throws BundleException {
+    public void validateBundle(UserBundleState userBundle, OSGiMetaData osgiMetaData) throws BundleException {
 
         // Missing Bundle-SymbolicName
         final String symbolicName = osgiMetaData.getBundleSymbolicName();
         if (symbolicName == null)
-            throw new BundleException("Missing Bundle-SymbolicName in: " + bundleState);
+            throw new BundleException("Missing Bundle-SymbolicName in: " + userBundle);
 
         // Bundle-ManifestVersion value not equal to 2, unless the Framework specifically
         // recognizes the semantics of a later release.
         int manifestVersion = osgiMetaData.getBundleManifestVersion();
         if (manifestVersion > 2)
-            throw new BundleException("Unsupported manifest version " + manifestVersion + " for " + bundleState);
+            throw new BundleException("Unsupported manifest version " + manifestVersion + " for " + userBundle);
 
         // Multiple imports of a given package.
         // Specification-version and version specified together (for the same package(s)) but with different values
@@ -68,16 +68,16 @@ final class BundleValidatorR4 implements BundleValidator {
             for (PackageAttribute packageAttribute : importPackages) {
                 String packageName = packageAttribute.getAttribute();
                 if (packages.contains(packageName))
-                    throw new BundleException("Duplicate import of package " + packageName + " for " + bundleState);
+                    throw new BundleException("Duplicate import of package " + packageName + " for " + userBundle);
                 packages.add(packageName);
 
                 if (packageName.startsWith("java."))
-                    throw new BundleException("Not allowed to import java.* for " + bundleState);
+                    throw new BundleException("Not allowed to import java.* for " + userBundle);
 
                 String version = packageAttribute.getAttributeValue(VERSION_ATTRIBUTE, String.class);
                 String specificationVersion = packageAttribute.getAttributeValue(PACKAGE_SPECIFICATION_VERSION, String.class);
                 if (version != null && specificationVersion != null && version.equals(specificationVersion) == false)
-                    throw new BundleException(packageName + " version and specification version should be the same in: " + bundleState);
+                    throw new BundleException(packageName + " version and specification version should be the same in: " + userBundle);
             }
         }
 
@@ -89,20 +89,20 @@ final class BundleValidatorR4 implements BundleValidator {
             for (PackageAttribute packageAttr : exportPackages) {
                 String packageName = packageAttr.getAttribute();
                 if (packageName.startsWith("java."))
-                    throw new BundleException("Not allowed to export java.* for " + bundleState);
+                    throw new BundleException("Not allowed to export java.* for " + userBundle);
                 
                 String versionAttr = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
                 String specificationAttr = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
                 if (versionAttr != null && specificationAttr != null && versionAttr.equals(specificationAttr) == false)
-                    throw new BundleException(packageName + " version and specification version should be the same in: " + bundleState);
+                    throw new BundleException(packageName + " version and specification version should be the same in: " + userBundle);
                 
                 String symbolicNameAttr = packageAttr.getAttributeValue(Constants.BUNDLE_SYMBOLICNAME_ATTRIBUTE, String.class);
                 if (symbolicNameAttr != null)
-                    throw new BundleException(packageName + " must not specify an explicit bundle symbolic name in: " + bundleState);
+                    throw new BundleException(packageName + " must not specify an explicit bundle symbolic name in: " + userBundle);
                 
                 String bundleVersionAttr = packageAttr.getAttributeValue(Constants.BUNDLE_VERSION_ATTRIBUTE, String.class);
                 if (bundleVersionAttr != null)
-                    throw new BundleException(packageName + " must not specify an explicit bundle version in: " + bundleState);
+                    throw new BundleException(packageName + " must not specify an explicit bundle version in: " + userBundle);
             }
         }
 
@@ -114,25 +114,25 @@ final class BundleValidatorR4 implements BundleValidator {
                 String versionAttr = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
                 String specificationAttr = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
                 if (versionAttr != null && specificationAttr != null && versionAttr.equals(specificationAttr) == false)
-                    throw new BundleException(packageName + " version and specification version should be the same in: " + bundleState);
+                    throw new BundleException(packageName + " version and specification version should be the same in: " + userBundle);
             }
         }
         
         // Installing a bundle that has the same symbolic name and version as an already installed bundle.
-        for (BundleState aux : bundleState.getBundleManager().getBundles()) {
-            if (bundleState.getCanonicalName().equals(aux.getCanonicalName())) {
+        for (AbstractBundleState aux : userBundle.getBundleManager().getBundles()) {
+            if (userBundle.getCanonicalName().equals(aux.getCanonicalName())) {
                 throw new BundleException("Cannot install bundle, name and version already installed: " + aux);
             }
         }
 
         // Verify Fragment-Host header
-        if (bundleState.isFragment()) {
+        if (userBundle.isFragment()) {
             ParameterizedAttribute hostAttr = osgiMetaData.getFragmentHost();
             String fragmentHost = hostAttr.getAttribute();
             String extension = hostAttr.getDirectiveValue(EXTENSION_DIRECTIVE, String.class);
             if (extension != null) {
                 if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(fragmentHost) == false)
-                    throw new BundleException("Invalid Fragment-Host for extension fragment: " + bundleState);
+                    throw new BundleException("Invalid Fragment-Host for extension fragment: " + userBundle);
 
                 if (EXTENSION_BOOTCLASSPATH.equals(extension))
                     throw new UnsupportedOperationException("Boot classpath extension not supported");

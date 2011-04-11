@@ -37,7 +37,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class UserBundleService<T extends UserBundleState> extends BundleService<T> {
+abstract class UserBundleService<T extends UserBundleState> extends AbstractBundleService<T> {
 
     private final Deployment initialDeployment;
     
@@ -97,7 +97,7 @@ abstract class UserBundleService<T extends UserBundleState> extends BundleServic
 
     private void addToResolver(UserBundleState userBundle) {
         if (userBundle.isSingleton()) {
-            for (BundleState aux : getBundleManager().getBundles(getSymbolicName(), null)) {
+            for (AbstractBundleState aux : getBundleManager().getBundles(getSymbolicName(), null)) {
                 if (aux != userBundle && aux.isSingleton()) {
                     log.infof("No resolvable singleton bundle: %s", this);
                     return;

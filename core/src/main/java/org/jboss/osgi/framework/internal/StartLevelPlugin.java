@@ -101,7 +101,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
     @Override
     public synchronized void setStartLevel(final int level) {
         final FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
-        final BundleState bundleState = injectedSystemBundle.getValue();
+        final AbstractBundleState bundleState = injectedSystemBundle.getValue();
         if (level > getStartLevel()) {
             log.infof("About to increase start level from %s to %s", getStartLevel(), level);
             getExecutorService().execute(new Runnable() {
@@ -132,7 +132,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         if (bundle instanceof Framework)
             return 0;
 
-        BundleState b = BundleState.assertBundleState(bundle);
+        AbstractBundleState b = AbstractBundleState.assertBundleState(bundle);
         if (b instanceof SystemBundleState)
             return 0;
         else if (b instanceof HostBundleState)
@@ -205,14 +205,14 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
 
     @Override
     public boolean isBundlePersistentlyStarted(Bundle bundle) {
-        BundleState bundleState = BundleState.assertBundleState(bundle);
+        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
         BundleStorageState storageState = bundleState.getBundleStorageState();
         return storageState.isPersistentlyStarted();
     }
 
     @Override
     public boolean isBundleActivationPolicyUsed(Bundle bundle) {
-        BundleState bundleState = BundleState.assertBundleState(bundle);
+        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
         BundleStorageState storageState = bundleState.getBundleStorageState();
         return storageState.isBundleActivationPolicyUsed();
     }
@@ -224,11 +224,11 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
      */
     synchronized void increaseStartLevel(int level) {
         BundleManager bundleManager = injectedBundleManager.getValue();
-        Collection<BundleState> bundles = bundleManager.getBundles();
+        Collection<AbstractBundleState> bundles = bundleManager.getBundles();
         while (startLevel < level) {
             startLevel++;
             log.infof("Starting bundles for start level: %s", startLevel);
-            for (BundleState bundle : bundles) {
+            for (AbstractBundleState bundle : bundles) {
                 if (!(bundle instanceof HostBundleState))
                     continue;
 
@@ -258,8 +258,8 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         BundleManager bundleManager = injectedBundleManager.getValue();
         while (startLevel > sl) {
             log.infof("Stopping bundles for start level: %s", startLevel);
-            Collection<BundleState> bundles = bundleManager.getBundles();
-            for (BundleState bundleState : bundles) {
+            Collection<AbstractBundleState> bundles = bundleManager.getBundles();
+            for (AbstractBundleState bundleState : bundles) {
                 if (bundleState instanceof HostBundleState) {
                     HostBundleState hostBundle = (HostBundleState) bundleState;
                     if (hostBundle.getStartLevel() == startLevel) {

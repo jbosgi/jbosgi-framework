@@ -22,7 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import org.jboss.osgi.framework.internal.BundleManager;
-import org.jboss.osgi.framework.internal.BundleState;
+import org.jboss.osgi.framework.internal.AbstractBundleState;
 import org.jboss.osgi.framework.internal.FrameworkState;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.osgi.framework.Bundle;
@@ -38,7 +38,7 @@ public abstract class AbstractFrameworkTest extends OSGiFrameworkTest {
 
     protected BundleManager getBundleManager() throws BundleException {
         Bundle systemBundle = getSystemContext().getBundle();
-        BundleManager bundleManager = BundleState.assertBundleState(systemBundle).getBundleManager();
+        BundleManager bundleManager = AbstractBundleState.assertBundleState(systemBundle).getBundleManager();
         return bundleManager;
     }
     

@@ -24,9 +24,9 @@ package org.jboss.osgi.framework.internal;
 import org.jboss.logging.Logger;
 
 /**
- * The proxy that represents a {@link FragmentBundleService}.
+ * The proxy that represents a {@link FragmentBundleInstalled}.
  * 
- * The {@link FragmentBundleProxy} uses the respective {@link FragmentBundleService}s. 
+ * The {@link FragmentBundleProxy} uses the respective {@link FragmentBundleInstalled}s. 
  * It never interacts with the {@link FragmentBundleState} directly. 
  * The client may hold a reference to the {@link FragmentBundleProxy}. 
  *

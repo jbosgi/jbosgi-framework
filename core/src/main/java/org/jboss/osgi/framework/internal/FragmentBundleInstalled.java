@@ -35,11 +35,11 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
-final class FragmentBundleService extends UserBundleService<FragmentBundleState> {
+final class FragmentBundleInstalled extends UserBundleService<FragmentBundleState> {
 
     static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, long bundleId, Deployment dep) throws BundleException {
         FragmentBundleState bundleState = new FragmentBundleState(frameworkState, bundleId, dep.getSymbolicName());
-        FragmentBundleService service = new FragmentBundleService(bundleState, dep);
+        FragmentBundleInstalled service = new FragmentBundleInstalled(bundleState, dep);
         ServiceName serviceName = bundleState.getServiceName();
         ServiceBuilder<FragmentBundleState> builder = serviceTarget.addService(serviceName, service);
         builder.addDependency(InternalServices.CORE_SERVICES);
@@ -47,7 +47,7 @@ final class FragmentBundleService extends UserBundleService<FragmentBundleState>
         return serviceName;
     }
 
-    private FragmentBundleService(FragmentBundleState bundleState, Deployment dep) throws BundleException {
+    private FragmentBundleInstalled(FragmentBundleState bundleState, Deployment dep) throws BundleException {
         super(bundleState, dep);
     }
 }

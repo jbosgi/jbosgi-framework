@@ -176,7 +176,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      *
      * @return The bundle revision or null
      */
-    BundleRevision getBundleRevision(ModuleIdentifier identifier) {
+    AbstractBundleRevision getBundleRevision(ModuleIdentifier identifier) {
         return moduleLoader.getBundleRevision(identifier);
     }
 
@@ -184,7 +184,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      * Get the bundle for the given identifier
      * @return The bundle or null
      */
-    BundleState getBundleState(ModuleIdentifier identifier) {
+    AbstractBundleState getBundleState(ModuleIdentifier identifier) {
         return moduleLoader.getBundleState(identifier);
     }
 
@@ -192,15 +192,15 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      * Get the bundle for the given class
      * @return The bundle or null
      */
-    BundleState getBundleState(Class<?> clazz) {
+    AbstractBundleState getBundleState(Class<?> clazz) {
         if (clazz == null)
             throw new IllegalArgumentException("Null clazz");
 
-        BundleState result = null;
+        AbstractBundleState result = null;
         ClassLoader loader = clazz.getClassLoader();
         if (loader instanceof BundleReference) {
             BundleReference bundleRef = (BundleReference) loader;
-            result = BundleState.assertBundleState(bundleRef.getBundle());
+            result = AbstractBundleState.assertBundleState(bundleRef.getBundle());
         } else if (loader instanceof ModuleClassLoader) {
             ModuleClassLoader moduleCL = (ModuleClassLoader) loader;
             result = getBundleState(moduleCL.getModule().getIdentifier());
@@ -220,13 +220,13 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             throw new IllegalArgumentException("Null module");
 
         Bundle bundle = resModule.getAttachment(Bundle.class);
-        BundleState bundleState = BundleState.assertBundleState(bundle);
+        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
         if (bundleState.isFragment())
             throw new IllegalStateException("Fragments cannot be added: " + bundleState);
 
         Module module = resModule.getAttachment(Module.class);
         if (module != null) {
-            BundleRevision bundleRev = resModule.getAttachment(BundleRevision.class);
+            AbstractBundleRevision bundleRev = resModule.getAttachment(AbstractBundleRevision.class);
             moduleLoader.addModule(bundleRev, module);
             return  module.getIdentifier();
         }
@@ -347,7 +347,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             moduleSpec = specBuilder.create();
         }
 
-        BundleRevision bundleRev = resModule.getAttachment(BundleRevision.class);
+        AbstractBundleRevision bundleRev = resModule.getAttachment(AbstractBundleRevision.class);
         moduleLoader.addModule(bundleRev, moduleSpec);
         return moduleSpec.getModuleIdentifier();
     }
@@ -400,7 +400,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         }
     }
 
-    private void addNativeResourceLoader(ModuleSpec.Builder specBuilder, UserBundleState bundleState, Deployment deployment) {
+    private void addNativeResourceLoader(ModuleSpec.Builder specBuilder, UserBundleState userBundle, Deployment deployment) {
         NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
         if (libMetaData != null) {
             NativeResourceLoader nativeLoader = new NativeResourceLoader();
@@ -410,13 +410,13 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
                 String libname = libfile.substring(0, libfile.lastIndexOf('.'));
 
                 // Add the library provider to the policy
-                NativeLibraryProvider libProvider = new NativeCodePlugin.BundleNativeLibraryProvider(bundleState, libname, libpath);
+                NativeLibraryProvider libProvider = new NativeCodePlugin.BundleNativeLibraryProvider(userBundle, libname, libpath);
                 nativeLoader.addNativeLibrary(libProvider);
 
                 // [TODO] why does the TCK use 'Native' to mean 'libNative' ?
                 if (libname.startsWith("lib")) {
                     libname = libname.substring(3);
-                    libProvider = new NativeCodePlugin.BundleNativeLibraryProvider(bundleState, libname, libpath);
+                    libProvider = new NativeCodePlugin.BundleNativeLibraryProvider(userBundle, libname, libpath);
                     nativeLoader.addNativeLibrary(libProvider);
                 }
             }

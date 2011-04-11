@@ -33,11 +33,11 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 06-Apr-2011
  */
-final class HostBundleService extends UserBundleService<HostBundleState> {
+final class HostBundleInstalled extends UserBundleService<HostBundleState> {
 
     static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, long bundleId, Deployment dep) throws BundleException {
         HostBundleState bundleState = new HostBundleState(frameworkState, bundleId, dep.getSymbolicName());
-        HostBundleService service = new HostBundleService(bundleState, dep);
+        HostBundleInstalled service = new HostBundleInstalled(bundleState, dep);
         ServiceName serviceName = bundleState.getServiceName();
         ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, service);
         builder.addDependency(InternalServices.CORE_SERVICES);
@@ -45,7 +45,7 @@ final class HostBundleService extends UserBundleService<HostBundleState> {
         return serviceName;
     }
 
-    private HostBundleService(HostBundleState bundleState, Deployment dep) throws BundleException {
+    private HostBundleInstalled(HostBundleState bundleState, Deployment dep) throws BundleException {
         super(bundleState, dep);
     }
 }

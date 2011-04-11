@@ -44,16 +44,16 @@ import org.osgi.framework.Version;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-abstract class BundleRevision {
+abstract class AbstractBundleRevision {
 
-    static final Logger log = Logger.getLogger(BundleRevision.class);
+    static final Logger log = Logger.getLogger(AbstractBundleRevision.class);
 
     private final int revision;
-    private final BundleState bundleState;
+    private final AbstractBundleState bundleState;
     private final OSGiMetaData metadata;
     private XModule resolverModule;
 
-    BundleRevision(BundleState bundleState, OSGiMetaData metadata, XModule resModule, int revision) throws BundleException {
+    AbstractBundleRevision(AbstractBundleState bundleState, OSGiMetaData metadata, XModule resModule, int revision) throws BundleException {
         if (bundleState == null)
             throw new IllegalArgumentException("Null bundleState");
         if (metadata == null)
@@ -67,7 +67,7 @@ abstract class BundleRevision {
         this.resolverModule = resModule;
         
         // Add bidirectional one-to-one association between a revision and a resolver module 
-        resModule.addAttachment(BundleRevision.class, this);
+        resModule.addAttachment(AbstractBundleRevision.class, this);
     }
 
     int getRevisionId() {
@@ -78,7 +78,7 @@ abstract class BundleRevision {
         return resolverModule;
     }
 
-    BundleState getBundleState() {
+    AbstractBundleState getBundleState() {
         return bundleState;
     }
 
@@ -140,7 +140,7 @@ abstract class BundleRevision {
 
     abstract void refreshRevisionInternal(XModule resModule);
     
-    XModule createResolverModule(BundleState bundleState, OSGiMetaData metadata) throws BundleException {
+    XModule createResolverModule(AbstractBundleState bundleState, OSGiMetaData metadata) throws BundleException {
         final String symbolicName = metadata.getBundleSymbolicName();
         final Version version = metadata.getBundleVersion();
 
@@ -149,7 +149,7 @@ abstract class BundleRevision {
         // An UNINSTALLED module with active wires may still be registered in with the Resolver
         // Make sure we have a unique module identifier
         BundleManager bundleManager = bundleState.getBundleManager();
-        for (BundleState aux : bundleManager.getBundles(symbolicName, version.toString())) {
+        for (AbstractBundleState aux : bundleManager.getBundles(symbolicName, version.toString())) {
             if (aux.getState() == Bundle.UNINSTALLED) {
                 XModule resModule = aux.getResolverModule();
                 int auxrev = resModule.getModuleId().getRevision();
@@ -159,7 +159,7 @@ abstract class BundleRevision {
         ResolverPlugin resolverPlugin = bundleState.getFrameworkState().getResolverPlugin();
         XModuleBuilder builder = resolverPlugin.getModuleBuilder();
         XModule resModule = builder.createModule(metadata, modulerev).getModule();
-        resModule.addAttachment(BundleRevision.class, this);
+        resModule.addAttachment(AbstractBundleRevision.class, this);
         resModule.addAttachment(Bundle.class, bundleState);
         return resModule;
     }

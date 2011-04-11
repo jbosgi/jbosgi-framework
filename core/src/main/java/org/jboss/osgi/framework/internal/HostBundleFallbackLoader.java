@@ -161,7 +161,7 @@ final class HostBundleFallbackLoader implements LocalLoader {
 
     private List<XPackageRequirement> findMatchingPatterns(String resName) {
 
-        BundleRevision bundleRev = moduleManager.getBundleRevision(identifier);
+        AbstractBundleRevision bundleRev = moduleManager.getBundleRevision(identifier);
         XModule resModule = bundleRev.getResolverModule();
         List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
 
@@ -215,7 +215,7 @@ final class HostBundleFallbackLoader implements LocalLoader {
                 continue;
 
             // Attempt to resolve the bundle
-            BundleState bundle = BundleState.assertBundleState(aux);
+            AbstractBundleState bundle = AbstractBundleState.assertBundleState(aux);
             if (bundle.ensureResolved(false) == false)
                 continue;
 
@@ -242,7 +242,7 @@ final class HostBundleFallbackLoader implements LocalLoader {
             return false;
 
         log.tracef("Found path [%s] in %s", resName, candidate);
-        BundleRevision bundleRevision = moduleManager.getBundleRevision(candidateId);
+        AbstractBundleRevision bundleRevision = moduleManager.getBundleRevision(candidateId);
         XModule resModule = bundleRevision.getResolverModule();
 
         for (XPackageRequirement pattern : matchingPatterns) {

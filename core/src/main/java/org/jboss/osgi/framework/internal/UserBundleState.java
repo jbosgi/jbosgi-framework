@@ -37,8 +37,8 @@ import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.deployment.deployer.DeployerService;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.InstallHandler;
 import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XCapability;
@@ -61,7 +61,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
-abstract class UserBundleState extends BundleState {
+abstract class UserBundleState extends AbstractBundleState {
 
     // Provide logging
     static final Logger log = Logger.getLogger(UserBundleState.class);
@@ -87,7 +87,7 @@ abstract class UserBundleState extends BundleState {
      * @throws IllegalArgumentException if the given bundle is not an instance of {@link UserBundleState}
      */
     static UserBundleState assertBundleState(Bundle bundle) {
-        bundle = BundleState.assertBundleState(bundle);
+        bundle = AbstractBundleState.assertBundleState(bundle);
         if (bundle instanceof BundleProxy<?>)
             bundle = ((BundleProxy<?>) bundle).getBundleState();
 
@@ -130,33 +130,36 @@ abstract class UserBundleState extends BundleState {
     }
 
     XModule createResolverModule(Deployment dep) throws BundleException {
-        OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
-        String symbolicName = metadata.getBundleSymbolicName();
-        Version version = metadata.getBundleVersion();
+        XModule resModule = dep.getAttachment(XModule.class);
+        if (resModule == null) {
+            OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
+            String symbolicName = metadata.getBundleSymbolicName();
+            Version version = metadata.getBundleVersion();
 
-        BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
-        int modulerev = storageState.getRevisionId();
+            BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
+            int modulerev = storageState.getRevisionId();
 
-        // An UNINSTALLED module with active wires may still be registered in with the Resolver
-        // Make sure we have a unique module identifier
-        for (BundleState aux : getBundleManager().getBundles(symbolicName, version.toString())) {
-            if (aux.getState() == Bundle.UNINSTALLED) {
-                XModule resModule = aux.getResolverModule();
-                int auxrev = resModule.getModuleId().getRevision();
-                modulerev = Math.max(modulerev + 100, auxrev + 100);
+            // An UNINSTALLED module with active wires may still be registered in with the Resolver
+            // Make sure we have a unique module identifier
+            for (AbstractBundleState aux : getBundleManager().getBundles(symbolicName, version.toString())) {
+                if (aux.getState() == Bundle.UNINSTALLED) {
+                    XModule auxmod = aux.getResolverModule();
+                    int auxrev = auxmod.getModuleId().getRevision();
+                    modulerev = Math.max(modulerev + 100, auxrev + 100);
+                }
             }
+            FrameworkState frameworkState = getFrameworkState();
+            ResolverPlugin resolverPlugin = frameworkState.getResolverPlugin();
+            XModuleBuilder builder = resolverPlugin.getModuleBuilder();
+            resModule = builder.createModule(metadata, modulerev).getModule();
+
+            Module module = dep.getAttachment(Module.class);
+            if (module != null)
+                resModule.addAttachment(Module.class, module);
+
+            dep.addAttachment(XModule.class, resModule);
         }
-        FrameworkState frameworkState = getFrameworkState();
-        ResolverPlugin resolverPlugin = frameworkState.getResolverPlugin();
-        XModuleBuilder builder = resolverPlugin.getModuleBuilder();
-        XModule resModule = builder.createModule(metadata, modulerev).getModule();
         resModule.addAttachment(Bundle.class, this);
-        dep.addAttachment(XModule.class, resModule);
-        
-        Module module = dep.getAttachment(Module.class);
-        if (module != null)
-            resModule.addAttachment(Module.class, module);
-        
         return resModule;
     }
 
@@ -199,8 +202,8 @@ abstract class UserBundleState extends BundleState {
     }
 
     @Override
-    BundleRevision getRevisionById(int revisionId) {
-        for (BundleRevision rev : revisions) {
+    AbstractBundleRevision getRevisionById(int revisionId) {
+        for (AbstractBundleRevision rev : revisions) {
             if (rev.getRevisionId() == revisionId) {
                 return rev;
             }
@@ -235,7 +238,7 @@ abstract class UserBundleState extends BundleState {
             Set<XRequirement> wiredReqs = cap.getWiredRequirements();
             for (XRequirement req : wiredReqs) {
                 Bundle bundle = req.getModule().getAttachment(Bundle.class);
-                BundleState importer = BundleState.assertBundleState(bundle);
+                AbstractBundleState importer = AbstractBundleState.assertBundleState(bundle);
                 if (importer.getState() != Bundle.UNINSTALLED)
                     return true;
             }
@@ -246,12 +249,12 @@ abstract class UserBundleState extends BundleState {
     @Override
     List<XModule> getAllResolverModules() {
         List<XModule> allModules = new ArrayList<XModule>();
-        for (BundleRevision rev : getRevisions())
+        for (AbstractBundleRevision rev : getRevisions())
             allModules.add(rev.getResolverModule());
 
         return allModules;
     }
-    
+
     @Override
     void updateInternal(InputStream input) throws BundleException {
         // Not checking that the bundle is uninstalled as that already happened
@@ -337,7 +340,7 @@ abstract class UserBundleState extends BundleState {
 
         BundleStorageState storageState = createStorageState(getLocation(), rootFile);
         try {
-            BundleDeploymentPlugin deploymentPlugin = getFrameworkState().getBundleDeploymentPlugin();
+            DeploymentFactoryPlugin deploymentPlugin = getFrameworkState().getDeploymentFactoryPlugin();
             Deployment dep = deploymentPlugin.createDeployment(storageState);
             OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
             dep.addAttachment(OSGiMetaData.class, metadata);
@@ -345,7 +348,7 @@ abstract class UserBundleState extends BundleState {
 
             XModule resModule = createResolverModule(dep);
             createRevision(dep);
-            
+
             ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
             resolverPlugin.addModule(resModule);
         } catch (BundleException ex) {
@@ -394,7 +397,7 @@ abstract class UserBundleState extends BundleState {
         // Remove the revisions from the resolver
         ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        for (BundleRevision rev : getRevisions()) {
+        for (AbstractBundleRevision rev : getRevisions()) {
             XModule resModule = rev.getResolverModule();
             resolverPlugin.removeModule(resModule);
 
@@ -414,16 +417,16 @@ abstract class UserBundleState extends BundleState {
 
         changeState(Bundle.INSTALLED);
     }
-    
+
     @Override
     void uninstallInternal() throws BundleException {
         // #1 If this bundle's state is UNINSTALLED then an IllegalStateException is thrown
         assertNotUninstalled();
         headersOnUninstall = getHeaders(null);
 
-        // Uninstall through the {@link DeployerService}
-        DeployerService deployerService = getCoreServices().getDeployerService();
-        deployerService.undeploy(getDeployment());
+        // Uninstall through the {@link InstallHandler}
+        InstallHandler installProvider = getCoreServices().getInstallProvider();
+        installProvider.uninstallBundle(getDeployment());
 
         log.infof("Bundle uninstalled: %s", this);
     }

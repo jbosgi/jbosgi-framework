@@ -50,6 +50,8 @@ final class FutureServiceValue<T> implements Future<T> {
     private ServiceController<T> controller;
 
     FutureServiceValue(ServiceController<T> controller) {
+        if (controller == null)
+            throw new IllegalArgumentException("Null controller");
         this.controller = controller;
     }
 

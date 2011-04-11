@@ -232,7 +232,7 @@ final class FrameworkProxy implements Framework {
             // No Start Level Service available, stop all bundles individually...
             // All installed bundles must be stopped without changing each bundle's persistent autostart setting
             BundleManager bundleManager = systemBundle.getBundleManager();
-            for (BundleState bundleState : bundleManager.getBundles()) {
+            for (AbstractBundleState bundleState : bundleManager.getBundles()) {
                 if (bundleState.getBundleId() != 0) {
                     try {
                         bundleState.stop(Bundle.STOP_TRANSIENT);

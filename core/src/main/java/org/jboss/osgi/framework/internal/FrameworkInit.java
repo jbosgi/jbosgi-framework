@@ -49,12 +49,14 @@ public final class FrameworkInit extends FrameworkService {
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkInit.class);
 
+    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     private final InjectedValue<CoreServices> injectedCoreServices = new InjectedValue<CoreServices>();
 
     static void addService(ServiceTarget serviceTarget) {
         FrameworkInit service = new FrameworkInit();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(ServiceNames.FRAMEWORK_INIT, service);
+        builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.addDependency(ServiceNames.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
         builder.addDependency(InternalServices.CORE_SERVICES, CoreServices.class, service.injectedCoreServices);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -68,7 +70,7 @@ public final class FrameworkInit extends FrameworkService {
     public void start(StartContext context) throws StartException {
         super.start(context);
         try {
-            installPersistedBundles();
+            installPersistedBundles(context.getChildTarget());
             log.debugf("OSGi Framework initilized");
         } catch (BundleException ex) {
             throw new StartException(ex);
@@ -84,18 +86,19 @@ public final class FrameworkInit extends FrameworkService {
         return injectedCoreServices.getValue();
     }
 
-    private void installPersistedBundles() throws BundleException {
+    private void installPersistedBundles(ServiceTarget serviceTarget) throws BundleException {
         // Install the persisted bundles
         try {
             BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
-            BundleDeploymentPlugin deploymentPlugin = getFrameworkState().getBundleDeploymentPlugin();
+            DeploymentFactoryPlugin deploymentPlugin = getFrameworkState().getDeploymentFactoryPlugin();
             List<BundleStorageState> storageStates = storagePlugin.getBundleStorageStates();
+            BundleManager bundleManager = injectedBundleManager.getValue();
             for (BundleStorageState storageState : storageStates) {
                 long bundleId = storageState.getBundleId();
                 if (bundleId != 0) {
                     try {
                         Deployment dep = deploymentPlugin.createDeployment(storageState);
-                        getBundleManager().installBundle(dep);
+                        bundleManager.installBundle(serviceTarget, dep);
                     } catch (BundleException ex) {
                         log.errorf(ex, "Cannot install persistet bundle: %s", storageState);
                     }

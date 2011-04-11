@@ -61,13 +61,13 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     private static final Logger log = Logger.getLogger(ServiceState.class);
 
     private final ServiceManagerPlugin serviceManager;
-    private final BundleState ownerBundle;
+    private final AbstractBundleState ownerBundle;
     private final Set<ServiceName> serviceNames;
     private final long serviceId;
     private final ValueProvider valueProvider;
     private final ServiceReference reference;
     private ServiceRegistration registration;
-    private Set<BundleState> usingBundles;
+    private Set<AbstractBundleState> usingBundles;
     private Map<Long, ServiceFactoryHolder> factoryValues;
 
     // The properties
@@ -75,7 +75,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     private CaseInsensitiveDictionary currProperties;
 
     @SuppressWarnings("unchecked")
-    ServiceState(ServiceManagerPlugin serviceManager, BundleState owner, long serviceId, String[] clazzes, ValueProvider valueProvider, Dictionary properties) {
+    ServiceState(ServiceManagerPlugin serviceManager, AbstractBundleState owner, long serviceId, String[] clazzes, ValueProvider valueProvider, Dictionary properties) {
         if (serviceManager == null)
             throw new IllegalArgumentException("Null serviceManager");
         if (owner == null)
@@ -99,7 +99,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
             if (clazzes[i] == null)
                 throw new IllegalArgumentException("Null service class at index: " + i);
 
-            ServiceName serviceName = createServiceName(clazzes[i]);
+            ServiceName serviceName = ServiceState.createServiceName(clazzes[i]);
             serviceNames.add(serviceName);
         }
 
@@ -113,14 +113,6 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         // Create the {@link ServiceRegistration} and {@link ServiceReference}
         this.registration = new ServiceRegistrationWrapper(this);
         this.reference = new ServiceReferenceWrapper(this);
-    }
-
-    static ServiceName createServiceName(String clazz) {
-        return ServiceNames.JBOSGI_SERVICE_BASE_NAME.append(clazz);
-    }
-
-    static ServiceName createXServiceName(String clazz) {
-        return ServiceNames.JBOSGI_XSERVICE_BASE_NAME.append(clazz);
     }
 
     /**
@@ -142,11 +134,19 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         return serviceId;
     }
 
+    static ServiceName createXServiceName(String clazz) {
+        return ServiceNames.JBOSGI_XSERVICE_BASE_NAME.append(clazz);
+    }
+
+    static ServiceName createServiceName(String clazz) {
+        return ServiceNames.JBOSGI_SERVICE_BASE_NAME.append(clazz);
+    }
+
     Object getRawValue() {
         return valueProvider.getValue();
     }
 
-    Object getScopedValue(BundleState bundleState) {
+    Object getScopedValue(AbstractBundleState bundleState) {
 
         // For non-factory services, return the value
         Object value = valueProvider.getValue();
@@ -185,7 +185,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         return result;
     }
 
-    void ungetScopedValue(BundleState bundleState) {
+    void ungetScopedValue(AbstractBundleState bundleState) {
         Object value = valueProvider.getValue();
         if (value instanceof ServiceFactory) {
             try {
@@ -268,7 +268,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         return prevProperties;
     }
 
-    BundleState getServiceOwner() {
+    AbstractBundleState getServiceOwner() {
         return ownerBundle;
     }
 
@@ -280,29 +280,29 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         return ownerBundle.getBundleProxy();
     }
 
-    void addUsingBundle(BundleState bundleState) {
+    void addUsingBundle(AbstractBundleState bundleState) {
         synchronized (this) {
             if (usingBundles == null)
-                usingBundles = new HashSet<BundleState>();
+                usingBundles = new HashSet<AbstractBundleState>();
 
             usingBundles.add(bundleState);
         }
     }
 
-    void removeUsingBundle(BundleState bundleState) {
+    void removeUsingBundle(AbstractBundleState bundleState) {
         synchronized (this) {
             if (usingBundles != null)
                 usingBundles.remove(bundleState);
         }
     }
 
-    Set<BundleState> getUsingBundlesInternal() {
+    Set<AbstractBundleState> getUsingBundlesInternal() {
         synchronized (this) {
             if (usingBundles == null)
                 return Collections.emptySet();
 
             // Return an unmodifieable snapshot of the set
-            return Collections.unmodifiableSet(new HashSet<BundleState>(usingBundles));
+            return Collections.unmodifiableSet(new HashSet<AbstractBundleState>(usingBundles));
         }
     }
 
@@ -313,7 +313,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
                 return null;
 
             Set<Bundle> bundles = new HashSet<Bundle>();
-            for (BundleState aux : usingBundles)
+            for (AbstractBundleState aux : usingBundles)
                 bundles.add(aux.getBundleProxy());
 
             return bundles.toArray(new Bundle[bundles.size()]);
@@ -327,7 +327,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         if (className == null)
             throw new IllegalArgumentException("Null className");
 
-        if (ownerBundle == BundleState.assertBundleState(bundle))
+        if (ownerBundle == AbstractBundleState.assertBundleState(bundle))
             return true;
 
         Class<?> targetClass = null;
@@ -382,7 +382,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
             throw new IllegalStateException("Service is unregistered: " + this);
     }
 
-    private boolean checkValidClassNames(BundleState bundleState, String[] classNames, Object value) {
+    private boolean checkValidClassNames(AbstractBundleState bundleState, String[] classNames, Object value) {
         if (bundleState == null)
             throw new IllegalArgumentException("Null bundleState");
         if (classNames == null || classNames.length == 0)
@@ -422,18 +422,18 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         return "ServiceState" + props;
     }
 
-    public interface ValueProvider {
+    interface ValueProvider {
         Object getValue();
     }
 
     class ServiceFactoryHolder {
 
         ServiceFactory factory;
-        BundleState bundleState;
+        AbstractBundleState bundleState;
         AtomicInteger useCount;
         Object value;
 
-        ServiceFactoryHolder(BundleState bundleState, ServiceFactory factory) {
+        ServiceFactoryHolder(AbstractBundleState bundleState, ServiceFactory factory) {
             this.bundleState = bundleState;
             this.factory = factory;
             this.useCount = new AtomicInteger();

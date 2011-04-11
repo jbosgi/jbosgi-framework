@@ -81,11 +81,11 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
 
     /** The bundleState listeners */
-    private final Map<BundleState, List<BundleListener>> bundleListeners = new ConcurrentHashMap<BundleState, List<BundleListener>>();
+    private final Map<AbstractBundleState, List<BundleListener>> bundleListeners = new ConcurrentHashMap<AbstractBundleState, List<BundleListener>>();
     /** The framework listeners */
-    private final Map<BundleState, List<FrameworkListener>> frameworkListeners = new ConcurrentHashMap<BundleState, List<FrameworkListener>>();
+    private final Map<AbstractBundleState, List<FrameworkListener>> frameworkListeners = new ConcurrentHashMap<AbstractBundleState, List<FrameworkListener>>();
     /** The service listeners */
-    private final Map<BundleState, List<ServiceListenerRegistration>> serviceListeners = new ConcurrentHashMap<BundleState, List<ServiceListenerRegistration>>();
+    private final Map<AbstractBundleState, List<ServiceListenerRegistration>> serviceListeners = new ConcurrentHashMap<AbstractBundleState, List<ServiceListenerRegistration>>();
 
     /** The set of bundleState events that are delivered to an (asynchronous) BundleListener */
     private Set<Integer> asyncBundleEvents = new HashSet<Integer>();
@@ -138,7 +138,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         return this;
     }
 
-    void addBundleListener(final BundleState bundleState, final BundleListener listener) {
+    void addBundleListener(final AbstractBundleState bundleState, final BundleListener listener) {
         if (listener == null)
             throw new IllegalArgumentException("Null listener");
 
@@ -153,7 +153,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         }
     }
 
-    void removeBundleListener(final BundleState bundleState, final BundleListener listener) {
+    void removeBundleListener(final AbstractBundleState bundleState, final BundleListener listener) {
         if (listener == null)
             throw new IllegalArgumentException("Null listener");
 
@@ -168,13 +168,13 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         }
     }
 
-    void removeBundleListeners(final BundleState bundleState) {
+    void removeBundleListeners(final AbstractBundleState bundleState) {
         synchronized (bundleListeners) {
             bundleListeners.remove(bundleState);
         }
     }
 
-    void addFrameworkListener(final BundleState bundleState, final FrameworkListener listener) {
+    void addFrameworkListener(final AbstractBundleState bundleState, final FrameworkListener listener) {
         if (listener == null)
             throw new IllegalArgumentException("Null listener");
 
@@ -189,7 +189,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         }
     }
 
-    void removeFrameworkListener(final BundleState bundleState, final FrameworkListener listener) {
+    void removeFrameworkListener(final AbstractBundleState bundleState, final FrameworkListener listener) {
         if (listener == null)
             throw new IllegalArgumentException("Null listener");
 
@@ -204,13 +204,13 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         }
     }
 
-    void removeFrameworkListeners(final BundleState bundleState) {
+    void removeFrameworkListeners(final AbstractBundleState bundleState) {
         synchronized (frameworkListeners) {
             frameworkListeners.remove(bundleState);
         }
     }
 
-    void addServiceListener(final BundleState bundleState, final ServiceListener listener, final String filterstr) throws InvalidSyntaxException {
+    void addServiceListener(final AbstractBundleState bundleState, final ServiceListener listener, final String filterstr) throws InvalidSyntaxException {
         if (listener == null)
             throw new IllegalArgumentException("Null listener");
 
@@ -245,9 +245,9 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         }
     }
 
-    Collection<ListenerInfo> getServiceListenerInfos(final BundleState bundleState) {
+    Collection<ListenerInfo> getServiceListenerInfos(final AbstractBundleState bundleState) {
         Collection<ListenerInfo> listeners = new ArrayList<ListenerInfo>();
-        for (Entry<BundleState, List<ServiceListenerRegistration>> entry : serviceListeners.entrySet()) {
+        for (Entry<AbstractBundleState, List<ServiceListenerRegistration>> entry : serviceListeners.entrySet()) {
             if (bundleState == null || bundleState.equals(entry.getKey())) {
                 for (ServiceListenerRegistration aux : entry.getValue()) {
                     ListenerInfo info = aux.getListenerInfo();
@@ -258,7 +258,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         return Collections.unmodifiableCollection(listeners);
     }
 
-    void removeServiceListener(final BundleState bundleState, final ServiceListener listener) {
+    void removeServiceListener(final AbstractBundleState bundleState, final ServiceListener listener) {
         if (listener == null)
             throw new IllegalArgumentException("Null listener");
 
@@ -287,7 +287,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         }
     }
 
-    void removeServiceListeners(final BundleState bundleState) {
+    void removeServiceListeners(final AbstractBundleState bundleState) {
         synchronized (serviceListeners) {
             Collection<ListenerInfo> listenerInfos = getServiceListenerInfos(bundleState);
             serviceListeners.remove(bundleState);
@@ -328,11 +328,11 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         return Collections.unmodifiableList(hooks);
     }
 
-    void fireBundleEvent(final BundleState bundleState, final int type) {
+    void fireBundleEvent(final AbstractBundleState bundleState, final int type) {
         // Get a snapshot of the current listeners
         final List<BundleListener> listeners = new ArrayList<BundleListener>();
         synchronized (bundleListeners) {
-            for (Entry<BundleState, List<BundleListener>> entry : bundleListeners.entrySet()) {
+            for (Entry<AbstractBundleState, List<BundleListener>> entry : bundleListeners.entrySet()) {
                 for (BundleListener listener : entry.getValue()) {
                     listeners.add(listener);
                 }
@@ -386,11 +386,11 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         fireEvent(runnable);
     }
 
-    void fireFrameworkEvent(final BundleState bundleState, final int type, final Throwable th) {
+    void fireFrameworkEvent(final AbstractBundleState bundleState, final int type, final Throwable th) {
         // Get a snapshot of the current listeners
         final ArrayList<FrameworkListener> listeners = new ArrayList<FrameworkListener>();
         synchronized (frameworkListeners) {
-            for (Entry<BundleState, List<FrameworkListener>> entry : frameworkListeners.entrySet()) {
+            for (Entry<AbstractBundleState, List<FrameworkListener>> entry : frameworkListeners.entrySet()) {
                 for (FrameworkListener listener : entry.getValue()) {
                     listeners.add(listener);
                 }
@@ -448,12 +448,12 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         fireEvent(runnable);
     }
 
-    void fireServiceEvent(final BundleState bundleState, int type, final ServiceState serviceState) {
+    void fireServiceEvent(final AbstractBundleState bundleState, int type, final ServiceState serviceState) {
 
         // Get a snapshot of the current listeners
         List<ServiceListenerRegistration> listenerRegs = new ArrayList<ServiceListenerRegistration>();
         synchronized (serviceListeners) {
-            for (Entry<BundleState, List<ServiceListenerRegistration>> entry : serviceListeners.entrySet()) {
+            for (Entry<AbstractBundleState, List<ServiceListenerRegistration>> entry : serviceListeners.entrySet()) {
                 for (ServiceListenerRegistration listener : entry.getValue()) {
                     BundleContext context = listener.getBundleContext();
                     if (context != null)
@@ -485,7 +485,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
 
             // Service events must only be delivered to event listeners which can validly cast the event
             if (listenerReg.isAllServiceListener() == false) {
-                BundleState owner = listenerReg.getBundleState();
+                AbstractBundleState owner = listenerReg.getBundleState();
                 boolean assignableToOwner = true;
                 String[] clazzes = (String[]) serviceState.getProperty(Constants.OBJECTCLASS);
                 for (String clazz : clazzes) {
@@ -581,7 +581,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
      */
     static class ServiceListenerRegistration {
 
-        private BundleState bundleState;
+        private AbstractBundleState bundleState;
         private ServiceListener listener;
         private Filter filter;
         private ListenerInfo info;
@@ -589,7 +589,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         // Any access control context
         AccessControlContext accessControlContext;
 
-        ServiceListenerRegistration(final BundleState bundleState, final ServiceListener listener, final Filter filter) {
+        ServiceListenerRegistration(final AbstractBundleState bundleState, final ServiceListener listener, final Filter filter) {
             if (bundleState == null)
                 throw new IllegalArgumentException("Null bundleState");
             if (listener == null)
@@ -606,7 +606,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
                 accessControlContext = AccessController.getContext();
         }
 
-        BundleState getBundleState() {
+        AbstractBundleState getBundleState() {
             return bundleState;
         }
 
@@ -700,7 +700,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
 
         private static final long serialVersionUID = 6505331543651318189L;
 
-        public FrameworkEventImpl(int type, BundleState bundleState, Throwable throwable) {
+        public FrameworkEventImpl(int type, AbstractBundleState bundleState, Throwable throwable) {
             super(type, bundleState.getBundleProxy(), throwable);
         }
 
@@ -714,7 +714,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
 
         private static final long serialVersionUID = -2705304702665185935L;
 
-        public BundleEventImpl(int type, BundleState bundleState) {
+        public BundleEventImpl(int type, AbstractBundleState bundleState) {
             super(type, bundleState.getBundleProxy());
         }
 

@@ -77,7 +77,7 @@ final class LifecycleInterceptorPlugin extends AbstractPluginService<LifecycleIn
 
             @Override
             protected InvocationContext getInvocationContext(Bundle bundle) {
-                BundleState bundleState = BundleState.assertBundleState(bundle);
+                AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
                 if (bundleState == null)
                     throw new IllegalStateException("Cannot obtain bundleState for: " + bundle);
 

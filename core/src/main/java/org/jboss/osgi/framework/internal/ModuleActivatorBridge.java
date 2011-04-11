@@ -49,7 +49,7 @@ final class ModuleActivatorBridge implements BundleActivator {
 
     @Override
     public void start(BundleContext context) throws Exception {
-        BundleState bundleState = AbstractBundleContext.assertBundleContext(context).getBundleState();
+        AbstractBundleState bundleState = AbstractBundleContext.assertBundleContext(context).getBundleState();
         bundleManager = bundleState.getBundleManager();
 
         ModuleManagerPlugin moduleManager = bundleManager.getFrameworkState().getModuleManagerPlugin();

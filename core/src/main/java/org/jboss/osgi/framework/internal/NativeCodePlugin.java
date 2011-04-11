@@ -144,11 +144,11 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
         dep.addAttachment(NativeLibraryMetaData.class, nativeLibraries);
     }
 
-    void resolveNativeCode(UserBundleState bundleState) throws BundleException {
-        OSGiMetaData osgiMetaData = bundleState.getOSGiMetaData();
+    void resolveNativeCode(UserBundleState userBundle) throws BundleException {
+        OSGiMetaData osgiMetaData = userBundle.getOSGiMetaData();
         List<ParameterizedAttribute> nativeCodeParams = osgiMetaData.getBundleNativeCode();
         if (nativeCodeParams == null)
-            throw new BundleException("Cannot find Bundle-NativeCode header for: " + bundleState);
+            throw new BundleException("Cannot find Bundle-NativeCode header for: " + userBundle);
 
         // Find the matching parameters
         List<ParameterizedAttribute> matchedParams = new ArrayList<ParameterizedAttribute>();
@@ -157,7 +157,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
                 matchedParams.add(param);
         }
 
-        Deployment dep = bundleState.getDeployment();
+        Deployment dep = userBundle.getDeployment();
         NativeLibraryMetaData nativeLibraries = dep.getAttachment(NativeLibraryMetaData.class);
 
         // If no native clauses were selected in step 1, this algorithm is terminated
@@ -305,14 +305,14 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
     }
 
     static class BundleNativeLibraryProvider implements NativeLibraryProvider {
-        private final UserBundleState bundleState;
+        private final UserBundleState userBundle;
         private final String libname;
         private final String libpath;
         private final URL libURL;
         private File libraryFile;
 
-        BundleNativeLibraryProvider(UserBundleState bundleState, String libname, String libpath) {
-            this.bundleState = bundleState;
+        BundleNativeLibraryProvider(UserBundleState userBundle, String libname, String libpath) {
+            this.userBundle = userBundle;
             this.libpath = libpath;
             this.libname = libname;
 
@@ -328,7 +328,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
                 path = "";
                 filename = libpath;
             }
-            Enumeration<URL> urls = bundleState.findEntries(path, filename, false);
+            Enumeration<URL> urls = userBundle.findEntries(path, filename, false);
             if (urls == null || urls.hasMoreElements() == false)
                 throw new IllegalStateException("Cannot find native library: " + libpath);
 
@@ -349,7 +349,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
         public File getLibraryLocation() throws IOException {
             if (libraryFile == null) {
                 // Create a unique local file location
-                libraryFile = getUniqueLibraryFile(bundleState, libpath);
+                libraryFile = getUniqueLibraryFile(userBundle, libpath);
                 libraryFile.deleteOnExit();
 
                 // Copy the native library to the bundle storage area
@@ -363,7 +363,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
         }
 
         private void handleExecPermission() throws IOException {
-            String epProp = bundleState.getBundleContext().getProperty(Constants.FRAMEWORK_EXECPERMISSION);
+            String epProp = userBundle.getBundleContext().getProperty(Constants.FRAMEWORK_EXECPERMISSION);
             if (epProp == null)
                 return;
 

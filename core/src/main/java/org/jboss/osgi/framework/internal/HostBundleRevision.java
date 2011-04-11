@@ -63,7 +63,7 @@ final class HostBundleRevision extends UserBundleRevision {
      * Assert that the given bundleRev is an instance of HostRevision
      * @throws IllegalArgumentException if the given bundleRev is not an instance of HostRevision
      */
-    static HostBundleRevision assertUserRevision(BundleRevision bundleRev) {
+    static HostBundleRevision assertUserRevision(AbstractBundleRevision bundleRev) {
         if (bundleRev == null)
             throw new IllegalArgumentException("Null bundleRev");
 

@@ -24,9 +24,9 @@ package org.jboss.osgi.framework.internal;
 import org.jboss.logging.Logger;
 
 /**
- * The proxy that represents a {@link HostBundleService}.
+ * The proxy that represents a {@link HostBundleInstalled}.
  * 
- * The {@link HostBundleProxy} uses the respective {@link HostBundleService}s. 
+ * The {@link HostBundleProxy} uses the respective {@link HostBundleInstalled}s. 
  * It never interacts with the {@link HostBundleState} directly. 
  * The client may hold a reference to the {@link HostBundleProxy}. 
  *

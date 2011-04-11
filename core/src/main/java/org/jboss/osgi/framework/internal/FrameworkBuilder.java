@@ -124,7 +124,7 @@ public final class FrameworkBuilder {
         FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager, initialMode);
 
         AutoInstallProcessor.addService(serviceTarget);
-        BundleDeploymentPlugin.addService(serviceTarget);
+        DeploymentFactoryPlugin.addService(serviceTarget);
         BundleStoragePlugin.addService(serviceTarget, firstInit);
         CoreServices.addService(serviceTarget);
         FrameworkActive.addService(serviceTarget);
@@ -144,8 +144,8 @@ public final class FrameworkBuilder {
 
         if (isProvidedService(ServiceNames.AUTOINSTALL_PROVIDER) == false)
             DefaultAutoInstallProvider.addService(serviceTarget);
-        if (isProvidedService(ServiceNames.DEPLOYERSERVICE_PROVIDER) == false)
-            DefaultDeployerServiceProvider.addService(serviceTarget);
+        if (isProvidedService(ServiceNames.INSTALL_HANDLER) == false)
+            DefaultInstallHandler.addService(serviceTarget);
         if (isProvidedService(ServiceNames.FRAMEWORK_MODULE_PROVIDER) == false)
             DefaultFrameworkModuleProvider.addService(serviceTarget);
         if (isProvidedService(ServiceNames.MODULE_LOADER_PROVIDER) == false)

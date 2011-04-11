@@ -33,7 +33,7 @@ import org.osgi.framework.BundleContext;
  */
 abstract class UserBundleContext extends AbstractBundleContext {
 
-    UserBundleContext(UserBundleState bundleState) {
-        super(bundleState);
+    UserBundleContext(UserBundleState userBundle) {
+        super(userBundle);
     }
 }

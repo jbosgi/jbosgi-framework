@@ -45,33 +45,33 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 
 /**
- * A plugin the handles Bundle deployments.
+ * A plugin taht create bundle {@link Deployment} objects.
  *
  * @author thomas.diesler@jboss.com
  * @since 12-Jul-2010
  */
-final class BundleDeploymentPlugin extends AbstractPluginService<BundleDeploymentPlugin> {
+final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFactoryPlugin> {
 
     // Provide logging
-    private static final Logger log = Logger.getLogger(BundleDeploymentPlugin.class);
+    private static final Logger log = Logger.getLogger(DeploymentFactoryPlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<ResolverPlugin> injectedResolver = new InjectedValue<ResolverPlugin>();
 
     static void addService(ServiceTarget serviceTarget) {
-        BundleDeploymentPlugin service = new BundleDeploymentPlugin();
-        ServiceBuilder<BundleDeploymentPlugin> builder = serviceTarget.addService(InternalServices.BUNDLE_DEPLOYMENT_PLUGIN, service);
+        DeploymentFactoryPlugin service = new DeploymentFactoryPlugin();
+        ServiceBuilder<DeploymentFactoryPlugin> builder = serviceTarget.addService(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, service);
         builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolver);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    BundleDeploymentPlugin() {
+    DeploymentFactoryPlugin() {
     }
 
     @Override
-    public BundleDeploymentPlugin getValue() {
+    public DeploymentFactoryPlugin getValue() {
         return this;
     }
 
@@ -129,7 +129,7 @@ final class BundleDeploymentPlugin extends AbstractPluginService<BundleDeploymen
                 path = path.substring(1);
             if (path.endsWith("/"))
                 path = path.substring(0, path.length() - 1);
-            if (path.startsWith("META-INF"))
+            if (path.isEmpty() || path.startsWith("META-INF"))
                 continue;
 
             String packageName = path.replace('/', '.');

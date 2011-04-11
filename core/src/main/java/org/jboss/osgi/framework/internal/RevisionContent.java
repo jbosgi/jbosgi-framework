@@ -58,7 +58,7 @@ final class RevisionContent implements EntriesProvider {
         this.virtualFile = rootFile;
         this.contentId = contentId;
 
-        BundleState bundleState = userRev.getBundleState();
+        AbstractBundleState bundleState = userRev.getBundleState();
         String symbolicName = bundleState.getSymbolicName();
         if (symbolicName != null) {
             symbolicName = symbolicName.replace(':', '.');
@@ -80,10 +80,10 @@ final class RevisionContent implements EntriesProvider {
         long bundleId = Long.parseLong(parts[1]);
         int revisionId = Integer.parseInt(parts[2]);
         int contentId = Integer.parseInt(parts[3]);
-        BundleState bundleState = bundleManager.getBundleById(bundleId);
+        AbstractBundleState bundleState = bundleManager.getBundleById(bundleId);
         if (bundleState == null)
             return null;
-        BundleRevision bundleRev = bundleState.getRevisionById(revisionId);
+        AbstractBundleRevision bundleRev = bundleState.getRevisionById(revisionId);
         if (bundleRev == null)
             return null;
         UserBundleRevision userRev = (UserBundleRevision) bundleRev;

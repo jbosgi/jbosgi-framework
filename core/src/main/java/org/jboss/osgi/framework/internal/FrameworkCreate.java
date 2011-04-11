@@ -51,7 +51,7 @@ public final class FrameworkCreate extends FrameworkService {
         FrameworkState frameworkState = new FrameworkState(bundleManager);
         FrameworkCreate service = new FrameworkCreate(frameworkState);
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(ServiceNames.FRAMEWORK_CREATE, service);
-        builder.addDependency(InternalServices.BUNDLE_DEPLOYMENT_PLUGIN, BundleDeploymentPlugin.class, frameworkState.injectedBundleDeployment);
+        builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, frameworkState.injectedDeploymentFactory);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, frameworkState.injectedBundleStorage);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, frameworkState.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, frameworkState.injectedModuleManager);

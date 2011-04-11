@@ -40,7 +40,7 @@ import org.osgi.framework.Constants;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-final class SystemBundleRevision extends BundleRevision {
+final class SystemBundleRevision extends AbstractBundleRevision {
 
     static final Logger log = Logger.getLogger(SystemBundleRevision.class);
 

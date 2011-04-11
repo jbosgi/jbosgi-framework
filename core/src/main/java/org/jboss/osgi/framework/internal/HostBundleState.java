@@ -61,7 +61,7 @@ final class HostBundleState extends UserBundleState {
     }
 
     static HostBundleState assertBundleState(Bundle bundle) {
-        BundleState bundleState = BundleState.assertBundleState(bundle);
+        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
 
         if (bundleState instanceof HostBundleState == false)
             throw new IllegalArgumentException("Not a HostBundleState: " + bundleState);
