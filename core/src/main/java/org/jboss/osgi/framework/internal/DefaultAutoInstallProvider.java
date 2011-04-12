@@ -39,7 +39,6 @@ import org.jboss.osgi.framework.AutoInstallProvider;
 import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.spi.util.StringPropertyReplacer;
 import org.jboss.osgi.spi.util.StringPropertyReplacer.PropertyProvider;
-import org.osgi.framework.BundleContext;
 
 /**
  * A provider for the list of auto install bundles
@@ -100,12 +99,12 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
     }
 
     @Override
-    public List<URL> getAutoInstallList(BundleContext context) {
+    public List<URL> getAutoInstallList() {
         return Collections.unmodifiableList(autoInstall);
     }
 
     @Override
-    public List<URL> getAutoStartList(BundleContext context) {
+    public List<URL> getAutoStartList() {
         return Collections.unmodifiableList(autoStart);
     }
 

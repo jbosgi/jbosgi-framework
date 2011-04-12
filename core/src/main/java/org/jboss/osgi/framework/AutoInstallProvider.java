@@ -25,7 +25,6 @@ import java.net.URL;
 import java.util.List;
 
 import org.jboss.msc.service.Service;
-import org.osgi.framework.BundleContext;
 
 /**
  * A provider for the list of auto install bundles.
@@ -35,7 +34,7 @@ import org.osgi.framework.BundleContext;
  */
 public interface AutoInstallProvider extends Service<AutoInstallProvider> {
 
-    List<URL> getAutoInstallList(BundleContext context);
+    List<URL> getAutoInstallList();
 
-    List<URL> getAutoStartList(BundleContext context);
+    List<URL> getAutoStartList();
 }

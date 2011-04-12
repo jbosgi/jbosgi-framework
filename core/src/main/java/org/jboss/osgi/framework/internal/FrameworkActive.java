@@ -53,6 +53,7 @@ public final class FrameworkActive extends FrameworkService {
         FrameworkActive service = new FrameworkActive();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(org.jboss.osgi.framework.ServiceNames.FRAMEWORK_ACTIVE, service);
         builder.addDependency(org.jboss.osgi.framework.ServiceNames.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
+        builder.addDependency(InternalServices.AUTOINSTALL_PROCESSOR);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -80,12 +81,11 @@ public final class FrameworkActive extends FrameworkService {
         super.start(context);
         try {
             // Resolve the system bundle
-            SystemBundleState systemBundle = getSystemBundle();
             ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
-            resolverPlugin.resolve(systemBundle.getResolverModule());
+            resolverPlugin.resolve(getSystemBundle().getResolverModule());
 
             // This Framework's state is set to ACTIVE
-            systemBundle.changeState(Bundle.ACTIVE);
+            getSystemBundle().changeState(Bundle.ACTIVE);
 
             // Increase to initial start level
             StartLevelPlugin startLevelPlugin = getFrameworkState().getCoreServices().getStartLevelPlugin();
