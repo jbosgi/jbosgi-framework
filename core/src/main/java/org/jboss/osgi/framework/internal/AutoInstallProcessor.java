@@ -25,15 +25,18 @@ import static org.jboss.osgi.framework.internal.InternalServices.AUTOINSTALL_PRO
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
+import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceController.State;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -44,7 +47,6 @@ import org.jboss.osgi.framework.AutoInstallProvider;
 import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.spi.util.BundleInfo;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
 /**
@@ -56,10 +58,9 @@ import org.osgi.framework.BundleException;
 final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProcessor> {
 
     // Provide logging
-    final Logger log = Logger.getLogger(AutoInstallProcessor.class);
+    static final Logger log = Logger.getLogger(AutoInstallProcessor.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-    private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private final InjectedValue<AutoInstallProvider> injectedProvider = new InjectedValue<AutoInstallProvider>();
 
     static void addService(ServiceTarget serviceTarget) {
@@ -67,21 +68,9 @@ final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProces
         ServiceBuilder<AutoInstallProcessor> builder = serviceTarget.addService(AUTOINSTALL_PROCESSOR, service);
         builder.addDependency(ServiceNames.AUTOINSTALL_PROVIDER, AutoInstallProvider.class, service.injectedProvider);
         builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(ServiceNames.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(ServiceNames.FRAMEWORK_INIT);
+        builder.addDependency(InternalServices.CORE_SERVICES);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
-    }
-
-    static void awaitStartup(ServiceContainer serviceContainer, long timeout, TimeUnit unit) throws BundleException {
-        @SuppressWarnings("unchecked")
-        ServiceController<AutoInstallProcessor> controller = (ServiceController<AutoInstallProcessor>) serviceContainer.getRequiredService(AUTOINSTALL_PROCESSOR);
-        FutureServiceValue<AutoInstallProcessor> future = new FutureServiceValue<AutoInstallProcessor>(controller);
-        try {
-            future.get(timeout, unit);
-        } catch (Exception ex) {
-            throw new BundleException("Cannot start " + AUTOINSTALL_PROCESSOR, ex);
-        }
     }
 
     private AutoInstallProcessor() {
@@ -90,12 +79,10 @@ final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProces
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-
         try {
             AutoInstallProvider provider = injectedProvider.getValue();
-            BundleContext systemContext = injectedSystemContext.getValue();
-            List<URL> autoInstall = new ArrayList<URL>(provider.getAutoInstallList(systemContext));
-            List<URL> autoStart = new ArrayList<URL>(provider.getAutoStartList(systemContext));
+            List<URL> autoInstall = new ArrayList<URL>(provider.getAutoInstallList());
+            List<URL> autoStart = new ArrayList<URL>(provider.getAutoStartList());
             installBundles(autoInstall, autoStart);
         } catch (BundleException ex) {
             throw new IllegalStateException("Cannot start auto install bundles", ex);
@@ -107,32 +94,77 @@ final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProces
         return this;
     }
 
-    private void installBundles(List<URL> autoInstall, List<URL> autoStart) throws BundleException {
+    private void installBundles(final List<URL> autoInstall, final List<URL> autoStart) throws BundleException {
 
         // Add the autoStart bundles to autoInstall
-        for (URL bundleURL : autoStart) {
-            autoInstall.add(bundleURL);
-        }
+        autoInstall.addAll(autoStart);
 
-        HashMap<URL, Bundle> autoBundles = new HashMap<URL, Bundle>();
+        // Nothing to do
+        if (autoInstall.isEmpty())
+            return;
+
+        final BundleManager bundleManager = injectedBundleManager.getValue();
+        final Set<ServiceName> pendingServices = new HashSet<ServiceName>();
 
         // Install autoInstall bundles
-        BundleContext systemContext = injectedSystemContext.getValue();
-        AbstractBundleContext abstractContext = AbstractBundleContext.assertBundleContext(systemContext);
+        ServiceContainer serviceContainer = bundleManager.getServiceContainer();
+        ServiceTarget serviceTarget = serviceContainer.subTarget();
         for (URL url : autoInstall) {
             BundleInfo info = BundleInfo.createBundleInfo(url);
             Deployment dep = DeploymentFactory.createDeployment(info);
             dep.setAutoStart(autoStart.contains(url));
-            
-            Bundle bundle = abstractContext.installBundle(dep);
-            autoBundles.put(url, bundle);
-        }
 
-        // Start autoStart bundles
-        if (autoStart != null) {
-            for (URL uri : autoStart) {
-                Bundle bundle = autoBundles.get(uri);
-                bundle.start();
+            ServiceName serviceName = bundleManager.installBundle(serviceTarget, dep);
+            synchronized (pendingServices) {
+                pendingServices.add(serviceName);
+            }
+
+            @SuppressWarnings("unchecked")
+            ServiceController<Bundle> controller = (ServiceController<Bundle>) serviceContainer.getService(serviceName);
+            controller.addListener(new AbstractServiceListener<Bundle>() {
+
+                @Override
+                public void listenerAdded(ServiceController<? extends Bundle> controller) {
+                    State state = controller.getState();
+                    if (state == State.UP || state == State.START_FAILED)
+                        done(controller, controller.getStartException());
+
+                }
+
+                @Override
+                public void serviceStarted(ServiceController<? extends Bundle> controller) {
+                    done(controller, null);
+                }
+
+                @Override
+                public void serviceFailed(ServiceController<? extends Bundle> controller, StartException reason) {
+                    done(controller, reason);
+                }
+
+                private void done(ServiceController<? extends Bundle> controller, StartException startException) {
+                    controller.removeListener(this);
+                    synchronized (pendingServices) {
+                        pendingServices.remove(controller.getName());
+                    }
+                    if (pendingServices.isEmpty()) {
+                        startBundles(autoStart);
+                    }
+                }
+
+            });
+        }
+    }
+
+    private void startBundles(final List<URL> autoStart) {
+        final BundleManager bundleManager = injectedBundleManager.getValue();
+        for (URL url : autoStart) {
+            Bundle bundle = bundleManager.getBundleByLocation(url.toExternalForm());
+            if (bundle != null) {
+                try {
+                    bundle.start();
+                } catch (BundleException ex) {
+                    log.errorf(ex, "Cannot start bundle: %s", bundle);
+                }
             }
         }
     }

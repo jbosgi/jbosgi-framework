@@ -126,7 +126,7 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
         assertBundleState(Bundle.INSTALLED, bundle.getState());
 
         bundle.start();
-        assertBundleState(Bundle.ACTIVE, framework.getState());
+        assertBundleState(Bundle.ACTIVE, bundle.getState());
 
         framework.stop();
         framework.waitForStop(2000);
