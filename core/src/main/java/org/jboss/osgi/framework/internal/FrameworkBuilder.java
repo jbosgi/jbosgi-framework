@@ -134,6 +134,7 @@ public final class FrameworkBuilder {
         ModuleManagerPlugin.addService(serviceTarget);
         NativeCodePlugin.addService(serviceTarget);
         PackageAdminPlugin.addService(serviceTarget);
+        PersistentBundlesInstaller.addService(serviceTarget);
         ResolverPlugin.addService(serviceTarget);
         ServiceManagerPlugin.addService(serviceTarget);
         StartLevelPlugin.addService(serviceTarget);

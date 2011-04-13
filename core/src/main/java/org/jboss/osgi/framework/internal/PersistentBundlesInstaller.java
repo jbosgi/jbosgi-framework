@@ -21,10 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.InternalServices.AUTOINSTALL_BUNDLES;
-
-import java.net.URL;
-import java.util.ArrayList;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,89 +36,91 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.deployment.deployer.DeploymentFactory;
-import org.jboss.osgi.framework.AutoInstallProvider;
 import org.jboss.osgi.framework.ServiceNames;
-import org.jboss.osgi.spi.util.BundleInfo;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.launch.Framework;
 
 /**
- * A plugin that installs/starts bundles on framework startup.
+ * A service that represents the INIT state of the {@link Framework}.
+ *
+ *  See {@link Framework#init()} for details.
  *
  * @author thomas.diesler@jboss.com
- * @since 18-Aug-2009
+ * @since 04-Apr-2011
  */
-final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProcessor> {
+public final class PersistentBundlesInstaller extends AbstractPluginService<Void> {
 
     // Provide logging
-    static final Logger log = Logger.getLogger(AutoInstallProcessor.class);
+    static final Logger log = Logger.getLogger(PersistentBundlesInstaller.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-    private final InjectedValue<AutoInstallProvider> injectedProvider = new InjectedValue<AutoInstallProvider>();
+    private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
+    private final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
 
     static void addService(ServiceTarget serviceTarget) {
-        AutoInstallProcessor service = new AutoInstallProcessor();
-        ServiceBuilder<AutoInstallProcessor> builder = serviceTarget.addService(AUTOINSTALL_BUNDLES, service);
-        builder.addDependency(ServiceNames.AUTOINSTALL_PROVIDER, AutoInstallProvider.class, service.injectedProvider);
+        PersistentBundlesInstaller service = new PersistentBundlesInstaller();
+        ServiceBuilder<Void> builder = serviceTarget.addService(InternalServices.PERSISTENT_BUNDLES_INSTALLER, service);
         builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(ServiceNames.FRAMEWORK_INIT);
+        builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
+        builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, service.injectedDeploymentFactory);
+        builder.addDependency(InternalServices.CORE_SERVICES);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    private AutoInstallProcessor() {
+    private PersistentBundlesInstaller() {
     }
 
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
         try {
-            AutoInstallProvider provider = injectedProvider.getValue();
-            List<URL> autoInstall = new ArrayList<URL>(provider.getAutoInstallList());
-            List<URL> autoStart = new ArrayList<URL>(provider.getAutoStartList());
             ServiceTarget serviceTarget = context.getChildTarget();
-            installBundles(serviceTarget, autoInstall, autoStart);
+            installPersistedBundles(serviceTarget);
         } catch (BundleException ex) {
-            throw new IllegalStateException("Cannot start auto install bundles", ex);
+            throw new StartException(ex);
         }
     }
 
-    @Override
-    public AutoInstallProcessor getValue() {
-        return this;
-    }
+    private void installPersistedBundles(ServiceTarget serviceTarget) throws BundleException {
 
-    private void installBundles(ServiceTarget serviceTarget, final List<URL> autoInstall, final List<URL> autoStart) throws BundleException {
+        BundleManager bundleManager = injectedBundleManager.getValue();
+        BundleStoragePlugin storagePlugin = injectedBundleStorage.getValue();
+        DeploymentFactoryPlugin deploymentPlugin = injectedDeploymentFactory.getValue();
 
-        // Add the autoStart bundles to autoInstall
-        autoInstall.addAll(autoStart);
-
-        final BundleManager bundleManager = injectedBundleManager.getValue();
+        // Install the persisted bundles
         final Map<ServiceName, Deployment> pendingServices = new HashMap<ServiceName, Deployment>();
-
-        // Install autoInstall bundles
-        for (URL url : autoInstall) {
-            BundleInfo info = BundleInfo.createBundleInfo(url);
-            Deployment dep = DeploymentFactory.createDeployment(info);
-            dep.setAutoStart(autoStart.contains(url));
-
-            ServiceName serviceName = bundleManager.installBundle(serviceTarget, dep);
-            pendingServices.put(serviceName, dep);
+        try {
+            List<BundleStorageState> storageStates = storagePlugin.getBundleStorageStates();
+            for (BundleStorageState storageState : storageStates) {
+                long bundleId = storageState.getBundleId();
+                if (bundleId != 0) {
+                    try {
+                        Deployment dep = deploymentPlugin.createDeployment(storageState);
+                        ServiceName serviceName = bundleManager.installBundle(serviceTarget, dep);
+                        pendingServices.put(serviceName, dep);
+                    } catch (BundleException ex) {
+                        log.errorf(ex, "Cannot install persistet bundle: %s", storageState);
+                    }
+                }
+            }
+        } catch (IOException ex) {
+            throw new BundleException("Cannot install persisted bundles", ex);
         }
-        
+
         // Install a service that has a dependency on all pending bundle INSTALLED services
-        ServiceName servicesInstalled = InternalServices.AUTOINSTALL_BUNDLES.append("INSTALLED");
+        ServiceName servicesInstalled = InternalServices.PERSISTENT_BUNDLES_INSTALLER.append("INSTALLED");
         ServiceBuilder<Void> builder = serviceTarget.addService(servicesInstalled, new AbstractService<Void>() {
             public void start(StartContext context) throws StartException {
-                log.debugf("Auto bundles installed");
+                log.debugf("Persistent bundles installed");
             }
         });
         builder.addDependencies(pendingServices.keySet());
         builder.install();
-        
+
         // Install a service that starts the persistent bundles
-        builder = serviceTarget.addService(InternalServices.AUTOINSTALL_BUNDLES_ACTIVE, new AbstractService<Void>() {
+        builder = serviceTarget.addService(InternalServices.PERSISTENT_BUNDLES_ACTIVE, new AbstractService<Void>() {
             public void start(StartContext context) throws StartException {
                 for (Deployment dep : pendingServices.values()) {
                     if (dep.isAutoStart()) {
@@ -133,7 +132,7 @@ final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProces
                         }
                     }
                 }
-                log.debugf("Auto bundles bundles started");
+                log.debugf("Persistent bundles started");
             }
         });
         builder.addDependencies(servicesInstalled);

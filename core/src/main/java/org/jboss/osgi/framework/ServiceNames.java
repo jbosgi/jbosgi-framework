@@ -50,10 +50,10 @@ public interface ServiceNames {
     ServiceName BUNDLE_BASE_NAME = JBOSGI_BASE_NAME.append("bundle");
 
     /** The {@link BundleManager} service name. */
-    ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("bundlemanager");
+    ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("BundleManager");
 
     /** The base name of all framework services */
-    ServiceName FRAMEWORK_BASE_NAME = JBOSGI_BASE_NAME.append("framework");
+    ServiceName FRAMEWORK_BASE_NAME = JBOSGI_BASE_NAME.append("Framework");
 
     /** The service name for the created {@link Framework} */
     ServiceName FRAMEWORK_CREATE = FRAMEWORK_BASE_NAME.append("CREATED");
@@ -65,29 +65,29 @@ public interface ServiceNames {
     ServiceName FRAMEWORK_ACTIVE = FRAMEWORK_BASE_NAME.append("ACTIVE");
 
     /** The service name for the {@link InstallHandler} */
-    ServiceName INSTALL_HANDLER = JBOSGI_BASE_NAME.append("installhandler");
+    ServiceName INSTALL_HANDLER = JBOSGI_BASE_NAME.append("InstallHandler");
 
     /** The service name for the {@link PackageAdmin} service */
-    ServiceName PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("packageadmin");
+    ServiceName PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("PackageAdmin");
 
     /** The service name for the {@link StartLevel} service */
-    ServiceName START_LEVEL = JBOSGI_BASE_NAME.append("startlevel");
+    ServiceName START_LEVEL = JBOSGI_BASE_NAME.append("StartLevel");
 
     /** The service name for the system {@link Bundle} */
-    ServiceName SYSTEM_BUNDLE = JBOSGI_BASE_NAME.append("systembundle");
+    ServiceName SYSTEM_BUNDLE = JBOSGI_BASE_NAME.append("SystemBundle");
 
     /** The service name for the system {@link BundleContext} */
-    ServiceName SYSTEM_CONTEXT = JBOSGI_BASE_NAME.append("systemcontext");
+    ServiceName SYSTEM_CONTEXT = JBOSGI_BASE_NAME.append("SystemContext");
 
     /** The service name for the {@link FrameworkModuleProvider} */
-    ServiceName FRAMEWORK_MODULE_PROVIDER = JBOSGI_BASE_NAME.append("frameworkmoduleprovider");
+    ServiceName FRAMEWORK_MODULE_PROVIDER = JBOSGI_BASE_NAME.append("FrameworkModuleProvider");
 
     /** The service name for the {@link ModuleLoaderProvider} */
-    ServiceName MODULE_LOADER_PROVIDER = JBOSGI_BASE_NAME.append("moduleloaderprovider");
+    ServiceName MODULE_LOADER_PROVIDER = JBOSGI_BASE_NAME.append("ModuleLoaderProvider");
 
     /** The service name for the {@link SystemModuleProvider} */
-    ServiceName SYSTEM_MODULE_PROVIDER = JBOSGI_BASE_NAME.append("systemmoduleprovider");
+    ServiceName SYSTEM_MODULE_PROVIDER = JBOSGI_BASE_NAME.append("SystemModuleProvider");
 
     /** The service name for the {@link AutoInstallProvider} */
-    ServiceName AUTOINSTALL_PROVIDER = JBOSGI_BASE_NAME.append("autoinstallprovider");
+    ServiceName AUTOINSTALL_PROVIDER = JBOSGI_BASE_NAME.append("AutoInstallProvider");
 }

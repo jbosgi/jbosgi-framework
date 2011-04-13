@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.Constants.DEFAULT_FRAMEWORK_INIT_TIMEOUT;
+import static org.jboss.osgi.framework.Constants.DEFAULT_FRAMEWORK_START_TIMEOUT;
 import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_INIT_TIMEOUT;
 import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_START_TIMEOUT;
 
@@ -441,7 +443,7 @@ final class FrameworkProxy implements Framework {
             controller.setMode(Mode.ACTIVE);
             FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
             try {
-                Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_INIT_TIMEOUT, new Integer(2000));
+                Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_INIT_TIMEOUT, DEFAULT_FRAMEWORK_INIT_TIMEOUT);
                 frameworkInit = future.get(timeout, TimeUnit.MILLISECONDS);
             } catch (ExecutionException ex) {
                 Throwable cause = ex.getCause();
@@ -469,7 +471,7 @@ final class FrameworkProxy implements Framework {
             controller.setMode(Mode.ACTIVE);
             FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
             try {
-                Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_START_TIMEOUT, new Integer(2000));
+                Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_START_TIMEOUT, DEFAULT_FRAMEWORK_START_TIMEOUT);
                 activeFramework = future.get(timeout, TimeUnit.MILLISECONDS);
             } catch (ExecutionException ex) {
                 Throwable cause = ex.getCause();

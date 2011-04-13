@@ -23,11 +23,11 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.AbstractLifecycleInterceptorService;
@@ -90,7 +90,7 @@ final class LifecycleInterceptorPlugin extends AbstractPluginService<LifecycleIn
                     RevisionContent revContent = userBundle.getFirstContentRoot();
                     VirtualFile rootFile = revContent != null ? revContent.getVirtualFile() : null;
                     LifecycleInterceptorAttachments att = new LifecycleInterceptorAttachments();
-                    inv = new InvocationContextImpl(systemContext, bundle, rootFile, att);
+                    inv = new InvocationContextImpl(systemContext, new BundleWrapper<AbstractBundleState>(bundleState), rootFile, att);
                     dep.addAttachment(InvocationContext.class, inv);
                 }
                 return inv;

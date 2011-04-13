@@ -582,7 +582,10 @@ abstract class AbstractBundleState implements Bundle {
             throw new IllegalArgumentException("Null bundle");
 
         if (bundle instanceof BundleProxy<?>)
-          bundle = ((BundleProxy<?>) bundle).getBundleState();
+            bundle = ((BundleProxy<?>) bundle).getBundleState();
+
+        if (bundle instanceof BundleWrapper<?>)
+            bundle = ((BundleWrapper<?>) bundle).getBundleState();
 
         if (bundle instanceof AbstractBundleState == false)
             throw new IllegalArgumentException("Not a BundleState: " + bundle);
