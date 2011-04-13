@@ -425,8 +425,8 @@ abstract class UserBundleState extends AbstractBundleState {
         headersOnUninstall = getHeaders(null);
 
         // Uninstall through the {@link InstallHandler}
-        InstallHandler installProvider = getCoreServices().getInstallProvider();
-        installProvider.uninstallBundle(getDeployment());
+        InstallHandler installHandler = getCoreServices().getInstallHandler();
+        installHandler.uninstallBundle(getDeployment());
 
         log.infof("Bundle uninstalled: %s", this);
     }
