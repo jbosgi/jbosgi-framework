@@ -53,7 +53,7 @@ public final class FrameworkActive extends FrameworkService {
         FrameworkActive service = new FrameworkActive();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(org.jboss.osgi.framework.ServiceNames.FRAMEWORK_ACTIVE, service);
         builder.addDependency(org.jboss.osgi.framework.ServiceNames.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
-        builder.addDependency(InternalServices.AUTOINSTALL_PROCESSOR);
+        builder.addDependencies(InternalServices.AUTOINSTALL_BUNDLES, InternalServices.AUTOINSTALL_BUNDLES_ACTIVE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

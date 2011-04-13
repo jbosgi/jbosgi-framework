@@ -21,32 +21,32 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import org.jboss.osgi.spi.framework.GenericBundleWrapper;
 import org.osgi.framework.BundleContext;
 
 /**
- * The proxy that represents a {@link HostBundleInstalled}.
+ * A bundle wrapper that delegates all method calls to the underlying Bundle implementation.
  * 
- * The {@link HostBundleProxy} uses the respective {@link HostBundleInstalled}s. 
- * It never interacts with the {@link HostBundleState} directly. 
- * The client may hold a reference to the {@link HostBundleProxy}. 
- *
+ * This is a workaround for
+ * 
+ *   Invalid discovery of Bundle.getBundleContext() method
+ *   http://issues.ops4j.org/browse/PAXSB-44
+ *   
+ * [TODO] Remove BundleWrapper
+ * 
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-//Public because of: Invalid discovery of Bundle.getBundleContext() method
-//http://issues.ops4j.org/browse/PAXSB-44
-public final class HostBundleProxy extends UserBundleProxy<HostBundleState> {
+public final class BundleWrapper<T extends AbstractBundleState> extends GenericBundleWrapper<T> {
 
-    // Provide logging
-    static final Logger log = Logger.getLogger(HostBundleProxy.class);
-
-    HostBundleProxy(HostBundleState bundleState) {
+    BundleWrapper(T bundleState) {
         super(bundleState);
     }
 
-    // Invalid discovery of Bundle.getBundleContext() method
-    // http://issues.ops4j.org/browse/PAXSB-44
+    AbstractBundleState getBundleState() {
+        return getWrappedBundle();
+    }
+
     public BundleContext getBundleContext() {
         return super.getBundleContext();
     }

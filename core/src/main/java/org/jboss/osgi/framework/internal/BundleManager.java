@@ -105,11 +105,11 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
     private final Map<String, Object> properties = new HashMap<String, Object>();
     private final AtomicLong identityGenerator = new AtomicLong();
     private final Map<Long, AbstractBundleState> bundleMap = Collections.synchronizedMap(new HashMap<Long, AbstractBundleState>());
+    private final ServiceTarget serviceTarget;
     private ServiceContainer serviceContainer;
-    private ServiceTarget serviceTarget;
 
     static BundleManager addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
-        BundleManager service = new BundleManager(frameworkBuilder);
+        BundleManager service = new BundleManager(frameworkBuilder, serviceTarget);
         ServiceBuilder<BundleManager> builder = serviceTarget.addService(org.jboss.osgi.framework.ServiceNames.BUNDLE_MANAGER, service);
         builder.addDependency(ServiceNames.MODULE_LOADER_PROVIDER, ModuleLoader.class, service.injectedModuleLoader);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -117,8 +117,9 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
         return service;
     }
 
-    private BundleManager(FrameworkBuilder frameworkBuilder) {
+    private BundleManager(FrameworkBuilder frameworkBuilder, ServiceTarget serviceTarget) {
         this.frameworkBuilder = frameworkBuilder;
+        this.serviceTarget = serviceTarget;
 
         // The properties on the BundleManager are mutable as long the framework is not created
         // Plugins may modify these properties in their respective constructor
@@ -146,7 +147,6 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
         super.start(context);
         log.infof(implementationTitle + " - " + implementationVersion);
         serviceContainer = context.getController().getServiceContainer();
-        serviceTarget = context.getChildTarget();
     }
 
     @Override

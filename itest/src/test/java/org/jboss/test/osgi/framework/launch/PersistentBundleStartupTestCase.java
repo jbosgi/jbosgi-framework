@@ -21,7 +21,6 @@
  */
 package org.jboss.test.osgi.framework.launch;
 
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -61,7 +60,7 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    public void testInstalledBundleOnFirstInit() throws Exception {
+    public void testInstalledBundle() throws Exception {
         Map<String, String> props = new HashMap<String, String>();
         props.put("org.osgi.framework.storage", storageDir.getAbsolutePath());
         props.put("org.osgi.framework.storage.clean", "onFirstInit");
@@ -101,7 +100,7 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
 
         context = framework.getBundleContext();
         bundle = context.getBundle(bundle.getBundleId());
-        assertNotNull("Bundle available", bundle);
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
 
         framework.stop();
         framework.waitForStop(2000);

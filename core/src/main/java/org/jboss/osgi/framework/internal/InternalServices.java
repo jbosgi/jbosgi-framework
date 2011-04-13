@@ -32,34 +32,39 @@ import org.jboss.osgi.framework.ServiceNames;
  */
 interface InternalServices {
 
-    /** The base name of all framnework plugin services */
-    ServiceName FRAMEWORK_PLUGIN_BASE = ServiceNames.FRAMEWORK_BASE_NAME.append("plugin");
+    /** The base name of all internal services */
+    ServiceName INTERNAL_SERVICE_BASE = ServiceNames.JBOSGI_BASE_NAME.append("internal");
 
-    /** The {@link CoreServices} service name. */
-    ServiceName CORE_SERVICES = ServiceNames.FRAMEWORK_BASE_NAME.append("coreservices");
-
-    /** The {@link DeploymentFactoryPlugin} service name */
-    ServiceName AUTOINSTALL_PROCESSOR = FRAMEWORK_PLUGIN_BASE.append("autoinstallprocessor");
+    /** The {@link AutoInstallProcessor} service name */
+    ServiceName AUTOINSTALL_BUNDLES = INTERNAL_SERVICE_BASE.append("AutoInstall");
+    /** The {@link AutoInstallProcessor} nested activator service name */
+    ServiceName AUTOINSTALL_BUNDLES_ACTIVE = AUTOINSTALL_BUNDLES.append("ACTIVE");
     /** The {@link BundleStoragePlugin} service name */
-    ServiceName BUNDLE_STORAGE_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("storage");
+    ServiceName BUNDLE_STORAGE_PLUGIN = INTERNAL_SERVICE_BASE.append("BundleStorage");
+    /** The {@link CoreServices} service name. */
+    ServiceName CORE_SERVICES = INTERNAL_SERVICE_BASE.append("CoreServices");
     /** The {@link DeploymentFactoryPlugin} service name */
-    ServiceName DEPLOYMENT_FACTORY_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("deployment");
+    ServiceName DEPLOYMENT_FACTORY_PLUGIN = INTERNAL_SERVICE_BASE.append("DeploymentFactory");
     /** The {@link FrameworkEventsPlugin} service name */
-    ServiceName FRAMEWORK_EVENTS_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("frameworkevents");
+    ServiceName FRAMEWORK_EVENTS_PLUGIN = INTERNAL_SERVICE_BASE.append("FrameworkEvents");
     /** The {@link LifecycleInterceptorPlugin} service name */
-    ServiceName LIFECYCLE_INTERCEPTOR_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("lifecycle");
+    ServiceName LIFECYCLE_INTERCEPTOR_PLUGIN = INTERNAL_SERVICE_BASE.append("LifecycleInterceptor");
     /** The {@link ModuleManagerPlugin} service name */
-    ServiceName MODULE_MANGER_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("modulemanager");
+    ServiceName MODULE_MANGER_PLUGIN = INTERNAL_SERVICE_BASE.append("ModuleManager");
     /** The {@link NativeCodePlugin} service name */
-    ServiceName NATIVE_CODE_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("nativecode");
+    ServiceName NATIVE_CODE_PLUGIN = INTERNAL_SERVICE_BASE.append("NativeCode");
+    /** The {@link PersistentBundlesInstaller} service name */
+    ServiceName PERSISTENT_BUNDLES_INSTALLER = INTERNAL_SERVICE_BASE.append("PersistentBundles");
+    /** The {@link PersistentBundlesInstaller} nested activator service name */
+    ServiceName PERSISTENT_BUNDLES_ACTIVE = PERSISTENT_BUNDLES_INSTALLER.append("ACTIVE");
     /** The {@link ResolverPlugin} service name */
-    ServiceName RESOLVER_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("resolver");
+    ServiceName RESOLVER_PLUGIN = INTERNAL_SERVICE_BASE.append("BundleResolver");
     /** The {@link ServiceManagerPlugin} service name */
-    ServiceName SERVICE_MANAGER_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("servicemanager");
+    ServiceName SERVICE_MANAGER_PLUGIN = INTERNAL_SERVICE_BASE.append("ServiceManager");
     /** The {@link SystemPackagesPlugin} service name */
-    ServiceName SYSTEM_PACKAGES_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("systempackages");
+    ServiceName SYSTEM_PACKAGES_PLUGIN = INTERNAL_SERVICE_BASE.append("SystemPackages");
     /** The {@link WebXMLVerifierInterceptor} service name */
-    ServiceName WEBXML_VERIFIER_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("webxmlverifier");
+    ServiceName WEBXML_VERIFIER_PLUGIN = INTERNAL_SERVICE_BASE.append("WebXMLVerifier");
     /** The {@link URLHandler} service name */
-    ServiceName URL_HANDLER_PLUGIN = FRAMEWORK_PLUGIN_BASE.append("urlhandler");
+    ServiceName URL_HANDLER_PLUGIN = INTERNAL_SERVICE_BASE.append("URLHandler");
 }

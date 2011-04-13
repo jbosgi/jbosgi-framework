@@ -33,9 +33,15 @@ public interface Constants extends org.osgi.framework.Constants {
     /** The prefix for modules/services managed by the OSGi layer */
     String JBOSGI_PREFIX = "jbosgi";
 
-    /** The timeout in millisecons for the framework to initialize */
+    /** The timeout in milliseconds for the framework to initialize */
     String PROPERTY_FRAMEWORK_INIT_TIMEOUT = "org.jboss.osgi.framework.init.timeout";
+    
+    /** The default timeout for the framework to initialize is 5sec */
+    int DEFAULT_FRAMEWORK_INIT_TIMEOUT = 5000;
 
-    /** The timeout in millisecons for the framework to start */
+    /** The timeout in milliseconds for the framework to start */
     String PROPERTY_FRAMEWORK_START_TIMEOUT = "org.jboss.osgi.framework.start.timeout";
+    
+    /** The default timeout for the framework to start is 10sec */
+    int DEFAULT_FRAMEWORK_START_TIMEOUT = 10000;
 }
