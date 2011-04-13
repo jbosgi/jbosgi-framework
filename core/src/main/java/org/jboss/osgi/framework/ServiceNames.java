@@ -88,6 +88,9 @@ public interface ServiceNames {
     /** The service name for the {@link SystemModuleProvider} */
     ServiceName SYSTEM_MODULE_PROVIDER = JBOSGI_BASE_NAME.append("SystemModuleProvider");
 
+    /** The service name for the {@link SystemServicesProvider} */
+    ServiceName SYSTEM_SERVICES_PROVIDER = JBOSGI_BASE_NAME.append("SystemServicesProvider");
+
     /** The service name for the {@link AutoInstallProvider} */
     ServiceName AUTOINSTALL_PROVIDER = JBOSGI_BASE_NAME.append("AutoInstallProvider");
 }

@@ -32,6 +32,8 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.InstallHandler;
 import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.SystemServicesProvider;
+import org.osgi.framework.BundleContext;
 
 /**
  * An injection point for framework core services. Other services can depend on this.
@@ -49,7 +51,8 @@ public final class CoreServices extends AbstractService<CoreServices> {
     private final InjectedValue<LifecycleInterceptorPlugin> injectedLifecycleInterceptor = new InjectedValue<LifecycleInterceptorPlugin>();
     private final InjectedValue<PackageAdminPlugin> injectedPackageAdmin = new InjectedValue<PackageAdminPlugin>();
     private final InjectedValue<StartLevelPlugin> injectedStartLevel = new InjectedValue<StartLevelPlugin>();
-    private final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
+    private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
+    private final InjectedValue<SystemServicesProvider> injectedServicesProvider = new InjectedValue<SystemServicesProvider>();
 
     static void addService(ServiceTarget serviceTarget) {
         CoreServices service = new CoreServices();
@@ -59,7 +62,8 @@ public final class CoreServices extends AbstractService<CoreServices> {
         builder.addDependency(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, service.injectedLifecycleInterceptor);
         builder.addDependency(ServiceNames.PACKAGE_ADMIN, PackageAdminPlugin.class, service.injectedPackageAdmin);
         builder.addDependency(ServiceNames.START_LEVEL, StartLevelPlugin.class, service.injectedStartLevel);
-        builder.addDependency(ServiceNames.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
+        builder.addDependency(ServiceNames.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
+        builder.addDependency(ServiceNames.SYSTEM_SERVICES_PROVIDER, SystemServicesProvider.class, service.injectedServicesProvider);
         builder.addDependencies(InternalServices.URL_HANDLER_PLUGIN, InternalServices.WEBXML_VERIFIER_PLUGIN);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
@@ -71,6 +75,9 @@ public final class CoreServices extends AbstractService<CoreServices> {
     @Override
     public void start(StartContext context) throws StartException {
         log.debugf("Starting: %s", context.getController().getName());
+        BundleContext systemContext = injectedSystemContext.getValue();
+        SystemServicesProvider servicesProvider = injectedServicesProvider.getValue();
+        servicesProvider.registerSystemServices(systemContext);
         getFrameworkState().injectedCoreServices.inject(this);
     }
 
@@ -85,7 +92,7 @@ public final class CoreServices extends AbstractService<CoreServices> {
         return this;
     }
 
-    InstallHandler getInstallProvider() {
+    InstallHandler getInstallHandler() {
         return injectedInstallProvider.getValue();
     }
 
@@ -103,9 +110,5 @@ public final class CoreServices extends AbstractService<CoreServices> {
 
     StartLevelPlugin getStartLevelPlugin() {
         return injectedStartLevel.getValue();
-    }
-
-    SystemBundleState getSystemBundle() {
-        return injectedSystemBundle.getValue();
     }
 }

@@ -153,6 +153,8 @@ public final class FrameworkBuilder {
             DefaultModuleLoaderProvider.addService(serviceTarget);
         if (isProvidedService(ServiceNames.SYSTEM_MODULE_PROVIDER) == false)
             DefaultSystemModuleProvider.addService(serviceTarget);
+        if (isProvidedService(ServiceNames.SYSTEM_SERVICES_PROVIDER) == false)
+            DefaultSystemServicesProvider.addService(serviceTarget);
     }
 
     private void assertNotClosed() {
