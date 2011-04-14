@@ -21,20 +21,26 @@
  */
 package org.jboss.osgi.framework;
 
-import java.net.URL;
-import java.util.List;
-
 import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceTarget;
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.osgi.framework.BundleException;
 
 /**
- * A provider for the list of auto install bundles.
+ * A handler for bundle deployments.
  *
  * @author thomas.diesler@jboss.com
- * @since 30-Mar-2011
+ * @since 29-Mar-2011
  */
-public interface AutoInstallProvider extends Service<AutoInstallProvider> {
+public interface BundleInstallHandler extends Service<BundleInstallHandler> {
 
-    List<URL> getAutoInstallList();
+    /**
+     * Install the bundle service for the given deployment.
+     */
+    void installBundle(ServiceTarget serviceTarget, Deployment dep) throws BundleException;
 
-    List<URL> getAutoStartList();
+    /**
+     * Uninstall the bundle associated with the given deployment.
+     */
+    void uninstallBundle(Deployment dep);
 }

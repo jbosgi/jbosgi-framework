@@ -106,7 +106,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
      *
      * @param module The module
      */
-    Deployment createDeployment(final Module module) throws BundleException {
+    Deployment createDeployment(Module module, OSGiMetaData metadata) throws BundleException {
         if (module == null)
             throw new IllegalArgumentException("Null module");
 
@@ -120,26 +120,35 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
             version = Version.emptyVersion;
         }
 
-        // Build the resolver capabilities, which exports every package
+        Deployment dep = DeploymentFactory.createDeployment(identifier.toString(), symbolicName, version);
+
         ResolverPlugin resolverPlugin = injectedResolver.getValue();
         XModuleBuilder builder = resolverPlugin.getModuleBuilder();
-        builder.createModule(symbolicName, version, 0);
-        builder.addBundleCapability(symbolicName, version);
-        for (String path : module.getExportedPaths()) {
-            if (path.startsWith("/"))
-                path = path.substring(1);
-            if (path.endsWith("/"))
-                path = path.substring(0, path.length() - 1);
-            if (path.isEmpty() || path.startsWith("META-INF"))
-                continue;
 
-            String packageName = path.replace('/', '.');
-            builder.addPackageCapability(packageName, null, null);
+        // Build the resolver capabilities, which exports every package
+        XModule resModule;
+        if (metadata == null) {
+            builder.createModule(symbolicName, version, 0);
+            builder.addBundleCapability(symbolicName, version);
+            for (String path : module.getExportedPaths()) {
+                if (path.startsWith("/"))
+                    path = path.substring(1);
+                if (path.endsWith("/"))
+                    path = path.substring(0, path.length() - 1);
+                if (path.isEmpty() || path.startsWith("META-INF"))
+                    continue;
+
+                String packageName = path.replace('/', '.');
+                builder.addPackageCapability(packageName, null, null);
+            }
+            resModule = builder.getModule();
         }
-        XModule resModule = builder.getModule();
+        else {
+            builder.createModule(metadata, 0);
+            resModule = builder.getModule();
+            dep.addAttachment(OSGiMetaData.class, metadata);
+        }
         resModule.addAttachment(Module.class, module);
-
-        Deployment dep = DeploymentFactory.createDeployment(identifier.toString(), symbolicName, version);
         dep.addAttachment(XModule.class, resModule);
         dep.addAttachment(Module.class, module);
         return dep;

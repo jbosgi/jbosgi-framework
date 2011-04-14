@@ -35,10 +35,6 @@ interface InternalServices {
     /** The base name of all internal services */
     ServiceName INTERNAL_SERVICE_BASE = ServiceNames.JBOSGI_BASE_NAME.append("internal");
 
-    /** The {@link AutoInstallProcessor} service name */
-    ServiceName AUTOINSTALL_BUNDLES = INTERNAL_SERVICE_BASE.append("AutoInstall");
-    /** The {@link AutoInstallProcessor} nested activator service name */
-    ServiceName AUTOINSTALL_BUNDLES_ACTIVE = AUTOINSTALL_BUNDLES.append("ACTIVE");
     /** The {@link BundleStoragePlugin} service name */
     ServiceName BUNDLE_STORAGE_PLUGIN = INTERNAL_SERVICE_BASE.append("BundleStorage");
     /** The {@link CoreServices} service name. */
@@ -56,7 +52,7 @@ interface InternalServices {
     /** The {@link PersistentBundlesInstaller} service name */
     ServiceName PERSISTENT_BUNDLES_INSTALLER = INTERNAL_SERVICE_BASE.append("PersistentBundles");
     /** The {@link PersistentBundlesInstaller} nested activator service name */
-    ServiceName PERSISTENT_BUNDLES_ACTIVE = PERSISTENT_BUNDLES_INSTALLER.append("ACTIVE");
+    ServiceName PERSISTENT_BUNDLES_INSTALLER_COMPLETE = PERSISTENT_BUNDLES_INSTALLER.append("COMPLETE");
     /** The {@link ResolverPlugin} service name */
     ServiceName RESOLVER_PLUGIN = INTERNAL_SERVICE_BASE.append("BundleResolver");
     /** The {@link ServiceManagerPlugin} service name */

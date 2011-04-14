@@ -49,6 +49,15 @@ public interface ServiceNames {
     /** The prefix for all OSGi bundle services */
     ServiceName BUNDLE_BASE_NAME = JBOSGI_BASE_NAME.append("bundle");
 
+    /** The service name for the {@link AutoInstallProcessor} */
+    ServiceName AUTOINSTALL_BUNDLES = JBOSGI_BASE_NAME.append("AutoInstallBundles");
+
+    /** The {@link AutoInstallProcessor} nested service that indicates completion */
+    ServiceName AUTOINSTALL_BUNDLES_COMPLETE = AUTOINSTALL_BUNDLES.append("COMPLETE");
+
+    /** The service name for the {@link BundleInstallHandler} */
+    ServiceName BUNDLE_INSTALL_HANDLER = JBOSGI_BASE_NAME.append("BundleInstallHandler");
+
     /** The {@link BundleManager} service name. */
     ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("BundleManager");
 
@@ -63,9 +72,6 @@ public interface ServiceNames {
 
     /** The service name for the started {@link Framework} */
     ServiceName FRAMEWORK_ACTIVE = FRAMEWORK_BASE_NAME.append("ACTIVE");
-
-    /** The service name for the {@link InstallHandler} */
-    ServiceName INSTALL_HANDLER = JBOSGI_BASE_NAME.append("InstallHandler");
 
     /** The service name for the {@link PackageAdmin} service */
     ServiceName PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("PackageAdmin");
@@ -90,7 +96,4 @@ public interface ServiceNames {
 
     /** The service name for the {@link SystemServicesProvider} */
     ServiceName SYSTEM_SERVICES_PROVIDER = JBOSGI_BASE_NAME.append("SystemServicesProvider");
-
-    /** The service name for the {@link AutoInstallProvider} */
-    ServiceName AUTOINSTALL_PROVIDER = JBOSGI_BASE_NAME.append("AutoInstallProvider");
 }

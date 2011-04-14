@@ -121,13 +121,12 @@ public final class FrameworkBuilder {
         URLHandlerPlugin.addService(serviceTarget);
 
         BundleManager bundleManager = BundleManager.addService(serviceTarget, this);
-        FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager, initialMode);
+        FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
 
-        AutoInstallProcessor.addService(serviceTarget);
         DeploymentFactoryPlugin.addService(serviceTarget);
         BundleStoragePlugin.addService(serviceTarget, firstInit);
         CoreServices.addService(serviceTarget);
-        FrameworkActive.addService(serviceTarget);
+        FrameworkActive.addService(serviceTarget, initialMode);
         FrameworkEventsPlugin.addService(serviceTarget);
         FrameworkInit.addService(serviceTarget);
         LifecycleInterceptorPlugin.addService(serviceTarget);
@@ -143,10 +142,10 @@ public final class FrameworkBuilder {
         SystemPackagesPlugin.addService(serviceTarget, this);
         WebXMLVerifierInterceptor.addService(serviceTarget);
 
-        if (isProvidedService(ServiceNames.AUTOINSTALL_PROVIDER) == false)
-            DefaultAutoInstallProvider.addService(serviceTarget);
-        if (isProvidedService(ServiceNames.INSTALL_HANDLER) == false)
-            DefaultInstallHandler.addService(serviceTarget);
+        if (isProvidedService(ServiceNames.AUTOINSTALL_BUNDLES) == false)
+            DefaultAutoInstallProcessor.addService(serviceTarget);
+        if (isProvidedService(ServiceNames.BUNDLE_INSTALL_HANDLER) == false)
+            DefaultBundleInstallHandler.addService(serviceTarget);
         if (isProvidedService(ServiceNames.FRAMEWORK_MODULE_PROVIDER) == false)
             DefaultFrameworkModuleProvider.addService(serviceTarget);
         if (isProvidedService(ServiceNames.MODULE_LOADER_PROVIDER) == false)

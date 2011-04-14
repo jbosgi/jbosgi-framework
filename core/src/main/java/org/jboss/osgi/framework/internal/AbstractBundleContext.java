@@ -35,7 +35,7 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.InstallHandler;
+import org.jboss.osgi.framework.BundleInstallHandler;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -144,12 +144,12 @@ abstract class AbstractBundleContext implements BundleContext {
      *
      * #2 Create a Bundle {@link Deployment}
      *
-     * #3 Deploy the Bundle through the {@link InstallHandler}
+     * #3 Deploy the Bundle through the {@link BundleInstallHandler}
      *
-     * The {@link InstallHandler} is the integration point for JBossAS.
+     * The {@link BundleInstallHandler} is the integration point for JBossAS.
      *
-     * The {@link DefaultInstallHandler} simply delegates to {@link BundleManager#installBundle(Deployment)} In
-     * JBossAS however, the {@link InstallHandler} delegates to the management API that feeds the Bundle deployment
+     * The {@link DefaultBundleInstallHandler} simply delegates to {@link BundleManager#installBundle(Deployment)} In
+     * JBossAS however, the {@link BundleInstallHandler} delegates to the management API that feeds the Bundle deployment
      * through the DeploymentUnitProcessor chain.
      */
     private Bundle installBundleInternal(String location, InputStream input) throws BundleException {
@@ -219,7 +219,7 @@ abstract class AbstractBundleContext implements BundleContext {
 
         //BundleService.addService(serviceTarget, dep);
 
-        InstallHandler installHandler = frameworkState.getCoreServices().getInstallHandler();
+        BundleInstallHandler installHandler = frameworkState.getCoreServices().getInstallHandler();
         installHandler.installBundle(serviceTarget, dep);
 
         ServiceName serviceName = dep.getAttachment(ServiceName.class);

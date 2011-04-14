@@ -313,9 +313,9 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
     }
 
     @Override
-    public ServiceName installBundle(ServiceTarget serviceTarget, Module module) throws BundleException {
+    public ServiceName installBundle(ServiceTarget serviceTarget, Module module, OSGiMetaData metadata) throws BundleException {
         DeploymentFactoryPlugin plugin = getFrameworkState().getDeploymentFactoryPlugin();
-        Deployment dep = plugin.createDeployment(module);
+        Deployment dep = plugin.createDeployment(module, metadata);
         plugin.createOSGiMetaData(dep);
         return installBundle(serviceTarget, dep);
     }
@@ -329,7 +329,7 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
         } catch (ModuleLoadException ex) {
             throw new BundleException("Cannot load module: " + moduleid, ex);
         }
-        return installBundle(serviceTarget, module);
+        return installBundle(serviceTarget, module, null);
     }
 
     @Override

@@ -151,6 +151,7 @@ final class SystemPackagesPlugin extends AbstractPluginService<SystemPackagesPlu
         frameworkPackages.add("org.jboss.msc.service");
         frameworkPackages.add("org.jboss.osgi.deployment.deployer");
         frameworkPackages.add("org.jboss.osgi.deployment.interceptor");
+        frameworkPackages.add("org.jboss.osgi.framework");
         frameworkPackages.add("org.jboss.osgi.framework.url");
         frameworkPackages.add("org.jboss.osgi.modules");
 
