@@ -27,9 +27,9 @@ import org.osgi.framework.launch.Framework;
 
 /**
  * Represents the state of the {@link Framework}.
- *  
+ *
  * It is used by the various {@link FrameworkService}s as well as the {@link FrameworkProxy}.
- * The state is never given to the client. 
+ * The state is never given to the client.
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
@@ -40,7 +40,7 @@ final class FrameworkState {
     static final Logger log = Logger.getLogger(FrameworkState.class);
 
     private final BundleManager bundleManager;
-    
+
     final InjectedValue<CoreServices> injectedCoreServices = new InjectedValue<CoreServices>();
     final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
     final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
@@ -51,7 +51,7 @@ final class FrameworkState {
     final InjectedValue<ServiceManagerPlugin> injectedServiceManager = new InjectedValue<ServiceManagerPlugin>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     private int startStopOptions;
-    
+
     FrameworkState(BundleManager bundleManager) {
         this.bundleManager = bundleManager;
     }
@@ -63,35 +63,35 @@ final class FrameworkState {
     DeploymentFactoryPlugin getDeploymentFactoryPlugin() {
         return injectedDeploymentFactory.getValue();
     }
-    
+
     BundleStoragePlugin getBundleStoragePlugin() {
         return injectedBundleStorage.getValue();
     }
-    
+
     CoreServices getCoreServices() {
         return injectedCoreServices.getValue();
     }
-    
+
     FrameworkEventsPlugin getFrameworkEventsPlugin() {
         return injectedFrameworkEvents.getValue();
     }
-    
+
     ModuleManagerPlugin getModuleManagerPlugin() {
         return injectedModuleManager.getValue();
     }
-    
+
     NativeCodePlugin getNativeCodePlugin() {
         return injectedNativeCode.getValue();
     }
-    
+
     ResolverPlugin getResolverPlugin() {
         return injectedResolverPlugin.getValue();
     }
-    
+
     ServiceManagerPlugin getServiceManagerPlugin() {
         return injectedServiceManager.getValue();
     }
-    
+
     SystemBundleState getSystemBundle() {
         return injectedSystemBundle.getValue();
     }

@@ -65,7 +65,7 @@ public class InstallFromModuleTestCase extends AbstractFrameworkTest {
         Module module = Module.getBootModuleLoader().loadModule(identifier);
         ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
         ServiceTarget serviceTarget = serviceContainer.subTarget();
-        ServiceName serviceName = getBundleManager().installBundle(serviceTarget, module);
+        ServiceName serviceName = getBundleManager().installBundle(serviceTarget, module, null);
 
         Bundle bundle = getBundleFromService(serviceContainer, serviceName);
         assertBundleState(Bundle.INSTALLED, bundle.getState());

@@ -28,6 +28,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.ServiceNames;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -47,14 +48,14 @@ public final class FrameworkActive extends FrameworkService {
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkActive.class);
 
-    private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
+    private final InjectedValue<FrameworkService> injectedFramework = new InjectedValue<FrameworkService>();
 
-    static void addService(ServiceTarget serviceTarget) {
+    static void addService(ServiceTarget serviceTarget, Mode initialMode) {
         FrameworkActive service = new FrameworkActive();
-        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(org.jboss.osgi.framework.ServiceNames.FRAMEWORK_ACTIVE, service);
-        builder.addDependency(org.jboss.osgi.framework.ServiceNames.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
-        builder.addDependencies(InternalServices.AUTOINSTALL_BUNDLES, InternalServices.AUTOINSTALL_BUNDLES_ACTIVE);
-        builder.setInitialMode(Mode.ON_DEMAND);
+        ServiceBuilder<FrameworkService> builder = serviceTarget.addService(org.jboss.osgi.framework.ServiceNames.FRAMEWORK_ACTIVE, service);
+        builder.addDependency(org.jboss.osgi.framework.ServiceNames.FRAMEWORK_INIT, FrameworkService.class, service.injectedFramework);
+        builder.addDependencies(ServiceNames.AUTOINSTALL_BUNDLES, ServiceNames.AUTOINSTALL_BUNDLES_COMPLETE);
+        builder.setInitialMode(initialMode);
         builder.install();
     }
 
@@ -103,7 +104,7 @@ public final class FrameworkActive extends FrameworkService {
 
     @Override
     FrameworkState getFrameworkState() {
-        return injectedFramework.getValue();
+        return injectedFramework.getValue().getFrameworkState();
     }
 
     private int getBeginningStartLevel() {

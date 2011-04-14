@@ -42,12 +42,12 @@ import org.osgi.framework.Version;
 import org.osgi.framework.launch.Framework;
 
 /**
- * The base of all framework services. 
+ * The base of all framework services.
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class FrameworkService implements Service<FrameworkState>, Framework {
+abstract class FrameworkService implements Service<FrameworkService>, Framework {
 
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkService.class);
@@ -61,18 +61,18 @@ abstract class FrameworkService implements Service<FrameworkState>, Framework {
     public void stop(StopContext context) {
         log.debugf("Stopping: %s", context.getController().getName());
     }
-    
+
     @Override
-    public FrameworkState getValue() {
-        return getFrameworkState();
+    public FrameworkService getValue() {
+        return this;
     }
 
     abstract FrameworkState getFrameworkState();
-    
+
     BundleManager getBundleManager() {
         return getFrameworkState().getBundleManager();
     }
-    
+
     SystemBundleState getSystemBundle() {
         return getFrameworkState().getSystemBundle();
     }
@@ -80,7 +80,7 @@ abstract class FrameworkService implements Service<FrameworkState>, Framework {
     void changeState(int newstate) {
         throw new NotImplementedException();
     }
-    
+
     @Override
     public int getState() {
         return getSystemBundle().getState();

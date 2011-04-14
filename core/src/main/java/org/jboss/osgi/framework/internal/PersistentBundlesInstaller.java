@@ -120,7 +120,7 @@ public final class PersistentBundlesInstaller extends AbstractPluginService<Void
         builder.install();
 
         // Install a service that starts the persistent bundles
-        builder = serviceTarget.addService(InternalServices.PERSISTENT_BUNDLES_ACTIVE, new AbstractService<Void>() {
+        builder = serviceTarget.addService(InternalServices.PERSISTENT_BUNDLES_INSTALLER_COMPLETE, new AbstractService<Void>() {
             public void start(StartContext context) throws StartException {
                 for (Deployment dep : pendingServices.values()) {
                     if (dep.isAutoStart()) {

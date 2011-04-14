@@ -22,25 +22,13 @@
 package org.jboss.osgi.framework;
 
 import org.jboss.msc.service.Service;
-import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.deployment.deployer.Deployment;
-import org.osgi.framework.BundleException;
 
 /**
- * A handler for bundle deployments.
+ * Integration point to auto install bundles at framework startup.
  *
  * @author thomas.diesler@jboss.com
- * @since 29-Mar-2011
+ * @since 30-Mar-2011
  */
-public interface InstallHandler extends Service<InstallHandler> {
+public interface AutoInstallProcessor extends Service<AutoInstallProcessor> {
 
-    /**
-     * Install the bundle service for the given deployment.
-     */
-    void installBundle(ServiceTarget serviceTarget, Deployment dep) throws BundleException;
-
-    /**
-     * Uninstall the bundle associated with the given deployment.
-     */
-    void uninstallBundle(Deployment dep);
 }

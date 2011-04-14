@@ -21,8 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.InternalServices.AUTOINSTALL_BUNDLES;
-
+import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,9 +40,12 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
-import org.jboss.osgi.framework.AutoInstallProvider;
+import org.jboss.osgi.framework.AutoInstallProcessor;
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.spi.util.BundleInfo;
+import org.jboss.osgi.spi.util.StringPropertyReplacer;
+import org.jboss.osgi.spi.util.StringPropertyReplacer.PropertyProvider;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -52,34 +55,51 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProcessor> {
+final class DefaultAutoInstallProcessor extends AbstractPluginService<AutoInstallProcessor> implements AutoInstallProcessor {
 
     // Provide logging
-    static final Logger log = Logger.getLogger(AutoInstallProcessor.class);
+    static final Logger log = Logger.getLogger(DefaultAutoInstallProcessor.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-    private final InjectedValue<AutoInstallProvider> injectedProvider = new InjectedValue<AutoInstallProvider>();
 
     static void addService(ServiceTarget serviceTarget) {
-        AutoInstallProcessor service = new AutoInstallProcessor();
-        ServiceBuilder<AutoInstallProcessor> builder = serviceTarget.addService(AUTOINSTALL_BUNDLES, service);
-        builder.addDependency(ServiceNames.AUTOINSTALL_PROVIDER, AutoInstallProvider.class, service.injectedProvider);
+        DefaultAutoInstallProcessor service = new DefaultAutoInstallProcessor();
+        ServiceBuilder<AutoInstallProcessor> builder = serviceTarget.addService(ServiceNames.AUTOINSTALL_BUNDLES, service);
         builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.addDependency(ServiceNames.FRAMEWORK_INIT);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    private AutoInstallProcessor() {
+    private DefaultAutoInstallProcessor() {
     }
 
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
         try {
-            AutoInstallProvider provider = injectedProvider.getValue();
-            List<URL> autoInstall = new ArrayList<URL>(provider.getAutoInstallList());
-            List<URL> autoStart = new ArrayList<URL>(provider.getAutoStartList());
+            List<URL> autoInstall = new ArrayList<URL>();
+            List<URL> autoStart = new ArrayList<URL>();
+
+            BundleManager bundleManager = injectedBundleManager.getValue();
+            String propValue = (String) bundleManager.getProperty(Constants.PROPERTY_AUTO_INSTALL_URLS);
+            if (propValue != null) {
+                for (String path : propValue.split(",")) {
+                    URL url = toURL(bundleManager, path.trim());
+                    if (url != null) {
+                        autoInstall.add(url);
+                    }
+                }
+            }
+            propValue = (String) bundleManager.getProperty(Constants.PROPERTY_AUTO_START_URLS);
+            if (propValue != null) {
+                for (String path : propValue.split(",")) {
+                    URL url = toURL(bundleManager, path.trim());
+                    if (url != null) {
+                        autoStart.add(url);
+                    }
+                }
+            }
             ServiceTarget serviceTarget = context.getChildTarget();
             installBundles(serviceTarget, autoInstall, autoStart);
         } catch (BundleException ex) {
@@ -88,7 +108,7 @@ final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProces
     }
 
     @Override
-    public AutoInstallProcessor getValue() {
+    public DefaultAutoInstallProcessor getValue() {
         return this;
     }
 
@@ -109,9 +129,9 @@ final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProces
             ServiceName serviceName = bundleManager.installBundle(serviceTarget, dep);
             pendingServices.put(serviceName, dep);
         }
-        
+
         // Install a service that has a dependency on all pending bundle INSTALLED services
-        ServiceName servicesInstalled = InternalServices.AUTOINSTALL_BUNDLES.append("INSTALLED");
+        ServiceName servicesInstalled = ServiceNames.AUTOINSTALL_BUNDLES.append("INSTALLED");
         ServiceBuilder<Void> builder = serviceTarget.addService(servicesInstalled, new AbstractService<Void>() {
             public void start(StartContext context) throws StartException {
                 log.debugf("Auto bundles installed");
@@ -119,9 +139,9 @@ final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProces
         });
         builder.addDependencies(pendingServices.keySet());
         builder.install();
-        
-        // Install a service that starts the persistent bundles
-        builder = serviceTarget.addService(InternalServices.AUTOINSTALL_BUNDLES_ACTIVE, new AbstractService<Void>() {
+
+        // Install a service that starts the bundles
+        builder = serviceTarget.addService(ServiceNames.AUTOINSTALL_BUNDLES_COMPLETE, new AbstractService<Void>() {
             public void start(StartContext context) throws StartException {
                 for (Deployment dep : pendingServices.values()) {
                     if (dep.isAutoStart()) {
@@ -133,10 +153,42 @@ final class AutoInstallProcessor extends AbstractPluginService<AutoInstallProces
                         }
                     }
                 }
-                log.debugf("Auto bundles bundles started");
+                log.debugf("Auto bundles started");
             }
         });
         builder.addDependencies(servicesInstalled);
         builder.install();
+    }
+
+    private URL toURL(final BundleManager bundleManager, final String path) {
+
+        URL pathURL = null;
+        PropertyProvider provider = new PropertyProvider() {
+            @Override
+            public String getProperty(String key) {
+                return (String) bundleManager.getProperty(key);
+            }
+        };
+        String realPath = StringPropertyReplacer.replaceProperties(path, provider);
+        try {
+            pathURL = new URL(realPath);
+        } catch (MalformedURLException ex) {
+            // ignore
+        }
+
+        if (pathURL == null) {
+            try {
+                File file = new File(realPath);
+                if (file.exists())
+                    pathURL = file.toURI().toURL();
+            } catch (MalformedURLException ex) {
+                throw new IllegalArgumentException("Invalid path: " + realPath, ex);
+            }
+        }
+
+        if (pathURL == null)
+            throw new IllegalArgumentException("Invalid path: " + realPath);
+
+        return pathURL;
     }
 }

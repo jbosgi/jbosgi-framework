@@ -27,6 +27,8 @@ import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XModule;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -51,7 +53,7 @@ public interface BundleManagement {
     /**
      * Install a bundle from the given module
      */
-    ServiceName installBundle(ServiceTarget serviceTarget, Module module) throws BundleException;
+    ServiceName installBundle(ServiceTarget serviceTarget, Module module, OSGiMetaData metadata) throws BundleException;
 
     /**
      * Uninstall the given module

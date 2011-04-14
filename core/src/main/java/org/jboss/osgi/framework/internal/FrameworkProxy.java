@@ -142,7 +142,7 @@ final class FrameworkProxy implements Framework {
             if (serviceTarget == null)
                 serviceTarget = serviceContainer.subTarget();
 
-            frameworkBuilder.createFrameworkServicesInternal(serviceTarget, Mode.ACTIVE, firstInit);
+            frameworkBuilder.createFrameworkServicesInternal(serviceTarget, Mode.ON_DEMAND, firstInit);
             awaitFrameworkInit();
             firstInit = false;
 
@@ -430,10 +430,10 @@ final class FrameworkProxy implements Framework {
     @SuppressWarnings("unchecked")
     private FrameworkState awaitFrameworkInit() {
         if (frameworkInit == null) {
-            ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) serviceContainer.getRequiredService(ServiceNames.FRAMEWORK_INIT);
-            controller.addListener(new AbstractServiceListener<FrameworkState>() {
+            ServiceController<FrameworkService> controller = (ServiceController<FrameworkService>) serviceContainer.getRequiredService(ServiceNames.FRAMEWORK_INIT);
+            controller.addListener(new AbstractServiceListener<FrameworkService>() {
                 @Override
-                public void serviceStopped(ServiceController<? extends FrameworkState> controller) {
+                public void serviceStopped(ServiceController<? extends FrameworkService> controller) {
                     controller.removeListener(this);
                     frameworkBundleState = Bundle.RESOLVED;
                     serviceStopped = true;
@@ -441,10 +441,11 @@ final class FrameworkProxy implements Framework {
                 }
             });
             controller.setMode(Mode.ACTIVE);
-            FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
+            FutureServiceValue<FrameworkService> future = new FutureServiceValue<FrameworkService>(controller);
             try {
                 Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_INIT_TIMEOUT, DEFAULT_FRAMEWORK_INIT_TIMEOUT);
-                frameworkInit = future.get(timeout, TimeUnit.MILLISECONDS);
+                FrameworkService service = future.get(timeout, TimeUnit.MILLISECONDS);
+                frameworkInit = service.getFrameworkState();
             } catch (ExecutionException ex) {
                 Throwable cause = ex.getCause();
                 throw new IllegalStateException("Cannot initialize Framework", cause);
@@ -460,19 +461,20 @@ final class FrameworkProxy implements Framework {
     @SuppressWarnings("unchecked")
     private FrameworkState awaitActiveFramework() {
         if (activeFramework == null) {
-            ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) serviceContainer.getRequiredService(ServiceNames.FRAMEWORK_ACTIVE);
-            controller.addListener(new AbstractServiceListener<FrameworkState>() {
+            ServiceController<FrameworkService> controller = (ServiceController<FrameworkService>) serviceContainer.getRequiredService(ServiceNames.FRAMEWORK_ACTIVE);
+            controller.addListener(new AbstractServiceListener<FrameworkService>() {
                 @Override
-                public void serviceStopped(ServiceController<? extends FrameworkState> controller) {
+                public void serviceStopped(ServiceController<? extends FrameworkService> controller) {
                     controller.removeListener(this);
                     activeFramework = null;
                 }
             });
             controller.setMode(Mode.ACTIVE);
-            FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
+            FutureServiceValue<FrameworkService> future = new FutureServiceValue<FrameworkService>(controller);
             try {
                 Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_START_TIMEOUT, DEFAULT_FRAMEWORK_START_TIMEOUT);
-                activeFramework = future.get(timeout, TimeUnit.MILLISECONDS);
+                FrameworkService service = future.get(timeout, TimeUnit.MILLISECONDS);
+                activeFramework = service.getFrameworkState();
             } catch (ExecutionException ex) {
                 Throwable cause = ex.getCause();
                 throw new IllegalStateException("Cannot start the Framework", cause);

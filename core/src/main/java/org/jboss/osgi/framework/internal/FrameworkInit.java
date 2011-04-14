@@ -44,14 +44,15 @@ public final class FrameworkInit extends FrameworkService {
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkInit.class);
 
-    private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
+    private final InjectedValue<FrameworkService> injectedFramework = new InjectedValue<FrameworkService>();
 
     static void addService(ServiceTarget serviceTarget) {
         FrameworkInit service = new FrameworkInit();
-        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(ServiceNames.FRAMEWORK_INIT, service);
-        builder.addDependency(ServiceNames.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
-        builder.addDependencies(InternalServices.PERSISTENT_BUNDLES_INSTALLER, InternalServices.PERSISTENT_BUNDLES_ACTIVE);
+        ServiceBuilder<FrameworkService> builder = serviceTarget.addService(ServiceNames.FRAMEWORK_INIT, service);
+        builder.addDependency(ServiceNames.FRAMEWORK_CREATE, FrameworkService.class, service.injectedFramework);
         builder.addDependency(InternalServices.CORE_SERVICES);
+        builder.addDependency(InternalServices.PERSISTENT_BUNDLES_INSTALLER);
+        builder.addDependency(InternalServices.PERSISTENT_BUNDLES_INSTALLER_COMPLETE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -67,6 +68,6 @@ public final class FrameworkInit extends FrameworkService {
 
     @Override
     FrameworkState getFrameworkState() {
-        return injectedFramework.getValue();
+        return injectedFramework.getValue().getFrameworkState();
     }
 }
