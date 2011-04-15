@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import java.util.Set;
 
+import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -35,6 +36,7 @@ import org.jboss.osgi.deployment.interceptor.InvocationContext;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptor;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -48,6 +50,9 @@ import org.osgi.framework.ServiceRegistration;
  */
 final class WebXMLVerifierInterceptor extends AbstractPluginService<WebXMLVerifierInterceptor> implements LifecycleInterceptor {
 
+    // Provide logging
+    static final Logger log = Logger.getLogger(WebXMLVerifierInterceptor.class);
+    
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private LifecycleInterceptor delegate;
     private ServiceRegistration registration;
@@ -70,6 +75,7 @@ final class WebXMLVerifierInterceptor extends AbstractPluginService<WebXMLVerifi
         delegate = new AbstractLifecycleInterceptor() {
             @Override
             public void invoke(int state, InvocationContext context) throws LifecycleInterceptorException {
+                log.debugf("Invoke [bundle=%s,state=%s]", context.getBundle(), ConstantsHelper.bundleState(state));
                 if (state == Bundle.STARTING) {
                     try {
                         VirtualFile root = context.getRoot();
@@ -77,6 +83,7 @@ final class WebXMLVerifierInterceptor extends AbstractPluginService<WebXMLVerifi
                             VirtualFile webXML = root.getChild("/WEB-INF/web.xml");
                             String contextPath = (String) context.getBundle().getHeaders().get("Web-ContextPath");
                             boolean isWebApp = contextPath != null || root.getName().endsWith(".war");
+                            log.debugf("[webXML=%s,contextPath=%s]", webXML, contextPath);
                             if (isWebApp == true && webXML == null)
                                 throw new LifecycleInterceptorException("Cannot obtain web.xml from: " + root.toURL());
                         }
