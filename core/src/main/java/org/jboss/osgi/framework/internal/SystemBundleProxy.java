@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import java.io.InputStream;
 
-import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -41,30 +40,30 @@ final class SystemBundleProxy extends BundleProxy<SystemBundleState> {
     }
 
     public void start(int options) throws BundleException {
-        throw new NotImplementedException();
+        // do nothing
     }
 
     public void start() throws BundleException {
-        throw new NotImplementedException();
+        // do nothing
     }
 
     public void stop(int options) throws BundleException {
-        throw new NotImplementedException();
+        // do nothing
     }
 
     public void stop() throws BundleException {
-        throw new NotImplementedException();
+        // do nothing
     }
 
     public void update(InputStream input) throws BundleException {
-        throw new NotImplementedException();
+        // do nothing
     }
 
     public void update() throws BundleException {
-        throw new NotImplementedException();
+        // do nothing
     }
 
     public void uninstall() throws BundleException {
-        throw new NotImplementedException();
+        throw new BundleException("Cannot uninstall the system bundle");
     }
 }

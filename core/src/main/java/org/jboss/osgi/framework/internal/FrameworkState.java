@@ -103,5 +103,4 @@ final class FrameworkState {
     void setStartStopOptions(int startStopOptions) {
         this.startStopOptions = startStopOptions;
     }
-
 }
