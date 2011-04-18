@@ -63,7 +63,7 @@ import org.osgi.service.packageadmin.RequiredBundle;
 
 /**
  * An implementation of the {@link PackageAdmin} service.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2010
@@ -120,7 +120,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         if (bundle == null)
             return getAllExportedPackages();
 
-        // A bundle is destroyed if it is no longer known to the system. An uninstalled bundle can potentially live on if there are
+        // A bundle is destroyed if it is no longer known to the system. An uninstalled bundle can potentially live on if there
+        // are
         // other bundles depending on it. Only after a call to {@link PackageAdmin#refreshPackages(Bundle[])} the bundle gets
         // destroyed.
         AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
@@ -215,6 +216,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         BundleManager bundleManager = injectedBundleManager.getValue();
         for (AbstractBundleState ab : bundleManager.getBundles()) {
             for (XModule module : ab.getAllResolverModules()) {
+                if (module.isResolved() == false)
+                    continue;
                 for (XWire wire : module.getWires()) {
                     if (wire.getCapability().equals(capability))
                         return true;
@@ -415,19 +418,16 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     }
 
     /**
-     * Returns the bundles with the specified symbolic name whose bundle version
-     * is within the specified version range. If no bundles are installed that
-     * have the specified symbolic name, then <code>null</code> is returned.
-     * If a version range is specified, then only the bundles that have the
-     * specified symbolic name and whose bundle versions belong to the specified
-     * version range are returned. The returned bundles are ordered by version
-     * in descending version order so that the first element of the array
-     * contains the bundle with the highest version.
-     *
+     * Returns the bundles with the specified symbolic name whose bundle version is within the specified version range. If no
+     * bundles are installed that have the specified symbolic name, then <code>null</code> is returned. If a version range is
+     * specified, then only the bundles that have the specified symbolic name and whose bundle versions belong to the specified
+     * version range are returned. The returned bundles are ordered by version in descending version order so that the first
+     * element of the array contains the bundle with the highest version.
+     * 
      * @param symbolicName The symbolic name of the desired bundles.
      * @param versionRange The version range of the desired bundles, or <code>null</code> if all versions are desired.
-     * @return An array of bundles with the specified name belonging to the specified version range ordered in descending version order,
-     *         or <code>null</code> if no bundles are found.
+     * @return An array of bundles with the specified name belonging to the specified version range ordered in descending
+     *         version order, or <code>null</code> if no bundles are found.
      */
     @Override
     public Bundle[] getBundles(String symbolicName, String versionRange) {
