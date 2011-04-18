@@ -267,24 +267,26 @@ final class FrameworkProxy implements Framework {
     @Override
     @SuppressWarnings("unchecked")
     public FrameworkEvent waitForStop(long timeout) throws InterruptedException {
-        if (shutdownContainer == true) {
-            serviceContainer.awaitTermination(timeout, TimeUnit.MILLISECONDS);
-            if (serviceContainer.isShutdownComplete() == false) {
-                return new FrameworkEvent(FrameworkEvent.WAIT_TIMEDOUT, this, null);
-            }
-        } else {
-            final CountDownLatch latch = new CountDownLatch(1);
-            ServiceController<BundleManager> controller = (ServiceController<BundleManager>) serviceContainer.getRequiredService(ServiceNames.BUNDLE_MANAGER);
-            controller.addListener(new AbstractServiceListener<BundleManager>() {
-                @Override
-                public void serviceRemoved(ServiceController<? extends BundleManager> controller) {
-                    controller.removeListener(this);
-                    latch.countDown();
+        if (serviceContainer != null) {
+            if (shutdownContainer == true) {
+                serviceContainer.awaitTermination(timeout, TimeUnit.MILLISECONDS);
+                if (serviceContainer.isShutdownComplete() == false) {
+                    return new FrameworkEvent(FrameworkEvent.WAIT_TIMEDOUT, this, null);
                 }
-            });
-            controller.setMode(Mode.REMOVE);
-            if (latch.await(timeout, TimeUnit.MILLISECONDS) == false) {
-                return new FrameworkEvent(FrameworkEvent.WAIT_TIMEDOUT, this, null);
+            } else {
+                final CountDownLatch latch = new CountDownLatch(1);
+                ServiceController<BundleManager> controller = (ServiceController<BundleManager>) serviceContainer.getRequiredService(ServiceNames.BUNDLE_MANAGER);
+                controller.addListener(new AbstractServiceListener<BundleManager>() {
+                    @Override
+                    public void serviceRemoved(ServiceController<? extends BundleManager> controller) {
+                        controller.removeListener(this);
+                        latch.countDown();
+                    }
+                });
+                controller.setMode(Mode.REMOVE);
+                if (latch.await(timeout, TimeUnit.MILLISECONDS) == false) {
+                    return new FrameworkEvent(FrameworkEvent.WAIT_TIMEDOUT, this, null);
+                }
             }
         }
         return new FrameworkEvent(stoppedEvent, this, null);
@@ -411,7 +413,7 @@ final class FrameworkProxy implements Framework {
 
     @Override
     public BundleContext getBundleContext() {
-        return serviceStopped ? null : awaitFrameworkInit().getSystemBundle().getBundleContext();
+        return isNotStopped() ? awaitFrameworkInit().getSystemBundle().getBundleContext() : null;
     }
 
     @Override
@@ -420,8 +422,12 @@ final class FrameworkProxy implements Framework {
         throw new NotImplementedException();
     }
 
+    private boolean isNotStopped() {
+        return serviceContainer != null && serviceStopped == false;
+    }
+
     private void assertNotStopped() {
-        if (serviceStopped == true)
+        if (isNotStopped() == false)
             throw new IllegalStateException("Framework already stopped");
     }
 
