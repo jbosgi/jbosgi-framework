@@ -32,16 +32,18 @@ import java.net.URL;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.ServiceNames;
@@ -56,11 +58,10 @@ import org.osgi.framework.launch.Framework;
 
 /**
  * The proxy that represents the {@link Framework}.
- *
- * The {@link FrameworkProxy} uses the respective {@link FrameworkService}s.
- * It never interacts with the {@link FrameworkState} directly.
- * The client may hold a reference to the {@link FrameworkProxy}.
- *
+ * 
+ * The {@link FrameworkProxy} uses the respective {@link FrameworkService}s. It never interacts with the {@link FrameworkState}
+ * directly. The client may hold a reference to the {@link FrameworkProxy}.
+ * 
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
@@ -69,18 +70,16 @@ final class FrameworkProxy implements Framework {
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkProxy.class);
 
+    private final AtomicInteger proxyState;
     private final FrameworkBuilder frameworkBuilder;
-    private ServiceContainer serviceContainer;
-    private boolean shutdownContainer;
-    private int frameworkBundleState;
-    private boolean serviceStopped;
+    private LenientShutdownContainer lenientContainer;
     private boolean firstInit;
     private int stoppedEvent;
 
     FrameworkProxy(FrameworkBuilder frameworkBuilder) {
         this.frameworkBuilder = frameworkBuilder;
         this.stoppedEvent = FrameworkEvent.STOPPED;
-        this.frameworkBundleState = Bundle.INSTALLED;
+        this.proxyState = new AtomicInteger(Bundle.INSTALLED);
         this.firstInit = true;
     }
 
@@ -106,18 +105,15 @@ final class FrameworkProxy implements Framework {
 
     /**
      * Initialize this Framework.
-     *
+     * 
      * After calling this method, this Framework must:
-     *
-     * - Be in the Bundle.STARTING state.
-     * - Have a valid Bundle Context.
-     * - Be at start level 0.
-     * - Have event handling enabled.
-     * - Have reified Bundle objects for all installed bundles.
-     * - Have registered any framework services (e.g. PackageAdmin, ConditionalPermissionAdmin, StartLevel)
-     *
+     * 
+     * - Be in the Bundle.STARTING state. - Have a valid Bundle Context. - Be at start level 0. - Have event handling enabled. -
+     * Have reified Bundle objects for all installed bundles. - Have registered any framework services (e.g. PackageAdmin,
+     * ConditionalPermissionAdmin, StartLevel)
+     * 
      * This Framework will not actually be started until start is called.
-     *
+     * 
      * This method does nothing if called when this Framework is in the Bundle.STARTING, Bundle.ACTIVE or Bundle.STOPPING
      * states.
      */
@@ -129,20 +125,15 @@ final class FrameworkProxy implements Framework {
         if (state == Bundle.STARTING || state == Bundle.ACTIVE || state == Bundle.STOPPING)
             return;
 
+        log.debugf("init framework");
         try {
-            serviceStopped = false;
-
-            serviceContainer = frameworkBuilder.getServiceContainer();
-            if (serviceContainer == null) {
-                serviceContainer = ServiceContainer.Factory.create();
-                shutdownContainer = true;
-            }
-
+            lenientContainer = new LenientShutdownContainer(frameworkBuilder.getServiceContainer());
             ServiceTarget serviceTarget = frameworkBuilder.getServiceTarget();
             if (serviceTarget == null)
-                serviceTarget = serviceContainer.subTarget();
+                serviceTarget = lenientContainer.subTarget();
 
             frameworkBuilder.createFrameworkServicesInternal(serviceTarget, Mode.ON_DEMAND, firstInit);
+            proxyState.set(Bundle.STARTING);
             awaitFrameworkInit();
             firstInit = false;
 
@@ -158,18 +149,16 @@ final class FrameworkProxy implements Framework {
 
     /**
      * Start this Framework.
-     *
+     * 
      * The following steps are taken to start this Framework:
-     *
-     * - If this Framework is not in the {@link #STARTING} state, {@link #init()} is called
-     * - All installed bundles must be started
-     * - The start level of this Framework is moved to the FRAMEWORK_BEGINNING_STARTLEVEL
-     *
+     * 
+     * - If this Framework is not in the {@link #STARTING} state, {@link #init()} is called - All installed bundles must be
+     * started - The start level of this Framework is moved to the FRAMEWORK_BEGINNING_STARTLEVEL
+     * 
      * Any exceptions that occur during bundle starting must be wrapped in a {@link BundleException} and then published as a
      * framework event of type {@link FrameworkEvent#ERROR}
-     *
-     * - This Framework's state is set to {@link #ACTIVE}.
-     * - A framework event of type {@link FrameworkEvent#STARTED} is fired
+     * 
+     * - This Framework's state is set to {@link #ACTIVE}. - A framework event of type {@link FrameworkEvent#STARTED} is fired
      */
     @Override
     public void start(int options) throws BundleException {
@@ -178,10 +167,12 @@ final class FrameworkProxy implements Framework {
         if (getState() != Bundle.STARTING)
             init();
 
+        log.debugf("start framework");
         try {
             FrameworkState frameworkState = awaitFrameworkInit();
             frameworkState.setStartStopOptions(options);
             awaitActiveFramework();
+            proxyState.set(Bundle.ACTIVE);
         } catch (IllegalStateException ex) {
             throw new BundleException(ex.getMessage(), ex);
         }
@@ -194,17 +185,15 @@ final class FrameworkProxy implements Framework {
 
     /**
      * Stop this Framework.
-     *
+     * 
      * The method returns immediately to the caller after initiating the following steps to be taken on another thread.
-     *
-     * 1. This Framework's state is set to Bundle.STOPPING.
-     * 2. All installed bundles must be stopped without changing each bundle's persistent autostart setting.
-     * 3. Unregister all services registered by this Framework.
-     * 4. Event handling is disabled.
-     * 5. This Framework's state is set to Bundle.RESOLVED.
-     * 6. All resources held by this Framework are released. This includes threads, bundle class loaders, open files, etc.
-     * 7. Notify all threads that are waiting at waitForStop that the stop operation has completed.
-     *
+     * 
+     * 1. This Framework's state is set to Bundle.STOPPING. 2. All installed bundles must be stopped without changing each
+     * bundle's persistent autostart setting. 3. Unregister all services registered by this Framework. 4. Event handling is
+     * disabled. 5. This Framework's state is set to Bundle.RESOLVED. 6. All resources held by this Framework are released. This
+     * includes threads, bundle class loaders, open files, etc. 7. Notify all threads that are waiting at waitForStop that the
+     * stop operation has completed.
+     * 
      * After being stopped, this Framework may be discarded, initialized or started.
      */
     @Override
@@ -219,12 +208,15 @@ final class FrameworkProxy implements Framework {
         if (state != Bundle.STARTING && state != Bundle.ACTIVE)
             return;
 
+        log.debugf("stop framework");
+
         FrameworkState frameworkState = awaitFrameworkInit();
         CoreServices coreServices = frameworkState.getCoreServices();
         SystemBundleState systemBundle = frameworkState.getSystemBundle();
 
         stoppedEvent = stopForUpdate ? FrameworkEvent.STOPPED_UPDATE : FrameworkEvent.STOPPED;
         systemBundle.changeState(Bundle.STOPPING);
+        proxyState.set(Bundle.STOPPING);
 
         // Move to start level 0 in the current thread
         StartLevelPlugin startLevel = coreServices.getStartLevelPlugin();
@@ -247,47 +239,28 @@ final class FrameworkProxy implements Framework {
             }
         }
 
-        if (shutdownContainer == true) {
-            serviceContainer.shutdown();
-        } else {
-            ServiceController<?> controller = serviceContainer.getRequiredService(ServiceNames.BUNDLE_MANAGER);
-            controller.setMode(Mode.REMOVE);
-        }
+        lenientContainer.shutdown();
+        proxyState.set(Bundle.RESOLVED);
     }
 
     /**
      * Wait until this Framework has completely stopped.
-     *
+     * 
      * The stop and update methods on a Framework performs an asynchronous stop of the Framework. This method can be used to
      * wait until the asynchronous stop of this Framework has completed. This method will only wait if called when this
      * Framework is in the Bundle.STARTING, Bundle.ACTIVE, or Bundle.STOPPING states. Otherwise it will return immediately.
-     *
+     * 
      * A Framework Event is returned to indicate why this Framework has stopped.
      */
     @Override
-    @SuppressWarnings("unchecked")
     public FrameworkEvent waitForStop(long timeout) throws InterruptedException {
-        if (serviceContainer != null) {
-            if (shutdownContainer == true) {
-                serviceContainer.awaitTermination(timeout, TimeUnit.MILLISECONDS);
-                if (serviceContainer.isShutdownComplete() == false) {
-                    return new FrameworkEvent(FrameworkEvent.WAIT_TIMEDOUT, this, null);
-                }
-            } else {
-                final CountDownLatch latch = new CountDownLatch(1);
-                ServiceController<BundleManager> controller = (ServiceController<BundleManager>) serviceContainer.getRequiredService(ServiceNames.BUNDLE_MANAGER);
-                controller.addListener(new AbstractServiceListener<BundleManager>() {
-                    @Override
-                    public void serviceRemoved(ServiceController<? extends BundleManager> controller) {
-                        controller.removeListener(this);
-                        latch.countDown();
-                    }
-                });
-                controller.setMode(Mode.REMOVE);
-                if (latch.await(timeout, TimeUnit.MILLISECONDS) == false) {
-                    return new FrameworkEvent(FrameworkEvent.WAIT_TIMEDOUT, this, null);
-                }
-            }
+        if (lenientContainer == null)
+            return new FrameworkEvent(FrameworkEvent.STOPPED, this, null);
+
+        LenientShutdownContainer localContainer = lenientContainer;
+        localContainer.awaitTermination(timeout, TimeUnit.MILLISECONDS);
+        if (localContainer.isShutdownComplete() == false) {
+            return new FrameworkEvent(FrameworkEvent.WAIT_TIMEDOUT, this, null);
         }
         return new FrameworkEvent(stoppedEvent, this, null);
     }
@@ -311,22 +284,27 @@ final class FrameworkProxy implements Framework {
         if (state != Bundle.STARTING && state != Bundle.ACTIVE)
             return;
 
+        log.debugf("update framework");
+
         final int targetState = getState();
         Runnable cmd = new Runnable() {
 
             public void run() {
                 try {
                     stopInternal(true);
-                    if (targetState == Bundle.STARTING)
+                    if (targetState == Bundle.STARTING) {
                         init();
-                    if (targetState == Bundle.ACTIVE)
+                    }
+                    if (targetState == Bundle.ACTIVE) {
                         start();
+                    }
                 } catch (Exception ex) {
-                    log.errorf(ex, "Error stopping framework");
+                    ex.printStackTrace();
+                    log.errorf(ex, "Error updating framework");
                 }
             }
         };
-        new Thread(cmd, "OSGi Framework update").run();
+        new Thread(cmd, "Framework update thread").run();
     }
 
     @Override
@@ -336,7 +314,7 @@ final class FrameworkProxy implements Framework {
 
     @Override
     public int getState() {
-        return frameworkInit != null ? frameworkInit.getSystemBundle().getState() : frameworkBundleState;
+        return proxyState.get();
     }
 
     @Override
@@ -423,7 +401,7 @@ final class FrameworkProxy implements Framework {
     }
 
     private boolean isNotStopped() {
-        return serviceContainer != null && serviceStopped == false;
+        return lenientContainer != null && lenientContainer.isShutdownInitiated() == false;
     }
 
     private void assertNotStopped() {
@@ -436,13 +414,11 @@ final class FrameworkProxy implements Framework {
     @SuppressWarnings("unchecked")
     private FrameworkState awaitFrameworkInit() {
         if (frameworkInit == null) {
-            ServiceController<FrameworkService> controller = (ServiceController<FrameworkService>) serviceContainer.getRequiredService(ServiceNames.FRAMEWORK_INIT);
+            ServiceController<FrameworkService> controller = (ServiceController<FrameworkService>) lenientContainer.getRequiredService(ServiceNames.FRAMEWORK_INIT);
             controller.addListener(new AbstractServiceListener<FrameworkService>() {
                 @Override
                 public void serviceStopped(ServiceController<? extends FrameworkService> controller) {
                     controller.removeListener(this);
-                    frameworkBundleState = Bundle.RESOLVED;
-                    serviceStopped = true;
                     frameworkInit = null;
                 }
             });
@@ -467,7 +443,7 @@ final class FrameworkProxy implements Framework {
     @SuppressWarnings("unchecked")
     private FrameworkState awaitActiveFramework() {
         if (activeFramework == null) {
-            ServiceController<FrameworkService> controller = (ServiceController<FrameworkService>) serviceContainer.getRequiredService(ServiceNames.FRAMEWORK_ACTIVE);
+            ServiceController<FrameworkService> controller = (ServiceController<FrameworkService>) lenientContainer.getRequiredService(ServiceNames.FRAMEWORK_ACTIVE);
             controller.addListener(new AbstractServiceListener<FrameworkService>() {
                 @Override
                 public void serviceStopped(ServiceController<? extends FrameworkService> controller) {
@@ -489,5 +465,58 @@ final class FrameworkProxy implements Framework {
             }
         }
         return activeFramework;
+    }
+
+    // The TCK calls waitForStop before it initiates the shutdown, in which case the {@link ServiceContainer}
+    // returns imediately from awaitTermination and returns false from isShutdownComplete.
+    // We compensate with a grace periode that allows the shutdown to get initiated after awaitTermination.
+    static class LenientShutdownContainer {
+        private final ServiceContainer serviceContainer;
+        private final AtomicBoolean shutdownInitiated;
+        private final boolean allowContainerShutdown;
+
+        LenientShutdownContainer(final ServiceContainer providedContainer) {
+            this.serviceContainer = (providedContainer != null ? providedContainer : ServiceContainer.Factory.create());
+            this.allowContainerShutdown = (providedContainer == null);
+            this.shutdownInitiated = new AtomicBoolean(false);
+        }
+
+        ServiceController<?> getRequiredService(ServiceName serviceName) {
+            return serviceContainer.getRequiredService(serviceName);
+        }
+
+        ServiceTarget subTarget() {
+            return serviceContainer.subTarget();
+        }
+
+        boolean isShutdownInitiated() {
+            return shutdownInitiated.get();
+        }
+
+        void shutdown() {
+            if (allowContainerShutdown) {
+                serviceContainer.shutdown();
+                synchronized (shutdownInitiated) {
+                    shutdownInitiated.set(true);
+                    log.debugf("shutdownInitiated.notifyAll");
+                    shutdownInitiated.notifyAll();
+                }
+            }
+        }
+
+        void awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            log.debugf("awaitTermination");
+            synchronized (shutdownInitiated) {
+                if (shutdownInitiated.get() == false) {
+                    log.debugf("shutdownInitiated.wait");
+                    shutdownInitiated.wait(2000);
+                }
+            }
+            serviceContainer.awaitTermination(timeout, unit);
+        }
+
+        boolean isShutdownComplete() {
+            return serviceContainer.isShutdownComplete();
+        }
     }
 }
