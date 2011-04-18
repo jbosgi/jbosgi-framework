@@ -21,6 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.ServiceNames.JBOSGI_SERVICE_BASE_NAME;
+import static org.jboss.osgi.framework.ServiceNames.JBOSGI_XSERVICE_BASE_NAME;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -62,7 +65,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 
 /**
  * A plugin that manages OSGi services
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
@@ -128,7 +131,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
      * A <code>ServiceRegistration</code> object is returned. The <code>ServiceRegistration</code> object is for the private use
      * of the bundle registering the service and should not be shared with other bundles. The registering bundle is defined to
      * be the context bundle.
-     *
+     * 
      * @param clazzes The class names under which the service can be located.
      * @param service The service object or a <code>ServiceFactory</code> object.
      * @param properties The properties for this service.
@@ -193,7 +196,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
     /**
      * Returns a <code>ServiceReference</code> object for a service that implements and was registered under the specified
      * class.
-     *
+     * 
      * @param clazz The class name with which the service was registered.
      * @return A <code>ServiceReference</code> object, or <code>null</code>
      */
@@ -214,11 +217,11 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
     /**
      * Returns an array of <code>ServiceReference</code> objects. The returned array of <code>ServiceReference</code> objects
      * contains services that were registered under the specified class, match the specified filter expression.
-     *
+     * 
      * If checkAssignable is true, the packages for the class names under which the services were registered match the context
      * bundle's packages as defined in {@link ServiceReference#isAssignableTo(Bundle, String)}.
-     *
-     *
+     * 
+     * 
      * @param clazz The class name with which the service was registered or <code>null</code> for all services.
      * @param filter The filter expression or <code>null</code> for all services.
      * @return A potentially empty list of <code>ServiceReference</code> objects.
@@ -234,7 +237,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
     }
 
     @SuppressWarnings("unchecked")
-    private List<ServiceState> getServiceReferencesInternal(final AbstractBundleState bundleState, final String clazz, final Filter filter, boolean checkAssignable) {
+    private List<ServiceState> getServiceReferencesInternal(final AbstractBundleState bundleState, final String clazz, final Filter filter, final boolean checkAssignable) {
         if (bundleState == null)
             throw new IllegalArgumentException("Null bundleState");
         if (filter == null)
@@ -253,7 +256,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
             }
         } else {
             for (ServiceName aux : serviceContainer.getServiceNames()) {
-                if (ServiceNames.JBOSGI_SERVICE_BASE_NAME.isParentOf(aux) || ServiceNames.JBOSGI_XSERVICE_BASE_NAME.isParentOf(aux)) {
+                if (JBOSGI_SERVICE_BASE_NAME.isParentOf(aux) || JBOSGI_XSERVICE_BASE_NAME.isParentOf(aux)) {
                     serviceNames.add(aux);
                 }
             }
@@ -262,23 +265,18 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
         if (serviceNames.isEmpty())
             return Collections.emptyList();
 
-        List<ServiceState> result = new ArrayList<ServiceState>();
+        Set<ServiceState> resultset = new HashSet<ServiceState>();
         for (ServiceName serviceName : serviceNames) {
             final ServiceController<?> controller = serviceContainer.getService(serviceName);
             if (controller != null) {
-                if (ServiceNames.JBOSGI_SERVICE_BASE_NAME.isParentOf(serviceName)) {
-                    for (ServiceState serviceState : (List<ServiceState>) controller.getValue()) {
-                        if (filter.match(serviceState)) {
-                            Object rawValue = serviceState.getRawValue();
-                            checkAssignable &= (clazz != null);
-                            checkAssignable &= (bundleState.getBundleId() != 0);
-                            checkAssignable &= !(rawValue instanceof ServiceFactory);
-                            if (checkAssignable == false || serviceState.isAssignableTo(bundleState, clazz)) {
-                                result.add(serviceState);
-                            }
+                if (JBOSGI_SERVICE_BASE_NAME.isParentOf(serviceName)) {
+                    List<ServiceState> serviceStates = (List<ServiceState>) controller.getValue();
+                    for (ServiceState serviceState : serviceStates) {
+                        if (isMatchingService(bundleState, serviceState, clazz, filter, checkAssignable)) {
+                            resultset.add(serviceState);
                         }
                     }
-                } else if (ServiceNames.JBOSGI_XSERVICE_BASE_NAME.isParentOf(serviceName)) {
+                } else if (JBOSGI_XSERVICE_BASE_NAME.isParentOf(serviceName)) {
                     final ServiceState.ValueProvider valueProvider = new ServiceState.ValueProvider() {
                         @Override
                         public Object getValue() {
@@ -297,29 +295,40 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                     final AbstractBundleState aux = injectedModuleManager.getValue().getBundleState(value.getClass());
                     final AbstractBundleState owner = (aux != null ? aux : injectedBundleManager.getValue().getSystemBundle());
                     ServiceState serviceState = new ServiceState(this, owner, serviceId, new String[] { clazz }, valueProvider, null);
-                    if (filter.match(serviceState)) {
-                        Object rawValue = serviceState.getRawValue();
-                        checkAssignable &= (clazz != null);
-                        checkAssignable &= (bundleState.getBundleId() != 0);
-                        checkAssignable &= !(rawValue instanceof ServiceFactory);
-                        if (checkAssignable == false || serviceState.isAssignableTo(bundleState, clazz)) {
-                            result.add(serviceState);
-                        }
+                    if (isMatchingService(bundleState, serviceState, clazz, filter, checkAssignable)) {
+                        resultset.add(serviceState);
                     }
                 }
             }
         }
 
         // Sort the result
-        if (result.size() > 1)
-            Collections.sort(result, ServiceReferenceComparator.getInstance());
+        List<ServiceState> resultlist = new ArrayList<ServiceState>(resultset);
+        if (resultlist.size() > 1)
+            Collections.sort(resultlist, ServiceReferenceComparator.getInstance());
 
-        return Collections.unmodifiableList(result);
+        return Collections.unmodifiableList(resultlist);
+    }
+
+    private boolean isMatchingService(AbstractBundleState bundleState, ServiceState serviceState, String clazz, Filter filter, boolean checkAssignable) {
+        if (serviceState.isUnregistered() || filter.match(serviceState) == false)
+            return false;
+        if (checkAssignable == false)
+            return true;
+
+        Object rawValue = serviceState.getRawValue();
+        checkAssignable &= (clazz != null);
+        checkAssignable &= (bundleState.getBundleId() != 0);
+        checkAssignable &= !(rawValue instanceof ServiceFactory);
+        if (checkAssignable == false)
+            return true;
+        
+        return serviceState.isAssignableTo(bundleState, clazz);
     }
 
     /**
      * Returns the service object referenced by the specified <code>ServiceReference</code> object.
-     *
+     * 
      * @param reference A reference to the service.
      * @return A service object for the service associated with <code>reference</code> or <code>null</code>
      */
@@ -391,7 +400,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
      * Releases the service object referenced by the specified <code>ServiceReference</code> object. If the context bundle's use
      * count for the service is zero, this method returns <code>false</code>. Otherwise, the context bundle's use count for the
      * service is decremented by one.
-     *
+     * 
      * @param reference A reference to the service to be released.
      * @return <code>false</code> if the context bundle's use count for the service is zero or if the service has been
      *         unregistered; <code>true</code> otherwise.
