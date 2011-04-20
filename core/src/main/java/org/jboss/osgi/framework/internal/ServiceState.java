@@ -52,11 +52,11 @@ import org.osgi.framework.ServiceRegistration;
  * The service implementation.
  *
  * @author thomas.diesler@jboss.com
+ * @author David Bosschaert
  * @since 29-Jun-2010
  */
 @SuppressWarnings("rawtypes")
 final class ServiceState implements ServiceRegistration, ServiceReference {
-
     // Provide logging
     private static final Logger log = Logger.getLogger(ServiceState.class);
 
@@ -340,15 +340,17 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
             return true;
         }
 
-        Class<?> ownerClass = null;
+        Class<?> serviceClass;
         try {
-            ownerClass = ownerBundle.loadClass(className);
-        } catch (ClassNotFoundException ex) {
-            log.warnf("Owner bundle cannot load class: %s", className);
+            // Class.forName because the valueProvider classloader could be null (when using JDK classes).
+            serviceClass = Class.forName(className, false, valueProvider.getValue().getClass().getClassLoader());
+        } catch (ClassNotFoundException e) {
+            // serviceClass's classloader has no visibility of the requested class, return false
+            log.warnf("The service's classloader has no visibility of the requested class: %s", className);
             return false;
         }
 
-        if (targetClass != ownerClass) {
+        if (targetClass != serviceClass) {
             Object value = valueProvider.getValue();
             log.debugf("Not assignable: %s", value.getClass().getName());
             return false;
@@ -398,8 +400,10 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
                 throw new IllegalArgumentException("Null className");
 
             try {
-                Class<?> clazz = bundleState.loadClass(className);
-                Class<? extends Object> valueClass = value.getClass();
+                Class<?> valueClass = value.getClass();
+                // Use Class.forName with classloader argument as the classloader
+                // might be null (for JRE provided types).
+                Class<?> clazz = Class.forName(className, false, valueClass.getClassLoader());
                 if (clazz.isAssignableFrom(valueClass) == false) {
                     String format = "Service interface [%s] loaded from [%s] is not assignable from [%s] loaded from [%s]";
                     log.errorf(format, className, clazz.getClassLoader(), valueClass.getName(), valueClass.getClassLoader());

@@ -53,6 +53,7 @@ import org.osgi.framework.ServiceRegistration;
  * 
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author Thomas.Diesler@jboss.com
+ * @author David Bosschaert
  * @version $Revision: 1.1 $
  */
 public class ServiceReferenceTestCase extends OSGiFrameworkTest {
@@ -440,11 +441,9 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
             Bundle bundle1 = installBundle(assembly1);
 
             try {
-                Runnable runnable = new Runnable() {
-                    public void run() {
-                    }
-                };
-                ServiceRegistration sreg = bundleContext2.registerService(Runnable.class.getName(), runnable, null);
+                Class<?> cls = bundle2.loadClass(A.class.getName());
+                Object service = cls.newInstance();
+                ServiceRegistration sreg = bundleContext2.registerService(A.class.getName(), service, null);
                 assertNotNull(sreg);
 
                 ServiceReference sref = sreg.getReference();
