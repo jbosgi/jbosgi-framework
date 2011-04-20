@@ -142,14 +142,14 @@ public final class FrameworkBuilder {
         SystemPackagesPlugin.addService(serviceTarget, this);
         WebXMLVerifierInterceptor.addService(serviceTarget);
 
-        if (isProvidedService(ServiceNames.AUTOINSTALL_BUNDLES) == false)
-            DefaultAutoInstallProcessor.addService(serviceTarget);
-        if (isProvidedService(ServiceNames.BUNDLE_INSTALL_HANDLER) == false)
+        if (isProvidedService(ServiceNames.AUTOINSTALL_PROVIDER) == false)
+            DefaultAutoInstallProvider.addService(serviceTarget);
+        if (isProvidedService(ServiceNames.BUNDLE_INSTALL_PROVIDER) == false)
             DefaultBundleInstallHandler.addService(serviceTarget);
         if (isProvidedService(ServiceNames.FRAMEWORK_MODULE_PROVIDER) == false)
             DefaultFrameworkModuleProvider.addService(serviceTarget);
         if (isProvidedService(ServiceNames.MODULE_LOADER_PROVIDER) == false)
-            DefaultModuleLoaderProvider.addService(serviceTarget);
+            DefaultModuleLoaderIntegration.addService(serviceTarget);
         if (isProvidedService(ServiceNames.SYSTEM_MODULE_PROVIDER) == false)
             DefaultSystemModuleProvider.addService(serviceTarget);
         if (isProvidedService(ServiceNames.SYSTEM_SERVICES_PROVIDER) == false)

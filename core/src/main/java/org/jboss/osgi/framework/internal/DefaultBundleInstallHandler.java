@@ -26,7 +26,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleInstallHandler;
+import org.jboss.osgi.framework.BundleInstallProvider;
 import org.jboss.osgi.framework.ServiceNames;
 import org.osgi.framework.BundleException;
 
@@ -36,13 +36,13 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-final class DefaultBundleInstallHandler extends AbstractPluginService<BundleInstallHandler> implements BundleInstallHandler {
+final class DefaultBundleInstallHandler extends AbstractPluginService<BundleInstallProvider> implements BundleInstallProvider {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultBundleInstallHandler service = new DefaultBundleInstallHandler();
-        ServiceBuilder<BundleInstallHandler> builder = serviceTarget.addService(ServiceNames.BUNDLE_INSTALL_HANDLER, service);
+        ServiceBuilder<BundleInstallProvider> builder = serviceTarget.addService(ServiceNames.BUNDLE_INSTALL_PROVIDER, service);
         builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.addDependency(ServiceNames.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -53,7 +53,7 @@ final class DefaultBundleInstallHandler extends AbstractPluginService<BundleInst
     }
 
     @Override
-    public BundleInstallHandler getValue() {
+    public BundleInstallProvider getValue() {
         return this;
     }
 

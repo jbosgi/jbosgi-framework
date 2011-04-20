@@ -22,7 +22,6 @@
 package org.jboss.osgi.framework;
 
 import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.internal.BundleManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
@@ -49,16 +48,16 @@ public interface ServiceNames {
     /** The prefix for all OSGi bundle services */
     ServiceName BUNDLE_BASE_NAME = JBOSGI_BASE_NAME.append("bundle");
 
-    /** The service name for the {@link AutoInstallProcessor} */
-    ServiceName AUTOINSTALL_BUNDLES = JBOSGI_BASE_NAME.append("AutoInstallBundles");
+    /** The service name for the {@link AutoInstallProvider} */
+    ServiceName AUTOINSTALL_PROVIDER = JBOSGI_BASE_NAME.append("AutoInstallProvider");
 
-    /** The {@link AutoInstallProcessor} nested service that indicates completion */
-    ServiceName AUTOINSTALL_BUNDLES_COMPLETE = AUTOINSTALL_BUNDLES.append("COMPLETE");
+    /** The {@link AutoInstallProvider} nested service that indicates completion */
+    ServiceName AUTOINSTALL_PROVIDER_COMPLETE = AUTOINSTALL_PROVIDER.append("COMPLETE");
 
-    /** The service name for the {@link BundleInstallHandler} */
-    ServiceName BUNDLE_INSTALL_HANDLER = JBOSGI_BASE_NAME.append("BundleInstallHandler");
+    /** The service name for the {@link BundleInstallProvider} */
+    ServiceName BUNDLE_INSTALL_PROVIDER = JBOSGI_BASE_NAME.append("BundleInstallProvider");
 
-    /** The {@link BundleManager} service name. */
+    /** The {@link BundleManagerService} service name. */
     ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("BundleManager");
 
     /** The base name of all framework services */

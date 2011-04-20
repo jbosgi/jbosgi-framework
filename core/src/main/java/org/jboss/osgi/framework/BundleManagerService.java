@@ -22,13 +22,11 @@
 package org.jboss.osgi.framework;
 
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
+import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XModule;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -38,7 +36,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 24-Mar-2011
  */
-public interface BundleManagement {
+public interface BundleManagerService extends Service<BundleManagerService> {
 
     /**
      * Install a bundle from the given deployment
@@ -59,14 +57,4 @@ public interface BundleManagement {
      * Uninstall the given module
      */
     void uninstallBundle(Module module);
-
-    /**
-     * Install a bundle from the given module identifier
-     */
-    ServiceName installBundle(ServiceTarget serviceTarget, ModuleIdentifier identifier) throws BundleException, ModuleLoadException;
-
-    /**
-     * Uninstall the given module identifier
-     */
-    void uninstallBundle(ModuleIdentifier identifier);
 }

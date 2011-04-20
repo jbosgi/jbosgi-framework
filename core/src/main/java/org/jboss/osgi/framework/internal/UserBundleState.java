@@ -38,7 +38,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleInstallHandler;
+import org.jboss.osgi.framework.BundleInstallProvider;
 import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XCapability;
@@ -424,8 +424,8 @@ abstract class UserBundleState extends AbstractBundleState {
         assertNotUninstalled();
         headersOnUninstall = getHeaders(null);
 
-        // Uninstall through the {@link BundleInstallHandler}
-        BundleInstallHandler installHandler = getCoreServices().getInstallHandler();
+        // Uninstall through the {@link BundleInstallProvider}
+        BundleInstallProvider installHandler = getCoreServices().getInstallHandler();
         installHandler.uninstallBundle(getDeployment());
 
         log.infof("Bundle uninstalled: %s", this);

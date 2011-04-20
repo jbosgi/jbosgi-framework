@@ -19,36 +19,16 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework.internal;
+package org.jboss.osgi.framework;
 
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleLoader;
-import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.osgi.framework.ModuleLoaderProvider;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.msc.service.Service;
 
 /**
- * A plugin that handles module loading.
+ * Integration point to auto install bundles at framework startup.
  *
  * @author thomas.diesler@jboss.com
- * @since 17-Feb-2011
+ * @since 30-Mar-2011
  */
-final class DefaultModuleLoaderProvider extends AbstractPluginService<ModuleLoader> implements ModuleLoaderProvider {
+public interface AutoInstallProvider extends Service<AutoInstallProvider> {
 
-    static void addService(ServiceTarget serviceTarget) {
-        DefaultModuleLoaderProvider service = new DefaultModuleLoaderProvider();
-        ServiceBuilder<ModuleLoader> builder = serviceTarget.addService(ServiceNames.MODULE_LOADER_PROVIDER, service);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
-    }
-
-    private DefaultModuleLoaderProvider() {
-    }
-
-    @Override
-    public ModuleLoader getValue() {
-        return Module.getBootModuleLoader();
-    }
 }

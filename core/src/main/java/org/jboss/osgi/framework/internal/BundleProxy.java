@@ -45,10 +45,10 @@ import org.osgi.framework.Version;
 
 /**
  * The proxy that represents a {@link AbstractBundleService}.
- * 
- * The {@link BundleProxy} uses the respective {@link AbstractBundleService}s. 
- * It never interacts with the {@link AbstractBundleState} directly. 
- * The client may hold a reference to the {@link BundleProxy}. 
+ *
+ * The {@link BundleProxy} uses the respective {@link AbstractBundleService}s.
+ * It never interacts with the {@link AbstractBundleState} directly.
+ * The client may hold a reference to the {@link BundleProxy}.
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
@@ -60,15 +60,16 @@ abstract class BundleProxy<T extends AbstractBundleState> implements Bundle {
 
     private final ServiceContainer serviceContainer;
     private final ServiceName serviceName;
-    private String cachedObjectName;
-    private long bundleId;
-    private T bundleState;
+    private final String canonicalName;
+    private final String location;
+    private final long bundleId;
 
     BundleProxy(T bundleState) {
         this.serviceContainer = bundleState.getBundleManager().getServiceContainer();
         this.serviceName = bundleState.getServiceName();
-        this.cachedObjectName = bundleState.toString();
+        this.canonicalName = bundleState.getCanonicalName();
         this.bundleId = bundleState.getBundleId();
+        this.location = bundleState.getLocation();
     }
 
     T getBundleState() {
@@ -78,6 +79,21 @@ abstract class BundleProxy<T extends AbstractBundleState> implements Bundle {
     @Override
     public long getBundleId() {
         return bundleId;
+    }
+
+    @Override
+    public String getLocation() {
+        return location;
+    }
+
+    @Override
+    public String getSymbolicName() {
+        return awaitBundleServiceActive().getSymbolicName();
+    }
+
+    @Override
+    public Version getVersion() {
+        return awaitBundleServiceActive().getVersion();
     }
 
     @Override
@@ -126,11 +142,6 @@ abstract class BundleProxy<T extends AbstractBundleState> implements Bundle {
     }
 
     @Override
-    public String getLocation() {
-        return awaitBundleServiceActive().getLocation();
-    }
-
-    @Override
     public ServiceReference[] getRegisteredServices() {
         return awaitBundleServiceActive().getRegisteredServices();
     }
@@ -153,11 +164,6 @@ abstract class BundleProxy<T extends AbstractBundleState> implements Bundle {
     @Override
     public Dictionary<String, String> getHeaders(String locale) {
         return awaitBundleServiceActive().getHeaders(locale);
-    }
-
-    @Override
-    public String getSymbolicName() {
-        return awaitBundleServiceActive().getSymbolicName();
     }
 
     @Override
@@ -201,10 +207,7 @@ abstract class BundleProxy<T extends AbstractBundleState> implements Bundle {
         return awaitBundleServiceActive().getSignerCertificates(signersType);
     }
 
-    @Override
-    public Version getVersion() {
-        return awaitBundleServiceActive().getVersion();
-    }
+    private T bundleState;
 
     @SuppressWarnings("unchecked")
     private T awaitBundleServiceActive() {
@@ -233,6 +236,6 @@ abstract class BundleProxy<T extends AbstractBundleState> implements Bundle {
 
     @Override
     public String toString() {
-        return cachedObjectName;
+        return canonicalName;
     }
 }

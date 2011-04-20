@@ -403,13 +403,13 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
 
         switch (event.getType()) {
             case FrameworkEvent.ERROR:
-                log.errorf(th, "Framwork %s", typeName);
+                log.errorf(th, "Framework %s", typeName);
                 break;
             case FrameworkEvent.WARNING:
-                log.warnf(th, "Framwork %s", typeName);
+                log.warnf(th, "Framework %s", typeName);
                 break;
             default:
-                log.tracef(th, "Framwork %s", typeName);
+                log.tracef(th, "Framework %s", typeName);
         }
 
         // Are we active?

@@ -34,6 +34,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.Resource;
 import org.jboss.modules.filter.PathFilter;
+import org.jboss.osgi.framework.ModuleLoaderProvider;
 import org.osgi.framework.BundleException;
 
 /**
@@ -77,7 +78,7 @@ final class LazyActivationLocalLoader implements LocalLoader {
                 Module module = moduleManager.getModule(identifier);
                 if (relinkModule.getAndSet(false)) {
                     log.debugf("Relinking [%s] on class load: %s", identifier, className);
-                    OSGiModuleLoader moduleLoader = moduleManager.getModuleLoader();
+                    ModuleLoaderProvider moduleLoader = moduleManager.getModuleLoaderIntegration();
                     List<DependencySpec> dependencies = new ArrayList<DependencySpec>(moduleDependencies);
                     dependencies.add(DependencySpec.createLocalDependencySpec());
                     moduleLoader.setAndRelinkDependencies(module, dependencies);
