@@ -32,6 +32,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleClassLoader;
+import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -103,7 +104,12 @@ final class HostBundleRevision extends UserBundleRevision {
             throw new ClassNotFoundException("Class '" + className + "' not found in: " + this);
 
         // Load the class through the module
-        ModuleClassLoader loader = getModuleClassLoader();
+        ModuleClassLoader loader;
+        try {
+            loader = getModuleClassLoader();
+        } catch (ModuleLoadException ex) {
+            throw new ClassNotFoundException("Cannot load class: " + className, ex);
+        }
         return loader.loadClass(className, true);
     }
 
@@ -137,8 +143,16 @@ final class HostBundleRevision extends UserBundleRevision {
         getBundleState().assertNotUninstalled();
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-        if (getBundleState().ensureResolved(false))
-            return getModuleClassLoader().getResource(path);
+        if (getBundleState().ensureResolved(false)) {
+            ModuleClassLoader moduleClassLoader;
+            try {
+                moduleClassLoader = getModuleClassLoader();
+            } catch (ModuleLoadException ex) {
+                log.debugf("Cannot get resource, because of: %s", ex);
+                return null;
+            }
+            return moduleClassLoader.getResource(path);
+        }
 
         // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
         return getEntry(path);
@@ -150,7 +164,14 @@ final class HostBundleRevision extends UserBundleRevision {
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         if (getBundleState().ensureResolved(true) == true) {
-            Enumeration<URL> resources = getModuleClassLoader().getResources(path);
+            ModuleClassLoader moduleClassLoader;
+            try {
+                moduleClassLoader = getModuleClassLoader();
+            } catch (ModuleLoadException ex) {
+                log.debugf("Cannot get resources, because of: %s", ex);
+                return null;
+            }
+            Enumeration<URL> resources = moduleClassLoader.getResources(path);
             return resources.hasMoreElements() ? resources : null;
         }
 

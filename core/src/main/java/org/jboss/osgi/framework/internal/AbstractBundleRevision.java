@@ -65,8 +65,8 @@ abstract class AbstractBundleRevision {
         this.metadata = metadata;
         this.revision = revision;
         this.resolverModule = resModule;
-        
-        // Add bidirectional one-to-one association between a revision and a resolver module 
+
+        // Add bidirectional one-to-one association between a revision and a resolver module
         resModule.addAttachment(AbstractBundleRevision.class, this);
     }
 
@@ -115,31 +115,27 @@ abstract class AbstractBundleRevision {
         }
     }
 
-    ModuleClassLoader getModuleClassLoader() {
+    ModuleClassLoader getModuleClassLoader() throws ModuleLoadException {
         ModuleIdentifier identifier = getModuleIdentifier();
-        try {
-            ModuleManagerPlugin moduleManager = bundleState.getFrameworkState().getModuleManagerPlugin();
-            Module module = moduleManager.loadModule(identifier);
-            return module.getClassLoader();
-        } catch (ModuleLoadException ex) {
-            throw new IllegalStateException("Cannot load module: " + identifier);
-        }
+        ModuleManagerPlugin moduleManager = bundleState.getFrameworkState().getModuleManagerPlugin();
+        Module module = moduleManager.loadModule(identifier);
+        return module.getClassLoader();
     }
-    
+
     void refreshRevision(OSGiMetaData metadata) throws BundleException {
         // [TODO] In case of an externally provided XModule, we generate dummy OSGiMetaData
         // with considerable data loss. A new XModule cannot get created from that
         // OSGiMetaData. An acceptable fix would be to allow refresh on the XModule
         // or otherwise create a clone of the original XModule.
-        //if (refreshAllowed == false)
-        //    throw new IllegalStateException("External XModule, refresh not allowed");
+        // if (refreshAllowed == false)
+        // throw new IllegalStateException("External XModule, refresh not allowed");
 
         resolverModule = createResolverModule(getBundleState(), metadata);
         refreshRevisionInternal(resolverModule);
     }
 
     abstract void refreshRevisionInternal(XModule resModule);
-    
+
     XModule createResolverModule(AbstractBundleState bundleState, OSGiMetaData metadata) throws BundleException {
         final String symbolicName = metadata.getBundleSymbolicName();
         final Version version = metadata.getBundleVersion();
@@ -163,7 +159,7 @@ abstract class AbstractBundleRevision {
         resModule.addAttachment(Bundle.class, bundleState);
         return resModule;
     }
-    
+
     @Override
     public String toString() {
         return "Revision[" + resolverModule.getModuleId() + "]";
