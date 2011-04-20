@@ -36,8 +36,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
-import org.jboss.modules.ModuleLoader;
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
@@ -50,8 +48,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleManagement;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.BundleManagerService;
 import org.jboss.osgi.framework.util.Java;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
@@ -70,7 +67,7 @@ import org.osgi.framework.FrameworkEvent;
  * @author David Bosschaert
  * @since 29-Jun-2010
  */
-public final class BundleManager extends AbstractService<BundleManager> implements BundleManagement {
+public final class BundleManager extends AbstractService<BundleManagerService> implements BundleManagerService {
 
     // Provide logging
     static final Logger log = Logger.getLogger(BundleManager.class);
@@ -97,7 +94,6 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
         implementationVersion = BundleManager.class.getPackage().getImplementationVersion();
     }
 
-    final InjectedValue<ModuleLoader> injectedModuleLoader = new InjectedValue<ModuleLoader>();
     final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
 
@@ -110,8 +106,7 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
 
     static BundleManager addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
         BundleManager service = new BundleManager(frameworkBuilder, serviceTarget);
-        ServiceBuilder<BundleManager> builder = serviceTarget.addService(org.jboss.osgi.framework.ServiceNames.BUNDLE_MANAGER, service);
-        builder.addDependency(ServiceNames.MODULE_LOADER_PROVIDER, ModuleLoader.class, service.injectedModuleLoader);
+        ServiceBuilder<BundleManagerService> builder = serviceTarget.addService(org.jboss.osgi.framework.ServiceNames.BUNDLE_MANAGER, service);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
         return service;
@@ -321,18 +316,6 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
     }
 
     @Override
-    public ServiceName installBundle(ServiceTarget serviceTarget, ModuleIdentifier moduleid) throws BundleException {
-        Module module;
-        try {
-            ModuleLoader moduleLoader = injectedModuleLoader.getValue();
-            module = moduleLoader.loadModule(moduleid);
-        } catch (ModuleLoadException ex) {
-            throw new BundleException("Cannot load module: " + moduleid, ex);
-        }
-        return installBundle(serviceTarget, module, null);
-    }
-
-    @Override
     public ServiceName installBundle(ServiceTarget serviceTarget, Deployment dep) throws BundleException {
         if (dep == null)
             throw new IllegalArgumentException("Null deployment");
@@ -390,18 +373,13 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
 
     @Override
     public void uninstallBundle(Module module) {
-        ModuleIdentifier moduleid = module.getIdentifier();
-        uninstallBundle(moduleid);
-    }
-
-    @Override
-    public void uninstallBundle(ModuleIdentifier moduleid) {
+        ModuleIdentifier identifier = module.getIdentifier();
         try {
             ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-            AbstractBundleState bundleState = moduleManager.getBundleState(moduleid);
+            AbstractBundleState bundleState = moduleManager.getBundleState(identifier);
             bundleState.uninstall();
         } catch (BundleException ex) {
-            log.errorf("Cannot uninstall module: " + moduleid, ex);
+            log.errorf("Cannot uninstall module: " + identifier, ex);
         }
     }
 
@@ -420,7 +398,7 @@ public final class BundleManager extends AbstractService<BundleManager> implemen
                         } catch (Exception ex) {
                             // If Bundle.stop throws an exception, a Framework event of type FrameworkEvent.ERROR is fired containing the
                             // exception
-                            fireFrameworkError(userBundle, "Error stopping bundle: " + userBundle, ex);
+                            fireFrameworkError(userBundle, "stopping bundle: " + userBundle, ex);
                         }
                     }
                 }

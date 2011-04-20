@@ -40,7 +40,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
-import org.jboss.osgi.framework.AutoInstallProcessor;
+import org.jboss.osgi.framework.AutoInstallProvider;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.spi.util.BundleInfo;
@@ -55,23 +55,23 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class DefaultAutoInstallProcessor extends AbstractPluginService<AutoInstallProcessor> implements AutoInstallProcessor {
+final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstallProvider> implements AutoInstallProvider {
 
     // Provide logging
-    static final Logger log = Logger.getLogger(DefaultAutoInstallProcessor.class);
+    static final Logger log = Logger.getLogger(DefaultAutoInstallProvider.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
     static void addService(ServiceTarget serviceTarget) {
-        DefaultAutoInstallProcessor service = new DefaultAutoInstallProcessor();
-        ServiceBuilder<AutoInstallProcessor> builder = serviceTarget.addService(ServiceNames.AUTOINSTALL_BUNDLES, service);
+        DefaultAutoInstallProvider service = new DefaultAutoInstallProvider();
+        ServiceBuilder<AutoInstallProvider> builder = serviceTarget.addService(ServiceNames.AUTOINSTALL_PROVIDER, service);
         builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.addDependency(ServiceNames.FRAMEWORK_INIT);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    private DefaultAutoInstallProcessor() {
+    private DefaultAutoInstallProvider() {
     }
 
     @Override
@@ -108,7 +108,7 @@ final class DefaultAutoInstallProcessor extends AbstractPluginService<AutoInstal
     }
 
     @Override
-    public DefaultAutoInstallProcessor getValue() {
+    public DefaultAutoInstallProvider getValue() {
         return this;
     }
 
@@ -131,7 +131,7 @@ final class DefaultAutoInstallProcessor extends AbstractPluginService<AutoInstal
         }
 
         // Install a service that has a dependency on all pending bundle INSTALLED services
-        ServiceName servicesInstalled = ServiceNames.AUTOINSTALL_BUNDLES.append("INSTALLED");
+        ServiceName servicesInstalled = ServiceNames.AUTOINSTALL_PROVIDER.append("INSTALLED");
         ServiceBuilder<Void> builder = serviceTarget.addService(servicesInstalled, new AbstractService<Void>() {
             public void start(StartContext context) throws StartException {
                 log.debugf("Auto bundles installed");
@@ -141,7 +141,7 @@ final class DefaultAutoInstallProcessor extends AbstractPluginService<AutoInstal
         builder.install();
 
         // Install a service that starts the bundles
-        builder = serviceTarget.addService(ServiceNames.AUTOINSTALL_BUNDLES_COMPLETE, new AbstractService<Void>() {
+        builder = serviceTarget.addService(ServiceNames.AUTOINSTALL_PROVIDER_COMPLETE, new AbstractService<Void>() {
             public void start(StartContext context) throws StartException {
                 for (Deployment dep : pendingServices.values()) {
                     if (dep.isAutoStart()) {

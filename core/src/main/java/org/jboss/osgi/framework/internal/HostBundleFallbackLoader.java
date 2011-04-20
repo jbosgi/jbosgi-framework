@@ -54,8 +54,7 @@ final class HostBundleFallbackLoader implements LocalLoader {
     private static final Logger log = Logger.getLogger(HostBundleFallbackLoader.class);
 
     private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
-    private final ModuleManagerPlugin moduleManager;
-    private final BundleManager bundleManager;
+    private final HostBundleState hostBundle;
     private final ModuleIdentifier identifier;
     private final Set<String> importedPaths;
 
@@ -68,8 +67,7 @@ final class HostBundleFallbackLoader implements LocalLoader {
             throw new IllegalArgumentException("Null importedPaths");
         this.identifier = identifier;
         this.importedPaths = importedPaths;
-        bundleManager = hostBundle.getBundleManager();
-        moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
+        this.hostBundle = hostBundle;
     }
 
     @Override
@@ -161,6 +159,7 @@ final class HostBundleFallbackLoader implements LocalLoader {
 
     private List<XPackageRequirement> findMatchingPatterns(String resName) {
 
+        ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
         AbstractBundleRevision bundleRev = moduleManager.getBundleRevision(identifier);
         XModule resModule = bundleRev.getResolverModule();
         List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
@@ -200,17 +199,23 @@ final class HostBundleFallbackLoader implements LocalLoader {
 
     private Module findInResolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
         log.tracef("Attempt to find path dynamically in resolved modules ...");
-        for (ModuleIdentifier candidateId : moduleManager.getModuleIdentifiers()) {
-            Module candidate = moduleManager.getModule(candidateId);
-            if (isValidCandidate(resName, matchingPatterns, candidate))
-                return candidate;
+        ResolverPlugin resolverPlugin = hostBundle.getFrameworkState().getResolverPlugin();
+        ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
+        for (XModule resModule : resolverPlugin.getResolver().getModules()) {
+            if (resModule.isResolved()) {
+                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(resModule);
+                Module candidate = moduleManager.getModule(identifier);
+                if (isValidCandidate(resName, matchingPatterns, candidate))
+                    return candidate;
+            }
         }
         return null;
     }
 
     private Module findInUnresolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
         log.tracef("Attempt to find path dynamically in unresolved modules ...");
-        for (Bundle aux : bundleManager.getBundles()) {
+        ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
+        for (Bundle aux : hostBundle.getBundleManager().getBundles()) {
             if (aux.getState() != Bundle.INSTALLED)
                 continue;
 
@@ -231,6 +236,9 @@ final class HostBundleFallbackLoader implements LocalLoader {
 
     private boolean isValidCandidate(String resName, List<XPackageRequirement> matchingPatterns, Module candidate) {
 
+        if (candidate == null)
+            return false;
+
         // Skip dynamic loads from this module
         ModuleIdentifier candidateId = candidate.getIdentifier();
         if (candidateId.equals(identifier))
@@ -242,6 +250,7 @@ final class HostBundleFallbackLoader implements LocalLoader {
             return false;
 
         log.tracef("Found path [%s] in %s", resName, candidate);
+        ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
         AbstractBundleRevision bundleRevision = moduleManager.getBundleRevision(candidateId);
         XModule resModule = bundleRevision.getResolverModule();
 

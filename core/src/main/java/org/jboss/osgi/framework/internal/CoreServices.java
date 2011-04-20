@@ -30,7 +30,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.BundleInstallHandler;
+import org.jboss.osgi.framework.BundleInstallProvider;
 import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.framework.SystemServicesProvider;
 import org.osgi.framework.BundleContext;
@@ -47,7 +47,7 @@ public final class CoreServices extends AbstractService<CoreServices> {
     static final Logger log = Logger.getLogger(CoreServices.class);
 
     private final InjectedValue<FrameworkService> injectedFramework = new InjectedValue<FrameworkService>();
-    private final InjectedValue<BundleInstallHandler> injectedInstallProvider = new InjectedValue<BundleInstallHandler>();
+    private final InjectedValue<BundleInstallProvider> injectedInstallProvider = new InjectedValue<BundleInstallProvider>();
     private final InjectedValue<LifecycleInterceptorPlugin> injectedLifecycleInterceptor = new InjectedValue<LifecycleInterceptorPlugin>();
     private final InjectedValue<PackageAdminPlugin> injectedPackageAdmin = new InjectedValue<PackageAdminPlugin>();
     private final InjectedValue<StartLevelPlugin> injectedStartLevel = new InjectedValue<StartLevelPlugin>();
@@ -57,7 +57,7 @@ public final class CoreServices extends AbstractService<CoreServices> {
     static void addService(ServiceTarget serviceTarget) {
         CoreServices service = new CoreServices();
         ServiceBuilder<CoreServices> builder = serviceTarget.addService(InternalServices.CORE_SERVICES, service);
-        builder.addDependency(ServiceNames.BUNDLE_INSTALL_HANDLER, BundleInstallHandler.class, service.injectedInstallProvider);
+        builder.addDependency(ServiceNames.BUNDLE_INSTALL_PROVIDER, BundleInstallProvider.class, service.injectedInstallProvider);
         builder.addDependency(ServiceNames.FRAMEWORK_CREATE, FrameworkService.class, service.injectedFramework);
         builder.addDependency(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, service.injectedLifecycleInterceptor);
         builder.addDependency(ServiceNames.PACKAGE_ADMIN, PackageAdminPlugin.class, service.injectedPackageAdmin);
@@ -92,7 +92,7 @@ public final class CoreServices extends AbstractService<CoreServices> {
         return this;
     }
 
-    BundleInstallHandler getInstallHandler() {
+    BundleInstallProvider getInstallHandler() {
         return injectedInstallProvider.getValue();
     }
 

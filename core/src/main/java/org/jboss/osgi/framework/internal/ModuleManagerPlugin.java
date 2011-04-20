@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -28,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.DependencySpec;
@@ -43,15 +46,13 @@ import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.StopContext;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleReferenceClassLoader;
 import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.ModuleLoaderProvider;
 import org.jboss.osgi.framework.ServiceNames;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.NativeLibrary;
@@ -81,12 +82,15 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<SystemPackagesPlugin> injectedSystemPackages = new InjectedValue<SystemPackagesPlugin>();
     private final InjectedValue<Module> injectedSystemModule = new InjectedValue<Module>();
-    private OSGiModuleLoader moduleLoader;
+    private final InjectedValue<ModuleLoaderProvider> injectedModuleLoader = new InjectedValue<ModuleLoaderProvider>();
+
+    private Map<ModuleIdentifier, AbstractBundleRevision> modules = new ConcurrentHashMap<ModuleIdentifier, AbstractBundleRevision>();
 
     static void addService(ServiceTarget serviceTarget) {
         ModuleManagerPlugin service = new ModuleManagerPlugin();
         ServiceBuilder<ModuleManagerPlugin> builder = serviceTarget.addService(InternalServices.MODULE_MANGER_PLUGIN, service);
         builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(ServiceNames.MODULE_LOADER_PROVIDER, ModuleLoaderProvider.class, service.injectedModuleLoader);
         builder.addDependency(InternalServices.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
         builder.addDependency(ServiceNames.SYSTEM_MODULE_PROVIDER, Module.class, service.injectedSystemModule);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -97,69 +101,44 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        super.start(context);
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        moduleLoader = new OSGiModuleLoader(bundleManager);
-    }
-
-    @Override
-    public void stop(StopContext context) {
-        super.stop(context);
-        moduleLoader = null;
-    }
-
-    @Override
     public ModuleManagerPlugin getValue() {
         return this;
     }
 
-    /**
-     * Get the {@link OSGiModuleLoader}
-     */
-    OSGiModuleLoader getModuleLoader() {
-        return moduleLoader;
+    ModuleLoaderProvider getModuleLoaderIntegration() {
+        return injectedModuleLoader.getValue();
     }
 
-    /**
-     * Return the module identifier for a given XModule.
-     */
+    ModuleLoader getModuleLoader() {
+        return getModuleLoaderIntegration().getModuleLoader();
+    }
+
     ModuleIdentifier getModuleIdentifier(XModule resModule) {
         if (resModule == null)
             throw new IllegalArgumentException("Null resModule");
         if (resModule.isFragment())
             throw new IllegalArgumentException("A fragment is not a module");
 
-        ModuleIdentifier id = resModule.getAttachment(ModuleIdentifier.class);
-        if (id != null)
-            return id;
+        ModuleIdentifier identifier = resModule.getAttachment(ModuleIdentifier.class);
+        if (identifier != null)
+            return identifier;
 
+        XModuleIdentity moduleId = resModule.getModuleId();
         Module module = resModule.getAttachment(Module.class);
-        ModuleIdentifier identifier = (module != null ? module.getIdentifier() : null);
-        if (identifier == null) {
-            XModuleIdentity moduleId = resModule.getModuleId();
-            if (Constants.SYSTEM_BUNDLE_SYMBOLICNAME.equals(moduleId.getName()))
-                identifier = getFrameworkModule().getIdentifier();
-
-            if (identifier == null) {
-                String slot = moduleId.getVersion().toString();
-                int revision = moduleId.getRevision();
-                if (revision > 0)
-                    slot += "-rev" + revision;
-
-                String name = Constants.JBOSGI_PREFIX + "." + moduleId.getName();
-                identifier = ModuleIdentifier.create(name, slot);
-            }
-            resModule.addAttachment(ModuleIdentifier.class, identifier);
+        if (module != null) {
+            identifier = module.getIdentifier();
         }
-        return identifier;
-    }
 
-    /**
-     * Get the set of registered module idetifiers
-     */
-    Set<ModuleIdentifier> getModuleIdentifiers() {
-        return moduleLoader.getModuleIdentifiers();
+        if (identifier == null && SYSTEM_BUNDLE_SYMBOLICNAME.equals(moduleId.getName())) {
+            identifier = getFrameworkModule().getIdentifier();
+        }
+
+        if (identifier == null) {
+            identifier = getModuleLoaderIntegration().getModuleIdentifier(resModule);
+        }
+
+        resModule.addAttachment(ModuleIdentifier.class, identifier);
+        return identifier;
     }
 
     /**
@@ -168,7 +147,11 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      * @return The module or null
      */
     Module getModule(ModuleIdentifier identifier) {
-        return moduleLoader.getModule(identifier);
+        try {
+            return getModuleLoader().loadModule(identifier);
+        } catch (ModuleLoadException ex) {
+            return null;
+        }
     }
 
     /**
@@ -177,19 +160,22 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      * @return The bundle revision or null
      */
     AbstractBundleRevision getBundleRevision(ModuleIdentifier identifier) {
-        return moduleLoader.getBundleRevision(identifier);
+        return modules.get(identifier);
     }
 
     /**
      * Get the bundle for the given identifier
+     *
      * @return The bundle or null
      */
     AbstractBundleState getBundleState(ModuleIdentifier identifier) {
-        return moduleLoader.getBundleState(identifier);
+        AbstractBundleRevision bundleRevision = getBundleRevision(identifier);
+        return bundleRevision != null ? bundleRevision.getBundleState() : null;
     }
 
     /**
      * Get the bundle for the given class
+     *
      * @return The bundle or null
      */
     AbstractBundleState getBundleState(Class<?> clazz) {
@@ -227,8 +213,10 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         Module module = resModule.getAttachment(Module.class);
         if (module != null) {
             AbstractBundleRevision bundleRev = resModule.getAttachment(AbstractBundleRevision.class);
-            moduleLoader.addModule(bundleRev, module);
-            return  module.getIdentifier();
+            ModuleIdentifier identifier = module.getIdentifier();
+            modules.put(identifier, bundleRev);
+            getModuleLoaderIntegration().addModule(module);
+            return identifier;
         }
 
         ModuleIdentifier identifier;
@@ -263,7 +251,8 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             ModuleIdentifier systemIdentifier = systemModule.getIdentifier();
             ModuleLoader systemModuleLoader = systemModule.getModuleLoader();
             PathFilter systemPackagesFilter = plugin.getSystemPackageFilter();
-            moduleDependencies.add(DependencySpec.createModuleDependencySpec(systemPackagesFilter, PathFilters.acceptAll(), systemModuleLoader, systemIdentifier, false));
+            moduleDependencies
+                    .add(DependencySpec.createModuleDependencySpec(systemPackagesFilter, PathFilters.acceptAll(), systemModuleLoader, systemIdentifier, false));
 
             // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
             Map<XModule, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XModule, ModuleDependencyHolder>();
@@ -348,8 +337,10 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         }
 
         AbstractBundleRevision bundleRev = resModule.getAttachment(AbstractBundleRevision.class);
-        moduleLoader.addModule(bundleRev, moduleSpec);
-        return moduleSpec.getModuleIdentifier();
+        ModuleIdentifier identifier = moduleSpec.getModuleIdentifier();
+        getModuleLoaderIntegration().addModule(moduleSpec);
+        modules.put(identifier, bundleRev);
+        return identifier;
     }
 
     /**
@@ -527,16 +518,15 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         else if (getFrameworkModule().getIdentifier().equals(identifier))
             return getFrameworkModule();
         else
-            return moduleLoader.loadModule(identifier);
+            return getModuleLoader().loadModule(identifier);
     }
 
     /**
      * Remove the module with the given identifier
-     *
-     * @return The module or null
      */
-    Module removeModule(ModuleIdentifier identifier) {
-        return moduleLoader.removeModule(identifier);
+    void removeModule(ModuleIdentifier identifier) {
+        modules.remove(identifier);
+        getModuleLoaderIntegration().removeModule(identifier);
     }
 
     private Module getSystemModule() {
@@ -596,7 +586,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
                 importFilter = (importPaths != null ? PathFilters.in(importPaths) : PathFilters.acceptAll());
             }
             Module frameworkModule = getFrameworkModule();
-            ModuleLoader depLoader = (frameworkModule.getIdentifier().equals(identifier) ? frameworkModule.getModuleLoader() : moduleLoader);
+            ModuleLoader depLoader = (frameworkModule.getIdentifier().equals(identifier) ? frameworkModule.getModuleLoader() : getModuleLoader());
             return DependencySpec.createModuleDependencySpec(importFilter, exportFilter, depLoader, identifier, optional);
         }
 

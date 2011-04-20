@@ -21,15 +21,34 @@
  */
 package org.jboss.osgi.framework;
 
+import java.util.List;
+
+import org.jboss.modules.DependencySpec;
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
+import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.Service;
+import org.jboss.osgi.resolver.XModule;
 
 /**
- * The ModuleLoader provider.
+ * Integration point for the {@link ModuleLoader}.
  *
  * @author thomas.diesler@jboss.com
- * @since 29-Mar-2011
+ * @since 20-Apr-2011
  */
-public interface ModuleLoaderProvider extends Service<ModuleLoader> {
+public interface ModuleLoaderProvider extends Service<ModuleLoaderProvider> {
 
+    ModuleLoader getModuleLoader();
+
+    ModuleIdentifier getModuleIdentifier(XModule resModule);
+
+    void addModule(ModuleSpec moduleSpec);
+
+    void addModule(Module module);
+
+    void removeModule(ModuleIdentifier identifier);
+
+    void setAndRelinkDependencies(Module module, List<DependencySpec> dependencies) throws ModuleLoadException;
 }
