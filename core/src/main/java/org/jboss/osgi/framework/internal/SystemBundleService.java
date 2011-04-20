@@ -33,7 +33,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.resolver.XModule;
@@ -58,8 +58,8 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
     static void addService(ServiceTarget serviceTarget, FrameworkState frameworkState) {
         SystemBundleState bundleState = new SystemBundleState(frameworkState);
         SystemBundleService service = new SystemBundleService(bundleState);
-        ServiceBuilder<SystemBundleState> builder = serviceTarget.addService(ServiceNames.SYSTEM_BUNDLE, service);
-        builder.addDependency(ServiceNames.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, bundleState.injectedModuleProvider);
+        ServiceBuilder<SystemBundleState> builder = serviceTarget.addService(Services.SYSTEM_BUNDLE, service);
+        builder.addDependency(Services.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, bundleState.injectedModuleProvider);
         builder.addDependency(InternalServices.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
         builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolverPlugin);

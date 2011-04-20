@@ -35,7 +35,7 @@ import org.jboss.osgi.deployment.interceptor.AbstractLifecycleInterceptor;
 import org.jboss.osgi.deployment.interceptor.InvocationContext;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptor;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -60,8 +60,8 @@ final class WebXMLVerifierInterceptor extends AbstractPluginService<WebXMLVerifi
     static void addService(ServiceTarget serviceTarget) {
         WebXMLVerifierInterceptor service = new WebXMLVerifierInterceptor();
         ServiceBuilder<WebXMLVerifierInterceptor> builder = serviceTarget.addService(InternalServices.WEBXML_VERIFIER_PLUGIN, service);
-        builder.addDependency(ServiceNames.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(ServiceNames.FRAMEWORK_CREATE);
+        builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
+        builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

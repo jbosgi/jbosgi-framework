@@ -120,7 +120,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
     static void addService(ServiceTarget serviceTarget) {
         NativeCodePlugin service = new NativeCodePlugin();
         ServiceBuilder<NativeCodePlugin> builder = serviceTarget.addService(InternalServices.NATIVE_CODE_PLUGIN, service);
-        builder.addDependency(org.jboss.osgi.framework.ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

@@ -31,7 +31,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.BundleInstallProvider;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemServicesProvider;
 import org.osgi.framework.BundleContext;
 
@@ -57,13 +57,13 @@ public final class CoreServices extends AbstractService<CoreServices> {
     static void addService(ServiceTarget serviceTarget) {
         CoreServices service = new CoreServices();
         ServiceBuilder<CoreServices> builder = serviceTarget.addService(InternalServices.CORE_SERVICES, service);
-        builder.addDependency(ServiceNames.BUNDLE_INSTALL_PROVIDER, BundleInstallProvider.class, service.injectedInstallProvider);
-        builder.addDependency(ServiceNames.FRAMEWORK_CREATE, FrameworkService.class, service.injectedFramework);
+        builder.addDependency(Services.BUNDLE_INSTALL_PROVIDER, BundleInstallProvider.class, service.injectedInstallProvider);
+        builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkService.class, service.injectedFramework);
         builder.addDependency(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, service.injectedLifecycleInterceptor);
-        builder.addDependency(ServiceNames.PACKAGE_ADMIN, PackageAdminPlugin.class, service.injectedPackageAdmin);
-        builder.addDependency(ServiceNames.START_LEVEL, StartLevelPlugin.class, service.injectedStartLevel);
-        builder.addDependency(ServiceNames.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(ServiceNames.SYSTEM_SERVICES_PROVIDER, SystemServicesProvider.class, service.injectedServicesProvider);
+        builder.addDependency(Services.PACKAGE_ADMIN, PackageAdminPlugin.class, service.injectedPackageAdmin);
+        builder.addDependency(Services.START_LEVEL, StartLevelPlugin.class, service.injectedStartLevel);
+        builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
+        builder.addDependency(Services.SYSTEM_SERVICES_PROVIDER, SystemServicesProvider.class, service.injectedServicesProvider);
         builder.addDependencies(InternalServices.URL_HANDLER_PLUGIN, InternalServices.WEBXML_VERIFIER_PLUGIN);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();

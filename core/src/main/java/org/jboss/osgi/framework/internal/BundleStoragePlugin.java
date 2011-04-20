@@ -60,7 +60,7 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
     static void addService(ServiceTarget serviceTarget, boolean firstInit) {
         BundleStoragePlugin service = new BundleStoragePlugin(firstInit);
         ServiceBuilder<BundleStoragePlugin> builder = serviceTarget.addService(InternalServices.BUNDLE_STORAGE_PLUGIN, service);
-        builder.addDependency(org.jboss.osgi.framework.ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

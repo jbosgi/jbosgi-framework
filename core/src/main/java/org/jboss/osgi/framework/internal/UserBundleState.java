@@ -39,7 +39,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallProvider;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
@@ -79,7 +79,7 @@ abstract class UserBundleState extends AbstractBundleState {
     }
 
     static ServiceName getServiceName(long bundleId) {
-        return ServiceNames.BUNDLE_BASE_NAME.append(new Long(bundleId).toString()).append("INSTALLED");
+        return Services.BUNDLE_BASE_NAME.append(new Long(bundleId).toString()).append("INSTALLED");
     }
 
     /**
