@@ -30,7 +30,7 @@ import org.jboss.modules.Module;
 
 /**
  * A bundle entries provider.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 28-Sep-2010
  */
@@ -66,7 +66,7 @@ final class ModuleEntriesProvider implements EntriesProvider {
 
     @Override
     public Enumeration<URL> findEntries(String path, String pattern, boolean recurse) {
-        log.warn("[JBOSGI-408] Bundle entry related functionality for plain modules");
+        log.warnf("[JBOSGI-408] Bundle entry related functionality for plain modules");
         return null;
     }
 }

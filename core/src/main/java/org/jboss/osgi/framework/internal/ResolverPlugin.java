@@ -207,8 +207,8 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         // Apply resolver results
         try {
             applyResolverResults(resolved);
-        } catch (BundleException e) {
-            log.debug("Exception when applying resolver results.", e);
+        } catch (BundleException ex) {
+            log.debugf(ex, "Exception when applying resolver results.");
             allResolved = false;
         }
 
