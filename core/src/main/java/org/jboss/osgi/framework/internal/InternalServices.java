@@ -22,7 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 
 /**
  * The collection of internal service names.
@@ -33,7 +33,7 @@ import org.jboss.osgi.framework.ServiceNames;
 interface InternalServices {
 
     /** The base name of all internal services */
-    ServiceName INTERNAL_SERVICE_BASE = ServiceNames.JBOSGI_BASE_NAME.append("internal");
+    ServiceName INTERNAL_SERVICE_BASE = Services.JBOSGI_BASE_NAME.append("internal");
 
     /** The {@link BundleStoragePlugin} service name */
     ServiceName BUNDLE_STORAGE_PLUGIN = INTERNAL_SERVICE_BASE.append("BundleStorage");

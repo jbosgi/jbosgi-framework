@@ -106,7 +106,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
 
     static BundleManager addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
         BundleManager service = new BundleManager(frameworkBuilder, serviceTarget);
-        ServiceBuilder<BundleManagerService> builder = serviceTarget.addService(org.jboss.osgi.framework.ServiceNames.BUNDLE_MANAGER, service);
+        ServiceBuilder<BundleManagerService> builder = serviceTarget.addService(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, service);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
         return service;

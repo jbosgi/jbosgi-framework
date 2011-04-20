@@ -28,7 +28,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -52,9 +52,9 @@ public final class FrameworkActive extends FrameworkService {
 
     static void addService(ServiceTarget serviceTarget, Mode initialMode) {
         FrameworkActive service = new FrameworkActive();
-        ServiceBuilder<FrameworkService> builder = serviceTarget.addService(org.jboss.osgi.framework.ServiceNames.FRAMEWORK_ACTIVE, service);
-        builder.addDependency(org.jboss.osgi.framework.ServiceNames.FRAMEWORK_INIT, FrameworkService.class, service.injectedFramework);
-        builder.addDependencies(ServiceNames.AUTOINSTALL_PROVIDER, ServiceNames.AUTOINSTALL_PROVIDER_COMPLETE);
+        ServiceBuilder<FrameworkService> builder = serviceTarget.addService(org.jboss.osgi.framework.Services.FRAMEWORK_ACTIVE, service);
+        builder.addDependency(org.jboss.osgi.framework.Services.FRAMEWORK_INIT, FrameworkService.class, service.injectedFramework);
+        builder.addDependencies(Services.AUTOINSTALL_PROVIDER, Services.AUTOINSTALL_PROVIDER_COMPLETE);
         builder.setInitialMode(initialMode);
         builder.install();
     }

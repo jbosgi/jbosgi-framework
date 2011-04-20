@@ -28,7 +28,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.osgi.framework.launch.Framework;
 
 /**
@@ -50,7 +50,7 @@ public final class FrameworkCreate extends FrameworkService {
     static FrameworkState addService(ServiceTarget serviceTarget, BundleManager bundleManager) {
         FrameworkState frameworkState = new FrameworkState(bundleManager);
         FrameworkCreate service = new FrameworkCreate(frameworkState);
-        ServiceBuilder<FrameworkService> builder = serviceTarget.addService(ServiceNames.FRAMEWORK_CREATE, service);
+        ServiceBuilder<FrameworkService> builder = serviceTarget.addService(Services.FRAMEWORK_CREATE, service);
         builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, frameworkState.injectedDeploymentFactory);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, frameworkState.injectedBundleStorage);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, frameworkState.injectedFrameworkEvents);
@@ -58,7 +58,7 @@ public final class FrameworkCreate extends FrameworkService {
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, frameworkState.injectedNativeCode);
         builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, frameworkState.injectedResolverPlugin);
         builder.addDependency(InternalServices.SERVICE_MANAGER_PLUGIN, ServiceManagerPlugin.class, frameworkState.injectedServiceManager);
-        builder.addDependency(ServiceNames.SYSTEM_BUNDLE, SystemBundleState.class, frameworkState.injectedSystemBundle);
+        builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, frameworkState.injectedSystemBundle);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
         return frameworkState;

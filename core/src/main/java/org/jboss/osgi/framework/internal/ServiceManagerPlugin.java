@@ -21,8 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.ServiceNames.JBOSGI_SERVICE_BASE_NAME;
-import static org.jboss.osgi.framework.ServiceNames.JBOSGI_XSERVICE_BASE_NAME;
+import static org.jboss.osgi.framework.Services.JBOSGI_SERVICE_BASE_NAME;
+import static org.jboss.osgi.framework.Services.JBOSGI_XSERVICE_BASE_NAME;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,7 +49,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.util.NoFilter;
 import org.jboss.osgi.framework.util.RemoveOnlyCollection;
 import org.osgi.framework.Bundle;
@@ -89,7 +89,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
     static void addService(ServiceTarget serviceTarget) {
         ServiceManagerPlugin service = new ServiceManagerPlugin();
         ServiceBuilder<ServiceManagerPlugin> builder = serviceTarget.addService(InternalServices.SERVICE_MANAGER_PLUGIN, service);
-        builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.setInitialMode(Mode.ON_DEMAND);

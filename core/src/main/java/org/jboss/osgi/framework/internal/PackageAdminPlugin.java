@@ -43,7 +43,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundleCapability;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
@@ -82,13 +82,13 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     static void addService(ServiceTarget serviceTarget) {
         PackageAdminPlugin service = new PackageAdminPlugin();
-        ServiceBuilder<PackageAdmin> builder = serviceTarget.addService(ServiceNames.PACKAGE_ADMIN, service);
-        builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        ServiceBuilder<PackageAdmin> builder = serviceTarget.addService(Services.PACKAGE_ADMIN, service);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
-        builder.addDependency(ServiceNames.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
+        builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
         builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolver);
-        builder.addDependency(ServiceNames.FRAMEWORK_CREATE);
+        builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

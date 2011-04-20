@@ -95,8 +95,8 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
     static void addService(ServiceTarget serviceTarget) {
         FrameworkEventsPlugin service = new FrameworkEventsPlugin();
         ServiceBuilder<FrameworkEventsPlugin> builder = serviceTarget.addService(InternalServices.FRAMEWORK_EVENTS_PLUGIN, service);
-        builder.addDependency(org.jboss.osgi.framework.ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(org.jboss.osgi.framework.ServiceNames.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
+        builder.addDependency(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(org.jboss.osgi.framework.Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

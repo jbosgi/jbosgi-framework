@@ -38,7 +38,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemModuleProvider;
 
 /**
@@ -60,7 +60,7 @@ final class DefaultSystemModuleProvider extends AbstractPluginService<Module> im
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultSystemModuleProvider service = new DefaultSystemModuleProvider();
-        ServiceBuilder<Module> builder = serviceTarget.addService(ServiceNames.SYSTEM_MODULE_PROVIDER, service);
+        ServiceBuilder<Module> builder = serviceTarget.addService(Services.SYSTEM_MODULE_PROVIDER, service);
         builder.addDependency(InternalServices.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();

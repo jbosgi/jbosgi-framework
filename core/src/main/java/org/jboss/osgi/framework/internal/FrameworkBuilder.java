@@ -31,7 +31,7 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.osgi.framework.launch.Framework;
 
 /**
@@ -142,17 +142,17 @@ public final class FrameworkBuilder {
         SystemPackagesPlugin.addService(serviceTarget, this);
         WebXMLVerifierInterceptor.addService(serviceTarget);
 
-        if (isProvidedService(ServiceNames.AUTOINSTALL_PROVIDER) == false)
+        if (isProvidedService(Services.AUTOINSTALL_PROVIDER) == false)
             DefaultAutoInstallProvider.addService(serviceTarget);
-        if (isProvidedService(ServiceNames.BUNDLE_INSTALL_PROVIDER) == false)
+        if (isProvidedService(Services.BUNDLE_INSTALL_PROVIDER) == false)
             DefaultBundleInstallHandler.addService(serviceTarget);
-        if (isProvidedService(ServiceNames.FRAMEWORK_MODULE_PROVIDER) == false)
+        if (isProvidedService(Services.FRAMEWORK_MODULE_PROVIDER) == false)
             DefaultFrameworkModuleProvider.addService(serviceTarget);
-        if (isProvidedService(ServiceNames.MODULE_LOADER_PROVIDER) == false)
+        if (isProvidedService(Services.MODULE_LOADER_PROVIDER) == false)
             DefaultModuleLoaderIntegration.addService(serviceTarget);
-        if (isProvidedService(ServiceNames.SYSTEM_MODULE_PROVIDER) == false)
+        if (isProvidedService(Services.SYSTEM_MODULE_PROVIDER) == false)
             DefaultSystemModuleProvider.addService(serviceTarget);
-        if (isProvidedService(ServiceNames.SYSTEM_SERVICES_PROVIDER) == false)
+        if (isProvidedService(Services.SYSTEM_SERVICES_PROVIDER) == false)
             DefaultSystemServicesProvider.addService(serviceTarget);
     }
 

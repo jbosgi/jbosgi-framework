@@ -46,7 +46,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -414,7 +414,7 @@ final class FrameworkProxy implements Framework {
     @SuppressWarnings("unchecked")
     private FrameworkState awaitFrameworkInit() {
         if (frameworkInit == null) {
-            ServiceController<FrameworkService> controller = (ServiceController<FrameworkService>) lenientContainer.getRequiredService(ServiceNames.FRAMEWORK_INIT);
+            ServiceController<FrameworkService> controller = (ServiceController<FrameworkService>) lenientContainer.getRequiredService(Services.FRAMEWORK_INIT);
             controller.addListener(new AbstractServiceListener<FrameworkService>() {
                 @Override
                 public void serviceStopped(ServiceController<? extends FrameworkService> controller) {
@@ -443,7 +443,7 @@ final class FrameworkProxy implements Framework {
     @SuppressWarnings("unchecked")
     private FrameworkState awaitActiveFramework() {
         if (activeFramework == null) {
-            ServiceController<FrameworkService> controller = (ServiceController<FrameworkService>) lenientContainer.getRequiredService(ServiceNames.FRAMEWORK_ACTIVE);
+            ServiceController<FrameworkService> controller = (ServiceController<FrameworkService>) lenientContainer.getRequiredService(Services.FRAMEWORK_ACTIVE);
             controller.addListener(new AbstractServiceListener<FrameworkService>() {
                 @Override
                 public void serviceStopped(ServiceController<? extends FrameworkService> controller) {

@@ -42,7 +42,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.AutoInstallProvider;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.spi.util.StringPropertyReplacer;
 import org.jboss.osgi.spi.util.StringPropertyReplacer.PropertyProvider;
@@ -64,9 +64,9 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultAutoInstallProvider service = new DefaultAutoInstallProvider();
-        ServiceBuilder<AutoInstallProvider> builder = serviceTarget.addService(ServiceNames.AUTOINSTALL_PROVIDER, service);
-        builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(ServiceNames.FRAMEWORK_INIT);
+        ServiceBuilder<AutoInstallProvider> builder = serviceTarget.addService(Services.AUTOINSTALL_PROVIDER, service);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(Services.FRAMEWORK_INIT);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -131,7 +131,7 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
         }
 
         // Install a service that has a dependency on all pending bundle INSTALLED services
-        ServiceName servicesInstalled = ServiceNames.AUTOINSTALL_PROVIDER.append("INSTALLED");
+        ServiceName servicesInstalled = Services.AUTOINSTALL_PROVIDER.append("INSTALLED");
         ServiceBuilder<Void> builder = serviceTarget.addService(servicesInstalled, new AbstractService<Void>() {
             public void start(StartContext context) throws StartException {
                 log.debugf("Auto bundles installed");
@@ -141,7 +141,7 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
         builder.install();
 
         // Install a service that starts the bundles
-        builder = serviceTarget.addService(ServiceNames.AUTOINSTALL_PROVIDER_COMPLETE, new AbstractService<Void>() {
+        builder = serviceTarget.addService(Services.AUTOINSTALL_PROVIDER_COMPLETE, new AbstractService<Void>() {
             public void start(StartContext context) throws StartException {
                 for (Deployment dep : pendingServices.values()) {
                     if (dep.isAutoStart()) {

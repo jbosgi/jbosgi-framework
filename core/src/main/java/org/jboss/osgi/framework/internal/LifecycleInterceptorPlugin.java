@@ -35,7 +35,7 @@ import org.jboss.osgi.deployment.interceptor.InvocationContext;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
 import org.jboss.osgi.deployment.internal.InvocationContextImpl;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.spi.util.AttachmentSupport;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -60,8 +60,8 @@ final class LifecycleInterceptorPlugin extends AbstractPluginService<LifecycleIn
     static void addService(ServiceTarget serviceTarget) {
         LifecycleInterceptorPlugin service = new LifecycleInterceptorPlugin();
         ServiceBuilder<LifecycleInterceptorPlugin> builder = serviceTarget.addService(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN, service);
-        builder.addDependency(ServiceNames.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(ServiceNames.FRAMEWORK_CREATE);
+        builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
+        builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

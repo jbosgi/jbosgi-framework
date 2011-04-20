@@ -34,7 +34,7 @@ import org.osgi.service.startlevel.StartLevel;
  * @author thomas.diesler@jboss.com
  * @since 08-Apr-2011
  */
-public interface ServiceNames {
+public interface Services {
 
     /** The prefix for all OSGi services */
     ServiceName JBOSGI_BASE_NAME = ServiceName.of(Constants.JBOSGI_PREFIX);

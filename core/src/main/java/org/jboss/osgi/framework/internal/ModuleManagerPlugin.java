@@ -53,7 +53,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleReferenceClassLoader;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.ModuleLoaderProvider;
-import org.jboss.osgi.framework.ServiceNames;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
@@ -89,10 +89,10 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     static void addService(ServiceTarget serviceTarget) {
         ModuleManagerPlugin service = new ModuleManagerPlugin();
         ServiceBuilder<ModuleManagerPlugin> builder = serviceTarget.addService(InternalServices.MODULE_MANGER_PLUGIN, service);
-        builder.addDependency(ServiceNames.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(ServiceNames.MODULE_LOADER_PROVIDER, ModuleLoaderProvider.class, service.injectedModuleLoader);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(Services.MODULE_LOADER_PROVIDER, ModuleLoaderProvider.class, service.injectedModuleLoader);
         builder.addDependency(InternalServices.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
-        builder.addDependency(ServiceNames.SYSTEM_MODULE_PROVIDER, Module.class, service.injectedSystemModule);
+        builder.addDependency(Services.SYSTEM_MODULE_PROVIDER, Module.class, service.injectedSystemModule);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
