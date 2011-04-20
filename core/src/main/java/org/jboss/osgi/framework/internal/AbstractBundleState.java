@@ -59,9 +59,9 @@ import org.osgi.framework.Version;
 
 /**
  * An abstract representation of a {@link Bundle} state.
- *  
+ *
  * It is used by the various {@link AbstractBundleService}s as well as the {@link BundleProxy}s.
- * The state is never given to the client. 
+ * The state is never given to the client.
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
@@ -93,7 +93,7 @@ abstract class AbstractBundleState implements Bundle {
         this.frameworkState = frameworkState;
     }
 
-    
+
     FrameworkState getFrameworkState() {
         return frameworkState;
     }
@@ -101,7 +101,7 @@ abstract class AbstractBundleState implements Bundle {
     BundleManager getBundleManager() {
         return frameworkState.getBundleManager();
     }
-    
+
     SystemBundleState getSystemBundle() {
         return frameworkState.getSystemBundle();
     }
@@ -109,7 +109,7 @@ abstract class AbstractBundleState implements Bundle {
     CoreServices getCoreServices() {
         return frameworkState.getCoreServices();
     }
-    
+
     @Override
     public int getState() {
         return bundleState.get();
@@ -131,27 +131,27 @@ abstract class AbstractBundleState implements Bundle {
         }
         return bundleProxy;
     }
-    
+
     abstract Bundle createBundleProxy();
 
     abstract AbstractBundleContext createContextInternal();
-    
+
     abstract AbstractBundleRevision getCurrentRevision();
-    
+
     abstract AbstractBundleRevision getRevisionById(int revisionId);
-    
+
     abstract ServiceName getServiceName();
-    
+
     abstract boolean isFragment();
-    
+
     abstract boolean isSingleton();
-    
+
     abstract BundleStorageState getBundleStorageState();
-    
+
     ModuleIdentifier getModuleIdentifier() {
         return getCurrentRevision().getModuleIdentifier();
     }
-    
+
     void changeState(int state) {
         // Get the corresponding bundle event type
         int bundleEvent;
@@ -189,7 +189,7 @@ abstract class AbstractBundleState implements Bundle {
            LifecycleInterceptorPlugin plugin = getCoreServices().getLifecycleInterceptorPlugin();
            plugin.handleStateChange(state, this);
         }
-        
+
         bundleState.set(state);
 
         // Fire the bundle event
@@ -198,7 +198,7 @@ abstract class AbstractBundleState implements Bundle {
             eventsPlugin.fireBundleEvent(this, eventType);
         }
     }
-    
+
     void addRegisteredService(ServiceState serviceState) {
         log.tracef("Add registered service %s to: %s", serviceState, this);
         registeredServices.add(serviceState);
@@ -244,7 +244,7 @@ abstract class AbstractBundleState implements Bundle {
     Set<ServiceState> getServicesInUseInternal() {
         return Collections.unmodifiableSet(usedServices.keySet());
     }
-    
+
     void addServiceInUse(ServiceState serviceState) {
         log.tracef("Add service in use %s to: %s", serviceState, this);
         usedServices.putIfAbsent(serviceState, new AtomicInteger());
@@ -264,7 +264,7 @@ abstract class AbstractBundleState implements Bundle {
 
         return countVal;
     }
-    
+
     @Override
     public boolean hasPermission(Object permission) {
         assertNotUninstalled();
@@ -355,19 +355,19 @@ abstract class AbstractBundleState implements Bundle {
     OSGiMetaData getOSGiMetaData() {
         return getCurrentRevision().getOSGiMetaData();
     }
-    
+
     XModule getResolverModule() {
         return getCurrentRevision().getResolverModule();
     }
-    
+
     boolean isResolved() {
         return getResolverModule().isResolved();
     }
-    
+
     boolean isUninstalled() {
         return getState() == Bundle.UNINSTALLED;
     }
-    
+
     private URL getLocalizationEntry(String baseName, String locale) {
         // The Framework searches for localization entries by appending suffixes to
         // the localization base name according to a specified locale and finally
@@ -396,7 +396,7 @@ abstract class AbstractBundleState implements Bundle {
         }
         return entryURL;
     }
-    
+
     /**
      * The framework must search for localization entries using the following search rules based on the bundle type:
      *
@@ -410,7 +410,7 @@ abstract class AbstractBundleState implements Bundle {
     private URL getLocalizationEntry(String entryPath) {
         return getCurrentRevision().getLocalizationEntry(entryPath);
     }
-    
+
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         return getCurrentRevision().loadClass(name);
@@ -440,7 +440,7 @@ abstract class AbstractBundleState implements Bundle {
         // A bundle is considered to be modified when it is installed, updated or uninstalled.
         getBundleStorageState().updateLastModified();
     }
-    
+
     @Override
     public Enumeration<URL> findEntries(String path, String filePattern, boolean recurse) {
         return getCurrentRevision().findEntries(path, filePattern, recurse);
@@ -449,13 +449,13 @@ abstract class AbstractBundleState implements Bundle {
     AbstractBundleContext getBundleContextInternal() {
         return bundleContext;
     }
-    
+
     AbstractBundleContext createBundleContext() {
         if (bundleContext != null)
             throw new IllegalStateException("BundleContext already available");
         return bundleContext = createContextInternal();
     }
-    
+
     void destroyBundleContext() {
         // The BundleContext object is only valid during the execution of its context bundle;
         // that is, during the period from when the context bundle is in the STARTING, STOPPING, and ACTIVE bundle states.
@@ -466,7 +466,7 @@ abstract class AbstractBundleState implements Bundle {
             bundleContext = null;
         }
     }
-    
+
     @Override
     public BundleContext getBundleContext() {
         return bundleContext;
@@ -536,7 +536,7 @@ abstract class AbstractBundleState implements Bundle {
     }
 
     abstract void uninstallInternal() throws BundleException;
-    
+
     boolean ensureResolved(boolean fireEvent) {
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired
@@ -554,12 +554,16 @@ abstract class AbstractBundleState implements Bundle {
                 if (fireEvent == true) {
                     FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
                     eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, ex);
+                } else {
+                    // Make sure the reason for not resolving doesn't get lost, so log it.
+                    log.error("Could not resolve bundle " + this, ex);
                 }
+
                 return false;
             }
         }
     }
-    
+
     /**
      * This method returns all the resolver modules of the bundle, including those of revisions that may since have been
      * updated. These obsolete resolver modules disappear when PackageAdmin.refreshPackages() is called.
@@ -567,7 +571,7 @@ abstract class AbstractBundleState implements Bundle {
      * @return A list of all the resolver modules
      */
     abstract List<XModule> getAllResolverModules();
-    
+
     void assertNotUninstalled() {
         if (getState() == Bundle.UNINSTALLED)
             throw new IllegalStateException("Bundle uninstalled: " + this);
@@ -596,7 +600,7 @@ abstract class AbstractBundleState implements Bundle {
     String getCanonicalName() {
         return getSymbolicName() + ":" + getVersion();
     }
-    
+
     @Override
     public int hashCode() {
         return (int) getBundleId() * 51;
