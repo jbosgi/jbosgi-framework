@@ -113,8 +113,9 @@ public abstract class ModulesTestBase {
 
     protected void assertLoadClassFails(ModuleIdentifier identifier, String className) throws Exception {
         try {
-            loadClass(identifier, className);
-            fail("ClassNotFoundException expected");
+            Class<?> clazz = loadClass(identifier, className);
+            assertNotNull("ClassNotFoundException expected, but was: " + clazz, clazz);
+            fail("ClassNotFoundException expected, but was loaded from: " + clazz.getClassLoader());
         } catch (ClassNotFoundException ex) {
             // expected
         } catch (NoClassDefFoundError ex) {
