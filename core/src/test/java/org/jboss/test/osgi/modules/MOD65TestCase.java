@@ -21,17 +21,25 @@
  */
 package org.jboss.test.osgi.modules;
 
+import static org.junit.Assert.assertNotNull;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.jboss.modules.ClassSpec;
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
+import org.jboss.modules.ModuleClassLoaderFactory;
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoaderSpec;
+import org.jboss.modules.filter.PathFilter;
+import org.jboss.modules.filter.PathFilters;
 import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -71,7 +79,7 @@ public class MOD65TestCase extends ModulesTestBase {
     
     @Test
     @Ignore("[MODULES-65] Deadlock when LocalLoader attempts a circular class load")
-    public void testCircularityError() throws Exception {
+    public void testLazyActivationLocalLoader() throws Exception {
         JavaArchive archiveA = getModuleA();
         ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
 
@@ -94,6 +102,74 @@ public class MOD65TestCase extends ModulesTestBase {
         addModuleSpec(specBuilderB.create());
 
         assertLoadClass(identifierB, CircularityError.class.getName());
+    }
+
+    @Test
+    public void testPostDefineHook() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+
+        JavaArchive archiveB = getModuleB();
+        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
+
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        Set<String> lazyPaths = Collections.singleton(getPathForClassName(CircularityActivator.class.getName()));
+        specBuilderA.setModuleClassLoaderFactory(new PostDefineModuleClassLoader.Factory(lazyPaths));
+        addModuleSpec(specBuilderA.create());
+
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
+        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
+        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
+        addModuleSpec(specBuilderB.create());
+
+        assertLoadClass(identifierB, CircularityError.class.getName());
+    }
+
+    static class PostDefineModuleClassLoader extends ModuleClassLoader {
+
+        private final PathFilter activationFilter;
+
+        private PostDefineModuleClassLoader(Configuration configuration, Set<String> lazyPaths) {
+            super(configuration);
+            activationFilter = PathFilters.in(lazyPaths);
+        }
+
+        @Override
+        protected void postDefine(ClassSpec classSpec, Class<?> definedClass) {
+            String path = definedClass.getPackage().getName().replace('.', '/');
+            if (activationFilter.accept(path)) {
+                try {
+                    // After defining the class the LocalLoader may call into the ModuleActivator
+                    // which in turn may try to load a class that initiated a call to this local loader
+                    ModuleLoader moduleLoader = getModule().getModuleLoader();
+                    ModuleIdentifier identifierB = ModuleIdentifier.create("moduleB");
+                    Module moduleB = moduleLoader.loadModule(identifierB);
+                    Class<?> loadedClass = moduleB.getClassLoader().loadClass(CircularityError.class.getName());
+                    assertNotNull(loadedClass);
+                } catch (Throwable ex) {
+                    throw new IllegalStateException("Cannot post define: " + definedClass, ex);
+                }
+            }
+        }
+
+        static class Factory implements ModuleClassLoaderFactory {
+
+            private final Set<String> lazyPaths;
+
+            private Factory(Set<String> lazyPaths) {
+                this.lazyPaths = lazyPaths;
+            }
+
+            @Override
+            public ModuleClassLoader create(Configuration configuration) {
+                return new PostDefineModuleClassLoader(configuration, lazyPaths);
+            }
+        }
     }
 
     class LazyActivationLocalLoader implements LocalLoader {
