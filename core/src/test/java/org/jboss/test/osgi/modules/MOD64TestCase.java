@@ -25,6 +25,7 @@ import org.jboss.modules.DependencySpec;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.ResourceLoaderSpec;
+import org.jboss.modules.filter.PathFilters;
 import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -69,6 +70,28 @@ public class MOD64TestCase extends ModulesTestBase {
 
         assertLoadClass(identifierA, A.class.getName());
         assertLoadClassFails(identifierA, B.class.getName());
+    }
+
+    @Test
+    public void testExportFilterOnLocalLoader() throws Exception {
+        JavaArchive archiveA = getModuleA();
+        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(PathFilters.acceptAll(), getPathFilter(A.class)));
+        addModuleSpec(specBuilderA.create());
+
+        assertLoadClass(identifierA, A.class.getName());
+        assertLoadClass(identifierA, B.class.getName());
+
+        ModuleIdentifier identifierB = ModuleIdentifier.create("moduleB");
+        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
+        addModuleSpec(specBuilderB.create());
+
+        assertLoadClass(identifierB, A.class.getName());
+        assertLoadClassFails(identifierB, B.class.getName());
     }
 
     private JavaArchive getModuleA() {
