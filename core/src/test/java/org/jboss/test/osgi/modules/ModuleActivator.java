@@ -19,26 +19,10 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.modules.b;
+package org.jboss.test.osgi.modules;
 
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoader;
-import org.jboss.test.osgi.modules.ModuleActivator;
 
-public class CircularityActivator implements ModuleActivator {
+public interface ModuleActivator {
 
-    @Override
-    public boolean start() {
-        Module module = ((ModuleClassLoader) getClass().getClassLoader()).getModule();
-        try {
-            ModuleLoader moduleLoader = module.getModuleLoader();
-            Module moduleA = moduleLoader.loadModule(ModuleIdentifier.create("moduleA"));
-            moduleA.getClassLoader().loadClass("org.jboss.test.osgi.modules.a.CircularityError");
-            return true;
-        } catch (Exception ex) {
-            throw new IllegalStateException("Cannot activate module: " + module);
-        }
-    }
+    boolean start();
 }

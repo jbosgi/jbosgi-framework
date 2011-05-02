@@ -21,26 +21,30 @@
  */
 package org.jboss.test.osgi.modules;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.io.File;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Set;
 
 import org.jboss.modules.ClassSpec;
 import org.jboss.modules.DependencySpec;
-import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleClassLoaderFactory;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
+import org.jboss.osgi.testing.OSGiTestHelper;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -50,7 +54,6 @@ import org.jboss.test.osgi.modules.b.CircularityActivator;
 import org.jboss.test.osgi.modules.b.CircularityErrorDep;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -63,7 +66,7 @@ public class MOD65TestCase extends ModulesTestBase {
 
     private VirtualFile virtualFileA;
     private VirtualFile virtualFileB;
-    
+
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -76,33 +79,6 @@ public class MOD65TestCase extends ModulesTestBase {
         VFSUtils.safeClose(virtualFileA);
         VFSUtils.safeClose(virtualFileB);
     }
-    
-    @Test
-    @Ignore("[MODULES-65] Deadlock when LocalLoader attempts a circular class load")
-    public void testLazyActivationLocalLoader() throws Exception {
-        JavaArchive archiveA = getModuleA();
-        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
-
-        JavaArchive archiveB = getModuleB();
-        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
-
-        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
-        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
-        LazyActivationLocalLoader localLoader = new LazyActivationLocalLoader(identifierA, identifierB);
-        Set<String> lazyPaths = Collections.singleton(getPathForClassName(CircularityActivator.class.getName()));
-        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(localLoader, lazyPaths, true));
-        addModuleSpec(specBuilderA.create());
-
-        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
-        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
-        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
-        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-        addModuleSpec(specBuilderB.create());
-
-        assertLoadClass(identifierB, CircularityError.class.getName());
-    }
 
     @Test
     public void testPostDefineHook() throws Exception {
@@ -112,22 +88,56 @@ public class MOD65TestCase extends ModulesTestBase {
         JavaArchive archiveB = getModuleB();
         ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
 
-        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
-        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
-        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
-        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-        Set<String> lazyPaths = Collections.singleton(getPathForClassName(CircularityActivator.class.getName()));
-        specBuilderA.setModuleClassLoaderFactory(new PostDefineModuleClassLoader.Factory(lazyPaths));
-        addModuleSpec(specBuilderA.create());
+        Module sysModule = Module.getSystemModule();
+        ModuleLoader sysLoader = sysModule.getModuleLoader();
+        PathFilter sysImports = PathFilters.is("org/jboss/modules");
+        PathFilter sysExports = PathFilters.rejectAll();
 
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
         VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
         specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
-        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(sysImports, sysExports, sysLoader, ModuleIdentifier.SYSTEM, false));
+        Set<String> lazyPaths = Collections.singleton(getPathForClassName(CircularityErrorDep.class.getName()));
+        specBuilderB.setModuleClassLoaderFactory(new PostDefineModuleClassLoader.Factory(lazyPaths));
         addModuleSpec(specBuilderB.create());
 
-        assertLoadClass(identifierB, CircularityError.class.getName());
+        ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
+        VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
+        specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
+        specBuilderA.addDependency(DependencySpec.createModuleDependencySpec(identifierB));
+        addModuleSpec(specBuilderA.create());
+
+        List<ModuleIdentifier> activated = new ArrayList<ModuleIdentifier>();
+        Class<?> clazz = loadClassLazily(identifierA, CircularityError.class.getName(), activated);
+        assertNotNull("Class not null", clazz);
+        assertEquals("One module activated", 1, activated.size());
+        assertEquals("ModuleB activated", identifierB, activated.get(0));
+    }
+
+    Class<?> loadClassLazily(ModuleIdentifier moduleId, String className, List<ModuleIdentifier> activated) throws Exception {
+        Class<?> result = getModuleLoader().loadModule(moduleId).getClassLoader().loadClass(className);
+        Deque<ModuleIdentifier> stack = LazyActivationStack.getLazyActivationStack();
+        while (stack.isEmpty() == false) {
+            ModuleIdentifier auxid = stack.pop();
+            if (activated.contains(auxid) == false && activateModule(auxid))
+                activated.add(auxid);
+        }
+        return result;
+    }
+
+    static class LazyActivationStack {
+        static ThreadLocal<Deque<ModuleIdentifier>> stackAssociation = new ThreadLocal<Deque<ModuleIdentifier>>();
+
+        static Deque<ModuleIdentifier> getLazyActivationStack() {
+            Deque<ModuleIdentifier> stack = stackAssociation.get();
+            if (stack == null) {
+                stack = new ArrayDeque<ModuleIdentifier>();
+                stackAssociation.set(stack);
+            }
+            return stack;
+        }
     }
 
     static class PostDefineModuleClassLoader extends ModuleClassLoader {
@@ -143,16 +153,11 @@ public class MOD65TestCase extends ModulesTestBase {
         protected void postDefine(ClassSpec classSpec, Class<?> definedClass) {
             String path = definedClass.getPackage().getName().replace('.', '/');
             if (activationFilter.accept(path)) {
-                try {
-                    // After defining the class the LocalLoader may call into the ModuleActivator
-                    // which in turn may try to load a class that initiated a call to this local loader
-                    ModuleLoader moduleLoader = getModule().getModuleLoader();
-                    ModuleIdentifier identifierB = ModuleIdentifier.create("moduleB");
-                    Module moduleB = moduleLoader.loadModule(identifierB);
-                    Class<?> loadedClass = moduleB.getClassLoader().loadClass(CircularityError.class.getName());
-                    assertNotNull(loadedClass);
-                } catch (Throwable ex) {
-                    throw new IllegalStateException("Cannot post define: " + definedClass, ex);
+                Deque<ModuleIdentifier> stack = LazyActivationStack.getLazyActivationStack();
+                Module module = ((ModuleClassLoader) definedClass.getClassLoader()).getModule();
+                ModuleIdentifier identifier = module.getIdentifier();
+                if (stack.contains(identifier) == false) {
+                    stack.push(identifier);
                 }
             }
         }
@@ -172,50 +177,17 @@ public class MOD65TestCase extends ModulesTestBase {
         }
     }
 
-    class LazyActivationLocalLoader implements LocalLoader {
-
-        private final ModuleIdentifier identifierA, identifierB;
-
-        LazyActivationLocalLoader(ModuleIdentifier identifierA, ModuleIdentifier identifierB) {
-            this.identifierA = identifierA;
-            this.identifierB = identifierB;
-        }
-
-        @Override
-        public Class<?> loadClassLocal(String className, boolean resolve) {
-            try {
-                ModuleLoaderSupport moduleLoader = getModuleLoader();
-                Module moduleA = moduleLoader.loadModule(identifierA);
-                List<DependencySpec> dependencies = Collections.singletonList(DependencySpec.createLocalDependencySpec());
-                moduleLoader.setAndRelinkDependencies(moduleA, dependencies);
-                Class<?> definedClass = moduleA.getClassLoader().loadClass(className);
-
-                // After defining the class the LocalLoader may call into the ModuleActivator
-                // which in turn may try to load a class that initiated a call to this local loader
-                Module moduleB = moduleLoader.loadModule(identifierB);
-                moduleB.getClassLoader().loadClass(CircularityError.class.getName());
-
-                return definedClass;
-            } catch (Throwable th) {
-                throw new IllegalStateException(th);
-            }
-        }
-
-        @Override
-        public List<Resource> loadResourceLocal(String name) {
-            return null;
-        }
-    }
-
     private JavaArchive getModuleA() {
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-        archive.addClasses(CircularityErrorDep.class, CircularityActivator.class);
+        archive.addClasses(CircularityError.class);
         return archive;
     }
 
     private JavaArchive getModuleB() {
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
-        archive.addClasses(CircularityError.class);
+        archive.addClasses(CircularityErrorDep.class, CircularityActivator.class, ModuleActivator.class);
+        File resourceFile = OSGiTestHelper.getResourceFile("modules/moduleB/META-INF/services/" + ModuleActivator.class.getName());
+        archive.addManifestResource(resourceFile, "services/" + ModuleActivator.class.getName());
         return archive;
     }
 }
