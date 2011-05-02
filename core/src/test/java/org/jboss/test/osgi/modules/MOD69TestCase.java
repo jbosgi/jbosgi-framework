@@ -50,7 +50,7 @@ import org.junit.Test;
 public class MOD69TestCase extends ModulesTestBase {
 
     private VirtualFile virtualFileA;
-    
+
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -61,22 +61,22 @@ public class MOD69TestCase extends ModulesTestBase {
     public void tearDown() throws Exception {
         VFSUtils.safeClose(virtualFileA);
     }
-    
+
     @Test
     public void testClassFilter() throws Exception {
         JavaArchive archiveA = getModuleA();
-        ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
+        final ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
 
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
         VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
-        
+
         // Export-Package: com.acme.foo; include:="Qux*,BarImpl";exclude:=QuxImpl
 
         String packagePath = QuxBar.class.getPackage().getName();
         PathFilter inA = PathFilters.match(packagePath + ".Qux*");
         PathFilter inB = PathFilters.match(packagePath + ".BarImpl");
         PathFilter exA = PathFilters.match(packagePath + ".QuxImpl");
-        
+
         //A class is only visible if it is:
         //    Matched with an entry in the included list, and
         //    Not matched with an entry in the excluded list.
@@ -84,16 +84,23 @@ public class MOD69TestCase extends ModulesTestBase {
         PathFilter in = PathFilters.any(inA, inB);
         PathFilter ex = PathFilters.not(PathFilters.any(exA));
         final PathFilter filter = PathFilters.all(in, ex);
-        
-        ClassFilter classFilter = new ClassFilter() {
-            
-            @Override
+
+        ClassFilter classImportFilter = new ClassFilter() {
+            public boolean accept(String className) {
+                return true;
+            }
+        };
+        ClassFilter classExportFilter = new ClassFilter() {
             public boolean accept(String className) {
                 return filter.accept(className);
             }
         };
         specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
-        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(classFilter));
+        PathFilter importFilter = PathFilters.acceptAll();
+        PathFilter exportFilter = PathFilters.acceptAll();
+        PathFilter resourceImportFilter = PathFilters.acceptAll();
+        PathFilter resourceExportFilter = PathFilters.acceptAll();
+        specBuilderA.addDependency(DependencySpec.createLocalDependencySpec(importFilter, exportFilter, resourceImportFilter, resourceExportFilter, classImportFilter, classExportFilter));
         addModuleSpec(specBuilderA.create());
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("moduleB");
@@ -103,9 +110,9 @@ public class MOD69TestCase extends ModulesTestBase {
 
         assertLoadClass(identifierA, QuxFoo.class.getName());
         assertLoadClass(identifierA, QuxBar.class.getName());
-        //assertLoadClass(identifierA, QuxImpl.class.getName());
+        assertLoadClass(identifierA, QuxImpl.class.getName());
         assertLoadClass(identifierA, BarImpl.class.getName());
-        
+
         assertLoadClass(identifierB, QuxFoo.class.getName());
         assertLoadClass(identifierB, QuxBar.class.getName());
         assertLoadClassFails(identifierB, QuxImpl.class.getName());

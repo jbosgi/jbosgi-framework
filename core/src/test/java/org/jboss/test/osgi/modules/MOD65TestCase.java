@@ -46,7 +46,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * [MODULES-65] Deadlock when LocalLoader attempts a circular class load
+ * [MODULES-65] Deadlock on circular class load
  * 
  * @author Thomas.Diesler@jboss.com
  * @since 20-Dec-2010
