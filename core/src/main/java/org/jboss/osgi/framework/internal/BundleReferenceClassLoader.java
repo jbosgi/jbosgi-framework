@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework;
+package org.jboss.osgi.framework.internal;
 
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleClassLoaderFactory;
@@ -32,33 +32,37 @@ import org.osgi.framework.BundleReference;
  * @author thomas.diesler@jboss.com
  * @since 16-Dec-2010
  */
-public final class BundleReferenceClassLoader extends ModuleClassLoader implements BundleReference {
+class BundleReferenceClassLoader<T extends AbstractBundleState> extends ModuleClassLoader implements BundleReference {
 
-    private final Bundle bundle;
+    private final T bundleState;
 
-    private BundleReferenceClassLoader(Bundle bundle, Configuration configuration) {
+    BundleReferenceClassLoader(Configuration configuration, T bundleState) {
         super(configuration);
-        if (bundle == null)
-            throw new IllegalArgumentException("Null bundle");
-        this.bundle = bundle;
+        if (bundleState == null)
+            throw new IllegalArgumentException("Null bundleState");
+        this.bundleState = bundleState;
     }
 
     @Override
     public Bundle getBundle() {
-        return bundle;
+        return bundleState.getBundleProxy();
     }
 
-    public static class Factory implements ModuleClassLoaderFactory {
+    T getBundleState() {
+        return bundleState;
+    }
 
-        private Bundle bundle;
+    static class Factory<T extends AbstractBundleState> implements ModuleClassLoaderFactory {
 
-        public Factory(Bundle bundle) {
-            this.bundle = bundle;
+        private T bundleState;
+
+        public Factory(T bundleState) {
+            this.bundleState = bundleState;
         }
 
         @Override
         public ModuleClassLoader create(Configuration configuration) {
-            return new BundleReferenceClassLoader(bundle, configuration);
+            return new BundleReferenceClassLoader<T>(configuration, bundleState);
         }
     }
 }
