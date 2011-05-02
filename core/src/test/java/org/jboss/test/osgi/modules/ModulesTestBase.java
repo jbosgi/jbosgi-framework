@@ -26,12 +26,14 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.jboss.modules.DependencySpec;
@@ -69,6 +71,16 @@ public abstract class ModulesTestBase {
 
     protected void addModuleSpec(ModuleSpec moduleSpec) {
         moduleLoader.addModuleSpec(moduleSpec);
+    }
+
+    protected boolean activateModule(ModuleIdentifier moduleId) throws Exception {
+        Module module = getModuleLoader().loadModule(moduleId);
+        ModuleClassLoader classLoader = module.getClassLoader();
+        Class<?> activatorClass = classLoader.loadClass(ModuleActivator.class.getName());
+        Method startMethod = activatorClass.getMethod("start");
+        ServiceLoader<?> loadService = module.loadService(activatorClass);
+        Object activator = loadService.iterator().next();
+        return (Boolean) startMethod.invoke(activator);
     }
 
     protected Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException {
