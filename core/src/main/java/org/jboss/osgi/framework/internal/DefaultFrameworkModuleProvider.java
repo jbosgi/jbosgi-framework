@@ -43,7 +43,6 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.BundleReferenceClassLoader;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.Services;
@@ -131,7 +130,7 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
         };
         Set<String> frameworkPackagePaths = systemPackagesPlugin.getFrameworkPackagePaths();
         specBuilder.addDependency(DependencySpec.createLocalDependencySpec(frameworkFilter, PathFilters.acceptAll(), localLoader, frameworkPackagePaths));
-        specBuilder.setModuleClassLoaderFactory(new BundleReferenceClassLoader.Factory(systemBundle.getBundleProxy()));
+        specBuilder.setModuleClassLoaderFactory(new BundleReferenceClassLoader.Factory<SystemBundleState>(systemBundle));
 
         try {
             final ModuleSpec moduleSpec = specBuilder.create();

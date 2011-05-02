@@ -34,7 +34,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.DependencySpec;
-import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
@@ -51,7 +50,6 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleReferenceClassLoader;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.ModuleLoaderProvider;
 import org.jboss.osgi.framework.Services;
@@ -279,14 +277,14 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             for (DependencySpec dep : moduleDependencies)
                 specBuilder.addDependency(dep);
 
-            // Add a local dependency for the local bundle content
+            // Add resource roots the local bundle content
             for (RevisionContent revContent : contentRoots) {
                 ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
                 specBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resLoader));
                 allPaths.addAll(resLoader.getPaths());
             }
 
-            // Process fragment local content
+            // Process fragment local content and more resource roots
             for (FragmentBundleRevision fragRev : fragRevs) {
                 for (RevisionContent revContent : fragRev.getContentList()) {
                     ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
@@ -304,51 +302,33 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
                 }
             }
 
-            if (hostBundle.isActivationLazy()) {
-                Set<String> lazyPaths = new HashSet<String>();
-                PathFilter lazyFilter = getLazyPackagesFilter(hostBundle);
-                for (String path : allPaths) {
-                    if (lazyFilter.accept(path))
-                        lazyPaths.add(path);
-                }
-                log.tracef("Module [%s] lazy filter: %s", identifier, lazyFilter);
-                LocalLoader localLoader = new LazyActivationLocalLoader(hostBundle, identifier, moduleDependencies, lazyFilter);
-                specBuilder.addDependency(DependencySpec.createLocalDependencySpec(localLoader, lazyPaths, true));
-
-                PathFilter eagerFilter = PathFilters.not(lazyFilter);
-                PathFilter exportFilter = sysExportFilter;
-                log.tracef("Module [%s] eager filter: %s", identifier, eagerFilter);
-                specBuilder.addDependency(DependencySpec.createLocalDependencySpec(eagerFilter, exportFilter));
-            } else {
-
-                PathFilter importFilter = sysExportFilter;
-                PathFilter exportFilter = sysExportFilter;
-                if (importedPaths.isEmpty() == false) {
-                    importFilter = PathFilters.not(PathFilters.in(importedPaths));
-                }
-                PathFilter resourceImportFilter = PathFilters.acceptAll();
-                PathFilter resourceExportFilter = PathFilters.acceptAll();
-
-                ClassFilter classImportFilter = new ClassFilter() {
-                    public boolean accept(String className) {
-                        return true;
-                    }
-                };
-
-                final PathFilter filter = getExportClassFilter(resModule);
-                ClassFilter classExportFilter = new ClassFilter() {
-                    public boolean accept(String className) {
-                        return filter.accept(className);
-                    }
-                };
-                specBuilder.addDependency(DependencySpec.createLocalDependencySpec(importFilter, exportFilter, resourceImportFilter, resourceExportFilter,
-                        classImportFilter, classExportFilter));
+            // Setup the local loader dependency
+            PathFilter importFilter = sysExportFilter;
+            PathFilter exportFilter = sysExportFilter;
+            if (importedPaths.isEmpty() == false) {
+                importFilter = PathFilters.not(PathFilters.in(importedPaths));
             }
+            PathFilter resImportFilter = PathFilters.acceptAll();
+            PathFilter resExportFilter = PathFilters.acceptAll();
+            ClassFilter classImportFilter = new ClassFilter() {
+                public boolean accept(String className) {
+                    return true;
+                }
+            };
+            final PathFilter filter = getExportClassFilter(resModule);
+            ClassFilter classExportFilter = new ClassFilter() {
+                public boolean accept(String className) {
+                    return filter.accept(className);
+                }
+            };
+            DependencySpec localDep = DependencySpec.createLocalDependencySpec(importFilter, exportFilter, resImportFilter, resExportFilter, classImportFilter, classExportFilter);
+            specBuilder.addDependency(localDep);
 
             // Native - Hack
             addNativeResourceLoader(resModule, specBuilder);
 
-            specBuilder.setModuleClassLoaderFactory(new BundleReferenceClassLoader.Factory(hostBundle.getBundleProxy()));
+            PathFilter lazyActivationFilter = getLazyPackagesFilter(hostBundle);
+            specBuilder.setModuleClassLoaderFactory(new HostBundleClassLoader.Factory(hostBundle, lazyActivationFilter));
             specBuilder.setFallbackLoader(new HostBundleFallbackLoader(hostBundle, identifier, importedPaths));
 
             // Build the ModuleSpec
@@ -387,17 +367,17 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
                 excludeFilter = PathFilters.not(PathFilters.any(excludes));
             }
         }
-        
+
         // Accept all classes for export if there is no filter specified
         if (includeFilter == null && excludeFilter == null)
             return PathFilters.acceptAll();
-        
+
         if (includeFilter == null)
             includeFilter = PathFilters.acceptAll();
-        
+
         if (excludeFilter == null)
             excludeFilter = PathFilters.rejectAll();
-        
+
         return PathFilters.all(includeFilter, excludeFilter);
     }
 
@@ -405,32 +385,34 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      * Get a path filter for packages that trigger bundle activation for a host bundle with lazy ActivationPolicy
      */
     private PathFilter getLazyPackagesFilter(HostBundleState hostBundle) {
+        
         // By default all packages are loaded lazily
         PathFilter result = PathFilters.acceptAll();
 
         ActivationPolicyMetaData activationPolicy = hostBundle.getActivationPolicy();
-        List<String> includes = activationPolicy.getIncludes();
-        if (includes != null) {
-            Set<String> paths = new HashSet<String>();
-            for (String packageName : includes)
-                paths.add(packageName.replace('.', '/'));
+        if (activationPolicy != null) {
+            List<String> includes = activationPolicy.getIncludes();
+            if (includes != null) {
+                Set<String> paths = new HashSet<String>();
+                for (String packageName : includes)
+                    paths.add(packageName.replace('.', '/'));
 
-            result = PathFilters.in(paths);
+                result = PathFilters.in(paths);
+            }
+
+            List<String> excludes = activationPolicy.getExcludes();
+            if (excludes != null) {
+                // The set of packages on the exclude list determines the packages that can be loaded eagerly
+                Set<String> paths = new HashSet<String>();
+                for (String packageName : excludes)
+                    paths.add(packageName.replace('.', '/'));
+
+                if (includes != null)
+                    result = PathFilters.all(result, PathFilters.not(PathFilters.in(paths)));
+                else
+                    result = PathFilters.not(PathFilters.in(paths));
+            }
         }
-
-        List<String> excludes = activationPolicy.getExcludes();
-        if (excludes != null) {
-            // The set of packages on the exclude list determines the packages that can be loaded eagerly
-            Set<String> paths = new HashSet<String>();
-            for (String packageName : excludes)
-                paths.add(packageName.replace('.', '/'));
-
-            if (includes != null)
-                result = PathFilters.all(result, PathFilters.not(PathFilters.in(paths)));
-            else
-                result = PathFilters.not(PathFilters.in(paths));
-        }
-
         return result;
     }
 

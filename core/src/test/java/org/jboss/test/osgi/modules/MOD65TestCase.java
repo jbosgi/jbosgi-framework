@@ -25,12 +25,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 
 import org.jboss.modules.ClassSpec;
 import org.jboss.modules.DependencySpec;
@@ -117,23 +116,23 @@ public class MOD65TestCase extends ModulesTestBase {
     }
 
     Class<?> loadClassLazily(ModuleIdentifier moduleId, String className, List<ModuleIdentifier> activated) throws Exception {
-        Class<?> result = getModuleLoader().loadModule(moduleId).getClassLoader().loadClass(className);
-        Deque<ModuleIdentifier> stack = LazyActivationStack.getLazyActivationStack();
+        Class<?> loadedClass = getModuleLoader().loadModule(moduleId).getClassLoader().loadClass(className);
+        Stack<ModuleIdentifier> stack = LazyActivationStack.getLazyActivationStack();
         while (stack.isEmpty() == false) {
             ModuleIdentifier auxid = stack.pop();
             if (activated.contains(auxid) == false && activateModule(auxid))
                 activated.add(auxid);
         }
-        return result;
+        return loadedClass;
     }
 
     static class LazyActivationStack {
-        static ThreadLocal<Deque<ModuleIdentifier>> stackAssociation = new ThreadLocal<Deque<ModuleIdentifier>>();
+        static ThreadLocal<Stack<ModuleIdentifier>> stackAssociation = new ThreadLocal<Stack<ModuleIdentifier>>();
 
-        static Deque<ModuleIdentifier> getLazyActivationStack() {
-            Deque<ModuleIdentifier> stack = stackAssociation.get();
+        static Stack<ModuleIdentifier> getLazyActivationStack() {
+            Stack<ModuleIdentifier> stack = stackAssociation.get();
             if (stack == null) {
-                stack = new ArrayDeque<ModuleIdentifier>();
+                stack = new Stack<ModuleIdentifier>();
                 stackAssociation.set(stack);
             }
             return stack;
@@ -153,7 +152,7 @@ public class MOD65TestCase extends ModulesTestBase {
         protected void postDefine(ClassSpec classSpec, Class<?> definedClass) {
             String path = definedClass.getPackage().getName().replace('.', '/');
             if (activationFilter.accept(path)) {
-                Deque<ModuleIdentifier> stack = LazyActivationStack.getLazyActivationStack();
+                Stack<ModuleIdentifier> stack = LazyActivationStack.getLazyActivationStack();
                 Module module = ((ModuleClassLoader) definedClass.getClassLoader()).getModule();
                 ModuleIdentifier identifier = module.getIdentifier();
                 if (stack.contains(identifier) == false) {

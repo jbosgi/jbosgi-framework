@@ -23,11 +23,13 @@ package org.jboss.osgi.framework.internal;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Stack;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
@@ -55,7 +57,7 @@ final class HostBundleState extends UserBundleState {
     private AtomicBoolean awaitLazyActivation;
     private BundleActivator bundleActivator;
     private int startLevel;
-    
+
     HostBundleState(FrameworkState frameworkState, long bundleId, String symbolicName) throws BundleException {
         super(frameworkState, bundleId, symbolicName);
     }
@@ -68,13 +70,13 @@ final class HostBundleState extends UserBundleState {
 
         return (HostBundleState) bundleState;
     }
-    
+
     void initUserBundleState(OSGiMetaData metadata) {
         StartLevel startLevelService = getCoreServices().getStartLevelPlugin();
         startLevel = startLevelService.getInitialBundleStartLevel();
         awaitLazyActivation = new AtomicBoolean(isActivationLazy());
-    } 
-    
+    }
+
     @Override
     HostBundleContext createContextInternal() {
         return new HostBundleContext(this);
@@ -112,7 +114,7 @@ final class HostBundleState extends UserBundleState {
         BundleStorageState storageState = getBundleStorageState();
         return storageState.isPersistentlyStarted();
     }
-    
+
     boolean isActivationLazy() {
         ActivationPolicyMetaData activationPolicy = getActivationPolicy();
         String policyType = (activationPolicy != null ? activationPolicy.getType() : null);
@@ -123,6 +125,10 @@ final class HostBundleState extends UserBundleState {
         return getOSGiMetaData().getBundleActivationPolicy();
     }
 
+    boolean awaitLazyActivation() {
+        return awaitLazyActivation.get();
+    }
+
     void activateOnClassLoad(final Class<?> definedClass) throws BundleException {
         if (awaitLazyActivation.getAndSet(false)) {
             if (hasStartLevelValidForStart() == true) {
@@ -130,16 +136,46 @@ final class HostBundleState extends UserBundleState {
                 if (isBundleActivationPolicyUsed())
                     options |= START_ACTIVATION_POLICY;
 
+                log.debugf("Lazy activation of: %s", this);
                 startInternal(options);
             }
         }
     }
-    
+
+    @Override
+    public Class<?> loadClass(String name) throws ClassNotFoundException {
+
+        Class<?> loadedClass = super.loadClass(name);
+        Stack<ModuleIdentifier> stack = LazyActivationStack.getLazyActivationStack();
+        if (stack.isEmpty())
+            return loadedClass;
+        
+        try {
+            ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
+            while (stack.isEmpty() == false) {
+                ModuleIdentifier moduleId = stack.pop();
+                AbstractBundleState bundleState = moduleManager.getBundleState(moduleId);
+                HostBundleState hostBundle = HostBundleState.assertBundleState(bundleState);
+                if (hostBundle.awaitLazyActivation()) {
+                    try {
+                        hostBundle.activateOnClassLoad(null);
+                    } catch (BundleException ex) {
+                        log.errorf(ex, "Cannot activate lazily: %s", hostBundle);
+                    }
+                }
+            }
+        } finally {
+            stack.clear();
+        }
+        
+        return loadedClass;
+    }
+
     private boolean hasStartLevelValidForStart() {
         StartLevel startLevelPlugin = getCoreServices().getStartLevelPlugin();
         return getStartLevel() <= startLevelPlugin.getStartLevel();
     }
-    
+
     private boolean isBundleActivationPolicyUsed() {
         BundleStorageState storageState = getBundleStorageState();
         return storageState.isBundleActivationPolicyUsed();
@@ -200,7 +236,7 @@ final class HostBundleState extends UserBundleState {
             releaseActivationLock();
         }
     }
-    
+
     private void assertStartConditions() throws BundleException {
 
         // The service platform may run this bundle if any of the execution environments named in the
@@ -220,7 +256,7 @@ final class HostBundleState extends UserBundleState {
                 throw new BundleException("Unsupported execution environment " + requiredEnvs + " we have " + availableEnvs);
         }
     }
-    
+
     private void persistAutoStartSettings(int options) {
         // The Framework must set this bundle's persistent autostart setting to
         // Started with declared activation if the START_ACTIVATION_POLICY option is set or
@@ -237,7 +273,7 @@ final class HostBundleState extends UserBundleState {
         BundleStorageState storageState = getBundleStorageState();
         storageState.setPersistentlyStarted(started);
     }
-    
+
     private void transitionToStarting(int options) throws BundleException {
         // #5.1 If this bundle's state is STARTING then this method returns immediately.
         if (getState() == STARTING)
@@ -311,7 +347,7 @@ final class HostBundleState extends UserBundleState {
 
         log.infof("Bundle started: %s", this);
     }
-    
+
     @Override
     void stopInternal(int options) throws BundleException {
 
