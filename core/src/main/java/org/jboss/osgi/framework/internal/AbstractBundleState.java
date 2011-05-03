@@ -555,11 +555,7 @@ abstract class AbstractBundleState implements Bundle {
                 if (fireEvent == true) {
                     FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
                     eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, ex);
-                } else {
-                    // Make sure the reason for not resolving doesn't get lost, so log it.
-                    log.errorf(ex, "Could not resolve bundle: %s", this);
                 }
-
                 return false;
             }
         }

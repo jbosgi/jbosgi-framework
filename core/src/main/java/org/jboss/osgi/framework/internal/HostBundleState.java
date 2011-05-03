@@ -182,7 +182,7 @@ final class HostBundleState extends UserBundleState {
 
             // #4 If this bundle's state is not RESOLVED, an attempt is made to resolve this bundle.
             // If the Framework cannot resolve this bundle, a BundleException is thrown.
-            if (ensureResolved(false) == false)
+            if (ensureResolved(true) == false)
                 throw new BundleException("Cannot resolve bundle: " + this);
 
             // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
