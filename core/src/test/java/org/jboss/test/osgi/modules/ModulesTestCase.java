@@ -80,8 +80,8 @@ public class ModulesTestCase extends ModulesTestBase {
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
         addModuleSpec(specBuilderA.create());
 
-        assertLoadClassFails(identifierA, A.class.getName());
-        assertLoadClassFails(identifierA, B.class.getName());
+        assertLoadClassFail(identifierA, A.class.getName());
+        assertLoadClassFail(identifierA, B.class.getName());
     }
 
     @Test
@@ -121,7 +121,7 @@ public class ModulesTestCase extends ModulesTestBase {
         addModuleSpec(specBuilderA.create());
 
         assertLoadClass(identifierA, A.class.getName());
-        assertLoadClassFails(identifierA, B.class.getName());
+        assertLoadClassFail(identifierA, B.class.getName());
     }
 
     @Test
@@ -159,7 +159,7 @@ public class ModulesTestCase extends ModulesTestBase {
         assertLoadClass(identifierA, A.class.getName());
         assertLoadClass(identifierA, B.class.getName());
 
-        assertLoadClassFails(identifierB, C.class.getName());
+        assertLoadClassFail(identifierB, C.class.getName());
         assertLoadClass(identifierB, D.class.getName());
     }
 
@@ -256,7 +256,7 @@ public class ModulesTestCase extends ModulesTestBase {
 
         // moduleA has an export filter on A, B is not visible
         assertLoadClass(identifierB, A.class.getName(), identifierA);
-        assertLoadClassFails(identifierB, B.class.getName());
+        assertLoadClassFail(identifierB, B.class.getName());
 
         assertLoadClass(identifierB, C.class.getName());
         assertLoadClass(identifierB, D.class.getName());
@@ -284,7 +284,7 @@ public class ModulesTestCase extends ModulesTestBase {
 
         // The dependency on moduleA has an import filter on A, B is not visible
         assertLoadClass(identifierB, A.class.getName(), identifierA);
-        assertLoadClassFails(identifierB, B.class.getName());
+        assertLoadClassFail(identifierB, B.class.getName());
 
         assertLoadClass(identifierB, C.class.getName());
         assertLoadClass(identifierB, D.class.getName());
@@ -324,8 +324,8 @@ public class ModulesTestCase extends ModulesTestBase {
 
         assertLoadClass(identifierX, C.class.getName());
         assertLoadClass(identifierX, D.class.getName());
-        assertLoadClassFails(identifierX, A.class.getName());
-        assertLoadClassFails(identifierX, B.class.getName());
+        assertLoadClassFail(identifierX, A.class.getName());
+        assertLoadClassFail(identifierX, B.class.getName());
     }
 
     @Test
@@ -363,7 +363,7 @@ public class ModulesTestCase extends ModulesTestBase {
         assertLoadClass(identifierX, C.class.getName());
         assertLoadClass(identifierX, D.class.getName());
         assertLoadClass(identifierX, A.class.getName());
-        assertLoadClassFails(identifierX, B.class.getName());
+        assertLoadClassFail(identifierX, B.class.getName());
     }
 
     @Test
@@ -396,12 +396,12 @@ public class ModulesTestCase extends ModulesTestBase {
         assertLoadClass(identifierB, C.class.getName());
         assertLoadClass(identifierB, D.class.getName());
         assertLoadClass(identifierB, A.class.getName());
-        assertLoadClassFails(identifierB, B.class.getName());
+        assertLoadClassFail(identifierB, B.class.getName());
 
         assertLoadClass(identifierX, C.class.getName());
         assertLoadClass(identifierX, D.class.getName());
         assertLoadClass(identifierX, A.class.getName());
-        assertLoadClassFails(identifierX, B.class.getName());
+        assertLoadClassFail(identifierX, B.class.getName());
     }
 
     class RelinkFallbackLoader implements LocalLoader {

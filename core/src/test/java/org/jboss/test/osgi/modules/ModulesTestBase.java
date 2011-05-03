@@ -111,7 +111,7 @@ public abstract class ModulesTestBase {
             assertEquals(expClassLoader, wasClassLoader);
     }
 
-    protected void assertLoadClassFails(ModuleIdentifier identifier, String className) throws Exception {
+    protected void assertLoadClassFail(ModuleIdentifier identifier, String className) throws Exception {
         try {
             Class<?> clazz = loadClass(identifier, className);
             assertNotNull("ClassNotFoundException expected for [" + className + "], but was: " + clazz, clazz);

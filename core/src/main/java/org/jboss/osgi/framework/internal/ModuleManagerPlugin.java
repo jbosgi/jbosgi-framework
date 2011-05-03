@@ -43,6 +43,7 @@ import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.ResourceLoader;
 import org.jboss.modules.ResourceLoaderSpec;
+import org.jboss.modules.filter.ClassFilter;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.msc.service.ServiceBuilder;
@@ -70,7 +71,7 @@ import org.osgi.framework.BundleReference;
 
 /**
  * The module manager plugin.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 06-Jul-2009
  */
@@ -143,7 +144,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     /**
      * Get the module with the given identifier
-     *
+     * 
      * @return The module or null
      */
     Module getModule(ModuleIdentifier identifier) {
@@ -156,7 +157,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     /**
      * Get the bundle revision for the given identifier
-     *
+     * 
      * @return The bundle revision or null
      */
     AbstractBundleRevision getBundleRevision(ModuleIdentifier identifier) {
@@ -165,7 +166,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     /**
      * Get the bundle for the given identifier
-     *
+     * 
      * @return The bundle or null
      */
     AbstractBundleState getBundleState(ModuleIdentifier identifier) {
@@ -175,7 +176,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     /**
      * Get the bundle for the given class
-     *
+     * 
      * @return The bundle or null
      */
     AbstractBundleState getBundleState(Class<?> clazz) {
@@ -198,7 +199,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     /**
      * Create the module in the {@link ModuleLoader}
-     *
+     * 
      * @return The module identifier
      */
     ModuleIdentifier addModule(final XModule resModule) {
@@ -246,13 +247,14 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             List<DependencySpec> moduleDependencies = new ArrayList<DependencySpec>();
 
             // Add a dependency on the system module
+            Module sysModule = getSystemModule();
+            ModuleIdentifier systemIdentifier = sysModule.getIdentifier();
+            ModuleLoader sysModuleLoader = sysModule.getModuleLoader();
             SystemPackagesPlugin plugin = injectedSystemPackages.getValue();
-            Module systemModule = getSystemModule();
-            ModuleIdentifier systemIdentifier = systemModule.getIdentifier();
-            ModuleLoader systemModuleLoader = systemModule.getModuleLoader();
             PathFilter systemPackagesFilter = plugin.getSystemPackageFilter();
-            moduleDependencies
-                    .add(DependencySpec.createModuleDependencySpec(systemPackagesFilter, PathFilters.acceptAll(), systemModuleLoader, systemIdentifier, false));
+            PathFilter sysImportFilter = systemPackagesFilter;
+            PathFilter sysExportFilter = PathFilters.acceptAll();
+            moduleDependencies.add(DependencySpec.createModuleDependencySpec(sysImportFilter, sysExportFilter, sysModuleLoader, systemIdentifier, false));
 
             // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
             Map<XModule, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XModule, ModuleDependencyHolder>();
@@ -314,16 +316,33 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
                 specBuilder.addDependency(DependencySpec.createLocalDependencySpec(localLoader, lazyPaths, true));
 
                 PathFilter eagerFilter = PathFilters.not(lazyFilter);
-                PathFilter exportFilter = PathFilters.acceptAll();
+                PathFilter exportFilter = sysExportFilter;
                 log.tracef("Module [%s] eager filter: %s", identifier, eagerFilter);
                 specBuilder.addDependency(DependencySpec.createLocalDependencySpec(eagerFilter, exportFilter));
             } else {
-                PathFilter importFilter = PathFilters.acceptAll();
-                PathFilter exportFilter = PathFilters.acceptAll();
+
+                PathFilter importFilter = sysExportFilter;
+                PathFilter exportFilter = sysExportFilter;
                 if (importedPaths.isEmpty() == false) {
                     importFilter = PathFilters.not(PathFilters.in(importedPaths));
                 }
-                specBuilder.addDependency(DependencySpec.createLocalDependencySpec(importFilter, exportFilter));
+                PathFilter resourceImportFilter = PathFilters.acceptAll();
+                PathFilter resourceExportFilter = PathFilters.acceptAll();
+
+                ClassFilter classImportFilter = new ClassFilter() {
+                    public boolean accept(String className) {
+                        return true;
+                    }
+                };
+
+                final PathFilter filter = getExportClassFilter(resModule);
+                ClassFilter classExportFilter = new ClassFilter() {
+                    public boolean accept(String className) {
+                        return filter.accept(className);
+                    }
+                };
+                specBuilder.addDependency(DependencySpec.createLocalDependencySpec(importFilter, exportFilter, resourceImportFilter, resourceExportFilter,
+                        classImportFilter, classExportFilter));
             }
 
             // Native - Hack
@@ -341,6 +360,45 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         getModuleLoaderIntegration().addModule(moduleSpec);
         modules.put(identifier, bundleRev);
         return identifier;
+    }
+
+    private PathFilter getExportClassFilter(XModule resModule) {
+        PathFilter includeFilter = null;
+        PathFilter excludeFilter = null;
+        for (XPackageCapability packageCap : resModule.getPackageCapabilities()) {
+            String includeDirective = packageCap.getDirective(Constants.INCLUDE_DIRECTIVE);
+            if (includeDirective != null) {
+                String packageName = packageCap.getName();
+                String[] patterns = includeDirective.split(",");
+                List<PathFilter> includes = new ArrayList<PathFilter>();
+                for (String pattern : patterns) {
+                    includes.add(PathFilters.match(packageName + "." + pattern));
+                }
+                includeFilter = PathFilters.any(includes);
+            }
+            String excludeDirective = packageCap.getDirective(Constants.EXCLUDE_DIRECTIVE);
+            if (excludeDirective != null) {
+                String packageName = packageCap.getName();
+                String[] patterns = excludeDirective.split(",");
+                List<PathFilter> excludes = new ArrayList<PathFilter>();
+                for (String pattern : patterns) {
+                    excludes.add(PathFilters.match(packageName + "." + pattern));
+                }
+                excludeFilter = PathFilters.not(PathFilters.any(excludes));
+            }
+        }
+        
+        // Accept all classes for export if there is no filter specified
+        if (includeFilter == null && excludeFilter == null)
+            return PathFilters.acceptAll();
+        
+        if (includeFilter == null)
+            includeFilter = PathFilters.acceptAll();
+        
+        if (excludeFilter == null)
+            excludeFilter = PathFilters.rejectAll();
+        
+        return PathFilters.all(includeFilter, excludeFilter);
     }
 
     /**
@@ -509,7 +567,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     /**
      * Load the module for the given identifier
-     *
+     * 
      * @throws ModuleLoadException If the module cannot be loaded
      */
     Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException {

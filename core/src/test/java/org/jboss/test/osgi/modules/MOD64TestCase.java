@@ -69,7 +69,7 @@ public class MOD64TestCase extends ModulesTestBase {
         addModuleSpec(specBuilderA.create());
 
         assertLoadClass(identifierA, A.class.getName());
-        assertLoadClassFails(identifierA, B.class.getName());
+        assertLoadClassFail(identifierA, B.class.getName());
     }
 
     @Test
@@ -91,7 +91,7 @@ public class MOD64TestCase extends ModulesTestBase {
         addModuleSpec(specBuilderB.create());
 
         assertLoadClass(identifierB, A.class.getName());
-        assertLoadClassFails(identifierB, B.class.getName());
+        assertLoadClassFail(identifierB, B.class.getName());
     }
 
     private JavaArchive getModuleA() {
