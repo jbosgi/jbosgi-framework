@@ -44,7 +44,7 @@ import org.osgi.framework.Bundle;
 
 /**
  * A fallback loader that takes care of dynamic class/resource loads.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
@@ -201,12 +201,14 @@ final class HostBundleFallbackLoader implements LocalLoader {
         log.tracef("Attempt to find path dynamically in resolved modules ...");
         ResolverPlugin resolverPlugin = hostBundle.getFrameworkState().getResolverPlugin();
         ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
-        for (XModule resModule : resolverPlugin.getResolver().getModules()) {
-            if (resModule.isResolved()) {
-                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(resModule);
-                Module candidate = moduleManager.getModule(identifier);
-                if (isValidCandidate(resName, matchingPatterns, candidate))
-                    return candidate;
+        for (XPackageRequirement packageReq : matchingPatterns) {
+            for (XModule resModule : resolverPlugin.getResolver().getModules()) {
+                if (resModule.isResolved()) {
+                    ModuleIdentifier identifier = moduleManager.getModuleIdentifier(resModule);
+                    Module candidate = moduleManager.getModule(identifier);
+                    if (isValidCandidate(resName, packageReq, candidate))
+                        return candidate;
+                }
             }
         }
         return null;
@@ -214,27 +216,15 @@ final class HostBundleFallbackLoader implements LocalLoader {
 
     private Module findInUnresolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
         log.tracef("Attempt to find path dynamically in unresolved modules ...");
-        ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
-        for (Bundle aux : hostBundle.getBundleManager().getBundles()) {
-            if (aux.getState() != Bundle.INSTALLED)
-                continue;
-
-            // Attempt to resolve the bundle
-            AbstractBundleState bundle = AbstractBundleState.assertBundleState(aux);
-            if (bundle.ensureResolved(false) == false)
-                continue;
-
-            // Create and load the module. This should not fail for resolved bundles.
-            ModuleIdentifier candidateId = bundle.getModuleIdentifier();
-            Module candidate = moduleManager.getModule(candidateId);
-
-            if (isValidCandidate(resName, matchingPatterns, candidate))
-                return candidate;
+        for (AbstractBundleState bundleState : hostBundle.getBundleManager().getBundles()) {
+            if (bundleState.getState() == Bundle.INSTALLED) {
+                bundleState.ensureResolved(false);
+            }
         }
-        return null;
+        return findInResolvedModules(resName, matchingPatterns);
     }
 
-    private boolean isValidCandidate(String resName, List<XPackageRequirement> matchingPatterns, Module candidate) {
+    private boolean isValidCandidate(String resName, XPackageRequirement packageReq, Module candidate) {
 
         if (candidate == null)
             return false;
@@ -254,13 +244,8 @@ final class HostBundleFallbackLoader implements LocalLoader {
         AbstractBundleRevision bundleRevision = moduleManager.getBundleRevision(candidateId);
         XModule resModule = bundleRevision.getResolverModule();
 
-        for (XPackageRequirement pattern : matchingPatterns) {
-            XPackageCapability candidateCap = getCandidateCapability(resModule, pattern);
-            if (candidateCap != null) {
-                return true;
-            }
-        }
-        return false;
+        XPackageCapability candidateCap = getCandidateCapability(resModule, packageReq);
+        return (candidateCap != null);
     }
 
     private XPackageCapability getCandidateCapability(XModule resModule, XPackageRequirement packageReq) {
