@@ -21,11 +21,7 @@
  */
 package org.jboss.test.osgi.framework.classloader;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-
 import java.io.InputStream;
-import java.net.URL;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
@@ -37,7 +33,6 @@ import org.jboss.test.osgi.framework.classloader.support.b.B;
 import org.jboss.test.osgi.framework.classloader.support.c.C;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
-import org.osgi.service.log.LogService;
 
 /**
  * Test the DynamicImport-Package manifest header.
@@ -340,101 +335,69 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    public void testPackageAvailableOnInstall() throws Exception {
-        Bundle cmpd = installBundle("bundles/org.osgi.compendium.jar");
-        assertBundleState(Bundle.INSTALLED, cmpd.getState());
-        try {
-            Bundle bundleC = installBundle(getLogServiceArchive());
-            assertBundleState(Bundle.INSTALLED, bundleC.getState());
-            try {
-                bundleC.start();
-                assertBundleState(Bundle.ACTIVE, bundleC.getState());
-                assertLoadClass(bundleC, LogService.class.getName());
-            } finally {
-                bundleC.uninstall();
-            }
-        } finally {
-            cmpd.uninstall();
-        }
-    }
-
-    @Test
-    public void testPackageNotAvailableOnInstall() throws Exception {
-        Bundle bundleC = installBundle(getLogServiceArchive());
-        assertBundleState(Bundle.INSTALLED, bundleC.getState());
-        try {
-            bundleC.start();
-            assertBundleState(Bundle.ACTIVE, bundleC.getState());
-            assertLoadClassFail(bundleC, LogService.class.getName());
-
-            Bundle cmpd = installBundle("bundles/org.osgi.compendium.jar");
-            try {
-                assertLoadClass(bundleC, LogService.class.getName());
-            } finally {
-                cmpd.uninstall();
-            }
-        } finally {
-            bundleC.uninstall();
-        }
-    }
-
-    @Test
-    public void testResourceAvailableOnInstall() throws Exception {
-        Bundle cmpd = installBundle("bundles/org.osgi.compendium.jar");
-        assertBundleState(Bundle.INSTALLED, cmpd.getState());
-        try {
-            Bundle bundleC = installBundle(getLogServiceArchive());
-            assertBundleState(Bundle.INSTALLED, bundleC.getState());
-            try {
-                String resPath = LogService.class.getName().replace('.', '/') + ".class";
-                URL resURL = bundleC.getResource(resPath);
-                assertNotNull("Resource found", resURL);
-                assertBundleState(Bundle.RESOLVED, bundleC.getState());
-            } finally {
-                bundleC.uninstall();
-            }
-        } finally {
-            cmpd.uninstall();
-        }
-    }
-
-    @Test
-    public void testResourceNotAvailableOnInstall() throws Exception {
-        Bundle bundleC = installBundle(getLogServiceArchive());
-        assertBundleState(Bundle.INSTALLED, bundleC.getState());
-        try {
-            String resPath = LogService.class.getName().replace('.', '/') + ".class";
-            URL resURL = bundleC.getResource(resPath);
-            assertNull("Resource not found", resURL);
-            assertBundleState(Bundle.RESOLVED, bundleC.getState());
-
-            Bundle cmpd = installBundle("bundles/org.osgi.compendium.jar");
-            try {
-                resURL = bundleC.getResource(resPath);
-                assertNotNull("Resource found", resURL);
-            } finally {
-                cmpd.uninstall();
-            }
-        } finally {
-            bundleC.uninstall();
-        }
-    }
-
-    private JavaArchive getLogServiceArchive() {
+    public void testBundleSymbolicNameDirective() throws Exception {
         
-        // Bundle-SymbolicName: dynamic-log-service
-        // DynamicImport-Package: org.osgi.service.log
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "dynamic-log-service");
-        archive.setManifest(new Asset() {
-
+        final JavaArchive archiveA = ShrinkWrap.create(JavaArchive.class, "tb8a");
+        archiveA.addClasses(A.class);
+        archiveA.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
-                builder.addBundleSymbolicName(archive.getName());
-                builder.addDynamicImportPackages("org.osgi.service.log");
+                builder.addBundleSymbolicName(archiveA.getName());
+                builder.addExportPackages(A.class);
                 return builder.openStream();
             }
         });
-        return archive;
+        
+        final JavaArchive archiveB = ShrinkWrap.create(JavaArchive.class, "tb8b");
+        archiveB.addClasses(A.class);
+        archiveB.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archiveB.getName());
+                builder.addExportPackages(A.class);
+                return builder.openStream();
+            }
+        });
+        
+        final JavaArchive archiveC = ShrinkWrap.create(JavaArchive.class, "tb17c");
+        archiveC.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archiveC.getName());
+                String packageA = A.class.getPackage().getName();
+                builder.addDynamicImportPackages(packageA + ";bundle-symbolic-name=tb8b," + packageA + ";bundle-symbolic-name=tb8a");
+                return builder.openStream();
+            }
+        });
+
+        Bundle bundleA = installBundle(archiveA);
+        assertLoadClass(bundleA, A.class.getName(), bundleA);
+        
+        Bundle bundleB = installBundle(archiveB);
+        assertLoadClass(bundleB, A.class.getName(), bundleB);
+        
+        Bundle bundleC = installBundle(archiveC);
+        assertLoadClass(bundleC, A.class.getName(), bundleB);
+        
+        bundleA.uninstall();
+        bundleB.uninstall();
+        bundleC.uninstall();
+
+        // Reverse the order of installed bundles
+        bundleB = installBundle(archiveB);
+        assertLoadClass(bundleB, A.class.getName(), bundleB);
+        
+        bundleA = installBundle(archiveA);
+        assertLoadClass(bundleA, A.class.getName(), bundleA);
+        
+        bundleC = installBundle(archiveC);
+        assertLoadClass(bundleC, A.class.getName(), bundleB);
+        
+        bundleA.uninstall();
+        bundleB.uninstall();
+        bundleC.uninstall();
     }
 }
