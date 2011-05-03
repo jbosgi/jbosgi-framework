@@ -80,7 +80,7 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
         addModuleSpec(specBuilderA.create());
         
         assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal", identifierA);
-        assertLoadClassFails(identifierA, "org.osgi.framework.Bundle");
+        assertLoadClassFail(identifierA, "org.osgi.framework.Bundle");
     }
 
     @Test
@@ -96,7 +96,7 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
         
-        assertLoadClassFails(identifierA, "org.osgi.framework.Bundle");
+        assertLoadClassFail(identifierA, "org.osgi.framework.Bundle");
         assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal");
     }
 
@@ -111,7 +111,7 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
         addModuleSpec(specBuilderF.create());
         
         assertLoadClass(identifierF, "org.osgi.framework.Bundle");
-        assertLoadClassFails(identifierF, "javax.security.auth.x500.X500Principal");
+        assertLoadClassFail(identifierF, "javax.security.auth.x500.X500Principal");
     }
 
     @Test

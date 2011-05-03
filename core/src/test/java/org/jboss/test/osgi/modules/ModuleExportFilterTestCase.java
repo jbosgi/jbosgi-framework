@@ -100,11 +100,11 @@ public class ModuleExportFilterTestCase extends ModulesTestBase {
 
         assertLoadClass(identifierA, A.class.getName());
         assertLoadClass(identifierC, A.class.getName());
-        assertLoadClassFails(identifierD, A.class.getName());
+        assertLoadClassFail(identifierD, A.class.getName());
 
         assertLoadClass(identifierA, B.class.getName());
         assertLoadClass(identifierC, B.class.getName());
-        assertLoadClassFails(identifierD, B.class.getName());
+        assertLoadClassFail(identifierD, B.class.getName());
 
         assertNotNull(getResource(identifierA, getResourcePath(A.class)));
         assertNotNull(getResource(identifierC, getResourcePath(A.class)));
@@ -119,8 +119,8 @@ public class ModuleExportFilterTestCase extends ModulesTestBase {
         assertLoadClass(identifierD, D.class.getName());
         
         assertLoadClass(identifierB, E.class.getName());
-        assertLoadClassFails(identifierC, E.class.getName());
-        assertLoadClassFails(identifierD, E.class.getName());
+        assertLoadClassFail(identifierC, E.class.getName());
+        assertLoadClassFail(identifierD, E.class.getName());
         
         assertNotNull(getResource(identifierB, getResourcePath(D.class)));
         assertNotNull(getResource(identifierC, getResourcePath(D.class)));

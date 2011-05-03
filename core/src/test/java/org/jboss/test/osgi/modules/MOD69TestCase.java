@@ -115,7 +115,7 @@ public class MOD69TestCase extends ModulesTestBase {
 
         assertLoadClass(identifierB, QuxFoo.class.getName());
         assertLoadClass(identifierB, QuxBar.class.getName());
-        assertLoadClassFails(identifierB, QuxImpl.class.getName());
+        assertLoadClassFail(identifierB, QuxImpl.class.getName());
         assertLoadClass(identifierB, BarImpl.class.getName());
     }
 

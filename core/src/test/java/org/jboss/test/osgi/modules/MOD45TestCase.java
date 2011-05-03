@@ -83,7 +83,7 @@ public class MOD45TestCase extends ModulesTestBase {
         assertLoadClass(identifierA, A.class.getName());
         assertLoadClass(identifierA, B.class.getName());
 
-        assertLoadClassFails(identifierB, C.class.getName());
+        assertLoadClassFail(identifierB, C.class.getName());
         assertLoadClass(identifierB, D.class.getName());
     }
 
