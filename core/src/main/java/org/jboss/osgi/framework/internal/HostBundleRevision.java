@@ -99,6 +99,7 @@ final class HostBundleRevision extends UserBundleRevision {
 
     @Override
     Class<?> loadClass(String className) throws ClassNotFoundException {
+        
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         if (getBundleState().ensureResolved(false) == false)
             throw new ClassNotFoundException("Class '" + className + "' not found in: " + this);
