@@ -61,7 +61,7 @@ import org.junit.Test;
  * @author Thomas.Diesler@jboss.com
  * @since 20-Dec-2010
  */
-public class MOD65TestCase extends ModulesTestBase {
+public class MOD65ComplexTestCase extends ModulesTestBase {
 
     private VirtualFile virtualFileA;
     private VirtualFile virtualFileB;
@@ -116,7 +116,7 @@ public class MOD65TestCase extends ModulesTestBase {
     }
 
     Class<?> loadClassLazily(ModuleIdentifier moduleId, String className, List<ModuleIdentifier> activated) throws Exception {
-        Class<?> loadedClass = getModuleLoader().loadModule(moduleId).getClassLoader().loadClass(className);
+        Class<?> loadedClass = getModuleLoader().loadModule(moduleId).getClassLoader().loadClass(className, true);
         Stack<ModuleIdentifier> stack = LazyActivationStack.getLazyActivationStack();
         while (stack.isEmpty() == false) {
             ModuleIdentifier auxid = stack.pop();

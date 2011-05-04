@@ -203,7 +203,7 @@ final class HostBundleFallbackLoader implements LocalLoader {
         ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
         for (XPackageRequirement packageReq : matchingPatterns) {
             for (XModule resModule : resolverPlugin.getResolver().getModules()) {
-                if (resModule.isResolved()) {
+                if (resModule.isResolved() && !resModule.isFragment()) {
                     ModuleIdentifier identifier = moduleManager.getModuleIdentifier(resModule);
                     Module candidate = moduleManager.getModule(identifier);
                     if (isValidCandidate(resName, packageReq, candidate))
