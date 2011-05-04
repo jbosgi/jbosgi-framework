@@ -23,13 +23,11 @@ package org.jboss.osgi.framework.internal;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Stack;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
@@ -129,9 +127,9 @@ final class HostBundleState extends UserBundleState {
         return awaitLazyActivation.get();
     }
 
-    void activateOnClassLoad(final Class<?> definedClass) throws BundleException {
+    void activateLazily() throws BundleException {
         if (awaitLazyActivation.getAndSet(false)) {
-            if (hasStartLevelValidForStart() == true) {
+            if (startLevelValidForStart() == true) {
                 int options = START_TRANSIENT;
                 if (isBundleActivationPolicyUsed())
                     options |= START_ACTIVATION_POLICY;
@@ -143,35 +141,21 @@ final class HostBundleState extends UserBundleState {
     }
 
     @Override
-    public Class<?> loadClass(String name) throws ClassNotFoundException {
-
-        Class<?> loadedClass = super.loadClass(name);
-        Stack<ModuleIdentifier> stack = LazyActivationStack.getLazyActivationStack();
-        if (stack.isEmpty())
+    public Class<?> loadClass(String className) throws ClassNotFoundException {
+        LazyActivationTracker.startTracking(this, className);
+        try
+        {
+            Class<?> loadedClass = super.loadClass(className);
+            LazyActivationTracker.processLoadedClass(loadedClass);
             return loadedClass;
-        
-        try {
-            ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-            while (stack.isEmpty() == false) {
-                ModuleIdentifier moduleId = stack.pop();
-                AbstractBundleState bundleState = moduleManager.getBundleState(moduleId);
-                HostBundleState hostBundle = HostBundleState.assertBundleState(bundleState);
-                if (hostBundle.awaitLazyActivation()) {
-                    try {
-                        hostBundle.activateOnClassLoad(null);
-                    } catch (BundleException ex) {
-                        log.errorf(ex, "Cannot activate lazily: %s", hostBundle);
-                    }
-                }
-            }
-        } finally {
-            stack.clear();
         }
-        
-        return loadedClass;
+        finally
+        {
+            LazyActivationTracker.stopTracking();
+        }
     }
 
-    private boolean hasStartLevelValidForStart() {
+    private boolean startLevelValidForStart() {
         StartLevel startLevelPlugin = getCoreServices().getStartLevelPlugin();
         return getStartLevel() <= startLevelPlugin.getStartLevel();
     }
@@ -192,7 +176,7 @@ final class HostBundleState extends UserBundleState {
         assertStartConditions();
 
         // If the Framework's current start level is less than this bundle's start level
-        if (hasStartLevelValidForStart() == false) {
+        if (startLevelValidForStart() == false) {
             // If the START_TRANSIENT option is set, then a BundleException is thrown
             // indicating this bundle cannot be started due to the Framework's current start level
             if ((options & START_TRANSIENT) != 0)

@@ -412,9 +412,9 @@ abstract class AbstractBundleState implements Bundle {
     }
 
     @Override
-    public Class<?> loadClass(String name) throws ClassNotFoundException {
+    public Class<?> loadClass(String className) throws ClassNotFoundException {
         assertNotUninstalled();
-        return getCurrentRevision().loadClass(name);
+        return getCurrentRevision().loadClass(className);
     }
 
     @Override
