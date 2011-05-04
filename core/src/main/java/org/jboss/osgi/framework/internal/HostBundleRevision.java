@@ -111,7 +111,7 @@ final class HostBundleRevision extends UserBundleRevision {
         } catch (ModuleLoadException ex) {
             throw new ClassNotFoundException("Cannot load class: " + className, ex);
         }
-        return loader.loadClass(className, true);
+        return loader.loadClass(className);
     }
 
     @Override
