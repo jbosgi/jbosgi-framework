@@ -90,11 +90,11 @@ abstract class AbstractBundleRevision {
         return metadata.getBundleVersion();
     }
 
-    abstract Class<?> loadClass(String name) throws ClassNotFoundException;
+    abstract Class<?> loadClass(String className) throws ClassNotFoundException;
 
-    abstract URL getResource(String name);
+    abstract URL getResource(String resourceName);
 
-    abstract Enumeration<URL> getResources(String name) throws IOException;
+    abstract Enumeration<URL> getResources(String resourceName) throws IOException;
 
     abstract Enumeration<String> getEntryPaths(String path);
 

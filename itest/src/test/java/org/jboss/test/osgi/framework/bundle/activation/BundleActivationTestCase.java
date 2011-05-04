@@ -38,7 +38,6 @@ import org.jboss.test.osgi.framework.simple.bundleA.SimpleActivator;
 import org.jboss.test.osgi.framework.simple.bundleA.SimpleService;
 import org.jboss.test.osgi.framework.simple.bundleB.BeanB;
 import org.jboss.test.osgi.framework.simple.bundleB.SimpleServiceImporter;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -163,7 +162,6 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    @Ignore("Fix transitive lazy activation")
     public void testTransitiveActivation() throws Exception {
         BundleContext context = getSystemContext();
         context.addBundleListener(new ActivationListener());

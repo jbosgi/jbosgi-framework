@@ -83,18 +83,18 @@ final class FragmentBundleRevision extends UserBundleRevision {
     }
 
     @Override
-    Class<?> loadClass(String name) throws ClassNotFoundException {
+    Class<?> loadClass(String className) throws ClassNotFoundException {
         throw new ClassNotFoundException("Cannot load class from a fragment: " + this);
     }
 
     @Override
-    URL getResource(String name) {
+    URL getResource(String resourceName) {
         // Null if the resource could not be found or if this bundle is a fragment bundle
         return null;
     }
 
     @Override
-    Enumeration<URL> getResources(String name) throws IOException {
+    Enumeration<URL> getResources(String resourceName) throws IOException {
         // Null if the resource could not be found or if this bundle is a fragment bundle
         return null;
     }

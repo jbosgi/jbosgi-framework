@@ -21,14 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.util.Stack;
-
-import org.jboss.logging.Logger;
 import org.jboss.modules.ClassSpec;
-import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleClassLoaderFactory;
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.filter.PathFilter;
 
 /**
@@ -39,9 +34,6 @@ import org.jboss.modules.filter.PathFilter;
  */
 final class HostBundleClassLoader extends BundleReferenceClassLoader<HostBundleState> {
 
-    // Provide logging
-    private static final Logger log = Logger.getLogger(HostBundleClassLoader.class);
-    
     private final PathFilter lazyFilter;
     
     private HostBundleClassLoader(Configuration configuration, HostBundleState bundleState, PathFilter lazyFilter) {
@@ -54,14 +46,7 @@ final class HostBundleClassLoader extends BundleReferenceClassLoader<HostBundleS
         if (getBundleState().isActivationLazy()) {
             String path = definedClass.getPackage().getName().replace('.', '/');
             if (lazyFilter.accept(path)) {
-                Stack<ModuleIdentifier> stack = LazyActivationStack.getLazyActivationStack();
-                ClassLoader classLoader = definedClass.getClassLoader();
-                Module module = ((ModuleClassLoader) classLoader).getModule();
-                ModuleIdentifier identifier = module.getIdentifier();
-                if (stack.contains(identifier) == false) {
-                    log.debugf("Add lazy activation [%s] on class load: %s", identifier, definedClass.getName());
-                    stack.push(identifier);
-                }
+                LazyActivationTracker.processDefinedClass(getBundleState(), definedClass);
             }
         }
     }
