@@ -151,7 +151,7 @@ final class HostBundleState extends UserBundleState {
         }
         finally
         {
-            LazyActivationTracker.stopTracking();
+            LazyActivationTracker.stopTracking(this, className);
         }
     }
 

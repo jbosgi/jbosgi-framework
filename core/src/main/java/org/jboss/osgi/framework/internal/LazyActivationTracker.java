@@ -37,11 +37,12 @@ final class LazyActivationTracker {
 
     // Provide logging
     static final Logger log = Logger.getLogger(LazyActivationTracker.class);
-    
+
     private final static ThreadLocal<Deque<HostBundleState>> stackAssociation = new ThreadLocal<Deque<HostBundleState>>();
     private final static ThreadLocal<HostBundleState> initiatorAssociation = new ThreadLocal<HostBundleState>();
 
     static void startTracking(HostBundleState hostBundle, String className) {
+        log.tracef("startTracking %s from: %s", className, hostBundle);
         initiatorAssociation.set(hostBundle);
     }
 
@@ -49,17 +50,20 @@ final class LazyActivationTracker {
         if (initiatorAssociation.get() == null)
             throw new IllegalStateException("No activation initiator");
 
+        log.tracef("processLoadedClass: %s", loadedClass.getName());
         processActivationStack();
     }
 
     static void processDefinedClass(HostBundleState hostBundle, Class<?> definedClass) {
+        log.tracef("processDefinedClass %s from: %s", definedClass.getName(), hostBundle);
         addDefinedClass(hostBundle, definedClass);
         if (initiatorAssociation.get() == null) {
             processActivationStack();
         }
     }
 
-    static void stopTracking() {
+    static void stopTracking(HostBundleState hostBundle, String className) {
+        log.tracef("stopTracking %s from: %s", className, hostBundle);
         initiatorAssociation.remove();
     }
 
@@ -69,13 +73,17 @@ final class LazyActivationTracker {
             stack = new ArrayDeque<HostBundleState>();
             stackAssociation.set(stack);
         }
-        stack.add(hostBundle);
+        if (stack.contains(hostBundle) == false) {
+            log.tracef("addDefinedClass %s from: %s", definedClass.getName(), hostBundle);
+            stack.add(hostBundle);
+        }
     }
 
     private static void processActivationStack() {
         Deque<HostBundleState> stack = stackAssociation.get();
         if (stack != null) {
             try {
+                log.tracef("processActivationStack: %s", stack);
                 while (stack.isEmpty() == false) {
                     HostBundleState hostBundle = stack.pop();
                     if (hostBundle.awaitLazyActivation()) {
