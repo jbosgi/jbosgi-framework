@@ -27,9 +27,8 @@
 
 package org.jboss.test.osgi.framework.bundle.tbchain1;
 
-import org.jboss.test.osgi.framework.bundle.tbchain2.AMultiChain1;
-import org.jboss.test.osgi.framework.bundle.tbchain3.BMultiChain2;
+import org.jboss.test.osgi.framework.bundle.tbchain2.AMultiChain3;
 
-public class TestMultiChain implements AMultiChain1, BMultiChain2 {
+public class MultiChain2 implements AMultiChain3 {
 //
 }
