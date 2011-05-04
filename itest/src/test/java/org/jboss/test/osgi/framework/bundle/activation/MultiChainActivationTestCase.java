@@ -32,13 +32,17 @@ import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.test.osgi.framework.bundle.tbchain1.TestMultiChain;
+import org.jboss.test.osgi.framework.bundle.tbchain1.MultiChain1;
+import org.jboss.test.osgi.framework.bundle.tbchain1.MultiChain2;
 import org.jboss.test.osgi.framework.bundle.tbchain2.AMultiChain1;
 import org.jboss.test.osgi.framework.bundle.tbchain2.AMultiChain2;
+import org.jboss.test.osgi.framework.bundle.tbchain2.AMultiChain3;
 import org.jboss.test.osgi.framework.bundle.tbchain3.BMultiChain1;
 import org.jboss.test.osgi.framework.bundle.tbchain3.BMultiChain2;
+import org.jboss.test.osgi.framework.bundle.tbchain3.BMultiChain3;
 import org.jboss.test.osgi.framework.bundle.tbchain4.CMultipleChain1;
 import org.jboss.test.osgi.framework.bundle.tbchain4.CMultipleChain2;
+import org.jboss.test.osgi.framework.bundle.tbchain4.CMultipleChain3;
 import org.jboss.test.osgi.framework.bundle.tbchain5.DMultipleChain1;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
@@ -57,7 +61,7 @@ public class MultiChainActivationTestCase extends OSGiFrameworkTest {
     private final List<BundleEvent> events = new ArrayList<BundleEvent>();
 
     @Test
-    public void testLazyActivation() throws Exception {
+    public void testRandomOrder() throws Exception {
 
         Bundle tbchain1 = installBundle(getArchive1());
         Bundle tbchain2 = installBundle(getArchive2());
@@ -74,8 +78,41 @@ public class MultiChainActivationTestCase extends OSGiFrameworkTest {
         BundleContext context = getSystemContext();
         context.addBundleListener(new ActivationListener(BundleEvent.STARTED));
 
-        tbchain1.loadClass(TestMultiChain.class.getName()).newInstance();
+        tbchain1.loadClass(MultiChain1.class.getName()).newInstance();
         assertEquals(5, events.size());
+
+        tbchain5.uninstall();
+        tbchain4.uninstall();
+        tbchain3.uninstall();
+        tbchain2.uninstall();
+        tbchain1.uninstall();
+    }
+
+    @Test
+    public void testPredicatableOrder() throws Exception {
+
+        Bundle tbchain1 = installBundle(getArchive1());
+        Bundle tbchain2 = installBundle(getArchive2());
+        Bundle tbchain3 = installBundle(getArchive3());
+        Bundle tbchain4 = installBundle(getArchive4());
+        Bundle tbchain5 = installBundle(getArchive5());
+
+        tbchain1.start(Bundle.START_ACTIVATION_POLICY);
+        tbchain2.start(Bundle.START_ACTIVATION_POLICY);
+        tbchain3.start(Bundle.START_ACTIVATION_POLICY);
+        tbchain4.start(Bundle.START_ACTIVATION_POLICY);
+        tbchain5.start(Bundle.START_ACTIVATION_POLICY);
+
+        BundleContext context = getSystemContext();
+        context.addBundleListener(new ActivationListener(BundleEvent.STARTED));
+
+        tbchain1.loadClass(MultiChain2.class.getName()).newInstance();
+        assertEquals(5, events.size());
+        assertEquals(tbchain5, events.get(0).getBundle());
+        assertEquals(tbchain3, events.get(1).getBundle());
+        assertEquals(tbchain4, events.get(2).getBundle());
+        assertEquals(tbchain2, events.get(3).getBundle());
+        assertEquals(tbchain1, events.get(4).getBundle());
 
         tbchain5.uninstall();
         tbchain4.uninstall();
@@ -100,7 +137,7 @@ public class MultiChainActivationTestCase extends OSGiFrameworkTest {
 
     private static JavaArchive getArchive1() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "tbchain1");
-        archive.addClasses(TestMultiChain.class);
+        archive.addClasses(MultiChain1.class, MultiChain2.class);
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
@@ -116,7 +153,7 @@ public class MultiChainActivationTestCase extends OSGiFrameworkTest {
 
     private static JavaArchive getArchive2() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "tbchain2");
-        archive.addClasses(AMultiChain1.class, AMultiChain2.class);
+        archive.addClasses(AMultiChain1.class, AMultiChain2.class, AMultiChain3.class);
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
@@ -133,7 +170,7 @@ public class MultiChainActivationTestCase extends OSGiFrameworkTest {
 
     private static JavaArchive getArchive3() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "tbchain3");
-        archive.addClasses(BMultiChain1.class, BMultiChain2.class);
+        archive.addClasses(BMultiChain1.class, BMultiChain2.class, BMultiChain3.class);
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
@@ -150,14 +187,15 @@ public class MultiChainActivationTestCase extends OSGiFrameworkTest {
 
     private static JavaArchive getArchive4() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "tbchain4");
-        archive.addClasses(CMultipleChain1.class, CMultipleChain2.class);
+        archive.addClasses(CMultipleChain1.class, CMultipleChain2.class, CMultipleChain3.class);
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleManifestVersion(2);
-                builder.addExportPackages(CMultipleChain1.class);
                 builder.addBundleActivationPolicy(Constants.ACTIVATION_LAZY);
+                builder.addExportPackages(CMultipleChain1.class);
+                builder.addImportPackages(BMultiChain1.class);
                 return builder.openStream();
             }
         });
