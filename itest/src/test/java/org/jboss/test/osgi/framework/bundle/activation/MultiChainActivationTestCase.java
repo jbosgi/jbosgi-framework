@@ -46,7 +46,6 @@ import org.jboss.test.osgi.framework.bundle.tbchain4.CMultipleChain3;
 import org.jboss.test.osgi.framework.bundle.tbchain5.DMultipleChain1;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.Constants;
 import org.osgi.framework.SynchronousBundleListener;
@@ -61,7 +60,7 @@ public class MultiChainActivationTestCase extends OSGiFrameworkTest {
     private final List<BundleEvent> events = new ArrayList<BundleEvent>();
 
     @Test
-    public void testRandomOrder() throws Exception {
+    public void testComplexGraph() throws Exception {
 
         Bundle tbchain1 = installBundle(getArchive1());
         Bundle tbchain2 = installBundle(getArchive2());
@@ -75,21 +74,29 @@ public class MultiChainActivationTestCase extends OSGiFrameworkTest {
         tbchain4.start(Bundle.START_ACTIVATION_POLICY);
         tbchain5.start(Bundle.START_ACTIVATION_POLICY);
 
-        BundleContext context = getSystemContext();
-        context.addBundleListener(new ActivationListener(BundleEvent.STARTED));
+        ActivationListener listener = new ActivationListener(BundleEvent.STARTED);
+        getSystemContext().addBundleListener(listener);
 
-        tbchain1.loadClass(MultiChain1.class.getName()).newInstance();
-        assertEquals(5, events.size());
-
-        tbchain5.uninstall();
-        tbchain4.uninstall();
-        tbchain3.uninstall();
-        tbchain2.uninstall();
-        tbchain1.uninstall();
+        try {
+            tbchain1.loadClass(MultiChain1.class.getName()).newInstance();
+            assertEquals(5, events.size());
+            assertEquals(tbchain5, events.get(0).getBundle());
+            assertEquals(tbchain3, events.get(1).getBundle());
+            assertEquals(tbchain4, events.get(2).getBundle());
+            assertEquals(tbchain2, events.get(3).getBundle());
+            assertEquals(tbchain1, events.get(4).getBundle());
+        } finally {
+            getSystemContext().removeBundleListener(listener);
+            tbchain5.uninstall();
+            tbchain4.uninstall();
+            tbchain3.uninstall();
+            tbchain2.uninstall();
+            tbchain1.uninstall();
+        }
     }
 
     @Test
-    public void testPredicatableOrder() throws Exception {
+    public void testSimpleGraph() throws Exception {
 
         Bundle tbchain1 = installBundle(getArchive1());
         Bundle tbchain2 = installBundle(getArchive2());
@@ -103,22 +110,25 @@ public class MultiChainActivationTestCase extends OSGiFrameworkTest {
         tbchain4.start(Bundle.START_ACTIVATION_POLICY);
         tbchain5.start(Bundle.START_ACTIVATION_POLICY);
 
-        BundleContext context = getSystemContext();
-        context.addBundleListener(new ActivationListener(BundleEvent.STARTED));
+        ActivationListener listener = new ActivationListener(BundleEvent.STARTED);
+        getSystemContext().addBundleListener(listener);
 
-        tbchain1.loadClass(MultiChain2.class.getName()).newInstance();
-        assertEquals(5, events.size());
-        assertEquals(tbchain5, events.get(0).getBundle());
-        assertEquals(tbchain3, events.get(1).getBundle());
-        assertEquals(tbchain4, events.get(2).getBundle());
-        assertEquals(tbchain2, events.get(3).getBundle());
-        assertEquals(tbchain1, events.get(4).getBundle());
-
-        tbchain5.uninstall();
-        tbchain4.uninstall();
-        tbchain3.uninstall();
-        tbchain2.uninstall();
-        tbchain1.uninstall();
+        try {
+            tbchain1.loadClass(MultiChain2.class.getName()).newInstance();
+            assertEquals(5, events.size());
+            assertEquals(tbchain5, events.get(0).getBundle());
+            assertEquals(tbchain4, events.get(1).getBundle());
+            assertEquals(tbchain3, events.get(2).getBundle());
+            assertEquals(tbchain2, events.get(3).getBundle());
+            assertEquals(tbchain1, events.get(4).getBundle());
+        } finally {
+            getSystemContext().removeBundleListener(listener);
+            tbchain5.uninstall();
+            tbchain4.uninstall();
+            tbchain3.uninstall();
+            tbchain2.uninstall();
+            tbchain1.uninstall();
+        }
     }
 
     class ActivationListener implements SynchronousBundleListener {
@@ -195,7 +205,7 @@ public class MultiChainActivationTestCase extends OSGiFrameworkTest {
                 builder.addBundleManifestVersion(2);
                 builder.addBundleActivationPolicy(Constants.ACTIVATION_LAZY);
                 builder.addExportPackages(CMultipleChain1.class);
-                builder.addImportPackages(BMultiChain1.class);
+                builder.addImportPackages(BMultiChain1.class, DMultipleChain1.class);
                 return builder.openStream();
             }
         });

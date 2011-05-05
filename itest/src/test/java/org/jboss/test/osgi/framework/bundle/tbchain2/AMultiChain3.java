@@ -27,9 +27,10 @@
 
 package org.jboss.test.osgi.framework.bundle.tbchain2;
 
-import org.jboss.test.osgi.framework.bundle.tbchain4.CMultipleChain3;
+import org.jboss.test.osgi.framework.bundle.tbchain3.BMultiChain3;
 
 
-public interface AMultiChain3 extends CMultipleChain3 {
+
+public interface AMultiChain3 extends BMultiChain3 {
 //
 }

@@ -42,11 +42,21 @@ final class HostBundleClassLoader extends BundleReferenceClassLoader<HostBundleS
     }
     
     @Override
+    protected void preDefine(ClassSpec classSpec, String className) {
+        if (getBundleState().awaitLazyActivation()) {
+            String path = className.substring(0, className.lastIndexOf('.')).replace('.', '/');
+            if (lazyFilter.accept(path)) {
+                LazyActivationTracker.preDefineClass(getBundleState(), className);
+            }
+        }
+    }
+
+    @Override
     protected void postDefine(ClassSpec classSpec, Class<?> definedClass) {
-        if (getBundleState().isActivationLazy()) {
+        if (getBundleState().awaitLazyActivation()) {
             String path = definedClass.getPackage().getName().replace('.', '/');
             if (lazyFilter.accept(path)) {
-                LazyActivationTracker.processDefinedClass(getBundleState(), definedClass);
+                LazyActivationTracker.postDefineClass(getBundleState(), definedClass);
             }
         }
     }

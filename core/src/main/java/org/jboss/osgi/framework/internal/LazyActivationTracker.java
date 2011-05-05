@@ -2,7 +2,7 @@
  * JBoss, Home of Professional Open Source
  * Copyright 2009, Red Hat Middleware LLC, and individual contributors
  * as indicated by the @author tags. See the copyright.txt file in the
- * distribution for a full listing of individual contributors.
+ * distribution for a full Stacking of individual contributors.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -21,11 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.Stack;
 
 import org.jboss.logging.Logger;
-import org.osgi.framework.BundleException;
 
 /**
  * A {@link ThreadLocal} of bundles that need to get started caused by lazy activation.
@@ -38,7 +36,7 @@ final class LazyActivationTracker {
     // Provide logging
     static final Logger log = Logger.getLogger(LazyActivationTracker.class);
 
-    private final static ThreadLocal<Deque<HostBundleState>> stackAssociation = new ThreadLocal<Deque<HostBundleState>>();
+    private final static ThreadLocal<Stack<HostBundleState>> StackAssociation = new ThreadLocal<Stack<HostBundleState>>();
     private final static ThreadLocal<HostBundleState> initiatorAssociation = new ThreadLocal<HostBundleState>();
 
     static void startTracking(HostBundleState hostBundle, String className) {
@@ -54,9 +52,13 @@ final class LazyActivationTracker {
         processActivationStack();
     }
 
-    static void processDefinedClass(HostBundleState hostBundle, Class<?> definedClass) {
-        log.tracef("processDefinedClass %s from: %s", definedClass.getName(), hostBundle);
-        addDefinedClass(hostBundle, definedClass);
+    static void preDefineClass(HostBundleState hostBundle, String className) {
+        log.tracef("preDefineClass %s from: %s", className, hostBundle);
+        addDefinedClass(hostBundle, className);
+    }
+
+    static void postDefineClass(HostBundleState hostBundle, Class<?> definedClass) {
+        log.tracef("postDefineClass %s from: %s", definedClass.getName(), hostBundle);
         if (initiatorAssociation.get() == null) {
             processActivationStack();
         }
@@ -65,37 +67,36 @@ final class LazyActivationTracker {
     static void stopTracking(HostBundleState hostBundle, String className) {
         log.tracef("stopTracking %s from: %s", className, hostBundle);
         initiatorAssociation.remove();
+        StackAssociation.remove();
     }
 
-    private static void addDefinedClass(HostBundleState hostBundle, Class<?> definedClass) {
-        Deque<HostBundleState> stack = stackAssociation.get();
-        if (stack == null) {
-            stack = new ArrayDeque<HostBundleState>();
-            stackAssociation.set(stack);
-        }
-        if (stack.contains(hostBundle) == false) {
-            log.tracef("addDefinedClass %s from: %s", definedClass.getName(), hostBundle);
-            stack.add(hostBundle);
+    private static void addDefinedClass(HostBundleState hostBundle, String className) {
+        if (hostBundle.awaitLazyActivation()) {
+            Stack<HostBundleState> stack = StackAssociation.get();
+            if (stack == null) {
+                stack = new Stack<HostBundleState>();
+                StackAssociation.set(stack);
+            }
+            if (stack.contains(hostBundle) == false) {
+                log.tracef("addDefinedClass %s from: %s", className, hostBundle);
+                stack.push(hostBundle);
+            }
         }
     }
 
     private static void processActivationStack() {
-        Deque<HostBundleState> stack = stackAssociation.get();
+        Stack<HostBundleState> stack = StackAssociation.get();
         if (stack != null) {
-            try {
-                log.tracef("processActivationStack: %s", stack);
-                while (stack.isEmpty() == false) {
-                    HostBundleState hostBundle = stack.pop();
-                    if (hostBundle.awaitLazyActivation()) {
-                        try {
-                            hostBundle.activateLazily();
-                        } catch (BundleException ex) {
-                            log.errorf(ex, "Cannot activate lazily: %s", hostBundle);
-                        }
+            log.tracef("processActivationStack: %s", stack);
+            while (stack.isEmpty() == false) {
+                HostBundleState hostBundle = stack.pop();
+                if (hostBundle.awaitLazyActivation()) {
+                    try {
+                        hostBundle.activateLazily();
+                    } catch (Throwable th) {
+                        log.errorf(th, "Cannot activate lazily: %s", hostBundle);
                     }
                 }
-            } finally {
-                stack.clear();
             }
         }
     }
