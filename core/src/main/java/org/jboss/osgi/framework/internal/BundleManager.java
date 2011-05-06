@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
@@ -100,6 +101,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     private final FrameworkBuilder frameworkBuilder;
     private final Map<String, Object> properties = new HashMap<String, Object>();
     private final AtomicLong identityGenerator = new AtomicLong();
+    private final AtomicBoolean shutdownInitiated = new AtomicBoolean();
     private final Map<Long, AbstractBundleState> bundleMap = Collections.synchronizedMap(new HashMap<Long, AbstractBundleState>());
     private final ServiceTarget serviceTarget;
     private ServiceContainer serviceContainer;
@@ -135,6 +137,12 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
             setProperty(Constants.FRAMEWORK_VENDOR, OSGi_FRAMEWORK_VENDOR);
         if (getProperty(Constants.FRAMEWORK_VERSION) == null)
             setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                shutdownInitiated.set(true);
+            }
+        });
     }
 
     @Override
@@ -171,7 +179,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     }
 
     boolean isFrameworkActive() {
-        return getFrameworkState() != null;
+        return shutdownInitiated.get() == false &&  getFrameworkState() != null;
     }
 
     void assertFrameworkActive() {
@@ -327,8 +335,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         AbstractBundleState bundleState = getBundleByLocation(dep.getLocation());
         if (bundleState != null) {
             serviceName = bundleState.getServiceName();
-        }
-        else {
+        } else {
             try {
                 // The storage state exists when we re-create the bundle from persistent storage
                 BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
