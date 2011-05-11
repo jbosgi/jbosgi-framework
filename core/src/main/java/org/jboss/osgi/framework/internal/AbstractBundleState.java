@@ -48,6 +48,7 @@ import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.NotImplementedException;
+import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
@@ -183,6 +184,8 @@ abstract class AbstractBundleState implements Bundle {
 
     void changeState(int state, int eventType) {
 
+        log.tracef("changeState: %s -> %s", this, ConstantsHelper.bundleState(state));
+        
         // Invoke the lifecycle interceptors
         boolean frameworkActive = getBundleManager().isFrameworkActive();
         if (frameworkActive && bundleId > 0) {
