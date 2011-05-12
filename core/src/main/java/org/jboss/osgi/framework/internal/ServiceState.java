@@ -75,12 +75,12 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     private CaseInsensitiveDictionary currProperties;
 
     @SuppressWarnings("unchecked")
-    ServiceState(ServiceManagerPlugin serviceManager, AbstractBundleState owner, long serviceId, String[] clazzes, ValueProvider valueProvider, Dictionary properties) {
+    ServiceState(ServiceManagerPlugin serviceManager, AbstractBundleState owner, long serviceId, String[] classNames, ValueProvider valueProvider, Dictionary properties) {
         if (serviceManager == null)
             throw new IllegalArgumentException("Null serviceManager");
         if (owner == null)
             throw new IllegalArgumentException("Null owner");
-        if (clazzes == null || clazzes.length == 0)
+        if (classNames == null || classNames.length == 0)
             throw new IllegalArgumentException("Null clazzes");
         if (valueProvider == null)
             throw new IllegalArgumentException("Null valueProvider");
@@ -90,16 +90,16 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         this.serviceId = serviceId;
         this.valueProvider = valueProvider;
 
-        if (checkValidClassNames(owner, clazzes, valueProvider.getValue()) == false)
-            throw new IllegalArgumentException("Invalid object class in: " + Arrays.asList(clazzes));
+        if (checkValidClassNames(owner, classNames, valueProvider.getValue()) == false)
+            throw new IllegalArgumentException("Invalid object class in: " + Arrays.asList(classNames));
 
         // Generate the service names
-        serviceNames = new HashSet<ServiceName>(clazzes.length);
-        for (int i = 0; i < clazzes.length; i++) {
-            if (clazzes[i] == null)
+        serviceNames = new HashSet<ServiceName>(classNames.length);
+        for (int i = 0; i < classNames.length; i++) {
+            if (classNames[i] == null)
                 throw new IllegalArgumentException("Null service class at index: " + i);
 
-            ServiceName serviceName = ServiceState.createServiceName(clazzes[i]);
+            ServiceName serviceName = ServiceState.createServiceName(classNames[i]);
             serviceNames.add(serviceName);
         }
 
@@ -107,7 +107,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
             properties = new Hashtable();
 
         properties.put(Constants.SERVICE_ID, serviceId);
-        properties.put(Constants.OBJECTCLASS, clazzes);
+        properties.put(Constants.OBJECTCLASS, classNames);
         this.currProperties = new CaseInsensitiveDictionary(properties);
 
         // Create the {@link ServiceRegistration} and {@link ServiceReference}

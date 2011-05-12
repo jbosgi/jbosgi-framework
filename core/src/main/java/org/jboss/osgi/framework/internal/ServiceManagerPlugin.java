@@ -238,19 +238,20 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
     }
 
     @SuppressWarnings("unchecked")
-    private List<ServiceState> getServiceReferencesInternal(final AbstractBundleState bundleState, final String clazz, final Filter filter, final boolean checkAssignable) {
+    private List<ServiceState> getServiceReferencesInternal(final AbstractBundleState bundleState, final String className, final Filter filter,
+            final boolean checkAssignable) {
         if (bundleState == null)
             throw new IllegalArgumentException("Null bundleState");
         if (filter == null)
             throw new IllegalArgumentException("Null filter");
 
         Set<ServiceName> serviceNames = new HashSet<ServiceName>();
-        if (clazz != null) {
-            ServiceName serviceName = ServiceState.createServiceName(clazz);
+        if (className != null) {
+            ServiceName serviceName = ServiceState.createServiceName(className);
             if (serviceContainer.getService(serviceName) != null) {
                 serviceNames.add(serviceName);
             } else {
-                ServiceName xserviceName = ServiceState.createXServiceName(clazz);
+                ServiceName xserviceName = ServiceState.createXServiceName(className);
                 if (serviceContainer.getService(xserviceName) != null) {
                     serviceNames.add(xserviceName);
                 }
@@ -273,7 +274,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                 if (JBOSGI_SERVICE_BASE_NAME.isParentOf(serviceName)) {
                     List<ServiceState> serviceStates = (List<ServiceState>) controller.getValue();
                     for (ServiceState serviceState : serviceStates) {
-                        if (isMatchingService(bundleState, serviceState, clazz, filter, checkAssignable)) {
+                        if (isMatchingService(bundleState, serviceState, className, filter, checkAssignable)) {
                             resultset.add(serviceState);
                         }
                     }
@@ -299,10 +300,11 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                     };
                     final long serviceId = getNextServiceId();
                     final Object value = valueProvider.getValue();
-                    final AbstractBundleState aux = injectedModuleManager.getValue().getBundleState(value.getClass());
-                    final AbstractBundleState owner = (aux != null ? aux : injectedBundleManager.getValue().getSystemBundle());
-                    ServiceState serviceState = new ServiceState(this, owner, serviceId, new String[] { clazz }, valueProvider, null);
-                    if (isMatchingService(bundleState, serviceState, clazz, filter, checkAssignable)) {
+                    final AbstractBundleState auxBundle = injectedModuleManager.getValue().getBundleState(value.getClass());
+                    final AbstractBundleState owner = (auxBundle != null ? auxBundle : injectedBundleManager.getValue().getSystemBundle());
+                    final String auxName = (className != null ? className : serviceName.getSimpleName());
+                    ServiceState serviceState = new ServiceState(this, owner, serviceId, new String[] { auxName }, valueProvider, null);
+                    if (isMatchingService(bundleState, serviceState, auxName, filter, checkAssignable)) {
                         resultset.add(serviceState);
                     }
                 }
