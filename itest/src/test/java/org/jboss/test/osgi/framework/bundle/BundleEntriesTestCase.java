@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
+import java.net.URI;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
@@ -247,15 +248,15 @@ public class BundleEntriesTestCase extends OSGiFrameworkTest {
 
     @SuppressWarnings("unchecked")
     protected void assertEntries(Bundle bundle, String path, String filePattern, boolean recurse, String... entries) throws Exception {
-        Set<URL> actual = new HashSet<URL>();
+        Set<URI> actual = new HashSet<URI>();
         Enumeration<URL> enumeration = bundle.findEntries(path, filePattern, recurse);
         while (enumeration != null && enumeration.hasMoreElements())
-            actual.add(enumeration.nextElement());
+            actual.add(enumeration.nextElement().toURI());
 
         URL baseurl = bundle.getEntry("/");
-        Set<URL> expected = new HashSet<URL>();
+        Set<URI> expected = new HashSet<URI>();
         for (String entry : entries)
-            expected.add(new URL(baseurl + entry));
+            expected.add(new URI(baseurl + entry));
 
         assertEquals(expected, actual);
     }
