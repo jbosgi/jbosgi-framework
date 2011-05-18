@@ -60,7 +60,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * Test Fragment functionality
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 07-Jan-2010

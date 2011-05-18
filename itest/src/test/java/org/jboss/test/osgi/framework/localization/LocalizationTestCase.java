@@ -38,7 +38,7 @@ import org.osgi.framework.Constants;
 
 /**
  * Test the Localization
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 25-Jan-2010
  */
