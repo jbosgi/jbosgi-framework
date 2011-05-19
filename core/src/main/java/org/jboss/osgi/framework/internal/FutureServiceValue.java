@@ -114,7 +114,6 @@ final class FutureServiceValue<T> implements Future<T> {
                 latch.countDown();
             }
         };
-
         controller.addListener(listener);
 
         try {
@@ -145,12 +144,11 @@ final class FutureServiceValue<T> implements Future<T> {
     }
 
     String processExceptionCause(Throwable cause) throws ExecutionException, TimeoutException {
-
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         controller.getServiceContainer().dumpServices(new PrintStream(baos));
         String message = "Cannot start " + controller.getName();
-        log.debugf(message + "\n%s", baos.toString());
-        log.errorf(message);
+        log.debugf(cause, message + "\n%s", baos.toString());
+        log.errorf(cause, message);
         return message;
     }
 }

@@ -239,9 +239,11 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
      */
     Set<AbstractBundleState> getBundles() {
         Set<AbstractBundleState> result = new HashSet<AbstractBundleState>();
-        for (AbstractBundleState aux : bundleMap.values()) {
-            if (aux.getState() != Bundle.UNINSTALLED)
-                result.add(aux);
+        synchronized (bundleMap) {
+            for (AbstractBundleState aux : bundleMap.values()) {
+                if (aux.getState() != Bundle.UNINSTALLED)
+                    result.add(aux);
+            }
         }
         return Collections.unmodifiableSet(result);
     }
@@ -290,10 +292,12 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
      */
     Set<AbstractBundleState> getBundles(String symbolicName, String versionRange) {
         Set<AbstractBundleState> resultSet = new HashSet<AbstractBundleState>();
-        for (AbstractBundleState aux : bundleMap.values()) {
-            if (symbolicName == null || symbolicName.equals(aux.getSymbolicName())) {
-                if (versionRange == null || XVersionRange.parse(versionRange).isInRange(aux.getVersion())) {
-                    resultSet.add(aux);
+        synchronized (bundleMap) {
+            for (AbstractBundleState aux : bundleMap.values()) {
+                if (symbolicName == null || symbolicName.equals(aux.getSymbolicName())) {
+                    if (versionRange == null || XVersionRange.parse(versionRange).isInRange(aux.getVersion())) {
+                        resultSet.add(aux);
+                    }
                 }
             }
         }
@@ -308,9 +312,11 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
      */
     Set<AbstractBundleState> getBundles(Integer states) {
         Set<AbstractBundleState> result = new HashSet<AbstractBundleState>();
-        for (AbstractBundleState aux : bundleMap.values()) {
-            if (states == null || (aux.getState() & states.intValue()) != 0)
-                result.add(aux);
+        synchronized (bundleMap) {
+            for (AbstractBundleState aux : bundleMap.values()) {
+                if (states == null || (aux.getState() & states.intValue()) != 0)
+                    result.add(aux);
+            }
         }
         return Collections.unmodifiableSet(result);
     }
@@ -476,7 +482,6 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
             }
             userRev.close();
         }
-
         bundleMap.remove(userBundle.getBundleId());
     }
 
