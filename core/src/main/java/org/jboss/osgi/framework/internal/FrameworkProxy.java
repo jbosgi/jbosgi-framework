@@ -73,6 +73,7 @@ final class FrameworkProxy implements Framework {
     private final AtomicInteger proxyState;
     private final FrameworkBuilder frameworkBuilder;
     private LenientShutdownContainer lenientContainer;
+    private final AtomicBoolean frameworkStopped;
     private boolean firstInit;
     private int stoppedEvent;
 
@@ -80,6 +81,7 @@ final class FrameworkProxy implements Framework {
         this.frameworkBuilder = frameworkBuilder;
         this.stoppedEvent = FrameworkEvent.STOPPED;
         this.proxyState = new AtomicInteger(Bundle.INSTALLED);
+        this.frameworkStopped = new AtomicBoolean(false);
         this.firstInit = true;
     }
 
@@ -108,9 +110,12 @@ final class FrameworkProxy implements Framework {
      * 
      * After calling this method, this Framework must:
      * 
-     * - Be in the Bundle.STARTING state. - Have a valid Bundle Context. - Be at start level 0. - Have event handling enabled. -
-     * Have reified Bundle objects for all installed bundles. - Have registered any framework services (e.g. PackageAdmin,
-     * ConditionalPermissionAdmin, StartLevel)
+     * - Be in the Bundle.STARTING state. 
+     * - Have a valid Bundle Context. 
+     * - Be at start level 0. 
+     * - Have event handling enabled. 
+     * - Have reified Bundle objects for all installed bundles. 
+     * - Have registered any framework services (e.g. PackageAdmin, ConditionalPermissionAdmin, StartLevel)
      * 
      * This Framework will not actually be started until start is called.
      * 
@@ -127,7 +132,15 @@ final class FrameworkProxy implements Framework {
 
         log.debugf("init framework");
         try {
-            lenientContainer = new LenientShutdownContainer(frameworkBuilder.getServiceContainer());
+            frameworkStopped.set(false);
+            
+            boolean allowContainerShutdown = false;
+            ServiceContainer serviceContainer = frameworkBuilder.getServiceContainer();
+            if (serviceContainer == null) {
+                serviceContainer = ServiceContainer.Factory.create();
+                allowContainerShutdown = true;
+            }
+            lenientContainer = new LenientShutdownContainer(serviceContainer, allowContainerShutdown);
             ServiceTarget serviceTarget = frameworkBuilder.getServiceTarget();
             if (serviceTarget == null)
                 serviceTarget = lenientContainer.subTarget();
@@ -152,13 +165,15 @@ final class FrameworkProxy implements Framework {
      * 
      * The following steps are taken to start this Framework:
      * 
-     * - If this Framework is not in the {@link #STARTING} state, {@link #init()} is called - All installed bundles must be
-     * started - The start level of this Framework is moved to the FRAMEWORK_BEGINNING_STARTLEVEL
+     * - If this Framework is not in the {@link #STARTING} state, {@link #init()} is called 
+     * - All installed bundles must be started 
+     * - The start level of this Framework is moved to the FRAMEWORK_BEGINNING_STARTLEVEL
      * 
      * Any exceptions that occur during bundle starting must be wrapped in a {@link BundleException} and then published as a
      * framework event of type {@link FrameworkEvent#ERROR}
      * 
-     * - This Framework's state is set to {@link #ACTIVE}. - A framework event of type {@link FrameworkEvent#STARTED} is fired
+     * - This Framework's state is set to {@link #ACTIVE}. 
+     * - A framework event of type {@link FrameworkEvent#STARTED} is fired
      */
     @Override
     public void start(int options) throws BundleException {
@@ -188,11 +203,13 @@ final class FrameworkProxy implements Framework {
      * 
      * The method returns immediately to the caller after initiating the following steps to be taken on another thread.
      * 
-     * 1. This Framework's state is set to Bundle.STOPPING. 2. All installed bundles must be stopped without changing each
-     * bundle's persistent autostart setting. 3. Unregister all services registered by this Framework. 4. Event handling is
-     * disabled. 5. This Framework's state is set to Bundle.RESOLVED. 6. All resources held by this Framework are released. This
-     * includes threads, bundle class loaders, open files, etc. 7. Notify all threads that are waiting at waitForStop that the
-     * stop operation has completed.
+     * 1. This Framework's state is set to Bundle.STOPPING. 
+     * 2. All installed bundles must be stopped without changing each bundle's persistent autostart setting. 
+     * 3. Unregister all services registered by this Framework. 
+     * 4. Event handling is disabled. 
+     * 5. This Framework's state is set to Bundle.RESOLVED. 
+     * 6. All resources held by this Framework are released. This includes threads, bundle class loaders, open files, etc. 
+     * 7. Notify all threads that are waiting at waitForStop that the stop operation has completed.
      * 
      * After being stopped, this Framework may be discarded, initialized or started.
      */
@@ -401,7 +418,8 @@ final class FrameworkProxy implements Framework {
     }
 
     private boolean isNotStopped() {
-        return lenientContainer != null && lenientContainer.isShutdownInitiated() == false;
+        boolean isShutdownInitiated = lenientContainer != null && lenientContainer.isShutdownInitiated();
+        return frameworkStopped.get() == false && isShutdownInitiated == false;
     }
 
     private void assertNotStopped() {
@@ -419,6 +437,7 @@ final class FrameworkProxy implements Framework {
                 @Override
                 public void serviceStopped(ServiceController<? extends FrameworkService> controller) {
                     controller.removeListener(this);
+                    frameworkStopped.set(true);
                     frameworkInit = null;
                 }
             });
@@ -475,9 +494,9 @@ final class FrameworkProxy implements Framework {
         private final AtomicBoolean shutdownInitiated;
         private final boolean allowContainerShutdown;
 
-        LenientShutdownContainer(final ServiceContainer providedContainer) {
-            this.serviceContainer = (providedContainer != null ? providedContainer : ServiceContainer.Factory.create());
-            this.allowContainerShutdown = (providedContainer == null);
+        LenientShutdownContainer(final ServiceContainer providedContainer, boolean allowContainerShutdown) {
+            this.serviceContainer = providedContainer;
+            this.allowContainerShutdown = allowContainerShutdown;
             this.shutdownInitiated = new AtomicBoolean(false);
         }
 

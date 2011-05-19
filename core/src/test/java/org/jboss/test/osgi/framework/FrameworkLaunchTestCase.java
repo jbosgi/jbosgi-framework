@@ -23,6 +23,7 @@ package org.jboss.test.osgi.framework;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -72,7 +73,9 @@ public class FrameworkLaunchTestCase extends OSGiTest {
             Bundle bundle = bundleContext.installBundle("simple-bundle1", toInputStream(archive));
             assertBundleState(Bundle.INSTALLED, bundle.getState());
         } finally {
+            assertNotNull("BundleContext not null", framework.getBundleContext());
             framework.stop();
+            assertNull("BundleContext null", framework.getBundleContext());
             framework.waitForStop(2000);
         }
     }
