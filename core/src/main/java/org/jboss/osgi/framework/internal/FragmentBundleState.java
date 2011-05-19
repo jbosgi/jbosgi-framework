@@ -55,8 +55,8 @@ final class FragmentBundleState extends UserBundleState {
     }
 
     @Override
-    Bundle createBundleProxy() {
-        return new FragmentBundleProxy(this);
+    Bundle createBundleWrapper() {
+        return new BundleWrapper<FragmentBundleState>(this);
     }
 
     @Override

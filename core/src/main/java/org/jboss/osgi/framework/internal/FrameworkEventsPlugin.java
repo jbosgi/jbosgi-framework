@@ -701,7 +701,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         private static final long serialVersionUID = 6505331543651318189L;
 
         public FrameworkEventImpl(int type, AbstractBundleState bundleState, Throwable throwable) {
-            super(type, bundleState.getBundleProxy(), throwable);
+            super(type, bundleState.getBundleWrapper(), throwable);
         }
 
         @Override
@@ -715,7 +715,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         private static final long serialVersionUID = -2705304702665185935L;
 
         public BundleEventImpl(int type, AbstractBundleState bundleState) {
-            super(type, bundleState.getBundleProxy());
+            super(type, bundleState.getBundleWrapper());
         }
 
         @Override
