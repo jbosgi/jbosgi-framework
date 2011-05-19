@@ -21,12 +21,14 @@
  */
 package org.jboss.test.osgi.framework.jbosgi450;
 
+import static java.util.jar.JarFile.MANIFEST_NAME;
 import static org.jboss.osgi.spi.util.ConstantsHelper.bundleEvent;
 import static org.jboss.osgi.spi.util.ConstantsHelper.bundleState;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import java.io.InputStream;
+import java.net.URL;
 import java.util.EventObject;
 import java.util.HashMap;
 import java.util.List;
@@ -91,8 +93,11 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
             Bundle bundleA = installBundle(archiveA);
             assertBundleEvent(BundleEvent.INSTALLED);
 
-            bundleA.start();
+            URL url = bundleA.getResource(MANIFEST_NAME);
             assertBundleEvent(BundleEvent.RESOLVED);
+            assertNotNull("URL not null", url);
+            
+            bundleA.start();
             assertBundleEvent(BundleEvent.STARTED);
 
             bundleA.stop();
@@ -126,8 +131,11 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
             Bundle bundleA = installBundle(archiveA);
             assertBundleEvent(BundleEvent.INSTALLED);
 
-            bundleA.start();
+            URL url = bundleA.getResource(MANIFEST_NAME);
             assertBundleEvent(BundleEvent.RESOLVED);
+            assertNotNull("URL not null", url);
+            
+            bundleA.start();
             assertBundleEvent(BundleEvent.STARTED);
 
             bundleA.stop();
@@ -167,8 +175,11 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
             Bundle bundleA = installBundle(archiveA);
             assertBundleEvent(BundleEvent.INSTALLED);
 
-            bundleA.start();
+            URL url = bundleA.getResource(MANIFEST_NAME);
             assertBundleEvent(BundleEvent.RESOLVED);
+            assertNotNull("URL not null", url);
+            
+            bundleA.start();
             assertBundleEvent(BundleEvent.STARTED);
 
             bundleA.stop();
@@ -198,8 +209,11 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
             Bundle bundleA = installBundle(archiveA);
             assertBundleEvent(BundleEvent.INSTALLED);
 
-            bundleA.start();
+            URL url = bundleA.getResource(MANIFEST_NAME);
             assertBundleEvent(BundleEvent.RESOLVED);
+            assertNotNull("URL not null", url);
+            
+            bundleA.start();
             assertBundleEvent(BundleEvent.STARTED);
 
             bundleA.stop();
@@ -233,8 +247,11 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
             Bundle bundleA = installBundle(archiveA);
             assertBundleEvent(BundleEvent.INSTALLED);
 
-            bundleA.start();
+            URL url = bundleA.getResource(MANIFEST_NAME);
             assertBundleEvent(BundleEvent.RESOLVED);
+            assertNotNull("URL not null", url);
+            
+            bundleA.start();
             assertBundleEvent(BundleEvent.STARTED);
 
             bundleA.stop();
@@ -280,8 +297,11 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
             Bundle bundleA = installBundle(archiveA);
             assertBundleEvent(BundleEvent.INSTALLED);
 
-            bundleA.start();
+            URL url = bundleA.getResource(MANIFEST_NAME);
             assertBundleEvent(BundleEvent.RESOLVED);
+            assertNotNull("URL not null", url);
+            
+            bundleA.start();
             assertBundleEvent(BundleEvent.STARTED);
 
             bundleA.stop();
