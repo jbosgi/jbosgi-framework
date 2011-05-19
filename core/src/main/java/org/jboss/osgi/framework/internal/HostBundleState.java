@@ -86,8 +86,8 @@ final class HostBundleState extends UserBundleState {
     }
 
     @Override
-    Bundle createBundleProxy() {
-        return new HostBundleProxy(this);
+    Bundle createBundleWrapper() {
+        return new BundleWrapper<HostBundleState>(this);
     }
 
     @Override

@@ -79,7 +79,7 @@ abstract class AbstractBundleState implements Bundle {
     private final CopyOnWriteArrayList<ServiceState> registeredServices = new CopyOnWriteArrayList<ServiceState>();
     private final ConcurrentHashMap<ServiceState, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
     private AbstractBundleContext bundleContext;
-    private Bundle bundleProxy;
+    private Bundle bundleWrapper;
 
     AbstractBundleState(FrameworkState frameworkState, long bundleId, String symbolicName) {
         if (frameworkState == null)
@@ -126,14 +126,14 @@ abstract class AbstractBundleState implements Bundle {
         return symbolicName;
     }
 
-    Bundle getBundleProxy() {
-        if (bundleProxy == null) {
-            bundleProxy = createBundleProxy();
+    Bundle getBundleWrapper() {
+        if (bundleWrapper == null) {
+            bundleWrapper = createBundleWrapper();
         }
-        return bundleProxy;
+        return bundleWrapper;
     }
 
-    abstract Bundle createBundleProxy();
+    abstract Bundle createBundleWrapper();
 
     abstract AbstractBundleContext createContextInternal();
 
@@ -584,9 +584,6 @@ abstract class AbstractBundleState implements Bundle {
     static AbstractBundleState assertBundleState(Bundle bundle) {
         if (bundle == null)
             throw new IllegalArgumentException("Null bundle");
-
-        if (bundle instanceof BundleProxy<?>)
-            bundle = ((BundleProxy<?>) bundle).getBundleState();
 
         if (bundle instanceof BundleWrapper<?>)
             bundle = ((BundleWrapper<?>) bundle).getBundleState();

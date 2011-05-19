@@ -124,7 +124,7 @@ abstract class AbstractBundleContext implements BundleContext {
     @Override
     public Bundle getBundle() {
         checkValidBundleContext();
-        return bundleState.getBundleProxy();
+        return bundleState.getBundleWrapper();
     }
 
     @Override
@@ -231,7 +231,7 @@ abstract class AbstractBundleContext implements BundleContext {
         FutureServiceValue<UserBundleState> future = new FutureServiceValue<UserBundleState>(controller);
         try {
             UserBundleState userBundle = future.get(5, TimeUnit.SECONDS);
-            return userBundle.getBundleProxy();
+            return userBundle.getBundleWrapper();
         } catch (Exception ex) {
             Throwable cause = ex.getCause();
             if (cause instanceof BundleException)
@@ -244,7 +244,7 @@ abstract class AbstractBundleContext implements BundleContext {
     public Bundle getBundle(long id) {
         checkValidBundleContext();
         AbstractBundleState bundleState = getBundleManager().getBundleById(id);
-        return (bundleState != null ? bundleState.getBundleProxy() : null);
+        return (bundleState != null ? bundleState.getBundleWrapper() : null);
     }
 
     @Override
@@ -252,7 +252,7 @@ abstract class AbstractBundleContext implements BundleContext {
         checkValidBundleContext();
         List<Bundle> result = new ArrayList<Bundle>();
         for (AbstractBundleState bundle : getBundleManager().getBundles())
-            result.add(bundle.getBundleProxy());
+            result.add(bundle.getBundleWrapper());
         return result.toArray(new Bundle[result.size()]);
     }
 

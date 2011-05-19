@@ -59,8 +59,9 @@ import org.osgi.framework.launch.Framework;
 /**
  * The proxy that represents the {@link Framework}.
  * 
- * The {@link FrameworkProxy} uses the respective {@link FrameworkService}s. It never interacts with the {@link FrameworkState}
- * directly. The client may hold a reference to the {@link FrameworkProxy}.
+ * The {@link FrameworkProxy} uses the respective {@link FrameworkService}s. 
+ * It never interacts with the {@link FrameworkState} directly. 
+ * The client may hold a reference to the {@link FrameworkProxy}.
  * 
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011

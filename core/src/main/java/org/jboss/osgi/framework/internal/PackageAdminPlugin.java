@@ -441,7 +441,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         BundleManager bundleManager = injectedBundleManager.getValue();
         for (AbstractBundleState bundleState : bundleManager.getBundles(symbolicName, versionRange)) {
             if (bundleState.getState() != Bundle.UNINSTALLED) {
-                sortedSet.add(bundleState.getBundleProxy());
+                sortedSet.add(bundleState.getBundleWrapper());
             }
         }
         if (sortedSet.isEmpty())
@@ -463,7 +463,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         List<Bundle> result = new ArrayList<Bundle>();
         for (FragmentBundleRevision aux : curRevision.getAttachedFragments())
-            result.add(aux.getBundleState().getBundleProxy());
+            result.add(aux.getBundleState().getBundleWrapper());
 
         if (result.isEmpty())
             return null;
@@ -482,7 +482,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         List<Bundle> result = new ArrayList<Bundle>();
         for (HostBundleRevision aux : curRevision.getAttachedHosts())
-            result.add(aux.getBundleState().getBundleProxy());
+            result.add(aux.getBundleState().getBundleWrapper());
 
         if (result.isEmpty())
             return null;
@@ -495,7 +495,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     public Bundle getBundle(Class clazz) {
         ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
         AbstractBundleState bundleState = moduleManager.getBundleState(clazz);
-        return bundleState != null ? bundleState.getBundleProxy() : null;
+        return bundleState != null ? bundleState.getBundleWrapper() : null;
     }
 
     @Override
@@ -521,7 +521,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         public Bundle getExportingBundle() {
             Bundle bundle = capability.getModule().getAttachment(Bundle.class);
             AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-            return bundleState.getBundleProxy();
+            return bundleState.getBundleWrapper();
         }
 
         @Override
@@ -551,13 +551,13 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 XModule reqmod = req.getModule();
                 Bundle bundle = reqmod.getAttachment(Bundle.class);
                 AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-                bundles.add(bundleState.getBundleProxy());
+                bundles.add(bundleState.getBundleWrapper());
             }
 
             // Remove the exporting bundle from the result
             Bundle capBundle = capModule.getAttachment(Bundle.class);
             AbstractBundleState capAbstractBundle = AbstractBundleState.assertBundleState(capBundle);
-            bundles.remove(capAbstractBundle.getBundleProxy());
+            bundles.remove(capAbstractBundle.getBundleWrapper());
 
             return bundles.toArray(new Bundle[bundles.size()]);
         }
@@ -593,12 +593,12 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         private final AbstractBundleRevision bundleRevision;
 
         public RequiredBundleImpl(AbstractBundleState requiredBundle, Collection<AbstractBundleState> requiringBundles) {
-            this.requiredBundle = AbstractBundleState.assertBundleState(requiredBundle).getBundleProxy();
+            this.requiredBundle = AbstractBundleState.assertBundleState(requiredBundle).getBundleWrapper();
             this.bundleRevision = requiredBundle.getCurrentRevision();
 
             List<Bundle> bundles = new ArrayList<Bundle>(requiringBundles.size());
             for (AbstractBundleState ab : requiringBundles) {
-                bundles.add(AbstractBundleState.assertBundleState(ab).getBundleProxy());
+                bundles.add(AbstractBundleState.assertBundleState(ab).getBundleWrapper());
             }
             this.requiringBundles = bundles.toArray(new Bundle[bundles.size()]);
         }

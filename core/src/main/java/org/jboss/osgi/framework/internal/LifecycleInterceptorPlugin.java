@@ -90,7 +90,7 @@ final class LifecycleInterceptorPlugin extends AbstractPluginService<LifecycleIn
                     RevisionContent revContent = userBundle.getFirstContentRoot();
                     VirtualFile rootFile = revContent != null ? revContent.getVirtualFile() : null;
                     LifecycleInterceptorAttachments att = new LifecycleInterceptorAttachments();
-                    inv = new InvocationContextImpl(systemContext, new BundleWrapper<AbstractBundleState>(bundleState), rootFile, att);
+                    inv = new InvocationContextImpl(systemContext, bundleState.getBundleWrapper(), rootFile, att);
                     dep.addAttachment(InvocationContext.class, inv);
                 }
                 return inv;

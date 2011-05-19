@@ -27,13 +27,6 @@ import org.osgi.framework.BundleContext;
 /**
  * A bundle wrapper that delegates all method calls to the underlying Bundle implementation.
  * 
- * This is a workaround for
- * 
- *   Invalid discovery of Bundle.getBundleContext() method
- *   http://issues.ops4j.org/browse/PAXSB-44
- *   
- * [TODO] Remove BundleWrapper
- * 
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
@@ -47,6 +40,8 @@ public final class BundleWrapper<T extends AbstractBundleState> extends GenericB
         return getWrappedBundle();
     }
 
+    // Invalid discovery of Bundle.getBundleContext() method
+    // http://issues.ops4j.org/browse/PAXSB-44
     public BundleContext getBundleContext() {
         return super.getBundleContext();
     }

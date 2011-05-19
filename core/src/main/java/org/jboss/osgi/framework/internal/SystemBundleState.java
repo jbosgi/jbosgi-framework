@@ -68,8 +68,6 @@ final class SystemBundleState extends AbstractBundleState {
      */
     static SystemBundleState assertBundleState(Bundle bundle) {
         bundle = AbstractBundleState.assertBundleState(bundle);
-        if (bundle instanceof BundleProxy<?>)
-            bundle = ((BundleProxy<?>) bundle).getBundleState();
 
         if (bundle instanceof UserBundleState == false)
             throw new IllegalArgumentException("Not an UserBundleState: " + bundle);
@@ -155,8 +153,8 @@ final class SystemBundleState extends AbstractBundleState {
     }
 
     @Override
-    Bundle createBundleProxy() {
-        return new SystemBundleProxy(this);
+    Bundle createBundleWrapper() {
+        return new BundleWrapper<SystemBundleState>(this);
     }
 
     @Override

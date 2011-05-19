@@ -88,8 +88,6 @@ abstract class UserBundleState extends AbstractBundleState {
      */
     static UserBundleState assertBundleState(Bundle bundle) {
         bundle = AbstractBundleState.assertBundleState(bundle);
-        if (bundle instanceof BundleProxy<?>)
-            bundle = ((BundleProxy<?>) bundle).getBundleState();
 
         if (bundle instanceof UserBundleState == false)
             throw new IllegalArgumentException("Not an UserBundleState: " + bundle);

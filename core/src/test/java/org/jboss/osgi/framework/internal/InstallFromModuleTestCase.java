@@ -102,6 +102,6 @@ public class InstallFromModuleTestCase extends AbstractFrameworkTest {
         ServiceController<UserBundleState> controller = (ServiceController<UserBundleState>) serviceContainer.getService(serviceName);
         FutureServiceValue<UserBundleState> future = new FutureServiceValue<UserBundleState>(controller);
         UserBundleState userBundle = future.get(5, TimeUnit.SECONDS);
-        return userBundle.getBundleProxy();
+        return userBundle.getBundleWrapper();
     }
 }
