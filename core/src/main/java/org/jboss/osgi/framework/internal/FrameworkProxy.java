@@ -419,8 +419,8 @@ final class FrameworkProxy implements Framework {
     }
 
     private boolean isNotStopped() {
-        boolean isShutdownInitiated = lenientContainer != null && lenientContainer.isShutdownInitiated();
-        return frameworkStopped.get() == false && isShutdownInitiated == false;
+        boolean serviceContainerActive = lenientContainer != null && lenientContainer.isShutdownInitiated() == false;
+        return serviceContainerActive == true && frameworkStopped.get() == false;
     }
 
     private void assertNotStopped() {
