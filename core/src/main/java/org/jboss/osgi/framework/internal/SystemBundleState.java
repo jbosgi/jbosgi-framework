@@ -37,14 +37,13 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XResolverFactory;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 
 /**
  * Represents the state of the system {@link Bundle}.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
@@ -64,6 +63,7 @@ final class SystemBundleState extends AbstractBundleState {
 
     /**
      * Assert that the given bundle is an instance of {@link UserBundleState}
+     * 
      * @throws IllegalArgumentException if the given bundle is not an instance of {@link UserBundleState}
      */
     static SystemBundleState assertBundleState(Bundle bundle) {
@@ -74,7 +74,7 @@ final class SystemBundleState extends AbstractBundleState {
 
         return (SystemBundleState) bundle;
     }
-    
+
     Module getFrameworkModule() {
         FrameworkModuleProvider moduleProvider = injectedModuleProvider.getValue();
         return moduleProvider.getFrameworkModule(this);
@@ -91,12 +91,12 @@ final class SystemBundleState extends AbstractBundleState {
         resModule.addAttachment(Bundle.class, this);
         return resModule;
     }
-    
+
     @Override
     List<XModule> getAllResolverModules() {
         return Collections.singletonList(getResolverModule());
     }
-    
+
     void createStorageState(BundleStoragePlugin storagePlugin) {
         try {
             storageState = storagePlugin.createStorageState(0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME, null);
@@ -104,7 +104,7 @@ final class SystemBundleState extends AbstractBundleState {
             throw new IllegalStateException("Cannot create system persistence storage", ex);
         }
     }
-    
+
     @Override
     ServiceName getServiceName() {
         return Services.SYSTEM_BUNDLE;
@@ -134,12 +134,12 @@ final class SystemBundleState extends AbstractBundleState {
     BundleStorageState getBundleStorageState() {
         return storageState;
     }
-    
+
     @Override
     boolean isFragment() {
         return false;
     }
-    
+
     @Override
     boolean isSingleton() {
         return true;
@@ -169,11 +169,11 @@ final class SystemBundleState extends AbstractBundleState {
 
     @Override
     void updateInternal(InputStream input) throws BundleException {
-        throw new NotImplementedException();
+        // do nothing
     }
 
     @Override
     void uninstallInternal() throws BundleException {
-        // do nothing
+        throw new BundleException("Cannot uninstall the system bundle");
     }
 }
