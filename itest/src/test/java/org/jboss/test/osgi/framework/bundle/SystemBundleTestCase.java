@@ -121,4 +121,19 @@ public class SystemBundleTestCase extends OSGiFrameworkTest {
         Enumeration was = getFramework().getResources("META-INF/services/jboss-osgi-bootstrap-system.xml");
         assertNotNull("Resources not null", was);
     }
+
+    @Test
+    public void testBundleZero() throws BundleException {
+        
+        Bundle systemBundle = getSystemContext().getBundle(0);
+        systemBundle.start();
+        assertBundleState(Bundle.ACTIVE, systemBundle.getState());
+        
+        try {
+            systemBundle.uninstall();
+            fail("bundle(0).uninstall returned without Exception");
+        } catch (BundleException e) {
+            // expected
+        }
+    }
 }
