@@ -23,6 +23,9 @@ package org.jboss.osgi.framework.internal;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.osgi.framework.Bundle.INSTALLED;
+import static org.osgi.framework.Bundle.RESOLVED;
+import static org.osgi.framework.Bundle.UNINSTALLED;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -54,15 +57,14 @@ public class BundleUninstallTestCase extends AbstractFrameworkTest {
 
         Bundle bundle = installBundle(getTestArchive());
         AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-        ServiceName servicename = BundleManager.getServiceName(bundleState);
 
         List<ServiceName> additionalNames = getServiceNameDelta(initialNames);
-        assertTrue("Contains INSTALLED", additionalNames.contains(servicename.append("INSTALLED")));
-        assertTrue("Contains RESOLVED", additionalNames.contains(servicename.append("RESOLVED")));
-        assertTrue("Contains ACTIVE", additionalNames.contains(servicename.append("ACTIVE")));
+        assertTrue("Contains INSTALLED", additionalNames.contains(bundleState.getServiceName(INSTALLED)));
+        assertTrue("Contains RESOLVED", additionalNames.contains(bundleState.getServiceName(RESOLVED)));
+        assertTrue("Contains ACTIVE", additionalNames.contains(bundleState.getServiceName(Bundle.ACTIVE)));
 
         bundle.uninstall();
-        assertBundleState(Bundle.UNINSTALLED, bundle.getState());
+        assertBundleState(UNINSTALLED, bundle.getState());
 
         additionalNames = getServiceNameDelta(initialNames);
         assertEquals("No additional services: " + additionalNames, 0, additionalNames.size());

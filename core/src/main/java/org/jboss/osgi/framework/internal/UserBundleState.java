@@ -76,7 +76,7 @@ abstract class UserBundleState extends AbstractBundleState {
     private Dictionary<String, String> headersOnUninstall;
     private BundleStorageState storageState;
 
-    UserBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
+    UserBundleState(FrameworkState frameworkState, BundleId bundleId, Deployment dep) {
         super(frameworkState, bundleId, dep.getSymbolicName());
         this.serviceName = BundleManager.getServiceName(dep);
     }

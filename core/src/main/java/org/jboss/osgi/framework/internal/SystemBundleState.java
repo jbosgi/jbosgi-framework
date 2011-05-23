@@ -56,7 +56,7 @@ final class SystemBundleState extends AbstractBundleState {
     private SystemBundleRevision revision;
 
     SystemBundleState(FrameworkState frameworkState, FrameworkModuleProvider frameworkModuleProvider) {
-        super(frameworkState, 0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+        super(frameworkState, new BundleId(0), Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
         this.frameworkModuleProvider = frameworkModuleProvider;
     }
 

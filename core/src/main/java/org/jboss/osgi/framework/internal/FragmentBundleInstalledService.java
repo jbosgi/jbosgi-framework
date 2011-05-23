@@ -35,17 +35,17 @@ import org.osgi.framework.BundleException;
  */
 final class FragmentBundleInstalledService extends UserBundleInstalledService<FragmentBundleState> {
 
-    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, long bundleId, Deployment dep) throws BundleException {
+    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep) throws BundleException {
         ServiceName serviceName = BundleManager.getServiceName(dep).append("INSTALLED");
-        FragmentBundleInstalledService service = new FragmentBundleInstalledService(frameworkState, bundleId, dep);
+        FragmentBundleInstalledService service = new FragmentBundleInstalledService(frameworkState, dep);
         ServiceBuilder<FragmentBundleState> builder = serviceTarget.addService(serviceName, service);
         builder.addDependency(InternalServices.CORE_SERVICES);
         builder.install();
         return serviceName;
     }
 
-    private FragmentBundleInstalledService(FrameworkState frameworkState, long bundleId, Deployment dep) throws BundleException {
-        super(frameworkState, bundleId, dep);
+    private FragmentBundleInstalledService(FrameworkState frameworkState, Deployment dep) throws BundleException {
+        super(frameworkState, dep);
     }
 
     @Override

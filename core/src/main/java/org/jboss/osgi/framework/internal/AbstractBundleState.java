@@ -75,7 +75,7 @@ abstract class AbstractBundleState implements Bundle {
     // Provide logging
     static final Logger log = Logger.getLogger(AbstractBundleState.class);
 
-    private final long bundleId;
+    private final BundleId bundleId;
     private final String symbolicName;
     private final FrameworkState frameworkState;
     private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
@@ -84,7 +84,7 @@ abstract class AbstractBundleState implements Bundle {
     private AbstractBundleContext bundleContext;
     private Bundle bundleWrapper;
 
-    AbstractBundleState(FrameworkState frameworkState, long bundleId, String symbolicName) {
+    AbstractBundleState(FrameworkState frameworkState, BundleId bundleId, String symbolicName) {
         if (frameworkState == null)
             throw new IllegalStateException("Null frameworkState");
 
@@ -120,7 +120,7 @@ abstract class AbstractBundleState implements Bundle {
 
     @Override
     public long getBundleId() {
-        return bundleId;
+        return bundleId.longValue();
     }
 
     @Override
@@ -190,7 +190,7 @@ abstract class AbstractBundleState implements Bundle {
 
         // Invoke the lifecycle interceptors
         boolean frameworkActive = getBundleManager().isFrameworkActive();
-        if (frameworkActive && bundleId > 0) {
+        if (frameworkActive && bundleId.longValue() > 0) {
             LifecycleInterceptorPlugin plugin = getCoreServices().getLifecycleInterceptorPlugin();
             plugin.handleStateChange(state, this);
         }

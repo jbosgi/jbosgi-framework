@@ -224,15 +224,19 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     }
 
     static ServiceName getServiceName(Deployment dep) {
-        return getServiceNameInternal(dep.getSymbolicName(), Version.parseVersion(dep.getVersion()), dep.getLocation());
+        long bundleId = dep.getAttachment(BundleId.class).longValue();
+        return getServiceNameInternal(bundleId, dep.getSymbolicName(), Version.parseVersion(dep.getVersion()));
     }
 
-    static ServiceName getServiceName(AbstractBundleState bundle) {
-        return getServiceNameInternal(bundle.getSymbolicName(), bundle.getVersion(), bundle.getLocation());
+    @Override
+    public ServiceName getServiceName(Bundle bundle) {
+        return getServiceNameInternal(bundle.getBundleId(), bundle.getSymbolicName(), bundle.getVersion());
     }
 
-    private static ServiceName getServiceNameInternal(String symbolicName, Version version, String location) {
-        return ServiceName.of(BUNDLE_BASE_NAME, "" + symbolicName, "" + version, "loc" + location.hashCode());
+    private static ServiceName getServiceNameInternal(long bundleId, String symbolicName, Version version) {
+        // Currently the bundleId is needed for uniqueness because of
+        // [MSC-97] Cannot re-install service with same name 
+        return ServiceName.of(BUNDLE_BASE_NAME, "" + bundleId, "" + symbolicName, "" + version);
     }
 
     void addBundle(AbstractBundleState bundleState) {
@@ -359,7 +363,8 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
             try {
                 // The storage state exists when we re-create the bundle from persistent storage
                 BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
-                long bundleId = storageState != null ? storageState.getBundleId() : getNextBundleId();
+                BundleId bundleId = new BundleId(storageState != null ? storageState.getBundleId() : getNextBundleId());
+                dep.addAttachment(BundleId.class, bundleId);
 
                 // Check that we have valid metadata
                 OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
@@ -370,11 +375,11 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
 
                 // Create the bundle services
                 if (metadata.getFragmentHost() == null) {
-                    serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), bundleId, dep);
+                    serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep);
                     HostBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                     HostBundleActiveService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 } else {
-                    serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), bundleId, dep);
+                    serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep);
                     FragmentBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 }
             } catch (RuntimeException rte) {
