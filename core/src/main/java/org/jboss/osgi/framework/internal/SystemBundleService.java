@@ -37,6 +37,7 @@ import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.resolver.XModule;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 
@@ -52,14 +53,15 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
     static final Logger log = Logger.getLogger(SystemBundleService.class);
 
     private final InjectedValue<SystemPackagesPlugin> injectedSystemPackages = new InjectedValue<SystemPackagesPlugin>();
+    private final InjectedValue<FrameworkModuleProvider> injectedModuleProvider = new InjectedValue<FrameworkModuleProvider>();
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
     private final InjectedValue<ResolverPlugin> injectedResolverPlugin = new InjectedValue<ResolverPlugin>();
+    private SystemBundleState bundleState;
 
     static void addService(ServiceTarget serviceTarget, FrameworkState frameworkState) {
-        SystemBundleState bundleState = new SystemBundleState(frameworkState);
-        SystemBundleService service = new SystemBundleService(bundleState);
+        SystemBundleService service = new SystemBundleService(frameworkState);
         ServiceBuilder<SystemBundleState> builder = serviceTarget.addService(Services.SYSTEM_BUNDLE, service);
-        builder.addDependency(Services.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, bundleState.injectedModuleProvider);
+        builder.addDependency(Services.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, service.injectedModuleProvider);
         builder.addDependency(InternalServices.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
         builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolverPlugin);
@@ -67,28 +69,37 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
         builder.install();
     }
     
-    private SystemBundleService(SystemBundleState bundleState) {
-        super(bundleState);
+    private SystemBundleService(FrameworkState frameworkState) {
+        super(frameworkState);
     }
 
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
         try {
-            BundleManager bundleManager = getBundleManager();
-            SystemBundleState bundleState = getBundleState();
-            bundleState.changeState(STARTING);
+            bundleState = createBundleState();
+            bundleState.changeState(Bundle.STARTING);
             OSGiMetaData metadata = createOSGiMetaData();
             XModule resModule = bundleState.createResolverModule(metadata);
             bundleState.createBundleRevision(metadata, resModule);
             bundleState.createBundleContext();
             bundleState.createStorageState(injectedBundleStorage.getValue());
             injectedResolverPlugin.getValue().addModule(resModule);
+            BundleManager bundleManager = getBundleManager();
             bundleManager.injectedSystemBundle.inject(bundleState);
             bundleManager.addBundle(bundleState);
         } catch (BundleException ex) {
             throw new StartException(ex);
         }
+    }
+
+    SystemBundleState createBundleState() {
+        return new SystemBundleState(getFrameworkState(), injectedModuleProvider.getValue());
+    }
+
+    @Override
+    SystemBundleState getBundleState() {
+        return bundleState;
     }
 
     @Override
@@ -99,8 +110,10 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
     }
 
     private OSGiMetaData createOSGiMetaData() {
+        
         // Initialize the OSGiMetaData
-        OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(getSymbolicName(), getVersion());
+        SystemBundleState bundleState = getBundleState();
+        OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(bundleState.getSymbolicName(), bundleState.getVersion());
         SystemPackagesPlugin systemPackages = injectedSystemPackages.getValue();
 
         List<String> exportedPackages = new ArrayList<String>();

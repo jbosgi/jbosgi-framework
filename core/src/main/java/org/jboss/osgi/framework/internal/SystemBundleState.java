@@ -29,7 +29,6 @@ import java.util.List;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.Services;
@@ -52,13 +51,13 @@ final class SystemBundleState extends AbstractBundleState {
     // Provide logging
     static final Logger log = Logger.getLogger(SystemBundleState.class);
 
-    final InjectedValue<FrameworkModuleProvider> injectedModuleProvider = new InjectedValue<FrameworkModuleProvider>();
-
+    private final FrameworkModuleProvider frameworkModuleProvider;
     private BundleStorageState storageState;
     private SystemBundleRevision revision;
 
-    SystemBundleState(FrameworkState frameworkState) {
+    SystemBundleState(FrameworkState frameworkState, FrameworkModuleProvider frameworkModuleProvider) {
         super(frameworkState, 0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+        this.frameworkModuleProvider = frameworkModuleProvider;
     }
 
     /**
@@ -76,8 +75,7 @@ final class SystemBundleState extends AbstractBundleState {
     }
 
     Module getFrameworkModule() {
-        FrameworkModuleProvider moduleProvider = injectedModuleProvider.getValue();
-        return moduleProvider.getFrameworkModule(this);
+        return frameworkModuleProvider.getFrameworkModule(this);
     }
 
     void createBundleRevision(OSGiMetaData metadata, XModule resModule) throws BundleException {
@@ -106,7 +104,7 @@ final class SystemBundleState extends AbstractBundleState {
     }
 
     @Override
-    ServiceName getServiceName() {
+    ServiceName getServiceName(int state) {
         return Services.SYSTEM_BUNDLE;
     }
 

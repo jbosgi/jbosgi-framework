@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.Services.BUNDLE_BASE_NAME;
+
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -40,7 +42,6 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
@@ -60,6 +61,7 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.Version;
 
 /**
  * The BundleManager is the central managing entity for OSGi bundles.
@@ -179,7 +181,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     }
 
     boolean isFrameworkActive() {
-        return shutdownInitiated.get() == false &&  getFrameworkState() != null;
+        return shutdownInitiated.get() == false && getFrameworkState() != null;
     }
 
     void assertFrameworkActive() {
@@ -219,6 +221,18 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
             throw new IllegalStateException("Cannot add property to ACTIVE framwork");
 
         properties.put(key, value);
+    }
+
+    static ServiceName getServiceName(Deployment dep) {
+        return getServiceNameInternal(dep.getSymbolicName(), Version.parseVersion(dep.getVersion()), dep.getLocation());
+    }
+
+    static ServiceName getServiceName(AbstractBundleState bundle) {
+        return getServiceNameInternal(bundle.getSymbolicName(), bundle.getVersion(), bundle.getLocation());
+    }
+
+    private static ServiceName getServiceNameInternal(String symbolicName, Version version, String location) {
+        return ServiceName.of(BUNDLE_BASE_NAME, "" + symbolicName, "" + version, "loc" + location.hashCode());
     }
 
     void addBundle(AbstractBundleState bundleState) {
@@ -340,7 +354,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         // the Bundle object for that bundle is returned.
         AbstractBundleState bundleState = getBundleByLocation(dep.getLocation());
         if (bundleState != null) {
-            serviceName = bundleState.getServiceName();
+            serviceName = bundleState.getServiceName(Bundle.INSTALLED);
         } else {
             try {
                 // The storage state exists when we re-create the bundle from persistent storage
@@ -354,11 +368,14 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
                     metadata = plugin.createOSGiMetaData(dep);
                 }
 
-                // Create the bundle state
+                // Create the bundle services
                 if (metadata.getFragmentHost() == null) {
-                    serviceName = HostBundleInstalled.addService(serviceTarget, getFrameworkState(), bundleId, dep);
+                    serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), bundleId, dep);
+                    HostBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
+                    HostBundleActiveService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 } else {
-                    serviceName = FragmentBundleInstalled.addService(serviceTarget, getFrameworkState(), bundleId, dep);
+                    serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), bundleId, dep);
+                    FragmentBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 }
             } catch (RuntimeException rte) {
                 VFSUtils.safeClose(dep.getRoot());
@@ -420,17 +437,8 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
                 FrameworkEventsPlugin eventsPlugin = userBundle.getFrameworkState().getFrameworkEventsPlugin();
                 userBundle.changeState(Bundle.UNINSTALLED, 0);
 
-                // Remove the bundle INSTALLED services
-                ServiceName serviceName = UserBundleState.getServiceName(userBundle.getBundleId());
-                ServiceController<?> controller = getServiceContainer().getService(serviceName);
-                if (controller != null)
-                    controller.setMode(Mode.REMOVE);
-
-                // Remove the bundle DEPLOYED services
-                //serviceName = BundleService.getServiceName(userBundle.getDeployment(), State.DEPLOYED);
-                //controller = getServiceContainer().getService(serviceName);
-                //if (controller != null)
-                //    controller.setMode(Mode.REMOVE);
+                // Remove the bundle services
+                userBundle.removeServices();
 
                 // Check if the bundle has still active wires
                 boolean hasActiveWires = userBundle.hasActiveWires();

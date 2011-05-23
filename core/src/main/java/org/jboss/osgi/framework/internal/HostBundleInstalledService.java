@@ -28,26 +28,28 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.osgi.framework.BundleException;
 
 /**
- * This is the internal implementation of a fragment Bundle.
- *
- * Fragment specific functionality is handled here.
+ * Represents the INSTALLED state of a host bundle.
  *
  * @author thomas.diesler@jboss.com
- * @since 12-Aug-2010
+ * @since 06-Apr-2011
  */
-final class FragmentBundleInstalled extends UserBundleService<FragmentBundleState> {
+final class HostBundleInstalledService extends UserBundleInstalledService<HostBundleState> {
 
     static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, long bundleId, Deployment dep) throws BundleException {
-        FragmentBundleState bundleState = new FragmentBundleState(frameworkState, bundleId, dep.getSymbolicName());
-        FragmentBundleInstalled service = new FragmentBundleInstalled(bundleState, dep);
-        ServiceName serviceName = bundleState.getServiceName();
-        ServiceBuilder<FragmentBundleState> builder = serviceTarget.addService(serviceName, service);
+        ServiceName serviceName = BundleManager.getServiceName(dep).append("INSTALLED");
+        HostBundleInstalledService service = new HostBundleInstalledService(frameworkState, bundleId, dep);
+        ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, service);
         builder.addDependency(InternalServices.CORE_SERVICES);
         builder.install();
         return serviceName;
     }
 
-    private FragmentBundleInstalled(FragmentBundleState bundleState, Deployment dep) throws BundleException {
-        super(bundleState, dep);
+    private HostBundleInstalledService(FrameworkState frameworkState, long bundleId, Deployment dep) throws BundleException {
+        super(frameworkState, bundleId, dep);
+    }
+
+    @Override
+    HostBundleState createBundleState(Deployment dep) {
+        return new HostBundleState(getFrameworkState(), getBundleId(), dep);
     }
 }

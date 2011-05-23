@@ -43,7 +43,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
@@ -94,7 +97,6 @@ abstract class AbstractBundleState implements Bundle {
         this.frameworkState = frameworkState;
     }
 
-
     FrameworkState getFrameworkState() {
         return frameworkState;
     }
@@ -141,7 +143,7 @@ abstract class AbstractBundleState implements Bundle {
 
     abstract AbstractBundleRevision getRevisionById(int revisionId);
 
-    abstract ServiceName getServiceName();
+    abstract ServiceName getServiceName(int state);
 
     abstract boolean isFragment();
 
@@ -185,21 +187,25 @@ abstract class AbstractBundleState implements Bundle {
     void changeState(int state, int eventType) {
 
         log.tracef("changeState: %s -> %s", this, ConstantsHelper.bundleState(state));
-        
+
         // Invoke the lifecycle interceptors
         boolean frameworkActive = getBundleManager().isFrameworkActive();
         if (frameworkActive && bundleId > 0) {
-           LifecycleInterceptorPlugin plugin = getCoreServices().getLifecycleInterceptorPlugin();
-           plugin.handleStateChange(state, this);
+            LifecycleInterceptorPlugin plugin = getCoreServices().getLifecycleInterceptorPlugin();
+            plugin.handleStateChange(state, this);
         }
 
         bundleState.set(state);
 
         // Fire the bundle event
         if (frameworkActive && eventType != 0) {
-            FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
-            eventsPlugin.fireBundleEvent(this, eventType);
+            fireBundleEvent(eventType);
         }
+    }
+
+    void fireBundleEvent(int eventType) {
+        FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
+        eventsPlugin.fireBundleEvent(this, eventType);
     }
 
     void addRegisteredService(ServiceState serviceState) {
@@ -294,6 +300,7 @@ abstract class AbstractBundleState implements Bundle {
         return getHeaders(null);
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public Dictionary<String, String> getHeaders(String locale) {
         // Get the raw (unlocalized) manifest headers
@@ -542,6 +549,7 @@ abstract class AbstractBundleState implements Bundle {
     abstract void uninstallInternal() throws BundleException;
 
     boolean ensureResolved(boolean fireEvent) {
+        
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired
         // containing a BundleException with details of the reason this bundle could not be resolved.
@@ -553,6 +561,12 @@ abstract class AbstractBundleState implements Bundle {
             try {
                 ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
                 resolverPlugin.resolve(resModule);
+                
+                // Activate the service that represents bundle state RESOLVED 
+                ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
+                ServiceController<?> controller = serviceContainer.getService(getServiceName(RESOLVED));
+                controller.setMode(Mode.ACTIVE);
+                
                 return true;
             } catch (BundleException ex) {
                 if (fireEvent == true) {

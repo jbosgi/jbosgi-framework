@@ -36,8 +36,8 @@ import org.osgi.framework.BundleException;
  */
 final class FragmentBundleState extends UserBundleState {
 
-    FragmentBundleState(FrameworkState frameworkState, long bundleId, String symbolicName) throws BundleException {
-        super(frameworkState, bundleId, symbolicName);
+    FragmentBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
+        super(frameworkState, bundleId, dep);
     }
 
     static FragmentBundleState assertBundleState(Bundle bundle) {
@@ -48,7 +48,7 @@ final class FragmentBundleState extends UserBundleState {
 
         return (FragmentBundleState) bundleState;
     }
-    
+
     @Override
     AbstractBundleContext createContextInternal() {
         return new FragmentBundleContext(this);
@@ -68,7 +68,7 @@ final class FragmentBundleState extends UserBundleState {
     FragmentBundleRevision createRevisionInternal(Deployment deployment) throws BundleException {
         return new FragmentBundleRevision(this, deployment);
     }
-    
+
     @Override
     FragmentBundleRevision getCurrentRevision() {
         return (FragmentBundleRevision) super.getCurrentRevision();

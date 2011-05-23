@@ -36,15 +36,18 @@ import java.util.concurrent.TimeUnit;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallProvider;
-import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XRequirement;
+import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -73,13 +76,9 @@ abstract class UserBundleState extends AbstractBundleState {
     private Dictionary<String, String> headersOnUninstall;
     private BundleStorageState storageState;
 
-    UserBundleState(FrameworkState frameworkState, long bundleId, String symbolicName) throws BundleException {
-        super(frameworkState, bundleId, symbolicName);
-        this.serviceName = getServiceName(bundleId);
-    }
-
-    static ServiceName getServiceName(long bundleId) {
-        return Services.BUNDLE_BASE_NAME.append(new Long(bundleId).toString()).append("INSTALLED");
+    UserBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
+        super(frameworkState, bundleId, dep.getSymbolicName());
+        this.serviceName = BundleManager.getServiceName(dep);
     }
 
     /**
@@ -169,15 +168,15 @@ abstract class UserBundleState extends AbstractBundleState {
     public Dictionary<String, String> getHeaders(String locale) {
         // This method must continue to return Manifest header information while this bundle is in the UNINSTALLED state,
         // however the header values must only be available in the raw and default locale values
-        if (getState() == Bundle.UNINSTALLED)
+        if (headersOnUninstall != null)
             return headersOnUninstall;
 
         return super.getHeaders(locale);
     }
 
     @Override
-    ServiceName getServiceName() {
-        return serviceName;
+    ServiceName getServiceName(int state) {
+        return serviceName.append(ConstantsHelper.bundleState(state));
     }
 
     void addRevision(UserBundleRevision rev) {
@@ -270,10 +269,15 @@ abstract class UserBundleState extends AbstractBundleState {
             }
         }
 
-        // Sent when the Framework detects that a bundle becomes unresolved; this could happen when the bundle is refreshed or
-        // updated.
+        // Sent when the Framework detects that a bundle becomes unresolved; T
+        // This could happen when the bundle is refreshed or updated.
         changeState(Bundle.INSTALLED, BundleEvent.UNRESOLVED);
 
+        // Deactivate the service that represents bundle state RESOLVED 
+        ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
+        ServiceController<?> controller = serviceContainer.getService(getServiceName(RESOLVED));
+        controller.setMode(Mode.NEVER);
+        
         try {
             // If the Framework is unable to install the updated version of this bundle, the original
             // version of this bundle must be restored and a BundleException must be thrown after
@@ -382,7 +386,6 @@ abstract class UserBundleState extends AbstractBundleState {
         return storageState;
     }
 
-
     /**
      * This method gets called by {@link PackageAdmin} when the bundle needs to be refreshed, this means that all the old
      * revisions are thrown out.
@@ -414,6 +417,11 @@ abstract class UserBundleState extends AbstractBundleState {
         resolverPlugin.addModule(currentRev.getResolverModule());
 
         changeState(Bundle.INSTALLED);
+        
+        // Deactivate the service that represents bundle state RESOLVED 
+        ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
+        ServiceController<?> controller = serviceContainer.getService(getServiceName(RESOLVED));
+        controller.setMode(Mode.NEVER);
     }
 
     @Override
@@ -427,5 +435,20 @@ abstract class UserBundleState extends AbstractBundleState {
         installHandler.uninstallBundle(getDeployment());
 
         log.infof("Bundle uninstalled: %s", this);
+    }
+
+    void removeServices() {
+        ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
+        ServiceController<?> controller = serviceContainer.getService(getServiceName(INSTALLED));
+        if (controller != null)
+            controller.setMode(Mode.REMOVE);
+        
+        controller = serviceContainer.getService(getServiceName(RESOLVED));
+        if (controller != null)
+            controller.setMode(Mode.REMOVE);
+        
+        controller = serviceContainer.getService(getServiceName(ACTIVE));
+        if (controller != null)
+            controller.setMode(Mode.REMOVE);
     }
 }

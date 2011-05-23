@@ -28,6 +28,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
+import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
@@ -56,8 +59,8 @@ final class HostBundleState extends UserBundleState {
     private BundleActivator bundleActivator;
     private int startLevel;
 
-    HostBundleState(FrameworkState frameworkState, long bundleId, String symbolicName) throws BundleException {
-        super(frameworkState, bundleId, symbolicName);
+    HostBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
+        super(frameworkState, bundleId, dep);
     }
 
     static HostBundleState assertBundleState(Bundle bundle) {
@@ -143,14 +146,11 @@ final class HostBundleState extends UserBundleState {
     @Override
     public Class<?> loadClass(String className) throws ClassNotFoundException {
         LazyActivationTracker.startTracking(this, className);
-        try
-        {
+        try {
             Class<?> loadedClass = super.loadClass(className);
             LazyActivationTracker.processLoadedClass(loadedClass);
             return loadedClass;
-        }
-        finally
-        {
+        } finally {
             LazyActivationTracker.stopTracking(this, className);
         }
     }
@@ -329,6 +329,11 @@ final class HostBundleState extends UserBundleState {
         // #11 A bundle event of type BundleEvent.STARTED is fired
         changeState(ACTIVE);
 
+        // Activate the service that represents bundle state ACTIVE 
+        ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
+        ServiceController<?> controller = serviceContainer.getService(getServiceName(ACTIVE));
+        controller.setMode(Mode.ACTIVE);
+
         log.infof("Bundle started: %s", this);
     }
 
@@ -401,6 +406,11 @@ final class HostBundleState extends UserBundleState {
             // #13 A bundle event of type BundleEvent.STOPPED is fired
             changeState(RESOLVED, BundleEvent.STOPPED);
 
+            // Activate the service that represents bundle state ACTIVE 
+            ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
+            ServiceController<?> controller = serviceContainer.getService(getServiceName(ACTIVE));
+            controller.setMode(Mode.NEVER);
+            
             log.infof("Bundle stopped: %s", this);
 
             if (rethrow != null)
