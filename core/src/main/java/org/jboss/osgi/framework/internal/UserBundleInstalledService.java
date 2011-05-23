@@ -41,17 +41,17 @@ import org.osgi.framework.BundleException;
 abstract class UserBundleInstalledService<T extends UserBundleState> extends AbstractBundleService<T> {
 
     private final Deployment initialDeployment;
-    private final long bundleId;
+    private final BundleId bundleId;
 
     private T bundleState;
     
-    UserBundleInstalledService(FrameworkState frameworkState, long bundleId, Deployment dep) {
+    UserBundleInstalledService(FrameworkState frameworkState, Deployment dep) {
         super(frameworkState);
+        this.bundleId = dep.getAttachment(BundleId.class);
         this.initialDeployment = dep;
-        this.bundleId = bundleId;
     }
     
-    long getBundleId() {
+    BundleId getBundleId() {
         return bundleId;
     }
 

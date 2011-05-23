@@ -59,7 +59,7 @@ final class HostBundleState extends UserBundleState {
     private BundleActivator bundleActivator;
     private int startLevel;
 
-    HostBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
+    HostBundleState(FrameworkState frameworkState, BundleId bundleId, Deployment dep) {
         super(frameworkState, bundleId, dep);
     }
 

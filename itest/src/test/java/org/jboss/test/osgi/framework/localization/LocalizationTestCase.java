@@ -47,7 +47,7 @@ public class LocalizationTestCase extends OSGiFrameworkTest {
     @Test
     @SuppressWarnings("unchecked")
     public void testHostLocalization() throws Exception {
-        Bundle host = installBundle(getSimpleHost());
+        Bundle host = installBundle(getHostArchive("simple-hostA"));
         assertBundleState(Bundle.INSTALLED, host.getState());
 
         // Test default locale
@@ -77,8 +77,8 @@ public class LocalizationTestCase extends OSGiFrameworkTest {
     @Test
     @SuppressWarnings("unchecked")
     public void testFragmentLocalization() throws Exception {
-        Bundle host = installBundle(getSimpleHost());
-        Bundle frag = installBundle(getSimpleFragment());
+        Bundle host = installBundle(getHostArchive("localization-hostB"));
+        Bundle frag = installBundle(getFragmentArchive("localization-hostB"));
 
         host.start();
         assertBundleState(Bundle.ACTIVE, host.getState());
@@ -101,11 +101,11 @@ public class LocalizationTestCase extends OSGiFrameworkTest {
         assertEquals("English Bundle Name", bundleName);
     }
 
-    private JavaArchive getSimpleHost() {
+    private JavaArchive getHostArchive(String hostName) {
         // Bundle-SymbolicName: localization-simple-host
         // Bundle-Name: %bundle-name
         // Include-Resource: OSGI-INF/l10n/bundle_en.properties=OSGI-INF/l10n/bundle_en.properties
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "localization-simple-host");
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, hostName);
         archive.addResource(getResourceFile("localization/OSGI-INF/l10n/bundle_en.properties"), "OSGI-INF/l10n/bundle_en.properties");
         archive.setManifest(new Asset() {
 
@@ -120,19 +120,18 @@ public class LocalizationTestCase extends OSGiFrameworkTest {
         return archive;
     }
 
-    private JavaArchive getSimpleFragment() {
+    private JavaArchive getFragmentArchive(final String hostName) {
         // Bundle-SymbolicName: localization-simple-frag
         // Fragment-Host: localization-simple-host
         // Include-Resource: OSGI-INF/l10n/bundle_de.properties=OSGI-INF/l10n/bundle_de.properties
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "localization-simple-frag");
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "localization-fragment");
         archive.addResource(getResourceFile("localization/OSGI-INF/l10n/bundle_de.properties"), "OSGI-INF/l10n/bundle_de.properties");
         archive.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
-                builder.addFragmentHost("localization-simple-host");
+                builder.addFragmentHost(hostName);
                 return builder.openStream();
             }
         });
