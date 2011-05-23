@@ -50,9 +50,8 @@ public final class FrameworkInit extends FrameworkService {
         FrameworkInit service = new FrameworkInit();
         ServiceBuilder<FrameworkService> builder = serviceTarget.addService(Services.FRAMEWORK_INIT, service);
         builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkService.class, service.injectedFramework);
+        builder.addDependencies(InternalServices.PERSISTENT_BUNDLES_INSTALLER, InternalServices.PERSISTENT_BUNDLES_INSTALLER_COMPLETE);
         builder.addDependency(InternalServices.CORE_SERVICES);
-        builder.addDependency(InternalServices.PERSISTENT_BUNDLES_INSTALLER);
-        builder.addDependency(InternalServices.PERSISTENT_BUNDLES_INSTALLER_COMPLETE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

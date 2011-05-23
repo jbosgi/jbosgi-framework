@@ -21,23 +21,11 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.Dictionary;
-import java.util.Enumeration;
-import java.util.Map;
-
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.Version;
 
 /**
  * Represents the INSTALLED state of a bundle.
@@ -45,17 +33,25 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class AbstractBundleService<T extends AbstractBundleState> implements Service<T>, Bundle {
+abstract class AbstractBundleService<T extends AbstractBundleState> implements Service<T> {
 
     // Provide logging
     static final Logger log = Logger.getLogger(AbstractBundleService.class);
 
-    private final T bundleState;
-
-    AbstractBundleService(T bundleState) {
-        this.bundleState = bundleState;
+    private final FrameworkState frameworkState;
+    
+    AbstractBundleService(FrameworkState frameworkState) {
+        this.frameworkState = frameworkState;
     }
 
+    FrameworkState getFrameworkState() {
+        return frameworkState;
+    }
+    
+    BundleManager getBundleManager() {
+        return frameworkState.getBundleManager();
+    }
+    
     @Override
     public void start(StartContext context) throws StartException {
         log.debugf("Starting: %s", context.getController().getName());
@@ -68,149 +64,8 @@ abstract class AbstractBundleService<T extends AbstractBundleState> implements S
     
     @Override
     public T getValue() {
-        return bundleState;
+        return getBundleState();
     }
 
-    T getBundleState() {
-        return bundleState;
-    }
-
-    BundleManager getBundleManager() {
-        return bundleState.getBundleManager();
-    }
-    
-    FrameworkState getFrameworkState() {
-        return bundleState.getFrameworkState();
-    }
-    
-    @Override
-    public int getState() {
-        return bundleState.getState();
-    }
-
-    @Override
-    public long getBundleId() {
-        return bundleState.getBundleId();
-    }
-
-    @Override
-    public String getLocation() {
-        return bundleState.getLocation();
-    }
-
-    @Override
-    public ServiceReference[] getRegisteredServices() {
-        return bundleState.getRegisteredServices();
-    }
-
-    @Override
-    public ServiceReference[] getServicesInUse() {
-        return bundleState.getServicesInUse();
-    }
-
-    @Override
-    public boolean hasPermission(Object permission) {
-        return bundleState.hasPermission(permission);
-    }
-
-    @Override
-    public URL getResource(String name) {
-        return bundleState.getResource(name);
-    }
-
-    @Override
-    public Dictionary<String, String> getHeaders() {
-        return bundleState.getHeaders();
-    }
-
-    @Override
-    public Dictionary<String, String> getHeaders(String locale) {
-        return bundleState.getHeaders(locale);
-    }
-
-    @Override
-    public String getSymbolicName() {
-        return bundleState.getSymbolicName();
-    }
-
-    @Override
-    public Class<?> loadClass(String name) throws ClassNotFoundException {
-        return bundleState.loadClass(name);
-    }
-
-    @Override
-    public Enumeration<URL> getResources(String name) throws IOException {
-        return bundleState.getResources(name);
-    }
-
-    @Override
-    public Enumeration<String> getEntryPaths(String path) {
-        return bundleState.getEntryPaths(path);
-    }
-
-    @Override
-    public URL getEntry(String path) {
-        return bundleState.getEntry(path);
-    }
-
-    @Override
-    public long getLastModified() {
-        return bundleState.getLastModified();
-    }
-
-    @Override
-    public Enumeration<URL> findEntries(String path, String filePattern, boolean recurse) {
-        return bundleState.findEntries(path, filePattern, recurse);
-    }
-
-    @Override
-    public BundleContext getBundleContext() {
-        return bundleState.getBundleContext();
-    }
-
-    @Override
-    @SuppressWarnings("rawtypes")
-    public Map getSignerCertificates(int signersType) {
-        return bundleState.getSignerCertificates(signersType);
-    }
-
-    @Override
-    public Version getVersion() {
-        return bundleState.getVersion();
-    }
-
-    @Override
-    public void start(int options) throws BundleException {
-        throw new UnsupportedOperationException("Not supported on the service object");
-    }
-
-    @Override
-    public void start() throws BundleException {
-        throw new UnsupportedOperationException("Not supported on the service object");
-    }
-
-    @Override
-    public void stop(int options) throws BundleException {
-        throw new UnsupportedOperationException("Not supported on the service object");
-    }
-
-    @Override
-    public void stop() throws BundleException {
-        throw new UnsupportedOperationException("Not supported on the service object");
-    }
-
-    @Override
-    public void update(InputStream input) throws BundleException {
-        throw new UnsupportedOperationException("Not supported on the service object");
-    }
-
-    @Override
-    public void update() throws BundleException {
-        throw new UnsupportedOperationException("Not supported on the service object");
-    }
-
-    @Override
-    public void uninstall() throws BundleException {
-        throw new UnsupportedOperationException("Not supported on the service object");
-    }
+    abstract T getBundleState();
 }

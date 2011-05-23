@@ -50,16 +50,7 @@ public class BundleClassPathTestCase extends OSGiFrameworkTest {
             assertLoadClass(bundle, A.class.getName(), bundle);
             assertLoadClass(bundle, B.class.getName(), bundle);
             assertLoadClass(bundle, CA.class.getName(), bundle);
-        } finally {
-            bundle.uninstall();
-        }
-    }
-
-    @Test
-    public void testEntries() throws Exception {
-        URL bundleURL = getTestArchiveURL("bundle-classpath.war");
-        Bundle bundle = installBundle(bundleURL.toExternalForm());
-        try {
+            
             URL url = bundle.getEntry("message.txt");
             assertEquals("/message.txt", url.getPath());
 

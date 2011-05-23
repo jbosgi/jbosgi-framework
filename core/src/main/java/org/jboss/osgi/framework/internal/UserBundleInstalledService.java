@@ -28,6 +28,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 
 
@@ -37,22 +38,30 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class UserBundleService<T extends UserBundleState> extends AbstractBundleService<T> {
+abstract class UserBundleInstalledService<T extends UserBundleState> extends AbstractBundleService<T> {
 
     private final Deployment initialDeployment;
+    private final long bundleId;
+
+    private T bundleState;
     
-    UserBundleService(T bundleState, Deployment dep) {
-        super(bundleState);
+    UserBundleInstalledService(FrameworkState frameworkState, long bundleId, Deployment dep) {
+        super(frameworkState);
         this.initialDeployment = dep;
+        this.bundleId = bundleId;
     }
     
+    long getBundleId() {
+        return bundleId;
+    }
+
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
+        Deployment dep = initialDeployment;
         BundleStorageState storageState = null;
         try {
-            T bundleState = getBundleState();
-            Deployment dep = initialDeployment;
+            bundleState = createBundleState(dep);
             dep.addAttachment(Bundle.class, bundleState);
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
             storageState = bundleState.createStorageState(dep);
@@ -62,13 +71,21 @@ abstract class UserBundleService<T extends UserBundleState> extends AbstractBund
             validateBundle(bundleState, metadata);
             processNativeCode(bundleState, dep);
             getBundleManager().addBundle(bundleState);
-            bundleState.changeState(INSTALLED);
+            bundleState.changeState(Bundle.INSTALLED, 0);
             addToResolver(bundleState);
+            bundleState.fireBundleEvent(BundleEvent.INSTALLED);
         } catch (BundleException ex) {
             if (storageState != null)
                 storageState.deleteBundleStorage();
             throw new StartException(ex);
         }
+    }
+
+    abstract T createBundleState(Deployment dep);
+
+    @Override
+    T getBundleState() {
+        return bundleState;
     }
 
     @Override
@@ -97,7 +114,8 @@ abstract class UserBundleService<T extends UserBundleState> extends AbstractBund
 
     private void addToResolver(UserBundleState userBundle) {
         if (userBundle.isSingleton()) {
-            for (AbstractBundleState aux : getBundleManager().getBundles(getSymbolicName(), null)) {
+            String symbolicName = getBundleState().getSymbolicName();
+            for (AbstractBundleState aux : getBundleManager().getBundles(symbolicName, null)) {
                 if (aux != userBundle && aux.isSingleton()) {
                     log.infof("No resolvable singleton bundle: %s", this);
                     return;

@@ -22,30 +22,35 @@
 package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.deployment.deployer.Deployment;
-import org.osgi.framework.BundleException;
+import org.jboss.msc.value.InjectedValue;
 
 /**
- * Represents the INSTALLED state of a host bundle.
+ * Represents the RESOLVED state of a fragment bundle.
  *
  * @author thomas.diesler@jboss.com
- * @since 06-Apr-2011
+ * @since 23-May-2011
  */
-final class HostBundleInstalled extends UserBundleService<HostBundleState> {
+final class FragmentBundleResolvedService extends UserBundleResolvedService<FragmentBundleState> {
 
-    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, long bundleId, Deployment dep) throws BundleException {
-        HostBundleState bundleState = new HostBundleState(frameworkState, bundleId, dep.getSymbolicName());
-        HostBundleInstalled service = new HostBundleInstalled(bundleState, dep);
-        ServiceName serviceName = bundleState.getServiceName();
-        ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, service);
-        builder.addDependency(InternalServices.CORE_SERVICES);
+    private final InjectedValue<FragmentBundleState> injectedBundleState = new InjectedValue<FragmentBundleState>();
+    
+    static void addService(ServiceTarget serviceTarget, FrameworkState frameworkState, ServiceName serviceName) {
+        FragmentBundleResolvedService service = new FragmentBundleResolvedService(frameworkState);
+        ServiceBuilder<FragmentBundleState> builder = serviceTarget.addService(serviceName.append("RESOLVED"), service);
+        builder.addDependency(serviceName.append("INSTALLED"), FragmentBundleState.class, service.injectedBundleState);
+        builder.setInitialMode(Mode.NEVER);
         builder.install();
-        return serviceName;
     }
 
-    private HostBundleInstalled(HostBundleState bundleState, Deployment dep) throws BundleException {
-        super(bundleState, dep);
+    private FragmentBundleResolvedService(FrameworkState frameworkState) {
+        super(frameworkState);
+    }
+
+    @Override
+    FragmentBundleState getBundleState() {
+        return injectedBundleState.getValue();
     }
 }
