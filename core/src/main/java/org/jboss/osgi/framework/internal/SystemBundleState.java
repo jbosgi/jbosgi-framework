@@ -42,7 +42,7 @@ import org.osgi.framework.Version;
 
 /**
  * Represents the state of the system {@link Bundle}.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
@@ -56,13 +56,13 @@ final class SystemBundleState extends AbstractBundleState {
     private SystemBundleRevision revision;
 
     SystemBundleState(FrameworkState frameworkState, FrameworkModuleProvider frameworkModuleProvider) {
-        super(frameworkState, new BundleId(0), Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+        super(frameworkState, 0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
         this.frameworkModuleProvider = frameworkModuleProvider;
     }
 
     /**
      * Assert that the given bundle is an instance of {@link UserBundleState}
-     * 
+     *
      * @throws IllegalArgumentException if the given bundle is not an instance of {@link UserBundleState}
      */
     static SystemBundleState assertBundleState(Bundle bundle) {

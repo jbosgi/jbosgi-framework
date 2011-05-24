@@ -75,7 +75,7 @@ abstract class AbstractBundleState implements Bundle {
     // Provide logging
     static final Logger log = Logger.getLogger(AbstractBundleState.class);
 
-    private final BundleId bundleId;
+    private final long bundleId;
     private final String symbolicName;
     private final FrameworkState frameworkState;
     private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
@@ -84,7 +84,7 @@ abstract class AbstractBundleState implements Bundle {
     private AbstractBundleContext bundleContext;
     private Bundle bundleWrapper;
 
-    AbstractBundleState(FrameworkState frameworkState, BundleId bundleId, String symbolicName) {
+    AbstractBundleState(FrameworkState frameworkState, long bundleId, String symbolicName) {
         if (frameworkState == null)
             throw new IllegalStateException("Null frameworkState");
 
@@ -120,7 +120,7 @@ abstract class AbstractBundleState implements Bundle {
 
     @Override
     public long getBundleId() {
-        return bundleId.longValue();
+        return bundleId;
     }
 
     @Override
@@ -190,7 +190,7 @@ abstract class AbstractBundleState implements Bundle {
 
         // Invoke the lifecycle interceptors
         boolean frameworkActive = getBundleManager().isFrameworkActive();
-        if (frameworkActive && bundleId.longValue() > 0) {
+        if (frameworkActive && bundleId > 0) {
             LifecycleInterceptorPlugin plugin = getCoreServices().getLifecycleInterceptorPlugin();
             plugin.handleStateChange(state, this);
         }
@@ -549,7 +549,7 @@ abstract class AbstractBundleState implements Bundle {
     abstract void uninstallInternal() throws BundleException;
 
     boolean ensureResolved(boolean fireEvent) {
-        
+
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired
         // containing a BundleException with details of the reason this bundle could not be resolved.
@@ -561,12 +561,12 @@ abstract class AbstractBundleState implements Bundle {
             try {
                 ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
                 resolverPlugin.resolve(resModule);
-                
-                // Activate the service that represents bundle state RESOLVED 
+
+                // Activate the service that represents bundle state RESOLVED
                 ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
                 ServiceController<?> controller = serviceContainer.getService(getServiceName(RESOLVED));
                 controller.setMode(Mode.ACTIVE);
-                
+
                 return true;
             } catch (BundleException ex) {
                 if (fireEvent == true) {

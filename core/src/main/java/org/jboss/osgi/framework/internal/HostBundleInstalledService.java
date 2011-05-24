@@ -50,6 +50,7 @@ final class HostBundleInstalledService extends UserBundleInstalledService<HostBu
 
     @Override
     HostBundleState createBundleState(Deployment dep) {
-        return new HostBundleState(getFrameworkState(), getBundleId(), dep);
+        long bundleId = dep.getAttachment(BundleId.class).longValue();
+        return new HostBundleState(getFrameworkState(), bundleId, dep);
     }
 }
