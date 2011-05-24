@@ -34,6 +34,9 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
@@ -94,7 +97,6 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     }
 
     private PackageAdminPlugin() {
-        super("PackageAdmin");
     }
 
     @Override
@@ -113,6 +115,19 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     @Override
     public PackageAdminPlugin getValue() {
         return this;
+    }
+
+    @Override
+    ExecutorService createExecutorService() {
+        return Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable run) {
+                Thread thread = new Thread(run);
+                thread.setName("OSGi PackageAdmin refresh Thread");
+                thread.setDaemon(true);
+                return thread;
+            }
+        });
     }
 
     @Override
