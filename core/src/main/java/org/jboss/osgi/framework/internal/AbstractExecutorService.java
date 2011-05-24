@@ -22,9 +22,6 @@
 package org.jboss.osgi.framework.internal;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -40,26 +37,11 @@ import org.jboss.msc.service.StopContext;
 abstract class AbstractExecutorService<T> extends AbstractPluginService<T> {
 
     private ExecutorService executorService;
-    private AtomicInteger threadCount = new AtomicInteger();
-    private String typeName;
 
-    AbstractExecutorService(String executorType) {
-        this.typeName = executorType;
-    }
-
-    
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        executorService = Executors.newCachedThreadPool(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable run) {
-                Thread thread = new Thread(run);
-                thread.setName(String.format("OSGi " + typeName + " Thread-%d", threadCount.incrementAndGet()));
-                thread.setDaemon(true);
-                return thread;
-            }
-        });
+        executorService = createExecutorService();
     }
 
     @Override
@@ -67,6 +49,8 @@ abstract class AbstractExecutorService<T> extends AbstractPluginService<T> {
         super.stop(context);
         executorService.shutdown();
     }
+
+    abstract ExecutorService createExecutorService();
 
     ExecutorService getExecutorService() {
         return executorService;

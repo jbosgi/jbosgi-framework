@@ -22,6 +22,9 @@
 package org.jboss.osgi.framework.internal;
 
 import java.util.Collection;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
@@ -71,7 +74,6 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
     }
 
     private StartLevelPlugin() {
-        super("StartLevel");
     }
 
     @Override
@@ -91,6 +93,19 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
     @Override
     public StartLevelPlugin getValue() {
         return this;
+    }
+
+    @Override
+    ExecutorService createExecutorService() {
+        return Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable run) {
+                Thread thread = new Thread(run);
+                thread.setName("OSGi StartLevel Thread");
+                thread.setDaemon(true);
+                return thread;
+            }
+        });
     }
 
     @Override

@@ -35,14 +35,17 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.util.NoFilter;
 import org.jboss.osgi.framework.util.RemoveOnlyCollection;
@@ -72,7 +75,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEventsPlugin> {
+final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsPlugin> {
 
     // Provide logging
     final Logger log = Logger.getLogger(FrameworkEventsPlugin.class);
@@ -92,6 +95,9 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
     /** The set of events that are logged at INFO level */
     private Set<String> infoEvents = new HashSet<String>();
 
+    private final ExecutorService bundleEventExecutor;
+    private final ExecutorService frameworkEventExecutor;
+    
     static void addService(ServiceTarget serviceTarget) {
         FrameworkEventsPlugin service = new FrameworkEventsPlugin();
         ServiceBuilder<FrameworkEventsPlugin> builder = serviceTarget.addService(InternalServices.FRAMEWORK_EVENTS_PLUGIN, service);
@@ -102,7 +108,6 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
     }
 
     private FrameworkEventsPlugin() {
-        super("Event");
         asyncBundleEvents.add(new Integer(BundleEvent.INSTALLED));
         asyncBundleEvents.add(new Integer(BundleEvent.RESOLVED));
         asyncBundleEvents.add(new Integer(BundleEvent.STARTED));
@@ -118,6 +123,25 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.STARTED));
         infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.STOPPED));
         infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.UNINSTALLED));
+
+        bundleEventExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable run) {
+                Thread thread = new Thread(run);
+                thread.setName("OSGi BundleEvent Thread");
+                thread.setDaemon(true);
+                return thread;
+            }
+        });
+        frameworkEventExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable run) {
+                Thread thread = new Thread(run);
+                thread.setName("OSGi FrameworkEvent Thread");
+                thread.setDaemon(true);
+                return thread;
+            }
+        });
     }
 
     @Override
@@ -383,7 +407,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         };
 
         // Fire the event in a runnable
-        fireEvent(runnable);
+        bundleEventExecutor.execute(runnable);
     }
 
     void fireFrameworkEvent(final AbstractBundleState bundleState, final int type, final Throwable th) {
@@ -445,7 +469,7 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
         };
 
         // Fire the event in a runnable
-        fireEvent(runnable);
+        frameworkEventExecutor.execute(runnable);
     }
 
     void fireServiceEvent(final AbstractBundleState bundleState, int type, final ServiceState serviceState) {
@@ -570,10 +594,6 @@ final class FrameworkEventsPlugin extends AbstractExecutorService<FrameworkEvent
                 hooks.add((EventHook) systemContext.getService(sref));
         }
         return hooks;
-    }
-
-    private void fireEvent(Runnable runnable) {
-        getExecutorService().execute(runnable);
     }
 
     /**
