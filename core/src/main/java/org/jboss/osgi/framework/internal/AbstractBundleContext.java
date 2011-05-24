@@ -36,6 +36,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallProvider;
+import org.jboss.osgi.framework.FutureServiceValue;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
