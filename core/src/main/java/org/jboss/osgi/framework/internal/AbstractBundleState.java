@@ -64,8 +64,8 @@ import org.osgi.framework.Version;
 /**
  * An abstract representation of a {@link Bundle} state.
  *
- * It is used by the various {@link AbstractBundleService}s as well as the {@link BundleProxy}s.
- * The state is never given to the client.
+ * It is used by the various {@link AbstractBundleService}s as well as the {@link BundleProxy}s. The state is never given to the
+ * client.
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
@@ -565,7 +565,8 @@ abstract class AbstractBundleState implements Bundle {
                 // Activate the service that represents bundle state RESOLVED
                 ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
                 ServiceController<?> controller = serviceContainer.getService(getServiceName(RESOLVED));
-                controller.setMode(Mode.ACTIVE);
+                if (controller != null)
+                    controller.setMode(Mode.ACTIVE);
 
                 return true;
             } catch (BundleException ex) {
@@ -593,6 +594,7 @@ abstract class AbstractBundleState implements Bundle {
 
     /**
      * Assert that the given bundle is an instance of AbstractBundleState
+     *
      * @throws IllegalArgumentException if the given bundle is not an instance of AbstractBundleState
      */
     static AbstractBundleState assertBundleState(Bundle bundle) {

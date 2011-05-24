@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework.internal;
+package org.jboss.osgi.framework;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -43,13 +43,13 @@ import org.jboss.msc.service.StartException;
  * @author thomas.diesler@jboss.com
  * @since 29-Mar-2011
  */
-final class FutureServiceValue<T> implements Future<T> {
+public final class FutureServiceValue<T> implements Future<T> {
 
     private static final Logger log = Logger.getLogger(FutureServiceValue.class);
 
     private ServiceController<T> controller;
 
-    FutureServiceValue(ServiceController<T> controller) {
+    public FutureServiceValue(ServiceController<T> controller) {
         if (controller == null)
             throw new IllegalArgumentException("Null controller");
         this.controller = controller;

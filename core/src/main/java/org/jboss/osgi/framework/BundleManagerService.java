@@ -38,8 +38,11 @@ import org.osgi.framework.BundleException;
  */
 public interface BundleManagerService extends Service<BundleManagerService> {
 
+    /**
+     * Get the service base name for the given bundle.
+     */
     ServiceName getServiceName(Bundle bundle);
-    
+
     /**
      * Install a bundle from the given deployment
      */

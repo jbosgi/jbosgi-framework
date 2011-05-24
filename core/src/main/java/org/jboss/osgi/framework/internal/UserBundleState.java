@@ -83,6 +83,7 @@ abstract class UserBundleState extends AbstractBundleState {
 
     /**
      * Assert that the given bundle is an instance of {@link UserBundleState}
+     *
      * @throws IllegalArgumentException if the given bundle is not an instance of {@link UserBundleState}
      */
     static UserBundleState assertBundleState(Bundle bundle) {
@@ -276,7 +277,8 @@ abstract class UserBundleState extends AbstractBundleState {
         // Deactivate the service that represents bundle state RESOLVED
         ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
         ServiceController<?> controller = serviceContainer.getService(getServiceName(RESOLVED));
-        controller.setMode(Mode.NEVER);
+        if (controller != null)
+            controller.setMode(Mode.NEVER);
 
         try {
             // If the Framework is unable to install the updated version of this bundle, the original
@@ -421,7 +423,8 @@ abstract class UserBundleState extends AbstractBundleState {
         // Deactivate the service that represents bundle state RESOLVED
         ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
         ServiceController<?> controller = serviceContainer.getService(getServiceName(RESOLVED));
-        controller.setMode(Mode.NEVER);
+        if (controller != null)
+            controller.setMode(Mode.NEVER);
     }
 
     @Override

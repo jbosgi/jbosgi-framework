@@ -46,6 +46,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.FutureServiceValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
