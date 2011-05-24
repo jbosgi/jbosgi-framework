@@ -59,7 +59,7 @@ final class HostBundleState extends UserBundleState {
     private BundleActivator bundleActivator;
     private int startLevel;
 
-    HostBundleState(FrameworkState frameworkState, BundleId bundleId, Deployment dep) {
+    HostBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
         super(frameworkState, bundleId, dep);
     }
 
@@ -329,7 +329,7 @@ final class HostBundleState extends UserBundleState {
         // #11 A bundle event of type BundleEvent.STARTED is fired
         changeState(ACTIVE);
 
-        // Activate the service that represents bundle state ACTIVE 
+        // Activate the service that represents bundle state ACTIVE
         ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
         ServiceController<?> controller = serviceContainer.getService(getServiceName(ACTIVE));
         controller.setMode(Mode.ACTIVE);
@@ -406,11 +406,11 @@ final class HostBundleState extends UserBundleState {
             // #13 A bundle event of type BundleEvent.STOPPED is fired
             changeState(RESOLVED, BundleEvent.STOPPED);
 
-            // Activate the service that represents bundle state ACTIVE 
+            // Activate the service that represents bundle state ACTIVE
             ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
             ServiceController<?> controller = serviceContainer.getService(getServiceName(ACTIVE));
             controller.setMode(Mode.NEVER);
-            
+
             log.infof("Bundle stopped: %s", this);
 
             if (rethrow != null)

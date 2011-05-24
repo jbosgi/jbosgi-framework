@@ -36,7 +36,7 @@ import org.osgi.framework.BundleException;
  */
 final class FragmentBundleState extends UserBundleState {
 
-    FragmentBundleState(FrameworkState frameworkState, BundleId bundleId, Deployment dep) {
+    FragmentBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
         super(frameworkState, bundleId, dep);
     }
 

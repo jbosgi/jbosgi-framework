@@ -50,6 +50,7 @@ final class FragmentBundleInstalledService extends UserBundleInstalledService<Fr
 
     @Override
     FragmentBundleState createBundleState(Deployment dep) {
-        return new FragmentBundleState(getFrameworkState(), getBundleId(), dep);
+        long bundleId = dep.getAttachment(BundleId.class).longValue();
+        return new FragmentBundleState(getFrameworkState(), bundleId, dep);
     }
 }

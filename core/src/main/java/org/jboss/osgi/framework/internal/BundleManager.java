@@ -235,7 +235,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
 
     private static ServiceName getServiceNameInternal(long bundleId, String symbolicName, Version version) {
         // Currently the bundleId is needed for uniqueness because of
-        // [MSC-97] Cannot re-install service with same name 
+        // [MSC-97] Cannot re-install service with same name
         return ServiceName.of(BUNDLE_BASE_NAME, "" + bundleId, "" + symbolicName, "" + version);
     }
 
@@ -363,8 +363,8 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
             try {
                 // The storage state exists when we re-create the bundle from persistent storage
                 BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
-                BundleId bundleId = new BundleId(storageState != null ? storageState.getBundleId() : getNextBundleId());
-                dep.addAttachment(BundleId.class, bundleId);
+                long bundleId = storageState != null ? storageState.getBundleId() : getNextBundleId();
+                dep.addAttachment(BundleId.class, new BundleId(bundleId));
 
                 // Check that we have valid metadata
                 OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);

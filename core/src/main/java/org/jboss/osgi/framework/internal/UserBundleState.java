@@ -76,7 +76,7 @@ abstract class UserBundleState extends AbstractBundleState {
     private Dictionary<String, String> headersOnUninstall;
     private BundleStorageState storageState;
 
-    UserBundleState(FrameworkState frameworkState, BundleId bundleId, Deployment dep) {
+    UserBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
         super(frameworkState, bundleId, dep.getSymbolicName());
         this.serviceName = BundleManager.getServiceName(dep);
     }
@@ -273,11 +273,11 @@ abstract class UserBundleState extends AbstractBundleState {
         // This could happen when the bundle is refreshed or updated.
         changeState(Bundle.INSTALLED, BundleEvent.UNRESOLVED);
 
-        // Deactivate the service that represents bundle state RESOLVED 
+        // Deactivate the service that represents bundle state RESOLVED
         ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
         ServiceController<?> controller = serviceContainer.getService(getServiceName(RESOLVED));
         controller.setMode(Mode.NEVER);
-        
+
         try {
             // If the Framework is unable to install the updated version of this bundle, the original
             // version of this bundle must be restored and a BundleException must be thrown after
@@ -417,8 +417,8 @@ abstract class UserBundleState extends AbstractBundleState {
         resolverPlugin.addModule(currentRev.getResolverModule());
 
         changeState(Bundle.INSTALLED);
-        
-        // Deactivate the service that represents bundle state RESOLVED 
+
+        // Deactivate the service that represents bundle state RESOLVED
         ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
         ServiceController<?> controller = serviceContainer.getService(getServiceName(RESOLVED));
         controller.setMode(Mode.NEVER);
@@ -442,11 +442,11 @@ abstract class UserBundleState extends AbstractBundleState {
         ServiceController<?> controller = serviceContainer.getService(getServiceName(INSTALLED));
         if (controller != null)
             controller.setMode(Mode.REMOVE);
-        
+
         controller = serviceContainer.getService(getServiceName(RESOLVED));
         if (controller != null)
             controller.setMode(Mode.REMOVE);
-        
+
         controller = serviceContainer.getService(getServiceName(ACTIVE));
         if (controller != null)
             controller.setMode(Mode.REMOVE);
