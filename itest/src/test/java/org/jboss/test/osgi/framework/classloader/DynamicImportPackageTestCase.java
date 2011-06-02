@@ -29,22 +29,24 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.classloader.support.a.A;
+import org.jboss.test.osgi.framework.classloader.support.a.NonExistingResourceLoadingActivator;
 import org.jboss.test.osgi.framework.classloader.support.b.B;
 import org.jboss.test.osgi.framework.classloader.support.c.C;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 
 /**
  * Test the DynamicImport-Package manifest header.
- * 
+ *
  * @author thomas.diesler@jboss.com
+ * @author David Bosschaert
  * @since 26-Mar-2010
  */
 public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
-
     @Test
     public void testAllPackagesWildcard() throws Exception {
-        
+
         // Bundle-SymbolicName: dynamic-wildcard-a
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a
         // Import-Package: org.jboss.test.osgi.framework.classloader.support.b
@@ -103,7 +105,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testAllPackagesWildcardNotWired() throws Exception {
-        
+
         // Bundle-SymbolicName: dynamic-wildcard-a
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a
         // DynamicImport-Package: *
@@ -157,7 +159,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testAllPackagesWildcardNotThere() throws Exception {
-        
+
         // Bundle-SymbolicName: dynamic-wildcard-a
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a
         // DynamicImport-Package: *
@@ -190,7 +192,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testPackageWildcardWired() throws Exception {
-        
+
         // Bundle-SymbolicName: dynamic-wildcard-a
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a
         // Import-Package: org.jboss.test.osgi.framework.classloader.support.b
@@ -249,7 +251,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testPackageWildcardNotWired() throws Exception {
-        
+
         // Bundle-SymbolicName: dynamic-wildcard-a
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a
         // DynamicImport-Package: org.jboss.test.osgi.framework.classloader.*
@@ -303,7 +305,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testPackageWildcardNotThere() throws Exception {
-        
+
         // Bundle-SymbolicName: dynamic-wildcard-a
         // Export-Package: org.jboss.test.osgi.framework.classloader.support.a
         // DynamicImport-Package: org.jboss.test.osgi.framework.classloader.*
@@ -336,7 +338,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testBundleSymbolicNameDirective() throws Exception {
-        
+
         final JavaArchive archiveA = ShrinkWrap.create(JavaArchive.class, "tb8a");
         archiveA.addClasses(A.class);
         archiveA.setManifest(new Asset() {
@@ -348,7 +350,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
                 return builder.openStream();
             }
         });
-        
+
         final JavaArchive archiveB = ShrinkWrap.create(JavaArchive.class, "tb8b");
         archiveB.addClasses(A.class);
         archiveB.setManifest(new Asset() {
@@ -360,7 +362,7 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
                 return builder.openStream();
             }
         });
-        
+
         final JavaArchive archiveC = ShrinkWrap.create(JavaArchive.class, "tb17c");
         archiveC.setManifest(new Asset() {
             public InputStream openStream() {
@@ -375,13 +377,13 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
 
         Bundle bundleA = installBundle(archiveA);
         assertLoadClass(bundleA, A.class.getName(), bundleA);
-        
+
         Bundle bundleB = installBundle(archiveB);
         assertLoadClass(bundleB, A.class.getName(), bundleB);
-        
+
         Bundle bundleC = installBundle(archiveC);
         assertLoadClass(bundleC, A.class.getName(), bundleB);
-        
+
         bundleA.uninstall();
         bundleB.uninstall();
         bundleC.uninstall();
@@ -389,15 +391,45 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
         // Reverse the order of installed bundles
         bundleB = installBundle(archiveB);
         assertLoadClass(bundleB, A.class.getName(), bundleB);
-        
+
         bundleA = installBundle(archiveA);
         assertLoadClass(bundleA, A.class.getName(), bundleA);
-        
+
         bundleC = installBundle(archiveC);
         assertLoadClass(bundleC, A.class.getName(), bundleB);
-        
+
         bundleA.uninstall();
         bundleB.uninstall();
         bundleC.uninstall();
+    }
+
+    @Test
+    public void testResourceLookupNoPath() throws Exception {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "resource-no-path");
+        archive.addClass(NonExistingResourceLoadingActivator.class);
+        archive.setManifest(new Asset() {
+            @Override
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleActivator(NonExistingResourceLoadingActivator.class);
+                builder.addImportPackages(BundleActivator.class);
+                builder.addDynamicImportPackages("*");
+                return builder.openStream();
+            }
+        });
+
+        Bundle bundle = installBundle(archive);
+        try {
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+
+            bundle.start();
+            // The activator performs a resource lookup
+            assertBundleState(Bundle.ACTIVE, bundle.getState());
+        } finally {
+            bundle.uninstall();
+            assertBundleState(Bundle.UNINSTALLED, bundle.getState());
+        }
     }
 }

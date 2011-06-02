@@ -44,8 +44,9 @@ import org.osgi.framework.Bundle;
 
 /**
  * A fallback loader that takes care of dynamic class/resource loads.
- * 
+ *
  * @author thomas.diesler@jboss.com
+ * @author David Bosschaert
  * @since 29-Jun-2010
  */
 final class HostBundleFallbackLoader implements LocalLoader {
@@ -115,8 +116,11 @@ final class HostBundleFallbackLoader implements LocalLoader {
     }
 
     private Module findModuleDynamically(String resName, List<XPackageRequirement> matchingPatterns) {
+        int idx = resName.lastIndexOf('/');
+        if (idx < 0)
+            return null;
 
-        String path = resName.substring(0, resName.lastIndexOf('/'));
+        String path = resName.substring(0, idx);
         if (importedPaths.contains(path))
             return null;
 
