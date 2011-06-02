@@ -22,10 +22,15 @@
 package org.jboss.test.osgi.framework.classloader;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.Arrays;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.test.osgi.framework.classloader.support.a.A;
@@ -36,7 +41,7 @@ import org.osgi.framework.Bundle;
 
 /**
  * BundleClassPathTest.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 07-Oct-2009
  */
@@ -50,7 +55,7 @@ public class BundleClassPathTestCase extends OSGiFrameworkTest {
             assertLoadClass(bundle, A.class.getName(), bundle);
             assertLoadClass(bundle, B.class.getName(), bundle);
             assertLoadClass(bundle, CA.class.getName(), bundle);
-            
+
             URL url = bundle.getEntry("message.txt");
             assertEquals("/message.txt", url.getPath());
 
@@ -60,4 +65,50 @@ public class BundleClassPathTestCase extends OSGiFrameworkTest {
             bundle.uninstall();
         }
     }
+
+    @Test
+    public void testGetJarResource() throws Exception {
+        URL bundleURL = getTestArchiveURL("bundle-classpath.war");
+        Bundle bundle = installBundle(bundleURL.toExternalForm());
+        try {
+            URL compareURL = getTestArchiveURL("bundle-classpath-c.jar");
+            byte[] compareBytes = suck(compareURL.openStream());
+            assertTrue("Precondition", compareBytes.length > 0);
+
+            URL jarURL = bundle.getResource("bundle-classpath-c.jar");
+            byte[] actualBytes = suck(jarURL.openStream());
+            assertTrue("Returned bytes should be the same", Arrays.equals(compareBytes, actualBytes));
+
+            // TODO also check that the jar: url works on the URL returned
+        } finally {
+            bundle.uninstall();
+        }
+    }
+
+    private static byte[] suck(InputStream is) throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            byte[] bytes = new byte[8192];
+
+            int length = 0;
+            int offset = 0;
+
+            while ((length = is.read(bytes, offset, bytes.length - offset)) != -1) {
+                offset += length;
+
+                if (offset == bytes.length) {
+                    baos.write(bytes, 0, bytes.length);
+                    offset = 0;
+                }
+            }
+            if (offset != 0) {
+                baos.write(bytes, 0, offset);
+            }
+
+            return baos.toByteArray();
+        } finally {
+            is.close();
+        }
+    }
+
 }
