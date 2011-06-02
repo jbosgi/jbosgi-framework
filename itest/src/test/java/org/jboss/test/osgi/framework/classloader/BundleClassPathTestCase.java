@@ -43,6 +43,7 @@ import org.osgi.framework.Bundle;
  * BundleClassPathTest.
  *
  * @author thomas.diesler@jboss.com
+ * @author David Bosschaert
  * @since 07-Oct-2009
  */
 public class BundleClassPathTestCase extends OSGiFrameworkTest {
@@ -71,15 +72,19 @@ public class BundleClassPathTestCase extends OSGiFrameworkTest {
         URL bundleURL = getTestArchiveURL("bundle-classpath.war");
         Bundle bundle = installBundle(bundleURL.toExternalForm());
         try {
-            URL compareURL = getTestArchiveURL("bundle-classpath-c.jar");
-            byte[] compareBytes = suck(compareURL.openStream());
-            assertTrue("Precondition", compareBytes.length > 0);
-
             URL jarURL = bundle.getResource("bundle-classpath-c.jar");
-            byte[] actualBytes = suck(jarURL.openStream());
-            assertTrue("Returned bytes should be the same", Arrays.equals(compareBytes, actualBytes));
+            byte[] jarBytes = suck(jarURL.openStream());
+            assertTrue(jarBytes.length > 0);
 
-            // TODO also check that the jar: url works on the URL returned
+            URL compareURL = getTestArchiveURL("bundle-classpath-c.jar");
+            assertTrue("Precondition", !compareURL.equals(jarURL));
+            URL compareClsURL = new URL("jar:" + compareURL + "!/org/jboss/test/osgi/framework/classloader/support/c/CA.class");
+            byte[] compareClsBytes = suck(compareClsURL.openStream());
+            assertTrue("precondition", compareClsBytes.length > 0);
+
+            URL actClsURL = new URL("jar:" + jarURL + "!/org/jboss/test/osgi/framework/classloader/support/c/CA.class");
+            byte[] actualClsBytes = suck(actClsURL.openStream());
+            assertTrue(Arrays.equals(compareClsBytes, actualClsBytes));
         } finally {
             bundle.uninstall();
         }

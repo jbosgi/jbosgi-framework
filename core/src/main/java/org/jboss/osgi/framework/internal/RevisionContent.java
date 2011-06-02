@@ -35,7 +35,7 @@ import org.jboss.osgi.vfs.VirtualFile;
 
 /**
  * An abstraction for the revision content
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 13-Jan-2011
@@ -168,11 +168,11 @@ final class RevisionContent implements EntriesProvider {
             protected URLConnection openConnection(URL url) throws IOException {
                 String path = url.getPath();
                 VirtualFile real = (orgPath.equals(path) ? child : virtualFile.getChild(path));
-                return real.toURL().openConnection();
+                return real.getStreamURL().openConnection();
             }
 
             // [TODO] overwrite hashCode for to prevent host address resolution
-            // when offline the BundleEntriesTestCase is slow because of this 
+            // when offline the BundleEntriesTestCase is slow because of this
         };
 
         String rootPath = virtualFile.getPathName();
