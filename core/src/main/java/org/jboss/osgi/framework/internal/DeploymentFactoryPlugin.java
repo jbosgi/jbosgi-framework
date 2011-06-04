@@ -28,8 +28,8 @@ import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
@@ -111,16 +111,24 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
             throw new IllegalArgumentException("Null module");
 
         // Get the symbolic name and version
-        ModuleIdentifier identifier = module.getIdentifier();
-        String symbolicName = identifier.getName();
+        String symbolicName;
         Version version;
-        try {
-            version = Version.parseVersion(identifier.getSlot());
-        } catch (IllegalArgumentException ex) {
-            version = Version.emptyVersion;
+        if (metadata == null) {
+            ModuleIdentifier identifier = module.getIdentifier();
+            symbolicName = identifier.getName();
+            try {
+                version = Version.parseVersion(identifier.getSlot());
+            } catch (IllegalArgumentException ex) {
+                version = Version.emptyVersion;
+            }
+        } else
+        {
+            symbolicName = metadata.getBundleSymbolicName();
+            version = metadata.getBundleVersion();
         }
 
-        Deployment dep = DeploymentFactory.createDeployment(identifier.toString(), symbolicName, version);
+        String location = module.getIdentifier().toString();
+        Deployment dep = DeploymentFactory.createDeployment(location, symbolicName, version);
 
         ResolverPlugin resolverPlugin = injectedResolver.getValue();
         XModuleBuilder builder = resolverPlugin.getModuleBuilder();

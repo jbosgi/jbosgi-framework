@@ -51,7 +51,7 @@ final class WebXMLVerifierInterceptor extends AbstractPluginService<WebXMLVerifi
 
     // Provide logging
     static final Logger log = Logger.getLogger(WebXMLVerifierInterceptor.class);
-    
+
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private LifecycleInterceptor delegate;
     private ServiceRegistration registration;
