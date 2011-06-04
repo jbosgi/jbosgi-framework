@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
@@ -39,7 +40,7 @@ abstract class AbstractBundleService<T extends AbstractBundleState> implements S
     static final Logger log = Logger.getLogger(AbstractBundleService.class);
 
     private final FrameworkState frameworkState;
-    
+
     AbstractBundleService(FrameworkState frameworkState) {
         this.frameworkState = frameworkState;
     }
@@ -47,21 +48,23 @@ abstract class AbstractBundleService<T extends AbstractBundleState> implements S
     FrameworkState getFrameworkState() {
         return frameworkState;
     }
-    
+
     BundleManager getBundleManager() {
         return frameworkState.getBundleManager();
     }
-    
+
     @Override
     public void start(StartContext context) throws StartException {
-        log.debugf("Starting: %s", context.getController().getName());
+        ServiceController<?> controller = context.getController();
+        log.debugf("Starting: %s in mode %s", controller.getName(), controller.getMode());
     }
 
     @Override
     public void stop(StopContext context) {
-        log.debugf("Stopping: %s", context.getController().getName());
+        ServiceController<?> controller = context.getController();
+        log.debugf("Stopping: %s in mode %s", controller.getName(), controller.getMode());
     }
-    
+
     @Override
     public T getValue() {
         return getBundleState();

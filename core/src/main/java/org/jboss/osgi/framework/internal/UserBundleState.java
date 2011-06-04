@@ -38,8 +38,8 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallProvider;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -433,14 +433,21 @@ abstract class UserBundleState extends AbstractBundleState {
         assertNotUninstalled();
         headersOnUninstall = getHeaders(null);
 
+        Deployment deployment = getDeployment();
+
         // Uninstall through the {@link BundleInstallProvider}
         BundleInstallProvider installHandler = getCoreServices().getInstallHandler();
-        installHandler.uninstallBundle(getDeployment());
+        installHandler.uninstallBundle(deployment);
+
+        // Always uninstall from the bundle manager
+        BundleManager bundleManager = getBundleManager();
+        bundleManager.uninstallBundle(deployment);
 
         log.infof("Bundle uninstalled: %s", this);
     }
 
     void removeServices() {
+        log.debugf("Remove services for: %s", this);
         ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
         ServiceController<?> controller = serviceContainer.getService(getServiceName(INSTALLED));
         if (controller != null)

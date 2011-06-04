@@ -299,6 +299,13 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         return null;
     }
 
+    @Override
+    public Bundle getBundle(ModuleIdentifier identifier) {
+        ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
+        AbstractBundleState bundleState = moduleManager.getBundleState(identifier);
+        return bundleState != null ? bundleState.getBundleWrapper() : null;
+    }
+
     /**
      * Get the set of bundles with the given symbolic name and version
      *
@@ -340,7 +347,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     }
 
     @Override
-    public ServiceName installBundle(ServiceTarget serviceTarget, Module module, OSGiMetaData metadata) throws BundleException {
+    public ServiceName registerModule(ServiceTarget serviceTarget, Module module, OSGiMetaData metadata) throws BundleException {
         DeploymentFactoryPlugin plugin = getFrameworkState().getDeploymentFactoryPlugin();
         Deployment dep = plugin.createDeployment(module, metadata);
         plugin.createOSGiMetaData(dep);
@@ -407,15 +414,15 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     }
 
     @Override
-    public void uninstallBundle(Module module) {
-        ModuleIdentifier identifier = module.getIdentifier();
-        try {
-            ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-            AbstractBundleState bundleState = moduleManager.getBundleState(identifier);
-            bundleState.uninstall();
-        } catch (BundleException ex) {
-            log.errorf("Cannot uninstall module: " + identifier, ex);
+    public void unregisterModule(ModuleIdentifier identifier) {
+        ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
+        AbstractBundleState bundleState = moduleManager.getBundleState(identifier);
+        if (bundleState == null) {
+            log.errorf("Cannot find bundle associated with module: %s", identifier);
+            return;
         }
+        UserBundleState userBundle = UserBundleState.assertBundleState(bundleState);
+        uninstallBundle(userBundle, 0);
     }
 
     void uninstallBundle(UserBundleState userBundle, int options) {
@@ -470,7 +477,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     }
 
     void removeBundle(UserBundleState userBundle, int options) {
-        log.tracef("Remove bundle: %s", userBundle);
+        log.tracef("Start removing bundle: %s", userBundle);
 
         if ((options & Bundle.STOP_TRANSIENT) == 0) {
             BundleStorageState storageState = userBundle.getBundleStorageState();
@@ -495,6 +502,8 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
             }
             userRev.close();
         }
+
+        log.debugf("Remove bundle: %s", userBundle);
         bundleMap.remove(userBundle.getBundleId());
     }
 

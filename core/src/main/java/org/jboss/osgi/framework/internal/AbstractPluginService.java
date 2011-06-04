@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.AbstractService;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
@@ -40,12 +41,14 @@ abstract class AbstractPluginService<T> extends AbstractService<T> {
 
     @Override
     public void start(StartContext context) throws StartException {
-        log.debugf("Starting plugin: %s", context.getController().getName());
+        ServiceController<?> controller = context.getController();
+        log.debugf("Starting plugin: %s in mode %s", controller.getName(), controller.getMode());
     }
 
     @Override
     public void stop(StopContext context) {
-        log.debugf("Stopping plugin: %s", context.getController().getName());
+        ServiceController<?> controller = context.getController();
+        log.debugf("Stopping plugin: %s in mode %s", controller.getName(), controller.getMode());
     }
 
 }

@@ -149,7 +149,7 @@ abstract class AbstractBundleContext implements BundleContext {
      *
      * The {@link BundleInstallProvider} is the integration point for JBossAS.
      *
-     * The {@link DefaultBundleInstallHandler} simply delegates to {@link BundleManager#installBundle(Deployment)} In
+     * The {@link DefaultBundleInstallProvider} simply delegates to {@link BundleManager#installBundle(ServiceTarget,Deployment)} In
      * JBossAS however, the {@link BundleInstallProvider} delegates to the management API that feeds the Bundle deployment
      * through the DeploymentUnitProcessor chain.
      */

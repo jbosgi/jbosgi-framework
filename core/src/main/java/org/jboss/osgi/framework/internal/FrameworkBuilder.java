@@ -145,7 +145,7 @@ public final class FrameworkBuilder {
         if (isProvidedService(Services.AUTOINSTALL_PROVIDER) == false)
             DefaultAutoInstallProvider.addService(serviceTarget);
         if (isProvidedService(Services.BUNDLE_INSTALL_PROVIDER) == false)
-            DefaultBundleInstallHandler.addService(serviceTarget);
+            DefaultBundleInstallProvider.addService(serviceTarget);
         if (isProvidedService(Services.FRAMEWORK_MODULE_PROVIDER) == false)
             DefaultFrameworkModuleProvider.addService(serviceTarget);
         if (isProvidedService(Services.MODULE_LOADER_PROVIDER) == false)

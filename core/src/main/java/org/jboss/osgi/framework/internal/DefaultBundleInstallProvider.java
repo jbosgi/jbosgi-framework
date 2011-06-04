@@ -36,12 +36,12 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-final class DefaultBundleInstallHandler extends AbstractPluginService<BundleInstallProvider> implements BundleInstallProvider {
+final class DefaultBundleInstallProvider extends AbstractPluginService<BundleInstallProvider> implements BundleInstallProvider {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
     static void addService(ServiceTarget serviceTarget) {
-        DefaultBundleInstallHandler service = new DefaultBundleInstallHandler();
+        DefaultBundleInstallProvider service = new DefaultBundleInstallProvider();
         ServiceBuilder<BundleInstallProvider> builder = serviceTarget.addService(Services.BUNDLE_INSTALL_PROVIDER, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_CREATE);
@@ -49,7 +49,7 @@ final class DefaultBundleInstallHandler extends AbstractPluginService<BundleInst
         builder.install();
     }
 
-    private DefaultBundleInstallHandler() {
+    private DefaultBundleInstallProvider() {
     }
 
     @Override
