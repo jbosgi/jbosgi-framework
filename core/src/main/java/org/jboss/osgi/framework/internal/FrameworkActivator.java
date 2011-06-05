@@ -32,41 +32,42 @@ import org.jboss.osgi.framework.Services;
 import org.osgi.framework.launch.Framework;
 
 /**
- * A service that represents the INIT state of the {@link Framework}.
+ * A service that activates the {@link Framework}.
  *
- *  See {@link Framework#init()} for details.
+ * This service sets it's own mode to {@link Mode#ACTIVE} when started. The
+ * effect is that the framework stays active when a service that depends on the
+ * {@link FrameworkActivator} goes down.
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-public final class FrameworkInit extends AbstractFrameworkService {
+public final class FrameworkActivator extends AbstractFrameworkService {
 
     // Provide logging
-    static final Logger log = Logger.getLogger(FrameworkInit.class);
+    static final Logger log = Logger.getLogger(FrameworkActivator.class);
 
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
 
-    static void addService(ServiceTarget serviceTarget) {
-        FrameworkInit service = new FrameworkInit();
-        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_INIT, service);
-        builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
-        builder.addDependencies(InternalServices.PERSISTENT_BUNDLES_INSTALLER, InternalServices.PERSISTENT_BUNDLES_INSTALLER_COMPLETE);
-        builder.addDependency(InternalServices.CORE_SERVICES);
-        builder.setInitialMode(Mode.ON_DEMAND);
+    static void addService(ServiceTarget serviceTarget, Mode initialMode) {
+        FrameworkActivator service = new FrameworkActivator();
+        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVATOR, service);
+        builder.addDependency(Services.FRAMEWORK_ACTIVE, FrameworkState.class, service.injectedFramework);
+        builder.setInitialMode(initialMode);
         builder.install();
     }
 
-    private FrameworkInit() {
+    private FrameworkActivator() {
     }
 
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        log.debugf("OSGi Framework initilized");
+        context.getController().setMode(Mode.ACTIVE);
     }
 
     @Override
     public FrameworkState getValue() {
         return injectedFramework.getValue();
     }
+
 }

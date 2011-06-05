@@ -28,7 +28,7 @@ import org.osgi.framework.launch.Framework;
 /**
  * Represents the state of the {@link Framework}.
  *
- * It is used by the various {@link FrameworkService}s as well as the {@link FrameworkProxy}.
+ * It is used by the various {@link AbstractFrameworkService}s as well as the {@link FrameworkProxy}.
  * The state is never given to the client.
  *
  * @author thomas.diesler@jboss.com

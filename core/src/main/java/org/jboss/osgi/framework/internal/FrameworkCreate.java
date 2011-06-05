@@ -40,7 +40,7 @@ import org.osgi.framework.launch.Framework;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-public final class FrameworkCreate extends FrameworkService {
+public final class FrameworkCreate extends AbstractFrameworkService {
 
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkCreate.class);
@@ -50,7 +50,7 @@ public final class FrameworkCreate extends FrameworkService {
     static FrameworkState addService(ServiceTarget serviceTarget, BundleManager bundleManager) {
         FrameworkState frameworkState = new FrameworkState(bundleManager);
         FrameworkCreate service = new FrameworkCreate(frameworkState);
-        ServiceBuilder<FrameworkService> builder = serviceTarget.addService(Services.FRAMEWORK_CREATE, service);
+        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_CREATE, service);
         builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, frameworkState.injectedDeploymentFactory);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, frameworkState.injectedBundleStorage);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, frameworkState.injectedFrameworkEvents);
@@ -81,7 +81,7 @@ public final class FrameworkCreate extends FrameworkService {
     }
 
     @Override
-    FrameworkState getFrameworkState() {
+    public FrameworkState getValue() {
         return frameworkState;
     }
 }

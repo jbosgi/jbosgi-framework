@@ -59,11 +59,11 @@ import org.osgi.framework.launch.Framework;
 
 /**
  * The proxy that represents the {@link Framework}.
- * 
- * The {@link FrameworkProxy} uses the respective {@link FrameworkService}s. 
- * It never interacts with the {@link FrameworkState} directly. 
+ *
+ * The {@link FrameworkProxy} uses the respective {@link AbstractFrameworkService}s.
+ * It never interacts with the {@link FrameworkState} directly.
  * The client may hold a reference to the {@link FrameworkProxy}.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
@@ -109,18 +109,18 @@ final class FrameworkProxy implements Framework {
 
     /**
      * Initialize this Framework.
-     * 
+     *
      * After calling this method, this Framework must:
-     * 
-     * - Be in the Bundle.STARTING state. 
-     * - Have a valid Bundle Context. 
-     * - Be at start level 0. 
-     * - Have event handling enabled. 
-     * - Have reified Bundle objects for all installed bundles. 
+     *
+     * - Be in the Bundle.STARTING state.
+     * - Have a valid Bundle Context.
+     * - Be at start level 0.
+     * - Have event handling enabled.
+     * - Have reified Bundle objects for all installed bundles.
      * - Have registered any framework services (e.g. PackageAdmin, ConditionalPermissionAdmin, StartLevel)
-     * 
+     *
      * This Framework will not actually be started until start is called.
-     * 
+     *
      * This method does nothing if called when this Framework is in the Bundle.STARTING, Bundle.ACTIVE or Bundle.STOPPING
      * states.
      */
@@ -135,7 +135,7 @@ final class FrameworkProxy implements Framework {
         log.debugf("init framework");
         try {
             frameworkStopped.set(false);
-            
+
             boolean allowContainerShutdown = false;
             ServiceContainer serviceContainer = frameworkBuilder.getServiceContainer();
             if (serviceContainer == null) {
@@ -164,17 +164,17 @@ final class FrameworkProxy implements Framework {
 
     /**
      * Start this Framework.
-     * 
+     *
      * The following steps are taken to start this Framework:
-     * 
-     * - If this Framework is not in the {@link #STARTING} state, {@link #init()} is called 
-     * - All installed bundles must be started 
+     *
+     * - If this Framework is not in the {@link #STARTING} state, {@link #init()} is called
+     * - All installed bundles must be started
      * - The start level of this Framework is moved to the FRAMEWORK_BEGINNING_STARTLEVEL
-     * 
+     *
      * Any exceptions that occur during bundle starting must be wrapped in a {@link BundleException} and then published as a
      * framework event of type {@link FrameworkEvent#ERROR}
-     * 
-     * - This Framework's state is set to {@link #ACTIVE}. 
+     *
+     * - This Framework's state is set to {@link #ACTIVE}.
      * - A framework event of type {@link FrameworkEvent#STARTED} is fired
      */
     @Override
@@ -202,17 +202,17 @@ final class FrameworkProxy implements Framework {
 
     /**
      * Stop this Framework.
-     * 
+     *
      * The method returns immediately to the caller after initiating the following steps to be taken on another thread.
-     * 
-     * 1. This Framework's state is set to Bundle.STOPPING. 
-     * 2. All installed bundles must be stopped without changing each bundle's persistent autostart setting. 
-     * 3. Unregister all services registered by this Framework. 
-     * 4. Event handling is disabled. 
-     * 5. This Framework's state is set to Bundle.RESOLVED. 
-     * 6. All resources held by this Framework are released. This includes threads, bundle class loaders, open files, etc. 
+     *
+     * 1. This Framework's state is set to Bundle.STOPPING.
+     * 2. All installed bundles must be stopped without changing each bundle's persistent autostart setting.
+     * 3. Unregister all services registered by this Framework.
+     * 4. Event handling is disabled.
+     * 5. This Framework's state is set to Bundle.RESOLVED.
+     * 6. All resources held by this Framework are released. This includes threads, bundle class loaders, open files, etc.
      * 7. Notify all threads that are waiting at waitForStop that the stop operation has completed.
-     * 
+     *
      * After being stopped, this Framework may be discarded, initialized or started.
      */
     @Override
@@ -264,11 +264,11 @@ final class FrameworkProxy implements Framework {
 
     /**
      * Wait until this Framework has completely stopped.
-     * 
+     *
      * The stop and update methods on a Framework performs an asynchronous stop of the Framework. This method can be used to
      * wait until the asynchronous stop of this Framework has completed. This method will only wait if called when this
      * Framework is in the Bundle.STARTING, Bundle.ACTIVE, or Bundle.STOPPING states. Otherwise it will return immediately.
-     * 
+     *
      * A Framework Event is returned to indicate why this Framework has stopped.
      */
     @Override
@@ -434,21 +434,20 @@ final class FrameworkProxy implements Framework {
     @SuppressWarnings("unchecked")
     private FrameworkState awaitFrameworkInit() {
         if (frameworkInit == null) {
-            ServiceController<FrameworkService> controller = (ServiceController<FrameworkService>) lenientContainer.getRequiredService(Services.FRAMEWORK_INIT);
-            controller.addListener(new AbstractServiceListener<FrameworkService>() {
+            ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) lenientContainer.getRequiredService(Services.FRAMEWORK_INIT);
+            controller.addListener(new AbstractServiceListener<FrameworkState>() {
                 @Override
-                public void serviceStopped(ServiceController<? extends FrameworkService> controller) {
+                public void serviceStopped(ServiceController<? extends FrameworkState> controller) {
                     controller.removeListener(this);
                     frameworkStopped.set(true);
                     frameworkInit = null;
                 }
             });
             controller.setMode(Mode.ACTIVE);
-            FutureServiceValue<FrameworkService> future = new FutureServiceValue<FrameworkService>(controller);
+            FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
             try {
                 Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_INIT_TIMEOUT, DEFAULT_FRAMEWORK_INIT_TIMEOUT);
-                FrameworkService service = future.get(timeout, TimeUnit.MILLISECONDS);
-                frameworkInit = service.getFrameworkState();
+                frameworkInit = future.get(timeout, TimeUnit.MILLISECONDS);
             } catch (ExecutionException ex) {
                 Throwable cause = ex.getCause();
                 throw new IllegalStateException("Cannot initialize Framework", cause);
@@ -464,20 +463,19 @@ final class FrameworkProxy implements Framework {
     @SuppressWarnings("unchecked")
     private FrameworkState awaitActiveFramework() {
         if (activeFramework == null) {
-            ServiceController<FrameworkService> controller = (ServiceController<FrameworkService>) lenientContainer.getRequiredService(Services.FRAMEWORK_ACTIVE);
-            controller.addListener(new AbstractServiceListener<FrameworkService>() {
+            ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) lenientContainer.getRequiredService(Services.FRAMEWORK_ACTIVE);
+            controller.addListener(new AbstractServiceListener<FrameworkState>() {
                 @Override
-                public void serviceStopped(ServiceController<? extends FrameworkService> controller) {
+                public void serviceStopped(ServiceController<? extends FrameworkState> controller) {
                     controller.removeListener(this);
                     activeFramework = null;
                 }
             });
             controller.setMode(Mode.ACTIVE);
-            FutureServiceValue<FrameworkService> future = new FutureServiceValue<FrameworkService>(controller);
+            FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
             try {
                 Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_START_TIMEOUT, DEFAULT_FRAMEWORK_START_TIMEOUT);
-                FrameworkService service = future.get(timeout, TimeUnit.MILLISECONDS);
-                activeFramework = service.getFrameworkState();
+                activeFramework = future.get(timeout, TimeUnit.MILLISECONDS);
             } catch (ExecutionException ex) {
                 Throwable cause = ex.getCause();
                 throw new IllegalStateException("Cannot start the Framework", cause);

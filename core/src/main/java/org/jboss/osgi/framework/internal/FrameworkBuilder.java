@@ -126,7 +126,8 @@ public final class FrameworkBuilder {
         DeploymentFactoryPlugin.addService(serviceTarget);
         BundleStoragePlugin.addService(serviceTarget, firstInit);
         CoreServices.addService(serviceTarget);
-        FrameworkActive.addService(serviceTarget, initialMode);
+        FrameworkActive.addService(serviceTarget);
+        FrameworkActivator.addService(serviceTarget, initialMode);
         FrameworkEventsPlugin.addService(serviceTarget);
         FrameworkInit.addService(serviceTarget);
         LifecycleInterceptorPlugin.addService(serviceTarget);
