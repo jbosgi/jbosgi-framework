@@ -46,7 +46,7 @@ public final class CoreServices extends AbstractService<CoreServices> {
     // Provide logging
     static final Logger log = Logger.getLogger(CoreServices.class);
 
-    private final InjectedValue<FrameworkService> injectedFramework = new InjectedValue<FrameworkService>();
+    private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     private final InjectedValue<BundleInstallProvider> injectedInstallProvider = new InjectedValue<BundleInstallProvider>();
     private final InjectedValue<LifecycleInterceptorPlugin> injectedLifecycleInterceptor = new InjectedValue<LifecycleInterceptorPlugin>();
     private final InjectedValue<PackageAdminPlugin> injectedPackageAdmin = new InjectedValue<PackageAdminPlugin>();
@@ -58,7 +58,7 @@ public final class CoreServices extends AbstractService<CoreServices> {
         CoreServices service = new CoreServices();
         ServiceBuilder<CoreServices> builder = serviceTarget.addService(InternalServices.CORE_SERVICES, service);
         builder.addDependency(Services.BUNDLE_INSTALL_PROVIDER, BundleInstallProvider.class, service.injectedInstallProvider);
-        builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkService.class, service.injectedFramework);
+        builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
         builder.addDependency(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, service.injectedLifecycleInterceptor);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdminPlugin.class, service.injectedPackageAdmin);
         builder.addDependency(Services.START_LEVEL, StartLevelPlugin.class, service.injectedStartLevel);
@@ -97,7 +97,7 @@ public final class CoreServices extends AbstractService<CoreServices> {
     }
 
     FrameworkState getFrameworkState() {
-        return injectedFramework.getValue().getFrameworkState();
+        return injectedFramework.getValue();
     }
 
     LifecycleInterceptorPlugin getLifecycleInterceptorPlugin() {

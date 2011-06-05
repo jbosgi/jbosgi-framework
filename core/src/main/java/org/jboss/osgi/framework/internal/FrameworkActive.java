@@ -43,19 +43,19 @@ import org.osgi.framework.launch.Framework;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-public final class FrameworkActive extends FrameworkService {
+public final class FrameworkActive extends AbstractFrameworkService {
 
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkActive.class);
 
-    private final InjectedValue<FrameworkService> injectedFramework = new InjectedValue<FrameworkService>();
+    private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
 
-    static void addService(ServiceTarget serviceTarget, Mode initialMode) {
+    static void addService(ServiceTarget serviceTarget) {
         FrameworkActive service = new FrameworkActive();
-        ServiceBuilder<FrameworkService> builder = serviceTarget.addService(org.jboss.osgi.framework.Services.FRAMEWORK_ACTIVE, service);
-        builder.addDependency(org.jboss.osgi.framework.Services.FRAMEWORK_INIT, FrameworkService.class, service.injectedFramework);
+        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
+        builder.addDependency(Services.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
         builder.addDependencies(Services.AUTOINSTALL_PROVIDER, Services.AUTOINSTALL_PROVIDER_COMPLETE);
-        builder.setInitialMode(initialMode);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
@@ -82,18 +82,18 @@ public final class FrameworkActive extends FrameworkService {
         super.start(context);
         try {
             // Resolve the system bundle
-            ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
+            ResolverPlugin resolverPlugin = getValue().getResolverPlugin();
             resolverPlugin.resolve(getSystemBundle().getResolverModule());
 
             // This Framework's state is set to ACTIVE
             getSystemBundle().changeState(Bundle.ACTIVE);
 
             // Increase to initial start level
-            StartLevelPlugin startLevelPlugin = getFrameworkState().getCoreServices().getStartLevelPlugin();
+            StartLevelPlugin startLevelPlugin = getValue().getCoreServices().getStartLevelPlugin();
             startLevelPlugin.increaseStartLevel(getBeginningStartLevel());
 
             // A framework event of type STARTED is fired
-            FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
+            FrameworkEventsPlugin eventsPlugin = getValue().getFrameworkEventsPlugin();
             eventsPlugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
 
             log.infof("OSGi Framework started");
@@ -103,8 +103,8 @@ public final class FrameworkActive extends FrameworkService {
     }
 
     @Override
-    FrameworkState getFrameworkState() {
-        return injectedFramework.getValue().getFrameworkState();
+    public FrameworkState getValue() {
+        return injectedFramework.getValue();
     }
 
     private int getBeginningStartLevel() {

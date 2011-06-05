@@ -72,6 +72,9 @@ public interface Services {
     /** The service name for the started {@link Framework} */
     ServiceName FRAMEWORK_ACTIVE = FRAMEWORK_BASE_NAME.append("ACTIVE");
 
+    /** The service name to use as a dependency to activate the {@link Framework} */
+    ServiceName FRAMEWORK_ACTIVATOR = FRAMEWORK_BASE_NAME.append("ACTIVATOR");
+
     /** The service name for the {@link PackageAdmin} service */
     ServiceName PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("PackageAdmin");
 
