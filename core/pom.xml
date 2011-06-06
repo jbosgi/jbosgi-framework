@@ -54,11 +54,11 @@
     </dependency>
     <dependency>
       <groupId>org.jboss.osgi.resolver</groupId>
-      <artifactId>jbosgi-resolver-api</artifactId>
+      <artifactId>jbosgi-resolver-felix</artifactId>
     </dependency>
     <dependency>
       <groupId>org.jboss.osgi.vfs</groupId>
-      <artifactId>jbosgi-vfs</artifactId>
+      <artifactId>jbosgi-vfs30</artifactId>
     </dependency>
 
     <!-- OSGi Dependencies -->
@@ -75,16 +75,6 @@
     <dependency>
       <groupId>javax.inject</groupId>
       <artifactId>javax.inject</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.osgi.resolver</groupId>
-      <artifactId>jbosgi-resolver-felix</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.osgi.vfs</groupId>
-      <artifactId>jbosgi-vfs30</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

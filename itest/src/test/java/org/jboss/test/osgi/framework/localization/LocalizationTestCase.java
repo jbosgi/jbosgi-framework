@@ -106,7 +106,7 @@ public class LocalizationTestCase extends OSGiFrameworkTest {
         // Bundle-Name: %bundle-name
         // Include-Resource: OSGI-INF/l10n/bundle_en.properties=OSGI-INF/l10n/bundle_en.properties
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, hostName);
-        archive.addResource(getResourceFile("localization/OSGI-INF/l10n/bundle_en.properties"), "OSGI-INF/l10n/bundle_en.properties");
+        archive.addAsResource(getResourceFile("localization/OSGI-INF/l10n/bundle_en.properties"), "OSGI-INF/l10n/bundle_en.properties");
         archive.setManifest(new Asset() {
 
             public InputStream openStream() {
@@ -125,7 +125,7 @@ public class LocalizationTestCase extends OSGiFrameworkTest {
         // Fragment-Host: localization-simple-host
         // Include-Resource: OSGI-INF/l10n/bundle_de.properties=OSGI-INF/l10n/bundle_de.properties
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "localization-fragment");
-        archive.addResource(getResourceFile("localization/OSGI-INF/l10n/bundle_de.properties"), "OSGI-INF/l10n/bundle_de.properties");
+        archive.addAsResource(getResourceFile("localization/OSGI-INF/l10n/bundle_de.properties"), "OSGI-INF/l10n/bundle_de.properties");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();

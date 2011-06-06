@@ -25,7 +25,7 @@ import org.osgi.framework.BundleContext;
 
 /**
  * A SimpleService
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
