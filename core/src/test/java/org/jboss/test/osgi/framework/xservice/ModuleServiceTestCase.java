@@ -49,7 +49,7 @@ import org.osgi.framework.Version;
 
 /**
  * Test that an MSC module can have a dependency on an OSGi bundle and vice versa.
- * 
+ *
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jul-2010
  */
@@ -185,14 +185,14 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest {
 
     private JavaArchive getModuleAS() {
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleAS");
-        archive.addManifestResource(getResourceFile("xservice/moduleAS/META-INF/jbosgi-xservice.properties"));
+        archive.addAsManifestResource(getResourceFile("xservice/moduleAS/META-INF/jbosgi-xservice.properties"));
         archive.addClasses(ModuleActivatorA.class, ModuleServiceA.class);
         return archive;
     }
 
     private JavaArchive getModuleBS() {
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleBS");
-        archive.addManifestResource(getResourceFile("xservice/moduleBS/META-INF/jbosgi-xservice.properties"));
+        archive.addAsManifestResource(getResourceFile("xservice/moduleBS/META-INF/jbosgi-xservice.properties"));
         archive.addClasses(ModuleActivatorB.class, ModuleServiceB.class);
         return archive;
     }

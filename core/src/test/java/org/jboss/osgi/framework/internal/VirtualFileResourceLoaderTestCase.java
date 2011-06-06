@@ -47,7 +47,7 @@ import org.junit.Test;
 
 /**
  * Test the bundle content loader.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
@@ -62,7 +62,7 @@ public class VirtualFileResourceLoaderTestCase {
         // Export-Package: org.jboss.test.osgi.framework.loading.subB
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
         archive.addClasses(SimpleService.class, SimpleActivator.class);
-        archive.addResource("jira-test-coverage.txt");
+        archive.addAsResource("jira-test-coverage.txt");
         archive.setManifest(new Asset() {
 
             public InputStream openStream() {

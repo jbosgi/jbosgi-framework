@@ -56,7 +56,7 @@ import org.junit.Test;
 
 /**
  * [MODULES-65] Deadlock on circular class load
- * 
+ *
  * @author Thomas.Diesler@jboss.com
  * @since 20-Dec-2010
  */
@@ -168,7 +168,7 @@ public class MOD65SimpleTestCase extends ModulesTestBase {
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
         archive.addClasses(A.class, ModuleActivatorA.class, ModuleActivator.class);
         File resourceFile = OSGiTestHelper.getResourceFile("modules/moduleA/META-INF/services/" + ModuleActivator.class.getName());
-        archive.addManifestResource(resourceFile, "services/" + ModuleActivator.class.getName());
+        archive.addAsManifestResource(resourceFile, "services/" + ModuleActivator.class.getName());
         return archive;
     }
 

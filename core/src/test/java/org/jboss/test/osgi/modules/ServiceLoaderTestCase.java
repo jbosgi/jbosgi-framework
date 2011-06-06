@@ -49,7 +49,7 @@ import org.junit.Test;
 
 /**
  * Test usage of the java.util.ServiceLoader API
- * 
+ *
  * @author Thomas.Diesler@jboss.com
  * @since 22-Sep-2010
  */
@@ -58,7 +58,7 @@ public class ServiceLoaderTestCase extends ModulesTestBase {
     String resName = "META-INF/services/" + Foo.class.getName();
 
     private VirtualFile virtualFileA;
-    
+
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -136,7 +136,7 @@ public class ServiceLoaderTestCase extends ModulesTestBase {
     private JavaArchive getModuleA() {
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
         archive.addClasses(Foo.class);
-        archive.addResource("modules/" + resName, resName);
+        archive.addAsResource("modules/" + resName, resName);
         return archive;
     }
 }

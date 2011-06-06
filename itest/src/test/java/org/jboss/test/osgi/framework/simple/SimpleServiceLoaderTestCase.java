@@ -26,13 +26,14 @@ import static org.junit.Assert.assertNotNull;
 
 import java.util.Enumeration;
 
+import org.jboss.arquillian.container.test.spi.TestRunner;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 
 /**
  * Test whether we can load a service through bundles
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 20-Jan-2011
  */
@@ -44,10 +45,11 @@ public class SimpleServiceLoaderTestCase extends OSGiFrameworkTest {
         try {
             assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-            assertLoadClass(bundle, "org.jboss.arquillian.spi.TestRunner");
+            assertLoadClass(bundle, TestRunner.class.getName());
             assertBundleState(Bundle.RESOLVED, bundle.getState());
 
-            Enumeration<?> resources = bundle.getResources("META-INF/services/org.jboss.arquillian.spi.TestRunner");
+            Enumeration<?> resources = bundle.getResources("META-INF/services/" + TestRunner.class.getName());
+            assertNotNull("Enumeration not null", resources);
             assertNotNull("URL not null", resources.nextElement());
             assertFalse("No more URLs", resources.hasMoreElements());
         } finally {
