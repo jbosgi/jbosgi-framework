@@ -70,11 +70,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.jboss.osgi.vfs</groupId>
-      <artifactId>jbosgi-vfs30</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
         <groupId>org.jboss.logmanager</groupId>
         <artifactId>jboss-logmanager</artifactId>
         <scope>test</scope>
@@ -255,11 +250,6 @@
           <artifactId>jbosgi-framework-core</artifactId>
           <version>${project.version}</version>
           <scope>provided</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.jboss.osgi.resolver</groupId>
-          <artifactId>jbosgi-resolver-felix</artifactId>
-          <scope>test</scope>
         </dependency>
       </dependencies>
     </profile>
