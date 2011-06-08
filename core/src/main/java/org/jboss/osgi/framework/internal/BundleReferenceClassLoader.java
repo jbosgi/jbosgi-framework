@@ -45,7 +45,7 @@ class BundleReferenceClassLoader<T extends AbstractBundleState> extends ModuleCl
 
     @Override
     public Bundle getBundle() {
-        return bundleState.getBundleWrapper();
+        return bundleState;
     }
 
     T getBundleState() {

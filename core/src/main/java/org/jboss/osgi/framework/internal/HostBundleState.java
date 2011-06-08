@@ -39,6 +39,7 @@ import org.jboss.osgi.modules.ModuleActivator;
 import org.jboss.osgi.resolver.XModule;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -88,9 +89,10 @@ final class HostBundleState extends UserBundleState {
         return new HostBundleRevision(this, dep);
     }
 
-    @Override
-    Bundle createBundleWrapper() {
-        return new BundleWrapper<HostBundleState>(this);
+    // Invalid discovery of Bundle.getBundleContext() method
+    // http://issues.ops4j.org/browse/PAXSB-44
+    public BundleContext getBundleContext() {
+        return super.getBundleContext();
     }
 
     @Override

@@ -151,11 +151,6 @@ final class SystemBundleState extends AbstractBundleState {
     }
 
     @Override
-    Bundle createBundleWrapper() {
-        return new BundleWrapper<SystemBundleState>(this);
-    }
-
-    @Override
     void startInternal(int options) throws BundleException {
         // do nothing
     }

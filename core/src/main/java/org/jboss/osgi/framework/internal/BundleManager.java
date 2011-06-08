@@ -303,7 +303,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     public Bundle getBundle(ModuleIdentifier identifier) {
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
         AbstractBundleState bundleState = moduleManager.getBundleState(identifier);
-        return bundleState != null ? bundleState.getBundleWrapper() : null;
+        return bundleState != null ? bundleState : null;
     }
 
     /**

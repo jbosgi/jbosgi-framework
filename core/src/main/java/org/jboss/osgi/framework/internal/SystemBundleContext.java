@@ -34,9 +34,4 @@ final class SystemBundleContext extends AbstractBundleContext {
     SystemBundleContext(SystemBundleState bundle) {
         super(bundle);
     }
-
-    @Override
-    BundleContext createContextWrapper() {
-        return new BundleContextWrapper<SystemBundleContext>(this);
-    }
 }

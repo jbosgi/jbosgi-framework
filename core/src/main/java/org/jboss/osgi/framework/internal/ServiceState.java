@@ -277,7 +277,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         if (isUnregistered())
             return null;
 
-        return ownerBundle.getBundleWrapper();
+        return ownerBundle;
     }
 
     void addUsingBundle(AbstractBundleState bundleState) {
@@ -314,7 +314,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
 
             Set<Bundle> bundles = new HashSet<Bundle>();
             for (AbstractBundleState aux : usingBundles)
-                bundles.add(aux.getBundleWrapper());
+                bundles.add(aux);
 
             return bundles.toArray(new Bundle[bundles.size()]);
         }
@@ -448,7 +448,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
             if (useCount.get() == 0) {
                 // The Framework must not allow this method to be concurrently called for the same bundle
                 synchronized (bundleState) {
-                    Object retValue = factory.getService(bundleState.getBundleWrapper(), getRegistration());
+                    Object retValue = factory.getService(bundleState, getRegistration());
                     if (retValue == null)
                         return null;
 
@@ -472,7 +472,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
             // Call unget on the factory when done
             if (useCount.decrementAndGet() == 0) {
                 synchronized (bundleState) {
-                    factory.ungetService(bundleState.getBundleWrapper(), getRegistration(), value);
+                    factory.ungetService(bundleState, getRegistration(), value);
                     value = null;
                 }
             }

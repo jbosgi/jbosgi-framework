@@ -39,9 +39,6 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.FutureServiceValue;
-import org.jboss.osgi.framework.internal.BundleManager;
-import org.jboss.osgi.framework.internal.ResolverPlugin;
-import org.jboss.osgi.framework.internal.UserBundleState;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XResolver;
 import org.junit.Test;
@@ -102,6 +99,6 @@ public class InstallFromModuleTestCase extends AbstractFrameworkTest {
         ServiceController<UserBundleState> controller = (ServiceController<UserBundleState>) serviceContainer.getService(serviceName);
         FutureServiceValue<UserBundleState> future = new FutureServiceValue<UserBundleState>(controller);
         UserBundleState userBundle = future.get(5, TimeUnit.SECONDS);
-        return userBundle.getBundleWrapper();
+        return userBundle;
     }
 }
