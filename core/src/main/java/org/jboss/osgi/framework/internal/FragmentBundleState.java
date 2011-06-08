@@ -55,11 +55,6 @@ final class FragmentBundleState extends UserBundleState {
     }
 
     @Override
-    Bundle createBundleWrapper() {
-        return new BundleWrapper<FragmentBundleState>(this);
-    }
-
-    @Override
     void initUserBundleState(OSGiMetaData metadata) {
         // do nothing
     }

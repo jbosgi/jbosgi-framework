@@ -34,9 +34,4 @@ final class FragmentBundleContext extends UserBundleContext {
     FragmentBundleContext(FragmentBundleState fragmentBundle) {
         super(fragmentBundle);
     }
-
-    @Override
-    BundleContext createContextWrapper() {
-        return new BundleContextWrapper<FragmentBundleContext>(this);
-    }
 }

@@ -61,7 +61,6 @@ import org.osgi.framework.ServiceRegistration;
 abstract class AbstractBundleContext implements BundleContext {
 
     private final AbstractBundleState bundleState;
-    private BundleContext contextWrapper;
     private boolean destroyed;
 
     AbstractBundleContext(AbstractBundleState bundleState) {
@@ -80,23 +79,11 @@ abstract class AbstractBundleContext implements BundleContext {
         if (context == null)
             throw new IllegalArgumentException("Null bundle");
 
-        if (context instanceof BundleContextWrapper)
-            context = ((BundleContextWrapper<?>) context).getWrappedContext();
-
         if (context instanceof AbstractBundleContext == false)
             throw new IllegalArgumentException("Not an AbstractBundleContext: " + context);
 
         return (AbstractBundleContext) context;
     }
-
-    BundleContext getContextWrapper() {
-        checkValidBundleContext();
-        if (contextWrapper == null)
-            contextWrapper = createContextWrapper();
-        return contextWrapper;
-    }
-
-    abstract BundleContext createContextWrapper();
 
     void destroy() {
         destroyed = true;
@@ -125,7 +112,7 @@ abstract class AbstractBundleContext implements BundleContext {
     @Override
     public Bundle getBundle() {
         checkValidBundleContext();
-        return bundleState.getBundleWrapper();
+        return bundleState;
     }
 
     @Override
@@ -232,7 +219,7 @@ abstract class AbstractBundleContext implements BundleContext {
         FutureServiceValue<UserBundleState> future = new FutureServiceValue<UserBundleState>(controller);
         try {
             UserBundleState userBundle = future.get(5, TimeUnit.SECONDS);
-            return userBundle.getBundleWrapper();
+            return userBundle;
         } catch (Exception ex) {
             Throwable cause = ex.getCause();
             if (cause instanceof BundleException)
@@ -245,15 +232,15 @@ abstract class AbstractBundleContext implements BundleContext {
     public Bundle getBundle(long id) {
         checkValidBundleContext();
         AbstractBundleState bundleState = getBundleManager().getBundleById(id);
-        return (bundleState != null ? bundleState.getBundleWrapper() : null);
+        return (bundleState != null ? bundleState : null);
     }
 
     @Override
     public Bundle[] getBundles() {
         checkValidBundleContext();
         List<Bundle> result = new ArrayList<Bundle>();
-        for (AbstractBundleState bundle : getBundleManager().getBundles())
-            result.add(bundle.getBundleWrapper());
+        for (AbstractBundleState bundleState : getBundleManager().getBundles())
+            result.add(bundleState);
         return result.toArray(new Bundle[result.size()]);
     }
 

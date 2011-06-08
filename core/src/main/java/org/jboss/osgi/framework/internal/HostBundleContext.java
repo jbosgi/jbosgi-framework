@@ -35,9 +35,4 @@ final class HostBundleContext extends UserBundleContext {
     HostBundleContext(HostBundleState hostBundle) {
         super(hostBundle);
     }
-    
-    @Override
-    BundleContext createContextWrapper() {
-        return new BundleContextWrapper<HostBundleContext>(this);
-    }
 }

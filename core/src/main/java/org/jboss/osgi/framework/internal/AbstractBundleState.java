@@ -45,8 +45,8 @@ import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
@@ -82,7 +82,6 @@ abstract class AbstractBundleState implements Bundle {
     private final CopyOnWriteArrayList<ServiceState> registeredServices = new CopyOnWriteArrayList<ServiceState>();
     private final ConcurrentHashMap<ServiceState, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
     private AbstractBundleContext bundleContext;
-    private Bundle bundleWrapper;
 
     AbstractBundleState(FrameworkState frameworkState, long bundleId, String symbolicName) {
         if (frameworkState == null)
@@ -127,15 +126,6 @@ abstract class AbstractBundleState implements Bundle {
     public String getSymbolicName() {
         return symbolicName;
     }
-
-    Bundle getBundleWrapper() {
-        if (bundleWrapper == null) {
-            bundleWrapper = createBundleWrapper();
-        }
-        return bundleWrapper;
-    }
-
-    abstract Bundle createBundleWrapper();
 
     abstract AbstractBundleContext createContextInternal();
 
@@ -600,9 +590,6 @@ abstract class AbstractBundleState implements Bundle {
     static AbstractBundleState assertBundleState(Bundle bundle) {
         if (bundle == null)
             throw new IllegalArgumentException("Null bundle");
-
-        if (bundle instanceof BundleWrapper<?>)
-            bundle = ((BundleWrapper<?>) bundle).getBundleState();
 
         if (bundle instanceof AbstractBundleState == false)
             throw new IllegalArgumentException("Not a BundleState: " + bundle);
