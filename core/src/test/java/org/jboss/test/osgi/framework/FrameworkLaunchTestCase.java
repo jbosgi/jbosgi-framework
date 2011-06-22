@@ -31,7 +31,6 @@ import java.util.Map;
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiTest;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -54,37 +53,34 @@ public class FrameworkLaunchTestCase extends OSGiTest {
     @Test
     public void testFrameworkInit() throws Exception {
 
-        for (int i = 0; i < 50; i++) {
-            Framework framework = createFramework();
-            assertBundleState(Bundle.INSTALLED, framework.getState());
+        Framework framework = createFramework();
+        assertBundleState(Bundle.INSTALLED, framework.getState());
 
-            framework.init();
-            assertBundleState(Bundle.STARTING, framework.getState());
+        framework.init();
+        assertBundleState(Bundle.STARTING, framework.getState());
 
-            BundleContext bundleContext = framework.getBundleContext();
-            ServiceReference sref = bundleContext.getServiceReference(StartLevel.class.getName());
-            StartLevel startLevel = (StartLevel) bundleContext.getService(sref);
-            assertEquals("Framework should be at Start Level 0 on init()", 0, startLevel.getStartLevel());
+        BundleContext bundleContext = framework.getBundleContext();
+        ServiceReference sref = bundleContext.getServiceReference(StartLevel.class.getName());
+        StartLevel startLevel = (StartLevel) bundleContext.getService(sref);
+        assertEquals("Framework should be at Start Level 0 on init()", 0, startLevel.getStartLevel());
 
-            sref = bundleContext.getServiceReference(PackageAdmin.class.getName());
-            PackageAdmin packageAdmin = (PackageAdmin) bundleContext.getService(sref);
-            assertNotNull("The Package Admin service should be available", packageAdmin);
+        sref = bundleContext.getServiceReference(PackageAdmin.class.getName());
+        PackageAdmin packageAdmin = (PackageAdmin) bundleContext.getService(sref);
+        assertNotNull("The Package Admin service should be available", packageAdmin);
 
-            // It should be possible to install a bundle into this framework, even though it's only inited...
-            JavaArchive archive = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-            Bundle bundle = bundleContext.installBundle("simple-bundle1", toInputStream(archive));
-            assertBundleState(Bundle.INSTALLED, bundle.getState());
-            assertNotNull("BundleContext not null", framework.getBundleContext());
-            
-            framework.stop();
-            assertNull("BundleContext null", framework.getBundleContext());
-            FrameworkEvent stopEvent = framework.waitForStop(2000);
-            assertEquals(FrameworkEvent.STOPPED, stopEvent.getType());
-        }
+        // It should be possible to install a bundle into this framework, even though it's only inited...
+        JavaArchive archive = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
+        Bundle bundle = bundleContext.installBundle("simple-bundle1", toInputStream(archive));
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
+        assertNotNull("BundleContext not null", framework.getBundleContext());
+
+        framework.stop();
+        assertNull("BundleContext null", framework.getBundleContext());
+        FrameworkEvent stopEvent = framework.waitForStop(2000);
+        assertEquals(FrameworkEvent.STOPPED, stopEvent.getType());
     }
 
     @Test
-    @Ignore
     public void testFrameworkStartStop() throws Exception {
         Framework framework = createFramework();
         try {
