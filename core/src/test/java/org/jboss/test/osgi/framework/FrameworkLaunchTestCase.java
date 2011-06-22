@@ -31,10 +31,12 @@ import java.util.Map;
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiTest;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
+import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
@@ -52,8 +54,8 @@ public class FrameworkLaunchTestCase extends OSGiTest {
     @Test
     public void testFrameworkInit() throws Exception {
 
-        Framework framework = createFramework();
-        try {
+        for (int i = 0; i < 50; i++) {
+            Framework framework = createFramework();
             assertBundleState(Bundle.INSTALLED, framework.getState());
 
             framework.init();
@@ -72,15 +74,17 @@ public class FrameworkLaunchTestCase extends OSGiTest {
             JavaArchive archive = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
             Bundle bundle = bundleContext.installBundle("simple-bundle1", toInputStream(archive));
             assertBundleState(Bundle.INSTALLED, bundle.getState());
-        } finally {
             assertNotNull("BundleContext not null", framework.getBundleContext());
+            
             framework.stop();
             assertNull("BundleContext null", framework.getBundleContext());
-            framework.waitForStop(2000);
+            FrameworkEvent stopEvent = framework.waitForStop(2000);
+            assertEquals(FrameworkEvent.STOPPED, stopEvent.getType());
         }
     }
 
     @Test
+    @Ignore
     public void testFrameworkStartStop() throws Exception {
         Framework framework = createFramework();
         try {
@@ -117,7 +121,8 @@ public class FrameworkLaunchTestCase extends OSGiTest {
             assertBundleState(Bundle.ACTIVE, framework.getState());
         } finally {
             framework.stop();
-            framework.waitForStop(2000);
+            FrameworkEvent stopEvent = framework.waitForStop(2000);
+            assertEquals(FrameworkEvent.STOPPED, stopEvent.getType());
             assertBundleState(Bundle.RESOLVED, framework.getState());
         }
     }

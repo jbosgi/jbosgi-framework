@@ -34,7 +34,6 @@ import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.State;
-import org.jboss.msc.service.StartException;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
@@ -94,19 +93,14 @@ public class BundleServicesTestCase extends AbstractFrameworkTest {
                 checkState(controller);
             }
 
-            @Override
-            public void serviceStarted(ServiceController<? extends Object> controller) {
-                checkState(controller);
-            }
-
-            @Override
-            public void serviceFailed(ServiceController<? extends Object> controller, StartException reason) {
-                checkState(controller);
-            }
-
-            @Override
-            public void serviceStopped(ServiceController<? extends Object> controller) {
-                checkState(controller);
+            public final void transition(final ServiceController<? extends Object> controller, final ServiceController.Transition transition) {
+                switch (transition) {
+                    case STARTING_to_UP:
+                    case STARTING_to_START_FAILED:
+                    case STOPPING_to_DOWN:
+                        checkState(controller);
+                        break;
+                }
             }
             
             private void checkState(ServiceController<? extends Object> controller) {

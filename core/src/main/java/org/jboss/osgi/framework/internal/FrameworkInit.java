@@ -62,7 +62,7 @@ public final class FrameworkInit extends AbstractFrameworkService {
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        log.debugf("OSGi Framework initilized");
+        log.debugf("OSGi Framework initialized");
     }
 
     @Override

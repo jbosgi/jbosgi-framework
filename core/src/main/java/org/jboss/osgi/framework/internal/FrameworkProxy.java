@@ -32,6 +32,7 @@ import java.net.URL;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -76,6 +77,7 @@ final class FrameworkProxy implements Framework {
     private final FrameworkBuilder frameworkBuilder;
     private LenientShutdownContainer lenientContainer;
     private final AtomicBoolean frameworkStopped;
+    private FrameworkState frameworkState;
     private boolean firstInit;
     private int stoppedEvent;
 
@@ -145,14 +147,17 @@ final class FrameworkProxy implements Framework {
             lenientContainer = new LenientShutdownContainer(serviceContainer, allowContainerShutdown);
             ServiceTarget serviceTarget = frameworkBuilder.getServiceTarget();
             if (serviceTarget == null)
-                serviceTarget = lenientContainer.subTarget();
+                serviceTarget = serviceContainer.subTarget();
 
             frameworkBuilder.createFrameworkServicesInternal(serviceTarget, Mode.ON_DEMAND, firstInit);
             proxyState.set(Bundle.STARTING);
-            awaitFrameworkInit();
+            frameworkState = awaitFrameworkState();
             firstInit = false;
 
-        } catch (IllegalStateException ex) {
+        } catch (Exception ex) {
+            ServiceController<?> controller = lenientContainer.getRequiredService(InternalServices.PERSISTENT_BUNDLES_INSTALLER);
+            Set<ServiceName> unavailableDependencies = controller.getImmediateUnavailableDependencies();
+            log.errorf("Unavailable for %s: %s", controller, unavailableDependencies);
             throw new BundleException(ex.getMessage(), ex);
         }
     }
@@ -186,11 +191,10 @@ final class FrameworkProxy implements Framework {
 
         log.debugf("start framework");
         try {
-            FrameworkState frameworkState = awaitFrameworkInit();
             frameworkState.setStartStopOptions(options);
             awaitActiveFramework();
             proxyState.set(Bundle.ACTIVE);
-        } catch (IllegalStateException ex) {
+        } catch (Exception ex) {
             throw new BundleException(ex.getMessage(), ex);
         }
     }
@@ -229,7 +233,6 @@ final class FrameworkProxy implements Framework {
 
         log.debugf("stop framework");
 
-        FrameworkState frameworkState = awaitFrameworkInit();
         CoreServices coreServices = frameworkState.getCoreServices();
         SystemBundleState systemBundle = frameworkState.getSystemBundle();
 
@@ -339,78 +342,78 @@ final class FrameworkProxy implements Framework {
     @Override
     public Dictionary<String, String> getHeaders() {
         assertNotStopped();
-        return awaitFrameworkInit().getSystemBundle().getHeaders();
+        return getSystemBundle().getHeaders();
     }
 
     @Override
     public ServiceReference[] getRegisteredServices() {
         assertNotStopped();
-        return awaitFrameworkInit().getSystemBundle().getRegisteredServices();
+        return getSystemBundle().getRegisteredServices();
     }
 
     @Override
     public ServiceReference[] getServicesInUse() {
         assertNotStopped();
-        return awaitFrameworkInit().getSystemBundle().getServicesInUse();
+        return getSystemBundle().getServicesInUse();
     }
 
     @Override
     public boolean hasPermission(Object permission) {
         assertNotStopped();
-        return awaitFrameworkInit().getSystemBundle().hasPermission(permission);
+        return getSystemBundle().hasPermission(permission);
     }
 
     @Override
     public URL getResource(String name) {
         assertNotStopped();
-        return awaitFrameworkInit().getSystemBundle().getResource(name);
+        return getSystemBundle().getResource(name);
     }
 
     @Override
     public Dictionary<String, String> getHeaders(String locale) {
         assertNotStopped();
-        return awaitFrameworkInit().getSystemBundle().getHeaders(locale);
+        return getSystemBundle().getHeaders(locale);
     }
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         assertNotStopped();
-        return awaitFrameworkInit().getSystemBundle().loadClass(name);
+        return getSystemBundle().loadClass(name);
     }
 
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
         assertNotStopped();
-        return awaitFrameworkInit().getSystemBundle().getResources(name);
+        return getSystemBundle().getResources(name);
     }
 
     @Override
     public Enumeration<String> getEntryPaths(String path) {
         assertNotStopped();
-        return awaitFrameworkInit().getSystemBundle().getEntryPaths(path);
+        return getSystemBundle().getEntryPaths(path);
     }
 
     @Override
     public URL getEntry(String path) {
         assertNotStopped();
-        return awaitFrameworkInit().getSystemBundle().getEntry(path);
+        return getSystemBundle().getEntry(path);
     }
 
     @Override
     public long getLastModified() {
         assertNotStopped();
-        return awaitFrameworkInit().getSystemBundle().getLastModified();
+        return getSystemBundle().getLastModified();
     }
 
     @Override
     public Enumeration<URL> findEntries(String path, String filePattern, boolean recurse) {
         assertNotStopped();
-        return awaitFrameworkInit().getSystemBundle().findEntries(path, filePattern, recurse);
+        return getSystemBundle().findEntries(path, filePattern, recurse);
     }
 
     @Override
     public BundleContext getBundleContext() {
-        return isNotStopped() ? awaitFrameworkInit().getSystemBundle().getBundleContext() : null;
+        return isNotStopped() ? getSystemBundle().getBundleContext() : null;
     }
 
     @Override
@@ -429,61 +432,42 @@ final class FrameworkProxy implements Framework {
             throw new IllegalStateException("Framework already stopped");
     }
 
-    private FrameworkState frameworkInit;
-
-    @SuppressWarnings("unchecked")
-    private FrameworkState awaitFrameworkInit() {
-        if (frameworkInit == null) {
-            ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) lenientContainer.getRequiredService(Services.FRAMEWORK_INIT);
-            controller.addListener(new AbstractServiceListener<FrameworkState>() {
-                @Override
-                public void serviceStopped(ServiceController<? extends FrameworkState> controller) {
-                    controller.removeListener(this);
-                    frameworkStopped.set(true);
-                    frameworkInit = null;
-                }
-            });
-            controller.setMode(Mode.ACTIVE);
-            FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
-            try {
-                Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_INIT_TIMEOUT, DEFAULT_FRAMEWORK_INIT_TIMEOUT);
-                frameworkInit = future.get(timeout, TimeUnit.MILLISECONDS);
-            } catch (ExecutionException ex) {
-                Throwable cause = ex.getCause();
-                throw new IllegalStateException("Cannot initialize Framework", cause);
-            } catch (TimeoutException e) {
-                throw new IllegalStateException("Timeout starting Framework");
-            }
-        }
-        return frameworkInit;
+    private SystemBundleState getSystemBundle() {
+        if (frameworkState == null)
+            throw new IllegalStateException("Framework not initialized");
+        return frameworkState.getSystemBundle();
     }
 
-    private FrameworkState activeFramework;
+    @SuppressWarnings("unchecked")
+    private FrameworkState awaitFrameworkState() throws ExecutionException, TimeoutException {
+        final ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) lenientContainer.getRequiredService(Services.FRAMEWORK_INIT);
+        final String serviceName = controller.getName().getCanonicalName();
+        controller.addListener(new AbstractServiceListener<FrameworkState>() {
+            public void transition(final ServiceController<? extends FrameworkState> controller, final ServiceController.Transition transition) {
+                log.tracef("awaitFrameworkState %s => %s", serviceName, transition);
+                switch (transition) {
+                    case STARTING_to_START_FAILED:
+                    case STOPPING_to_DOWN:
+                        controller.removeListener(this);
+                        frameworkStopped.set(true);
+                        frameworkState = null;
+                        break;
+                }
+            }
+        });
+        controller.setMode(Mode.ACTIVE);
+        FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
+        Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_INIT_TIMEOUT, DEFAULT_FRAMEWORK_INIT_TIMEOUT);
+        return future.get(timeout, TimeUnit.MILLISECONDS);
+    }
 
     @SuppressWarnings("unchecked")
-    private FrameworkState awaitActiveFramework() {
-        if (activeFramework == null) {
-            ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) lenientContainer.getRequiredService(Services.FRAMEWORK_ACTIVE);
-            controller.addListener(new AbstractServiceListener<FrameworkState>() {
-                @Override
-                public void serviceStopped(ServiceController<? extends FrameworkState> controller) {
-                    controller.removeListener(this);
-                    activeFramework = null;
-                }
-            });
-            controller.setMode(Mode.ACTIVE);
-            FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
-            try {
-                Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_START_TIMEOUT, DEFAULT_FRAMEWORK_START_TIMEOUT);
-                activeFramework = future.get(timeout, TimeUnit.MILLISECONDS);
-            } catch (ExecutionException ex) {
-                Throwable cause = ex.getCause();
-                throw new IllegalStateException("Cannot start the Framework", cause);
-            } catch (TimeoutException e) {
-                throw new IllegalStateException("Timeout start the Framework");
-            }
-        }
-        return activeFramework;
+    private void awaitActiveFramework() throws ExecutionException, TimeoutException {
+        final ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) lenientContainer.getRequiredService(Services.FRAMEWORK_ACTIVE);
+        controller.setMode(Mode.ACTIVE);
+        FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
+        Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_START_TIMEOUT, DEFAULT_FRAMEWORK_START_TIMEOUT);
+        future.get(timeout, TimeUnit.MILLISECONDS);
     }
 
     // The TCK calls waitForStop before it initiates the shutdown, in which case the {@link ServiceContainer}
@@ -502,10 +486,6 @@ final class FrameworkProxy implements Framework {
 
         ServiceController<?> getRequiredService(ServiceName serviceName) {
             return serviceContainer.getRequiredService(serviceName);
-        }
-
-        ServiceTarget subTarget() {
-            return serviceContainer.subTarget();
         }
 
         boolean isShutdownInitiated() {
