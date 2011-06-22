@@ -22,14 +22,13 @@
 package org.jboss.osgi.framework.internal;
 
 import org.jboss.logging.Logger;
-import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.StopContext;
+import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.launch.Framework;
 
@@ -43,15 +42,17 @@ import org.osgi.framework.launch.Framework;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-public final class FrameworkActivator implements Service<Void> {
+final class FrameworkActivator extends AbstractFrameworkService {
 
     // Provide logging
     static final Logger log = Logger.getLogger(FrameworkActivator.class);
 
+    private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
+    
     static void addService(ServiceTarget serviceTarget, Mode initialMode) {
         FrameworkActivator service = new FrameworkActivator();
-        ServiceBuilder<Void> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVATOR, service);
-        builder.addDependency(Services.FRAMEWORK_ACTIVE);
+        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVATOR, service);
+        builder.addDependency(Services.FRAMEWORK_ACTIVE, FrameworkState.class, service.injectedFramework);
         builder.setInitialMode(initialMode);
         builder.install();
     }
@@ -61,20 +62,14 @@ public final class FrameworkActivator implements Service<Void> {
 
     @Override
     public void start(StartContext context) throws StartException {
+        super.start(context);
         ServiceController<?> controller = context.getController();
-        log.debugf("Starting: %s in mode %s", controller.getName(), controller.getMode());
         controller.setMode(Mode.ACTIVE);
     }
 
     @Override
-    public void stop(StopContext context) {
-        ServiceController<?> controller = context.getController();
-        log.debugf("Stopping: %s in mode %s", controller.getName(), controller.getMode());
-    }
-
-    @Override
-    public Void getValue() {
-        return null;
+    public FrameworkState getValue() {
+        return injectedFramework.getValue();
     }
 
 }

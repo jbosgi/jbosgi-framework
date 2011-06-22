@@ -21,10 +21,11 @@
  */
 package org.jboss.osgi.framework;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashSet;
-import java.util.Set;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -35,7 +36,7 @@ import org.jboss.logging.Logger;
 import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.State;
-import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.StartException;
 
 /**
@@ -93,7 +94,9 @@ public final class FutureServiceValue<T> implements Future<T> {
             return controller.getValue();
 
         final CountDownLatch latch = new CountDownLatch(1);
-        AbstractServiceListener<T> listener = new AbstractServiceListener<T>() {
+        final FutureServiceValue<T> futureServiceValue = this;
+        final String serviceName = controller.getName().getCanonicalName();
+        ServiceListener<T> listener = new AbstractServiceListener<T>() {
 
             @Override
             public void listenerAdded(ServiceController<? extends T> controller) {
@@ -102,16 +105,16 @@ public final class FutureServiceValue<T> implements Future<T> {
                     listenerDone(controller);
             }
 
-            @Override
-            public void serviceStarted(ServiceController<? extends T> controller) {
-                listenerDone(controller);
+            public void transition(final ServiceController<? extends T> controller, final ServiceController.Transition transition) {
+                log.tracef("transition %s %s => %s", futureServiceValue, serviceName, transition);
+                switch (transition) {
+                    case STARTING_to_UP:
+                    case STARTING_to_START_FAILED:
+                        listenerDone(controller);
+                        break;
+                }
             }
-
-            @Override
-            public void serviceFailed(ServiceController<? extends T> controller, StartException reason) {
-                listenerDone(controller);
-            }
-
+            
             private void listenerDone(ServiceController<? extends T> controller) {
                 controller.removeListener(this);
                 latch.countDown();
@@ -121,8 +124,8 @@ public final class FutureServiceValue<T> implements Future<T> {
 
         try {
             if (latch.await(timeout, unit) == false) {
-                TimeoutException ex = new TimeoutException("Timeout getting " + controller.getName());
-                processException(ex);
+                TimeoutException ex = new TimeoutException("Timeout getting " + serviceName);
+                processTimeoutException(ex);
                 throw ex;
             }
         } catch (InterruptedException e) {
@@ -133,46 +136,22 @@ public final class FutureServiceValue<T> implements Future<T> {
             return controller.getValue();
 
         StartException startException = controller.getStartException();
-        processException(startException);
-
-        Throwable cause = (startException != null ? startException.getCause() : null);
-        if (cause instanceof RuntimeException)
-            throw (RuntimeException) cause;
-        if (cause instanceof ExecutionException)
-            throw (ExecutionException) cause;
-        if (cause instanceof TimeoutException)
-            throw (TimeoutException) cause;
-
-        throw new ExecutionException("Cannot get service value for: " + controller, cause);
+        throw new ExecutionException("Cannot get service value for: " + serviceName, startException);
     }
 
-    private void processException(Exception exception) {
-        StringWriter out = new StringWriter();
-        PrintWriter writer = new PrintWriter(out);
-        Set<ServiceName> visited = new HashSet<ServiceName>();
-        Set<ServiceName> unavailableDependencies = controller.getImmediateUnavailableDependencies();
-        processUnavailableDependencies(unavailableDependencies, 0, writer, visited);
-        log.errorf("Cannot get service value for: %s\n%s", controller, out);
-    }
-
-    private void processUnavailableDependencies(Set<ServiceName> unavailableDependencies, int level, PrintWriter writer, Set<ServiceName> visited) {
-        if (unavailableDependencies != null) {
-            for (ServiceName serviceName : unavailableDependencies) {
-                if (visited.contains(serviceName)) {
-                    continue;
-                }
-                visited.add(serviceName);
-                for (int i = 0; i < level; i++) {
-                    writer.print("  ");
-                }
-                writer.print("+ " + serviceName.getCanonicalName());
-                ServiceController<?> dep = controller.getServiceContainer().getService(serviceName);
-                if (dep != null) {
-                    writer.println("[state=" + dep.getState() + ",cause=" + dep.getStartException() + "]");
-                    processUnavailableDependencies(dep.getImmediateUnavailableDependencies(), level + 1, writer, visited);
-                } else {
-                    writer.println("[state=UNAVAILABLE]");
-                }
+    private void processTimeoutException(TimeoutException exception) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream out = new PrintStream(baos);
+        controller.getServiceContainer().dumpServices(out);
+        String serviceName = controller.getName().getCanonicalName();
+        log.errorf("Cannot get service value for: %s\n%s", serviceName, new String(baos.toByteArray()));
+        ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+        ThreadInfo[] infos = bean.dumpAllThreads(true, true);
+        for (ThreadInfo info : infos) {
+            if (info.getThreadName().contains("MSC")) {
+                StringBuffer buffer = new StringBuffer();
+                buffer.append("ThreadInfo: " + info);
+                log.errorf("%s", buffer);
             }
         }
     }
