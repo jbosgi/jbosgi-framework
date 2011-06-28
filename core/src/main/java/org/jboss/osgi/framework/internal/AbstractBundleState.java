@@ -43,8 +43,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
@@ -553,10 +551,7 @@ abstract class AbstractBundleState implements Bundle {
                 resolverPlugin.resolve(resModule);
 
                 // Activate the service that represents bundle state RESOLVED
-                ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
-                ServiceController<?> controller = serviceContainer.getService(getServiceName(RESOLVED));
-                if (controller != null)
-                    controller.setMode(Mode.ACTIVE);
+                getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.ACTIVE);
 
                 return true;
             } catch (BundleException ex) {

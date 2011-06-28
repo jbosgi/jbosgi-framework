@@ -43,6 +43,7 @@ import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -507,9 +508,25 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         bundleMap.remove(userBundle.getBundleId());
     }
 
-    /**
-     * Fire a framework error
-     */
+    void setServiceMode(ServiceName serviceName, Mode mode) {
+        ServiceController<?> controller = serviceContainer.getService(serviceName);
+        if (controller == null)
+            log.debugf("Cannot set mode %s on non-existing service: %s", mode, serviceName);
+        else
+            setServiceMode(controller, mode);
+    }
+
+    void setServiceMode(ServiceController<?> controller, Mode mode) {
+        try {
+            log.tracef("Set mode %s on service: %s", mode, controller.getName());
+            controller.setMode(mode);
+        } catch (IllegalArgumentException rte) {
+            // [MSC-105] Cannot determine whether container is shutting down 
+            if (rte.getMessage().equals("Container is shutting down") == false)
+                throw rte;
+        }
+    }
+
     void fireFrameworkError(AbstractBundleState bundleState, String context, Throwable t) {
         FrameworkEventsPlugin plugin = getFrameworkState().getFrameworkEventsPlugin();
         if (t instanceof BundleException) {
@@ -522,9 +539,6 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         }
     }
 
-    /**
-     * Fire a framework warning
-     */
     void fireFrameworkWarning(AbstractBundleState bundleState, String context, Throwable t) {
         FrameworkEventsPlugin plugin = getFrameworkState().getFrameworkEventsPlugin();
         if (t instanceof BundleException) {

@@ -36,8 +36,6 @@ import java.util.concurrent.TimeUnit;
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -275,10 +273,7 @@ abstract class UserBundleState extends AbstractBundleState {
         changeState(Bundle.INSTALLED, BundleEvent.UNRESOLVED);
 
         // Deactivate the service that represents bundle state RESOLVED
-        ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
-        ServiceController<?> controller = serviceContainer.getService(getServiceName(RESOLVED));
-        if (controller != null)
-            controller.setMode(Mode.NEVER);
+        getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.NEVER);
 
         try {
             // If the Framework is unable to install the updated version of this bundle, the original
@@ -421,10 +416,7 @@ abstract class UserBundleState extends AbstractBundleState {
         changeState(Bundle.INSTALLED);
 
         // Deactivate the service that represents bundle state RESOLVED
-        ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
-        ServiceController<?> controller = serviceContainer.getService(getServiceName(RESOLVED));
-        if (controller != null)
-            controller.setMode(Mode.NEVER);
+        getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.NEVER);
     }
 
     @Override
@@ -448,17 +440,9 @@ abstract class UserBundleState extends AbstractBundleState {
 
     void removeServices() {
         log.debugf("Remove services for: %s", this);
-        ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
-        ServiceController<?> controller = serviceContainer.getService(getServiceName(INSTALLED));
-        if (controller != null)
-            controller.setMode(Mode.REMOVE);
-
-        controller = serviceContainer.getService(getServiceName(RESOLVED));
-        if (controller != null)
-            controller.setMode(Mode.REMOVE);
-
-        controller = serviceContainer.getService(getServiceName(ACTIVE));
-        if (controller != null)
-            controller.setMode(Mode.REMOVE);
+        BundleManager bundleManager = getBundleManager();
+        bundleManager.setServiceMode(getServiceName(ACTIVE), Mode.REMOVE);
+        bundleManager.setServiceMode(getServiceName(RESOLVED), Mode.REMOVE);
+        bundleManager.setServiceMode(getServiceName(INSTALLED), Mode.REMOVE);
     }
 }

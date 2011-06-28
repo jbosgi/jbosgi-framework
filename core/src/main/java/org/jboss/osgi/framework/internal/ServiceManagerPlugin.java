@@ -380,7 +380,8 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                         List<ServiceState> serviceStates = (List<ServiceState>) controller.getValue();
                         serviceStates.remove(serviceState);
                         if (serviceStates.isEmpty()) {
-                            controller.setMode(Mode.REMOVE);
+                            BundleManager bundleManager = injectedBundleManager.getValue();
+                            bundleManager.setServiceMode(controller, Mode.REMOVE);
                         }
                     }
                 } catch (RuntimeException ex) {

@@ -28,8 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
-import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
@@ -332,10 +330,7 @@ final class HostBundleState extends UserBundleState {
         changeState(ACTIVE);
 
         // Activate the service that represents bundle state ACTIVE
-        ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
-        ServiceController<?> controller = serviceContainer.getService(getServiceName(ACTIVE));
-        if (controller != null)
-            controller.setMode(Mode.ACTIVE);
+        getBundleManager().setServiceMode(getServiceName(ACTIVE), Mode.ACTIVE);
 
         log.infof("Bundle started: %s", this);
     }
@@ -410,10 +405,7 @@ final class HostBundleState extends UserBundleState {
             changeState(RESOLVED, BundleEvent.STOPPED);
 
             // Deactivate the service that represents bundle state ACTIVE
-            ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
-            ServiceController<?> controller = serviceContainer.getService(getServiceName(ACTIVE));
-            if (controller != null)
-                controller.setMode(Mode.NEVER);
+            getBundleManager().setServiceMode(getServiceName(ACTIVE), Mode.NEVER);
 
             log.infof("Bundle stopped: %s", this);
 
