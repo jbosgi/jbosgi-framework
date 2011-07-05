@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -141,6 +142,11 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         if (getProperty(Constants.FRAMEWORK_VERSION) == null)
             setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
 
+        log.debugf("Framework properties");
+        for (Entry<String, Object> entry : properties.entrySet()) {
+            log.debugf(" %s = %s", entry.getKey(), entry.getValue());
+        }
+
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 shutdownInitiated.set(true);
@@ -212,7 +218,6 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
             m.put(entry.getKey().toString(), entry.getValue());
         }
-
         m.putAll(properties);
         return m;
     }
@@ -556,6 +561,14 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
 
             public Object run() {
                 List<String> execEnvironments = new ArrayList<String>();
+                if (Java.isCompatible(Java.VERSION_1_2)) {
+                    execEnvironments.add("OSGi/Minimum-1.2");
+                    execEnvironments.add("J2SE-1.2");
+                }
+                if (Java.isCompatible(Java.VERSION_1_3)) 
+                    execEnvironments.add("J2SE-1.3");
+                if (Java.isCompatible(Java.VERSION_1_4)) 
+                    execEnvironments.add("J2SE-1.4");
                 if (Java.isCompatible(Java.VERSION_1_5))
                     execEnvironments.add("J2SE-1.5");
                 if (Java.isCompatible(Java.VERSION_1_6))
