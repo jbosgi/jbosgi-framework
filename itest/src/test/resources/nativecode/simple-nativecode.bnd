@@ -4,6 +4,7 @@ Private-Package: org.jboss.test.osgi.framework.nativecode.bundleA
 Bundle-NativeCode: \
  linux_x86/libNative.so; osname=Linux; processor=x86, \
  linux_x86-64/libNative.so; osname=Linux; processor=x86-64, \
+ linux_ia64/libNative.so; osname=Linux; processor=ia64, \
  macosx_x86/libNative.jnilib; osname="mac os x"; processor=x86_64, \
  macosx_x86/libNative.jnilib; osname="mac os x"; processor=ppc, \
  windows_x86/Native.dll; osname=Win32; processor=x86, \
