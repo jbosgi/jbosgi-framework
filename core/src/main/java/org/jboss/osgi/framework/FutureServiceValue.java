@@ -136,7 +136,11 @@ public final class FutureServiceValue<T> implements Future<T> {
             return controller.getValue();
 
         StartException startException = controller.getStartException();
-        throw new ExecutionException("Cannot get service value for: " + serviceName, startException);
+        Throwable cause = startException != null ? startException.getCause() : startException;
+        if (cause instanceof RuntimeException) { 
+            throw (RuntimeException)cause;
+        }
+        throw new ExecutionException("Cannot get service value for: " + serviceName, cause);
     }
 
     private void processTimeoutException(TimeoutException exception) {
