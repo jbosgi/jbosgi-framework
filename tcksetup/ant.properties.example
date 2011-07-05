@@ -1,0 +1,13 @@
+#
+# A sample ant properties file
+#
+# 
+
+# Versions 
+aQute.bnd.version=0.0.365.SP1
+
+# The location of the OSGi TCK
+# tck.checkout.dir=/home/yourname/git/osgitck
+
+# TCK user
+# username=yourname
