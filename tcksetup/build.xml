@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- ====================================================================== -->
+<!--                                                                        -->
+<!--  JBoss, the OpenSource J2EE webOS                                      -->
+<!--                                                                        -->
+<!--  Distributable under LGPL license.                                     -->
+<!--  See terms of license at http://www.gnu.org.                           -->
+<!--                                                                        -->
+<!-- ====================================================================== -->
+
+<project default="setup.vi">
+
+  <property name="target.dir" value="${basedir}/target" />
+  <property name="reports.dir" value="${target.dir}/test-reports" />
+
+  <!-- ================================================================== -->
+  <!-- Initialization                                                     -->
+  <!-- ================================================================== -->
+
+  <target name="init">
+
+    <!-- Check if ant.properties is available -->
+    <available property="ant.properties.available" file="${basedir}/ant.properties" />
+    <fail message="Cannot find ant.properties. Did you copy/edit ant.properties.example?" unless="ant.properties.available" />
+
+    <property file="${basedir}/ant.properties" />
+  	
+  	<!-- Get the framework version from the POM -->
+  	<xmlproperty file="${basedir}/../pom.xml"/>
+    <property name="framework.version" value="${project.version}" />
+  	
+    <!-- Setup property defaults -->
+    <property environment="env" />
+    <property name="username" value="${env.USER}" />
+    <property name="tck.checkout.dir" value="${env.TCKCHECKOUT}" />
+    <property name="maven.local.repository" value="/home/${username}/.m2/repository" />
+    <property name="framework.groupId" value="org/jboss/osgi/framework" />
+    <property name="framework.artifactId" value="jbosgi-framework-aggregated" />
+    <property name="framework.jar" value="${framework.artifactId}-${framework.version}-all.jar" />
+
+    <echo>************************************************</echo>
+    <echo message="aQute.bnd.version=${aQute.bnd.version}" />
+    <echo message="framework.jar=${framework.jar}" />
+    <echo message="tck.checkout.dir=${tck.checkout.dir}" />
+    <echo>************************************************</echo>
+
+    <!-- Check if the osgitck dir is available -->
+    <available property="tck.checkout.dir.available" file="${tck.checkout.dir}" />
+    <fail message="Cannot find: ${tck.checkout.dir}" unless="tck.checkout.dir.available" />
+
+    <!-- Check if the aQute.bnd jar is available -->
+    <property name="aQute.bnd.jar" value="${maven.local.repository}/biz/aQute/aQute.bnd/${aQute.bnd.version}/aQute.bnd-${aQute.bnd.version}.jar" />
+    <available property="aQute.bnd.available" file="${aQute.bnd.jar}" />
+    <fail message="Cannot find: ${aQute.bnd.jar}" unless="aQute.bnd.available" />
+
+    <!-- Check if the jboss.osgi.framework jar is available -->
+    <property name="framework.jar.path" value="${maven.local.repository}/${framework.groupId}/${framework.artifactId}/${framework.version}/${framework.jar}" />
+    <available property="framework.jar.available" file="${framework.jar.path}" />
+    <fail message="Cannot find: ${framework.jar.path}" unless="framework.jar.available" />
+
+  	<!-- Add a missing directory that prevents the build -->
+  	<mkdir dir="${tck.checkout.dir}/osgi.companion/src"/>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Setup                                                              -->
+  <!-- ================================================================== -->
+
+  <!-- Setup the TCK to use the RI (equinox) -->
+  <target name="setup.ri" description="Setup the TCK using the RI (Equinox)" depends="init">
+
+    <!-- Copy the aQute.bnd -->
+    <copy file="${aQute.bnd.jar}" tofile="${tck.checkout.dir}/licensed/repo/biz.aQute.bnd/biz.aQute.bnd-latest.jar" overwrite="true" />
+
+    <!-- Build the TCK -->
+    <ant dir="${tck.checkout.dir}" target="build-clean" />
+  </target>
+
+  <!-- Setup the TCK to use the Vendor Implemenation -->
+  <target name="setup.vi" description="Setup the TCK using the Vendor Implemenation" depends="init,update-framework">
+
+    <!-- Copy the aQute.bnd -->
+    <copy file="${aQute.bnd.jar}" tofile="${tck.checkout.dir}/licensed/repo/biz.aQute.bnd/biz.aQute.bnd-latest.jar" overwrite="true" />
+
+    <!-- Overlay the TCK setup -->
+    <copy todir="${tck.checkout.dir}" overwrite="true">
+      <fileset dir="${basedir}/overlay" />
+    </copy>
+
+    <!-- Build the TCK -->
+    <ant dir="${tck.checkout.dir}" target="build-clean" />
+  </target>
+
+  <!-- Update the JBoss OSGi Framework -->
+  <target name="update-framework" description="Update the JBoss OSGi Framework" depends="init">
+    <!-- Copy the OSGi Framework -->
+    <mkdir dir="${tck.checkout.dir}/licensed/repo/org.jboss.osgi.framework" />
+    <copy file="${framework.jar.path}" tofile="${tck.checkout.dir}/licensed/repo/org.jboss.osgi.framework/org.jboss.osgi.framework-1.0.0.jar"
+      overwrite="true" />
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- TCK Tests                                                          -->
+  <!-- ================================================================== -->
+
+  <target name="run-core-tests" description="Run the TCK core tests" depends="init">
+    <fail message="Cannot find: ${tck.checkout.dir}" unless="tck.checkout.dir.available" />
+    <ant dir="${tck.checkout.dir}/osgi.ct" target="osgi.core.tests" />
+  </target>
+
+  <target name="run-startlevel-tests" description="Run the TCK Start Level service tests" depends="init">
+    <fail message="Cannot find: ${tck.checkout.dir}" unless="tck.checkout.dir.available" />
+    <ant dir="${tck.checkout.dir}/org.osgi.test.cases.startlevel" target="test" />
+  </target>
+
+  <target name="run-packageadmin-tests" description="Run the TCK Package Admin service tests" depends="init">
+    <fail message="Cannot find: ${tck.checkout.dir}" unless="tck.checkout.dir.available" />
+    <ant dir="${tck.checkout.dir}/org.osgi.test.cases.packageadmin" target="test" />
+  </target>
+
+  <target name="run-blueprint-tests" description="Run the TCK blueprint tests" depends="init">
+    <fail message="Cannot find: ${tck.checkout.dir}" unless="tck.checkout.dir.available" />
+    <ant dir="${tck.checkout.dir}/org.osgi.test.cases.blueprint" target="test" />
+    <ant dir="${tck.checkout.dir}/org.osgi.test.cases.blueprint.secure" target="test" />
+  </target>
+
+  <target name="run-jdbc-tests" description="Run the TCK jdbc tests" depends="init">
+    <fail message="Cannot find: ${tck.checkout.dir}" unless="tck.checkout.dir.available" />
+    <ant dir="${tck.checkout.dir}/org.osgi.test.cases.jdbc" target="test" />
+  </target>
+
+  <target name="run-jmx-tests" description="Run the TCK jmx tests" depends="init">
+    <fail message="Cannot find: ${tck.checkout.dir}" unless="tck.checkout.dir.available" />
+    <ant dir="${tck.checkout.dir}/org.osgi.test.cases.jmx" target="test" />
+  </target>
+
+  <target name="run-jndi-tests" description="Run the TCK jndi tests" depends="init">
+    <fail message="Cannot find: ${tck.checkout.dir}" unless="tck.checkout.dir.available" />
+    <ant dir="${tck.checkout.dir}/org.osgi.test.cases.jndi" target="test" />
+  </target>
+
+  <target name="run-jpa-tests" description="Run the TCK jpa tests" depends="init">
+    <fail message="Cannot find: ${tck.checkout.dir}" unless="tck.checkout.dir.available" />
+    <ant dir="${tck.checkout.dir}/org.osgi.test.cases.jpa" target="test" />
+  </target>
+
+  <target name="run-jta-tests" description="Run the TCK jta tests" depends="init">
+    <fail message="Cannot find: ${tck.checkout.dir}" unless="tck.checkout.dir.available" />
+    <ant dir="${tck.checkout.dir}/org.osgi.test.cases.transaction" target="test" />
+  </target>
+
+  <target name="run-webapp-tests" description="Run the TCK webapp tests" depends="init">
+    <fail message="Cannot find: ${tck.checkout.dir}" unless="tck.checkout.dir.available" />
+    <ant dir="${tck.checkout.dir}/org.osgi.test.cases.webcontainer" target="test" />
+  </target>
+
+  <target name="test-reports" description="Generate the TCK test reports" depends="init">
+    <fail message="Cannot find: ${tck.checkout.dir}" unless="tck.checkout.dir.available" />
+    <mkdir dir="${reports.dir}" />
+    <junitreport todir="${reports.dir}">
+      <fileset dir="${tck.checkout.dir}">
+        <include name="**/test-reports/TEST-*.xml" />
+      </fileset>
+      <report format="frames" todir="${reports.dir}/html" />
+    </junitreport>
+
+    <echo />
+    <echo message="Generated test reports: ${reports.dir}" />
+    <echo />
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- Clean                                                              -->
+  <!-- ================================================================== -->
+
+  <target name="clean" description="Clean the TCK setup" depends="init">
+    <ant dir="${tck.checkout.dir}/osgi.ct" target="deepclean" />
+    <delete dir="${target.dir}" />
+  </target>
+
+</project>
