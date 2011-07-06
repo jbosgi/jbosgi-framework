@@ -229,7 +229,7 @@ final class HostBundleState extends UserBundleState {
         if (requiredEnvs != null) {
             boolean foundSupportedEnv = false;
             String frameworkEnvProp = (String) getBundleManager().getProperty(Constants.FRAMEWORK_EXECUTIONENVIRONMENT);
-            List<String> availableEnvs = Arrays.asList(frameworkEnvProp.split("[, ]"));
+            List<String> availableEnvs = Arrays.asList(frameworkEnvProp.split("[,\\s]+"));
             for (String aux : requiredEnvs) {
                 if (availableEnvs.contains(aux)) {
                     foundSupportedEnv = true;
@@ -422,7 +422,7 @@ final class HostBundleState extends UserBundleState {
             if (activationSemaphore.tryAcquire(10, TimeUnit.SECONDS) == false)
                 throw new BundleException("Cannot acquire start/stop lock for: " + this);
         } catch (InterruptedException ex) {
-            log.warnf("Tread interupted while trying to start/stop bundle: %s", this);
+            log.warnf("Interupted while trying to start/stop bundle: %s", this);
             return;
         }
     }
