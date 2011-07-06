@@ -43,8 +43,8 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -526,7 +526,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
             log.tracef("Set mode %s on service: %s", mode, controller.getName());
             controller.setMode(mode);
         } catch (IllegalArgumentException rte) {
-            // [MSC-105] Cannot determine whether container is shutting down 
+            // [MSC-105] Cannot determine whether container is shutting down
             if (rte.getMessage().equals("Container is shutting down") == false)
                 throw rte;
         }
@@ -561,13 +561,17 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
 
             public Object run() {
                 List<String> execEnvironments = new ArrayList<String>();
+                if (Java.isCompatible(Java.VERSION_1_1)) {
+                    execEnvironments.add("OSGi/Minimum-1.1");
+                    execEnvironments.add("J2SE-1.1");
+                }
                 if (Java.isCompatible(Java.VERSION_1_2)) {
                     execEnvironments.add("OSGi/Minimum-1.2");
                     execEnvironments.add("J2SE-1.2");
                 }
-                if (Java.isCompatible(Java.VERSION_1_3)) 
+                if (Java.isCompatible(Java.VERSION_1_3))
                     execEnvironments.add("J2SE-1.3");
-                if (Java.isCompatible(Java.VERSION_1_4)) 
+                if (Java.isCompatible(Java.VERSION_1_4))
                     execEnvironments.add("J2SE-1.4");
                 if (Java.isCompatible(Java.VERSION_1_5))
                     execEnvironments.add("J2SE-1.5");
