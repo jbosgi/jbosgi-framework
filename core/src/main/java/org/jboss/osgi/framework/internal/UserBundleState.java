@@ -281,9 +281,9 @@ abstract class UserBundleState extends AbstractBundleState {
             // completion of the remaining steps.
             createUpdateRevision(input);
         } catch (BundleException ex) {
-            if (restart)
+            if (restart) {
                 startInternal(Bundle.START_TRANSIENT);
-
+            }
             throw ex;
         } catch (Exception ex) {
             BundleException be = new BundleException("Problem updating bundle");
