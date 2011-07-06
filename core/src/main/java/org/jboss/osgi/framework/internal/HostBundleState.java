@@ -134,9 +134,9 @@ final class HostBundleState extends UserBundleState {
         if (awaitLazyActivation.getAndSet(false)) {
             if (startLevelValidForStart() == true) {
                 int options = START_TRANSIENT;
-                if (isBundleActivationPolicyUsed())
+                if (isBundleActivationPolicyUsed()) {
                     options |= START_ACTIVATION_POLICY;
-
+                }
                 log.debugf("Lazy activation of: %s", this);
                 startInternal(options);
             }
@@ -171,6 +171,11 @@ final class HostBundleState extends UserBundleState {
     }
 
     void startInternal(int options) throws BundleException {
+
+        // Disable lazy activation for explicit start
+        boolean useActivationPolicy = (options & START_ACTIVATION_POLICY) != 0;
+        if (useActivationPolicy == false)
+            awaitLazyActivation.set(false);
 
         // Assert the required start conditions
         assertStartConditions();
@@ -210,7 +215,6 @@ final class HostBundleState extends UserBundleState {
                 createBundleContext();
 
             // #5 If the START_ACTIVATION_POLICY option is set and this bundle's declared activation policy is lazy
-            boolean useActivationPolicy = (options & START_ACTIVATION_POLICY) != 0;
             if (awaitLazyActivation.get() == true && useActivationPolicy == true) {
                 transitionToStarting(options);
             } else {
