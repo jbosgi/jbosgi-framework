@@ -84,7 +84,7 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
                     URL.setURLStreamHandlerFactory(streamHandlerDelegate);
                 } catch (Throwable th) {
                     // [MODULES-44] Provide an API that allows adding of URLStreamHandlerFactories
-                    log.warnf("Unable to set the URLStreamHandlerFactory");
+                    log.debugf("Unable to set the URLStreamHandlerFactory");
                 }
                 return null;
             }
@@ -96,7 +96,7 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
                     URLConnection.setContentHandlerFactory(contentHandlerDelegate);
                 } catch (Throwable th) {
                     // [MODULES-44] Provide an API that allows adding of URLStreamHandlerFactories
-                    log.warnf("Unable to set the ContentHandlerFactory");
+                    log.debugf("Unable to set the ContentHandlerFactory");
                 }
                 return null;
             }
