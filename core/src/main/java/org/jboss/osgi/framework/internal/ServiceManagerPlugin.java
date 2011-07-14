@@ -162,22 +162,31 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
         log.debugf("Register service: %s", serviceState);
 
         for (ServiceName serviceName : serviceState.getServiceNames()) {
-            @SuppressWarnings("unchecked")
-            ServiceController<List<ServiceState>> controller = (ServiceController<List<ServiceState>>) serviceContainer.getService(serviceName);
-            if (controller != null) {
-                List<ServiceState> serviceStates = controller.getValue();
-                serviceStates.add(serviceState);
-            } else {
-                final List<ServiceState> serviceStates = new CopyOnWriteArrayList<ServiceState>();
-                serviceStates.add(serviceState);
-                Service<List<ServiceState>> service = new AbstractService<List<ServiceState>>() {
-                    public List<ServiceState> getValue() throws IllegalStateException {
-                        // [TODO] for injection to work this needs to be the Object value
-                        return serviceStates;
-                    }
-                };
-                ServiceBuilder<List<ServiceState>> builder = serviceTarget.addService(serviceName, service);
-                builder.install();
+            // Obtain an interned string representation of the service name
+            // having it interned means that two services with the same name will
+            // return the same object.
+            String sns = serviceName.getCanonicalName().intern();
+
+            // Now synchronize on the string representation so that two concurrent
+            // registrations of two services with the same name will not race to create an MSC service.
+            synchronized(sns) {
+                @SuppressWarnings("unchecked")
+                ServiceController<List<ServiceState>> controller = (ServiceController<List<ServiceState>>) serviceContainer.getService(serviceName);
+                if (controller != null) {
+                    List<ServiceState> serviceStates = controller.getValue();
+                    serviceStates.add(serviceState);
+                } else {
+                    final List<ServiceState> serviceStates = new CopyOnWriteArrayList<ServiceState>();
+                    serviceStates.add(serviceState);
+                    Service<List<ServiceState>> service = new AbstractService<List<ServiceState>>() {
+                        public List<ServiceState> getValue() throws IllegalStateException {
+                            // [TODO] for injection to work this needs to be the Object value
+                            return serviceStates;
+                        }
+                    };
+                    ServiceBuilder<List<ServiceState>> builder = serviceTarget.addService(serviceName, service);
+                    builder.install();
+                }
             }
         }
         bundleState.addRegisteredService(serviceState);
