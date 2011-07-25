@@ -21,6 +21,8 @@
  */
 package org.jboss.test.osgi.framework.jbosgi476;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.InputStream;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
@@ -34,7 +36,7 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.Constants;
 
 /**
- * [JBOSGI-476] Cannot acquire start/stop lock upon Equinox Util Bundle deployment
+ * [JBOSGI-476] Cannot acquire start/stop lock for lazy bundles
  *
  * https://jira.jboss.org/jira/browse/JBOSGI-476
  *
@@ -63,8 +65,13 @@ public class OSGi476TestCase extends OSGiFrameworkTest {
         Bundle bundleA = installBundle(archiveA);
         assertBundleState(Bundle.INSTALLED, bundleA.getState());
 
+        long before = System.currentTimeMillis();
+        
         bundleA.start(Bundle.START_TRANSIENT);
         assertBundleState(Bundle.ACTIVE, bundleA.getState());
+        
+        long after = System.currentTimeMillis();
+        assertTrue("Start not running into activation lock, should complete in < 2sec", (after - before) < 2000);
 
         bundleA.uninstall();
     }
