@@ -24,6 +24,7 @@ package org.jboss.test.osgi.framework.bundle.activation;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -43,9 +44,12 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
+import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.SynchronousBundleListener;
+import org.osgi.service.startlevel.StartLevel;
 
 /**
  * BundleActivationTestCase
@@ -58,7 +62,7 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testLazyActivation() throws Exception {
-        
+
         BundleContext context = getSystemContext();
         context.addBundleListener(new ActivationListener());
 
@@ -188,6 +192,75 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
             }
         } finally {
             providerBundle.uninstall();
+        }
+    }
+
+    @Test
+    public void testTransitiveStartWithStartLevel() throws Exception {
+        BundleContext context = getSystemContext();
+        context.addBundleListener(new ActivationListener());
+
+        StartLevel startLevel = getStartLevel();
+        int initialFrameworkSL = startLevel.getStartLevel();
+        int initialBundleStartLevel = startLevel.getInitialBundleStartLevel();
+        
+        startLevel.setInitialBundleStartLevel(initialFrameworkSL + 10);
+        try {
+            Bundle providerBundle = installBundle(getLazyServiceProvider());
+            try {
+                assertBundleState(Bundle.INSTALLED, providerBundle.getState());
+                
+                providerBundle.start(Bundle.START_ACTIVATION_POLICY);
+                assertBundleState(Bundle.INSTALLED, providerBundle.getState());
+
+                context.addBundleListener(this);
+                context.addFrameworkListener(this);
+                
+                // Crank up the framework start-level.  This should result in no STARTED event
+                startLevel.setStartLevel(initialFrameworkSL + 15);
+                assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, context.getBundle(), null);
+
+                startLevel.setStartLevel(initialFrameworkSL);
+                assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, context.getBundle(), null);
+                
+                assertBundleEvent(BundleEvent.RESOLVED, providerBundle);
+                assertBundleEvent(BundleEvent.LAZY_ACTIVATION, providerBundle);
+                assertBundleEvent(BundleEvent.STOPPING, providerBundle);
+                assertBundleEvent(BundleEvent.STOPPED, providerBundle);
+                assertNoBundleEvent();
+                
+                try {
+                    providerBundle.start(Bundle.START_TRANSIENT);
+                    fail("BundleException expected");
+                } catch (BundleException ex) {
+                    // expected
+                }
+                
+                // Now call start(START_TRANSIENT) while start-level is met.
+                startLevel.setStartLevel(initialFrameworkSL + 15);
+                assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, context.getBundle(), null);
+                
+                providerBundle.start(Bundle.START_TRANSIENT);
+                assertBundleState(Bundle.ACTIVE, providerBundle.getState());
+                
+                assertBundleEvent(BundleEvent.LAZY_ACTIVATION, providerBundle);
+                assertBundleEvent(BundleEvent.STARTING, providerBundle);
+                assertBundleEvent(BundleEvent.STARTED, providerBundle);
+                assertNoBundleEvent();
+                
+                startLevel.setStartLevel(initialFrameworkSL);
+                assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, context.getBundle(), null);
+                
+                assertBundleEvent(BundleEvent.STOPPING, providerBundle);
+                assertBundleEvent(BundleEvent.STOPPED, providerBundle);
+                assertNoBundleEvent();
+                
+                assertBundleState(Bundle.RESOLVED, providerBundle.getState());
+            } finally {
+                providerBundle.uninstall();
+            }
+        } finally {
+            startLevel.setInitialBundleStartLevel(initialBundleStartLevel);
         }
     }
 

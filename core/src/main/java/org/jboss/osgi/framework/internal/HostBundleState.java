@@ -54,7 +54,8 @@ final class HostBundleState extends UserBundleState {
     static final Logger log = Logger.getLogger(HostBundleState.class);
 
     private final Semaphore activationSemaphore = new Semaphore(1);
-    private AtomicBoolean awaitLazyActivation;
+    private final AtomicBoolean alreadyStarting = new AtomicBoolean();
+    private final AtomicBoolean awaitLazyActivation = new AtomicBoolean();
     private BundleActivator bundleActivator;
     private int startLevel;
 
@@ -74,7 +75,7 @@ final class HostBundleState extends UserBundleState {
     void initUserBundleState(OSGiMetaData metadata) {
         StartLevel startLevelService = getCoreServices().getStartLevelPlugin();
         startLevel = startLevelService.getInitialBundleStartLevel();
-        awaitLazyActivation = new AtomicBoolean(isActivationLazy());
+        awaitLazyActivation.set(isActivationLazy());
     }
 
     @Override
@@ -170,12 +171,11 @@ final class HostBundleState extends UserBundleState {
         storageState.setBundleActivationPolicyUsed(usePolicy);
     }
 
-    void startInternal(int options) throws BundleException {
+    boolean isAlreadyStarting() {
+        return alreadyStarting.get();
+    }
 
-        // Disable lazy activation for explicit start
-        boolean useActivationPolicy = (options & START_ACTIVATION_POLICY) != 0;
-        if (useActivationPolicy == false)
-            awaitLazyActivation.set(false);
+    void startInternal(int options) throws BundleException {
 
         // Assert the required start conditions
         assertStartConditions();
@@ -192,6 +192,7 @@ final class HostBundleState extends UserBundleState {
             return;
         }
 
+        alreadyStarting.set(true);
         try {
             // #1 If this bundle is in the process of being activated or deactivated
             // then this method must wait for activation or deactivation to complete before continuing.
@@ -215,12 +216,14 @@ final class HostBundleState extends UserBundleState {
                 createBundleContext();
 
             // #5 If the START_ACTIVATION_POLICY option is set and this bundle's declared activation policy is lazy
+            boolean useActivationPolicy = (options & START_ACTIVATION_POLICY) != 0;
             if (awaitLazyActivation.get() == true && useActivationPolicy == true) {
                 transitionToStarting(options);
             } else {
                 transitionToActive(options);
             }
         } finally {
+            alreadyStarting.set(false);
             releaseActivationLock();
         }
     }

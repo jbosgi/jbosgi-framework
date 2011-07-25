@@ -43,7 +43,7 @@ import org.osgi.framework.launch.Framework;
 import org.osgi.service.startlevel.StartLevel;
 
 /**
- * Test framework bootstrap options.
+ * Test start level.
  * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>

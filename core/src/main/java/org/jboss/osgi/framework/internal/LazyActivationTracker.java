@@ -36,7 +36,7 @@ final class LazyActivationTracker {
     // Provide logging
     static final Logger log = Logger.getLogger(LazyActivationTracker.class);
 
-    private final static ThreadLocal<Stack<HostBundleState>> StackAssociation = new ThreadLocal<Stack<HostBundleState>>();
+    private final static ThreadLocal<Stack<HostBundleState>> stackAssociation = new ThreadLocal<Stack<HostBundleState>>();
     private final static ThreadLocal<HostBundleState> initiatorAssociation = new ThreadLocal<HostBundleState>();
 
     static void startTracking(HostBundleState hostBundle, String className) {
@@ -67,15 +67,15 @@ final class LazyActivationTracker {
     static void stopTracking(HostBundleState hostBundle, String className) {
         log.tracef("stopTracking %s from: %s", className, hostBundle);
         initiatorAssociation.remove();
-        StackAssociation.remove();
+        stackAssociation.remove();
     }
 
     private static void addDefinedClass(HostBundleState hostBundle, String className) {
-        if (hostBundle.awaitLazyActivation()) {
-            Stack<HostBundleState> stack = StackAssociation.get();
+        if (hostBundle.awaitLazyActivation() && hostBundle.isAlreadyStarting() == false) {
+            Stack<HostBundleState> stack = stackAssociation.get();
             if (stack == null) {
                 stack = new Stack<HostBundleState>();
-                StackAssociation.set(stack);
+                stackAssociation.set(stack);
             }
             if (stack.contains(hostBundle) == false) {
                 log.tracef("addDefinedClass %s from: %s", className, hostBundle);
@@ -85,7 +85,7 @@ final class LazyActivationTracker {
     }
 
     private static void processActivationStack() {
-        Stack<HostBundleState> stack = StackAssociation.get();
+        Stack<HostBundleState> stack = stackAssociation.get();
         if (stack != null) {
             log.tracef("processActivationStack: %s", stack);
             while (stack.isEmpty() == false) {
