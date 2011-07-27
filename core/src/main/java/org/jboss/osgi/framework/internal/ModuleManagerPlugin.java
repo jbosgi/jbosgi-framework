@@ -80,7 +80,6 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<SystemPackagesPlugin> injectedSystemPackages = new InjectedValue<SystemPackagesPlugin>();
-    private final InjectedValue<Module> injectedSystemModule = new InjectedValue<Module>();
     private final InjectedValue<ModuleLoaderProvider> injectedModuleLoader = new InjectedValue<ModuleLoaderProvider>();
 
     private Map<ModuleIdentifier, AbstractBundleRevision> modules = new ConcurrentHashMap<ModuleIdentifier, AbstractBundleRevision>();
@@ -91,7 +90,6 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.addDependency(Services.MODULE_LOADER_PROVIDER, ModuleLoaderProvider.class, service.injectedModuleLoader);
         builder.addDependency(InternalServices.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
-        builder.addDependency(Services.SYSTEM_MODULE_PROVIDER, Module.class, service.injectedSystemModule);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -244,15 +242,12 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
             List<DependencySpec> moduleDependencies = new ArrayList<DependencySpec>();
 
-            // Add a dependency on the system module
-            Module sysModule = getSystemModule();
-            ModuleIdentifier systemIdentifier = sysModule.getIdentifier();
-            ModuleLoader sysModuleLoader = sysModule.getModuleLoader();
+            // Add a system dependency 
             SystemPackagesPlugin plugin = injectedSystemPackages.getValue();
             PathFilter systemPackagesFilter = plugin.getSystemPackageFilter();
             PathFilter sysImportFilter = systemPackagesFilter;
             PathFilter sysExportFilter = PathFilters.acceptAll();
-            moduleDependencies.add(DependencySpec.createModuleDependencySpec(sysImportFilter, sysExportFilter, sysModuleLoader, systemIdentifier, false));
+            moduleDependencies.add(DependencySpec.createSystemDependencySpec(sysImportFilter, sysExportFilter, null));
 
             // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
             Map<XModule, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XModule, ModuleDependencyHolder>();
@@ -553,9 +548,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      * @throws ModuleLoadException If the module cannot be loaded
      */
     Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException {
-        if (getSystemModule().getIdentifier().equals(identifier))
-            return getSystemModule();
-        else if (getFrameworkModule().getIdentifier().equals(identifier))
+        if (getFrameworkModule().getIdentifier().equals(identifier))
             return getFrameworkModule();
         else
             return getModuleLoader().loadModule(identifier);
@@ -567,10 +560,6 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     void removeModule(ModuleIdentifier identifier) {
         modules.remove(identifier);
         getModuleLoaderIntegration().removeModule(identifier);
-    }
-
-    private Module getSystemModule() {
-        return injectedSystemModule.getValue();
     }
 
     private Module getFrameworkModule() {
