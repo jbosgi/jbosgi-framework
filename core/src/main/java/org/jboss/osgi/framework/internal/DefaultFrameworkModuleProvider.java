@@ -104,11 +104,13 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
     private Module createFrameworkModule(SystemBundleState systemBundle) {
 
         ModuleSpec.Builder specBuilder = ModuleSpec.build(FRAMEWORK_MODULE_IDENTIFIER);
-        PathFilter sysImports = injectedSystemPackages.getValue().getSystemPackageFilter();
-        specBuilder.addDependency(DependencySpec.createSystemDependencySpec(sysImports, PathFilters.acceptAll(), null));
+        SystemPackagesPlugin plugin = injectedSystemPackages.getValue();
+        PathFilter sysImports = plugin.getSystemFilter();
+        Set<String> sysPaths = plugin.getSystemPaths();
+        specBuilder.addDependency(DependencySpec.createSystemDependencySpec(sysImports, PathFilters.acceptAll(), sysPaths));
 
-        SystemPackagesPlugin systemPackagesPlugin = injectedSystemPackages.getValue();
-        PathFilter frameworkFilter = systemPackagesPlugin.getFrameworkPackageFilter();
+        SystemPackagesPlugin systemPackagesPlugin = plugin;
+        PathFilter frameworkFilter = systemPackagesPlugin.getFrameworkFilter();
         final ClassLoader classLoader = BundleManager.class.getClassLoader();
         LocalLoader localLoader = new LocalLoader() {
 
@@ -131,7 +133,7 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
                 return Collections.emptyList();
             }
         };
-        Set<String> frameworkPackagePaths = systemPackagesPlugin.getFrameworkPackagePaths();
+        Set<String> frameworkPackagePaths = systemPackagesPlugin.getFrameworkPaths();
         specBuilder.addDependency(DependencySpec.createLocalDependencySpec(frameworkFilter, PathFilters.acceptAll(), localLoader, frameworkPackagePaths));
         specBuilder.setModuleClassLoaderFactory(new BundleReferenceClassLoader.Factory<SystemBundleState>(systemBundle));
 
