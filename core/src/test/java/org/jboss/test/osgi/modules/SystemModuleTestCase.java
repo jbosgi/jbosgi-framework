@@ -24,7 +24,6 @@ package org.jboss.test.osgi.modules;
 import java.io.InputStream;
 
 import org.jboss.modules.DependencySpec;
-import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.ResourceLoaderSpec;
@@ -64,12 +63,6 @@ public class SystemModuleTestCase extends ModulesTestBase {
     }
 
     @Test
-    public void testAvailableOnSystemModule() throws Exception {
-        ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
-        assertLoadClass(systemModuleId, "javax.security.auth.x500.X500Principal", systemModuleId);
-    }
-
-    @Test
     public void testAvailableOnModule() throws Exception {
         ModuleIdentifier identifierA = ModuleIdentifier.create("moduleA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
@@ -87,15 +80,13 @@ public class SystemModuleTestCase extends ModulesTestBase {
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
         VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
         specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
-        ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
         PathFilter importFilter = getSystemDelegationFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderA.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getBootModuleLoader(), systemModuleId, false));
+        specBuilderA.addDependency(DependencySpec.createSystemDependencySpec(importFilter, exportFilter, null));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
-        assertLoadClass(systemModuleId, "javax.security.auth.x500.X500Principal", systemModuleId);
-        assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal", systemModuleId);
+        assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal", null);
     }
 
     @Test
@@ -103,10 +94,9 @@ public class SystemModuleTestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("moduleB");
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
         PathFilter importFilter = getSystemDelegationFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getBootModuleLoader(), systemModuleId, false));
+        specBuilderB.addDependency(DependencySpec.createSystemDependencySpec(importFilter, exportFilter, null));
         addModuleSpec(specBuilderB.create());
         
         ModuleIdentifier identifierA = ModuleIdentifier.create("moduleA");
@@ -117,9 +107,8 @@ public class SystemModuleTestCase extends ModulesTestBase {
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
-        assertLoadClass(systemModuleId, "javax.security.auth.x500.X500Principal", systemModuleId);
-        assertLoadClass(identifierB, "javax.security.auth.x500.X500Principal", systemModuleId);
-        assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal", systemModuleId);
+        assertLoadClass(identifierB, "javax.security.auth.x500.X500Principal", null);
+        assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal", null);
     }
 
     private PathFilter getSystemDelegationFilter() {

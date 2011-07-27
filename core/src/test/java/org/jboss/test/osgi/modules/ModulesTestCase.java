@@ -35,6 +35,7 @@ import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
+import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -430,6 +431,11 @@ public class ModulesTestCase extends ModulesTestBase {
             } catch (ClassNotFoundException ex) {
                 return null;
             }
+        }
+
+        @Override
+        public Package loadPackageLocal(String name) {
+            throw new NotImplementedException();
         }
 
         @Override

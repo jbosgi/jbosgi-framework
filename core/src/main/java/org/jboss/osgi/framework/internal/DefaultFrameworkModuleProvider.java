@@ -46,6 +46,7 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 
 /**
@@ -61,7 +62,6 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
 
     private static final ModuleIdentifier FRAMEWORK_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".framework");
     private final InjectedValue<SystemPackagesPlugin> injectedSystemPackages = new InjectedValue<SystemPackagesPlugin>();
-    private final InjectedValue<Module> injectedSystemModule = new InjectedValue<Module>();
 
     private Module frameworkModule;
 
@@ -69,7 +69,6 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
         DefaultFrameworkModuleProvider service = new DefaultFrameworkModuleProvider();
         ServiceBuilder<FrameworkModuleProvider> builder = serviceTarget.addService(Services.FRAMEWORK_MODULE_PROVIDER, service);
         builder.addDependency(InternalServices.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
-        builder.addDependency(Services.SYSTEM_MODULE_PROVIDER, Module.class, service.injectedSystemModule);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -104,10 +103,9 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
 
     private Module createFrameworkModule(SystemBundleState systemBundle) {
 
-        Module systemModule = injectedSystemModule.getValue();
-        ModuleIdentifier systemIdentifier = systemModule.getIdentifier();
         ModuleSpec.Builder specBuilder = ModuleSpec.build(FRAMEWORK_MODULE_IDENTIFIER);
-        specBuilder.addDependency(DependencySpec.createModuleDependencySpec(PathFilters.acceptAll(), PathFilters.acceptAll(), systemModule.getModuleLoader(), systemIdentifier, false));
+        PathFilter sysImports = injectedSystemPackages.getValue().getSystemPackageFilter();
+        specBuilder.addDependency(DependencySpec.createSystemDependencySpec(sysImports, PathFilters.acceptAll(), null));
 
         SystemPackagesPlugin systemPackagesPlugin = injectedSystemPackages.getValue();
         PathFilter frameworkFilter = systemPackagesPlugin.getFrameworkPackageFilter();
@@ -121,6 +119,11 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
                 } catch (ClassNotFoundException ex) {
                     return null;
                 }
+            }
+
+            @Override
+            public Package loadPackageLocal(String name) {
+                throw new NotImplementedException();
             }
 
             @Override
