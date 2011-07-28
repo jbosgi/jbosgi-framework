@@ -53,6 +53,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.ModuleLoaderProvider;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.SystemPathsProvider;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
@@ -69,7 +70,7 @@ import org.osgi.framework.BundleReference;
 
 /**
  * The module manager plugin.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 06-Jul-2009
  */
@@ -79,7 +80,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     final Logger log = Logger.getLogger(ModuleManagerPlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-    private final InjectedValue<SystemPackagesPlugin> injectedSystemPackages = new InjectedValue<SystemPackagesPlugin>();
+    private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
     private final InjectedValue<ModuleLoaderProvider> injectedModuleLoader = new InjectedValue<ModuleLoaderProvider>();
 
     private Map<ModuleIdentifier, AbstractBundleRevision> modules = new ConcurrentHashMap<ModuleIdentifier, AbstractBundleRevision>();
@@ -89,7 +90,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         ServiceBuilder<ModuleManagerPlugin> builder = serviceTarget.addService(InternalServices.MODULE_MANGER_PLUGIN, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.addDependency(Services.MODULE_LOADER_PROVIDER, ModuleLoaderProvider.class, service.injectedModuleLoader);
-        builder.addDependency(InternalServices.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
+        builder.addDependency(Services.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -140,7 +141,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     /**
      * Get the module with the given identifier
-     * 
+     *
      * @return The module or null
      */
     Module getModule(ModuleIdentifier identifier) {
@@ -153,7 +154,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     /**
      * Get the bundle revision for the given identifier
-     * 
+     *
      * @return The bundle revision or null
      */
     AbstractBundleRevision getBundleRevision(ModuleIdentifier identifier) {
@@ -162,7 +163,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     /**
      * Get the bundle for the given identifier
-     * 
+     *
      * @return The bundle or null
      */
     AbstractBundleState getBundleState(ModuleIdentifier identifier) {
@@ -172,7 +173,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     /**
      * Get the bundle for the given class
-     * 
+     *
      * @return The bundle or null
      */
     AbstractBundleState getBundleState(Class<?> clazz) {
@@ -195,7 +196,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     /**
      * Create the module in the {@link ModuleLoader}
-     * 
+     *
      * @return The module identifier
      */
     ModuleIdentifier addModule(final XModule resModule) {
@@ -242,13 +243,12 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
             List<DependencySpec> moduleDependencies = new ArrayList<DependencySpec>();
 
-            // Add a system dependency 
-            SystemPackagesPlugin plugin = injectedSystemPackages.getValue();
-            Set<String> systemPaths = plugin.getSystemPaths();
-            PathFilter systemPackagesFilter = plugin.getSystemFilter();
-            PathFilter sysImportFilter = systemPackagesFilter;
-            PathFilter sysExportFilter = PathFilters.acceptAll();
-            moduleDependencies.add(DependencySpec.createSystemDependencySpec(sysImportFilter, sysExportFilter, systemPaths));
+            // Add a system dependency
+            SystemPathsProvider plugin = injectedSystemPaths.getValue();
+            Set<String> bootPaths = plugin.getBootDelegationPaths();
+            PathFilter bootFilter = plugin.getBootDelegationFilter();
+            PathFilter acceptAll = PathFilters.acceptAll();
+            moduleDependencies.add(DependencySpec.createSystemDependencySpec(bootFilter, acceptAll, bootPaths));
 
             // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
             Map<XModule, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XModule, ModuleDependencyHolder>();
@@ -299,8 +299,8 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             }
 
             // Setup the local loader dependency
-            PathFilter importFilter = sysExportFilter;
-            PathFilter exportFilter = sysExportFilter;
+            PathFilter importFilter = acceptAll;
+            PathFilter exportFilter = acceptAll;
             if (importedPaths.isEmpty() == false) {
                 importFilter = PathFilters.not(PathFilters.in(importedPaths));
             }
@@ -381,7 +381,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      * Get a path filter for packages that trigger bundle activation for a host bundle with lazy ActivationPolicy
      */
     private PathFilter getLazyPackagesFilter(HostBundleState hostBundle) {
-        
+
         // By default all packages are loaded lazily
         PathFilter result = PathFilters.acceptAll();
 
@@ -545,7 +545,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     /**
      * Load the module for the given identifier
-     * 
+     *
      * @throws ModuleLoadException If the module cannot be loaded
      */
     Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException {
