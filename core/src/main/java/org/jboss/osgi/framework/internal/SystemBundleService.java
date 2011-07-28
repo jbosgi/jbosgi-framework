@@ -34,6 +34,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.SystemPathsProvider;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.resolver.XModule;
@@ -52,7 +53,7 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
     // Provide logging
     static final Logger log = Logger.getLogger(SystemBundleService.class);
 
-    private final InjectedValue<SystemPackagesPlugin> injectedSystemPackages = new InjectedValue<SystemPackagesPlugin>();
+    private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
     private final InjectedValue<FrameworkModuleProvider> injectedModuleProvider = new InjectedValue<FrameworkModuleProvider>();
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
     private final InjectedValue<ResolverPlugin> injectedResolverPlugin = new InjectedValue<ResolverPlugin>();
@@ -62,13 +63,13 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
         SystemBundleService service = new SystemBundleService(frameworkState);
         ServiceBuilder<SystemBundleState> builder = serviceTarget.addService(Services.SYSTEM_BUNDLE, service);
         builder.addDependency(Services.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, service.injectedModuleProvider);
-        builder.addDependency(InternalServices.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
+        builder.addDependency(Services.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
         builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolverPlugin);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
-    
+
     private SystemBundleService(FrameworkState frameworkState) {
         super(frameworkState);
     }
@@ -110,15 +111,14 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
     }
 
     private OSGiMetaData createOSGiMetaData() {
-        
+
         // Initialize the OSGiMetaData
         SystemBundleState bundleState = getBundleState();
         OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(bundleState.getSymbolicName(), bundleState.getVersion());
-        SystemPackagesPlugin systemPackages = injectedSystemPackages.getValue();
+        SystemPathsProvider systemPackages = injectedSystemPaths.getValue();
 
         List<String> exportedPackages = new ArrayList<String>();
         exportedPackages.addAll(systemPackages.getSystemPackages());
-        exportedPackages.addAll(systemPackages.getFrameworkPackages());
 
         if (exportedPackages.isEmpty() == true)
             throw new IllegalStateException("Framework system packages not available");

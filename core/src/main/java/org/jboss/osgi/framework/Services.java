@@ -95,4 +95,7 @@ public interface Services {
 
     /** The service name for the {@link SystemServicesProvider} */
     ServiceName SYSTEM_SERVICES_PROVIDER = JBOSGI_BASE_NAME.append("SystemServicesProvider");
+
+    /** The service name for the {@link SystemPathsProvider} */
+    ServiceName SYSTEM_PATHS_PROVIDER = JBOSGI_BASE_NAME.append("SystemPathsProvider");
 }
