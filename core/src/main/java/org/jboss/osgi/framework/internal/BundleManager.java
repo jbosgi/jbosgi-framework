@@ -372,6 +372,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         AbstractBundleState bundleState = getBundleByLocation(dep.getLocation());
         if (bundleState != null) {
             serviceName = bundleState.getServiceName(Bundle.INSTALLED);
+            VFSUtils.safeClose(dep.getRoot());
         } else {
             try {
                 // The storage state exists when we re-create the bundle from persistent storage
