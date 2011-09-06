@@ -21,19 +21,13 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
 import org.jboss.logging.Logger;
 import org.jboss.modules.DependencySpec;
-import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
-import org.jboss.modules.Resource;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.msc.service.ServiceBuilder;
@@ -44,9 +38,8 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.Services;
-import org.osgi.framework.Bundle;
+import org.jboss.osgi.framework.SystemModuleProvider;
 
 /**
  * The system module provider plugin.
@@ -54,83 +47,55 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 04-Feb-2011
  */
-final class DefaultFrameworkModuleProvider extends AbstractPluginService<FrameworkModuleProvider> implements FrameworkModuleProvider {
+final class DefaultSystemModuleProvider extends AbstractPluginService<Module> implements SystemModuleProvider {
+
+    private static final ModuleIdentifier SYSTEM_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".system");
 
     // Provide logging
-    final Logger log = Logger.getLogger(DefaultFrameworkModuleProvider.class);
+    final Logger log = Logger.getLogger(DefaultSystemModuleProvider.class);
 
-    private static final ModuleIdentifier FRAMEWORK_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".framework");
     private final InjectedValue<SystemPackagesPlugin> injectedSystemPackages = new InjectedValue<SystemPackagesPlugin>();
-    private final InjectedValue<Module> injectedSystemModule = new InjectedValue<Module>();
 
-    private Module frameworkModule;
+    private Module systemModule;
 
     static void addService(ServiceTarget serviceTarget) {
-        DefaultFrameworkModuleProvider service = new DefaultFrameworkModuleProvider();
-        ServiceBuilder<FrameworkModuleProvider> builder = serviceTarget.addService(Services.FRAMEWORK_MODULE_PROVIDER, service);
+        DefaultSystemModuleProvider service = new DefaultSystemModuleProvider();
+        ServiceBuilder<Module> builder = serviceTarget.addService(Services.SYSTEM_MODULE_PROVIDER, service);
         builder.addDependency(InternalServices.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
-        builder.addDependency(Services.SYSTEM_MODULE_PROVIDER, Module.class, service.injectedSystemModule);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    private DefaultFrameworkModuleProvider() {
+    private DefaultSystemModuleProvider() {
     }
 
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
+        systemModule = createSystemModule();
     }
 
     @Override
     public void stop(StopContext context) {
         super.stop(context);
-        frameworkModule = null;
+        systemModule = null;
     }
 
     @Override
-    public FrameworkModuleProvider getValue() {
-        return this;
+    public Module getValue() {
+        return systemModule;
     }
 
-    @Override
-    public Module getFrameworkModule(Bundle bundle) {
-        if (frameworkModule == null) {
-            SystemBundleState systemBundle = (SystemBundleState) bundle;
-            frameworkModule = createFrameworkModule(systemBundle);
-        }
-        return frameworkModule;
+    Module getSystemModule() {
+        return systemModule;
     }
 
-    private Module createFrameworkModule(SystemBundleState systemBundle) {
-
-        Module systemModule = injectedSystemModule.getValue();
-        ModuleIdentifier systemIdentifier = systemModule.getIdentifier();
-        ModuleSpec.Builder specBuilder = ModuleSpec.build(FRAMEWORK_MODULE_IDENTIFIER);
-        specBuilder.addDependency(DependencySpec.createModuleDependencySpec(PathFilters.acceptAll(), PathFilters.acceptAll(), systemModule.getModuleLoader(), systemIdentifier, false));
-
-        SystemPackagesPlugin systemPackagesPlugin = injectedSystemPackages.getValue();
-        PathFilter frameworkFilter = systemPackagesPlugin.getFrameworkPackageFilter();
-        final ClassLoader classLoader = BundleManager.class.getClassLoader();
-        LocalLoader localLoader = new LocalLoader() {
-
-            @Override
-            public Class<?> loadClassLocal(String name, boolean resolve) {
-                try {
-                    return classLoader.loadClass(name);
-                } catch (ClassNotFoundException ex) {
-                    return null;
-                }
-            }
-
-            @Override
-            public List<Resource> loadResourceLocal(String name) {
-                return Collections.emptyList();
-            }
-        };
-        Set<String> frameworkPackagePaths = systemPackagesPlugin.getFrameworkPackagePaths();
-        specBuilder.addDependency(DependencySpec.createLocalDependencySpec(frameworkFilter, PathFilters.acceptAll(), localLoader, frameworkPackagePaths));
-        specBuilder.setModuleClassLoaderFactory(new BundleReferenceClassLoader.Factory<SystemBundleState>(systemBundle));
+    private Module createSystemModule() {
+        ModuleSpec.Builder specBuilder = ModuleSpec.build(SYSTEM_MODULE_IDENTIFIER);
+        ModuleLoader systemLoader = Module.getBootModuleLoader();
+        ModuleIdentifier identifier = Module.getSystemModule().getIdentifier();
+        PathFilter systemFilter = injectedSystemPackages.getValue().getSystemPackageFilter();
+        specBuilder.addDependency(DependencySpec.createModuleDependencySpec(systemFilter, PathFilters.acceptAll(), systemLoader, identifier, false));
 
         try {
             final ModuleSpec moduleSpec = specBuilder.create();

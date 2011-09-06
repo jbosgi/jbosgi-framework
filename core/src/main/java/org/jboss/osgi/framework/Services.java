@@ -93,6 +93,9 @@ public interface Services {
     /** The service name for the {@link ModuleLoaderProvider} */
     ServiceName MODULE_LOADER_PROVIDER = JBOSGI_BASE_NAME.append("ModuleLoaderProvider");
 
+    /** The service name for the {@link SystemModuleProvider} */
+    ServiceName SYSTEM_MODULE_PROVIDER = JBOSGI_BASE_NAME.append("SystemModuleProvider");
+
     /** The service name for the {@link SystemServicesProvider} */
     ServiceName SYSTEM_SERVICES_PROVIDER = JBOSGI_BASE_NAME.append("SystemServicesProvider");
 }
