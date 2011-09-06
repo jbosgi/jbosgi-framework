@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Map;
 
 import org.osgi.framework.launch.Framework;
@@ -30,22 +28,11 @@ import org.osgi.framework.launch.FrameworkFactory;
 
 /**
  * An impementation of an OSGi FrameworkFactory
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 21-Aug-2009
  */
 public class FrameworkFactoryImpl implements FrameworkFactory {
-
-    static {
-        AccessController.doPrivileged(new PrivilegedAction<Void>() {
-            public Void run() {
-                String cname = SecurityActions.getSystemProperty("java.util.logging.manager", null);
-                if (cname == null)
-                    SecurityActions.setSystemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
-                return null;
-            }
-        });
-    }
 
     // Main entry point used by AggregatedFrameworkLaunchTestCase
     public static void main(String[] args) throws Exception {
@@ -53,7 +40,7 @@ public class FrameworkFactoryImpl implements FrameworkFactory {
         Framework framework = factory.newFramework(null);
         framework.start();
     }
-    
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Framework newFramework(Map props) {
         FrameworkBuilder builder = new FrameworkBuilder(props);
