@@ -102,6 +102,8 @@ final class SystemPackagesPlugin extends AbstractPluginService<SystemPackagesPlu
             systemPackages.add("javax.net");
             systemPackages.add("javax.net.ssl");
 
+            systemPackages.add("javax.security.auth");
+            systemPackages.add("javax.security.auth.x500");
             systemPackages.add("javax.security.cert");
 
             systemPackages.add("javax.xml.datatype");
