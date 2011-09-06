@@ -159,11 +159,7 @@ abstract class AbstractBundleContext implements BundleContext {
             if (rootFile == null) {
                 try {
                     URL url = new URL(location);
-                    if (BundleProtocolHandler.PROTOCOL_NAME.equals(url.getProtocol())) {
-                        rootFile = AbstractVFS.toVirtualFile(url.openStream());
-                    } else {
-                        rootFile = AbstractVFS.toVirtualFile(url);
-                    }
+                    rootFile = AbstractVFS.toVirtualFile(url.openStream());
                 } catch (IOException ex) {
                     // Ignore, not a valid URL
                 }
