@@ -162,7 +162,20 @@ abstract class AbstractBundleContext implements BundleContext {
                     if (BundleProtocolHandler.PROTOCOL_NAME.equals(url.getProtocol())) {
                         rootFile = AbstractVFS.toVirtualFile(url.openStream());
                     } else {
-                        rootFile = AbstractVFS.toVirtualFile(url);
+                        try {
+                            rootFile = AbstractVFS.toVirtualFile(url);
+                        } catch (Exception ex) {
+                            // This might possibly be a custom URL, try opening it the conventional way...
+                            try {
+                                InputStream is = url.openStream();
+                                if (is != null) {
+                                    // Note that this never recurses more than once
+                                    return installBundleInternal(location, is);
+                                }
+                            } catch (IOException ioe) {
+                                // ok that didn't work - ignore
+                            }
+                        }
                     }
                 } catch (IOException ex) {
                     // Ignore, not a valid URL

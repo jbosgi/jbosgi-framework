@@ -69,7 +69,7 @@
             </fileset>
         </war>
 
-        <!-- native code -->
+        <!-- Please add alphabetically -->
         <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/fragment-nativecode.jar" files="${tests.resources.dir}/nativecode/fragment-nativecode.bnd" />
         <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/host-nativecode.jar" files="${tests.resources.dir}/nativecode/host-nativecode.bnd" />
         <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/nativecode.jar" files="${tests.resources.dir}/nativecode/nativecode.bnd" />
@@ -77,10 +77,8 @@
         <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/nativecode3.jar" files="${tests.resources.dir}/nativecode/nativecode3.bnd" />
         <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/nativecode4.jar" files="${tests.resources.dir}/nativecode/nativecode4.bnd" />
         <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/nativecode5.jar" files="${tests.resources.dir}/nativecode/nativecode5.bnd" />
+    	<bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/simple-bundle.jar" files="${tests.resources.dir}/bundles/simple/simple-bundle.bnd" />
         <bnd classpath="${tests.classes.dir}" output="${tests.output.dir}/test-libs/simple-nativecode.jar" files="${tests.resources.dir}/nativecode/simple-nativecode.bnd" />
 
-        <!-- Please add alphabetically -->
-
     </target>
-
 </project>
