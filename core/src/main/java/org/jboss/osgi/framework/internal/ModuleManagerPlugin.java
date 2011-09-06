@@ -244,11 +244,10 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
             // Add a system dependency 
             SystemPackagesPlugin plugin = injectedSystemPackages.getValue();
-            Set<String> systemPaths = plugin.getSystemPaths();
-            PathFilter systemPackagesFilter = plugin.getSystemFilter();
+            PathFilter systemPackagesFilter = plugin.getSystemPackageFilter();
             PathFilter sysImportFilter = systemPackagesFilter;
             PathFilter sysExportFilter = PathFilters.acceptAll();
-            moduleDependencies.add(DependencySpec.createSystemDependencySpec(sysImportFilter, sysExportFilter, systemPaths));
+            moduleDependencies.add(DependencySpec.createSystemDependencySpec(sysImportFilter, sysExportFilter, null));
 
             // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
             Map<XModule, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XModule, ModuleDependencyHolder>();
