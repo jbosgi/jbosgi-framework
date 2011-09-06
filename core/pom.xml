@@ -23,13 +23,12 @@
   <name>JBossOSGi Framework Core</name>
   <groupId>org.jboss.osgi.framework</groupId>
   <artifactId>jbosgi-framework-core</artifactId>
-  <version>1.0.1.CR2-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>org.jboss.osgi.framework</groupId>
     <artifactId>jbosgi-framework-parent</artifactId>
-    <version>1.0.1.CR2-SNAPSHOT1.0.1.CR2-SNAPSHOT</version>
+    <version>1.0.1.CR1</version>
   </parent>
   
   <!-- Dependencies -->
