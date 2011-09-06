@@ -37,6 +37,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleClassLoaderFactory;
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.modules.filter.PathFilter;
@@ -86,6 +87,8 @@ public class MOD65ComplexTestCase extends ModulesTestBase {
         JavaArchive archiveB = getModuleB();
         ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
 
+        Module sysModule = Module.getSystemModule();
+        ModuleLoader sysLoader = sysModule.getModuleLoader();
         PathFilter sysImports = PathFilters.is("org/jboss/modules");
         PathFilter sysExports = PathFilters.rejectAll();
 
@@ -93,7 +96,7 @@ public class MOD65ComplexTestCase extends ModulesTestBase {
         VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
         specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-        specBuilderB.addDependency(DependencySpec.createSystemDependencySpec(sysImports, sysExports, null));
+        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(sysImports, sysExports, sysLoader, ModuleIdentifier.SYSTEM, false));
         Set<String> lazyPaths = Collections.singleton(getPathForClassName(CircularityErrorDep.class.getName()));
         specBuilderB.setModuleClassLoaderFactory(new PostDefineModuleClassLoader.Factory(lazyPaths));
         addModuleSpec(specBuilderB.create());

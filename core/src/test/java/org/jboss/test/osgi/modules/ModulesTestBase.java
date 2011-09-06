@@ -84,6 +84,10 @@ public abstract class ModulesTestBase {
     }
 
     protected Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException {
+
+        if (ModuleIdentifier.SYSTEM.equals(identifier))
+            return Module.getSystemModule();
+
         return moduleLoader.loadModule(identifier);
     }
 
@@ -113,12 +117,10 @@ public abstract class ModulesTestBase {
 
     protected void assertLoadClass(ModuleIdentifier identifier, String className, ModuleIdentifier exporterId) throws Exception {
         Class<?> clazz = loadClass(identifier, className);
-        ClassLoader wasClassLoader = clazz.getClassLoader();
-        if (exporterId == null && wasClassLoader == null) {
-            return;
-        }
         ModuleClassLoader expClassLoader = loadModule(exporterId).getClassLoader();
-        assertEquals(expClassLoader, wasClassLoader);
+        ClassLoader wasClassLoader = clazz.getClassLoader();
+        if (ModuleIdentifier.SYSTEM.equals(exporterId) == false)
+            assertEquals(expClassLoader, wasClassLoader);
     }
 
     protected void assertLoadClassFail(ModuleIdentifier identifier, String className) throws Exception {
