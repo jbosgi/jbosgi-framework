@@ -38,7 +38,7 @@ import org.osgi.framework.launch.Framework;
 
 /**
  * Test aggregated framework bootstrap.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 29-Jul-2010
  */
@@ -80,7 +80,8 @@ public class AggregatedFrameworkLaunchTestCase extends OSGiFrameworkTest {
 
         // Run the java command
         String alljar = files[0].getAbsolutePath();
-        String cmd = "java -cp " + alljar + " " + FrameworkFactoryImpl.class.getName();
+        String javaopts = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager";
+        String cmd = "java " + javaopts + " -cp " + alljar + " " + FrameworkFactoryImpl.class.getName();
         Process proc = Runtime.getRuntime().exec(cmd);
         Thread.sleep(3000);
         proc.destroy();
