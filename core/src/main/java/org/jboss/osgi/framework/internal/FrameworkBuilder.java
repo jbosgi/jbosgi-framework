@@ -140,6 +140,7 @@ public final class FrameworkBuilder {
         StartLevelPlugin.addService(serviceTarget);
         SystemBundleService.addService(serviceTarget, frameworkState);
         SystemContextService.addService(serviceTarget);
+        SystemPackagesPlugin.addService(serviceTarget, this);
         WebXMLVerifierInterceptor.addService(serviceTarget);
 
         if (isProvidedService(Services.AUTOINSTALL_PROVIDER) == false)
@@ -150,8 +151,6 @@ public final class FrameworkBuilder {
             DefaultFrameworkModuleProvider.addService(serviceTarget);
         if (isProvidedService(Services.MODULE_LOADER_PROVIDER) == false)
             DefaultModuleLoaderIntegration.addService(serviceTarget);
-        if (isProvidedService(Services.SYSTEM_PATHS_PROVIDER) == false)
-            DefaultSystemPathsProvider.addService(serviceTarget, this);
         if (isProvidedService(Services.SYSTEM_SERVICES_PROVIDER) == false)
             DefaultSystemServicesProvider.addService(serviceTarget);
     }

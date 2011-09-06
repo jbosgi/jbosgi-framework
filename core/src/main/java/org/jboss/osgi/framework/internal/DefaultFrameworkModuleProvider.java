@@ -37,16 +37,15 @@ import org.jboss.modules.Resource;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.SystemPathsProvider;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 
@@ -62,14 +61,14 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
     final Logger log = Logger.getLogger(DefaultFrameworkModuleProvider.class);
 
     private static final ModuleIdentifier FRAMEWORK_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".framework");
-    private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
+    private final InjectedValue<SystemPackagesPlugin> injectedSystemPackages = new InjectedValue<SystemPackagesPlugin>();
 
     private Module frameworkModule;
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultFrameworkModuleProvider service = new DefaultFrameworkModuleProvider();
         ServiceBuilder<FrameworkModuleProvider> builder = serviceTarget.addService(Services.FRAMEWORK_MODULE_PROVIDER, service);
-        builder.addDependency(Services.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
+        builder.addDependency(InternalServices.SYSTEM_PACKAGES_PLUGIN, SystemPackagesPlugin.class, service.injectedSystemPackages);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -105,12 +104,13 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
     private Module createFrameworkModule(SystemBundleState systemBundle) {
 
         ModuleSpec.Builder specBuilder = ModuleSpec.build(FRAMEWORK_MODULE_IDENTIFIER);
-        SystemPathsProvider plugin = injectedSystemPaths.getValue();
-        Set<String> bootPaths = plugin.getBootDelegationPaths();
-        PathFilter bootFilter = plugin.getBootDelegationFilter();
-        PathFilter acceptAll = PathFilters.acceptAll();
-        specBuilder.addDependency(DependencySpec.createSystemDependencySpec(bootFilter, acceptAll, bootPaths));
+        SystemPackagesPlugin plugin = injectedSystemPackages.getValue();
+        PathFilter sysImports = plugin.getSystemFilter();
+        Set<String> sysPaths = plugin.getSystemPaths();
+        specBuilder.addDependency(DependencySpec.createSystemDependencySpec(sysImports, PathFilters.acceptAll(), sysPaths));
 
+        SystemPackagesPlugin systemPackagesPlugin = plugin;
+        PathFilter frameworkFilter = systemPackagesPlugin.getFrameworkFilter();
         final ClassLoader classLoader = BundleManager.class.getClassLoader();
         LocalLoader localLoader = new LocalLoader() {
 
@@ -133,9 +133,8 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
                 return Collections.emptyList();
             }
         };
-        Set<String> systemPaths = plugin.getSystemPaths();
-        PathFilter systemFilter = plugin.getSystemFilter();
-        specBuilder.addDependency(DependencySpec.createLocalDependencySpec(systemFilter, PathFilters.acceptAll(), localLoader, systemPaths));
+        Set<String> frameworkPackagePaths = systemPackagesPlugin.getFrameworkPaths();
+        specBuilder.addDependency(DependencySpec.createLocalDependencySpec(frameworkFilter, PathFilters.acceptAll(), localLoader, frameworkPackagePaths));
         specBuilder.setModuleClassLoaderFactory(new BundleReferenceClassLoader.Factory<SystemBundleState>(systemBundle));
 
         try {
