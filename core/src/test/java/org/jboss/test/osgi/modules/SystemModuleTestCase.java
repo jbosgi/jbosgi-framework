@@ -22,8 +22,6 @@
 package org.jboss.test.osgi.modules;
 
 import java.io.InputStream;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.ModuleIdentifier;
@@ -82,9 +80,9 @@ public class SystemModuleTestCase extends ModulesTestBase {
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
         VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
         specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
-        PathFilter importFilter = getSystemFilter();
+        PathFilter importFilter = getSystemDelegationFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderA.addDependency(DependencySpec.createSystemDependencySpec(importFilter, exportFilter, getSystemPaths()));
+        specBuilderA.addDependency(DependencySpec.createSystemDependencySpec(importFilter, exportFilter, null));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
@@ -96,9 +94,9 @@ public class SystemModuleTestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("moduleB");
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        PathFilter importFilter = getSystemFilter();
+        PathFilter importFilter = getSystemDelegationFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderB.addDependency(DependencySpec.createSystemDependencySpec(importFilter, exportFilter, getSystemPaths()));
+        specBuilderB.addDependency(DependencySpec.createSystemDependencySpec(importFilter, exportFilter, null));
         addModuleSpec(specBuilderB.create());
         
         ModuleIdentifier identifierA = ModuleIdentifier.create("moduleA");
@@ -113,13 +111,7 @@ public class SystemModuleTestCase extends ModulesTestBase {
         assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal", null);
     }
 
-    private Set<String> getSystemPaths() {
-        Set<String> paths = new HashSet<String>();
-        paths.add("javax/security/auth/x500");
-        return paths;
-    }
-
-    private PathFilter getSystemFilter() {
+    private PathFilter getSystemDelegationFilter() {
         MultiplePathFilterBuilder pathBuilder = PathFilters.multiplePathFilterBuilder(false);
         pathBuilder.addFilter(PathFilters.isChildOf("javax/security"), true);
         PathFilter importFilter = pathBuilder.create();

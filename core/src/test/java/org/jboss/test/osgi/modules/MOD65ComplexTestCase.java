@@ -86,7 +86,6 @@ public class MOD65ComplexTestCase extends ModulesTestBase {
         JavaArchive archiveB = getModuleB();
         ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
 
-        Set<String> sysPaths = Collections.singleton("org/jboss/modules");
         PathFilter sysImports = PathFilters.is("org/jboss/modules");
         PathFilter sysExports = PathFilters.rejectAll();
 
@@ -94,7 +93,7 @@ public class MOD65ComplexTestCase extends ModulesTestBase {
         VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
         specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
         specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-        specBuilderB.addDependency(DependencySpec.createSystemDependencySpec(sysImports, sysExports, sysPaths));
+        specBuilderB.addDependency(DependencySpec.createSystemDependencySpec(sysImports, sysExports, null));
         Set<String> lazyPaths = Collections.singleton(getPathForClassName(CircularityErrorDep.class.getName()));
         specBuilderB.setModuleClassLoaderFactory(new PostDefineModuleClassLoader.Factory(lazyPaths));
         addModuleSpec(specBuilderB.create());

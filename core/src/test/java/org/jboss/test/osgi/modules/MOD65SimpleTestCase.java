@@ -79,7 +79,6 @@ public class MOD65SimpleTestCase extends ModulesTestBase {
         JavaArchive archiveA = getModuleA();
         ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
 
-        Set<String> sysPaths = Collections.singleton("org/jboss/modules");
         PathFilter sysImports = PathFilters.is("org/jboss/modules");
         PathFilter sysExports = PathFilters.rejectAll();
 
@@ -87,7 +86,7 @@ public class MOD65SimpleTestCase extends ModulesTestBase {
         VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
         specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-        specBuilderA.addDependency(DependencySpec.createSystemDependencySpec(sysImports, sysExports, sysPaths));
+        specBuilderA.addDependency(DependencySpec.createSystemDependencySpec(sysImports, sysExports, null));
         Set<String> lazyPaths = Collections.singleton(getPathForClassName(A.class.getName()));
         specBuilderA.setModuleClassLoaderFactory(new PostDefineModuleClassLoader.Factory(lazyPaths));
         addModuleSpec(specBuilderA.create());

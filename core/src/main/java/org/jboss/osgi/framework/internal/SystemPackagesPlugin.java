@@ -39,10 +39,10 @@ import org.jboss.modules.filter.MultiplePathFilterBuilder;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.ServiceController.Mode;
 
 /**
  * A plugin manages the Framework's system packages.
@@ -62,13 +62,6 @@ final class SystemPackagesPlugin extends AbstractPluginService<SystemPackagesPlu
     private Set<String> bootDelegationPackages = new LinkedHashSet<String>();
     // The framework packages
     private Set<String> frameworkPackages = new LinkedHashSet<String>();
-
-    private Set<String> cachedBootDelegationPaths;
-    private PathFilter cachedBootDelegationFilter;
-    private Set<String> cachedFrameworkPaths;
-    private PathFilter cachedFrameworkFilter;
-    private Set<String> cachedSystemPaths;
-    private PathFilter cachedSystemFilter;
 
     static void addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
         SystemPackagesPlugin service = new SystemPackagesPlugin(frameworkBuilder);
@@ -193,19 +186,16 @@ final class SystemPackagesPlugin extends AbstractPluginService<SystemPackagesPlu
      *
      * @return The set of framework provided paths
      */
-    Set<String> getFrameworkPaths() {
-        if (cachedFrameworkPaths == null) {
-            Set<String> paths = new LinkedHashSet<String>();
-            for (String packageSpec : getFrameworkPackages()) {
-                int index = packageSpec.indexOf(';');
-                if (index > 0) {
-                    packageSpec = packageSpec.substring(0, index);
-                }
-                paths.add(packageSpec.replace('.', '/'));
+    Set<String> getFrameworkPackagePaths() {
+        Set<String> paths = new LinkedHashSet<String>();
+        for (String packageSpec : getFrameworkPackages()) {
+            int index = packageSpec.indexOf(';');
+            if (index > 0) {
+                packageSpec = packageSpec.substring(0, index);
             }
-            cachedFrameworkPaths = Collections.unmodifiableSet(paths);
+            paths.add(packageSpec.replace('.', '/'));
         }
-        return cachedFrameworkPaths;
+        return Collections.unmodifiableSet(paths);
     }
 
     /**
@@ -225,12 +215,9 @@ final class SystemPackagesPlugin extends AbstractPluginService<SystemPackagesPlu
      *
      * @return The filter of framework exported paths
      */
-    PathFilter getFrameworkFilter() {
+    PathFilter getFrameworkPackageFilter() {
         assertInitialized();
-        if (cachedFrameworkFilter == null) {
-            cachedFrameworkFilter = PathFilters.in(getFrameworkPaths());
-        }
-        return cachedFrameworkFilter;
+        return PathFilters.in(getFrameworkPackagePaths());
     }
 
     /**
@@ -248,60 +235,26 @@ final class SystemPackagesPlugin extends AbstractPluginService<SystemPackagesPlu
      *
      * @return The filter of framework exported paths
      */
-    PathFilter getBootDelegationFilter() {
+    PathFilter getBootDelegationPackageFilter() {
         assertInitialized();
-        if (cachedBootDelegationFilter == null) {
-            MultiplePathFilterBuilder builder = PathFilters.multiplePathFilterBuilder(false);
-            for (String packageName : getBootDelegationPackages()) {
-                if (packageName.equals("*")) {
-                    if (doFrameworkPackageDelegation()) {
-                        builder.addFilter(PathFilters.acceptAll(), true);
-                    } else {
-                        builder.addFilter(PathFilters.all(PathFilters.acceptAll(), PathFilters.not(getFrameworkFilter())), true);
-                    }
-                } else if (packageName.endsWith(".*")) {
-                    packageName = packageName.substring(0, packageName.length() - 2);
-                    builder.addFilter(PathFilters.isChildOf(packageName.replace('.', '/')), true);
-                } else {
-                    builder.addFilter(PathFilters.is(packageName.replace('.', '/')), true);
-                }
-            }
-            cachedBootDelegationFilter = builder.create();
-        }
-        return cachedBootDelegationFilter;
-    }
+        MultiplePathFilterBuilder builder = PathFilters.multiplePathFilterBuilder(false);
 
-    /**
-     * Get the filter for boot delegation
-     *
-     * @return The filter of framework exported paths
-     */
-    Set<String> getBootDelegationPaths() {
-        assertInitialized();
-        if (cachedBootDelegationPaths == null) {
-            Set<String> result = new LinkedHashSet<String>();
-            boolean hasBootDelegationWildcards = false;
-            for (String packageName : getBootDelegationPackages()) {
-                if (packageName.endsWith("*")) {
-                    hasBootDelegationWildcards = true;
-                    break;
+        // Add bootdelegation paths
+        for (String packageName : getBootDelegationPackages()) {
+            if (packageName.equals("*")) {
+                if (doFrameworkPackageDelegation()) {
+                    builder.addFilter(PathFilters.acceptAll(), true);
+                } else {
+                    builder.addFilter(PathFilters.all(PathFilters.acceptAll(), PathFilters.not(getFrameworkPackageFilter())), true);
                 }
-            }
-            if (hasBootDelegationWildcards == true) {
-                PathFilter bootDelegationFilter = getBootDelegationFilter();
-                for (String path : JDKPaths.JDK) {
-                    if (bootDelegationFilter.accept(path)) {
-                        result.add(path);
-                    }
-                }
+            } else if (packageName.endsWith(".*")) {
+                packageName = packageName.substring(0, packageName.length() - 2);
+                builder.addFilter(PathFilters.isChildOf(packageName.replace('.', '/')), true);
             } else {
-                for (String packageName : getBootDelegationPackages()) {
-                    result.add(packageName.replace('.', '/'));
-                }
+                builder.addFilter(PathFilters.is(packageName.replace('.', '/')), true);
             }
-            cachedBootDelegationPaths = Collections.unmodifiableSet(result);
         }
-        return cachedBootDelegationPaths;
+        return builder.create();
     }
 
     /**
@@ -358,52 +311,24 @@ final class SystemPackagesPlugin extends AbstractPluginService<SystemPackagesPlu
      *
      * @return The filter of framework exported paths
      */
-    PathFilter getSystemFilter() {
+    PathFilter getSystemPackageFilter() {
         assertInitialized();
-        if (cachedSystemFilter == null) {
-            MultiplePathFilterBuilder builder = PathFilters.multiplePathFilterBuilder(false);
-            builder.addFilter(getBootDelegationFilter(), true);
+        MultiplePathFilterBuilder builder = PathFilters.multiplePathFilterBuilder(false);
+        builder.addFilter(getBootDelegationPackageFilter(), true);
 
-            // Add system packages exported by the framework
-            Set<String> paths = new LinkedHashSet<String>();
-            for (String packageSpec : getSystemPackages()) {
-                int index = packageSpec.indexOf(';');
-                if (index > 0) {
-                    packageSpec = packageSpec.substring(0, index);
-                }
-                String path = packageSpec.replace('.', '/');
-                paths.add(path);
+        // Add system packages exported by the framework
+        Set<String> paths = new LinkedHashSet<String>();
+        for (String packageSpec : getSystemPackages()) {
+            int index = packageSpec.indexOf(';');
+            if (index > 0) {
+                packageSpec = packageSpec.substring(0, index);
             }
-            builder.addFilter(PathFilters.in(paths), true);
-            cachedSystemFilter = builder.create();
+            String path = packageSpec.replace('.', '/');
+            paths.add(path);
         }
-        return cachedSystemFilter;
-    }
+        builder.addFilter(PathFilters.in(paths), true);
 
-    /**
-     * Get the set of paths that the system exports
-     * This includes bootdelegation paths.
-     *
-     * @return The set of paths that the framework exports
-     */
-    Set<String> getSystemPaths() {
-        assertInitialized();
-        if (cachedSystemPaths == null) {
-            // Add bootdelegation paths
-            Set<String> result = new LinkedHashSet<String>();
-            result.addAll(getBootDelegationPaths());
-            // Add system packages exported by the framework
-            for (String packageSpec : getSystemPackages()) {
-                int index = packageSpec.indexOf(';');
-                if (index > 0) {
-                    packageSpec = packageSpec.substring(0, index);
-                }
-                String path = packageSpec.replace('.', '/');
-                result.add(path);
-            }
-            cachedSystemPaths = Collections.unmodifiableSet(result);
-        }
-        return cachedSystemPaths;
+        return builder.create();
     }
 
     private boolean doFrameworkPackageDelegation() {
