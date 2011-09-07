@@ -30,7 +30,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.print.attribute.standard.DocumentName;
+import javax.security.auth.x500.X500Principal;
 
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
@@ -48,48 +48,47 @@ import org.osgi.framework.launch.FrameworkFactory;
 
 /**
  * Test boot delegation
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 28-Jan-2011
  */
 public class BootDelegationTestCase extends OSGiTest {
 
     private static ClassLoader bootClassLoader = new BootClassLoader();
-
     private static class BootClassLoader extends ClassLoader {
         protected BootClassLoader() {
             super(null);
         }
     }
-
+    
     private Class<?> vmClass;
-
+    
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        vmClass = bootClassLoader.loadClass("javax.print.attribute.standard.PrinterStateReasons");
+        vmClass = bootClassLoader.loadClass("javax.security.auth.x500.X500Principal");
     }
 
     @Test
     public void testNoWildcard() throws Exception {
-        doTestBootDelegation("javax.print.attribute.standard", true);
+        doTestBootDelegation("javax.security.auth.x500", true);
     }
-
+    
     @Test
     public void testWildcardOne() throws Exception {
-        doTestBootDelegation("javax.print.attribute.*", true);
+        doTestBootDelegation("javax.security.auth.*", true);
     }
-
+    
     @Test
     public void testWildcardTwo() throws Exception {
-        doTestBootDelegation("javax.print.*", true);
+        doTestBootDelegation("javax.security.*", true);
     }
-
+    
     @Test
     public void testWildcardAll() throws Exception {
         doTestBootDelegation("*", true);
     }
-
+    
     @Test
     public void testNullBootDelegation() throws Exception {
         doTestBootDelegation(null, false);
@@ -106,25 +105,30 @@ public class BootDelegationTestCase extends OSGiTest {
         configuration.put("org.osgi.framework.storage.clean", "onFirstInit");
         if (bootDelegation != null)
             configuration.put(Constants.FRAMEWORK_BOOTDELEGATION, bootDelegation);
-
+        
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
         Framework framework = factory.newFramework(configuration);
         framework.start();
-        try {
+        try
+        {
             BundleContext sysContext = framework.getBundleContext();
             InputStream inputStream = OSGiTestHelper.toInputStream(getTestArchive());
             Bundle testBundle = sysContext.installBundle("http://bootdelegation", inputStream);
             Class<?> testClass = null;
             try {
-                testClass = testBundle.loadClass("javax.print.attribute.standard.PrinterStateReasons");
+                testClass = testBundle.loadClass("javax.security.auth.x500.X500Principal");
                 assertNotNull("Test class not null", testClass);
-                assertEquals("Unexpected classloader", vmClass.getClassLoader(), testClass.getClassLoader());
             } catch (ClassNotFoundException e) {
-                if (fromBoot) {
-                    fail("Unexpected ClassNotFoundException");
-                }
+                fail("Unexpected ClassNotFoundException");
             }
-        } finally {
+            if (fromBoot)
+                assertEquals("Unexpected class", vmClass.getClassLoader(), testClass.getClassLoader());
+            else
+                assertFalse("Unexpected class", vmClass.equals(testClass));
+            
+        }
+        finally
+        {
             framework.stop();
             framework.waitForStop(10000);
         }
@@ -132,7 +136,7 @@ public class BootDelegationTestCase extends OSGiTest {
 
     private JavaArchive getTestArchive() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bootdelegation");
-        archive.addClasses(DocumentName.class);
+        archive.addClasses(X500Principal.class);
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
