@@ -37,7 +37,7 @@
     <version.apache.aries.jmx>0.3</version.apache.aries.jmx>
     <version.apache.felix.eventadmin>1.2.2</version.apache.felix.eventadmin>
     <version.apache.felix.log>1.0.0</version.apache.felix.log>
-	<version.aqute.bnd>0.0.356</version.aqute.bnd>
+	<version.aqute.bnd>0.0.365.SP1</version.aqute.bnd>
     <version.javax.inject>1</version.javax.inject>
     <version.jboss.arquillian.core>1.0.0.CR1</version.jboss.arquillian.core>
     <version.jboss.arquillian.osgi>1.0.0.CR2</version.jboss.arquillian.osgi>
@@ -141,7 +141,7 @@
       <!-- Test dependencies -->
       <dependency>
         <groupId>biz.aQute</groupId>
-        <artifactId>bnd</artifactId>
+        <artifactId>aQute.bnd</artifactId>
         <version>${version.aqute.bnd}</version>
       </dependency>
       <dependency>
