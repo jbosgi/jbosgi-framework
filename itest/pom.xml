@@ -35,7 +35,7 @@
   <dependencies>
     <dependency>
       <groupId>biz.aQute</groupId>
-      <artifactId>bnd</artifactId>
+      <artifactId>aQute.bnd</artifactId>
     </dependency>
 
     <!-- Test Dependencies -->
