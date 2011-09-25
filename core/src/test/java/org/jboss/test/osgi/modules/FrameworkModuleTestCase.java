@@ -29,15 +29,14 @@ import java.util.Set;
 
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.LocalLoader;
-import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoaderSpec;
-import org.jboss.modules.filter.MultiplePathFilterBuilder;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
+import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -78,7 +77,7 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
         specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
-        
+
         assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal", identifierA);
         assertLoadClassFail(identifierA, "org.osgi.framework.Bundle");
     }
@@ -89,13 +88,12 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
         VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
         specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
-        ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
-        PathFilter importFilter = getSystemExportFilter();
+        PathFilter importFilter = getSystemFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderA.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getBootModuleLoader(), systemModuleId, false));
+        specBuilderA.addDependency(DependencySpec.createSystemDependencySpec(importFilter, exportFilter, getSystemPaths()));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
-        
+
         assertLoadClassFail(identifierA, "org.osgi.framework.Bundle");
         assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal");
     }
@@ -104,12 +102,12 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
     public void testAvailableFrameworkModule() throws Exception {
         ModuleIdentifier identifierF = ModuleIdentifier.create("framework");
         ModuleSpec.Builder specBuilderF = ModuleSpec.build(identifierF);
-        PathFilter importFilter = PathFilters.in(getFrameworkExportPaths());
+        PathFilter importFilter = PathFilters.in(getFrameworkPaths());
         PathFilter exportFilter = PathFilters.acceptAll();
         FrameworkLocalLoader localLoader = new FrameworkLocalLoader(Bundle.class.getClassLoader());
-        specBuilderF.addDependency(DependencySpec.createLocalDependencySpec(importFilter, exportFilter, localLoader, getFrameworkExportPaths()));
+        specBuilderF.addDependency(DependencySpec.createLocalDependencySpec(importFilter, exportFilter, localLoader, getFrameworkPaths()));
         addModuleSpec(specBuilderF.create());
-        
+
         assertLoadClass(identifierF, "org.osgi.framework.Bundle");
         assertLoadClassFail(identifierF, "javax.security.auth.x500.X500Principal");
     }
@@ -118,16 +116,15 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
     public void testFrameworkDelegatesToSystem() throws Exception {
         ModuleIdentifier identifierF = ModuleIdentifier.create("framework");
         ModuleSpec.Builder specBuilderF = ModuleSpec.build(identifierF);
-        ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
-        PathFilter importFilter = getSystemExportFilter();
+        PathFilter importFilter = getSystemFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderF.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getBootModuleLoader(), systemModuleId, false));
-        importFilter = PathFilters.in(getFrameworkExportPaths());
+        specBuilderF.addDependency(DependencySpec.createSystemDependencySpec(importFilter, exportFilter, getSystemPaths()));
+        importFilter = PathFilters.in(getFrameworkPaths());
         exportFilter = PathFilters.acceptAll();
         FrameworkLocalLoader localLoader = new FrameworkLocalLoader(Bundle.class.getClassLoader());
-        specBuilderF.addDependency(DependencySpec.createLocalDependencySpec(importFilter, exportFilter, localLoader, getFrameworkExportPaths()));
+        specBuilderF.addDependency(DependencySpec.createLocalDependencySpec(importFilter, exportFilter, localLoader, getFrameworkPaths()));
         addModuleSpec(specBuilderF.create());
-        
+
         assertLoadClass(identifierF, "org.osgi.framework.Bundle");
         assertLoadClass(identifierF, "javax.security.auth.x500.X500Principal");
     }
@@ -136,16 +133,15 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
     public void testModuleDelegatesToFramework() throws Exception {
         ModuleIdentifier identifierF = ModuleIdentifier.create("framework");
         ModuleSpec.Builder specBuilderF = ModuleSpec.build(identifierF);
-        ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
-        PathFilter importFilter = getSystemExportFilter();
+        PathFilter importFilter = getSystemFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderF.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getBootModuleLoader(), systemModuleId, false));
-        importFilter = PathFilters.in(getFrameworkExportPaths());
+        specBuilderF.addDependency(DependencySpec.createSystemDependencySpec(importFilter, exportFilter, getSystemPaths()));
+        importFilter = PathFilters.in(getFrameworkPaths());
         exportFilter = PathFilters.acceptAll();
         FrameworkLocalLoader localLoader = new FrameworkLocalLoader(Bundle.class.getClassLoader());
-        specBuilderF.addDependency(DependencySpec.createLocalDependencySpec(importFilter, exportFilter, localLoader, getFrameworkExportPaths()));
+        specBuilderF.addDependency(DependencySpec.createLocalDependencySpec(importFilter, exportFilter, localLoader, getFrameworkPaths()));
         addModuleSpec(specBuilderF.create());
-        
+
         ModuleIdentifier identifierA = ModuleIdentifier.create("moduleA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
         VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
@@ -153,23 +149,25 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
         specBuilderA.addDependency(DependencySpec.createModuleDependencySpec(identifierF));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
-        
+
         assertLoadClass(identifierA, "org.osgi.framework.Bundle");
         assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal");
     }
 
-    private Set<String> getFrameworkExportPaths() {
-        Set<String> exportPaths = new HashSet<String>();
-        exportPaths.add("org/osgi/framework");
-        return Collections.unmodifiableSet(exportPaths);
+    private Set<String> getFrameworkPaths() {
+        Set<String> paths = new HashSet<String>();
+        paths.add("org/osgi/framework");
+        return Collections.unmodifiableSet(paths);
     }
 
-    private PathFilter getSystemExportFilter() {
-        MultiplePathFilterBuilder pathBuilder = PathFilters.multiplePathFilterBuilder(false);
-        pathBuilder.addFilter(PathFilters.isChildOf("javax/security"), true);
-        pathBuilder.addFilter(PathFilters.isChildOf("org/osgi/framework"), false);
-        PathFilter importFilter = pathBuilder.create();
-        return importFilter;
+    private Set<String> getSystemPaths() {
+        Set<String> paths = new HashSet<String>();
+        paths.add("javax/security/auth/x500");
+        return paths;
+    }
+
+    private PathFilter getSystemFilter() {
+        return PathFilters.in(getSystemPaths());
     }
 
     private JavaArchive getModuleA() {
@@ -185,13 +183,12 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
         });
         return archive;
     }
-    
-    static class FrameworkLocalLoader implements LocalLoader
-    {
+
+    static class FrameworkLocalLoader implements LocalLoader {
         private ClassLoader classLoader;
 
         public FrameworkLocalLoader(ClassLoader classLoader) {
-            if (classLoader== null)
+            if (classLoader == null)
                 throw new IllegalArgumentException("Null classLoader");
             this.classLoader = classLoader;
         }
@@ -203,6 +200,11 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
             } catch (ClassNotFoundException ex) {
                 return null;
             }
+        }
+
+        @Override
+        public Package loadPackageLocal(String name) {
+            throw new NotImplementedException();
         }
 
         @Override

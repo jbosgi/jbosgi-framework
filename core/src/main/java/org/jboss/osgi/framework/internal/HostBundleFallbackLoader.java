@@ -39,6 +39,7 @@ import org.jboss.modules.Resource;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
+import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 
@@ -90,6 +91,11 @@ final class HostBundleFallbackLoader implements LocalLoader {
             log.tracef("Cannot load class [%s] from module: %s", className, module);
             return null;
         }
+    }
+
+    @Override
+    public Package loadPackageLocal(String name) {
+        throw new NotImplementedException();
     }
 
     @Override
