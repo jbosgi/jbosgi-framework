@@ -171,10 +171,6 @@ public class SystemPackageDependencyTestCase extends OSGiTest {
             assertBundleState(Bundle.INSTALLED, bundle.getState());
 
             // Note: Apache Felix does not support this, Equinox does.
-            bundle.start();
-            assertBundleState(Bundle.ACTIVE, bundle.getState());
-
-            /*
             try {
                 bundle.start();
                 fail("BundleException expected");
@@ -182,7 +178,6 @@ public class SystemPackageDependencyTestCase extends OSGiTest {
                 // expected
             }
             assertBundleState(Bundle.RESOLVED, bundle.getState());
-            */
 
         } finally {
             shutdownFramework(framework);

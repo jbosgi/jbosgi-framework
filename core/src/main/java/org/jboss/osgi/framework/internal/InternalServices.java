@@ -57,8 +57,6 @@ interface InternalServices {
     ServiceName RESOLVER_PLUGIN = INTERNAL_SERVICE_BASE.append("BundleResolver");
     /** The {@link ServiceManagerPlugin} service name */
     ServiceName SERVICE_MANAGER_PLUGIN = INTERNAL_SERVICE_BASE.append("ServiceManager");
-    /** The {@link SystemPackagesPlugin} service name */
-    ServiceName SYSTEM_PACKAGES_PLUGIN = INTERNAL_SERVICE_BASE.append("SystemPackages");
     /** The {@link WebXMLVerifierInterceptor} service name */
     ServiceName WEBXML_VERIFIER_PLUGIN = INTERNAL_SERVICE_BASE.append("WebXMLVerifier");
     /** The {@link URLHandler} service name */

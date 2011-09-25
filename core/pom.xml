@@ -13,7 +13,6 @@
   Set these VM properties in your IDE debugger 
   
   -Djava.util.logging.manager=org.jboss.logmanager.LogManager
-  -Dtest.archive.directory=${workspace_loc:jbosgi-framework-core/target}/test-libs
   -Dmodule.path=${workspace_loc:jbosgi-framework-core/target}/test-modules
   -Djboss.osgi.vfs.leakDebugging=true
 -->

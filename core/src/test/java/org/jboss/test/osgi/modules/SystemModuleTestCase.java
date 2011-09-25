@@ -22,9 +22,10 @@
 package org.jboss.test.osgi.modules;
 
 import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.jboss.modules.DependencySpec;
-import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.ResourceLoaderSpec;
@@ -64,12 +65,6 @@ public class SystemModuleTestCase extends ModulesTestBase {
     }
 
     @Test
-    public void testAvailableOnSystemModule() throws Exception {
-        ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
-        assertLoadClass(systemModuleId, "javax.security.auth.x500.X500Principal", systemModuleId);
-    }
-
-    @Test
     public void testAvailableOnModule() throws Exception {
         ModuleIdentifier identifierA = ModuleIdentifier.create("moduleA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
@@ -87,15 +82,13 @@ public class SystemModuleTestCase extends ModulesTestBase {
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
         VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
         specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
-        ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
-        PathFilter importFilter = getSystemDelegationFilter();
+        PathFilter importFilter = getSystemFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderA.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getBootModuleLoader(), systemModuleId, false));
+        specBuilderA.addDependency(DependencySpec.createSystemDependencySpec(importFilter, exportFilter, getSystemPaths()));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
-        assertLoadClass(systemModuleId, "javax.security.auth.x500.X500Principal", systemModuleId);
-        assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal", systemModuleId);
+        assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal", null);
     }
 
     @Test
@@ -103,10 +96,9 @@ public class SystemModuleTestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierB = ModuleIdentifier.create("moduleB");
         ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        ModuleIdentifier systemModuleId = Module.getSystemModule().getIdentifier();
-        PathFilter importFilter = getSystemDelegationFilter();
+        PathFilter importFilter = getSystemFilter();
         PathFilter exportFilter = PathFilters.acceptAll();
-        specBuilderB.addDependency(DependencySpec.createModuleDependencySpec(importFilter, exportFilter, Module.getBootModuleLoader(), systemModuleId, false));
+        specBuilderB.addDependency(DependencySpec.createSystemDependencySpec(importFilter, exportFilter, getSystemPaths()));
         addModuleSpec(specBuilderB.create());
         
         ModuleIdentifier identifierA = ModuleIdentifier.create("moduleA");
@@ -117,12 +109,17 @@ public class SystemModuleTestCase extends ModulesTestBase {
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
         addModuleSpec(specBuilderA.create());
 
-        assertLoadClass(systemModuleId, "javax.security.auth.x500.X500Principal", systemModuleId);
-        assertLoadClass(identifierB, "javax.security.auth.x500.X500Principal", systemModuleId);
-        assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal", systemModuleId);
+        assertLoadClass(identifierB, "javax.security.auth.x500.X500Principal", null);
+        assertLoadClass(identifierA, "javax.security.auth.x500.X500Principal", null);
     }
 
-    private PathFilter getSystemDelegationFilter() {
+    private Set<String> getSystemPaths() {
+        Set<String> paths = new HashSet<String>();
+        paths.add("javax/security/auth/x500");
+        return paths;
+    }
+
+    private PathFilter getSystemFilter() {
         MultiplePathFilterBuilder pathBuilder = PathFilters.multiplePathFilterBuilder(false);
         pathBuilder.addFilter(PathFilters.isChildOf("javax/security"), true);
         PathFilter importFilter = pathBuilder.create();
