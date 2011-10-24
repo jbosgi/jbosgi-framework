@@ -288,7 +288,9 @@ final class HostBundleState extends UserBundleState {
         XModule resModule = getResolverModule();
         String bundleActivatorClassName = resModule.getModuleActivator();
         if (bundleActivatorClassName != null) {
+            ClassLoader tccl = Thread.currentThread().getContextClassLoader();
             try {
+                Thread.currentThread().setContextClassLoader(null);
                 Object result = loadClass(bundleActivatorClassName).newInstance();
                 if (result instanceof ModuleActivator) {
                     bundleActivator = new ModuleActivatorBridge((ModuleActivator) result);
@@ -324,6 +326,9 @@ final class HostBundleState extends UserBundleState {
                     throw (BundleException) th;
 
                 throw new BundleException("Cannot start bundle: " + this, th);
+            }
+            finally {
+                Thread.currentThread().setContextClassLoader(tccl);
             }
         }
 
