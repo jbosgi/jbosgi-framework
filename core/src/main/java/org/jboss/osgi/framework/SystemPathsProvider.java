@@ -84,7 +84,6 @@ public interface SystemPathsProvider extends Service<SystemPathsProvider> {
             "javax.xml.transform.dom",
             "javax.xml.transform.sax",
             "javax.xml.transform.stream",
-            "org.jboss.modules",
             "org.w3c.dom",
             "org.w3c.dom.bootstrap",
             "org.w3c.dom.ls",
