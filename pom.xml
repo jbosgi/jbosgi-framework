@@ -43,7 +43,7 @@
     <version.jboss.arquillian.osgi>1.0.0.CR2</version.jboss.arquillian.osgi>
     <version.jboss.logging>3.0.1.GA</version.jboss.logging>
     <version.jboss.logmanager>1.2.0.GA</version.jboss.logmanager>
-    <version.jboss.modules>1.1.0.Beta2</version.jboss.modules>
+    <version.jboss.modules>1.1.0.CR2</version.jboss.modules>
     <version.jboss.msc>1.0.1.GA</version.jboss.msc>
     <version.jboss.osgi.deployment>1.0.10</version.jboss.osgi.deployment>
     <version.jboss.osgi.equinox>3.5.2</version.jboss.osgi.equinox>

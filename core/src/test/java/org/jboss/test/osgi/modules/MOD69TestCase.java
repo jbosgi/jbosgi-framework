@@ -39,6 +39,7 @@ import org.jboss.test.osgi.modules.a.QuxFoo;
 import org.jboss.test.osgi.modules.a.QuxImpl;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -47,6 +48,7 @@ import org.junit.Test;
  * @author Thomas.Diesler@jboss.com
  * @since 28-Apr-2011
  */
+@Ignore("[MODULES-111] Regression in Class Filtering")
 public class MOD69TestCase extends ModulesTestBase {
 
     private VirtualFile virtualFileA;

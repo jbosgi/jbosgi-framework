@@ -32,6 +32,7 @@ import org.jboss.test.osgi.framework.classloader.support.a.BarImpl;
 import org.jboss.test.osgi.framework.classloader.support.a.QuxBar;
 import org.jboss.test.osgi.framework.classloader.support.a.QuxFoo;
 import org.jboss.test.osgi.framework.classloader.support.a.QuxImpl;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 
@@ -41,6 +42,7 @@ import org.osgi.framework.Bundle;
  * @author Thomas.Diesler@jboss.com
  * @since 28-Apr-2011
  */
+@Ignore("[MODULES-111] Regression in Class Filtering")
 public class ExportFilterTestCase extends OSGiFrameworkTest {
 
     @Test
