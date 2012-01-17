@@ -37,13 +37,12 @@
     <version.apache.aries.jmx>0.3</version.apache.aries.jmx>
     <version.apache.felix.eventadmin>1.2.6</version.apache.felix.eventadmin>
     <version.apache.felix.log>1.0.0</version.apache.felix.log>
-    <version.aqute.bnd>0.0.365.SP1</version.aqute.bnd>
     <version.javax.inject>1</version.javax.inject>
-    <version.jboss.arquillian.core>1.0.0.CR1</version.jboss.arquillian.core>
-    <version.jboss.arquillian.osgi>1.0.0.CR2</version.jboss.arquillian.osgi>
-    <version.jboss.logging>3.0.1.GA</version.jboss.logging>
+    <version.jboss.arquillian.core>1.0.0.CR7</version.jboss.arquillian.core>
+    <version.jboss.arquillian.osgi>1.0.0.CR5-SNAPSHOT</version.jboss.arquillian.osgi>
+    <version.jboss.logging>3.1.0.CR2</version.jboss.logging>
     <version.jboss.logmanager>1.2.0.GA</version.jboss.logmanager>
-    <version.jboss.modules>1.1.0.CR3</version.jboss.modules>
+    <version.jboss.modules>1.1.0.CR6</version.jboss.modules>
     <version.jboss.msc>1.0.1.GA</version.jboss.msc>
     <version.jboss.osgi.deployment>1.0.10</version.jboss.osgi.deployment>
     <version.jboss.osgi.equinox>3.5.2</version.jboss.osgi.equinox>
@@ -139,11 +138,6 @@
       </dependency>
 
       <!-- Test dependencies -->
-      <dependency>
-        <groupId>biz.aQute</groupId>
-        <artifactId>aQute.bnd</artifactId>
-        <version>${version.aqute.bnd}</version>
-      </dependency>
       <dependency>
         <groupId>org.apache.aries.jmx</groupId>
         <artifactId>org.apache.aries.jmx</artifactId>
