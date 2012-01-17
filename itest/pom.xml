@@ -17,246 +17,247 @@
   -Djboss.osgi.vfs.leakDebugging=true
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <name>JBossOSGi Framework iTest</name>
-  <groupId>org.jboss.osgi.framework</groupId>
-  <artifactId>jbosgi-framework-itest</artifactId>
-  <packaging>jar</packaging>
-
-  <parent>
+    <name>JBossOSGi Framework iTest</name>
     <groupId>org.jboss.osgi.framework</groupId>
-    <artifactId>jbosgi-framework-parent</artifactId>
-    <version>1.1.1-SNAPSHOT</version>
-  </parent>
-  
-  <!-- Dependencies -->
-  <dependencies>
-    <dependency>
-      <groupId>biz.aQute</groupId>
-      <artifactId>aQute.bnd</artifactId>
-    </dependency>
+    <artifactId>jbosgi-framework-itest</artifactId>
+    <packaging>jar</packaging>
 
-    <!-- Test Dependencies -->
-    <dependency>
-      <groupId>org.apache.aries.jmx</groupId>
-      <artifactId>org.apache.aries.jmx</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.eventadmin</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.log</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.container</groupId>
-      <artifactId>arquillian-container-osgi-embedded</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.junit</groupId>
-      <artifactId>arquillian-junit-container</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.osgi</groupId>
-      <artifactId>arquillian-osgi-bundle</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.osgi.jmx</groupId>
-      <artifactId>jboss-osgi-jmx</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.jboss.logmanager</groupId>
-        <artifactId>jboss-logmanager</artifactId>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
+    <parent>
+        <groupId>org.jboss.osgi.framework</groupId>
+        <artifactId>jbosgi-framework-parent</artifactId>
+        <version>1.1.1-SNAPSHOT</version>
+    </parent>
 
-  <!-- Build -->
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>build-test-jars</id>
-            <phase>test-compile</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <tasks>
-                <property name="maven.runtime.classpath" refid="maven.runtime.classpath" />
-                <property name="tests.output.dir" value="${project.build.directory}" />
-                <ant antfile="scripts/antrun-test-jars.xml" />
-              </tasks>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.apache.felix</groupId>
-                  <artifactId>org.apache.felix.eventadmin</artifactId>
-                  <destFileName>org.apache.felix.eventadmin.jar</destFileName>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.aries.jmx</groupId>
-                  <artifactId>org.apache.aries.jmx</artifactId>
-                  <destFileName>org.apache.aries.jmx.jar</destFileName>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.apache.felix</groupId>
-                  <artifactId>org.apache.felix.log</artifactId>
-                  <destFileName>org.apache.felix.log.jar</destFileName>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.jboss.arquillian.osgi</groupId>
-                  <artifactId>arquillian-osgi-bundle</artifactId>
-                  <destFileName>arquillian-osgi-bundle.jar</destFileName>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.jboss.osgi.jmx</groupId>
-                  <artifactId>jboss-osgi-jmx</artifactId>
-                  <destFileName>jboss-osgi-jmx.jar</destFileName>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.osgi</groupId>
-                  <artifactId>org.osgi.compendium</artifactId>
-                  <destFileName>org.osgi.compendium.jar</destFileName>
-                </artifactItem>
-              </artifactItems>
-              <outputDirectory>${project.build.directory}/test-libs/bundles</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>${surefire.system.args}</argLine>
-          <systemProperties>
-            <property>
-              <name>java.io.tmpdir</name>
-              <value>${project.build.directory}</value>
-            </property>
-            <property>
-                <name>java.util.logging.manager</name>
-                <value>org.jboss.logmanager.LogManager</value>
-            </property>
-            <property>
-              <name>jboss.osgi.framework.properties</name>
-              <value>${jboss.osgi.framework.properties}</value>
-            </property>
-            <property>
-              <name>jboss.osgi.vfs.leakDebugging</name>
-              <value>true</value>
-            </property>
-            <property>
-              <name>test.archive.directory</name>
-              <value>${project.build.directory}/test-libs</value>
-            </property>
-          </systemProperties>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-  
-  <profiles>
-    <!--
-      Name: equinox
-      Descr: Setup for Equinox framework integration testing
-    -->
-    <profile>
-      <id>equinox</id>
-      <activation>
-        <property>
-          <name>framework</name>
-          <value>equinox</value>
-        </property>
-      </activation>
-      <properties>
-        <jboss.osgi.framework.properties>jboss-osgi-equinox.properties</jboss.osgi.framework.properties>
-      </properties>
-      <dependencies>
+    <!-- Dependencies -->
+    <dependencies>
         <dependency>
-          <groupId>org.jboss.osgi.equinox</groupId>
-          <artifactId>jboss-osgi-equinox</artifactId>
-          <scope>provided</scope>
+            <groupId>biz.aQute</groupId>
+            <artifactId>bnd</artifactId>
         </dependency>
-      </dependencies>
-    </profile>
 
-    <!--
-      Name: felix 
-      Descr: Setup for Felix framework integration testing
-    -->
-    <profile>
-      <id>felix</id>
-      <activation>
-        <property>
-          <name>framework</name>
-          <value>felix</value>
-        </property>
-      </activation>
-      <properties>
-        <jboss.osgi.framework.properties>jboss-osgi-felix.properties</jboss.osgi.framework.properties>
-      </properties>
-      <dependencies>
+        <!-- Test Dependencies -->
         <dependency>
-          <groupId>org.jboss.osgi.felix</groupId>
-          <artifactId>jboss-osgi-felix</artifactId>
-          <scope>provided</scope>
+            <groupId>org.apache.aries.jmx</groupId>
+            <artifactId>org.apache.aries.jmx</artifactId>
+            <scope>test</scope>
         </dependency>
-      </dependencies>
-    </profile>
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.eventadmin</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.felix</groupId>
+            <artifactId>org.apache.felix.log</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.arquillian.container</groupId>
+            <artifactId>arquillian-container-osgi-embedded</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.arquillian.junit</groupId>
+            <artifactId>arquillian-junit-container</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.arquillian.osgi</groupId>
+            <artifactId>arquillian-osgi-bundle</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.osgi.jmx</groupId>
+            <artifactId>jboss-osgi-jmx</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logmanager</groupId>
+            <artifactId>jboss-logmanager</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
-    <!--
-      Name: jboss
-      Descr: Setup for MSC Framework integration testing
-    -->
-    <profile>
-      <id>jboss</id>
-      <activation>
-        <property>
-          <name>!framework</name>
-        </property>
-      </activation>
-      <properties>
-        <jboss.osgi.framework.properties>jboss-osgi-framework.properties</jboss.osgi.framework.properties>
-      </properties>
-      <dependencies>
-        <dependency>
-          <groupId>org.jboss.osgi.framework</groupId>
-          <artifactId>jbosgi-framework-core</artifactId>
-          <version>${project.version}</version>
-          <scope>provided</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-  </profiles>
+    <!-- Build -->
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>build-test-jars</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <tasks>
+                                <property name="maven.runtime.classpath" refid="maven.runtime.classpath"/>
+                                <property name="tests.output.dir" value="${project.build.directory}"/>
+                                <ant antfile="scripts/antrun-test-jars.xml"/>
+                            </tasks>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.apache.felix</groupId>
+                                    <artifactId>org.apache.felix.eventadmin</artifactId>
+                                    <destFileName>org.apache.felix.eventadmin.jar</destFileName>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.aries.jmx</groupId>
+                                    <artifactId>org.apache.aries.jmx</artifactId>
+                                    <destFileName>org.apache.aries.jmx.jar</destFileName>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.apache.felix</groupId>
+                                    <artifactId>org.apache.felix.log</artifactId>
+                                    <destFileName>org.apache.felix.log.jar</destFileName>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.jboss.arquillian.osgi</groupId>
+                                    <artifactId>arquillian-osgi-bundle</artifactId>
+                                    <destFileName>arquillian-osgi-bundle.jar</destFileName>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.jboss.osgi.jmx</groupId>
+                                    <artifactId>jboss-osgi-jmx</artifactId>
+                                    <destFileName>jboss-osgi-jmx.jar</destFileName>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.osgi</groupId>
+                                    <artifactId>org.osgi.compendium</artifactId>
+                                    <destFileName>org.osgi.compendium.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                            <outputDirectory>${project.build.directory}/test-libs/bundles</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>${surefire.system.args}</argLine>
+                    <systemProperties>
+                        <property>
+                            <name>java.io.tmpdir</name>
+                            <value>${project.build.directory}</value>
+                        </property>
+                        <property>
+                            <name>java.util.logging.manager</name>
+                            <value>org.jboss.logmanager.LogManager</value>
+                        </property>
+                        <property>
+                            <name>jboss.osgi.framework.properties</name>
+                            <value>${jboss.osgi.framework.properties}</value>
+                        </property>
+                        <property>
+                            <name>jboss.osgi.vfs.leakDebugging</name>
+                            <value>true</value>
+                        </property>
+                        <property>
+                            <name>test.archive.directory</name>
+                            <value>${project.build.directory}/test-libs</value>
+                        </property>
+                    </systemProperties>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!--
+          Name: equinox
+          Descr: Setup for Equinox framework integration testing
+        -->
+        <profile>
+            <id>equinox</id>
+            <activation>
+                <property>
+                    <name>framework</name>
+                    <value>equinox</value>
+                </property>
+            </activation>
+            <properties>
+                <jboss.osgi.framework.properties>jboss-osgi-equinox.properties</jboss.osgi.framework.properties>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.jboss.osgi.equinox</groupId>
+                    <artifactId>jboss-osgi-equinox</artifactId>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!--
+          Name: felix
+          Descr: Setup for Felix framework integration testing
+        -->
+        <profile>
+            <id>felix</id>
+            <activation>
+                <property>
+                    <name>framework</name>
+                    <value>felix</value>
+                </property>
+            </activation>
+            <properties>
+                <jboss.osgi.framework.properties>jboss-osgi-felix.properties</jboss.osgi.framework.properties>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.jboss.osgi.felix</groupId>
+                    <artifactId>jboss-osgi-felix</artifactId>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <!--
+          Name: jboss
+          Descr: Setup for MSC Framework integration testing
+        -->
+        <profile>
+            <id>jboss</id>
+            <activation>
+                <property>
+                    <name>!framework</name>
+                </property>
+            </activation>
+            <properties>
+                <jboss.osgi.framework.properties>jboss-osgi-framework.properties</jboss.osgi.framework.properties>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.jboss.osgi.framework</groupId>
+                    <artifactId>jbosgi-framework-core</artifactId>
+                    <version>${project.version}</version>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>
