@@ -88,12 +88,6 @@
         <groupId>org.jboss.osgi.spi</groupId>
         <artifactId>jbosgi-spi</artifactId>
         <version>${version.jboss.osgi.spi}</version>
-        <exclusions>
-      	  <exclusion>
-	        <groupId>org.jboss.osgi.vfs</groupId>
-	        <artifactId>jbosgi-vfs</artifactId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.jboss.osgi.deployment</groupId>
@@ -181,23 +175,11 @@
       <dependency>
         <groupId>org.jboss.osgi.resolver</groupId>
         <artifactId>jbosgi-resolver-felix</artifactId>
-        <exclusions>
-          <exclusion>
-            <groupId>org.jboss.osgi</groupId>
-            <artifactId>jboss-osgi-spi</artifactId>
-          </exclusion>
-        </exclusions>
         <version>${version.jboss.osgi.resolver}</version>
       </dependency>
       <dependency>
         <groupId>org.jboss.osgi.vfs</groupId>
         <artifactId>jbosgi-vfs30</artifactId>
-        <exclusions>
-          <exclusion>
-            <groupId>org.jboss.osgi</groupId>
-            <artifactId>jboss-osgi-spi</artifactId>
-          </exclusion>
-        </exclusions>
         <version>${version.jboss.osgi.vfs}</version>
       </dependency>
       <dependency>

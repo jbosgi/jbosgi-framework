@@ -22,15 +22,28 @@
 package org.jboss.test.osgi.framework.bundle;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.util.Enumeration;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.exporter.StreamExporter;
+import org.jboss.shrinkwrap.api.exporter.ZipExporter;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.test.osgi.framework.simple.bundleA.SimpleService;
+import org.junit.Assert;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
+import org.osgi.framework.Constants;
 
 /**
  * The bundle URLs
@@ -42,11 +55,10 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetEntry() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleA());
         try {
-            URL url = bundle.getEntry("/resource-one.txt");
-            assertEquals("/resource-one.txt", url.getPath());
+            URL url = bundle.getEntry("/META-INF/resource-one.txt");
+            assertEquals("/META-INF/resource-one.txt", url.getPath());
 
             BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
             assertEquals("resource-one", br.readLine());
@@ -65,21 +77,109 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetEntryPaths() throws Exception {
-        // [TODO] testGetEntryPaths
+        Bundle bundle = installBundle(getBundleA());
+        try {
+            Enumeration urls = bundle.getEntryPaths("/");
+            assertEquals("org/", urls.nextElement());
+            assertEquals("META-INF/", urls.nextElement());
+            assertFalse(urls.hasMoreElements());
+
+            // Entry access should not resolve the bundle
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+        } finally {
+            bundle.uninstall();
+        }
     }
 
     @Test
     public void testFindEntries() throws Exception {
-        // [TODO] testFindEntries
+        Bundle bundle = installBundle(getBundleA());
+        try {
+            Enumeration urls = bundle.findEntries("/", "*.txt", true);
+            URL entry = (URL) urls.nextElement();
+            assertTrue(entry.toExternalForm(), entry.getPath().endsWith("META-INF/resource-one.txt"));
+            assertFalse(urls.hasMoreElements());
+
+            urls = bundle.findEntries("/", "*.class", true);
+            entry = (URL) urls.nextElement();
+            String suffix = SimpleService.class.getName().replace('.', '/') + ".class";
+            assertTrue(entry.toExternalForm(), entry.getPath().endsWith(suffix));
+            assertFalse(urls.hasMoreElements());
+
+            assertBundleState(Bundle.RESOLVED, bundle.getState());
+        } finally {
+            bundle.uninstall();
+        }
     }
 
     @Test
     public void testGetResource() throws Exception {
-        // [TODO] testGetResource
+        Bundle bundle = installBundle(getBundleA());
+        try {
+            URL url = bundle.getResource("/META-INF/resource-one.txt");
+            assertEquals("/META-INF/resource-one.txt", url.getPath());
+
+            BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
+            assertEquals("resource-one", br.readLine());
+
+            assertBundleState(Bundle.RESOLVED, bundle.getState());
+        } finally {
+            bundle.uninstall();
+        }
     }
 
     @Test
     public void testGetResources() throws Exception {
-        // [TODO] testGetResources
+        Bundle bundle = installBundle(getBundleB());
+        try {
+            Enumeration urls = bundle.getResources("/META-INF/resource-one.txt");
+            URL url = (URL) urls.nextElement();
+            assertEquals("/META-INF/resource-one.txt", url.getPath());
+
+            BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
+            assertEquals("resource-one", br.readLine());
+
+            url = (URL) urls.nextElement();
+            assertEquals("/META-INF/resource-one.txt", url.getPath());
+            assertFalse(urls.hasMoreElements());
+
+            br = new BufferedReader(new InputStreamReader(url.openStream()));
+            assertEquals("resource-one", br.readLine());
+
+            assertBundleState(Bundle.RESOLVED, bundle.getState());
+        } finally {
+            bundle.uninstall();
+        }
+    }
+
+    private JavaArchive getBundleA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA.jar");
+        archive.addClasses(SimpleService.class);
+        archive.addAsManifestResource("bundles/simple/simple-bundle1/resource-one.txt", "resource-one.txt");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleB.jar");
+        archive.add(getBundleA(), "x", ZipExporter.class);
+        archive.add(getBundleA(), "y", ZipExporter.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addManifestHeader(Constants.BUNDLE_CLASSPATH, "x/bundleA.jar,y/bundleA.jar");
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }
