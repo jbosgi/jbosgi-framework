@@ -44,6 +44,7 @@ import org.jboss.test.osgi.framework.bundle.tbchain4.CMultipleChain1;
 import org.jboss.test.osgi.framework.bundle.tbchain4.CMultipleChain2;
 import org.jboss.test.osgi.framework.bundle.tbchain4.CMultipleChain3;
 import org.jboss.test.osgi.framework.bundle.tbchain5.DMultipleChain1;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
@@ -55,6 +56,7 @@ import org.osgi.framework.SynchronousBundleListener;
  * 
  * @author thomas.diesler@jboss.com
  */
+@Ignore
 public class MultiChainActivationTestCase extends OSGiFrameworkTest {
 
     private final List<BundleEvent> events = new ArrayList<BundleEvent>();

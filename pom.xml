@@ -9,252 +9,225 @@
 <!--                                                                        -->
 <!-- ====================================================================== -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <name>JBossOSGi Framework</name>
-  <groupId>org.jboss.osgi.framework</groupId>
-  <artifactId>jbosgi-framework-parent</artifactId>
-  <packaging>pom</packaging>
+    <parent>
+        <groupId>org.jboss.osgi</groupId>
+        <artifactId>jboss-osgi-parent</artifactId>
+        <version>1.0.11</version>
+    </parent>
 
-  <version>1.1.1-SNAPSHOT</version>
+    <name>JBossOSGi Framework</name>
 
-  <parent>
-    <groupId>org.jboss.osgi</groupId>
-    <artifactId>jboss-osgi-parent</artifactId>
-    <version>1.0.10</version>
-  </parent>
+    <groupId>org.jboss.osgi.framework</groupId>
+    <artifactId>jbosgi-framework-parent</artifactId>
+    <packaging>pom</packaging>
 
-  <!-- Source Control -->
-  <scm>
-    <connection>scm:git:git://github.com/jbosgi/jbosgi-framework.git</connection>
-    <developerConnection>scm:git:git@github.com:jbosgi/jbosgi-framework.git</developerConnection>
-    <url>http://github.com/jbosgi/jbosgi-framework</url>
-  </scm>
+    <version>1.1.1-SNAPSHOT</version>
 
-  <!-- Properties -->
-  <properties>
-    <version.apache.aries.jmx>0.3</version.apache.aries.jmx>
-    <version.apache.felix.eventadmin>1.2.6</version.apache.felix.eventadmin>
-    <version.apache.felix.log>1.0.0</version.apache.felix.log>
-    <version.javax.inject>1</version.javax.inject>
-    <version.jboss.arquillian.core>1.0.0.CR7</version.jboss.arquillian.core>
-    <version.jboss.arquillian.osgi>1.0.0.CR5-SNAPSHOT</version.jboss.arquillian.osgi>
-    <version.jboss.logging>3.1.0.CR2</version.jboss.logging>
-    <version.jboss.logmanager>1.2.0.GA</version.jboss.logmanager>
-    <version.jboss.modules>1.1.0.CR6</version.jboss.modules>
-    <version.jboss.msc>1.0.1.GA</version.jboss.msc>
-    <version.jboss.osgi.deployment>1.0.10</version.jboss.osgi.deployment>
-    <version.jboss.osgi.equinox>3.5.2</version.jboss.osgi.equinox>
-    <version.jboss.osgi.felix>3.0.4</version.jboss.osgi.felix>
-    <version.jboss.osgi.jmx>1.0.10</version.jboss.osgi.jmx>
-    <version.jboss.osgi.resolver>1.0.9</version.jboss.osgi.resolver>
-    <version.jboss.osgi.spi>1.0.28</version.jboss.osgi.spi>
-    <version.jboss.osgi.vfs>1.0.6</version.jboss.osgi.vfs>
-    <version.mockito>1.8.4</version.mockito>
-    <version.osgi>4.2.0</version.osgi>
-    
-    <surefire.jpda.args />
-    <surefire.profiler.args />
-    <surefire.system.args>-da ${surefire.jpda.args} ${surefire.profiler.args}</surefire.system.args>
-  </properties>
+    <!-- Source Control -->
+    <scm>
+        <connection>scm:git:git://github.com/jbosgi/jbosgi-framework.git</connection>
+        <developerConnection>scm:git:git@github.com:jbosgi/jbosgi-framework.git</developerConnection>
+        <url>http://github.com/jbosgi/jbosgi-framework</url>
+    </scm>
 
-  <!-- Dependency Management -->
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-          <groupId>org.jboss.logmanager</groupId>
-          <artifactId>jboss-logmanager</artifactId>
-          <version>${version.jboss.logmanager}</version>
-      </dependency>
-      <dependency>
-          <groupId>org.jboss.logging</groupId>
-          <artifactId>jboss-logging</artifactId>
-          <version>${version.jboss.logging}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.modules</groupId>
-        <artifactId>jboss-modules</artifactId>
-        <version>${version.jboss.modules}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.msc</groupId>
-        <artifactId>jboss-msc</artifactId>
-        <version>${version.jboss.msc}</version>
-      </dependency>
+    <!-- Properties -->
+    <properties>
+        <version.javax.inject>1</version.javax.inject>
+        <version.jboss.arquillian.core>1.0.0.CR7</version.jboss.arquillian.core>
+        <version.jboss.arquillian.osgi>1.0.0.CR5</version.jboss.arquillian.osgi>
+        <version.jboss.logging>3.1.0.CR2</version.jboss.logging>
+        <version.jboss.logmanager>1.2.0.GA</version.jboss.logmanager>
+        <version.jboss.modules>1.1.0.CR7</version.jboss.modules>
+        <version.jboss.msc>1.0.1.GA</version.jboss.msc>
+        <version.jboss.osgi.deployment>1.0.10</version.jboss.osgi.deployment>
+        <version.jboss.osgi.equinox>3.5.2</version.jboss.osgi.equinox>
+        <version.jboss.osgi.felix>3.0.4</version.jboss.osgi.felix>
+        <version.jboss.osgi.resolver>1.0.9</version.jboss.osgi.resolver>
+        <version.jboss.osgi.spi>2.0.0</version.jboss.osgi.spi>
+        <version.jboss.osgi.vfs>1.0.6</version.jboss.osgi.vfs>
+        <version.mockito>1.8.4</version.mockito>
+        <version.osgi>4.2.0</version.osgi>
 
-      <!-- JBoss OSGi Dependencies -->
-      <dependency>
-        <groupId>org.jboss.osgi.spi</groupId>
-        <artifactId>jbosgi-spi</artifactId>
-        <version>${version.jboss.osgi.spi}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.osgi.deployment</groupId>
-        <artifactId>jbosgi-deployment</artifactId>
-        <version>${version.jboss.osgi.deployment}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.osgi.resolver</groupId>
-        <artifactId>jbosgi-resolver-api</artifactId>
-        <version>${version.jboss.osgi.resolver}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.osgi.vfs</groupId>
-        <artifactId>jbosgi-vfs</artifactId>
-        <version>${version.jboss.osgi.vfs}</version>
-      </dependency>
-      
-      <!-- Equinox Dependencies -->
-      <dependency>
-        <groupId>org.jboss.osgi.equinox</groupId>
-        <artifactId>jboss-osgi-equinox</artifactId>
-        <version>${version.jboss.osgi.equinox}</version>
-      </dependency>
+        <surefire.jpda.args/>
+        <surefire.profiler.args/>
+        <surefire.system.args>-da ${surefire.jpda.args} ${surefire.profiler.args}</surefire.system.args>
+    </properties>
 
-      <!-- Felix Dependencies -->
-      <dependency>
-        <groupId>org.jboss.osgi.felix</groupId>
-        <artifactId>jboss-osgi-felix</artifactId>
-        <version>${version.jboss.osgi.felix}</version>
-      </dependency>
+    <!-- Dependency Management -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.jboss.logmanager</groupId>
+                <artifactId>jboss-logmanager</artifactId>
+                <version>${version.jboss.logmanager}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.logging</groupId>
+                <artifactId>jboss-logging</artifactId>
+                <version>${version.jboss.logging}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.modules</groupId>
+                <artifactId>jboss-modules</artifactId>
+                <version>${version.jboss.modules}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.msc</groupId>
+                <artifactId>jboss-msc</artifactId>
+                <version>${version.jboss.msc}</version>
+            </dependency>
 
-      <!-- OSGi Dependencies -->
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.core</artifactId>
-        <version>${version.osgi}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.compendium</artifactId>
-        <version>${version.osgi}</version>
-      </dependency>
+            <!-- JBoss OSGi Dependencies -->
+            <dependency>
+                <groupId>org.jboss.osgi.spi</groupId>
+                <artifactId>jbosgi-spi</artifactId>
+                <version>${version.jboss.osgi.spi}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.osgi.deployment</groupId>
+                <artifactId>jbosgi-deployment</artifactId>
+                <version>${version.jboss.osgi.deployment}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.osgi.resolver</groupId>
+                <artifactId>jbosgi-resolver-api</artifactId>
+                <version>${version.jboss.osgi.resolver}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.osgi.vfs</groupId>
+                <artifactId>jbosgi-vfs</artifactId>
+                <version>${version.jboss.osgi.vfs}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.osgi.vfs</groupId>
+                <artifactId>jbosgi-vfs30</artifactId>
+                <version>${version.jboss.osgi.vfs}</version>
+            </dependency>
 
-      <!-- Test dependencies -->
-      <dependency>
-        <groupId>org.apache.aries.jmx</groupId>
-        <artifactId>org.apache.aries.jmx</artifactId>
-        <version>${version.apache.aries.jmx}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>org.apache.felix.eventadmin</artifactId>
-        <version>${version.apache.felix.eventadmin}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>org.apache.felix.log</artifactId>
-        <version>${version.apache.felix.log}</version>
-      </dependency>
-      <dependency>
-        <groupId>javax.inject</groupId>
-        <artifactId>javax.inject</artifactId>
-        <version>${version.javax.inject}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.arquillian.container</groupId>
-        <artifactId>arquillian-container-osgi-embedded</artifactId>
-        <version>${version.jboss.arquillian.osgi}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.arquillian.osgi</groupId>
-        <artifactId>arquillian-osgi-bundle</artifactId>
-        <version>${version.jboss.arquillian.osgi}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.arquillian.junit</groupId>
-        <artifactId>arquillian-junit-container</artifactId>
-        <version>${version.jboss.arquillian.core}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.osgi.jmx</groupId>
-        <artifactId>jboss-osgi-jmx</artifactId>
-        <version>${version.jboss.osgi.jmx}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.osgi.resolver</groupId>
-        <artifactId>jbosgi-resolver-felix</artifactId>
-        <version>${version.jboss.osgi.resolver}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.osgi.vfs</groupId>
-        <artifactId>jbosgi-vfs30</artifactId>
-        <version>${version.jboss.osgi.vfs}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.mockito</groupId>
-        <artifactId>mockito-all</artifactId>
-        <version>${version.mockito}</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
+            <!-- Equinox Dependencies -->
+            <dependency>
+                <groupId>org.jboss.osgi.equinox</groupId>
+                <artifactId>jboss-osgi-equinox</artifactId>
+                <version>${version.jboss.osgi.equinox}</version>
+            </dependency>
 
-  <!-- Modules -->
-  <modules>
-    <module>core</module>
-    <module>itest</module>
-  </modules>
+            <!-- Felix Dependencies -->
+            <dependency>
+                <groupId>org.jboss.osgi.felix</groupId>
+                <artifactId>jboss-osgi-felix</artifactId>
+                <version>${version.jboss.osgi.felix}</version>
+            </dependency>
 
-  <repositories>
-    <repository>
-      <id>jboss-public-repository-group</id>
-      <name>JBoss Public Repository Group</name>
-      <url>http://repository.jboss.org/nexus/content/groups/public/</url>
-      <layout>default</layout>
-      <releases>
-        <enabled>true</enabled>
-        <updatePolicy>never</updatePolicy>
-      </releases>
-      <snapshots>
-        <enabled>true</enabled>
-        <updatePolicy>never</updatePolicy>
-      </snapshots>
-    </repository>
-  </repositories>
+            <!-- OSGi Dependencies -->
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.core</artifactId>
+                <version>${version.osgi}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.compendium</artifactId>
+                <version>${version.osgi}</version>
+            </dependency>
 
-  <profiles>
-    <!-- 
-      Name: all 
-      Desc: Build the aggregated framework jar
-    -->
-    <profile>
-      <id>all</id>
-      <modules>
-        <module>aggregated</module>
-      </modules>
-    </profile>
+            <!-- Test dependencies -->
+            <dependency>
+                <groupId>javax.inject</groupId>
+                <artifactId>javax.inject</artifactId>
+                <version>${version.javax.inject}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.arquillian.container</groupId>
+                <artifactId>arquillian-container-osgi-embedded</artifactId>
+                <version>${version.jboss.arquillian.osgi}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.arquillian.junit</groupId>
+                <artifactId>arquillian-junit-container</artifactId>
+                <version>${version.jboss.arquillian.core}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.osgi.resolver</groupId>
+                <artifactId>jbosgi-resolver-felix</artifactId>
+                <version>${version.jboss.osgi.resolver}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-all</artifactId>
+                <version>${version.mockito}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
-    <!--
-      Name: jpda
-      Descr: Enable JPDA remote debuging
-    -->
-    <profile>
-      <id>jpda</id>
-      <activation>
-        <property>
-          <name>jpda</name>
-        </property>
-      </activation>
-      <properties>
-        <surefire.jpda.args>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</surefire.jpda.args>
-      </properties>
-    </profile>
-    
-    <!--
-      Name: yourkit
-      Descr: Enable YourKit remote profiling
-    -->
-    <profile>
-      <id>yourkit</id>
-      <activation>
-        <property>
-          <name>yourkit</name>
-        </property>
-      </activation>
-      <properties>
-        <surefire.profiler.args>-agentlib:yjpagent=onexit=memory</surefire.profiler.args>
-      </properties>
-    </profile>
-  </profiles>
+    <!-- Modules -->
+    <modules>
+        <module>core</module>
+        <module>itest</module>
+    </modules>
+
+    <repositories>
+        <repository>
+            <id>jboss-public-repository-group</id>
+            <name>JBoss Public Repository Group</name>
+            <url>http://repository.jboss.org/nexus/content/groups/public/</url>
+            <layout>default</layout>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <profiles>
+        <!--
+          Name: all
+          Desc: Build the aggregated framework jar
+        -->
+        <profile>
+            <id>all</id>
+            <modules>
+                <module>aggregated</module>
+            </modules>
+        </profile>
+
+        <!--
+          Name: jpda
+          Descr: Enable JPDA remote debuging
+        -->
+        <profile>
+            <id>jpda</id>
+            <activation>
+                <property>
+                    <name>jpda</name>
+                </property>
+            </activation>
+            <properties>
+                <surefire.jpda.args>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</surefire.jpda.args>
+            </properties>
+        </profile>
+
+        <!--
+          Name: yourkit
+          Descr: Enable YourKit remote profiling
+        -->
+        <profile>
+            <id>yourkit</id>
+            <activation>
+                <property>
+                    <name>yourkit</name>
+                </property>
+            </activation>
+            <properties>
+                <surefire.profiler.args>-agentlib:yjpagent=onexit=memory</surefire.profiler.args>
+            </properties>
+        </profile>
+    </profiles>
 </project>

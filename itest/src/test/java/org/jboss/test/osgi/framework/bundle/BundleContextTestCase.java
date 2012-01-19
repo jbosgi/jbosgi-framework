@@ -21,23 +21,6 @@
  */
 package org.jboss.test.osgi.framework.bundle;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.File;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Dictionary;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Locale;
-
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -54,6 +37,21 @@ import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.SynchronousBundleListener;
+
+import java.io.File;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Dictionary;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Locale;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * BundleContextTest.
@@ -181,32 +179,9 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testInstallBundle() throws Exception {
-        URL url = getTestArchiveURL("bundles/org.apache.felix.log.jar");
-        Bundle bundle = installBundle(url.toExternalForm());
-        try {
-            assertBundleState(Bundle.INSTALLED, bundle.getState());
-            assertEquals(url.toExternalForm(), bundle.getLocation());
-
-            Bundle duplicate = installBundle(url.toExternalForm());
-            assertSame("Duplicate bundle", bundle, duplicate);
-        } finally {
-            bundle.uninstall();
-            assertBundleState(Bundle.UNINSTALLED, bundle.getState());
-        }
-
-        // Test file location
-        String location = getTestArchivePath("bundles/org.apache.felix.log.jar");
-        bundle = installBundle(location);
-        try {
-            assertBundleState(Bundle.INSTALLED, bundle.getState());
-            assertEquals(location, bundle.getLocation());
-        } finally {
-            bundle.uninstall();
-            assertBundleState(Bundle.UNINSTALLED, bundle.getState());
-        }
-
         // Test symbolic location
-        bundle = installBundle("/symbolic/location", url.openStream());
+        JavaArchive archive = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
+        Bundle bundle = installBundle("/symbolic/location", toInputStream(archive));
         try {
             assertBundleState(Bundle.INSTALLED, bundle.getState());
             assertEquals("/symbolic/location", bundle.getLocation());

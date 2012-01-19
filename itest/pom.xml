@@ -41,21 +41,6 @@
 
         <!-- Test Dependencies -->
         <dependency>
-            <groupId>org.apache.aries.jmx</groupId>
-            <artifactId>org.apache.aries.jmx</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.felix</groupId>
-            <artifactId>org.apache.felix.eventadmin</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.felix</groupId>
-            <artifactId>org.apache.felix.log</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.jboss.arquillian.container</groupId>
             <artifactId>arquillian-container-osgi-embedded</artifactId>
             <scope>test</scope>
@@ -63,16 +48,6 @@
         <dependency>
             <groupId>org.jboss.arquillian.junit</groupId>
             <artifactId>arquillian-junit-container</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.arquillian.osgi</groupId>
-            <artifactId>arquillian-osgi-bundle</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.osgi.jmx</groupId>
-            <artifactId>jboss-osgi-jmx</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -105,53 +80,6 @@
                                 <property name="tests.output.dir" value="${project.build.directory}"/>
                                 <ant antfile="scripts/antrun-test-jars.xml"/>
                             </tasks>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.apache.felix</groupId>
-                                    <artifactId>org.apache.felix.eventadmin</artifactId>
-                                    <destFileName>org.apache.felix.eventadmin.jar</destFileName>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.apache.aries.jmx</groupId>
-                                    <artifactId>org.apache.aries.jmx</artifactId>
-                                    <destFileName>org.apache.aries.jmx.jar</destFileName>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.apache.felix</groupId>
-                                    <artifactId>org.apache.felix.log</artifactId>
-                                    <destFileName>org.apache.felix.log.jar</destFileName>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.jboss.arquillian.osgi</groupId>
-                                    <artifactId>arquillian-osgi-bundle</artifactId>
-                                    <destFileName>arquillian-osgi-bundle.jar</destFileName>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.jboss.osgi.jmx</groupId>
-                                    <artifactId>jboss-osgi-jmx</artifactId>
-                                    <destFileName>jboss-osgi-jmx.jar</destFileName>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.osgi</groupId>
-                                    <artifactId>org.osgi.compendium</artifactId>
-                                    <destFileName>org.osgi.compendium.jar</destFileName>
-                                </artifactItem>
-                            </artifactItems>
-                            <outputDirectory>${project.build.directory}/test-libs/bundles</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
