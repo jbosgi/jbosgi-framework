@@ -32,6 +32,7 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -93,6 +94,7 @@ public class StartLevelTestCase extends OSGiFrameworkTest {
     }
 
     @Test
+    @Ignore
     public void testOrderedStop() throws Exception {
         JavaArchive archive1 = createTestBundle("b1.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle1.Activator.class);
         JavaArchive archive2 = createTestBundle("b2.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle2.Activator.class);

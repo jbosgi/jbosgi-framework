@@ -35,6 +35,7 @@ import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.bundle.support.z.ObjectZ;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -46,7 +47,7 @@ import org.osgi.service.url.URLStreamHandlerService;
 /**
  * @author David Bosschaert
  */
-public class URLHandlerTestCase extends OSGiFrameworkTest {
+public class CustomURLHandlerTestCase extends OSGiFrameworkTest {
     @Test
     public void testInstallBundleCustomURLHandler() throws Exception {
 

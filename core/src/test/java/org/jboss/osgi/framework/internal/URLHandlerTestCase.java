@@ -52,6 +52,7 @@ import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.internal.OSGiStreamHandlerFactoryService;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.url.AbstractURLStreamHandlerService;
@@ -62,6 +63,7 @@ import org.osgi.service.url.URLStreamHandlerSetter;
 /**
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
+@Ignore
 public class URLHandlerTestCase extends OSGiFrameworkTest {
 
     @Test
