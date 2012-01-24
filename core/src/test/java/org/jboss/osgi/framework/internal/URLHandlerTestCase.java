@@ -63,7 +63,6 @@ import org.osgi.service.url.URLStreamHandlerSetter;
 /**
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-@Ignore
 public class URLHandlerTestCase extends OSGiFrameworkTest {
 
     @Test

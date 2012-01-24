@@ -21,18 +21,12 @@
  */
 package org.jboss.test.osgi.framework.startlevel;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.InputStream;
-import java.util.Properties;
-
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -43,6 +37,11 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
 import org.osgi.service.startlevel.StartLevel;
 
+import java.io.InputStream;
+import java.util.Properties;
+
+import static org.junit.Assert.assertEquals;
+
 /**
  * Test start level.
  * 
@@ -50,7 +49,7 @@ import org.osgi.service.startlevel.StartLevel;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Apr-2010
  */
-public class StartLevelTestCase extends OSGiFrameworkTest {
+public class StartLevelIntegrationTestCase extends OSGiFrameworkTest {
 
     private static final int BUNDLE_START_LEVEL_CHANGE_SLEEP = 500;
 
@@ -88,13 +87,11 @@ public class StartLevelTestCase extends OSGiFrameworkTest {
         } finally {
             framework.stop();
             framework.waitForStop(2000);
-
             System.setProperties(oldProps);
         }
     }
 
     @Test
-    @Ignore
     public void testOrderedStop() throws Exception {
         JavaArchive archive1 = createTestBundle("b1.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle1.Activator.class);
         JavaArchive archive2 = createTestBundle("b2.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle2.Activator.class);
