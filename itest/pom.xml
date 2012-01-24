@@ -88,28 +88,14 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <argLine>${surefire.system.args}</argLine>
-                    <systemProperties>
-                        <property>
-                            <name>java.io.tmpdir</name>
-                            <value>${project.build.directory}</value>
-                        </property>
-                        <property>
-                            <name>java.util.logging.manager</name>
-                            <value>org.jboss.logmanager.LogManager</value>
-                        </property>
-                        <property>
-                            <name>jboss.osgi.framework.properties</name>
-                            <value>${jboss.osgi.framework.properties}</value>
-                        </property>
-                        <property>
-                            <name>jboss.osgi.vfs.leakDebugging</name>
-                            <value>true</value>
-                        </property>
-                        <property>
-                            <name>test.archive.directory</name>
-                            <value>${project.build.directory}/test-libs</value>
-                        </property>
-                    </systemProperties>
+                    <systemPropertyVariables>
+                        <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        <jboss.osgi.framework.properties>${jboss.osgi.framework.properties}</jboss.osgi.framework.properties>
+                        <jboss.osgi.vfs.leakDebugging>true</jboss.osgi.vfs.leakDebugging>
+                        <module.path>${project.build.directory}/test-modules</module.path>
+                        <test.archive.directory>${project.build.directory}/test-libs</test.archive.directory>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

@@ -21,12 +21,6 @@
  */
 package org.jboss.test.osgi.framework.bundle.activation;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -44,19 +38,23 @@ import org.jboss.test.osgi.framework.bundle.tbchain4.CMultipleChain1;
 import org.jboss.test.osgi.framework.bundle.tbchain4.CMultipleChain2;
 import org.jboss.test.osgi.framework.bundle.tbchain4.CMultipleChain3;
 import org.jboss.test.osgi.framework.bundle.tbchain5.DMultipleChain1;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.Constants;
 import org.osgi.framework.SynchronousBundleListener;
 
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+
 /**
  * More advanced chain test that contains multiple class hierachies
  * 
  * @author thomas.diesler@jboss.com
  */
-@Ignore
 public class MultiChainActivationTestCase extends OSGiFrameworkTest {
 
     private final List<BundleEvent> events = new ArrayList<BundleEvent>();
