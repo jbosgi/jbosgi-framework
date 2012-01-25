@@ -49,6 +49,8 @@ public class BundleProtocolHandler extends AbstractURLStreamHandlerService {
         if (revContent == null)
             throw new IOException("Cannot obtain revision content for: " + url);
         URL entry = revContent.getEntry(url.getPath());
+        if (entry == null)
+            throw new IOException("Cannot obtain content for: " + url);
         return entry.openConnection();
     }
 
