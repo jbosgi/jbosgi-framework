@@ -94,7 +94,6 @@
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <jboss.osgi.framework.properties>${jboss.osgi.framework.properties}</jboss.osgi.framework.properties>
                         <jboss.osgi.vfs.leakDebugging>true</jboss.osgi.vfs.leakDebugging>
-                        <module.path>${project.build.directory}/test-modules</module.path>
                         <test.archive.directory>${project.build.directory}/test-libs</test.archive.directory>
                     </systemPropertyVariables>
                 </configuration>

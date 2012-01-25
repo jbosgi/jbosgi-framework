@@ -21,25 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URL;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Dictionary;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
-
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.NativeLibrary;
@@ -56,6 +40,20 @@ import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.Version;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Dictionary;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
 
 /**
  * The bundle native code plugin
@@ -381,10 +379,8 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
         }
 
         private File getUniqueLibraryFile(final UserBundleState userBundle, final String libpath) {
-            String timestamp = new SimpleDateFormat("-yyyyMMdd-HHmmssSSS").format(new Date(userBundle.getLastModified()));
-            String uniquePath = new StringBuffer(libpath).insert(libpath.lastIndexOf("."), timestamp).toString();
             BundleStoragePlugin storagePlugin = userBundle.getFrameworkState().getBundleStoragePlugin();
-            return storagePlugin.getDataFile(userBundle, uniquePath);
+            return storagePlugin.getDataFile(userBundle, libpath);
         }
     }
 }

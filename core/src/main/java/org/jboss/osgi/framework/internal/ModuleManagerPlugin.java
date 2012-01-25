@@ -21,6 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.NativeCodePlugin.BundleNativeLibraryProvider;
 import static org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
 
 import java.io.File;
@@ -437,13 +438,13 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
                 String libname = libfile.substring(0, libfile.lastIndexOf('.'));
 
                 // Add the library provider to the policy
-                NativeLibraryProvider libProvider = new NativeCodePlugin.BundleNativeLibraryProvider(userBundle, libname, libpath);
+                NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(userBundle, libname, libpath);
                 nativeLoader.addNativeLibrary(libProvider);
 
                 // [TODO] why does the TCK use 'Native' to mean 'libNative' ?
                 if (libname.startsWith("lib")) {
                     libname = libname.substring(3);
-                    libProvider = new NativeCodePlugin.BundleNativeLibraryProvider(userBundle, libname, libpath);
+                    libProvider = new BundleNativeLibraryProvider(userBundle, libname, libpath);
                     nativeLoader.addNativeLibrary(libProvider);
                 }
             }

@@ -77,7 +77,7 @@ final class NativeResourceLoader implements ResourceLoader {
         try {
             libfile = libProvider.getLibraryLocation();
         } catch (IOException ex) {
-            log.errorf(ex, "Cannot privide native library location for: %s", libname);
+            log.errorf(ex, "Cannot provide native library location for: %s", libname);
             return null;
         }
 
