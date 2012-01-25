@@ -24,8 +24,10 @@ package org.jboss.test.osgi.framework.bundle;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
@@ -70,6 +72,27 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
             
             // Entry access should not resolve the bundle
             assertBundleState(Bundle.INSTALLED, bundle.getState());
+        } finally {
+            bundle.uninstall();
+        }
+    }
+
+    @Test
+    public void testEntryNotExist() throws Exception {
+        Bundle bundle = installBundle(getBundleA());
+        try {
+            URL baseurl = bundle.getEntry("/META-INF");
+            assertEquals("/META-INF/", baseurl.getPath());
+
+            URL url = baseurl.toURI().resolve("does-not-exist").toURL();
+            assertEquals("/META-INF/does-not-exist", url.getPath());
+
+            try {
+                url.openStream();
+                fail("IOException expected");
+            } catch (IOException ex) {
+                // expected
+            }
         } finally {
             bundle.uninstall();
         }
