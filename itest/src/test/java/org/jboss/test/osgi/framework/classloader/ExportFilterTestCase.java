@@ -21,8 +21,6 @@
  */
 package org.jboss.test.osgi.framework.classloader;
 
-import java.io.InputStream;
-
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -32,9 +30,10 @@ import org.jboss.test.osgi.framework.classloader.support.a.BarImpl;
 import org.jboss.test.osgi.framework.classloader.support.a.QuxBar;
 import org.jboss.test.osgi.framework.classloader.support.a.QuxFoo;
 import org.jboss.test.osgi.framework.classloader.support.a.QuxImpl;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+
+import java.io.InputStream;
 
 /**
  * [MODULES-69] Allow for OSGi style Class Filtering
@@ -42,7 +41,6 @@ import org.osgi.framework.Bundle;
  * @author Thomas.Diesler@jboss.com
  * @since 28-Apr-2011
  */
-@Ignore("[MODULES-111] Regression in Class Filtering")
 public class ExportFilterTestCase extends OSGiFrameworkTest {
 
     @Test
