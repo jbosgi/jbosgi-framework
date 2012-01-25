@@ -15,79 +15,81 @@
   -Dtest.archive.directory=${workspace_loc:jbosgi-framework-core/target}/test-libs
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <name>JBossOSGi Framework Aggregated</name>
-  <groupId>org.jboss.osgi.framework</groupId>
-  <artifactId>jbosgi-framework-aggregated</artifactId>
-  <packaging>jar</packaging>
+    <parent>
+        <groupId>org.jboss.osgi.framework</groupId>
+        <artifactId>jbosgi-framework-parent</artifactId>
+        <version>1.1.1-SNAPSHOT</version>
+    </parent>
 
-  <parent>
+    <name>JBossOSGi Framework Aggregated</name>
+
     <groupId>org.jboss.osgi.framework</groupId>
-    <artifactId>jbosgi-framework-parent</artifactId>
-    <version>1.1.1-SNAPSHOT</version>
-  </parent>
-  
-  <!-- Properties -->
-  <properties>
-  </properties>
+    <artifactId>jbosgi-framework-aggregated</artifactId>
+    <packaging>jar</packaging>
 
-  <!-- Dependencies -->
-  <dependencies>
-    <dependency>
-      <groupId>org.jboss.osgi.framework</groupId>
-      <artifactId>jbosgi-framework-core</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.logmanager</groupId>
-      <artifactId>jboss-logmanager</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.osgi.resolver</groupId>
-      <artifactId>jbosgi-resolver-felix</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.osgi.vfs</groupId>
-      <artifactId>jbosgi-vfs30</artifactId>
-    </dependency>
-  </dependencies>
+    <!-- Properties -->
+    <properties>
+    </properties>
 
-  <!-- Build -->
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>process-test-resources</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>scripts/assembly.xml</descriptor>
-              </descriptors>
-              <archive>
-                <manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
-              </archive>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <argLine>-da ${surefire.system.args}</argLine>
-          <systemProperties>
-            <property>
-              <name>test.archive.directory</name>
-              <value>${project.build.directory}/test-libs</value>
-            </property>
-          </systemProperties>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+    <!-- Dependencies -->
+    <dependencies>
+        <dependency>
+            <groupId>org.jboss.osgi.framework</groupId>
+            <artifactId>jbosgi-framework-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logmanager</groupId>
+            <artifactId>jboss-logmanager</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.osgi.resolver</groupId>
+            <artifactId>jbosgi-resolver-felix</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.osgi.vfs</groupId>
+            <artifactId>jbosgi-vfs30</artifactId>
+        </dependency>
+    </dependencies>
+
+    <!-- Build -->
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>scripts/assembly.xml</descriptor>
+                            </descriptors>
+                            <archive>
+                                <manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
+                            </archive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-da ${surefire.system.args}</argLine>
+                    <systemProperties>
+                        <property>
+                            <name>test.archive.directory</name>
+                            <value>${project.build.directory}/test-libs</value>
+                        </property>
+                    </systemProperties>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
