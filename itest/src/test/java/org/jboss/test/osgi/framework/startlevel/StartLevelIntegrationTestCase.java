@@ -21,6 +21,11 @@
  */
 package org.jboss.test.osgi.framework.startlevel;
 
+import static org.junit.Assert.assertEquals;
+
+import java.io.InputStream;
+import java.util.Properties;
+
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -37,14 +42,9 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
 import org.osgi.service.startlevel.StartLevel;
 
-import java.io.InputStream;
-import java.util.Properties;
-
-import static org.junit.Assert.assertEquals;
-
 /**
  * Test start level.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Apr-2010
@@ -93,6 +93,7 @@ public class StartLevelIntegrationTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testOrderedStop() throws Exception {
+        System.setProperty("LifecycleOrdering", "");
         JavaArchive archive1 = createTestBundle("b1.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle1.Activator.class);
         JavaArchive archive2 = createTestBundle("b2.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle2.Activator.class);
         JavaArchive archive3 = createTestBundle("b3.jar", org.jboss.test.osgi.framework.bundle.support.lifecycle3.Activator.class);
@@ -135,7 +136,7 @@ public class StartLevelIntegrationTestCase extends OSGiFrameworkTest {
         } finally {
             framework.stop();
             framework.waitForStop(2000);
-            
+
             synchronized ("LifecycleOrdering") {
                 assertEquals("start1start3start2stop2stop3stop1", System.getProperty("LifecycleOrdering"));
             }
