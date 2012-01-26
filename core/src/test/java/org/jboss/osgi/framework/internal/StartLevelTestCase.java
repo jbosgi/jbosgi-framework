@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.jboss.osgi.framework.internal.StartLevelPlugin;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -50,6 +49,7 @@ public class StartLevelTestCase extends OSGiFrameworkTest {
     @Test
     public void testStartLevel() throws Exception {
         StartLevel startLevel = getStartLevel();
+        int orgStartLevel = startLevel.getStartLevel();
         int orgInitialStartlevel = startLevel.getInitialBundleStartLevel();
         try {
             setTestExecutor(startLevel);
@@ -100,6 +100,7 @@ public class StartLevelTestCase extends OSGiFrameworkTest {
             }
         } finally {
             startLevel.setInitialBundleStartLevel(orgInitialStartlevel);
+            startLevel.setStartLevel(orgStartLevel);
         }
     }
 
@@ -108,6 +109,7 @@ public class StartLevelTestCase extends OSGiFrameworkTest {
         BundleContext sc = getFramework().getBundleContext();
         ServiceReference sref = sc.getServiceReference(StartLevel.class.getName());
         StartLevel sls = (StartLevel) sc.getService(sref);
+        int orgStartLevel = sls.getStartLevel();
         int orgInitialStartlevel = sls.getInitialBundleStartLevel();
         try {
             setTestExecutor(sls);
@@ -135,6 +137,7 @@ public class StartLevelTestCase extends OSGiFrameworkTest {
             }
         } finally {
             sls.setInitialBundleStartLevel(orgInitialStartlevel);
+            sls.setStartLevel(orgStartLevel);
         }
     }
 
