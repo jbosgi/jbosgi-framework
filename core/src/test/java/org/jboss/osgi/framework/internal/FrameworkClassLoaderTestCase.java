@@ -21,21 +21,19 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.util.HashMap;
-
-import javax.management.MBeanServer;
-import javax.transaction.xa.XAResource;
-
 import org.jboss.modules.Module;
-import org.jboss.osgi.framework.internal.BundleManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.kohsuke.args4j.CmdLineParser;
+import org.omg.CORBA.ORB;
 import org.osgi.framework.BundleActivator;
+
+import javax.management.MBeanServer;
+import java.util.HashMap;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Test the bundle content loader.
@@ -71,7 +69,7 @@ public class FrameworkClassLoaderTestCase extends AbstractFrameworkTest {
     @Test
     public void testLoadJavaXFail() throws Exception {
         try {
-            classLoader.loadClass(XAResource.class.getName());
+            classLoader.loadClass(ORB.class.getName());
             fail("ClassNotFoundException expected");
         } catch (ClassNotFoundException ex) {
             // expected
