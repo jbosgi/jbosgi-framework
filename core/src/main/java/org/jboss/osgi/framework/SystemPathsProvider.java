@@ -35,16 +35,15 @@ import java.util.Set;
 public interface SystemPathsProvider extends Service<SystemPathsProvider> {
 
     String[] DEFAULT_FRAMEWORK_PACKAGES = new String[]{
-            "org.jboss.modules;version=1.0",
+            "org.jboss.modules;version=1.1",
             "org.jboss.msc.service;version=1.0",
             "org.jboss.osgi.deployment.deployer;version=1.0",
             "org.jboss.osgi.deployment.interceptor;version=1.0",
             "org.jboss.osgi.framework;version=1.0",
             "org.jboss.osgi.framework.url;version=1.0",
             "org.jboss.osgi.modules;version=1.0",
-            "org.jboss.osgi.spi.capability;version=1.0",
-            "org.jboss.osgi.spi.util;version=1.0",
-            "org.jboss.osgi.testing;version=1.0",
+            "org.jboss.osgi.spi.util;version=2.0",
+            "org.jboss.osgi.testing;version=2.0",
             "org.jboss.osgi.vfs;version=1.0",
             "org.osgi.framework;version=1.5",
             "org.osgi.framework.hooks;version=1.0",
