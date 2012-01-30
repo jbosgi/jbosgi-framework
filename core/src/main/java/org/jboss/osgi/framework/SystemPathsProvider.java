@@ -138,8 +138,10 @@ public interface SystemPathsProvider extends Service<SystemPathsProvider> {
             "javax.swing.tree",
             "javax.swing.undo",
             "javax.tools",
+            /* Provided by J2EE container
             "javax.transaction",
             "javax.transaction.xa",
+            */
             "javax.xml",
             "javax.xml.bind",
             "javax.xml.bind.annotation",
