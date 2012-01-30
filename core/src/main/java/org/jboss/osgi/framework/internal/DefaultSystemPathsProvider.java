@@ -206,7 +206,7 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
             }
             builder.addFilter(PathFilters.in(paths), true);
             cachedSystemFilter = builder.create();
-            log.debugf("SystemPaths: %s", cachedSystemFilter);
+            log.debugf("SystemFilter: %s", cachedSystemFilter);
         }
         return cachedSystemFilter;
     }
@@ -280,6 +280,6 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
 
     private void assertInitialized() {
         if (systemPackages.isEmpty())
-            throw new IllegalStateException("SystemPackagesPlugin not initialized");
+            throw new IllegalStateException(getClass().getSimpleName() + " not initialized");
     }
 }

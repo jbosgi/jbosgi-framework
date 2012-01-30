@@ -52,9 +52,8 @@
         <version.mockito>1.8.4</version.mockito>
         <version.osgi>4.2.0</version.osgi>
 
-        <surefire.jpda.args/>
         <surefire.profiler.args/>
-        <surefire.system.args>-da ${surefire.jpda.args} ${surefire.profiler.args}</surefire.system.args>
+        <surefire.system.args>-da ${surefire.profiler.args}</surefire.system.args>
     </properties>
 
     <!-- Dependency Management -->
@@ -196,22 +195,6 @@
             <modules>
                 <module>aggregated</module>
             </modules>
-        </profile>
-
-        <!--
-          Name: jpda
-          Descr: Enable JPDA remote debuging
-        -->
-        <profile>
-            <id>jpda</id>
-            <activation>
-                <property>
-                    <name>jpda</name>
-                </property>
-            </activation>
-            <properties>
-                <surefire.jpda.args>-Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y</surefire.jpda.args>
-            </properties>
         </profile>
 
         <!--
