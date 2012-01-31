@@ -54,7 +54,8 @@ public interface SystemPathsProvider extends Service<SystemPathsProvider> {
             "org.osgi.service.permissionadmin;version=1.2",
             "org.osgi.service.startlevel;version=1.1",
             "org.osgi.service.url;version=1.0",
-            "org.osgi.util.tracker;version=1.4"
+            "org.osgi.util.tracker;version=1.4",
+            "org.osgi.util.xml;version=1.0"
     };
 
     String[] DEFAULT_SYSTEM_PACKAGES = new String[]{
