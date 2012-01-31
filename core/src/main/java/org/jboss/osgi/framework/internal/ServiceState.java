@@ -21,6 +21,19 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import org.jboss.logging.Logger;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.Constants;
+import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.ServiceEvent;
+import org.osgi.framework.ServiceException;
+import org.osgi.framework.ServiceFactory;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,19 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.jboss.logging.Logger;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.Constants;
-import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.ServiceEvent;
-import org.osgi.framework.ServiceException;
-import org.osgi.framework.ServiceFactory;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
 
 /**
  * The service implementation.
@@ -190,7 +190,8 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         if (value instanceof ServiceFactory) {
             try {
                 ServiceFactoryHolder factoryHolder = factoryValues.get(bundleState.getBundleId());
-                factoryHolder.ungetService();
+                if (factoryHolder != null)
+                    factoryHolder.ungetService();
             } catch (RuntimeException rte) {
                 ServiceException sex = new ServiceException("Cannot unget factory value", ServiceException.FACTORY_EXCEPTION, rte);
                 FrameworkEventsPlugin eventsPlugin = serviceManager.getFrameworkEventsPlugin();
@@ -244,7 +245,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     }
 
     @Override
-    @SuppressWarnings({ "unchecked" })
+    @SuppressWarnings({"unchecked"})
     public void setProperties(Dictionary properties) {
         assertNotUnregistered();
 
