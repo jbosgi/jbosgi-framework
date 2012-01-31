@@ -169,11 +169,15 @@ public class XMLParserActivator implements BundleActivator, ServiceFactory {
         this.context = context;
         Bundle parserBundle = context.getBundle();
         // check for sax parsers
-        registerSAXParsers(getParserFactoryClassNames(parserBundle
-                .getResource(SAXCLASSFILE)));
+        URL saxurl = getResourceURL(parserBundle, SAXCLASSFILE);
+        registerSAXParsers(getParserFactoryClassNames(saxurl));
         // check for dom parsers
-        registerDOMParsers(getParserFactoryClassNames(parserBundle
-                .getResource(DOMCLASSFILE)));
+        URL domurl = getResourceURL(parserBundle, DOMCLASSFILE);
+        registerDOMParsers(getParserFactoryClassNames(domurl));
+    }
+
+    protected URL getResourceURL(Bundle parserBundle, String resname) {
+        return parserBundle.getResource(resname);
     }
 
     /**
