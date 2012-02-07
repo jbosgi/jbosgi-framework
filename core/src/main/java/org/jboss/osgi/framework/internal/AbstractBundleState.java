@@ -62,8 +62,8 @@ import org.osgi.framework.Version;
 /**
  * An abstract representation of a {@link Bundle} state.
  *
- * It is used by the various {@link AbstractBundleService}s as well as the {@link BundleProxy}s. The state is never given to the
- * client.
+ * It is used by the various {@link AbstractBundleService}s.
+ * The state is never given to the client.
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011

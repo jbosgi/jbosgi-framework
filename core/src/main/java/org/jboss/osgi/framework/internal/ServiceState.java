@@ -328,8 +328,18 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         if (className == null)
             throw new IllegalArgumentException("Null className");
 
-        if (ownerBundle == AbstractBundleState.assertBundleState(bundle))
-            return true;
+        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+
+        // For the bundle that registered the service referenced by this ServiceReference (registrant bundle);
+        // find the source for the package. If no source is found then return true if the registrant bundle
+        // is equal to the specified bundle; otherwise return false
+        Class<?> serviceClass;
+        try {
+            serviceClass = ownerBundle.loadClass(className);
+        } catch (ClassNotFoundException e) {
+            log.tracef("Registrant bundle [%s] cannot load class: %s", ownerBundle, className);
+            return bundleState == ownerBundle;
+        }
 
         Class<?> targetClass = null;
         try {
@@ -341,22 +351,12 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
             return true;
         }
 
-        Class<?> serviceClass;
-        try {
-            // Class.forName because the valueProvider classloader could be null (when using JDK classes).
-            serviceClass = Class.forName(className, false, valueProvider.getValue().getClass().getClassLoader());
-        } catch (ClassNotFoundException e) {
-            // serviceClass's classloader has no visibility of the requested class, return false
-            log.warnf("The service's classloader has no visibility of the requested class: %s", className);
-            return false;
-        }
-
+        // If the package source of the registrant bundle is equal to the package source of the specified bundle
+        // then return true; otherwise return false.
         if (targetClass != serviceClass) {
-            Object value = valueProvider.getValue();
-            log.debugf("Not assignable: %s", value.getClass().getName());
-            return false;
+            log.tracef("Not assignable: %s", className);
         }
-        return true;
+        return targetClass == serviceClass;
     }
 
     @Override

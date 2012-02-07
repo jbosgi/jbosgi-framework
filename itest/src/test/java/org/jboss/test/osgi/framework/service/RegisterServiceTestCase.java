@@ -301,7 +301,7 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
             assertSame(serviceB, svc);
 
             ServiceReference ref = reg.getReference();
-            assertTrue(ref.isAssignableTo(bundle2, ServiceB.class.getName()));
+            assertFalse(ref.isAssignableTo(bundle2, ServiceB.class.getName()));
             assertTrue(ref.isAssignableTo(bundle1, ServiceB.class.getName()));
         } finally {
             bundle2.uninstall();
