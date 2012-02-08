@@ -304,16 +304,16 @@ public class ServiceRegistrationTestCase extends OSGiFrameworkTest {
         Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
-            BundleContext bundleContext = bundle.getBundleContext();
-            assertNotNull(bundleContext);
+            BundleContext context = bundle.getBundleContext();
+            assertNotNull(context);
 
-            ServiceRegistration registration = bundleContext.registerService(BundleContext.class.getName(), bundleContext, null);
-            assertNotNull(registration);
+            ServiceRegistration reg = context.registerService(BundleContext.class.getName(), context, null);
+            assertNotNull(reg);
 
             bundle.stop();
 
             try {
-                registration.unregister();
+                reg.unregister();
                 fail("Should not be here!");
             } catch (IllegalStateException t) {
                 // expected

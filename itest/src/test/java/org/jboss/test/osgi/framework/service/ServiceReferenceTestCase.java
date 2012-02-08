@@ -21,22 +21,6 @@
  */
 package org.jboss.test.osgi.framework.service;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.io.InputStream;
-import java.util.Dictionary;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.TreeSet;
-
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archive;
@@ -52,9 +36,25 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
+import java.io.InputStream;
+import java.util.Dictionary;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.TreeSet;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 /**
  * ServiceReferenceTest.
- * 
+ *
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author Thomas.Diesler@jboss.com
  * @author David Bosschaert
@@ -64,7 +64,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
     @Test
     public void testGetProperty() throws Exception {
         ServiceReference sref = null;
-        String[] clazzes = new String[] { BundleContext.class.getName() };
+        String[] clazzes = new String[]{BundleContext.class.getName()};
         Object serviceID = null;
 
         Bundle bundle = installBundle(getBundleArchiveA());
@@ -553,7 +553,6 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
     @Test
     public void testServiceReferenceOrder() throws Exception {
         Runnable runIt = new Runnable() {
-
             public void run() {
             }
         };
@@ -603,7 +602,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
         assertEquals(sref1, sref);
     }
 
-    protected void assertCompareTo(ServiceReference sref1, ServiceReference sref2) throws Exception {
+    private void assertCompareTo(ServiceReference sref1, ServiceReference sref2) throws Exception {
         assertTrue(sref1 + " > " + sref2, sref1.compareTo(sref2) > 0);
         assertTrue(sref2 + " < " + sref1, sref2.compareTo(sref1) < 0);
     }

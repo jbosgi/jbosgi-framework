@@ -21,16 +21,8 @@
  */
 package org.jboss.test.osgi.framework.service;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
-import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -39,6 +31,7 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceException;
 import org.osgi.framework.ServiceReference;
@@ -46,13 +39,19 @@ import org.osgi.framework.ServiceRegistration;
 
 import java.io.InputStream;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 /**
  * GetUnGetServiceTest.
- * 
+ *
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author <a href="ales.justin@jboss.org">Ales Justin</a>
  * @author Thomas.Diesler@jboss.com
- * @version $Revision: 1.1 $
  */
 public class GetUnGetServiceTestCase extends OSGiFrameworkTest {
 
@@ -173,7 +172,6 @@ public class GetUnGetServiceTestCase extends OSGiFrameworkTest {
 
             sreg.unregister();
 
-            // [TODO] verify that this is expected
             assertFrameworkEvent(FrameworkEvent.WARNING, bundle, ServiceException.class);
         } finally {
             bundle.uninstall();
@@ -218,6 +216,26 @@ public class GetUnGetServiceTestCase extends OSGiFrameworkTest {
             }
         } finally {
             bundle1.uninstall();
+        }
+    }
+
+    @Test
+    public void testUnGetAfterUninstall() throws Exception {
+        Bundle bundle = installBundle(getBundleArchiveA());
+        bundle.start();
+        BundleContext context = bundle.getBundleContext();
+        ServiceRegistration sreg = context.registerService(OBJCLASS, context, null);
+        ServiceReference sref = sreg.getReference();
+        Object actual = context.getService(sref);
+        assertEquals(context, actual);
+
+        bundle.uninstall();
+
+        try {
+            context.ungetService(sref);
+            fail("IllegalStateException expected");
+        } catch (IllegalStateException e) {
+            //expected
         }
     }
 
