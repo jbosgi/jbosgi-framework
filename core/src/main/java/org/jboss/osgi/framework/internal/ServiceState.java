@@ -332,9 +332,6 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         if (bundleState == ownerBundle)
             return true;
 
-        if (getRawValue() instanceof ServiceFactory)
-            return true;
-
         Class<?> targetClass;
         try {
             targetClass = bundle.loadClass(className);
