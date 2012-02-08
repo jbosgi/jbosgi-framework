@@ -21,20 +21,6 @@
  */
 package org.jboss.test.osgi.framework.bundle;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.osgi.framework.Bundle.INSTALLED;
-import static org.osgi.framework.Bundle.RESOLVED;
-
-import java.io.InputStream;
-import java.util.Dictionary;
-import java.util.Hashtable;
-import java.util.jar.Attributes;
-
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archive;
@@ -42,17 +28,36 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.bundle.support.a.ObjectA;
+import org.jboss.test.osgi.framework.service.support.a.A;
+import org.junit.Assert;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.BundleReference;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Dictionary;
+import java.util.Hashtable;
+import java.util.jar.Attributes;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.osgi.framework.Bundle.ACTIVE;
+import static org.osgi.framework.Bundle.INSTALLED;
+import static org.osgi.framework.Bundle.RESOLVED;
+
 /**
  * BundleTest.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
@@ -199,7 +204,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
             Archive<?> assemblyB = assembleArchive("bundle20", "/bundles/singleton/singleton2");
             Bundle bundleB = installBundle(assemblyB);
             try {
-                boolean resolved = getPackageAdmin().resolveBundles(new Bundle[] { bundleA, bundleB });
+                boolean resolved = getPackageAdmin().resolveBundles(new Bundle[]{bundleA, bundleB});
                 assertTrue("Bundles resolved", resolved);
                 int stateA = bundleA.getState();
                 int stateB = bundleB.getState();
@@ -246,6 +251,32 @@ public class BundleTestCase extends OSGiFrameworkTest {
             assertEquals(expected, dictionary);
         } finally {
             bundle.uninstall();
+        }
+    }
+
+    @Test
+    public void testInvalidHeaders() throws Exception {
+
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.addClasses(A.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addExportPackages(A.class.getPackage().getName() + ";version=foo");
+                return builder.openStream();
+            }
+        });
+
+        try {
+            installBundle(archive);
+            fail("BundleException expected");
+        } catch (BundleException ex) {
+            String message = ex.getMessage();
+            Assert.assertTrue("Contains Export-Package", message.contains("Export-Package"));
+            Assert.assertTrue("Contains version", message.contains("version"));
+            Assert.assertTrue("Contains foo", message.contains("foo"));
         }
     }
 
