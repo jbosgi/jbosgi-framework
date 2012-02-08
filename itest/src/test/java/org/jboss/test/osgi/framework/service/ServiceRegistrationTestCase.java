@@ -28,13 +28,21 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
+import java.io.InputStream;
 import java.util.Hashtable;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.test.osgi.framework.bundle.support.b.ServiceB;
 import org.jboss.test.osgi.framework.service.support.SimpleServiceFactory;
+import org.jboss.test.osgi.framework.service.support.a.A;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceEvent;
@@ -46,14 +54,12 @@ import org.osgi.framework.ServiceRegistration;
  * 
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author thomas.diesler@jboss.com
- * @version $Revision: 1.1 $
  */
 public class ServiceRegistrationTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetReference() throws Exception {
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -104,8 +110,7 @@ public class ServiceRegistrationTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testSetProperties() throws Exception {
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -200,8 +205,7 @@ public class ServiceRegistrationTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testSetPropertiesAfterStop() throws Exception {
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -226,8 +230,7 @@ public class ServiceRegistrationTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testUnregister() throws Exception {
-        Archive<?> assembly1 = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle1 = installBundle(assembly1);
+        Bundle bundle1 = installBundle(getBundleArchiveA());
         try {
             bundle1.start();
             BundleContext context1 = bundle1.getBundleContext();
@@ -250,8 +253,7 @@ public class ServiceRegistrationTestCase extends OSGiFrameworkTest {
             inUse = bundle1.getServicesInUse();
             assertArrayEquals(new ServiceReference[] { sref1 }, inUse);
 
-            Archive<?> assembly2 = assembleArchive("simple2", "/bundles/simple/simple-bundle2");
-            Bundle bundle2 = installBundle(assembly2);
+            Bundle bundle2 = installBundle(getBundleArchiveB());
             try {
                 bundle2.start();
                 BundleContext context2 = bundle2.getBundleContext();
@@ -299,8 +301,7 @@ public class ServiceRegistrationTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testUnregisterAfterStop() throws Exception {
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -320,5 +321,34 @@ public class ServiceRegistrationTestCase extends OSGiFrameworkTest {
         } finally {
             bundle.uninstall();
         }
+    }
+
+    private JavaArchive getBundleArchiveA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleArchiveB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple2");
+        archive.addClasses(ServiceB.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }

@@ -30,6 +30,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,7 +40,10 @@ import java.util.List;
 import java.util.Set;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.bundle.support.a.ObjectA;
 import org.jboss.test.osgi.framework.bundle.support.a.ObjectA2;
@@ -56,6 +60,7 @@ import org.jboss.test.osgi.framework.service.support.b.Other;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
@@ -90,8 +95,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
             Bundle notFound = pa.getBundle(getClass());
             assertNull(notFound);
 
-            Archive<?> assemblyB = assembleArchive("simple", "/bundles/simple/simple-bundle1", Other.class);
-            Bundle bundleB = installBundle(assemblyB);
+            Bundle bundleB = installBundle(getBundleArchiveB());
             try {
                 bundleB.start();
                 Class<?> otherClass = assertLoadClass(bundleB, Other.class.getName());
@@ -761,5 +765,20 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
             bundleU.uninstall();
             bundleE.uninstall();
         }
+    }
+
+    private JavaArchive getBundleArchiveB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.addClasses(Other.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }

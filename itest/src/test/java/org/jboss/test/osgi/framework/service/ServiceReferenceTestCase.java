@@ -29,6 +29,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.InputStream;
 import java.util.Dictionary;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -37,10 +38,15 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.service.support.a.A;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
@@ -49,12 +55,9 @@ import org.osgi.framework.ServiceRegistration;
 /**
  * ServiceReferenceTest.
  * 
- * todo more isAssignableTests
- * 
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author Thomas.Diesler@jboss.com
  * @author David Bosschaert
- * @version $Revision: 1.1 $
  */
 public class ServiceReferenceTestCase extends OSGiFrameworkTest {
 
@@ -64,8 +67,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
         String[] clazzes = new String[] { BundleContext.class.getName() };
         Object serviceID = null;
 
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -159,8 +161,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
     public void testGetPropertyKeys() throws Exception {
         ServiceReference sref = null;
 
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -214,8 +215,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetBundle() throws Exception {
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -241,8 +241,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetBundleAfterStop() throws Exception {
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -268,8 +267,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testUsingBundles() throws Exception {
-        Archive<?> assembly1 = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle1 = installBundle(assembly1);
+        Bundle bundle1 = installBundle(getBundleArchiveA());
         try {
             bundle1.start();
             BundleContext bundleContext = bundle1.getBundleContext();
@@ -283,8 +281,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
 
             assertUsingBundles(sref);
 
-            Archive<?> assembly2 = assembleArchive("simple2", "/bundles/simple/simple-bundle2");
-            Bundle bundle2 = installBundle(assembly2);
+            Bundle bundle2 = installBundle(getBundleArchiveB());
             try {
                 bundle2.start();
                 BundleContext bundleContext2 = bundle2.getBundleContext();
@@ -320,8 +317,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testUsingBundlesAfterStop() throws Exception {
-        Archive<?> assembly1 = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle1 = installBundle(assembly1);
+        Bundle bundle1 = installBundle(getBundleArchiveA());
         try {
             bundle1.start();
             BundleContext bundleContext = bundle1.getBundleContext();
@@ -335,8 +331,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
 
             assertUsingBundles(sref);
 
-            Archive<?> assembly2 = assembleArchive("simple2", "/bundles/simple/simple-bundle2");
-            Bundle bundle2 = installBundle(assembly2);
+            Bundle bundle2 = installBundle(getBundleArchiveB());
             try {
                 bundle2.start();
                 BundleContext bundleContext2 = bundle2.getBundleContext();
@@ -358,8 +353,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testIsAssignableToErrors() throws Exception {
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1", A.class);
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -391,8 +385,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testNotAssignableTo() throws Exception {
-        Archive<?> assembly1 = assembleArchive("simple1", "/bundles/simple/simple-bundle1", A.class);
-        Bundle bundle1 = installBundle(assembly1);
+        Bundle bundle1 = installBundle(getBundleArchiveA());
         try {
             bundle1.start();
             BundleContext context1 = bundle1.getBundleContext();
@@ -404,8 +397,7 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
             ServiceReference sref = sreg.getReference();
             assertNotNull(sref);
 
-            Archive<?> assembly2 = assembleArchive("simple2", "/bundles/simple/simple-bundle2", A.class);
-            Bundle bundle2 = installBundle(assembly2);
+            Bundle bundle2 = installBundle(getBundleArchiveB());
             try {
                 assertFalse(sref.isAssignableTo(bundle2, A.class.getName()));
                 assertTrue(sref.isAssignableTo(bundle2, String.class.getName()));
@@ -614,5 +606,35 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
     protected void assertCompareTo(ServiceReference sref1, ServiceReference sref2) throws Exception {
         assertTrue(sref1 + " > " + sref2, sref1.compareTo(sref2) > 0);
         assertTrue(sref2 + " < " + sref1, sref2.compareTo(sref1) < 0);
+    }
+
+    private JavaArchive getBundleArchiveA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.addClasses(A.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleArchiveB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple2");
+        archive.addClasses(A.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }

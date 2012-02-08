@@ -21,17 +21,31 @@
  */
 package org.jboss.test.osgi.framework.service;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
+import java.io.InputStream;
 import java.util.Hashtable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.test.osgi.framework.service.support.a.A;
+import org.jboss.test.osgi.framework.service.support.b.B;
+import org.junit.Assert;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceEvent;
+import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
@@ -46,8 +60,7 @@ public class ServiceListenerTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testServiceListener() throws Exception {
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context = bundle.getBundleContext();
@@ -70,8 +83,7 @@ public class ServiceListenerTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testObjectClassFilter() throws Exception {
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context = bundle.getBundleContext();
@@ -104,8 +116,7 @@ public class ServiceListenerTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testModifyServiceProperties() throws Exception {
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context = bundle.getBundleContext();
@@ -139,5 +150,216 @@ public class ServiceListenerTestCase extends OSGiFrameworkTest {
         } finally {
             bundle.uninstall();
         }
+    }
+
+    @Test
+    public void testRegBundleIsRefBundle() throws Exception {
+        Bundle bundle = installBundle(getBundleArchiveA());
+        try {
+            bundle.start();
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            ServiceListener listener = new ServiceListener() {
+                public void serviceChanged(ServiceEvent event) {
+                    latch.countDown();
+                }
+            };
+            BundleContext context = bundle.getBundleContext();
+            context.addServiceListener(listener);
+                    
+            Object service = bundle.loadClass(A.class.getName()).newInstance();
+            ServiceRegistration reg = context.registerService(A.class.getName(), service, null);
+
+            ServiceReference ref = reg.getReference();
+            assertTrue(ref.isAssignableTo(bundle, A.class.getName()));
+
+            if (latch.await(5, TimeUnit.SECONDS) == false)
+                throw new TimeoutException();
+
+        } finally {
+            bundle.uninstall();
+        }
+    }
+
+    @Test
+    public void testRegValueIsServiceFactory() throws Exception {
+        final Bundle bundleA = installBundle(getBundleArchiveA());
+        final Bundle bundleB = installBundle(getBundleArchiveB());
+        try {
+            bundleA.start();
+            bundleB.start();
+
+            BundleContext contextA = bundleA.getBundleContext();
+            BundleContext contextB = bundleB.getBundleContext();
+            
+            final CountDownLatch latch = new CountDownLatch(1);
+            ServiceListener listener = new ServiceListener() {
+                public void serviceChanged(ServiceEvent event) {
+                    latch.countDown();
+                }
+            };
+            contextB.addServiceListener(listener);
+
+            Object service = new ServiceFactory() {
+                public Object getService(Bundle bundle, ServiceRegistration registration) {
+                    try {
+                        return bundleA.loadClass(A.class.getName()).newInstance();
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e);
+                    }
+                }
+                public void ungetService(Bundle bundle, ServiceRegistration registration, Object service) {
+                }
+            };
+            ServiceRegistration reg = contextA.registerService(A.class.getName(), service, null);
+
+            ServiceReference ref = reg.getReference();
+            assertTrue(ref.isAssignableTo(bundleA, A.class.getName()));
+            assertTrue(ref.isAssignableTo(bundleB, A.class.getName()));
+
+            if (latch.await(5, TimeUnit.SECONDS) == false)
+                throw new TimeoutException();
+
+        } finally {
+            bundleA.uninstall();
+            bundleB.uninstall();
+        }
+    }
+
+    @Test
+    public void testRefBundleCannotSeeServiceClass() throws Exception {
+        final Bundle bundleA = installBundle(getBundleArchiveA());
+        final Bundle bundleB = installBundle(getBundleArchiveB());
+        try {
+            bundleA.start();
+            bundleB.start();
+
+            BundleContext contextA = bundleA.getBundleContext();
+            BundleContext contextB = bundleB.getBundleContext();
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            ServiceListener listener = new ServiceListener() {
+                public void serviceChanged(ServiceEvent event) {
+                    latch.countDown();
+                }
+            };
+            contextB.addServiceListener(listener);
+
+            Object service = bundleA.loadClass(A.class.getName()).newInstance();
+            ServiceRegistration reg = contextA.registerService(A.class.getName(), service, null);
+
+            ServiceReference ref = reg.getReference();
+            assertTrue(ref.isAssignableTo(bundleA, A.class.getName()));
+            assertTrue(ref.isAssignableTo(bundleB, A.class.getName()));
+
+            if (latch.await(5, TimeUnit.SECONDS) == false)
+                throw new TimeoutException();
+
+        } finally {
+            bundleA.uninstall();
+            bundleB.uninstall();
+        }
+    }
+
+    @Test
+    public void testOwnerCannotSeeServiceClass() throws Exception {
+        final Bundle bundleA = installBundle(getBundleArchiveA());
+        final Bundle bundleB = installBundle(getBundleArchiveB());
+        try {
+            bundleA.start();
+            bundleB.start();
+
+            BundleContext contextA = bundleA.getBundleContext();
+            BundleContext contextB = bundleB.getBundleContext();
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            ServiceListener listener = new ServiceListener() {
+                public void serviceChanged(ServiceEvent event) {
+                    latch.countDown();
+                }
+            };
+            contextB.addServiceListener(listener);
+
+            Object service = bundleB.loadClass(B.class.getName()).newInstance();
+            ServiceRegistration reg = contextA.registerService(B.class.getName(), service, null);
+
+            ServiceReference ref = reg.getReference();
+            assertTrue(ref.isAssignableTo(bundleA, B.class.getName()));
+            assertTrue(ref.isAssignableTo(bundleB, B.class.getName()));
+
+            if (latch.await(5, TimeUnit.SECONDS) == false)
+                throw new TimeoutException();
+
+        } finally {
+            bundleA.uninstall();
+            bundleB.uninstall();
+        }
+    }
+
+    @Test
+    public void testOwnerAndRegBundleUseDifferentSource() throws Exception {
+        final Bundle bundleA = installBundle(getBundleArchiveA());
+        final Bundle bundleB = installBundle(getBundleArchiveC());
+        try {
+            bundleA.start();
+            bundleB.start();
+
+            BundleContext contextA = bundleA.getBundleContext();
+
+            Object service = bundleA.loadClass(A.class.getName()).newInstance();
+            ServiceRegistration reg = contextA.registerService(A.class.getName(), service, null);
+
+            ServiceReference ref = reg.getReference();
+            assertTrue(ref.isAssignableTo(bundleA, A.class.getName()));
+            assertFalse(ref.isAssignableTo(bundleB, A.class.getName()));
+        } finally {
+            bundleA.uninstall();
+            bundleB.uninstall();
+        }
+    }
+
+    private JavaArchive getBundleArchiveA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.addClasses(A.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleArchiveB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple2");
+        archive.addClasses(B.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleArchiveC() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple3");
+        archive.addClasses(A.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }

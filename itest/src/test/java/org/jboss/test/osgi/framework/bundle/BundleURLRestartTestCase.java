@@ -24,14 +24,20 @@ package org.jboss.test.osgi.framework.bundle;
 import static org.junit.Assert.assertEquals;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 
 /**
  * The bundle URLs
@@ -48,11 +54,9 @@ public class BundleURLRestartTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetEntry() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-
         createFramework().start();
         try {
-            Bundle bundle = installBundle(assembly);
+            Bundle bundle = installBundle(getBundleArchive());
 
             URL url = bundle.getEntry("/resource-one.txt");
             assertEquals("/resource-one.txt", url.getPath());
@@ -65,7 +69,7 @@ public class BundleURLRestartTestCase extends OSGiFrameworkTest {
 
         createFramework().start();
         try {
-            Bundle bundle = installBundle(assembly);
+            Bundle bundle = installBundle(getBundleArchive());
 
             URL url = bundle.getEntry("/resource-one.txt");
             assertEquals("/resource-one.txt", url.getPath());
@@ -75,5 +79,20 @@ public class BundleURLRestartTestCase extends OSGiFrameworkTest {
         } finally {
             shutdownFramework();
         }
+    }
+
+    private JavaArchive getBundleArchive() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.addAsResource("bundles/simple/simple-bundle1/resource-one.txt", "resource-one.txt");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }

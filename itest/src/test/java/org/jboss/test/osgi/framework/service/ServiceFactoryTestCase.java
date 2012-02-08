@@ -21,19 +21,16 @@
  */
 package org.jboss.test.osgi.framework.service;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.service.support.SimpleServiceFactory;
 import org.jboss.test.osgi.framework.service.support.a.A;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceException;
@@ -41,22 +38,28 @@ import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
+import java.io.InputStream;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 /**
  * Test {@link ServiceFactory} functionality.
  * 
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author thomas.diesler@jboss.com
- * @version $Revision$
  */
 public class ServiceFactoryTestCase extends OSGiFrameworkTest {
 
     static String OBJCLASS = BundleContext.class.getName();
-    static String[] OBJCLASSES = new String[] { OBJCLASS };
 
     @Test
     public void testRegisterServiceFactory() throws Exception {
-        Archive<?> assemblyA = assembleArchive("simple1", "/bundles/simple/simple-bundle1", A.class);
-        Bundle bundleA = installBundle(assemblyA);
+        Bundle bundleA = installBundle(getBundleArchiveA());
         try {
             bundleA.start();
             BundleContext contextA = bundleA.getBundleContext();
@@ -77,8 +80,7 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest {
             assertEquals(bundleA.getSymbolicName(), serviceFactory.getBundle.getSymbolicName());
             assertEquals(1, serviceFactory.getCount);
 
-            Archive<?> assemblyB = assembleArchive("simple2", "/bundles/simple/simple-bundle2");
-            Bundle bundleB = installBundle(assemblyB);
+            Bundle bundleB = installBundle(getBundleArchiveB());
             try {
                 bundleB.start();
                 BundleContext contextB = bundleB.getBundleContext();
@@ -100,8 +102,7 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetServiceFactory() throws Exception {
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context = bundle.getBundleContext();
@@ -130,8 +131,7 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetServiceException() throws Exception {
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context = bundle.getBundleContext();
@@ -165,9 +165,7 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest {
     @Test
     public void testGetServiceFactoryAfterStop() throws Exception {
         String OBJCLASS = BundleContext.class.getName();
-
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context = bundle.getBundleContext();
@@ -196,8 +194,7 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest {
         String[] OBJCLASS = { String.class.getName() };
         String[] OBJCLASSES = { String.class.getName(), BundleContext.class.getName() };
 
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context = bundle.getBundleContext();
@@ -279,5 +276,35 @@ public class ServiceFactoryTestCase extends OSGiFrameworkTest {
         was = (Runnable) context.getService(sref);
         assertNull("Service null", was);
         assertTrue("ungetService good", allGood[1]);
+    }
+
+    private JavaArchive getBundleArchiveA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.addClasses(A.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleArchiveB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple2");
+        archive.addClasses(A.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }

@@ -28,6 +28,7 @@ import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
@@ -62,7 +63,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetBundle() throws Exception {
-        Bundle bundle1 = installBundle(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
+        Bundle bundle1 = installBundle(getBundleArchiveA());
         BundleContext context1 = null;
         try {
             bundle1.start();
@@ -74,7 +75,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
             assertEquals(2, bundles.length);
             assertTrue(Arrays.asList(bundles).contains(bundle1));
 
-            Bundle bundle2 = installBundle(assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2"));
+            Bundle bundle2 = installBundle(getBundleArchiveB());
             BundleContext context2 = null;
             try {
                 bundle2.start();
@@ -147,7 +148,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testProperties() throws Exception {
-        Bundle bundle = installBundle(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -180,7 +181,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
     @Test
     public void testInstallBundle() throws Exception {
         // Test symbolic location
-        JavaArchive archive = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
+        JavaArchive archive = getBundleArchiveA();
         Bundle bundle = installBundle("/symbolic/location", toInputStream(archive));
         try {
             assertBundleState(Bundle.INSTALLED, bundle.getState());
@@ -296,7 +297,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testServiceListener() throws Exception {
-        Bundle bundle = installBundle(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -375,7 +376,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testBundleListener() throws Exception {
-        Bundle bundle = installBundle(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -453,7 +454,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
         };
         getSystemContext().addBundleListener(listener);
 
-        Bundle bundle = installBundle(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             bundle.stop();
@@ -477,7 +478,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testFrameworkListener() throws Exception {
-        Bundle bundle = installBundle(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -505,7 +506,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetDataFile() throws Exception {
-        Bundle bundle = installBundle(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -521,7 +522,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testStopedBundleContext() throws Exception {
-        Bundle bundle = installBundle(assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1"));
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -608,5 +609,33 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
         assertNotNull(bundleContext);
 
         return bundleContext;
+    }
+
+    private JavaArchive getBundleArchiveA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleArchiveB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple2");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }

@@ -39,6 +39,7 @@ import org.jboss.test.osgi.framework.service.support.a.A;
 import org.jboss.test.osgi.framework.service.support.b.B;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
@@ -52,15 +53,12 @@ import org.osgi.framework.ServiceRegistration;
  * 
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author Thomas.Diesler@jboss.com
- * @version $Revision: 1.1 $
  */
 public class GetServiceReferencesTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetServiceReferences() throws Exception {
-
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1", A.class);
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context1 = bundle.getBundleContext();
@@ -245,10 +243,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest {
     }
 
     private void assertGetServiceReferencesNotAssignable(String className) throws Exception {
-        // Bundle-Name: Simple1
-        // Bundle-SymbolicName: simple1
-        Archive<?> assemblyA = assembleArchive("simple1", "/bundles/simple/simple-bundle1", A.class);
-        Bundle bundleA = installBundle(assemblyA);
+        Bundle bundleA = installBundle(getBundleArchiveA());
         try {
             bundleA.start();
             BundleContext contextA = bundleA.getBundleContext();
@@ -264,9 +259,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest {
             ServiceReference sref1 = sreg1.getReference();
             assertNotNull(sref1);
 
-            // Bundle-SymbolicName: simple2
-            Archive<?> assemblyB = assembleArchive("simple2", "/bundles/simple/simple-bundle2", A.class);
-            Bundle bundleB = installBundle(assemblyB);
+            Bundle bundleB = installBundle(getBundleArchiveB());
             try {
                 bundleB.start();
                 BundleContext contextB = bundleB.getBundleContext();
@@ -543,8 +536,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest {
         String className = A.class.getName();
         String wrongClassName = B.class.getName();
 
-        Archive<?> assembly = assembleArchive("simple1", "/bundles/simple/simple-bundle1", A.class);
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context1 = bundle.getBundleContext();
@@ -643,5 +635,35 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest {
         } finally {
             bundle.uninstall();
         }
+    }
+
+    private JavaArchive getBundleArchiveA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.addClasses(A.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleArchiveB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple2");
+        archive.addClasses(A.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }

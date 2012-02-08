@@ -30,15 +30,21 @@ import static org.junit.Assert.fail;
 import static org.osgi.framework.Bundle.INSTALLED;
 import static org.osgi.framework.Bundle.RESOLVED;
 
+import java.io.InputStream;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.jar.Attributes;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.bundle.support.a.ObjectA;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleReference;
 import org.osgi.framework.Constants;
@@ -55,8 +61,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
     @Test
     public void testBundleId() throws Exception {
         long id1 = -1;
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             id1 = bundle.getBundleId();
         } finally {
@@ -65,7 +70,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
         assertEquals(id1, bundle.getBundleId());
 
         long id2 = -1;
-        bundle = installBundle(assembly);
+        bundle = installBundle(getBundleArchiveA());
         try {
             id2 = bundle.getBundleId();
         } finally {
@@ -77,8 +82,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testSymbolicName() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             assertEquals("simple1", bundle.getSymbolicName());
         } finally {
@@ -88,8 +92,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testState() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             assertEquals(Bundle.INSTALLED, bundle.getState());
 
@@ -106,8 +109,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetBundleContext() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             BundleContext bundleContext = bundle.getBundleContext();
             assertNull(bundleContext);
@@ -126,8 +128,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testLoadClass() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1", ObjectA.class);
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveB());
         assertBundleState(Bundle.INSTALLED, bundle.getState());
 
         Class<?> clazz = bundle.loadClass(ObjectA.class.getName());
@@ -151,8 +152,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testUninstall() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1", ObjectA.class);
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveB());
 
         bundle.start();
         assertBundleState(Bundle.ACTIVE, bundle.getState());
@@ -170,8 +170,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testInstallAfterUninstall() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1", ObjectA.class);
-        Bundle bundleA = installBundle(assembly);
+        Bundle bundleA = installBundle(getBundleArchiveB());
         long idA = bundleA.getBundleId();
 
         bundleA.start();
@@ -180,7 +179,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
         bundleA.uninstall();
         assertBundleState(Bundle.UNINSTALLED, bundleA.getState());
 
-        Bundle bundleB = installBundle(assembly);
+        Bundle bundleB = installBundle(getBundleArchiveB());
         long idB = bundleB.getBundleId();
         assertTrue("Bundle id incremented", idB == idA + 1);
         assertFalse("Bundles not equal", bundleA.equals(bundleB));
@@ -234,20 +233,14 @@ public class BundleTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    @SuppressWarnings({ "rawtypes", "unchecked" })
     public void testGetHeaders() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             Dictionary expected = new Hashtable();
-            expected.put(Constants.BUNDLE_NAME, "Simple1");
             expected.put(Constants.BUNDLE_SYMBOLICNAME, "simple1");
             expected.put(Constants.BUNDLE_MANIFESTVERSION, "2");
             expected.put(Constants.IMPORT_PACKAGE, "org.osgi.framework");
             expected.put(Attributes.Name.MANIFEST_VERSION.toString(), "1.0");
-            expected.put(Attributes.Name.IMPLEMENTATION_TITLE.toString(), "JBoss OSGi tests");
-            expected.put(Attributes.Name.IMPLEMENTATION_VENDOR.toString(), "jboss.org");
-            expected.put(Attributes.Name.IMPLEMENTATION_VERSION.toString(), "test");
 
             Dictionary dictionary = bundle.getHeaders();
             assertEquals(expected, dictionary);
@@ -269,5 +262,34 @@ public class BundleTestCase extends OSGiFrameworkTest {
         } finally {
             bundle.uninstall();
         }
+    }
+
+    private JavaArchive getBundleArchiveA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleArchiveB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.addClasses(ObjectA.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }

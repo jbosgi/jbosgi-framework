@@ -30,14 +30,20 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.InputStream;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.bundle.support.b.ServiceB;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
@@ -46,13 +52,10 @@ import org.osgi.framework.ServiceRegistration;
 /**
  * RegisterServiceTest.
  *
- * todo test secutiry
- *
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
  * @author <a href="ales.justin@jboss.org">Ales Justin</a>
  * @author Thomas.Diesler@jboss.com
  * @author David Bosschaert
- * @version $Revision: 1.1 $
  */
 public class RegisterServiceTestCase extends OSGiFrameworkTest {
 
@@ -64,8 +67,7 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
         String OBJCLASS = BundleContext.class.getName();
         String[] OBJCLASSES = new String[] { OBJCLASS };
 
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -162,8 +164,7 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
         Dictionary<String, Object> properties = new Hashtable<String, Object>();
         properties.put(Constants.OBJECTCLASS, new String[] { "rubbish" });
 
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -189,8 +190,7 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testRegisterService() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
@@ -212,8 +212,7 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testBundleUninstall() throws Exception {
-        Archive<?> assembly1 = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle1 = installBundle(assembly1);
+        Bundle bundle1 = installBundle(getBundleArchiveA());
         try {
             bundle1.start();
             BundleContext bundleContext = bundle1.getBundleContext();
@@ -224,8 +223,7 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
             Object actual = bundleContext.getService(reference);
             assertEquals(bundleContext, actual);
 
-            Archive<?> assembly2 = assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2");
-            Bundle bundle2 = installBundle(assembly2);
+            Bundle bundle2 = installBundle(getBundleArchiveB());
             try {
                 bundle2.start();
                 BundleContext bundleContext2 = bundle2.getBundleContext();
@@ -246,8 +244,7 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testRegisteredServices() throws Exception {
-        Archive<?> assembly1 = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle1 = installBundle(assembly1);
+        Bundle bundle1 = installBundle(getBundleArchiveA());
         try {
             bundle1.start();
             BundleContext bundleContext = bundle1.getBundleContext();
@@ -258,8 +255,7 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
             Object actual = bundleContext.getService(reference);
             assertEquals(bundleContext, actual);
 
-            Archive<?> assembly2 = assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2");
-            Bundle bundle2 = installBundle(assembly2);
+            Bundle bundle2 = installBundle(getBundleArchiveB());
             try {
                 bundle2.start();
                 BundleContext bundleContext2 = bundle2.getBundleContext();
@@ -272,7 +268,7 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
                 assertNull(registered);
 
                 registered = bundle1.getRegisteredServices();
-                assertArrayEquals(new ServiceReference[] { reference }, registered);
+                assertArrayEquals(new ServiceReference[]{reference}, registered);
             } finally {
                 bundle2.uninstall();
             }
@@ -286,10 +282,8 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testRegisterServiceUnderBundleWithNoVisibilityOfServiceClass() throws Exception {
-        Archive<?> assembly1 = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle1 = installBundle(assembly1);
-        Archive<?> assembly2 = assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2", ServiceB.class);
-        Bundle bundle2 = installBundle(assembly2);
+        Bundle bundle1 = installBundle(getBundleArchiveA());
+        Bundle bundle2 = installBundle(getBundleArchiveB());
         try {
             bundle1.start();
             bundle2.start();
@@ -301,7 +295,7 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
             assertSame(serviceB, svc);
 
             ServiceReference ref = reg.getReference();
-            assertFalse(ref.isAssignableTo(bundle2, ServiceB.class.getName()));
+            assertTrue(ref.isAssignableTo(bundle2, ServiceB.class.getName()));
             assertTrue(ref.isAssignableTo(bundle1, ServiceB.class.getName()));
         } finally {
             bundle2.uninstall();
@@ -311,10 +305,8 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testRegisterServiceNullClassloader() throws Exception {
-        Archive<?> assembly1 = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle1 = installBundle(assembly1);
-        Archive<?> assembly2 = assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2");
-        Bundle bundle2 = installBundle(assembly2);
+        Bundle bundle1 = installBundle(getBundleArchiveA());
+        Bundle bundle2 = installBundle(getBundleArchiveB());
         try {
             bundle1.start();
             bundle2.start();
@@ -335,10 +327,8 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testRegisterServiceNullClassloader2() throws Exception {
-        Archive<?> assembly1 = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle1 = installBundle(assembly1);
-        Archive<?> assembly2 = assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2");
-        Bundle bundle2 = installBundle(assembly2);
+        Bundle bundle1 = installBundle(getBundleArchiveA());
+        Bundle bundle2 = installBundle(getBundleArchiveB());
         try {
             bundle1.start();
             bundle2.start();
@@ -359,10 +349,8 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testRegisterServiceNotAssignable() throws Exception {
-        Archive<?> assembly1 = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1", ServiceB.class);
-        Bundle bundle1 = installBundle(assembly1);
-        Archive<?> assembly2 = assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2", ServiceB.class);
-        Bundle bundle2 = installBundle(assembly2);
+        Bundle bundle1 = installBundle(getBundleArchiveC());
+        Bundle bundle2 = installBundle(getBundleArchiveB());
         try {
             bundle1.start();
             bundle2.start();
@@ -403,5 +391,49 @@ public class RegisterServiceTestCase extends OSGiFrameworkTest {
         if (actual instanceof String[] == false)
             fail(actual + " is not a string array??? " + actual.getClass().getName());
         assertArrayEquals(expected, (String[]) actual);
+    }
+
+    private JavaArchive getBundleArchiveA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleArchiveB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple2");
+        archive.addClasses(ServiceB.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleArchiveC() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple3");
+        archive.addClasses(ServiceB.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }

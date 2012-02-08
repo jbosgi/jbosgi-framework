@@ -29,15 +29,22 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.service.support.BrokenServiceFactory;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+
+import java.io.InputStream;
 
 /**
  * GetUnGetServiceTest.
@@ -53,8 +60,7 @@ public class GetUnGetServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetUnServiceErrors() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context = bundle.getBundleContext();
@@ -82,8 +88,7 @@ public class GetUnGetServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetService() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context = bundle.getBundleContext();
@@ -105,8 +110,7 @@ public class GetUnGetServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testGetServiceAfterStop() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context = bundle.getBundleContext();
@@ -132,8 +136,7 @@ public class GetUnGetServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testErrorInGetService() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context = bundle.getBundleContext();
@@ -154,8 +157,7 @@ public class GetUnGetServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testErrorInUnGetService() throws Exception {
-        Archive<?> assembly = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getBundleArchiveA());
         try {
             bundle.start();
             BundleContext context = bundle.getBundleContext();
@@ -180,8 +182,7 @@ public class GetUnGetServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testUnGetServiceResult() throws Exception {
-        Archive<?> assembly1 = assembleArchive("simple-bundle1", "/bundles/simple/simple-bundle1");
-        Bundle bundle1 = installBundle(assembly1);
+        Bundle bundle1 = installBundle(getBundleArchiveA());
         try {
             bundle1.start();
             BundleContext context1 = bundle1.getBundleContext();
@@ -200,8 +201,7 @@ public class GetUnGetServiceTestCase extends OSGiFrameworkTest {
             assertTrue(context1.ungetService(sref));
             assertFalse(context1.ungetService(sref));
 
-            Archive<?> assembly2 = assembleArchive("simple-bundle2", "/bundles/simple/simple-bundle2");
-            Bundle bundle2 = installBundle(assembly2);
+            Bundle bundle2 = installBundle(getBundleArchiveB());
             try {
                 bundle2.start();
                 BundleContext context2 = bundle2.getBundleContext();
@@ -219,5 +219,33 @@ public class GetUnGetServiceTestCase extends OSGiFrameworkTest {
         } finally {
             bundle1.uninstall();
         }
+    }
+
+    private JavaArchive getBundleArchiveA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleArchiveB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple2");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }
