@@ -77,7 +77,7 @@ abstract class AbstractBundleState implements Bundle {
     private final String symbolicName;
     private final FrameworkState frameworkState;
     private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
-    private final CopyOnWriteArrayList<ServiceState> registeredServices = new CopyOnWriteArrayList<ServiceState>();
+    private final List<ServiceState> registeredServices = new CopyOnWriteArrayList<ServiceState>();
     private final ConcurrentHashMap<ServiceState, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
     private AbstractBundleContext bundleContext;
 
