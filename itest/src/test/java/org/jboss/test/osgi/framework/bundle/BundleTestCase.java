@@ -246,7 +246,6 @@ public class BundleTestCase extends OSGiFrameworkTest {
             expected.put(Constants.BUNDLE_MANIFESTVERSION, "2");
             expected.put(Constants.IMPORT_PACKAGE, "org.osgi.framework");
             expected.put(Attributes.Name.MANIFEST_VERSION.toString(), "1.0");
-
             Dictionary dictionary = bundle.getHeaders();
             assertEquals(expected, dictionary);
         } finally {
@@ -255,10 +254,8 @@ public class BundleTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    public void testInvalidHeaders() throws Exception {
-
+    public void testInvalidExportPackageHeader() throws Exception {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
-        archive.addClasses(A.class);
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
@@ -268,7 +265,6 @@ public class BundleTestCase extends OSGiFrameworkTest {
                 return builder.openStream();
             }
         });
-
         try {
             installBundle(archive);
             fail("BundleException expected");
@@ -277,6 +273,66 @@ public class BundleTestCase extends OSGiFrameworkTest {
             Assert.assertTrue("Contains Export-Package", message.contains("Export-Package"));
             Assert.assertTrue("Contains version", message.contains("version"));
             Assert.assertTrue("Contains foo", message.contains("foo"));
+        }
+    }
+
+    @Test
+    public void testInvalidBundleManifestVersion() throws Exception {
+        final JavaArchive archive1 = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive1.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleSymbolicName(archive1.getName());
+                return builder.openStream();
+            }
+        });
+        try {
+            installBundle(archive1);
+            fail("BundleException expected");
+        } catch (BundleException ex) {
+            String message = ex.getMessage();
+            Assert.assertEquals("Invalid Bundle-ManifestVersion for: simple1", message);
+        }
+
+        final JavaArchive archive2 = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive2.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(3);
+                builder.addBundleSymbolicName(archive2.getName());
+                return builder.openStream();
+            }
+        });
+        try {
+            installBundle(archive2);
+            fail("BundleException expected");
+        } catch (BundleException ex) {
+            String message = ex.getMessage();
+            Assert.assertEquals("Unsupported Bundle-ManifestVersion: 3", message);
+        }
+    }
+
+    @Test
+    public void testLegacyBundleManifestVersion() throws Exception {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleName(archive.getName());
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        Bundle bundle = installBundle(archive);
+        try {
+            Dictionary expected = new Hashtable();
+            expected.put(Constants.BUNDLE_NAME, "simple1");
+            expected.put(Constants.IMPORT_PACKAGE, "org.osgi.framework");
+            expected.put(Attributes.Name.MANIFEST_VERSION.toString(), "1.0");
+            Dictionary dictionary = bundle.getHeaders();
+            assertEquals(expected, dictionary);
+        } finally {
+            bundle.uninstall();
         }
     }
 

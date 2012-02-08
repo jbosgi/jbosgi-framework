@@ -164,6 +164,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
 
     Deployment createDeployment(String location, VirtualFile rootFile) throws BundleException {
 
+        BundleException cause = null;
         try {
             BundleInfo info = BundleInfo.createBundleInfo(rootFile, location);
             Deployment dep = DeploymentFactory.createDeployment(info);
@@ -175,6 +176,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
             throw new BundleException("Invalid number format: " + nfe.getMessage(), nfe);
         } catch (BundleException ex) {
             // No valid OSGi manifest. Fallback to jbosgi-xservice.properties
+            cause = ex;
         }
 
         // Check if we have META-INF/jbosgi-xservice.properties
@@ -202,6 +204,10 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
             dep.addAttachment(OSGiMetaData.class, metadata);
             return dep;
         }
+
+        // Rethrow root cause if we have one
+        if (cause != null)
+            throw cause;
 
         throw new BundleException("Cannot create deployment from: " + rootFile);
     }
