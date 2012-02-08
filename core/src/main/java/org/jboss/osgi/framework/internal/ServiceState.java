@@ -329,6 +329,11 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
             throw new IllegalArgumentException("Null className");
 
         AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        if (bundleState == ownerBundle || ownerBundle.getBundleId() == 0 || bundleState.getBundleId() == 0)
+            return true;
+
+        if (getRawValue() instanceof ServiceFactory)
+            return true;
 
         // For the bundle that registered the service referenced by this ServiceReference (registrant bundle);
         // find the source for the package. If no source is found then return true if the registrant bundle
@@ -341,7 +346,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
             return bundleState == ownerBundle;
         }
 
-        Class<?> targetClass = null;
+        Class<?> targetClass;
         try {
             targetClass = bundle.loadClass(className);
         } catch (ClassNotFoundException ex) {

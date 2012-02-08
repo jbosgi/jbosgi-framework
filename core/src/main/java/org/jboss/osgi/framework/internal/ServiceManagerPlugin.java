@@ -134,7 +134,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
      * be the context bundle.
      *
      * @param clazzes The class names under which the service can be located.
-     * @param service The service object or a <code>ServiceFactory</code> object.
+     * @param serviceValue The service object or a <code>ServiceFactory</code> object.
      * @param properties The properties for this service.
      * @return A <code>ServiceRegistration</code> object for use by the bundle registering the service
      */
@@ -233,7 +233,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
      *
      *
      * @param clazz The class name with which the service was registered or <code>null</code> for all services.
-     * @param filter The filter expression or <code>null</code> for all services.
+     * @param filterStr The filter expression or <code>null</code> for all services.
      * @return A potentially empty list of <code>ServiceReference</code> objects.
      */
     List<ServiceState> getServiceReferences(AbstractBundleState bundleState, String clazz, String filterStr, boolean checkAssignable) throws InvalidSyntaxException {
@@ -328,26 +328,18 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
         return Collections.unmodifiableList(resultlist);
     }
 
-    private boolean isMatchingService(AbstractBundleState bundleState, ServiceState serviceState, String clazz, Filter filter, boolean checkAssignable) {
+    private boolean isMatchingService(AbstractBundleState bundleState, ServiceState serviceState, String clazzName, Filter filter, boolean checkAssignable) {
         if (serviceState.isUnregistered() || filter.match(serviceState) == false)
             return false;
-        if (checkAssignable == false)
+        if (checkAssignable == false || clazzName == null)
             return true;
 
-        Object rawValue = serviceState.getRawValue();
-        checkAssignable &= (clazz != null);
-        checkAssignable &= (bundleState.getBundleId() != 0);
-        checkAssignable &= !(rawValue instanceof ServiceFactory);
-        if (checkAssignable == false)
-            return true;
-
-        return serviceState.isAssignableTo(bundleState, clazz);
+        return serviceState.isAssignableTo(bundleState, clazzName);
     }
 
     /**
      * Returns the service object referenced by the specified <code>ServiceReference</code> object.
      *
-     * @param reference A reference to the service.
      * @return A service object for the service associated with <code>reference</code> or <code>null</code>
      */
     Object getService(AbstractBundleState bundleState, ServiceState serviceState) {
@@ -420,7 +412,6 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
      * count for the service is zero, this method returns <code>false</code>. Otherwise, the context bundle's use count for the
      * service is decremented by one.
      *
-     * @param reference A reference to the service to be released.
      * @return <code>false</code> if the context bundle's use count for the service is zero or if the service has been
      *         unregistered; <code>true</code> otherwise.
      */
