@@ -159,7 +159,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
             if (factoryValues == null)
                 factoryValues = new HashMap<Long, ServiceFactoryHolder>();
 
-            ServiceFactoryHolder factoryHolder = factoryValues.get(bundleState.getBundleId());
+            ServiceFactoryHolder factoryHolder = getFactoryHolder(bundleState);
             if (factoryHolder == null) {
                 ServiceFactory factory = (ServiceFactory) value;
                 factoryHolder = new ServiceFactoryHolder(bundleState, factory);
@@ -188,16 +188,21 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     void ungetScopedValue(AbstractBundleState bundleState) {
         Object value = valueProvider.getValue();
         if (value instanceof ServiceFactory) {
-            try {
-                ServiceFactoryHolder factoryHolder = factoryValues.get(bundleState.getBundleId());
-                if (factoryHolder != null)
+            ServiceFactoryHolder factoryHolder = getFactoryHolder(bundleState);
+            if (factoryHolder != null) {
+                try {
                     factoryHolder.ungetService();
-            } catch (RuntimeException rte) {
-                ServiceException sex = new ServiceException("Cannot unget factory value", ServiceException.FACTORY_EXCEPTION, rte);
-                FrameworkEventsPlugin eventsPlugin = serviceManager.getFrameworkEventsPlugin();
-                eventsPlugin.fireFrameworkEvent(bundleState, FrameworkEvent.WARNING, sex);
+                } catch (RuntimeException rte) {
+                    ServiceException sex = new ServiceException("Cannot unget factory value", ServiceException.FACTORY_EXCEPTION, rte);
+                    FrameworkEventsPlugin eventsPlugin = serviceManager.getFrameworkEventsPlugin();
+                    eventsPlugin.fireFrameworkEvent(bundleState, FrameworkEvent.WARNING, sex);
+                }
             }
         }
+    }
+
+    private ServiceFactoryHolder getFactoryHolder(AbstractBundleState bundleState) {
+        return factoryValues != null ? factoryValues.get(bundleState.getBundleId()) : null;
     }
 
     ServiceRegistration getRegistration() {
