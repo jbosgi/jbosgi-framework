@@ -42,6 +42,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleReference;
 import org.osgi.framework.Constants;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
@@ -115,16 +116,22 @@ public class BootDelegationTestCase extends OSGiTest {
             InputStream inputStream = OSGiTestHelper.toInputStream(getTestArchive());
             Bundle testBundle = sysContext.installBundle("http://bootdelegation", inputStream);
             Class<?> testClass = null;
+            ClassLoader classLoader = null;
             try {
                 testClass = testBundle.loadClass("javax.security.auth.x500.X500Principal");
                 assertNotNull("Test class not null", testClass);
+                classLoader = testClass.getClassLoader();
             } catch (ClassNotFoundException e) {
                 fail("Unexpected ClassNotFoundException");
             }
-            if (fromBoot)
-                assertEquals("Unexpected class", vmClass.getClassLoader(), testClass.getClassLoader());
-            else
+            if (fromBoot) {
+                assertEquals("Unexpected class", vmClass.getClassLoader(), classLoader);
+            }
+            else {
                 assertFalse("Unexpected class", vmClass.equals(testClass));
+                Bundle provider = ((BundleReference) classLoader).getBundle();
+                assertEquals(testBundle, provider);
+            }
             
         }
         finally
