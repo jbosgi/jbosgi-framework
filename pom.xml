@@ -46,6 +46,7 @@
         <version.jboss.osgi.equinox>3.5.2</version.jboss.osgi.equinox>
         <version.jboss.osgi.felix>3.0.4</version.jboss.osgi.felix>
         <version.jboss.osgi.resolver>1.0.11</version.jboss.osgi.resolver>
+        <version.jboss.osgi.resolver.v2>2.0.0.Alpha6-SNAPSHOT</version.jboss.osgi.resolver.v2>
         <version.jboss.osgi.spi>2.0.4</version.jboss.osgi.spi>
         <version.jboss.osgi.vfs>1.0.6</version.jboss.osgi.vfs>
         <version.mockito>1.8.4</version.mockito>
@@ -92,8 +93,13 @@
             </dependency>
             <dependency>
                 <groupId>org.jboss.osgi.resolver</groupId>
-                <artifactId>jbosgi-resolver-api</artifactId>
+                <artifactId>jbosgi-resolver-felix</artifactId>
                 <version>${version.jboss.osgi.resolver}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.osgi.resolver</groupId>
+                <artifactId>jbosgi-resolver-felix-v2</artifactId>
+                <version>${version.jboss.osgi.resolver.v2}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.osgi.vfs</groupId>
@@ -147,11 +153,6 @@
                 <groupId>org.jboss.arquillian.junit</groupId>
                 <artifactId>arquillian-junit-container</artifactId>
                 <version>${version.jboss.arquillian.core}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.osgi.resolver</groupId>
-                <artifactId>jbosgi-resolver-felix</artifactId>
-                <version>${version.jboss.osgi.resolver}</version>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>

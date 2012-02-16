@@ -32,6 +32,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemPathsProvider;
@@ -56,16 +57,18 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
     private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
     private final InjectedValue<FrameworkModuleProvider> injectedModuleProvider = new InjectedValue<FrameworkModuleProvider>();
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
-    private final InjectedValue<ResolverPlugin> injectedResolverPlugin = new InjectedValue<ResolverPlugin>();
+    private final InjectedValue<LegacyResolverPlugin> injectedLegacyResolver = new InjectedValue<LegacyResolverPlugin>();
+    private final InjectedValue<EnvironmentPlugin> injectedEnvironmentPlugin = new InjectedValue<EnvironmentPlugin>();
     private SystemBundleState bundleState;
 
     static void addService(ServiceTarget serviceTarget, FrameworkState frameworkState) {
         SystemBundleService service = new SystemBundleService(frameworkState);
         ServiceBuilder<SystemBundleState> builder = serviceTarget.addService(Services.SYSTEM_BUNDLE, service);
+        builder.addDependency(Services.ENVIRONMENT_PLUGIN, EnvironmentPlugin.class, service.injectedEnvironmentPlugin);
         builder.addDependency(Services.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, service.injectedModuleProvider);
         builder.addDependency(Services.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
-        builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolverPlugin);
+        builder.addDependency(InternalServices.LEGACY_RESOLVER_PLUGIN, LegacyResolverPlugin.class, service.injectedLegacyResolver);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -82,10 +85,11 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
             bundleState.changeState(Bundle.STARTING);
             OSGiMetaData metadata = createOSGiMetaData();
             XModule resModule = bundleState.createResolverModule(metadata);
-            bundleState.createBundleRevision(metadata, resModule);
+            SystemBundleRevision sysrev = bundleState.createBundleRevision(metadata, resModule);
+            injectedEnvironmentPlugin.getValue().installResources(sysrev);
             bundleState.createBundleContext();
             bundleState.createStorageState(injectedBundleStorage.getValue());
-            injectedResolverPlugin.getValue().addModule(resModule);
+            injectedLegacyResolver.getValue().addModule(resModule);
             BundleManager bundleManager = getBundleManager();
             bundleManager.injectedSystemBundle.inject(bundleState);
             bundleManager.addBundle(bundleState);

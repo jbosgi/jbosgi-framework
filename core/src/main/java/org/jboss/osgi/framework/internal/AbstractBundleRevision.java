@@ -23,7 +23,12 @@ package org.jboss.osgi.framework.internal;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
@@ -33,9 +38,22 @@ import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
+import org.jboss.osgi.resolver.v2.XIdentityCapability;
+import org.jboss.osgi.resolver.v2.XResourceBuilder;
+import org.jboss.osgi.resolver.v2.spi.AbstractBundleCapability;
+import org.jboss.osgi.resolver.v2.spi.AbstractBundleRequirement;
+import org.jboss.osgi.resolver.v2.spi.AbstractResource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
+import org.osgi.framework.resource.Capability;
+import org.osgi.framework.resource.Requirement;
+import org.osgi.framework.wiring.BundleCapability;
+import org.osgi.framework.wiring.BundleRequirement;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWiring;
+
+import static org.osgi.framework.resource.ResourceConstants.IDENTITY_TYPE_FRAGMENT;
 
 /**
  * An abstract bundle revision.
@@ -44,14 +62,16 @@ import org.osgi.framework.Version;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-abstract class AbstractBundleRevision {
+abstract class AbstractBundleRevision extends AbstractResource implements BundleRevision {
 
     static final Logger log = Logger.getLogger(AbstractBundleRevision.class);
 
     private final int revision;
     private final AbstractBundleState bundleState;
     private final OSGiMetaData metadata;
-    private XModule resolverModule;
+    private Map<String, List<BundleCapability>> bundleCapabilities;
+    private Map<String, List<BundleRequirement>> bundleRequirements = new HashMap<String, List<BundleRequirement>>();
+    private XModule resModule;
 
     AbstractBundleRevision(AbstractBundleState bundleState, OSGiMetaData metadata, XModule resModule, int revision) throws BundleException {
         if (bundleState == null)
@@ -64,10 +84,86 @@ abstract class AbstractBundleRevision {
         this.bundleState = bundleState;
         this.metadata = metadata;
         this.revision = revision;
-        this.resolverModule = resModule;
+        this.resModule = resModule;
+
+        // Initialize the bundle caps/reqs
+        XResourceBuilder.create(this).load(metadata);
 
         // Add bidirectional one-to-one association between a revision and a resolver module
         resModule.addAttachment(AbstractBundleRevision.class, this);
+    }
+
+    @Override
+    public String getSymbolicName() {
+        return metadata.getBundleSymbolicName();
+    }
+
+    @Override
+    public Version getVersion() {
+        return metadata.getBundleVersion();
+    }
+
+    @Override
+    public List<BundleCapability> getDeclaredCapabilities(String namespace) {
+        if (bundleCapabilities == null) {
+            Map<String, List<BundleCapability>> capmap = new HashMap<String, List<BundleCapability>>();
+            List<BundleCapability> allcaps = new ArrayList<BundleCapability>();
+            for (Capability cap : getCapabilities(null)) {
+                String capns = cap.getNamespace();
+                List<BundleCapability> caps = capmap.get(capns);
+                if (caps == null) {
+                    caps = new ArrayList<BundleCapability>();
+                    capmap.put(capns, caps);
+                }
+                BundleCapability bcap = new AbstractBundleCapability(this, capns, cap.getAttributes(), cap.getDirectives());
+                allcaps.add(bcap);
+                caps.add(bcap);
+            }
+            capmap.put(null, allcaps);
+            bundleCapabilities = capmap;
+        }
+        List<BundleCapability> result = bundleCapabilities.get(namespace);
+        return Collections.unmodifiableList(result);
+    }
+
+    @Override
+    public List<BundleRequirement> getDeclaredRequirements(String namespace) {
+        if (bundleRequirements == null) {
+            Map<String, List<BundleRequirement>> reqmap = new HashMap<String, List<BundleRequirement>>();
+            List<BundleRequirement> allreqs = new ArrayList<BundleRequirement>();
+            for (Requirement req : getRequirements(null)) {
+                String reqns = req.getNamespace();
+                List<BundleRequirement> reqs = reqmap.get(reqns);
+                if (reqs == null) {
+                    reqs = new ArrayList<BundleRequirement>();
+                    reqmap.put(reqns, reqs);
+                }
+                BundleRequirement bcap = new AbstractBundleRequirement(this, reqns, req.getAttributes(), req.getDirectives());
+                allreqs.add(bcap);
+                reqs.add(bcap);
+            }
+            reqmap.put(null, allreqs);
+            bundleRequirements = reqmap;
+        }
+        List<BundleRequirement> result = bundleRequirements.get(namespace);
+        return Collections.unmodifiableList(result);
+    }
+
+    @Override
+    public int getTypes() {
+        XIdentityCapability idcap = getIdentityCapability();
+        boolean isfragment = IDENTITY_TYPE_FRAGMENT.equals(idcap.getType());
+        return isfragment ? TYPE_FRAGMENT : 0;
+    }
+
+    @Override
+    public BundleWiring getWiring() {
+        return getAttachment(BundleWiring.class);
+    }
+
+    @Override
+    public Bundle getBundle() {
+        return bundleState;
     }
 
     int getRevisionId() {
@@ -75,7 +171,7 @@ abstract class AbstractBundleRevision {
     }
 
     XModule getResolverModule() {
-        return resolverModule;
+        return resModule;
     }
 
     AbstractBundleState getBundleState() {
@@ -84,10 +180,6 @@ abstract class AbstractBundleRevision {
 
     OSGiMetaData getOSGiMetaData() {
         return metadata;
-    }
-
-    Version getVersion() {
-        return metadata.getBundleVersion();
     }
 
     abstract Class<?> loadClass(String className) throws ClassNotFoundException;
@@ -109,9 +201,9 @@ abstract class AbstractBundleRevision {
     ModuleIdentifier getModuleIdentifier() {
         try {
             ModuleManagerPlugin moduleManager = bundleState.getFrameworkState().getModuleManagerPlugin();
-            return moduleManager.getModuleIdentifier(resolverModule);
+            return moduleManager.getModuleIdentifier(resModule);
         } catch (Exception ex) {
-            throw new IllegalStateException("Cannot get module identifier for: " + resolverModule, ex);
+            throw new IllegalStateException("Cannot get module identifier for: " + resModule, ex);
         }
     }
 
@@ -130,13 +222,13 @@ abstract class AbstractBundleRevision {
         // if (refreshAllowed == false)
         // throw new IllegalStateException("External XModule, refresh not allowed");
 
-        resolverModule = createResolverModule(getBundleState(), metadata);
-        refreshRevisionInternal(resolverModule);
+        createResolverModule(getBundleState(), metadata);
+        refreshRevisionInternal();
     }
 
-    abstract void refreshRevisionInternal(XModule resModule);
+    abstract void refreshRevisionInternal();
 
-    XModule createResolverModule(AbstractBundleState bundleState, OSGiMetaData metadata) throws BundleException {
+    void createResolverModule(AbstractBundleState bundleState, OSGiMetaData metadata) throws BundleException {
         final String symbolicName = metadata.getBundleSymbolicName();
         final Version version = metadata.getBundleVersion();
 
@@ -152,16 +244,15 @@ abstract class AbstractBundleRevision {
                 modulerev = Math.max(modulerev + 100, auxrev + 100);
             }
         }
-        ResolverPlugin resolverPlugin = bundleState.getFrameworkState().getResolverPlugin();
-        XModuleBuilder builder = resolverPlugin.getModuleBuilder();
-        XModule resModule = builder.createModule(metadata, modulerev).getModule();
+        LegacyResolverPlugin legacyResolver = bundleState.getFrameworkState().getLegacyResolverPlugin();
+        XModuleBuilder builder = legacyResolver.getModuleBuilder();
+        resModule = builder.createModule(metadata, modulerev).getModule();
         resModule.addAttachment(AbstractBundleRevision.class, this);
         resModule.addAttachment(Bundle.class, bundleState);
-        return resModule;
     }
 
     @Override
     public String toString() {
-        return "Revision[" + resolverModule.getModuleId() + "]";
+        return "Revision[" + resModule.getModuleId() + "]";
     }
 }

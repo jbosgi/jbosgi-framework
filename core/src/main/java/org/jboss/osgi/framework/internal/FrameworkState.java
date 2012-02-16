@@ -23,6 +23,8 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.EnvironmentPlugin;
+import org.jboss.osgi.framework.ResolverPlugin;
 import org.osgi.framework.launch.Framework;
 
 /**
@@ -44,9 +46,11 @@ final class FrameworkState {
     final InjectedValue<CoreServices> injectedCoreServices = new InjectedValue<CoreServices>();
     final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
     final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
+    final InjectedValue<EnvironmentPlugin> injectedEnvironmentPlugin = new InjectedValue<EnvironmentPlugin>();
     final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
     final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
     final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
+    final InjectedValue<LegacyResolverPlugin> injectedLegacyResolver = new InjectedValue<LegacyResolverPlugin>();
     final InjectedValue<ResolverPlugin> injectedResolverPlugin = new InjectedValue<ResolverPlugin>();
     final InjectedValue<ServiceManagerPlugin> injectedServiceManager = new InjectedValue<ServiceManagerPlugin>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
@@ -84,8 +88,16 @@ final class FrameworkState {
         return injectedNativeCode.getValue();
     }
 
+    LegacyResolverPlugin getLegacyResolverPlugin() {
+        return injectedLegacyResolver.getValue();
+    }
+
     ResolverPlugin getResolverPlugin() {
         return injectedResolverPlugin.getValue();
+    }
+
+    EnvironmentPlugin getEnvironmentPlugin() {
+        return injectedEnvironmentPlugin.getValue();
     }
 
     ServiceManagerPlugin getServiceManagerPlugin() {
@@ -94,13 +106,5 @@ final class FrameworkState {
 
     SystemBundleState getSystemBundle() {
         return injectedSystemBundle.getValue();
-    }
-
-    int getStartStopOptions() {
-        return startStopOptions;
-    }
-
-    void setStartStopOptions(int startStopOptions) {
-        this.startStopOptions = startStopOptions;
     }
 }

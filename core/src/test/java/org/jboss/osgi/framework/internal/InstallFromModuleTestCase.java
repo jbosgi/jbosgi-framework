@@ -88,7 +88,7 @@ public class InstallFromModuleTestCase extends AbstractFrameworkTest {
         assertEquals("System bundle available", 1, bundles.length);
         assertEquals("System bundle id", 0, bundles[0].getBundleId());
 
-        ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
+        LegacyResolverPlugin resolverPlugin = getFrameworkState().getLegacyResolverPlugin();
         XResolver resolver = resolverPlugin.getResolver();
         Set<XModule> modules = resolver.getModules();
         assertEquals("System module available", 1, modules.size());

@@ -53,6 +53,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleManagerService;
+import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.framework.util.Java;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
@@ -491,10 +492,11 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
             storageState.deleteBundleStorage();
         }
 
-        ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
+        LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
+        EnvironmentPlugin environment = getFrameworkState().getEnvironmentPlugin();
         for (AbstractBundleRevision abr : userBundle.getRevisions()) {
-            XModule resModule = abr.getResolverModule();
-            resolverPlugin.removeModule(resModule);
+            legacyResolver.removeModule(abr.getResolverModule());
+            environment.uninstallResources(abr);
         }
 
         FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();

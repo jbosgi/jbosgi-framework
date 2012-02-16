@@ -163,19 +163,19 @@ public class DefaultResolverTestCase extends OSGiFrameworkTest {
         Archive<?> assemblyC = assembleArchive("bundleA", "/bundles/resolver/simpleexportanother", C.class);
 
         Bundle bundleA = installBundle(assemblyA);
-        Bundle bundleB = null;
         try {
             assertLoadClass(bundleA, A.class.getName(), bundleA);
 
             bundleA.update(toInputStream(assemblyC));
-            bundleB = installBundle(assemblyB);
-            assertLoadClass(bundleB, BC.class.getName(), bundleB);
-            assertLoadClass(bundleB, C.class.getName(), bundleA);
-
-            assertLoadClass(bundleA, C.class.getName(), bundleA);
-        } finally {
-            if (bundleB != null)
+            Bundle bundleB = installBundle(assemblyB);
+            try {
+                assertLoadClass(bundleB, BC.class.getName(), bundleB);
+                assertLoadClass(bundleB, C.class.getName(), bundleA);
+                assertLoadClass(bundleA, C.class.getName(), bundleA);
+            } finally {
                 bundleB.uninstall();
+            }
+        } finally {
             bundleA.uninstall();
         }
     }

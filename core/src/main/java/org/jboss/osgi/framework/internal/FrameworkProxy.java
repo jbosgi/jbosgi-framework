@@ -191,7 +191,6 @@ final class FrameworkProxy implements Framework {
 
         log.debugf("start framework");
         try {
-            frameworkState.setStartStopOptions(options);
             awaitActiveFramework();
             proxyState.set(Bundle.ACTIVE);
         } catch (Exception ex) {

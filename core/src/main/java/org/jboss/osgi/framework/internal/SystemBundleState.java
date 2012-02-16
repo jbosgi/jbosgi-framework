@@ -78,8 +78,9 @@ final class SystemBundleState extends AbstractBundleState {
         return frameworkModuleProvider.getFrameworkModule(this);
     }
 
-    void createBundleRevision(OSGiMetaData metadata, XModule resModule) throws BundleException {
+    SystemBundleRevision createBundleRevision(OSGiMetaData metadata, XModule resModule) throws BundleException {
         revision = new SystemBundleRevision(this, metadata, resModule);
+        return revision;
     }
 
     XModule createResolverModule(OSGiMetaData metadata) throws BundleException {

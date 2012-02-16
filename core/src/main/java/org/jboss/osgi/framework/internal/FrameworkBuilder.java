@@ -126,6 +126,7 @@ public final class FrameworkBuilder {
         DeploymentFactoryPlugin.addService(serviceTarget);
         BundleStoragePlugin.addService(serviceTarget, firstInit);
         CoreServices.addService(serviceTarget);
+        DefaultEnvironmentPlugin.addService(serviceTarget);
         FrameworkActive.addService(serviceTarget);
         FrameworkActivator.addService(serviceTarget, initialMode);
         FrameworkEventsPlugin.addService(serviceTarget);
@@ -135,7 +136,8 @@ public final class FrameworkBuilder {
         NativeCodePlugin.addService(serviceTarget);
         PackageAdminPlugin.addService(serviceTarget);
         PersistentBundlesInstaller.addService(serviceTarget);
-        ResolverPlugin.addService(serviceTarget);
+        LegacyResolverPlugin.addService(serviceTarget);
+        DefaultResolverPlugin.addService(serviceTarget);
         ServiceManagerPlugin.addService(serviceTarget);
         StartLevelPlugin.addService(serviceTarget);
         SystemBundleService.addService(serviceTarget, frameworkState);

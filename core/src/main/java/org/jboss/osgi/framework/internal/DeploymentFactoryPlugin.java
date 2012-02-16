@@ -56,13 +56,13 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
     private static final Logger log = Logger.getLogger(DeploymentFactoryPlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-    private final InjectedValue<ResolverPlugin> injectedResolver = new InjectedValue<ResolverPlugin>();
+    private final InjectedValue<LegacyResolverPlugin> injectedResolver = new InjectedValue<LegacyResolverPlugin>();
 
     static void addService(ServiceTarget serviceTarget) {
         DeploymentFactoryPlugin service = new DeploymentFactoryPlugin();
         ServiceBuilder<DeploymentFactoryPlugin> builder = serviceTarget.addService(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolver);
+        builder.addDependency(InternalServices.LEGACY_RESOLVER_PLUGIN, LegacyResolverPlugin.class, service.injectedResolver);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -130,7 +130,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
         String location = module.getIdentifier().toString();
         Deployment dep = DeploymentFactory.createDeployment(location, symbolicName, version);
 
-        ResolverPlugin resolverPlugin = injectedResolver.getValue();
+        LegacyResolverPlugin resolverPlugin = injectedResolver.getValue();
         XModuleBuilder builder = resolverPlugin.getModuleBuilder();
 
         // Build the resolver capabilities, which exports every package

@@ -53,8 +53,8 @@ interface InternalServices {
     ServiceName PERSISTENT_BUNDLES_INSTALLER = INTERNAL_SERVICE_BASE.append("PersistentBundles");
     /** The {@link PersistentBundlesInstaller} nested activator service name */
     ServiceName PERSISTENT_BUNDLES_INSTALLER_COMPLETE = PERSISTENT_BUNDLES_INSTALLER.append("COMPLETE");
-    /** The {@link ResolverPlugin} service name */
-    ServiceName RESOLVER_PLUGIN = INTERNAL_SERVICE_BASE.append("BundleResolver");
+    /** The {@link LegacyResolverPlugin} service name */
+    ServiceName LEGACY_RESOLVER_PLUGIN = INTERNAL_SERVICE_BASE.append("LegacyResolver");
     /** The {@link ServiceManagerPlugin} service name */
     ServiceName SERVICE_MANAGER_PLUGIN = INTERNAL_SERVICE_BASE.append("ServiceManager");
     /** The {@link WebXMLVerifierInterceptor} service name */

@@ -59,7 +59,7 @@ final class SystemBundleRevision extends AbstractBundleRevision {
     }
 
     @Override
-    void refreshRevisionInternal(XModule resModule) {
+    void refreshRevisionInternal() {
         throw new IllegalStateException("Cannot refresh the system bundle revision");
     }
     

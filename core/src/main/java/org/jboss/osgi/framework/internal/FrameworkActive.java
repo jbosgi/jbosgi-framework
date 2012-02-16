@@ -28,12 +28,16 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.ResolverPlugin;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.launch.Framework;
+import org.osgi.framework.wiring.BundleRevision;
+
+import java.util.Collections;
 
 /**
  * A service that represents the ACTIVE state of the {@link Framework}.
@@ -67,14 +71,14 @@ public final class FrameworkActive extends AbstractFrameworkService {
      *
      * The following steps are taken to start this Framework:
      *
-     * - If this Framework is not in the {@link #STARTING} state, {@link #init()} is called
+     * - If this Framework is not in the {@link Bundle#STARTING} state, {@link Framework#init()} is called
      * - All installed bundles must be started
      * - The start level of this Framework is moved to the FRAMEWORK_BEGINNING_STARTLEVEL
      *
      * Any exceptions that occur during bundle starting must be wrapped in a {@link BundleException} and then published as a
      * framework event of type {@link FrameworkEvent#ERROR}
      *
-     * - This Framework's state is set to {@link #ACTIVE}.
+     * - This Framework's state is set to {@link Bundle#ACTIVE}.
      * - A framework event of type {@link FrameworkEvent#STARTED} is fired
      */
     @Override
@@ -82,8 +86,12 @@ public final class FrameworkActive extends AbstractFrameworkService {
         super.start(context);
         try {
             // Resolve the system bundle
+            LegacyResolverPlugin legacyResolver = getValue().getLegacyResolverPlugin();
+            legacyResolver.resolve(getSystemBundle().getResolverModule());
+
             ResolverPlugin resolverPlugin = getValue().getResolverPlugin();
-            resolverPlugin.resolve(getSystemBundle().getResolverModule());
+            BundleRevision sysrev = getSystemBundle().getCurrentRevision();
+            resolverPlugin.resolveAndApply(Collections.singleton(sysrev), null);
 
             // This Framework's state is set to ACTIVE
             getSystemBundle().changeState(Bundle.ACTIVE);

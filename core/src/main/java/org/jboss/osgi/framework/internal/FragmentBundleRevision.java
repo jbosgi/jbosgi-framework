@@ -71,7 +71,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
         return (FragmentBundleState) super.getBundleState();
     }
 
-    void refreshRevisionInternal(XModule resModule) {
+    void refreshRevisionInternal() {
         attachedHosts = null;
     }
 

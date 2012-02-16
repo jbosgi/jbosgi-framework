@@ -21,6 +21,25 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import org.jboss.logging.Logger;
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.ResolverPlugin;
+import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
+import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.spi.NotImplementedException;
+import org.jboss.osgi.spi.util.ConstantsHelper;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
+import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.Version;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -40,24 +59,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.jboss.logging.Logger;
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
-import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.spi.NotImplementedException;
-import org.jboss.osgi.spi.util.ConstantsHelper;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleEvent;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
-import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.Version;
 
 /**
  * An abstract representation of a {@link Bundle} state.
@@ -547,8 +548,11 @@ abstract class AbstractBundleState implements Bundle {
                 return true;
 
             try {
+                LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
+                legacyResolver.resolve(resModule);
+
                 ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
-                resolverPlugin.resolve(resModule);
+                //resolverPlugin.resolveAndApply(Collections.singleton(getCurrentRevision()), null);
 
                 // Activate the service that represents bundle state RESOLVED
                 getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.ACTIVE);

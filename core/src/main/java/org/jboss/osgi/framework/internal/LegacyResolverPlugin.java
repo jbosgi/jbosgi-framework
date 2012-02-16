@@ -57,10 +57,10 @@ import org.osgi.framework.BundleException;
  * @author David Bosschaert
  * @since 06-Jul-2009
  */
-final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
+final class LegacyResolverPlugin extends AbstractPluginService<LegacyResolverPlugin> {
 
     // Provide logging
-    final Logger log = Logger.getLogger(ResolverPlugin.class);
+    final Logger log = Logger.getLogger(LegacyResolverPlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
@@ -70,8 +70,8 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
 
 
     static void addService(ServiceTarget serviceTarget) {
-        ResolverPlugin service = new ResolverPlugin();
-        ServiceBuilder<ResolverPlugin> builder = serviceTarget.addService(InternalServices.RESOLVER_PLUGIN, service);
+        LegacyResolverPlugin service = new LegacyResolverPlugin();
+        ServiceBuilder<LegacyResolverPlugin> builder = serviceTarget.addService(InternalServices.LEGACY_RESOLVER_PLUGIN, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
@@ -79,7 +79,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         builder.install();
     }
 
-    private ResolverPlugin() {
+    private LegacyResolverPlugin() {
         factory = XResolverFactory.getInstance(getClass().getClassLoader());
     }
 
@@ -96,7 +96,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
     }
 
     @Override
-    public ResolverPlugin getValue() {
+    public LegacyResolverPlugin getValue() {
         return this;
     }
 
@@ -117,7 +117,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
     /**
      * Add a module to the resolver.
      *
-     * @param module the resolver module
+     * @param resModule the resolver module
      */
     void addModule(XModule resModule) {
         resolver.addModule(resModule);
@@ -126,7 +126,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
     /**
      * Remove a module from the resolver.
      *
-     * @param module the resolver module
+     * @param resModule the resolver module
      */
     void removeModule(XModule resModule) {
         resolver.removeModule(resModule);
@@ -144,7 +144,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
     /**
      * Resolve the given modules.
      *
-     * @param module the module to resolve
+     * @param resModule the module to resolve
      * @return The set of resolved modules or an empty set
      * @throws BundleException If the resolver could not resolve the module
      */
@@ -164,7 +164,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
     /**
      * Resolve the given set of modules.
      *
-     * @param modules the modules to resolve
+     * @param unresolved the modules to resolve
      * @return True if all modules could be resolved
      */
     boolean resolveAll(Set<XModule> unresolved) {

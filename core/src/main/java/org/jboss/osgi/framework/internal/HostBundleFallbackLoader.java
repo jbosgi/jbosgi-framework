@@ -209,7 +209,7 @@ final class HostBundleFallbackLoader implements LocalLoader {
 
     private Module findInResolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
         log.tracef("Attempt to find path dynamically in resolved modules ...");
-        ResolverPlugin resolverPlugin = hostBundle.getFrameworkState().getResolverPlugin();
+        LegacyResolverPlugin resolverPlugin = hostBundle.getFrameworkState().getLegacyResolverPlugin();
         ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
         for (XPackageRequirement packageReq : matchingPatterns) {
             for (XModule resModule : resolverPlugin.getResolver().getModules()) {

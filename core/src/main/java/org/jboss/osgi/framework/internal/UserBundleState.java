@@ -40,6 +40,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallProvider;
+import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
@@ -54,6 +55,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
+import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
@@ -145,7 +147,7 @@ abstract class UserBundleState extends AbstractBundleState {
                 }
             }
             FrameworkState frameworkState = getFrameworkState();
-            ResolverPlugin resolverPlugin = frameworkState.getResolverPlugin();
+            LegacyResolverPlugin resolverPlugin = frameworkState.getLegacyResolverPlugin();
             XModuleBuilder builder = resolverPlugin.getModuleBuilder();
             resModule = builder.createModule(metadata, modulerev).getModule();
 
@@ -346,10 +348,14 @@ abstract class UserBundleState extends AbstractBundleState {
             dep.addAttachment(Bundle.class, this);
 
             XModule resModule = createResolverModule(dep);
-            createRevision(dep);
+            BundleRevision revision = createRevision(dep);
 
-            ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
-            resolverPlugin.addModule(resModule);
+            LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
+            legacyResolver.addModule(resModule);
+
+            EnvironmentPlugin environment = getFrameworkState().getEnvironmentPlugin();
+            environment.installResources(revision);
+
         } catch (BundleException ex) {
             throw ex;
         }
@@ -393,13 +399,15 @@ abstract class UserBundleState extends AbstractBundleState {
             throw new IllegalStateException("Attempt to refresh an unresolved bundle: " + this);
 
         // Remove the revisions from the resolver
-        ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
+        LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        for (AbstractBundleRevision rev : getRevisions()) {
-            XModule resModule = rev.getResolverModule();
-            resolverPlugin.removeModule(resModule);
+        EnvironmentPlugin environment = getFrameworkState().getEnvironmentPlugin();
+        for (AbstractBundleRevision brev : getRevisions()) {
+            XModule resModule = brev.getResolverModule();
+            legacyResolver.removeModule(resModule);
+            environment.uninstallResources(brev);
 
-            ModuleIdentifier identifier = rev.getModuleIdentifier();
+            ModuleIdentifier identifier = brev.getModuleIdentifier();
             moduleManager.removeModule(identifier);
         }
 
@@ -411,7 +419,7 @@ abstract class UserBundleState extends AbstractBundleState {
 
         // Update the resolver module for the current revision
         currentRev.refreshRevision(getOSGiMetaData());
-        resolverPlugin.addModule(currentRev.getResolverModule());
+        legacyResolver.addModule(currentRev.getResolverModule());
 
         changeState(Bundle.INSTALLED);
 

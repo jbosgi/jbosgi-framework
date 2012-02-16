@@ -27,6 +27,8 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.startlevel.StartLevel;
+import org.osgi.service.resolver.Environment;
+import org.osgi.service.resolver.Resolver;
 
 /**
  * A collection of public service names.
@@ -60,6 +62,9 @@ public interface Services {
     /** The {@link BundleManagerService} service name. */
     ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("BundleManager");
 
+    /** The {@link Environment} service name */
+    ServiceName ENVIRONMENT_PLUGIN = JBOSGI_BASE_NAME.append("Environment");
+
     /** The base name of all framework services */
     ServiceName FRAMEWORK_BASE_NAME = JBOSGI_BASE_NAME.append("Framework");
 
@@ -77,6 +82,9 @@ public interface Services {
 
     /** The service name for the {@link PackageAdmin} service */
     ServiceName PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("PackageAdmin");
+
+    /** The {@link Resolver} service name */
+    ServiceName RESOLVER_PLUGIN = JBOSGI_BASE_NAME.append("Resolver");
 
     /** The service name for the {@link StartLevel} service */
     ServiceName START_LEVEL = JBOSGI_BASE_NAME.append("StartLevel");

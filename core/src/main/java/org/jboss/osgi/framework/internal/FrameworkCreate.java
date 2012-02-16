@@ -28,6 +28,8 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.osgi.framework.EnvironmentPlugin;
+import org.jboss.osgi.framework.ResolverPlugin;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.launch.Framework;
 
@@ -56,9 +58,11 @@ public final class FrameworkCreate extends AbstractFrameworkService {
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, frameworkState.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, frameworkState.injectedModuleManager);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, frameworkState.injectedNativeCode);
-        builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, frameworkState.injectedResolverPlugin);
+        builder.addDependency(InternalServices.LEGACY_RESOLVER_PLUGIN, LegacyResolverPlugin.class, frameworkState.injectedLegacyResolver);
         builder.addDependency(InternalServices.SERVICE_MANAGER_PLUGIN, ServiceManagerPlugin.class, frameworkState.injectedServiceManager);
         builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, frameworkState.injectedSystemBundle);
+        builder.addDependency(Services.RESOLVER_PLUGIN, ResolverPlugin.class, frameworkState.injectedResolverPlugin);
+        builder.addDependency(Services.ENVIRONMENT_PLUGIN, EnvironmentPlugin.class, frameworkState.injectedEnvironmentPlugin);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
         return frameworkState;

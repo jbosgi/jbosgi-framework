@@ -80,7 +80,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
-    private final InjectedValue<ResolverPlugin> injectedResolver = new InjectedValue<ResolverPlugin>();
+    private final InjectedValue<LegacyResolverPlugin> injectedResolver = new InjectedValue<LegacyResolverPlugin>();
     private ServiceRegistration registration;
 
     static void addService(ServiceTarget serviceTarget) {
@@ -90,7 +90,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolver);
+        builder.addDependency(InternalServices.LEGACY_RESOLVER_PLUGIN, LegacyResolverPlugin.class, service.injectedResolver);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
@@ -185,7 +185,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             throw new IllegalArgumentException("Null name");
 
         Set<ExportedPackage> result = new HashSet<ExportedPackage>();
-        ResolverPlugin plugin = injectedResolver.getValue();
+        LegacyResolverPlugin plugin = injectedResolver.getValue();
         for (XModule mod : plugin.getResolver().getModules()) {
             if (mod.isResolved() && mod.isFragment() == false) {
                 for (XCapability cap : mod.getCapabilities()) {
@@ -365,7 +365,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     @Override
     public boolean resolveBundles(Bundle[] bundles) {
-        ResolverPlugin resolverPlugin = injectedResolver.getValue();
+        LegacyResolverPlugin resolverPlugin = injectedResolver.getValue();
         Set<XModule> unresolved = null;
         if (bundles != null) {
             unresolved = new LinkedHashSet<XModule>();

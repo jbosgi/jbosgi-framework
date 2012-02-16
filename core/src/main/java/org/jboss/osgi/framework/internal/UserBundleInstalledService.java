@@ -25,8 +25,8 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XModule;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
@@ -66,7 +66,7 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
             processNativeCode(bundleState, dep);
             getBundleManager().addBundle(bundleState);
             bundleState.changeState(Bundle.INSTALLED, 0);
-            addToResolver(bundleState);
+            addToEnvironment(bundleState);
             bundleState.fireBundleEvent(BundleEvent.INSTALLED);
         } catch (BundleException ex) {
             if (storageState != null)
@@ -106,7 +106,7 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
         }
     }
 
-    private void addToResolver(UserBundleState userBundle) {
+    private void addToEnvironment(UserBundleState userBundle) {
         if (userBundle.isSingleton()) {
             String symbolicName = getBundleState().getSymbolicName();
             for (AbstractBundleState aux : getBundleManager().getBundles(symbolicName, null)) {
@@ -117,8 +117,10 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
             }
         }
         FrameworkState frameworkState = userBundle.getFrameworkState();
-        ResolverPlugin resolverPlugin = frameworkState.getResolverPlugin();
-        XModule resModule = userBundle.getResolverModule();
-        resolverPlugin.addModule(resModule);
+        LegacyResolverPlugin legacyResolver = frameworkState.getLegacyResolverPlugin();
+        legacyResolver.addModule(userBundle.getResolverModule());
+
+        EnvironmentPlugin environment = frameworkState.getEnvironmentPlugin();
+        environment.installResources(userBundle.getCurrentRevision());
     }
 }

@@ -201,8 +201,6 @@ abstract class AbstractBundleContext implements BundleContext {
         BundleManager bundleManager = frameworkState.getBundleManager();
         ServiceTarget serviceTarget = bundleManager.getServiceTarget();
 
-        //BundleService.addService(serviceTarget, dep);
-
         BundleInstallProvider installHandler = frameworkState.getCoreServices().getInstallHandler();
         installHandler.installBundle(serviceTarget, dep);
 
