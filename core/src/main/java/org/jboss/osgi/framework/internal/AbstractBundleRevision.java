@@ -35,6 +35,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
+import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
@@ -70,7 +71,7 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
     private final AbstractBundleState bundleState;
     private final OSGiMetaData metadata;
     private Map<String, List<BundleCapability>> bundleCapabilities;
-    private Map<String, List<BundleRequirement>> bundleRequirements = new HashMap<String, List<BundleRequirement>>();
+    private Map<String, List<BundleRequirement>> bundleRequirements;
     private XModule resModule;
 
     AbstractBundleRevision(AbstractBundleState bundleState, OSGiMetaData metadata, XModule resModule, int revision) throws BundleException {
@@ -214,7 +215,7 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
         return module.getClassLoader();
     }
 
-    void refreshRevision(OSGiMetaData metadata) throws BundleException {
+    void refreshRevision() throws BundleException {
         // [TODO] In case of an externally provided XModule, we generate dummy OSGiMetaData
         // with considerable data loss. A new XModule cannot get created from that
         // OSGiMetaData. An acceptable fix would be to allow refresh on the XModule
@@ -222,7 +223,10 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
         // if (refreshAllowed == false)
         // throw new IllegalStateException("External XModule, refresh not allowed");
 
-        createResolverModule(getBundleState(), metadata);
+        createResolverModule(getBundleState(), getOSGiMetaData());
+
+        EnvironmentPlugin environment = bundleState.getFrameworkState().getEnvironmentPlugin();
+        environment.refreshResources(this);
         refreshRevisionInternal();
     }
 

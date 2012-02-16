@@ -87,34 +87,29 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
     }
 
     @Override
-    public void installResources(Resource... resarr) {
-        synchronized (resources) {
-            for (Resource res : resarr) {
-                if (resources.contains(res))
-                    throw new IllegalArgumentException("Resource already installed: " + res);
-                resources.add(res);
-            }
+    public synchronized void installResources(Resource... resarr) {
+        for (Resource res : resarr) {
+            if (resources.contains(res))
+                throw new IllegalArgumentException("Resource already installed: " + res);
+            resources.add(res);
         }
     }
 
     @Override
-    public void uninstallResources(Resource... resarr) {
-        synchronized (resources) {
-            for (Resource res : resarr) {
-                resources.remove(res);
-            }
+    public synchronized void uninstallResources(Resource... resarr) {
+        for (Resource res : resarr) {
+            resources.remove(res);
+            wirings.remove(res);
         }
     }
 
     @Override
-    public SortedSet<Capability> findProviders(Requirement req) {
+    public synchronized SortedSet<Capability> findProviders(Requirement req) {
         SortedSet<Capability> result = new TreeSet<Capability>(getComparator());
-        synchronized (resources) {
-            for (Resource res : resources) {
-                for (Capability cap : res.getCapabilities(req.getNamespace())) {
-                    if (req.matches(cap)) {
-                        result.add(cap);
-                    }
+        for (Resource res : resources) {
+            for (Capability cap : res.getCapabilities(req.getNamespace())) {
+                if (req.matches(cap)) {
+                    result.add(cap);
                 }
             }
         }
@@ -122,34 +117,39 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
     }
 
     @Override
-    public Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) {
+    public synchronized Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) {
         Map<Resource, Wiring> result = new HashMap<Resource, Wiring>();
-        synchronized (wirings) {
-            for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-                Resource res = entry.getKey();
-                List<Wire> wires = entry.getValue();
-                AbstractWiring reqwiring = (AbstractWiring) getWiring(result, res);
-                reqwiring.addRequiredWires(wires);
-                for (Wire wire : wires) {
-                    Resource provider = wire.getProvider();
-                    AbstractWiring provwiring = (AbstractWiring) getWiring(result, provider);
-                    provwiring.addProvidedWire(wire);
-                }
+        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+            Resource res = entry.getKey();
+            List<Wire> wires = entry.getValue();
+            AbstractWiring reqwiring = (AbstractWiring) getWiring(result, res);
+            reqwiring.addRequiredWires(wires);
+            for (Wire wire : wires) {
+                Resource provider = wire.getProvider();
+                AbstractWiring provwiring = (AbstractWiring) getWiring(result, provider);
+                provwiring.addProvidedWire(wire);
             }
-            for (Map.Entry<Resource, Wiring> entry : result.entrySet()) {
-                Resource res = entry.getKey();
-                Wiring delta = entry.getValue();
-                AbstractWiring wiring = (AbstractWiring) wirings.get(res);
-                if (wiring == null) {
-                    wirings.put(res, delta);
-                } else {
-                    for (Wire wire : delta.getProvidedResourceWires(null)) {
-                        wiring.addProvidedWire(wire);
-                    }
+        }
+        for (Map.Entry<Resource, Wiring> entry : result.entrySet()) {
+            Resource res = entry.getKey();
+            Wiring delta = entry.getValue();
+            AbstractWiring wiring = (AbstractWiring) wirings.get(res);
+            if (wiring == null) {
+                wirings.put(res, delta);
+            } else {
+                for (Wire wire : delta.getProvidedResourceWires(null)) {
+                    wiring.addProvidedWire(wire);
                 }
             }
         }
         return result;
+    }
+
+    @Override
+    public synchronized  void refreshResources(Resource... resarr) {
+        for (Resource res : resarr) {
+            wirings.remove(res);
+        }
     }
 
     @Override
@@ -158,10 +158,8 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
     }
 
     @Override
-    public Map<Resource, Wiring> getWirings() {
-        synchronized (wirings) {
-            return Collections.unmodifiableMap(new HashMap<Resource, Wiring>(wirings));
-        }
+    public synchronized Map<Resource, Wiring> getWirings() {
+        return Collections.unmodifiableMap(new HashMap<Resource, Wiring>(wirings));
     }
 
     private Wiring getWiring(Map<Resource, Wiring> result, Resource requirer) {

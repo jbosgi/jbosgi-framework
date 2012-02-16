@@ -193,7 +193,7 @@ abstract class UserBundleState extends AbstractBundleState {
         return Collections.unmodifiableList(revisions);
     }
 
-    void clearRevisions() {
+    void clearOldRevisions() {
         UserBundleRevision rev = getCurrentRevision();
         revisions.clear();
         revisions.add(rev);
@@ -348,14 +348,13 @@ abstract class UserBundleState extends AbstractBundleState {
             dep.addAttachment(Bundle.class, this);
 
             XModule resModule = createResolverModule(dep);
-            BundleRevision revision = createRevision(dep);
+            BundleRevision brev = createRevision(dep);
 
             LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
             legacyResolver.addModule(resModule);
 
             EnvironmentPlugin environment = getFrameworkState().getEnvironmentPlugin();
-            environment.installResources(revision);
-
+            environment.installResources(brev);
         } catch (BundleException ex) {
             throw ex;
         }
@@ -390,8 +389,8 @@ abstract class UserBundleState extends AbstractBundleState {
     }
 
     /**
-     * This method gets called by {@link PackageAdmin} when the bundle needs to be refreshed, this means that all the old
-     * revisions are thrown out.
+     * This method gets called by {@link PackageAdmin} when the bundle needs to be refreshed,
+     * this means that all the old revisions are thrown out.
      */
     void refresh() throws BundleException {
         assertNotUninstalled();
@@ -402,24 +401,28 @@ abstract class UserBundleState extends AbstractBundleState {
         LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
         EnvironmentPlugin environment = getFrameworkState().getEnvironmentPlugin();
+        UserBundleRevision currentRev = getCurrentRevision();
         for (AbstractBundleRevision brev : getRevisions()) {
             XModule resModule = brev.getResolverModule();
             legacyResolver.removeModule(resModule);
-            environment.uninstallResources(brev);
+
+            if (currentRev != brev)
+                environment.uninstallResources(brev);
 
             ModuleIdentifier identifier = brev.getModuleIdentifier();
             moduleManager.removeModule(identifier);
         }
 
-        UserBundleRevision currentRev = getCurrentRevision();
-        clearRevisions();
+        clearOldRevisions();
 
         FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
         eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
 
         // Update the resolver module for the current revision
-        currentRev.refreshRevision(getOSGiMetaData());
-        legacyResolver.addModule(currentRev.getResolverModule());
+        currentRev.refreshRevision();
+
+        XModule resModule = currentRev.getResolverModule();
+        legacyResolver.addModule(resModule);
 
         changeState(Bundle.INSTALLED);
 

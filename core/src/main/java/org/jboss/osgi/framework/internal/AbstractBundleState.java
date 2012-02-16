@@ -39,6 +39,7 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
+import org.osgi.service.resolver.ResolutionException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -551,8 +552,12 @@ abstract class AbstractBundleState implements Bundle {
                 LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
                 legacyResolver.resolve(resModule);
 
-                ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
-                //resolverPlugin.resolveAndApply(Collections.singleton(getCurrentRevision()), null);
+                try {
+                    ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
+                    resolverPlugin.resolveAndApply(Collections.singleton(getCurrentRevision()), null);
+                } catch (ResolutionException ex) {
+                    throw new BundleException(ex.getMessage(), ex);
+                }
 
                 // Activate the service that represents bundle state RESOLVED
                 getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.ACTIVE);
