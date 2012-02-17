@@ -25,12 +25,9 @@ import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.resolver.v2.spi.AbstractWiring;
+import org.jboss.osgi.resolver.v2.spi.AbstractEnvironment;
 import org.jboss.osgi.resolver.v2.spi.FrameworkPreferencesComparator;
 import org.osgi.framework.resource.Capability;
 import org.osgi.framework.resource.Requirement;
@@ -38,17 +35,19 @@ import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
 import org.osgi.framework.resource.Wiring;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeSet;
+
+import static org.osgi.framework.resource.ResourceConstants.IDENTITY_TYPE_FRAGMENT;
+import static org.osgi.framework.resource.ResourceConstants.WIRING_HOST_NAMESPACE;
 
 /**
- * The default environment plugin.
+ * The default delegate plugin.
  *
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
@@ -58,8 +57,7 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
     // Provide logging
     final Logger log = Logger.getLogger(DefaultEnvironmentPlugin.class);
 
-    private final List<Resource> resources = new ArrayList<Resource>();
-    private final Map<Resource, Wiring> wirings = new HashMap<Resource, Wiring>();
+    private final AbstractEnvironment delegate;
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultEnvironmentPlugin service = new DefaultEnvironmentPlugin();
@@ -69,16 +67,23 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
     }
 
     private DefaultEnvironmentPlugin() {
-    }
+        delegate = new AbstractEnvironment() {
+            @Override
+            public Comparator<Capability> getComparator() {
+                final AbstractEnvironment env = this;
+                return new FrameworkPreferencesComparator() {
+                    @Override
+                    protected Wiring getWiring(Resource res) {
+                        return env.getWiring(res);
+                    }
 
-    @Override
-    public void start(StartContext context) throws StartException {
-        super.start(context);
-    }
-
-    @Override
-    public void stop(StopContext context) {
-        super.stop(context);
+                    @Override
+                    public long getResourceIndex(Resource res) {
+                        return env.getResourceIndex(res);
+                    }
+                };
+            }
+        };
     }
 
     @Override
@@ -87,101 +92,90 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
     }
 
     @Override
-    public synchronized void installResources(Resource... resarr) {
-        for (Resource res : resarr) {
-            if (resources.contains(res))
-                throw new IllegalArgumentException("Resource already installed: " + res);
-            resources.add(res);
-        }
+    public void installResources(Resource... resarr) {
+        delegate.installResources(resarr);
     }
 
     @Override
-    public synchronized void uninstallResources(Resource... resarr) {
-        for (Resource res : resarr) {
-            resources.remove(res);
-            wirings.remove(res);
-        }
+    public void uninstallResources(Resource... resarr) {
+        delegate.uninstallResources(resarr);
     }
 
     @Override
-    public synchronized SortedSet<Capability> findProviders(Requirement req) {
-        SortedSet<Capability> result = new TreeSet<Capability>(getComparator());
-        for (Resource res : resources) {
-            for (Capability cap : res.getCapabilities(req.getNamespace())) {
+    public SortedSet<Capability> findProviders(Requirement req) {
+        return delegate.findProviders(req);
+    }
+
+    @Override
+    public Collection<? extends Resource> findAttachableFragments(Collection<? extends Capability> hostcaps) {
+        Set<Resource> result = new HashSet<Resource>();
+        for (Resource res : delegate.getResources(IDENTITY_TYPE_FRAGMENT)) {
+            Requirement req = res.getRequirements(WIRING_HOST_NAMESPACE).get(0);
+            for (Capability cap : hostcaps) {
                 if (req.matches(cap)) {
-                    result.add(cap);
+                    result.add(res);
                 }
             }
         }
+        log.debugf("attachable fragments: %s", result);
         return result;
-    }
-
-    @Override
-    public synchronized Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) {
-        Map<Resource, Wiring> result = new HashMap<Resource, Wiring>();
-        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-            Resource res = entry.getKey();
-            List<Wire> wires = entry.getValue();
-            AbstractWiring reqwiring = (AbstractWiring) getWiring(result, res);
-            reqwiring.addRequiredWires(wires);
-            for (Wire wire : wires) {
-                Resource provider = wire.getProvider();
-                AbstractWiring provwiring = (AbstractWiring) getWiring(result, provider);
-                provwiring.addProvidedWire(wire);
-            }
-        }
-        for (Map.Entry<Resource, Wiring> entry : result.entrySet()) {
-            Resource res = entry.getKey();
-            Wiring delta = entry.getValue();
-            AbstractWiring wiring = (AbstractWiring) wirings.get(res);
-            if (wiring == null) {
-                wirings.put(res, delta);
-            } else {
-                for (Wire wire : delta.getProvidedResourceWires(null)) {
-                    wiring.addProvidedWire(wire);
-                }
-            }
-        }
-        return result;
-    }
-
-    @Override
-    public synchronized  void refreshResources(Resource... resarr) {
-        for (Resource res : resarr) {
-            wirings.remove(res);
-        }
     }
 
     @Override
     public boolean isEffective(Requirement req) {
-        return true;
+        return delegate.isEffective(req);
     }
 
     @Override
-    public synchronized Map<Resource, Wiring> getWirings() {
-        return Collections.unmodifiableMap(new HashMap<Resource, Wiring>(wirings));
+    public Map<Resource, Wiring> getWirings() {
+        return delegate.getWirings();
     }
 
-    private Wiring getWiring(Map<Resource, Wiring> result, Resource requirer) {
-        Wiring wiring = result.get(requirer);
-        if (wiring == null) {
-            wiring = new AbstractWiring(requirer);
-            result.put(requirer, wiring);
+    @Override
+    public void refreshResources(Resource... resarr) {
+        delegate.refreshResources(resarr);
+    }
+
+    @Override
+    public synchronized Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) {
+        // Construct the resource wiring map
+        Map<Resource, Wiring> result = delegate.getResourceWiringMap(wiremap);
+
+        // Attach the fragments to host
+        attachFragmentsToHost(wiremap);
+
+        // Resolve native code libraries if there are any
+        //resolveNativeCodeLibraries(resolved);
+
+        // For every resolved host bundle create the {@link ModuleSpec}
+        //addModules(resolved);
+
+        // For every resolved host bundle load the module. This creates the {@link ModuleClassLoader}
+        //loadModules(resolved);
+
+        // Change the bundle state to RESOLVED
+        //setBundleToResolved(resolved);
+
+        // Apply the resource wiring map
+        delegate.applyResourceWiringMap(result);
+
+        return result;
+    }
+
+
+    private void attachFragmentsToHost(Map<Resource, List<Wire>> wiremap) {
+        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+            Resource res = entry.getKey();
+            if (res instanceof FragmentBundleRevision) {
+                FragmentBundleRevision fragRev = (FragmentBundleRevision) res;
+                for (Wire wire : entry.getValue()) {
+                    Capability cap = wire.getCapability();
+                    if (WIRING_HOST_NAMESPACE.equals(cap.getNamespace())) {
+                        HostBundleRevision hostRev = (HostBundleRevision) cap.getResource();
+                        fragRev.attachToHost(hostRev);
+                    }
+                }
+            }
         }
-        return wiring;
-    }
-
-    private Comparator<Capability> getComparator() {
-        return new FrameworkPreferencesComparator() {
-            @Override
-            protected long getResourceIndex(Resource res) {
-                return resources.indexOf(res);
-            }
-
-            @Override
-            protected Wiring getWiring(Resource res) {
-                return wirings.get(res);
-            }
-        };
     }
 }

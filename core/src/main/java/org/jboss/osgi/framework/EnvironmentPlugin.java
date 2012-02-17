@@ -21,11 +21,13 @@
  */
 package org.jboss.osgi.framework;
 
+import org.osgi.framework.resource.Capability;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
 import org.osgi.framework.resource.Wiring;
 import org.osgi.service.resolver.Environment;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -44,4 +46,11 @@ public interface EnvironmentPlugin extends Environment {
     Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap);
 
     void refreshResources(Resource... resarr);
+
+    /**
+     * Currently, the client must have knowlege about the fragments that exist in the environment
+     * and pass them in as optional resources. We extend the environment to find the fragments
+     * that can potentially attach to the given host capabilities.
+     */
+    Collection<? extends Resource> findAttachableFragments(Collection<? extends Capability> hosts);
 }

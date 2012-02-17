@@ -33,21 +33,25 @@ import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.framework.ResolverPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.v2.FelixResolver;
+import org.osgi.framework.resource.Capability;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
 import org.osgi.service.resolver.ResolutionException;
 import org.osgi.service.resolver.Resolver;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+
+import static org.osgi.framework.resource.ResourceConstants.WIRING_HOST_NAMESPACE;
 
 /**
  * The resolver plugin.
  *
  * @author thomas.diesler@jboss.com
- * @author David Bosschaert
- * @since 06-Jul-2009
+ * @since 15-Feb-2012
  */
 final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> implements ResolverPlugin {
 
@@ -86,15 +90,32 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     }
 
     @Override
-    public Map<Resource, List<Wire>> resolve(Collection<? extends Resource> mandatoryResources, Collection<? extends Resource> optionalResources) throws ResolutionException {
+    public Map<Resource, List<Wire>> resolve(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
         EnvironmentPlugin environment = injectedEnvironmentPlugin.getValue();
-        return resolver.resolve(environment, mandatoryResources, optionalResources);
+        Collection<Capability> hostcaps = getHostCapabilities(mandatory);
+        if (hostcaps.isEmpty() == false) {
+            Collection<Resource> allOptional = new HashSet<Resource>();
+            allOptional.addAll(optional != null ? optional : Collections.EMPTY_SET);
+            allOptional.addAll(environment.findAttachableFragments(hostcaps));
+            optional = allOptional;
+        }
+        return resolver.resolve(environment, mandatory, optional);
+    }
+
+    private Collection<Capability> getHostCapabilities(Collection<? extends Resource> resources) {
+        Collection<Capability> result = new HashSet<Capability>();
+        for (Resource res : resources) {
+            List<Capability> caps = res.getCapabilities(WIRING_HOST_NAMESPACE);
+            if (caps.size() == 1)
+                result.add(caps.get(0));
+        }
+        return result;
     }
 
     @Override
-    public void resolveAndApply(Collection<? extends Resource> mandatoryResources, Collection<? extends Resource> optionalResources) throws ResolutionException {
+    public void resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
+        Map<Resource, List<Wire>> result = resolve(mandatory, optional);
         EnvironmentPlugin environment = injectedEnvironmentPlugin.getValue();
-        Map<Resource, List<Wire>> result = resolver.resolve(environment, mandatoryResources, optionalResources);
         environment.applyResolverResults(result);
     }
 }

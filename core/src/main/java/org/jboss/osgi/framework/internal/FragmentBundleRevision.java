@@ -21,6 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.osgi.framework.BundleException;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
@@ -28,17 +31,11 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.resolver.XFragmentHostRequirement;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XRequirement;
-import org.jboss.osgi.resolver.XWire;
-import org.osgi.framework.BundleException;
-
 /**
  * A {@link FragmentBundleRevision} is responsible for the classloading and resource loading of a fragment.
- *
- * Every time a fragment is updated a new {@link FragmentBundleRevision} is created and referenced from the {@link FragmentBundle}.
+ * <p/>
+ * Every time a fragment is updated a new {@link FragmentBundleRevision} is created
+ * and referenced from the {@link FragmentBundleState}.
  *
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
@@ -99,19 +96,12 @@ final class FragmentBundleRevision extends UserBundleRevision {
         return null;
     }
 
-    void attachToHost() {
+    void attachToHost(HostBundleRevision hostRev) {
         if (attachedHosts == null)
             attachedHosts = new CopyOnWriteArrayList<HostBundleRevision>();
 
-        for (XWire wire : getResolverModule().getWires()) {
-            XRequirement req = wire.getRequirement();
-            if (req instanceof XFragmentHostRequirement) {
-                XModule hostModule = wire.getExporter();
-                HostBundleRevision hostRev = (HostBundleRevision) hostModule.getAttachment(AbstractBundleRevision.class);
-                hostRev.attachFragment(this);
-                attachedHosts.add(hostRev);
-            }
-        }
+        hostRev.attachFragment(this);
+        attachedHosts.add(hostRev);
     }
 
     @Override

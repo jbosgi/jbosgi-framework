@@ -39,9 +39,11 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
+import org.jboss.osgi.resolver.XFragmentHostRequirement;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XModuleIdentity;
+import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResolverCallback;
 import org.jboss.osgi.resolver.XResolverException;
@@ -217,7 +219,7 @@ final class LegacyResolverPlugin extends AbstractPluginService<LegacyResolverPlu
 
     private void applyResolverResults(List<XModule> resolved) throws BundleException {
         // Attach the fragments to host
-        attachFragmentsToHost(resolved);
+        //attachFragmentsToHost(resolved);
 
         // Resolve native code libraries if there are any
         resolveNativeCodeLibraries(resolved);
@@ -236,7 +238,14 @@ final class LegacyResolverPlugin extends AbstractPluginService<LegacyResolverPlu
         for (XModule aux : resolved) {
             if (aux.isFragment() == true) {
                 FragmentBundleRevision fragRev = (FragmentBundleRevision) aux.getAttachment(AbstractBundleRevision.class);
-                fragRev.attachToHost();
+                for (XWire wire : aux.getWires()) {
+                    XRequirement req = wire.getRequirement();
+                    if (req instanceof XFragmentHostRequirement) {
+                        XModule hostModule = wire.getExporter();
+                        HostBundleRevision hostRev = (HostBundleRevision) hostModule.getAttachment(AbstractBundleRevision.class);
+                        fragRev.attachToHost(hostRev);
+                    }
+                }
             }
         }
     }

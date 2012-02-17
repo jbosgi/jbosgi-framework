@@ -549,15 +549,15 @@ abstract class AbstractBundleState implements Bundle {
                 return true;
 
             try {
-                LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
-                legacyResolver.resolve(resModule);
-
                 try {
                     ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
                     resolverPlugin.resolveAndApply(Collections.singleton(getCurrentRevision()), null);
                 } catch (ResolutionException ex) {
                     throw new BundleException(ex.getMessage(), ex);
                 }
+
+                LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
+                legacyResolver.resolve(resModule);
 
                 // Activate the service that represents bundle state RESOLVED
                 getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.ACTIVE);
