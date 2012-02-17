@@ -222,7 +222,7 @@ final class LegacyResolverPlugin extends AbstractPluginService<LegacyResolverPlu
         //attachFragmentsToHost(resolved);
 
         // Resolve native code libraries if there are any
-        resolveNativeCodeLibraries(resolved);
+        //resolveNativeCodeLibraries(resolved);
 
         // For every resolved host bundle create the {@link ModuleSpec}
         addModules(resolved);
@@ -278,15 +278,14 @@ final class LegacyResolverPlugin extends AbstractPluginService<LegacyResolverPlu
         XModule systemModule = bundleManager.getSystemBundle().getResolverModule();
         for (XModule aux : resolved) {
             if (aux != systemModule) {
-                Bundle bundle = aux.getAttachment(Bundle.class);
-                UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
-                Deployment deployment = userBundle.getDeployment();
+                UserBundleRevision userRev = (UserBundleRevision) aux.getAttachment(AbstractBundleRevision.class);
+                Deployment deployment = userRev.getDeployment();
 
                 // Resolve the native code libraries, if there are any
                 NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
                 if (libMetaData != null) {
                     NativeCodePlugin nativeCodePlugin = injectedNativeCode.getValue();
-                    nativeCodePlugin.resolveNativeCode(userBundle);
+                    nativeCodePlugin.resolveNativeCode(userRev);
                 }
             }
         }

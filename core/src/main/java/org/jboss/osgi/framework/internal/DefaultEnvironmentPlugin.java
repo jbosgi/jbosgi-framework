@@ -25,15 +25,20 @@ import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.v2.spi.AbstractEnvironment;
 import org.jboss.osgi.resolver.v2.spi.FrameworkPreferencesComparator;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.resource.Capability;
 import org.osgi.framework.resource.Requirement;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
 import org.osgi.framework.resource.Wiring;
+import org.osgi.service.resolver.ResolutionException;
 
 import java.util.Collection;
 import java.util.Comparator;
@@ -57,11 +62,13 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
     // Provide logging
     final Logger log = Logger.getLogger(DefaultEnvironmentPlugin.class);
 
+    private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     private final AbstractEnvironment delegate;
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultEnvironmentPlugin service = new DefaultEnvironmentPlugin();
         ServiceBuilder<EnvironmentPlugin> builder = serviceTarget.addService(Services.ENVIRONMENT_PLUGIN, service);
+        builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -138,14 +145,24 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
 
     @Override
     public synchronized Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) {
+
+        // [TODO] Revisit how we apply the resolution results
+        // An exception in one of the steps may leave the framework partially modified
+
         // Construct the resource wiring map
         Map<Resource, Wiring> result = delegate.getResourceWiringMap(wiremap);
 
         // Attach the fragments to host
         attachFragmentsToHost(wiremap);
 
-        // Resolve native code libraries if there are any
-        //resolveNativeCodeLibraries(resolved);
+        try {
+
+            // Resolve native code libraries if there are any
+            resolveNativeCodeLibraries(wiremap);
+
+        } catch (BundleException ex) {
+            throw new ResolutionException(ex);
+        }
 
         // For every resolved host bundle create the {@link ModuleSpec}
         //addModules(resolved);
@@ -178,4 +195,22 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
             }
         }
     }
+
+    private void resolveNativeCodeLibraries(Map<Resource, List<Wire>> wiremap) throws BundleException {
+        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+            Resource res = entry.getKey();
+            if (res instanceof UserBundleRevision) {
+                UserBundleRevision userRev = (UserBundleRevision) res;
+                Deployment deployment = userRev.getDeployment();
+
+                // Resolve the native code libraries, if there are any
+                NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
+                if (libMetaData != null) {
+                    NativeCodePlugin nativeCodePlugin = injectedNativeCode.getValue();
+                    nativeCodePlugin.resolveNativeCode(userRev);
+                }
+            }
+        }
+    }
+
 }

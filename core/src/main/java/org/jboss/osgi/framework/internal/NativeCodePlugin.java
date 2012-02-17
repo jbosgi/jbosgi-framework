@@ -142,11 +142,11 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
         dep.addAttachment(NativeLibraryMetaData.class, nativeLibraries);
     }
 
-    void resolveNativeCode(UserBundleState userBundle) throws BundleException {
-        OSGiMetaData osgiMetaData = userBundle.getOSGiMetaData();
+    void resolveNativeCode(UserBundleRevision userRev) throws BundleException {
+        OSGiMetaData osgiMetaData = userRev.getOSGiMetaData();
         List<ParameterizedAttribute> nativeCodeParams = osgiMetaData.getBundleNativeCode();
         if (nativeCodeParams == null)
-            throw new BundleException("Cannot find Bundle-NativeCode header for: " + userBundle);
+            throw new BundleException("Cannot find Bundle-NativeCode header for: " + userRev);
 
         // Find the matching parameters
         List<ParameterizedAttribute> matchedParams = new ArrayList<ParameterizedAttribute>();
@@ -155,7 +155,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
                 matchedParams.add(param);
         }
 
-        Deployment dep = userBundle.getDeployment();
+        Deployment dep = userRev.getDeployment();
         NativeLibraryMetaData nativeLibraries = dep.getAttachment(NativeLibraryMetaData.class);
 
         // If no native clauses were selected in step 1, this algorithm is terminated
