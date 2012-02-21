@@ -51,5 +51,5 @@ public interface ResolverPlugin {
 
     Map<Resource, List<Wire>> resolve(Collection<? extends Resource> mandatoryResources, Collection<? extends Resource> optionalResources) throws ResolutionException;
 
-    void resolveAndApply(Collection<? extends Resource> mandatoryResources, Collection<? extends Resource> optionalResources) throws ResolutionException;
+    boolean resolveAndApply(Collection<? extends Resource> mandatoryResources, Collection<? extends Resource> optionalResources) throws ResolutionException;
 }

@@ -22,6 +22,8 @@
 package org.jboss.osgi.framework.internal;
 
 import org.jboss.logging.Logger;
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -30,8 +32,10 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
+import org.jboss.osgi.resolver.v2.XResource;
 import org.jboss.osgi.resolver.v2.spi.AbstractEnvironment;
 import org.jboss.osgi.resolver.v2.spi.FrameworkPreferencesComparator;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.resource.Capability;
 import org.osgi.framework.resource.Requirement;
@@ -62,13 +66,17 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
     // Provide logging
     final Logger log = Logger.getLogger(DefaultEnvironmentPlugin.class);
 
+    private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     private final AbstractEnvironment delegate;
+
+    static boolean USE_NEW_PATH = false;
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultEnvironmentPlugin service = new DefaultEnvironmentPlugin();
         ServiceBuilder<EnvironmentPlugin> builder = serviceTarget.addService(Services.ENVIRONMENT_PLUGIN, service);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
+        builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -165,13 +173,13 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
         }
 
         // For every resolved host bundle create the {@link ModuleSpec}
-        //addModules(resolved);
+        addModules(wiremap);
 
         // For every resolved host bundle load the module. This creates the {@link ModuleClassLoader}
-        //loadModules(resolved);
+        loadModules(wiremap);
 
         // Change the bundle state to RESOLVED
-        //setBundleToResolved(resolved);
+        setBundleToResolved(wiremap);
 
         // Apply the resource wiring map
         delegate.applyResourceWiringMap(result);
@@ -182,8 +190,8 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
 
     private void attachFragmentsToHost(Map<Resource, List<Wire>> wiremap) {
         for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-            Resource res = entry.getKey();
-            if (res instanceof FragmentBundleRevision) {
+            XResource res = (XResource) entry.getKey();
+            if (res.isFragment()) {
                 FragmentBundleRevision fragRev = (FragmentBundleRevision) res;
                 for (Wire wire : entry.getValue()) {
                     Capability cap = wire.getCapability();
@@ -198,7 +206,7 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
 
     private void resolveNativeCodeLibraries(Map<Resource, List<Wire>> wiremap) throws BundleException {
         for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-            Resource res = entry.getKey();
+            XResource res = (XResource) entry.getKey();
             if (res instanceof UserBundleRevision) {
                 UserBundleRevision userRev = (UserBundleRevision) res;
                 Deployment deployment = userRev.getDeployment();
@@ -213,4 +221,37 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
         }
     }
 
+    private void addModules(Map<Resource, List<Wire>> wiremap) {
+        ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
+        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+            XResource res = (XResource) entry.getKey();
+            if (res.isFragment() == false) {
+                List<Wire> wires = wiremap.get(res);
+                moduleManager.addModule(res, wires);
+            }
+        }
+    }
+
+    private void loadModules(Map<Resource, List<Wire>> wiremap) {
+        ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
+        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+            XResource res = (XResource) entry.getKey();
+            if (res.isFragment() == false) {
+                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(res);
+                try {
+                    moduleManager.loadModule(identifier);
+                } catch (ModuleLoadException ex) {
+                    throw new IllegalStateException("Cannot load module: " + identifier, ex);
+                }
+            }
+        }
+    }
+
+    private void setBundleToResolved(Map<Resource, List<Wire>> wiremap) {
+        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+            AbstractBundleRevision brev = (AbstractBundleRevision) entry.getKey();
+            AbstractBundleState bundleState = brev.getBundleState();
+            bundleState.changeState(Bundle.RESOLVED);
+        }
+    }
 }

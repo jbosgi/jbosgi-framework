@@ -21,18 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.NativeCodePlugin.BundleNativeLibraryProvider;
-import static org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.jboss.logging.Logger;
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
@@ -60,14 +48,32 @@ import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleIdentity;
-import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XRequireBundleRequirement;
 import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XWire;
+import org.jboss.osgi.resolver.v2.XIdentityCapability;
+import org.jboss.osgi.resolver.v2.XResource;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
+import org.osgi.framework.resource.Capability;
+import org.osgi.framework.resource.Requirement;
+import org.osgi.framework.resource.Resource;
+import org.osgi.framework.resource.Wire;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static org.jboss.osgi.framework.internal.NativeCodePlugin.BundleNativeLibraryProvider;
+import static org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
+import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
 
 /**
  * The module manager plugin.
@@ -140,6 +146,49 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         return identifier;
     }
 
+    ModuleIdentifier getModuleIdentifier(final XResource brev) {
+        if (brev == null)
+            throw new IllegalArgumentException("Null revision");
+        if (brev instanceof FragmentBundleRevision)
+            throw new IllegalArgumentException("A fragment is not a module");
+
+        ModuleIdentifier identifier = brev.getAttachment(ModuleIdentifier.class);
+        if (identifier != null)
+            return identifier;
+
+        Module module = brev.getAttachment(Module.class);
+        if (module != null) {
+            identifier = module.getIdentifier();
+        }
+
+        XIdentityCapability icap = brev.getIdentityCapability();
+        if (identifier == null && SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getSymbolicName())) {
+            identifier = getFrameworkModule().getIdentifier();
+        }
+
+        if (identifier == null) {
+            identifier = createModuleIdentifier(brev);
+        }
+
+        brev.addAttachment(ModuleIdentifier.class, identifier);
+        return identifier;
+    }
+
+    private ModuleIdentifier createModuleIdentifier(final XResource res) {
+        XIdentityCapability icap = res.getIdentityCapability();
+        String symbolicName = icap.getSymbolicName();
+        String slot = icap.getVersion().toString();
+        if (res instanceof AbstractBundleRevision) {
+            AbstractBundleRevision brev = (AbstractBundleRevision) res;
+            int revision = brev.getRevisionId();
+            if (revision > 0) {
+                slot += "-rev" + revision;
+            }
+        }
+        String name = Constants.JBOSGI_PREFIX + "." + symbolicName;
+        return ModuleIdentifier.create(name, slot);
+    }
+
     /**
      * Get the module with the given identifier
      *
@@ -195,6 +244,225 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         return result;
     }
 
+    ModuleIdentifier addModule(final XResource res, final List<Wire> wires) {
+        if (res == null)
+            throw new IllegalArgumentException("Null res");
+        if (wires == null)
+            throw new IllegalArgumentException("Null wires");
+
+        if (res instanceof FragmentBundleRevision)
+            throw new IllegalStateException("Fragments cannot be added: " + res);
+
+        /*
+        Module module = resModule.getAttachment(Module.class);
+        if (module != null) {
+            AbstractBundleRevision bundleRev = resModule.getAttachment(AbstractBundleRevision.class);
+            ModuleIdentifier identifier = module.getIdentifier();
+            modules.put(identifier, bundleRev);
+            getModuleLoaderIntegration().addModule(module);
+            return identifier;
+        }
+        */
+
+        ModuleIdentifier identifier;
+        XIdentityCapability icap = res.getIdentityCapability();
+        if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getSymbolicName())) {
+            identifier = getFrameworkModule().getIdentifier();
+        } else {
+            identifier = createHostModule((HostBundleRevision) res, wires);
+        }
+        return identifier;
+    }
+
+    /**
+     * Create a {@link ModuleSpec} from the given resolver module definition
+     */
+    private ModuleIdentifier createHostModule(final HostBundleRevision brev, final List<Wire> wires) {
+
+        HostBundleState hostBundle = brev.getBundleState();
+        List<RevisionContent> contentRoots = hostBundle.getContentRoots();
+
+        ModuleSpec moduleSpec = brev.getAttachment(ModuleSpec.class);
+        if (moduleSpec == null) {
+            ModuleIdentifier identifier = getModuleIdentifier(brev);
+            ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
+            List<DependencySpec> moduleDependencies = new ArrayList<DependencySpec>();
+
+            // Add a system dependency
+            SystemPathsProvider plugin = injectedSystemPaths.getValue();
+            Set<String> bootPaths = plugin.getBootDelegationPaths();
+            PathFilter bootFilter = plugin.getBootDelegationFilter();
+            PathFilter acceptAll = PathFilters.acceptAll();
+            moduleDependencies.add(DependencySpec.createSystemDependencySpec(bootFilter, acceptAll, bootPaths));
+
+            // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
+            Map<XResource, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XResource, ModuleDependencyHolder>();
+
+            // For every {@link XWire} add a dependency on the exporter
+            processModuleWireList(wires, specHolderMap);
+
+            // Process fragment wires
+            Set<String> allPaths = new HashSet<String>();
+            List<FragmentBundleRevision> fragRevs = brev.getAttachedFragments();
+            for (FragmentBundleRevision fragRev : fragRevs) {
+                // This takes care of Package-Imports and Require-Bundle on the fragment
+                //List<Wire> fragWires = fragRev.getResolverModule().getWires();
+                //processModuleWires(fragWires, specHolderMap);
+            }
+
+            // Add the holder values to dependencies
+            for (ModuleDependencyHolder holder : specHolderMap.values())
+                moduleDependencies.add(holder.create());
+
+            // Add the module dependencies to the builder
+            for (DependencySpec dep : moduleDependencies)
+                specBuilder.addDependency(dep);
+
+            // Add resource roots the local bundle content
+            for (RevisionContent revContent : contentRoots) {
+                ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
+                specBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resLoader));
+                allPaths.addAll(resLoader.getPaths());
+            }
+
+            // Process fragment local content and more resource roots
+            for (FragmentBundleRevision fragRev : fragRevs) {
+                for (RevisionContent revContent : fragRev.getContentList()) {
+                    ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
+                    specBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resLoader));
+                    allPaths.addAll(resLoader.getPaths());
+                }
+            }
+
+            // Get the set of imported paths
+            Set<String> importedPaths = new HashSet<String>();
+            for (ModuleDependencyHolder holder : specHolderMap.values()) {
+                Set<String> paths = holder.getImportPaths();
+                if (paths != null) {
+                    importedPaths.addAll(paths);
+                }
+            }
+
+            // Setup the local loader dependency
+            PathFilter importFilter = acceptAll;
+            PathFilter exportFilter = acceptAll;
+            if (importedPaths.isEmpty() == false) {
+                importFilter = PathFilters.not(PathFilters.in(importedPaths));
+            }
+            PathFilter resImportFilter = PathFilters.acceptAll();
+            PathFilter resExportFilter = PathFilters.acceptAll();
+            ClassFilter classImportFilter = new ClassFilter() {
+                public boolean accept(String className) {
+                    return true;
+                }
+            };
+            final PathFilter filter = getExportClassFilter(brev);
+            ClassFilter classExportFilter = new ClassFilter() {
+                public boolean accept(String className) {
+                    return filter.accept(className);
+                }
+            };
+            DependencySpec localDep = DependencySpec.createLocalDependencySpec(importFilter, exportFilter, resImportFilter, resExportFilter, classImportFilter, classExportFilter);
+            specBuilder.addDependency(localDep);
+
+            // Native - Hack
+            //addNativeResourceLoader(brev, specBuilder);
+
+            PathFilter lazyActivationFilter = getLazyPackagesFilter(hostBundle);
+            specBuilder.setModuleClassLoaderFactory(new HostBundleClassLoader.Factory(hostBundle, lazyActivationFilter));
+            specBuilder.setFallbackLoader(new HostBundleFallbackLoader(hostBundle, identifier, importedPaths));
+
+            // Build the ModuleSpec
+            moduleSpec = specBuilder.create();
+        }
+
+        ModuleIdentifier identifier = moduleSpec.getModuleIdentifier();
+        getModuleLoaderIntegration().addModule(moduleSpec);
+        modules.put(identifier, brev);
+        return identifier;
+    }
+
+    private void processModuleWireList(List<Wire> wires, Map<XResource, ModuleDependencyHolder> depBuilderMap) {
+
+        // A bundle may both import packages (via Import-Package) and require one
+        // or more bundles (via Require-Bundle), but if a package is imported via
+        // Import-Package, it is not also visible via Require-Bundle: Import-Package
+        // takes priority over Require-Bundle, and packages which are exported by a
+        // required bundle and imported via Import-Package must not be treated as
+        // split packages.
+
+        // Collect bundle and package wires
+        List<Wire> bundleWires = new ArrayList<Wire>();
+        List<Wire> packageWires = new ArrayList<Wire>();
+        for (Wire wire : wires) {
+            Requirement req = wire.getRequirement();
+            XResource importer = (XResource) wire.getRequirer();
+            XResource exporter = (XResource) wire.getProvider();
+
+            // Skip dependencies on the module itself
+            if (exporter == importer)
+                continue;
+
+            // Skip dependencies on the host that the fragment is attached to
+            //if (importer.isFragment()) {
+            //    XModule host = importer.getHostRequirement().getWiredCapability().getModule();
+            //    if (host == exporter)
+            //        continue;
+            //}
+
+            // Dependency for Import-Package
+            if (req instanceof XPackageRequirement) {
+                packageWires.add(wire);
+                continue;
+            }
+
+            // Dependency for Require-Bundle
+            if (req instanceof XRequireBundleRequirement) {
+                bundleWires.add(wire);
+                continue;
+            }
+        }
+
+        Set<String> importedPaths = new HashSet<String>();
+        Set<Resource> packageExporters = new HashSet<Resource>();
+        for (Wire wire : packageWires) {
+            XResource exporter = (XResource) wire.getProvider();
+            packageExporters.add(exporter);
+            org.jboss.osgi.resolver.v2.XPackageRequirement req = (org.jboss.osgi.resolver.v2.XPackageRequirement) wire.getRequirement();
+            ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
+            String path = VFSUtils.getPathFromPackageName(req.getPackageName());
+            holder.setOptional(req.isOptional());
+            holder.addImportPath(path);
+            importedPaths.add(path);
+        }
+        PathFilter importedPathsFilter = PathFilters.in(importedPaths);
+
+        for (Wire wire : bundleWires) {
+            XResource exporter = (XResource) wire.getProvider();
+            if (packageExporters.contains(exporter))
+                continue;
+
+            XRequireBundleRequirement req = (XRequireBundleRequirement) wire.getRequirement();
+            ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
+            holder.setImportFilter(PathFilters.not(importedPathsFilter));
+            holder.setOptional(req.isOptional());
+
+            boolean reexport = Constants.VISIBILITY_REEXPORT.equals(req.getVisibility());
+            if (reexport == true) {
+                Set<String> exportedPaths = new HashSet<String>();
+                for (Capability auxcap : exporter.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
+                    org.jboss.osgi.resolver.v2.XPackageCapability packcap = (org.jboss.osgi.resolver.v2.XPackageCapability) auxcap;
+                    String path = packcap.getPackageName().replace('.', '/');
+                    if (importedPaths.contains(path) == false)
+                        exportedPaths.add(path);
+                }
+                PathFilter exportedPathsFilter = PathFilters.in(exportedPaths);
+                holder.setImportFilter(exportedPathsFilter);
+                holder.setExportFilter(exportedPathsFilter);
+            }
+        }
+    }
+
     /**
      * Create the module in the {@link ModuleLoader}
      *
@@ -219,7 +487,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         }
 
         ModuleIdentifier identifier;
-        if (Constants.SYSTEM_BUNDLE_SYMBOLICNAME.equals(resModule.getModuleId().getName())) {
+        if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(resModule.getModuleId().getName())) {
             identifier = getFrameworkModule().getIdentifier();
         } else {
             identifier = createHostModule(resModule);
@@ -342,7 +610,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     private PathFilter getExportClassFilter(XModule resModule) {
         PathFilter includeFilter = null;
         PathFilter excludeFilter = null;
-        for (XPackageCapability packageCap : resModule.getPackageCapabilities()) {
+        for (org.jboss.osgi.resolver.XPackageCapability packageCap : resModule.getPackageCapabilities()) {
             String includeDirective = packageCap.getDirective(Constants.INCLUDE_DIRECTIVE);
             if (includeDirective != null) {
                 String packageName = packageCap.getName();
@@ -356,6 +624,46 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             String excludeDirective = packageCap.getDirective(Constants.EXCLUDE_DIRECTIVE);
             if (excludeDirective != null) {
                 String packageName = packageCap.getName();
+                String[] patterns = excludeDirective.split(",");
+                List<PathFilter> excludes = new ArrayList<PathFilter>();
+                for (String pattern : patterns) {
+                    excludes.add(PathFilters.match(packageName + "." + pattern));
+                }
+                excludeFilter = PathFilters.not(PathFilters.any(excludes));
+            }
+        }
+
+        // Accept all classes for export if there is no filter specified
+        if (includeFilter == null && excludeFilter == null)
+            return PathFilters.acceptAll();
+
+        if (includeFilter == null)
+            includeFilter = PathFilters.acceptAll();
+
+        if (excludeFilter == null)
+            excludeFilter = PathFilters.rejectAll();
+
+        return PathFilters.all(includeFilter, excludeFilter);
+    }
+
+    private PathFilter getExportClassFilter(XResource resModule) {
+        PathFilter includeFilter = null;
+        PathFilter excludeFilter = null;
+        for (Capability auxcap : resModule.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
+            org.jboss.osgi.resolver.v2.XPackageCapability packageCap = (org.jboss.osgi.resolver.v2.XPackageCapability) auxcap;
+            String includeDirective = packageCap.getDirective(Constants.INCLUDE_DIRECTIVE);
+            if (includeDirective != null) {
+                String packageName = packageCap.getPackageName();
+                String[] patterns = includeDirective.split(",");
+                List<PathFilter> includes = new ArrayList<PathFilter>();
+                for (String pattern : patterns) {
+                    includes.add(PathFilters.match(packageName + "." + pattern));
+                }
+                includeFilter = PathFilters.any(includes);
+            }
+            String excludeDirective = packageCap.getDirective(Constants.EXCLUDE_DIRECTIVE);
+            if (excludeDirective != null) {
+                String packageName = packageCap.getPackageName();
                 String[] patterns = excludeDirective.split(",");
                 List<PathFilter> excludes = new ArrayList<PathFilter>();
                 for (String pattern : patterns) {
@@ -417,6 +725,20 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         Bundle bundle = resModule.getAttachment(Bundle.class);
         UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
         Deployment deployment = userBundle.getDeployment();
+
+        addNativeResourceLoader(specBuilder, userBundle, deployment);
+
+        UserBundleRevision rev = userBundle.getCurrentRevision();
+        if (rev instanceof HostBundleRevision) {
+            for (FragmentBundleRevision fragRev : ((HostBundleRevision) rev).getAttachedFragments()) {
+                addNativeResourceLoader(specBuilder, userBundle, fragRev.getDeployment());
+            }
+        }
+    }
+
+    private void addNativeResourceLoader(final UserBundleRevision brev, ModuleSpec.Builder specBuilder) {
+        UserBundleState userBundle = UserBundleState.assertBundleState(brev.getBundleState());
+        Deployment deployment = brev.getDeployment();
 
         addNativeResourceLoader(specBuilder, userBundle, deployment);
 
@@ -499,7 +821,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         for (XWire wire : packageWires) {
             XModule exporter = wire.getExporter();
             packageExporters.add(exporter);
-            XPackageRequirement req = (XPackageRequirement) wire.getRequirement();
+            org.jboss.osgi.resolver.XPackageRequirement req = (org.jboss.osgi.resolver.XPackageRequirement) wire.getRequirement();
             ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
             String path = VFSUtils.getPathFromPackageName(req.getName());
             holder.setOptional(req.isOptional());
@@ -521,7 +843,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             boolean reexport = Constants.VISIBILITY_REEXPORT.equals(req.getVisibility());
             if (reexport == true) {
                 Set<String> exportedPaths = new HashSet<String>();
-                for (XPackageCapability cap : exporter.getPackageCapabilities()) {
+                for (org.jboss.osgi.resolver.XPackageCapability cap : exporter.getPackageCapabilities()) {
                     String path = cap.getName().replace('.', '/');
                     if (importedPaths.contains(path) == false)
                         exportedPaths.add(path);
@@ -535,6 +857,16 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     // Get or create the dependency builder for the exporter
     private ModuleDependencyHolder getDependencyHolder(Map<XModule, ModuleDependencyHolder> depBuilderMap, XModule exporter) {
+        ModuleIdentifier exporterId = getModuleIdentifier(exporter);
+        ModuleDependencyHolder holder = depBuilderMap.get(exporter);
+        if (holder == null) {
+            holder = new ModuleDependencyHolder(exporterId);
+            depBuilderMap.put(exporter, holder);
+        }
+        return holder;
+    }
+
+    private ModuleDependencyHolder getDependencyHolder(Map<XResource, ModuleDependencyHolder> depBuilderMap, XResource exporter) {
         ModuleIdentifier exporterId = getModuleIdentifier(exporter);
         ModuleDependencyHolder holder = depBuilderMap.get(exporter);
         if (holder == null) {

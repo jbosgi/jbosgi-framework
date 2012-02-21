@@ -539,6 +539,9 @@ abstract class AbstractBundleState implements Bundle {
     abstract void uninstallInternal() throws BundleException;
 
     boolean ensureResolved(boolean fireEvent) {
+        
+        if (isUninstalled())
+            throw new IllegalStateException("Bundle already uninstalled: " + this);
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired
@@ -549,15 +552,17 @@ abstract class AbstractBundleState implements Bundle {
                 return true;
 
             try {
-                try {
-                    ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
-                    resolverPlugin.resolveAndApply(Collections.singleton(getCurrentRevision()), null);
-                } catch (ResolutionException ex) {
-                    throw new BundleException(ex.getMessage(), ex);
+                if (DefaultEnvironmentPlugin.USE_NEW_PATH) {
+                    try {
+                        ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
+                        resolverPlugin.resolveAndApply(Collections.singleton(getCurrentRevision()), null);
+                    } catch (ResolutionException ex) {
+                        throw new BundleException(ex.getMessage(), ex);
+                    }
+                } else {
+                    LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
+                    legacyResolver.resolve(resModule);
                 }
-
-                LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
-                legacyResolver.resolve(resModule);
 
                 // Activate the service that represents bundle state RESOLVED
                 getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.ACTIVE);

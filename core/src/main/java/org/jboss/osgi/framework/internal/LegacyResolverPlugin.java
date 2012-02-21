@@ -21,20 +21,15 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
@@ -51,6 +46,11 @@ import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.resolver.XWire;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * The resolver plugin.
@@ -219,10 +219,10 @@ final class LegacyResolverPlugin extends AbstractPluginService<LegacyResolverPlu
 
     private void applyResolverResults(List<XModule> resolved) throws BundleException {
         // Attach the fragments to host
-        //attachFragmentsToHost(resolved);
+        attachFragmentsToHost(resolved);
 
         // Resolve native code libraries if there are any
-        //resolveNativeCodeLibraries(resolved);
+        resolveNativeCodeLibraries(resolved);
 
         // For every resolved host bundle create the {@link ModuleSpec}
         addModules(resolved);

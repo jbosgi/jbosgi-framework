@@ -43,6 +43,7 @@ import org.jboss.osgi.framework.ModuleLoaderProvider;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleIdentity;
+import org.osgi.framework.wiring.BundleRevision;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -151,11 +152,6 @@ final class DefaultModuleLoaderIntegration extends ModuleLoader implements Modul
         }
         String name = Constants.JBOSGI_PREFIX + "." + moduleId.getName();
         return ModuleIdentifier.create(name, slot);
-    }
-
-    @Override
-    public void setAndRelinkDependencies(Module module, List<DependencySpec> dependencies) throws ModuleLoadException {
-        super.setAndRelinkDependencies(module, dependencies);
     }
 
     @Override

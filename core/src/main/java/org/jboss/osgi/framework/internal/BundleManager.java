@@ -274,6 +274,23 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     }
 
     /**
+     * Get the set of bundles that are in one of the given states.
+     * If the states pattern is null, it returns all registered bundles.
+     *
+     * @param states The binary or combination of states or null
+     */
+    Set<AbstractBundleState> getBundles(Integer states) {
+        Set<AbstractBundleState> result = new HashSet<AbstractBundleState>();
+        synchronized (bundleMap) {
+            for (AbstractBundleState aux : bundleMap.values()) {
+                if (states == null || (aux.getState() & states.intValue()) != 0)
+                    result.add(aux);
+            }
+        }
+        return Collections.unmodifiableSet(result);
+    }
+
+    /**
      * Get a bundle by id
      *
      * Note, this will get the bundle regadless of its state. i.e. The returned bundle may have been UNINSTALLED
@@ -336,22 +353,6 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         return Collections.unmodifiableSet(resultSet);
     }
 
-    /**
-     * Get the set of bundles that are in one of the given states.
-     * If the states pattern is null, it returns all registered bundles.
-     *
-     * @param states The binary or combination of states or null
-     */
-    Set<AbstractBundleState> getBundles(Integer states) {
-        Set<AbstractBundleState> result = new HashSet<AbstractBundleState>();
-        synchronized (bundleMap) {
-            for (AbstractBundleState aux : bundleMap.values()) {
-                if (states == null || (aux.getState() & states.intValue()) != 0)
-                    result.add(aux);
-            }
-        }
-        return Collections.unmodifiableSet(result);
-    }
 
     @Override
     public ServiceName registerModule(ServiceTarget serviceTarget, Module module, OSGiMetaData metadata) throws BundleException {

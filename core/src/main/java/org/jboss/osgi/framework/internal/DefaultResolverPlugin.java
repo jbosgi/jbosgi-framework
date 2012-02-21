@@ -113,9 +113,10 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     }
 
     @Override
-    public void resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
+    public boolean resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
         Map<Resource, List<Wire>> result = resolve(mandatory, optional);
         EnvironmentPlugin environment = injectedEnvironmentPlugin.getValue();
         environment.applyResolverResults(result);
+        return result.size() > 0;
     }
 }

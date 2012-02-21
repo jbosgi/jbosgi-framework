@@ -46,6 +46,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.ResolverPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundleCapability;
 import org.jboss.osgi.resolver.XCapability;
@@ -60,6 +61,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
+import org.osgi.framework.resource.Resource;
 import org.osgi.service.packageadmin.ExportedPackage;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.packageadmin.RequiredBundle;
@@ -80,7 +82,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
-    private final InjectedValue<LegacyResolverPlugin> injectedResolver = new InjectedValue<LegacyResolverPlugin>();
+    private final InjectedValue<LegacyResolverPlugin> injectedLegacyResolver = new InjectedValue<LegacyResolverPlugin>();
+    private final InjectedValue<ResolverPlugin> injectedResolver = new InjectedValue<ResolverPlugin>();
     private ServiceRegistration registration;
 
     static void addService(ServiceTarget serviceTarget) {
@@ -90,7 +93,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(InternalServices.LEGACY_RESOLVER_PLUGIN, LegacyResolverPlugin.class, service.injectedResolver);
+        builder.addDependency(InternalServices.LEGACY_RESOLVER_PLUGIN, LegacyResolverPlugin.class, service.injectedLegacyResolver);
+        builder.addDependency(Services.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolver);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
@@ -185,7 +189,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             throw new IllegalArgumentException("Null name");
 
         Set<ExportedPackage> result = new HashSet<ExportedPackage>();
-        LegacyResolverPlugin plugin = injectedResolver.getValue();
+        LegacyResolverPlugin plugin = injectedLegacyResolver.getValue();
         for (XModule mod : plugin.getResolver().getModules()) {
             if (mod.isResolved() && mod.isFragment() == false) {
                 for (XCapability cap : mod.getCapabilities()) {
@@ -365,24 +369,43 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     @Override
     public boolean resolveBundles(Bundle[] bundles) {
-        LegacyResolverPlugin resolverPlugin = injectedResolver.getValue();
-        Set<XModule> unresolved = null;
-        if (bundles != null) {
-            unresolved = new LinkedHashSet<XModule>();
-
-            // Only bundles that are in state INSTALLED and are
-            // registered with the resolver qualify as resolvable
+        boolean result;
+        // Only bundles that are in state INSTALLED and are
+        // registered with the resolver qualify as resolvable
+        if (DefaultEnvironmentPlugin.USE_NEW_PATH) {
+            ResolverPlugin resolverPlugin = injectedResolver.getValue();
+            BundleManager bundleManager = injectedBundleManager.getValue();
+            if (bundles == null) {
+                Set<AbstractBundleState> bset = bundleManager.getBundles(Bundle.INSTALLED);
+                bundles = new Bundle[bset.size()];
+                bset.toArray(bundles);
+            }
+            Set<Resource> unresolved = new LinkedHashSet<Resource>();
             for (Bundle aux : bundles) {
                 AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
-                XModuleIdentity moduleId = bundleState.getResolverModule().getModuleId();
-                if (bundleState.getState() == Bundle.INSTALLED && resolverPlugin.getModuleById(moduleId) != null) {
-                    unresolved.add(bundleState.getResolverModule());
+                if (bundleState.getState() == Bundle.INSTALLED) {
+                    unresolved.add(bundleState.getCurrentRevision());
                 }
             }
+            log.debugf("Resolve bundles: %s", unresolved);
+            result = resolverPlugin.resolveAndApply(unresolved, null);
+        } else {
+            LegacyResolverPlugin resolverPlugin = injectedLegacyResolver.getValue();
+            Set<XModule> unresolved = null;
+            if (bundles != null) {
+                unresolved = new LinkedHashSet<XModule>();
+                for (Bundle aux : bundles) {
+                    AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
+                    XModuleIdentity moduleId = bundleState.getResolverModule().getModuleId();
+                    if (bundleState.getState() == Bundle.INSTALLED && resolverPlugin.getModuleById(moduleId) != null) {
+                        unresolved.add(bundleState.getResolverModule());
+                    }
+                }
+            }
+            log.debugf("Resolve bundles: %s", unresolved);
+            result = resolverPlugin.resolveAll(unresolved);
         }
-
-        log.debugf("Resolve bundles: %s", unresolved);
-        return resolverPlugin.resolveAll(unresolved);
+        return result;
     }
 
     @Override

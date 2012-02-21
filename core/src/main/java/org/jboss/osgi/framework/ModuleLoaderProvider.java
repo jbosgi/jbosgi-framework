@@ -31,6 +31,7 @@ import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.Service;
 import org.jboss.osgi.resolver.XModule;
+import org.osgi.framework.wiring.BundleRevision;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -49,6 +50,4 @@ public interface ModuleLoaderProvider extends Service<ModuleLoaderProvider> {
     void addModule(Module module);
 
     void removeModule(ModuleIdentifier identifier);
-
-    void setAndRelinkDependencies(Module module, List<DependencySpec> dependencies) throws ModuleLoadException;
 }
