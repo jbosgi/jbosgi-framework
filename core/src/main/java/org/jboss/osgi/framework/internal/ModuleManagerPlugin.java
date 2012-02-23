@@ -48,10 +48,8 @@ import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleIdentity;
-import org.jboss.osgi.resolver.XPackageRequirement;
-import org.jboss.osgi.resolver.XRequireBundleRequirement;
-import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XWire;
+import org.jboss.osgi.resolver.v2.XHostRequirement;
 import org.jboss.osgi.resolver.v2.XIdentityCapability;
 import org.jboss.osgi.resolver.v2.XResource;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -411,13 +409,13 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             //}
 
             // Dependency for Import-Package
-            if (req instanceof XPackageRequirement) {
+            if (req instanceof org.jboss.osgi.resolver.v2.XPackageRequirement) {
                 packageWires.add(wire);
                 continue;
             }
 
             // Dependency for Require-Bundle
-            if (req instanceof XRequireBundleRequirement) {
+            if (req instanceof XHostRequirement) {
                 bundleWires.add(wire);
                 continue;
             }
@@ -442,7 +440,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             if (packageExporters.contains(exporter))
                 continue;
 
-            XRequireBundleRequirement req = (XRequireBundleRequirement) wire.getRequirement();
+            XHostRequirement req = (XHostRequirement) wire.getRequirement();
             ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
             holder.setImportFilter(PathFilters.not(importedPathsFilter));
             holder.setOptional(req.isOptional());
@@ -788,7 +786,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         List<XWire> bundleWires = new ArrayList<XWire>();
         List<XWire> packageWires = new ArrayList<XWire>();
         for (XWire wire : wires) {
-            XRequirement req = wire.getRequirement();
+            org.jboss.osgi.resolver.XRequirement req = wire.getRequirement();
             XModule importer = wire.getImporter();
             XModule exporter = wire.getExporter();
 
@@ -804,13 +802,13 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             }
 
             // Dependency for Import-Package
-            if (req instanceof XPackageRequirement) {
+            if (req instanceof org.jboss.osgi.resolver.XPackageRequirement) {
                 packageWires.add(wire);
                 continue;
             }
 
             // Dependency for Require-Bundle
-            if (req instanceof XRequireBundleRequirement) {
+            if (req instanceof org.jboss.osgi.resolver.XRequireBundleRequirement) {
                 bundleWires.add(wire);
                 continue;
             }
@@ -835,7 +833,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             if (packageExporters.contains(exporter))
                 continue;
 
-            XRequireBundleRequirement req = (XRequireBundleRequirement) wire.getRequirement();
+            org.jboss.osgi.resolver.XRequireBundleRequirement req = (org.jboss.osgi.resolver.XRequireBundleRequirement) wire.getRequirement();
             ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
             holder.setImportFilter(PathFilters.not(importedPathsFilter));
             holder.setOptional(req.isOptional());

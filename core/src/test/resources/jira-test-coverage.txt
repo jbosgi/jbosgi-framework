@@ -1,6 +1,0 @@
-
-[JBOSGI-38] Investigate bundle install/start behaviour with random deployment order
-[JBOSGI-323] DynamicImport-Package takes presendence over embedded classes
-[JBOSGI-336] Implement PackageAdmin.refreshPackages(Bundle[])
-[JBOSGI-342] Bundle resolution depends on install order
-[JBOSGI-343] Comprehensive PackageAdmin test coverage

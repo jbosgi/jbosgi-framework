@@ -57,14 +57,10 @@ public class VirtualFileResourceLoaderTestCase {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        // Bundle-SymbolicName: simple-bundle
-        // Bundle-Activator: org.jboss.test.osgi.framework.loading.subA.SimpleActivator
-        // Export-Package: org.jboss.test.osgi.framework.loading.subB
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
         archive.addClasses(SimpleService.class, SimpleActivator.class);
-        archive.addAsResource("jira-test-coverage.txt");
+        archive.addAsResource("logging.properties");
         archive.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -74,7 +70,6 @@ public class VirtualFileResourceLoaderTestCase {
                 return builder.openStream();
             }
         });
-
         rootFile = OSGiTestHelper.toVirtualFile(archive);
     }
 
@@ -108,10 +103,10 @@ public class VirtualFileResourceLoaderTestCase {
         result = loader.getResource("/META-INF/MANIFEST.MF");
         assertNotNull("Resource not null", result);
 
-        result = loader.getResource("jira-test-coverage.txt");
+        result = loader.getResource("logging.properties");
         assertNotNull("Resource not null", result);
 
-        result = loader.getResource("/jira-test-coverage.txt");
+        result = loader.getResource("/logging.properties");
         assertNotNull("Resource not null", result);
     }
 

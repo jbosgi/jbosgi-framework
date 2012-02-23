@@ -21,15 +21,11 @@
  */
 package org.jboss.osgi.framework;
 
+import org.jboss.osgi.resolver.v2.XEnvironment;
 import org.osgi.framework.resource.Capability;
 import org.osgi.framework.resource.Resource;
-import org.osgi.framework.resource.Wire;
-import org.osgi.framework.resource.Wiring;
-import org.osgi.service.resolver.Environment;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 
 /**
  * The environment plugin.
@@ -37,15 +33,9 @@ import java.util.Map;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-public interface EnvironmentPlugin extends Environment {
+public interface EnvironmentPlugin {
 
-    void installResources(Resource... resarr);
-
-    void uninstallResources(Resource... resarr);
-
-    Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap);
-
-    void refreshResources(Resource... resarr);
+    XEnvironment getEnvironment();
 
     /**
      * Currently, the client must have knowlege about the fragments that exist in the environment

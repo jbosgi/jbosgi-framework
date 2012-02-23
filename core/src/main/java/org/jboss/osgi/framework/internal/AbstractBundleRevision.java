@@ -72,6 +72,7 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
     private final OSGiMetaData metadata;
     private Map<String, List<BundleCapability>> bundleCapabilities;
     private Map<String, List<BundleRequirement>> bundleRequirements;
+    private BundleWiring wiring;
     private XModule resModule;
 
     AbstractBundleRevision(AbstractBundleState bundleState, OSGiMetaData metadata, XModule resModule, int revision) throws BundleException {
@@ -79,8 +80,6 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
             throw new IllegalArgumentException("Null bundleState");
         if (metadata == null)
             throw new IllegalArgumentException("Null metadata");
-        if (resModule == null)
-            throw new IllegalArgumentException("Null resModule");
 
         this.bundleState = bundleState;
         this.metadata = metadata;
@@ -159,7 +158,11 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
     @Override
     public BundleWiring getWiring() {
-        return getAttachment(BundleWiring.class);
+        return wiring;
+    }
+
+    void setWiring(BundleWiring wiring) {
+        this.wiring = wiring;
     }
 
     @Override
@@ -225,8 +228,8 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
         createResolverModule(getBundleState(), getOSGiMetaData());
 
-        EnvironmentPlugin environment = bundleState.getFrameworkState().getEnvironmentPlugin();
-        environment.refreshResources(this);
+        EnvironmentPlugin envPlugin = bundleState.getFrameworkState().getEnvironmentPlugin();
+        envPlugin.getEnvironment().refreshResources(this);
         refreshRevisionInternal();
     }
 

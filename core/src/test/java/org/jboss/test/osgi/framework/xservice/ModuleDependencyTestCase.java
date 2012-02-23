@@ -38,6 +38,7 @@ import org.jboss.test.osgi.framework.xservice.bundleB.BundleActivatorB;
 import org.jboss.test.osgi.framework.xservice.bundleB.BundleServiceB;
 import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
 import org.jboss.test.osgi.framework.xservice.moduleB.ModuleServiceB;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -49,6 +50,8 @@ import org.osgi.framework.Version;
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jul-2010
  */
+@Ignore
+
 public class ModuleDependencyTestCase extends OSGiFrameworkTest {
 
     @Test

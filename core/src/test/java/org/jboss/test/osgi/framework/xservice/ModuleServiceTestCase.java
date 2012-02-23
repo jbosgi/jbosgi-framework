@@ -41,6 +41,7 @@ import org.jboss.test.osgi.framework.xservice.moduleA.ModuleActivatorA;
 import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
 import org.jboss.test.osgi.framework.xservice.moduleB.ModuleActivatorB;
 import org.jboss.test.osgi.framework.xservice.moduleB.ModuleServiceB;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -53,6 +54,7 @@ import org.osgi.framework.Version;
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jul-2010
  */
+@Ignore
 public class ModuleServiceTestCase extends OSGiFrameworkTest {
 
     @Test

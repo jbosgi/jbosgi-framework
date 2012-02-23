@@ -41,6 +41,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.FutureServiceValue;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XResolver;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -52,6 +53,7 @@ import org.osgi.framework.BundleException;
  * @author Thomas.Diesler@jboss.com
  * @since 28-Sep-2010
  */
+@Ignore
 public class InstallFromModuleTestCase extends AbstractFrameworkTest {
 
     @Test

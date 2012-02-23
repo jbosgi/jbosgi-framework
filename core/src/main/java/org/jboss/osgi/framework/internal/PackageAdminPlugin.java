@@ -65,6 +65,7 @@ import org.osgi.framework.resource.Resource;
 import org.osgi.service.packageadmin.ExportedPackage;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.packageadmin.RequiredBundle;
+import org.osgi.service.resolver.ResolutionException;
 
 /**
  * An implementation of the {@link PackageAdmin} service.
@@ -388,7 +389,12 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 }
             }
             log.debugf("Resolve bundles: %s", unresolved);
-            result = resolverPlugin.resolveAndApply(unresolved, null);
+            try {
+                result = resolverPlugin.resolveAndApply(unresolved, null);
+            } catch (ResolutionException ex) {
+                log.debugf(ex, "Cannot resolve: " + unresolved);
+                result = false;
+            }
         } else {
             LegacyResolverPlugin resolverPlugin = injectedLegacyResolver.getValue();
             Set<XModule> unresolved = null;

@@ -91,15 +91,15 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
 
     @Override
     public Map<Resource, List<Wire>> resolve(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
-        EnvironmentPlugin environment = injectedEnvironmentPlugin.getValue();
+        EnvironmentPlugin envPlugin = injectedEnvironmentPlugin.getValue();
         Collection<Capability> hostcaps = getHostCapabilities(mandatory);
         if (hostcaps.isEmpty() == false) {
             Collection<Resource> allOptional = new HashSet<Resource>();
             allOptional.addAll(optional != null ? optional : Collections.EMPTY_SET);
-            allOptional.addAll(environment.findAttachableFragments(hostcaps));
+            allOptional.addAll(envPlugin.findAttachableFragments(hostcaps));
             optional = allOptional;
         }
-        return resolver.resolve(environment, mandatory, optional);
+        return resolver.resolve(envPlugin.getEnvironment(), mandatory, optional);
     }
 
     private Collection<Capability> getHostCapabilities(Collection<? extends Resource> resources) {
@@ -115,8 +115,8 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     @Override
     public boolean resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
         Map<Resource, List<Wire>> result = resolve(mandatory, optional);
-        EnvironmentPlugin environment = injectedEnvironmentPlugin.getValue();
-        environment.applyResolverResults(result);
+        EnvironmentPlugin envPlugin = injectedEnvironmentPlugin.getValue();
+        envPlugin.getEnvironment().applyResolverResults(result);
         return result.size() > 0;
     }
 }

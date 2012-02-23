@@ -56,6 +56,7 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
@@ -228,20 +229,30 @@ abstract class UserBundleState extends AbstractBundleState {
     }
 
     boolean hasActiveWires() {
-        XModule resModule = getResolverModule();
-        if (resModule.isResolved() == false)
-            return false;
+        if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
+            XModule resModule = getResolverModule();
+            if (resModule.isResolved() == false)
+                return false;
 
-        for (XCapability cap : resModule.getCapabilities()) {
-            Set<XRequirement> wiredReqs = cap.getWiredRequirements();
-            for (XRequirement req : wiredReqs) {
-                Bundle bundle = req.getModule().getAttachment(Bundle.class);
-                AbstractBundleState importer = AbstractBundleState.assertBundleState(bundle);
-                if (importer.getState() != Bundle.UNINSTALLED)
-                    return true;
+            for (XCapability cap : resModule.getCapabilities()) {
+                Set<XRequirement> wiredReqs = cap.getWiredRequirements();
+                for (XRequirement req : wiredReqs) {
+                    Bundle bundle = req.getModule().getAttachment(Bundle.class);
+                    AbstractBundleState importer = AbstractBundleState.assertBundleState(bundle);
+                    if (importer.getState() != Bundle.UNINSTALLED)
+                        return true;
+                }
             }
+            return false;
+        } else {
+            BundleWiring wiring = getCurrentRevision().getWiring();
+            if (wiring == null)
+                return false;
+
+            wiring.getProvidedWires(null);
+
+            return wiring.isInUse();
         }
-        return false;
     }
 
     @Override
@@ -353,8 +364,8 @@ abstract class UserBundleState extends AbstractBundleState {
             LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
             legacyResolver.addModule(resModule);
 
-            EnvironmentPlugin environment = getFrameworkState().getEnvironmentPlugin();
-            environment.installResources(brev);
+            EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
+            envPlugin.getEnvironment().installResources(brev);
         } catch (BundleException ex) {
             throw ex;
         }
@@ -400,14 +411,14 @@ abstract class UserBundleState extends AbstractBundleState {
         // Remove the revisions from the resolver
         LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        EnvironmentPlugin environment = getFrameworkState().getEnvironmentPlugin();
+        EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
         UserBundleRevision currentRev = getCurrentRevision();
         for (AbstractBundleRevision brev : getRevisions()) {
             XModule resModule = brev.getResolverModule();
             legacyResolver.removeModule(resModule);
 
             if (currentRev != brev)
-                environment.uninstallResources(brev);
+                envPlugin.getEnvironment().uninstallResources(brev);
 
             ModuleIdentifier identifier = brev.getModuleIdentifier();
             moduleManager.removeModule(identifier);

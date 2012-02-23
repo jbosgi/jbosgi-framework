@@ -37,11 +37,12 @@ import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.testing.OSGiTest;
 import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Version;
 
 /**
- * Test the {@link XModuleParser}
+ * Test OSGi metadata comming from external properties
  * 
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jul-2010
