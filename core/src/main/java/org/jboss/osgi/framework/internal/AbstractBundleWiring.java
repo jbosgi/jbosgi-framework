@@ -26,6 +26,8 @@ import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.resolver.v2.spi.AbstractWiring;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.resource.Capability;
+import org.osgi.framework.resource.Requirement;
 import org.osgi.framework.resource.Wire;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
@@ -51,26 +53,8 @@ class AbstractBundleWiring extends AbstractWiring implements BundleWiring {
     // Provide logging
     static final Logger log = Logger.getLogger(AbstractBundleWiring.class);
 
-    private List<BundleWire> required;
-    private List<BundleWire> provided;
-    
     AbstractBundleWiring(AbstractBundleRevision brev, List<Wire> wires) {
         super(brev, wires);
-        if (wires.isEmpty() == false) {
-            required = new ArrayList<BundleWire>();
-            for (Wire wire : wires) {
-                required.add((BundleWire) wire);
-            }
-        }
-    }
-
-    @Override
-    protected void addProvidedWire(Wire wire) {
-        super.addProvidedWire(wire);
-        if (provided == null) {
-            provided = new ArrayList<BundleWire>();
-        }
-        provided.add((BundleWire) wire);
     }
 
     @Override
@@ -80,8 +64,8 @@ class AbstractBundleWiring extends AbstractWiring implements BundleWiring {
 
     @Override
     public boolean isInUse() {
-        for (BundleWire wire : getProvidedWires(null)) {
-            BundleRevision requirer = wire.getRequirer();
+        for (Wire wire : getProvidedResourceWires(null)) {
+            BundleRevision requirer = (BundleRevision) wire.getRequirer();
             AbstractBundleState importer = AbstractBundleState.assertBundleState(requirer.getBundle());
             if (importer.getState() != Bundle.UNINSTALLED)
                 return true;
@@ -101,12 +85,12 @@ class AbstractBundleWiring extends AbstractWiring implements BundleWiring {
 
     @Override
     public List<BundleWire> getProvidedWires(String namespace) {
-        return provided != null ? Collections.unmodifiableList(provided) : Collections.EMPTY_LIST;
+        throw new NotImplementedException();
     }
 
     @Override
     public List<BundleWire> getRequiredWires(String namespace) {
-       return required != null ? Collections.unmodifiableList(required) : Collections.EMPTY_LIST;
+        throw new NotImplementedException();
     }
 
     @Override
@@ -149,5 +133,23 @@ class AbstractBundleWiring extends AbstractWiring implements BundleWiring {
     public Bundle getBundle() {
         AbstractBundleRevision brev = (AbstractBundleRevision) getRevision();
         return brev.getBundle();
+    }
+
+    private AbstractBundleWire toBundleWire(Wire wire) {
+        BundleCapability bcap = toBundleCapability(wire.getCapability());
+        BundleRequirement breq = toBundleRequirement(wire.getRequirement());
+        BundleRevision provider = (BundleRevision) wire.getProvider();
+        BundleRevision requirer = (BundleRevision) wire.getRequirer();
+        return new AbstractBundleWire(bcap, breq, provider, requirer);
+    }
+
+   private BundleCapability toBundleCapability(Capability cap) {
+        BundleRevision brev = (BundleRevision) cap.getResource();
+        return new AbstractBundleCapability(brev, cap.getNamespace(), cap.getAttributes(), cap.getDirectives());
+    }
+
+    private BundleRequirement toBundleRequirement(Requirement req) {
+        BundleRevision brev = (BundleRevision) req.getResource();
+        return new AbstractBundleRequirement(brev, req.getNamespace(), req.getAttributes(), req.getDirectives());
     }
 }

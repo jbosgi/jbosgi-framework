@@ -33,6 +33,7 @@ import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.v2.XEnvironment;
+import org.jboss.osgi.resolver.v2.XIdentityCapability;
 import org.jboss.osgi.resolver.v2.XResource;
 import org.jboss.osgi.resolver.v2.spi.AbstractEnvironment;
 import org.jboss.osgi.resolver.v2.spi.FrameworkPreferencesComparator;
@@ -43,13 +44,16 @@ import org.osgi.framework.resource.Requirement;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
 import org.osgi.framework.resource.Wiring;
-import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.resolver.ResolutionException;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -72,7 +76,7 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     private final XEnvironment delegate;
 
-    static boolean USE_NEW_PATH = false;
+    static boolean USE_NEW_PATH = true;
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultEnvironmentPlugin service = new DefaultEnvironmentPlugin();
@@ -112,6 +116,25 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
         return result;
     }
 
+    @Override
+    public Collection<Resource> filterSingletons(Collection<? extends Resource> resources) {
+        Map<String, Resource> singletons = new HashMap<String, Resource>();
+        List<Resource> result = new ArrayList<Resource>(resources);
+        Iterator<Resource> iterator = result.iterator();
+        while (iterator.hasNext()) {
+            XResource xres = (XResource) iterator.next();
+            XIdentityCapability icap = xres.getIdentityCapability();
+            if (icap.isSingleton()) {
+                if (singletons.get(icap.getSymbolicName()) != null) {
+                    iterator.remove();
+                } else {
+                    singletons.put(icap.getSymbolicName(), xres);
+                }
+            }
+        }
+        return Collections.unmodifiableList(result);
+    }
+
     private class EnvironmentDelegate extends AbstractEnvironment {
 
         @Override
@@ -128,11 +151,6 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
                     return env.getResourceIndex(res);
                 }
             };
-        }
-
-        @Override
-        public Wire createWire(Capability cap, Requirement req, Resource provider, Resource requirer) {
-            return new AbstractBundleWire(cap, req, (BundleRevision)provider, (BundleRevision)requirer);
         }
 
         @Override

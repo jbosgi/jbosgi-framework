@@ -43,4 +43,6 @@ public interface EnvironmentPlugin {
      * that can potentially attach to the given host capabilities.
      */
     Collection<? extends Resource> findAttachableFragments(Collection<? extends Capability> hosts);
+
+    Collection<Resource> filterSingletons(Collection<? extends Resource> resources);
 }

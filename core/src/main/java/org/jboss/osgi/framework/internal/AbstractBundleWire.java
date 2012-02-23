@@ -42,8 +42,8 @@ class AbstractBundleWire extends AbstractWire implements BundleWire {
     // Provide logging
     static final Logger log = Logger.getLogger(AbstractBundleWire.class);
 
-    AbstractBundleWire(Capability cap, Requirement req, BundleRevision provider, BundleRevision requirer) {
-        super(toBundleCapability(cap), toBundleRequirement(req), provider, requirer);
+    AbstractBundleWire(BundleCapability cap, BundleRequirement req, BundleRevision provider, BundleRevision requirer) {
+        super(cap, req, provider, requirer);
     }
 
     @Override
@@ -73,15 +73,4 @@ class AbstractBundleWire extends AbstractWire implements BundleWire {
     public BundleRequirement getRequirement() {
         return (BundleRequirement) super.getRequirement();
     }
-
-    private static BundleCapability toBundleCapability(Capability cap) {
-        BundleRevision brev = (BundleRevision) cap.getResource();
-        return new AbstractBundleCapability(brev, cap.getNamespace(), cap.getAttributes(), cap.getDirectives());
-    }
-
-    private static BundleRequirement toBundleRequirement(Requirement req) {
-        BundleRevision brev = (BundleRevision) req.getResource();
-        return new AbstractBundleRequirement(brev, req.getNamespace(), req.getAttributes(), req.getDirectives());
-    }
-
 }

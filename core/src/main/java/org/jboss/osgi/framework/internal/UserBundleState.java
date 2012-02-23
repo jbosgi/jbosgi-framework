@@ -246,12 +246,7 @@ abstract class UserBundleState extends AbstractBundleState {
             return false;
         } else {
             BundleWiring wiring = getCurrentRevision().getWiring();
-            if (wiring == null)
-                return false;
-
-            wiring.getProvidedWires(null);
-
-            return wiring.isInUse();
+            return wiring != null ? wiring.isInUse() : false;
         }
     }
 
