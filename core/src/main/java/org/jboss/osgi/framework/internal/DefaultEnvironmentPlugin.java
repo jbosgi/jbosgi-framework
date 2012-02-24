@@ -76,7 +76,7 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     private final XEnvironment delegate;
 
-    static boolean USE_NEW_PATH = true;
+    static boolean USE_NEW_PATH = false;
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultEnvironmentPlugin service = new DefaultEnvironmentPlugin();

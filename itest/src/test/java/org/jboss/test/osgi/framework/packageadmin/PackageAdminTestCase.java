@@ -523,14 +523,9 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     @Test
     public void testRefreshPackagesNull() throws Exception {
         PackageAdmin pa = getPackageAdmin();
-        Archive<?> assemblyx = assembleArchive("bundlex", "/bundles/update/update-bundlex", ObjectX.class);
-        Archive<?> assemblyy = assembleArchive("bundley", "/bundles/update/update-bundley", ObjectY.class);
-        Archive<?> assembly1 = assembleArchive("bundle1", new String[] { "/bundles/update/update-bundle1", "/bundles/update/classes1" });
-        Archive<?> assembly2 = assembleArchive("bundle2", new String[] { "/bundles/update/update-bundle102", "/bundles/update/classes2" });
-
-        Bundle bundleA = installBundle(assembly1);
-        Bundle bundleX = installBundle(assemblyx);
-        Bundle bundleY = installBundle(assemblyy);
+        Bundle bundleA = installBundle(getUpdateBundle1());
+        Bundle bundleX = installBundle(getUpdateBundleX());
+        Bundle bundleY = installBundle(getUpdateBundleY());
         BundleListener bl = null;
         try {
             BundleContext systemContext = getFramework().getBundleContext();
@@ -551,7 +546,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
 
             Class<?> cls = bundleX.loadClass(ObjectX.class.getName());
 
-            bundleA.update(toInputStream(assembly2));
+            bundleA.update(toInputStream(getUpdateBundle102()));
             assertBundleState(Bundle.ACTIVE, bundleA.getState());
             assertBundleState(Bundle.ACTIVE, bundleX.getState());
             assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());
@@ -776,6 +771,70 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getUpdateBundle1() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundle1");
+        archive.addClasses(ObjectA.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addExportPackages(ObjectA.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getUpdateBundle102() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundle102");
+        archive.addClasses(ObjectA2.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName("update-bundle1");
+                builder.addBundleVersion("1.0.2");
+                builder.addExportPackages(ObjectA.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getUpdateBundleX() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundlex");
+        archive.addClasses(ObjectX.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addImportPackages(ObjectA.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getUpdateBundleY() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundley");
+        archive.addClasses(ObjectY.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addExportPackages(ObjectY.class);
                 return builder.openStream();
             }
         });

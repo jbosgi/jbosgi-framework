@@ -335,8 +335,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testBundleReference() throws Exception {
-        Archive<?> assembly = assembleArchive("bundle1", "/bundles/update/update-bundle1", ObjectA.class);
-        Bundle bundle = installBundle(assembly);
+        Bundle bundle = installBundle(getUpdateBundle1());
         try {
             Class<?> clazz = bundle.loadClass(ObjectA.class.getName());
             ClassLoader classLoader = clazz.getClassLoader();
@@ -413,6 +412,22 @@ public class BundleTestCase extends OSGiFrameworkTest {
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName("singleton");
                 builder.addBundleVersion("2.0.0");
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getUpdateBundle1() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundle1");
+        archive.addClasses(ObjectA.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addExportPackages(ObjectA.class);
                 return builder.openStream();
             }
         });

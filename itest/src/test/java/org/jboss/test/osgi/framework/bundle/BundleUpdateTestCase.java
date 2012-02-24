@@ -21,18 +21,12 @@
  */
 package org.jboss.test.osgi.framework.bundle;
 
-import static junit.framework.Assert.assertNotSame;
-import static junit.framework.Assert.assertSame;
-import static junit.framework.Assert.fail;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.io.IOException;
-import java.io.InputStream;
-
 import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.bundle.support.a.ObjectA;
 import org.jboss.test.osgi.framework.bundle.support.a.ObjectA2;
 import org.jboss.test.osgi.framework.bundle.support.b.ObjectB;
@@ -45,10 +39,21 @@ import org.jboss.test.osgi.framework.bundle.update.stopexc.BundleStopExActivator
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+import static junit.framework.Assert.assertNotSame;
+import static junit.framework.Assert.assertSame;
+import static junit.framework.Assert.fail;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * BundleUpdateTestCase
@@ -60,11 +65,8 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testUpdate() throws Exception {
-        Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundle1", ObjectA.class);
-        Archive<?> assembly2 = assembleArchive("bundle2", "/bundles/update/update-bundle101", ObjectB.class);
-        Archive<?> assemblyy = assembleArchive("bundley", "/bundles/update/update-bundley", ObjectY.class);
-        Bundle bundle1 = installBundle(assembly1);
-        Bundle bundleY = installBundle(assemblyy);
+        Bundle bundle1 = installBundle(getUpdateBundle1());
+        Bundle bundleY = installBundle(getUpdateBundleY());
         try {
             BundleContext systemContext = getFramework().getBundleContext();
             int beforeCount = systemContext.getBundles().length;
@@ -81,7 +83,7 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
 
             Class<?> clsY = bundleY.loadClass(ObjectY.class.getName());
 
-            bundle1.update(toInputStream(assembly2));
+            bundle1.update(toInputStream(getUpdateBundle101()));
             assertBundleState(Bundle.ACTIVE, bundle1.getState());
             assertEquals(Version.parseVersion("1.0.1"), bundle1.getVersion());
             // Nobody depends on the packages, so we can update them straight away
@@ -101,12 +103,8 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testUpdateImportedPackagesRemoved() throws Exception {
-        Archive<?> assemblyx = assembleArchive("bundlex", "/bundles/update/update-bundlex", ObjectX.class);
-        Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundle1", ObjectA.class);
-        Archive<?> assembly2 = assembleArchive("bundle2", "/bundles/update/update-bundle101", ObjectB.class);
-
-        Bundle bundleA = installBundle(assembly1);
-        Bundle bundleX = installBundle(assemblyx);
+        Bundle bundleA = installBundle(getUpdateBundle1());
+        Bundle bundleX = installBundle(getUpdateBundleX());
         try {
             BundleContext systemContext = getFramework().getBundleContext();
             int beforeCount = systemContext.getBundles().length;
@@ -125,7 +123,7 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
             assertLoadClassFail(bundleA, ObjectB.class.getName());
             assertLoadClass(bundleX, ObjectA.class.getName());
 
-            bundleA.update(toInputStream(assembly2));
+            bundleA.update(toInputStream(getUpdateBundle101()));
             assertBundleState(Bundle.ACTIVE, bundleA.getState());
             assertBundleState(Bundle.ACTIVE, bundleX.getState());
             assertEquals(Version.parseVersion("1.0.1"), bundleA.getVersion());
@@ -157,12 +155,8 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testUpdateImportedPackages() throws Exception {
-        Archive<?> assemblyx = assembleArchive("bundlex", "/bundles/update/update-bundlex", ObjectX.class);
-        Archive<?> assembly1 = assembleArchive("bundle1", new String[] { "/bundles/update/update-bundle1", "/bundles/update/classes1" });
-        Archive<?> assembly2 = assembleArchive("bundle2", new String[] { "/bundles/update/update-bundle102", "/bundles/update/classes2" });
-
-        Bundle bundleA = installBundle(assembly1);
-        Bundle bundleX = installBundle(assemblyx);
+        Bundle bundleA = installBundle(getUpdateBundle1());
+        Bundle bundleX = installBundle(getUpdateBundleX());
         try {
             BundleContext systemContext = getFramework().getBundleContext();
             int beforeCount = systemContext.getBundles().length;
@@ -183,7 +177,7 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
             Object x1 = cls.newInstance();
             assertEquals("ObjectX contains reference: ObjectA", x1.toString());
 
-            bundleA.update(toInputStream(assembly2));
+            bundleA.update(toInputStream(getUpdateBundle102()));
             assertBundleState(Bundle.ACTIVE, bundleA.getState());
             assertBundleState(Bundle.ACTIVE, bundleX.getState());
             assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());
@@ -196,7 +190,7 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
             assertSame(cls, bundleX.loadClass(ObjectX.class.getName()));
 
             getSystemContext().addFrameworkListener(this);
-            getPackageAdmin().refreshPackages(new Bundle[] { bundleA });
+            getPackageAdmin().refreshPackages(new Bundle[]{bundleA});
             assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
 
             assertBundleState(Bundle.ACTIVE, bundleA.getState());
@@ -223,9 +217,7 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testUpdateReadError() throws Exception {
-        Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundle1", ObjectA.class);
-
-        Bundle bundle = installBundle(assembly1);
+        Bundle bundle = installBundle(getUpdateBundle1());
         try {
             BundleContext systemContext = getFramework().getBundleContext();
             int beforeCount = systemContext.getBundles().length;
@@ -263,15 +255,12 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testUpdateExceptionStop() throws Exception {
-        Archive<?> assembly1 = assembleArchive("update-bundle-stop-exc1", "/bundles/update/update-bundle-stop-exc1", BundleStopExActivator.class);
-        Archive<?> assembly2 = assembleArchive("update-bundle-stop-exc2", "/bundles/update/update-bundle-stop-exc2");
-        Bundle bundle1 = installBundle(assembly1);
+        Bundle bundle1 = installBundle(getBundleStopExec1());
         try {
             bundle1.start();
-
             assertEquals(Version.parseVersion("1"), bundle1.getVersion());
             try {
-                bundle1.update(toInputStream(assembly2));
+                bundle1.update(toInputStream(getBundleStopExec2()));
                 fail("Should have thrown a bundle exception.");
             } catch (BundleException be) {
                 // good
@@ -284,15 +273,13 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testUpdateExceptionStart() throws Exception {
-        Archive<?> assembly1 = assembleArchive("update-bundle-start-exc1", "/bundles/update/update-bundle-start-exc1");
-        Archive<?> assembly2 = assembleArchive("update-bundle-start-exc2", "/bundles/update/update-bundle-start-exc2", BundleStartExActivator.class);
-        Bundle bundle1 = installBundle(assembly1);
+        Bundle bundle1 = installBundle(getBundleStartExec1());
         try {
             bundle1.start();
             assertEquals(Version.parseVersion("1"), bundle1.getVersion());
 
             getSystemContext().addFrameworkListener(this);
-            bundle1.update(toInputStream(assembly2));
+            bundle1.update(toInputStream(getBundleStartExec2()));
             assertFrameworkEvent(FrameworkEvent.ERROR, bundle1, BundleException.class);
             assertEquals(Version.parseVersion("2"), bundle1.getVersion());
         } finally {
@@ -303,21 +290,193 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testUpdateSameSymbolicNameAndVersion() throws Exception {
-        Archive<?> assembly1 = assembleArchive("bundle1", "/bundles/update/update-bundlea", ClassA.class);
-        Archive<?> assembly2 = assembleArchive("bundle2", "/bundles/update/update-bundleb", ClassB.class);
-        Bundle bundle1 = installBundle(assembly1);
+        Bundle bundle1 = installBundle(getUpdateBundleA());
         try {
             bundle1.start();
             assertBundleState(Bundle.ACTIVE, bundle1.getState());
             assertLoadClass(bundle1, ClassA.class.getName());
             assertLoadClassFail(bundle1, ClassB.class.getName());
 
-            bundle1.update(toInputStream(assembly2));
+            bundle1.update(toInputStream(getUpdateBundleB()));
             assertBundleState(Bundle.ACTIVE, bundle1.getState());
             assertLoadClass(bundle1, ClassB.class.getName());
             assertLoadClassFail(bundle1, ClassA.class.getName());
         } finally {
             bundle1.uninstall();
         }
+    }
+
+    private JavaArchive getUpdateBundle1() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundle1");
+        archive.addClasses(ObjectA.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addExportPackages(ObjectA.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getUpdateBundle101() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundle101");
+        archive.addClasses(ObjectB.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.1");
+                builder.addExportPackages(ObjectB.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getUpdateBundle102() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundle102");
+        archive.addClasses(ObjectA2.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName("update-bundle1");
+                builder.addBundleVersion("1.0.2");
+                builder.addExportPackages(ObjectA.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getUpdateBundleA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundle-a");
+        archive.addClasses(ClassA.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addExportPackages(ClassA.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getUpdateBundleB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundle-b");
+        archive.addClasses(ClassB.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName("update-bundle-a");
+                builder.addBundleVersion("1.0.0");
+                builder.addExportPackages(ClassB.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getUpdateBundleX() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundlex");
+        archive.addClasses(ObjectX.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addImportPackages(ObjectA.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getUpdateBundleY() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundley");
+        archive.addClasses(ObjectY.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addExportPackages(ObjectY.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleStartExec1() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundlestart-exc");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleStopExec1() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundlestop-exc");
+        archive.addClasses(BundleStopExActivator.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addBundleActivator(BundleStopExActivator.class);
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleStartExec2() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundlestart-exc");
+        archive.addClasses(BundleStartExActivator.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("2.0.0");
+                builder.addBundleActivator(BundleStartExActivator.class);
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleStopExec2() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundlestop-exc");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("2.0.0");
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }
