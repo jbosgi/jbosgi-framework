@@ -54,7 +54,6 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
         final JavaArchive archiveA = ShrinkWrap.create(JavaArchive.class, "dynamic-wildcard-a");
         archiveA.addClass(A.class);
         archiveA.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

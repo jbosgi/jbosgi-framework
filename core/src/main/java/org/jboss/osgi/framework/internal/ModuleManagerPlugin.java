@@ -368,7 +368,10 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
             PathFilter lazyActivationFilter = getLazyPackagesFilter(hostBundle);
             specBuilder.setModuleClassLoaderFactory(new HostBundleClassLoader.Factory(hostBundle, lazyActivationFilter));
-            specBuilder.setFallbackLoader(new HostBundleFallbackLoader(hostBundle, identifier, importedPaths));
+            if (DefaultEnvironmentPlugin.USE_NEW_PATH == false)
+                specBuilder.setFallbackLoader(new LegacyFallbackLoader(hostBundle, identifier, importedPaths));
+            else
+                specBuilder.setFallbackLoader(new FallbackLoader(hostBundle, identifier, importedPaths));
 
             // Build the ModuleSpec
             moduleSpec = specBuilder.create();
@@ -592,7 +595,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
             PathFilter lazyActivationFilter = getLazyPackagesFilter(hostBundle);
             specBuilder.setModuleClassLoaderFactory(new HostBundleClassLoader.Factory(hostBundle, lazyActivationFilter));
-            specBuilder.setFallbackLoader(new HostBundleFallbackLoader(hostBundle, identifier, importedPaths));
+            specBuilder.setFallbackLoader(new LegacyFallbackLoader(hostBundle, identifier, importedPaths));
 
             // Build the ModuleSpec
             moduleSpec = specBuilder.create();

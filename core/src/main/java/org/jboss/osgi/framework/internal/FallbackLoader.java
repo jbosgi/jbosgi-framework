@@ -21,6 +21,21 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import org.jboss.logging.Logger;
+import org.jboss.modules.LocalLoader;
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.Resource;
+import org.jboss.osgi.resolver.v2.XPackageCapability;
+import org.jboss.osgi.resolver.v2.XPackageRequirement;
+import org.jboss.osgi.spi.NotImplementedException;
+import org.jboss.osgi.vfs.VFSUtils;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.resource.Capability;
+import org.osgi.framework.resource.Requirement;
+import org.osgi.framework.wiring.BundleRevision;
+
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,37 +45,25 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jboss.logging.Logger;
-import org.jboss.modules.LocalLoader;
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.Resource;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XPackageCapability;
-import org.jboss.osgi.resolver.XPackageRequirement;
-import org.jboss.osgi.spi.NotImplementedException;
-import org.jboss.osgi.vfs.VFSUtils;
-import org.osgi.framework.Bundle;
+import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
 
 /**
  * A fallback loader that takes care of dynamic class/resource loads.
  *
  * @author thomas.diesler@jboss.com
- * @author David Bosschaert
- * @since 29-Jun-2010
+ * @since 24-Feb-2012
  */
-final class HostBundleFallbackLoader implements LocalLoader {
+final class FallbackLoader implements LocalLoader {
 
     // Provide logging
-    private static final Logger log = Logger.getLogger(HostBundleFallbackLoader.class);
+    private static final Logger log = Logger.getLogger(FallbackLoader.class);
 
     private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
     private final HostBundleState hostBundle;
     private final ModuleIdentifier identifier;
     private final Set<String> importedPaths;
 
-    HostBundleFallbackLoader(HostBundleState hostBundle, ModuleIdentifier identifier, Set<String> importedPaths) {
+    FallbackLoader(HostBundleState hostBundle, ModuleIdentifier identifier, Set<String> importedPaths) {
         if (hostBundle == null)
             throw new IllegalArgumentException("Null hostBundle");
         if (identifier == null)
@@ -171,14 +174,13 @@ final class HostBundleFallbackLoader implements LocalLoader {
 
         ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
         AbstractBundleRevision bundleRev = moduleManager.getBundleRevision(identifier);
-        XModule resModule = bundleRev.getResolverModule();
-        List<XPackageRequirement> dynamicRequirements = resModule.getDynamicPackageRequirements();
+        List<XPackageRequirement> dynamicRequirements = getDynamicPackageRequirements(bundleRev);
 
         // Dynamic imports may not be used when the package is exported
         String pathName = VFSUtils.getPathFromClassName(resName);
-        List<XPackageCapability> packageCapabilities = resModule.getPackageCapabilities();
+        List<XPackageCapability> packageCapabilities = getPackageCapabilities(bundleRev);
         for (XPackageCapability packageCap : packageCapabilities) {
-            String packagePath = packageCap.getName().replace('.', '/');
+            String packagePath = packageCap.getPackageName().replace('.', '/');
             if (pathName.equals(packagePath))
                 return Collections.emptyList();
         }
@@ -186,7 +188,7 @@ final class HostBundleFallbackLoader implements LocalLoader {
         List<XPackageRequirement> foundMatch = new ArrayList<XPackageRequirement>();
         for (XPackageRequirement dynreq : dynamicRequirements) {
 
-            final String pattern = dynreq.getName();
+            final String pattern = dynreq.getPackageName();
             if (pattern.equals("*")) {
                 foundMatch.add(dynreq);
                 continue;
@@ -209,12 +211,12 @@ final class HostBundleFallbackLoader implements LocalLoader {
 
     private Module findInResolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
         log.tracef("Attempt to find path dynamically in resolved modules ...");
-        LegacyResolverPlugin resolverPlugin = hostBundle.getFrameworkState().getLegacyResolverPlugin();
+        BundleManager bundleManager = hostBundle.getFrameworkState().getBundleManager();
         ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
         for (XPackageRequirement packageReq : matchingPatterns) {
-            for (XModule resModule : resolverPlugin.getResolver().getModules()) {
-                if (resModule.isResolved() && !resModule.isFragment()) {
-                    ModuleIdentifier identifier = moduleManager.getModuleIdentifier(resModule);
+            for (AbstractBundleState bundleState : bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE)) {
+                if (bundleState.isResolved() && !bundleState.isFragment()) {
+                    ModuleIdentifier identifier = bundleState.getModuleIdentifier();
                     Module candidate = moduleManager.getModule(identifier);
                     if (isValidCandidate(resName, packageReq, candidate))
                         return candidate;
@@ -251,16 +253,14 @@ final class HostBundleFallbackLoader implements LocalLoader {
 
         log.tracef("Found path [%s] in %s", resName, candidate);
         ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
-        AbstractBundleRevision bundleRevision = moduleManager.getBundleRevision(candidateId);
-        XModule resModule = bundleRevision.getResolverModule();
-
-        XPackageCapability candidateCap = getCandidateCapability(resModule, packageReq);
+        AbstractBundleRevision brev = moduleManager.getBundleRevision(candidateId);
+        XPackageCapability candidateCap = getCandidateCapability(brev, packageReq);
         return (candidateCap != null);
     }
 
-    private XPackageCapability getCandidateCapability(XModule resModule, XPackageRequirement packageReq) {
-        for (XPackageCapability packageCap : resModule.getPackageCapabilities()) {
-            if (packageReq.match(packageCap)) {
+    private XPackageCapability getCandidateCapability(AbstractBundleRevision brev, XPackageRequirement packageReq) {
+        for (XPackageCapability packageCap : getPackageCapabilities(brev)) {
+            if (packageReq.matches(packageCap)) {
                 log.tracef("Matching package capability: %s", packageCap);
                 return packageCap;
             }
@@ -276,5 +276,25 @@ final class HostBundleFallbackLoader implements LocalLoader {
 
         patternPath = patternPath.replace('.', '/');
         return patternPath;
+    }
+
+    private List<XPackageCapability> getPackageCapabilities(BundleRevision brev) {
+        List<XPackageCapability> result = new ArrayList<XPackageCapability>();
+        for (Capability aux : brev.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
+            XPackageCapability cap = (XPackageCapability) aux;
+            result.add(cap);
+        }
+        return result;
+    }
+
+    private List<XPackageRequirement> getDynamicPackageRequirements(BundleRevision brev) {
+        List<XPackageRequirement> result = new ArrayList<XPackageRequirement>();
+        for (Requirement aux : brev.getRequirements(WIRING_PACKAGE_NAMESPACE)) {
+            XPackageRequirement req = (XPackageRequirement) aux;
+            if (req.isDynamic()) {
+                result.add(req);
+            }
+        }
+        return result;
     }
 }
