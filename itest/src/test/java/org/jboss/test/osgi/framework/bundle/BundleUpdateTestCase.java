@@ -23,7 +23,6 @@ package org.jboss.test.osgi.framework.bundle;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
-import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -57,7 +56,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * BundleUpdateTestCase
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
@@ -132,7 +131,7 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
 
             assertNoFrameworkEvent();
             getSystemContext().addFrameworkListener(this);
-            getPackageAdmin().refreshPackages(new Bundle[] { bundleA });
+            getPackageAdmin().refreshPackages(new Bundle[]{bundleA});
             assertFrameworkEvent(FrameworkEvent.ERROR, bundleX, BundleException.class);
             assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
 

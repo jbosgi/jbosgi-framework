@@ -87,6 +87,10 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
         return deployment.getLocation();
     }
 
+    UserBundleState getBundleState() {
+        return (UserBundleState) super.getBundleState();
+    }
+
     /**
      * A user revision may have one or more associated content root files. Multiple content root files exist if there is a
      * Bundle-ClassPath header. No content root file may exist if bundle metadata was provided externally.

@@ -62,6 +62,7 @@ import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
 import org.osgi.framework.resource.Resource;
+import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.service.packageadmin.ExportedPackage;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.packageadmin.RequiredBundle;
@@ -272,53 +273,49 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                     bundles = bundlesToRefresh.toArray(new Bundle[bundlesToRefresh.size()]);
                 }
 
-                Map<XModule, UserBundleState> refreshMap = new HashMap<XModule, UserBundleState>();
+                Set<UserBundleRevision> refreshRevs = new LinkedHashSet<UserBundleRevision>();
                 for (Bundle aux : bundles) {
                     AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
                     if (bundleState instanceof UserBundleState == false)
                         continue;
 
-                    for (XModule resModule : bundleState.getAllResolverModules())
-                        refreshMap.put(resModule, (UserBundleState) bundleState);
+                    refreshRevs.addAll(((UserBundleState)bundleState).getRevisions());
                 }
 
                 Set<HostBundleState> stopBundles = new HashSet<HostBundleState>();
                 Set<UserBundleState> refreshBundles = new HashSet<UserBundleState>();
                 Set<UserBundleState> uninstallBundles = new HashSet<UserBundleState>();
 
-                for (UserBundleState aux : refreshMap.values()) {
-                    if (aux.getState() == Bundle.UNINSTALLED)
-                        uninstallBundles.add(aux);
-                    else if (aux.isResolved() == true)
-                        refreshBundles.add(aux);
+                for (UserBundleRevision brev : refreshRevs) {
+                    UserBundleState userBundle = brev.getBundleState();
+                    if (userBundle.getState() == Bundle.UNINSTALLED)
+                        uninstallBundles.add(userBundle);
+                    else if (userBundle.isResolved() == true)
+                        refreshBundles.add(userBundle);
                 }
 
                 // Compute all depending bundles that need to be stopped and unresolved.
                 for (AbstractBundleState aux : bundleManager.getBundles()) {
-                    if (aux instanceof HostBundleState == false)
-                        continue;
-
-                    HostBundleState hostBundle = (HostBundleState) aux;
-
-                    XModule resModule = hostBundle.getResolverModule();
-                    if (resModule.isResolved() == false)
-                        continue;
-
-                    for (XWire wire : resModule.getWires()) {
-                        if (refreshMap.containsKey(wire.getExporter())) {
-                            // Bundles can be either ACTIVE or RESOLVED
-                            int state = hostBundle.getState();
-                            if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
-                                stopBundles.add(hostBundle);
+                    if (aux instanceof HostBundleState && aux.isResolved()) {
+                        HostBundleState hostBundle = HostBundleState.assertBundleState(aux);
+                        Set<BundleRevision> dependentRevs = hostBundle.getDependentRevisions();
+                        for (BundleRevision brev : dependentRevs) {
+                            if (refreshRevs.contains(brev)) {
+                                // Bundles can be either ACTIVE or RESOLVED
+                                int state = hostBundle.getState();
+                                if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
+                                    stopBundles.add(hostBundle);
+                                }
+                                refreshBundles.add(hostBundle);
+                                break;
                             }
-                            refreshBundles.add(hostBundle);
-                            break;
                         }
                     }
                 }
 
                 // Add relevant bundles to be refreshed also to the stop list.
-                for (UserBundleState aux : new HashSet<UserBundleState>(refreshMap.values())) {
+                for (UserBundleRevision brev : refreshRevs) {
+                    UserBundleState aux = brev.getBundleState();
                     if (aux instanceof HostBundleState) {
                         int state = aux.getState();
                         if (state == Bundle.ACTIVE || state == Bundle.STARTING) {

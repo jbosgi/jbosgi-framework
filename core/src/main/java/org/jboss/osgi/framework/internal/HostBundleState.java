@@ -22,7 +22,9 @@
 package org.jboss.osgi.framework.internal;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,12 +37,18 @@ import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.modules.ModuleActivator;
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XWire;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
+import org.osgi.framework.resource.Resource;
+import org.osgi.framework.resource.Wire;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWire;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.startlevel.StartLevel;
 
 /**
@@ -173,6 +181,28 @@ final class HostBundleState extends UserBundleState {
 
     boolean isAlreadyStarting() {
         return alreadyStarting.get();
+    }
+
+    Set<BundleRevision> getDependentRevisions() {
+        Set<BundleRevision> result = new HashSet<BundleRevision>();
+        if (isResolved() == true) {
+            if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
+                XModule resModule = getResolverModule();
+                for (XWire wire : resModule.getWires()) {
+                    XModule exporter = wire.getExporter();
+                    BundleRevision provider = exporter.getAttachment(AbstractBundleRevision.class);
+                    result.add(provider);
+                }
+            } else {
+                BundleWiring wiring = getCurrentRevision().getWiring();
+                List<Wire> wires = wiring.getRequiredResourceWires(null);
+                for (Wire wire : wires) {
+                    Resource provider = wire.getProvider();
+                    result.add((BundleRevision) provider);
+                }
+            }
+        }
+        return result;
     }
 
     void startInternal(int options) throws BundleException {

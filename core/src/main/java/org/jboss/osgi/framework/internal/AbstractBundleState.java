@@ -361,7 +361,11 @@ abstract class AbstractBundleState implements Bundle {
     }
 
     boolean isResolved() {
-        return getResolverModule().isResolved();
+        if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
+            return getResolverModule().isResolved();
+        } else {
+            return getCurrentRevision().getWiring() != null;
+        }
     }
 
     boolean isUninstalled() {
