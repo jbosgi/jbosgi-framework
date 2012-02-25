@@ -1,5 +1,0 @@
-Manifest-Version: 1.0
-Bundle-ManifestVersion: 2
-Bundle-Version: 1.0.0
-Bundle-SymbolicName: classloader.bundleA
-Export-Package: org.jboss.test.osgi.framework.classloader.support.a;version=1.0.0;test=x

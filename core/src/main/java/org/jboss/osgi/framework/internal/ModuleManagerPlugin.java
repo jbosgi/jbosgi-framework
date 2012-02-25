@@ -49,8 +49,8 @@ import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleIdentity;
 import org.jboss.osgi.resolver.XWire;
-import org.jboss.osgi.resolver.v2.XHostRequirement;
 import org.jboss.osgi.resolver.v2.XIdentityCapability;
+import org.jboss.osgi.resolver.v2.XIdentityRequirement;
 import org.jboss.osgi.resolver.v2.XResource;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
@@ -71,6 +71,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static org.jboss.osgi.framework.internal.NativeCodePlugin.BundleNativeLibraryProvider;
 import static org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
+import static org.osgi.framework.Constants.VISIBILITY_REEXPORT;
 import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
 
 /**
@@ -418,7 +419,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             }
 
             // Dependency for Require-Bundle
-            if (req instanceof XHostRequirement) {
+            if (req instanceof XIdentityRequirement) {
                 bundleWires.add(wire);
                 continue;
             }
@@ -443,12 +444,12 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             if (packageExporters.contains(exporter))
                 continue;
 
-            XHostRequirement req = (XHostRequirement) wire.getRequirement();
+            XIdentityRequirement req = (XIdentityRequirement) wire.getRequirement();
             ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
             holder.setImportFilter(PathFilters.not(importedPathsFilter));
             holder.setOptional(req.isOptional());
 
-            boolean reexport = Constants.VISIBILITY_REEXPORT.equals(req.getVisibility());
+            boolean reexport = VISIBILITY_REEXPORT.equals(req.getVisibility());
             if (reexport == true) {
                 Set<String> exportedPaths = new HashSet<String>();
                 for (Capability auxcap : exporter.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
@@ -841,7 +842,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             holder.setImportFilter(PathFilters.not(importedPathsFilter));
             holder.setOptional(req.isOptional());
 
-            boolean reexport = Constants.VISIBILITY_REEXPORT.equals(req.getVisibility());
+            boolean reexport = VISIBILITY_REEXPORT.equals(req.getVisibility());
             if (reexport == true) {
                 Set<String> exportedPaths = new HashSet<String>();
                 for (org.jboss.osgi.resolver.XPackageCapability cap : exporter.getPackageCapabilities()) {

@@ -39,7 +39,6 @@ import org.osgi.framework.BundleReference;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -51,7 +50,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.osgi.framework.Bundle.ACTIVE;
 import static org.osgi.framework.Bundle.INSTALLED;
 import static org.osgi.framework.Bundle.RESOLVED;
 
