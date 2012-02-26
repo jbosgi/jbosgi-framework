@@ -337,7 +337,6 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    @Ignore
     public void testBundleSymbolicNameDirective() throws Exception {
 
         final JavaArchive archiveA = ShrinkWrap.create(JavaArchive.class, "tb8a");

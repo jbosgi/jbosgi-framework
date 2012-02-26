@@ -34,6 +34,7 @@ import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.v2.XEnvironment;
 import org.jboss.osgi.resolver.v2.XIdentityCapability;
+import org.jboss.osgi.resolver.v2.XPackageRequirement;
 import org.jboss.osgi.resolver.v2.XResource;
 import org.jboss.osgi.resolver.v2.spi.AbstractEnvironment;
 import org.jboss.osgi.resolver.v2.spi.FrameworkPreferencesComparator;
@@ -57,6 +58,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import static org.osgi.framework.resource.ResourceConstants.IDENTITY_TYPE_FRAGMENT;
 import static org.osgi.framework.resource.ResourceConstants.WIRING_HOST_NAMESPACE;
@@ -164,6 +167,25 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
             AbstractBundleRevision brev = (AbstractBundleRevision) res;
             brev.setWiring((BundleWiring) wiring);
             return wiring;
+        }
+
+        @Override
+        public SortedSet<Capability> findProviders(Requirement req) {
+
+            // Currently, there is no notion of dynamic package imports
+            // in the resource API. They are treaded like optional
+            // requirements and may cause resolver exceptions
+            // When we detect a dynamic package import, we return an
+            // empty set of capabilities
+            if (req instanceof XPackageRequirement) {
+                XPackageRequirement packreq = (XPackageRequirement) req;
+                if (packreq.isDynamic()) {
+                    return new TreeSet<Capability>();
+                }
+            }
+
+            SortedSet<Capability> providers = super.findProviders(req);
+            return providers;
         }
 
         @Override
