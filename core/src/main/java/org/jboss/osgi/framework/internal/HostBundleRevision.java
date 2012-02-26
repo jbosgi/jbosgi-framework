@@ -118,7 +118,10 @@ final class HostBundleRevision extends UserBundleRevision {
     Enumeration<URL> findEntries(String path, String pattern, boolean recurse) {
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         getBundleState().ensureResolved(true);
+        return findResolvedEntries(path, pattern, recurse);
+    }
 
+    Enumeration<URL> findResolvedEntries(String path, String pattern, boolean recurse) {
         Enumeration<URL> hostEntries = super.findEntries(path, pattern, recurse);
 
         List<FragmentBundleRevision> fragments = getAttachedFragments();

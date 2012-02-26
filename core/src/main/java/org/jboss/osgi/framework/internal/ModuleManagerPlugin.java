@@ -365,7 +365,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             specBuilder.addDependency(localDep);
 
             // Native - Hack
-            //addNativeResourceLoader(brev, specBuilder);
+            addNativeResourceLoader(brev, specBuilder);
 
             PathFilter lazyActivationFilter = getLazyPackagesFilter(hostBundle);
             specBuilder.setModuleClassLoaderFactory(new HostBundleClassLoader.Factory(hostBundle, lazyActivationFilter));
@@ -592,7 +592,8 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             specBuilder.addDependency(localDep);
 
             // Native - Hack
-            addNativeResourceLoader(resModule, specBuilder);
+            HostBundleRevision hostrev = (HostBundleRevision) resModule.getAttachment(AbstractBundleRevision.class);
+            addNativeResourceLoader(hostrev, specBuilder);
 
             PathFilter lazyActivationFilter = getLazyPackagesFilter(hostBundle);
             specBuilder.setModuleClassLoaderFactory(new HostBundleClassLoader.Factory(hostBundle, lazyActivationFilter));
@@ -723,36 +724,20 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         return result;
     }
 
-    private void addNativeResourceLoader(final XModule resModule, ModuleSpec.Builder specBuilder) {
-        Bundle bundle = resModule.getAttachment(Bundle.class);
-        UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
-        Deployment deployment = userBundle.getDeployment();
+    private void addNativeResourceLoader(HostBundleRevision hostrev, ModuleSpec.Builder specBuilder) {
 
-        addNativeResourceLoader(specBuilder, userBundle, deployment);
+        Deployment deployment = hostrev.getDeployment();
+        HostBundleState hostBundle = hostrev.getBundleState();
+        addNativeResourceLoader(specBuilder, hostrev, deployment);
 
-        UserBundleRevision rev = userBundle.getCurrentRevision();
-        if (rev instanceof HostBundleRevision) {
-            for (FragmentBundleRevision fragRev : ((HostBundleRevision) rev).getAttachedFragments()) {
-                addNativeResourceLoader(specBuilder, userBundle, fragRev.getDeployment());
+        if (hostrev instanceof HostBundleRevision) {
+            for (FragmentBundleRevision fragRev : hostrev.getAttachedFragments()) {
+                addNativeResourceLoader(specBuilder, hostrev, fragRev.getDeployment());
             }
         }
     }
 
-    private void addNativeResourceLoader(final UserBundleRevision brev, ModuleSpec.Builder specBuilder) {
-        UserBundleState userBundle = UserBundleState.assertBundleState(brev.getBundleState());
-        Deployment deployment = brev.getDeployment();
-
-        addNativeResourceLoader(specBuilder, userBundle, deployment);
-
-        UserBundleRevision rev = userBundle.getCurrentRevision();
-        if (rev instanceof HostBundleRevision) {
-            for (FragmentBundleRevision fragRev : ((HostBundleRevision) rev).getAttachedFragments()) {
-                addNativeResourceLoader(specBuilder, userBundle, fragRev.getDeployment());
-            }
-        }
-    }
-
-    private void addNativeResourceLoader(ModuleSpec.Builder specBuilder, UserBundleState userBundle, Deployment deployment) {
+    private void addNativeResourceLoader(ModuleSpec.Builder specBuilder, HostBundleRevision hostrev, Deployment deployment) {
         NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
         if (libMetaData != null) {
             NativeResourceLoader nativeLoader = new NativeResourceLoader();
@@ -762,13 +747,13 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
                 String libname = libfile.substring(0, libfile.lastIndexOf('.'));
 
                 // Add the library provider to the policy
-                NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(userBundle, libname, libpath);
+                NativeLibraryProvider libProvider = new BundleNativeLibraryProvider(hostrev, libname, libpath);
                 nativeLoader.addNativeLibrary(libProvider);
 
                 // [TODO] why does the TCK use 'Native' to mean 'libNative' ?
                 if (libname.startsWith("lib")) {
                     libname = libname.substring(3);
-                    libProvider = new BundleNativeLibraryProvider(userBundle, libname, libpath);
+                    libProvider = new BundleNativeLibraryProvider(hostrev, libname, libpath);
                     nativeLoader.addNativeLibrary(libProvider);
                 }
             }

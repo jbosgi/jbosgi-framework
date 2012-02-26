@@ -57,7 +57,7 @@ import org.osgi.service.startlevel.StartLevel;
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-final class HostBundleState extends UserBundleState {
+ final class HostBundleState extends UserBundleState {
 
     static final Logger log = Logger.getLogger(HostBundleState.class);
 

@@ -303,14 +303,14 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
     }
 
     static class BundleNativeLibraryProvider implements NativeLibraryProvider {
-        private final UserBundleState userBundle;
+        private final HostBundleState hostBundle;
         private final String libname;
         private final String libpath;
         private final URL libURL;
         private File libraryFile;
 
-        BundleNativeLibraryProvider(UserBundleState userBundle, String libname, String libpath) {
-            this.userBundle = userBundle;
+        BundleNativeLibraryProvider(HostBundleRevision hostrev, String libname, String libpath) {
+            this.hostBundle = hostrev.getBundleState();
             this.libpath = libpath;
             this.libname = libname;
 
@@ -326,7 +326,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
                 path = "";
                 filename = libpath;
             }
-            Enumeration<URL> urls = userBundle.findEntries(path, filename, false);
+            Enumeration<URL> urls = hostrev.findResolvedEntries(path, filename, false);
             if (urls == null || urls.hasMoreElements() == false)
                 throw new IllegalStateException("Cannot find native library: " + libpath);
 
@@ -347,7 +347,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
         public File getLibraryLocation() throws IOException {
             if (libraryFile == null) {
                 // Create a unique local file location
-                libraryFile = getUniqueLibraryFile(userBundle, libpath);
+                libraryFile = getUniqueLibraryFile(hostBundle, libpath);
                 libraryFile.deleteOnExit();
 
                 // Copy the native library to the bundle storage area
@@ -361,7 +361,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
         }
 
         private void handleExecPermission() throws IOException {
-            String epProp = userBundle.getBundleContext().getProperty(Constants.FRAMEWORK_EXECPERMISSION);
+            String epProp = hostBundle.getBundleContext().getProperty(Constants.FRAMEWORK_EXECPERMISSION);
             if (epProp == null)
                 return;
 
