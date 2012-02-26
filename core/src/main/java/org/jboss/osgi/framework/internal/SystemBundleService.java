@@ -86,7 +86,7 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
             OSGiMetaData metadata = createOSGiMetaData();
             XModule resModule = bundleState.createResolverModule(metadata);
             SystemBundleRevision sysrev = bundleState.createBundleRevision(metadata, resModule);
-            injectedEnvironmentPlugin.getValue().getEnvironment().installResources(sysrev);
+            injectedEnvironmentPlugin.getValue().installResources(sysrev);
             bundleState.createBundleContext();
             bundleState.createStorageState(injectedBundleStorage.getValue());
             injectedLegacyResolver.getValue().addModule(resModule);

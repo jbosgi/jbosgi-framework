@@ -121,6 +121,6 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
         legacyResolver.addModule(userBundle.getResolverModule());
 
         EnvironmentPlugin envPlugin = frameworkState.getEnvironmentPlugin();
-        envPlugin.getEnvironment().installResources(userBundle.getCurrentRevision());
+        envPlugin.installResources(userBundle.getCurrentRevision());
     }
 }

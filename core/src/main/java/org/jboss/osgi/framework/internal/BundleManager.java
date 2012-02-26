@@ -497,7 +497,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
         for (AbstractBundleRevision abr : userBundle.getRevisions()) {
             legacyResolver.removeModule(abr.getResolverModule());
-            envPlugin.getEnvironment().uninstallResources(abr);
+            envPlugin.uninstallResources(abr);
         }
 
         FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();

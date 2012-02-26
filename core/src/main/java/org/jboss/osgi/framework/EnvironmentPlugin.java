@@ -33,9 +33,7 @@ import java.util.Collection;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-public interface EnvironmentPlugin {
-
-    XEnvironment getEnvironment();
+public interface EnvironmentPlugin extends XEnvironment {
 
     /**
      * Currently, the client must have knowlege about the fragments that exist in the environment

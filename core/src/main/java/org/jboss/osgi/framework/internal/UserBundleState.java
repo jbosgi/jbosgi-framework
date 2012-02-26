@@ -360,7 +360,7 @@ abstract class UserBundleState extends AbstractBundleState {
             legacyResolver.addModule(resModule);
 
             EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
-            envPlugin.getEnvironment().installResources(brev);
+            envPlugin.installResources(brev);
         } catch (BundleException ex) {
             throw ex;
         }
@@ -413,7 +413,7 @@ abstract class UserBundleState extends AbstractBundleState {
             legacyResolver.removeModule(resModule);
 
             if (currentRev != brev)
-                envPlugin.getEnvironment().uninstallResources(brev);
+                envPlugin.uninstallResources(brev);
 
             ModuleIdentifier identifier = brev.getModuleIdentifier();
             moduleManager.removeModule(identifier);

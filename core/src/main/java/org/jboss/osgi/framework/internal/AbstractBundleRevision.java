@@ -229,7 +229,7 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
         createResolverModule(getBundleState(), getOSGiMetaData());
 
         EnvironmentPlugin envPlugin = bundleState.getFrameworkState().getEnvironmentPlugin();
-        envPlugin.getEnvironment().refreshResources(this);
+        envPlugin.refreshResources(this);
         refreshRevisionInternal();
     }
 

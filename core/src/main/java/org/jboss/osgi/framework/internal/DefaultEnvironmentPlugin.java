@@ -24,15 +24,18 @@ package org.jboss.osgi.framework.internal;
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
+import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
-import org.jboss.osgi.resolver.v2.XEnvironment;
 import org.jboss.osgi.resolver.v2.XIdentityCapability;
 import org.jboss.osgi.resolver.v2.XPackageRequirement;
 import org.jboss.osgi.resolver.v2.XResource;
@@ -70,14 +73,13 @@ import static org.osgi.framework.resource.ResourceConstants.WIRING_HOST_NAMESPAC
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPlugin> implements EnvironmentPlugin {
+final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Service<EnvironmentPlugin>, EnvironmentPlugin {
 
     // Provide logging
     final Logger log = Logger.getLogger(DefaultEnvironmentPlugin.class);
 
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
-    private final XEnvironment delegate;
 
     static boolean USE_NEW_PATH = false;
 
@@ -91,7 +93,14 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
     }
 
     private DefaultEnvironmentPlugin() {
-        delegate = new EnvironmentDelegate();
+    }
+
+    @Override
+    public void start(StartContext context) throws StartException {
+    }
+
+    @Override
+    public void stop(StopContext context) {
     }
 
     @Override
@@ -100,14 +109,9 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
     }
 
     @Override
-    public XEnvironment getEnvironment() {
-        return delegate;
-    }
-
-    @Override
     public Collection<? extends Resource> findAttachableFragments(Collection<? extends Capability> hostcaps) {
         Set<Resource> result = new HashSet<Resource>();
-        for (Resource res : delegate.getResources(IDENTITY_TYPE_FRAGMENT)) {
+        for (Resource res : getResources(IDENTITY_TYPE_FRAGMENT)) {
             Requirement req = res.getRequirements(WIRING_HOST_NAMESPACE).get(0);
             for (Capability cap : hostcaps) {
                 if (req.matches(cap)) {
@@ -138,153 +142,151 @@ final class DefaultEnvironmentPlugin extends AbstractPluginService<EnvironmentPl
         return Collections.unmodifiableList(result);
     }
 
-    private class EnvironmentDelegate extends AbstractEnvironment {
 
-        @Override
-        public Comparator<Capability> getComparator() {
-            final AbstractEnvironment env = this;
-            return new FrameworkPreferencesComparator() {
-                @Override
-                protected Wiring getWiring(Resource res) {
-                    return env.getWiring(res);
-                }
-
-                @Override
-                public long getResourceIndex(Resource res) {
-                    return env.getResourceIndex(res);
-                }
-            };
-        }
-
-        @Override
-        public Wiring createWiring(Resource res, List<Wire> wires) {
-            AbstractBundleRevision brev = (AbstractBundleRevision) res;
-            return new AbstractBundleWiring(brev, wires);
-        }
-
-        @Override
-        public Wiring applyWiring(Resource res, Wiring wiring) {
-            AbstractBundleRevision brev = (AbstractBundleRevision) res;
-            brev.setWiring((BundleWiring) wiring);
-            return wiring;
-        }
-
-        @Override
-        public SortedSet<Capability> findProviders(Requirement req) {
-
-            // Currently, there is no notion of dynamic package imports
-            // in the resource API. They are treaded like optional
-            // requirements and may cause resolver exceptions
-            // When we detect a dynamic package import, we return an
-            // empty set of capabilities
-            if (req instanceof XPackageRequirement) {
-                XPackageRequirement packreq = (XPackageRequirement) req;
-                if (packreq.isDynamic()) {
-                    return new TreeSet<Capability>();
-                }
+    @Override
+    public Comparator<Capability> getComparator() {
+        final AbstractEnvironment env = this;
+        return new FrameworkPreferencesComparator() {
+            @Override
+            protected Wiring getWiring(Resource res) {
+                return env.getWiring(res);
             }
 
-            SortedSet<Capability> providers = super.findProviders(req);
-            return providers;
-        }
-
-        @Override
-        public synchronized Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) {
-
-            // [TODO] Revisit how we apply the resolution results
-            // An exception in one of the steps may leave the framework partially modified
-
-            // Attach the fragments to host
-            attachFragmentsToHost(wiremap);
-
-            try {
-
-                // Resolve native code libraries if there are any
-                resolveNativeCodeLibraries(wiremap);
-
-            } catch (BundleException ex) {
-                throw new ResolutionException(ex);
+            @Override
+            public long getResourceIndex(Resource res) {
+                return env.getResourceIndex(res);
             }
+        };
+    }
 
-            // For every resolved host bundle create the {@link ModuleSpec}
-            addModules(wiremap);
+    @Override
+    public Wiring createWiring(Resource res, List<Wire> wires) {
+        AbstractBundleRevision brev = (AbstractBundleRevision) res;
+        return new AbstractBundleWiring(brev, wires);
+    }
 
-            // For every resolved host bundle load the module. This creates the {@link ModuleClassLoader}
-            loadModules(wiremap);
+    @Override
+    public Wiring applyWiring(Resource res, Wiring wiring) {
+        AbstractBundleRevision brev = (AbstractBundleRevision) res;
+        brev.setWiring((BundleWiring) wiring);
+        return wiring;
+    }
 
-            // Change the bundle state to RESOLVED
-            setBundleToResolved(wiremap);
+    @Override
+    public SortedSet<Capability> findProviders(Requirement req) {
 
-            // Construct and apply the resource wiring map
-            return super.applyResolverResults(wiremap);
+        // Currently, there is no notion of dynamic package imports
+        // in the resource API. They are treaded like optional
+        // requirements and may cause resolver exceptions
+        // When we detect a dynamic package import, we return an
+        // empty set of capabilities
+        if (req instanceof XPackageRequirement) {
+            XPackageRequirement packreq = (XPackageRequirement) req;
+            if (packreq.isDynamic()) {
+                return new TreeSet<Capability>();
+            }
         }
 
+        SortedSet<Capability> providers = super.findProviders(req);
+        return providers;
+    }
 
-        private void attachFragmentsToHost(Map<Resource, List<Wire>> wiremap) {
-            for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-                XResource res = (XResource) entry.getKey();
-                if (res.isFragment()) {
-                    FragmentBundleRevision fragRev = (FragmentBundleRevision) res;
-                    for (Wire wire : entry.getValue()) {
-                        Capability cap = wire.getCapability();
-                        if (WIRING_HOST_NAMESPACE.equals(cap.getNamespace())) {
-                            HostBundleRevision hostRev = (HostBundleRevision) cap.getResource();
-                            fragRev.attachToHost(hostRev);
-                        }
+    @Override
+    public synchronized Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) {
+
+        // [TODO] Revisit how we apply the resolution results
+        // An exception in one of the steps may leave the framework partially modified
+
+        // Attach the fragments to host
+        attachFragmentsToHost(wiremap);
+
+        try {
+
+            // Resolve native code libraries if there are any
+            resolveNativeCodeLibraries(wiremap);
+
+        } catch (BundleException ex) {
+            throw new ResolutionException(ex);
+        }
+
+        // For every resolved host bundle create the {@link ModuleSpec}
+        addModules(wiremap);
+
+        // For every resolved host bundle load the module. This creates the {@link ModuleClassLoader}
+        loadModules(wiremap);
+
+        // Change the bundle state to RESOLVED
+        setBundleToResolved(wiremap);
+
+        // Construct and apply the resource wiring map
+        return super.applyResolverResults(wiremap);
+    }
+
+
+    private void attachFragmentsToHost(Map<Resource, List<Wire>> wiremap) {
+        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+            XResource res = (XResource) entry.getKey();
+            if (res.isFragment()) {
+                FragmentBundleRevision fragRev = (FragmentBundleRevision) res;
+                for (Wire wire : entry.getValue()) {
+                    Capability cap = wire.getCapability();
+                    if (WIRING_HOST_NAMESPACE.equals(cap.getNamespace())) {
+                        HostBundleRevision hostRev = (HostBundleRevision) cap.getResource();
+                        fragRev.attachToHost(hostRev);
                     }
                 }
             }
         }
+    }
 
-        private void resolveNativeCodeLibraries(Map<Resource, List<Wire>> wiremap) throws BundleException {
-            for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-                XResource res = (XResource) entry.getKey();
-                if (res instanceof UserBundleRevision) {
-                    UserBundleRevision userRev = (UserBundleRevision) res;
-                    Deployment deployment = userRev.getDeployment();
+    private void resolveNativeCodeLibraries(Map<Resource, List<Wire>> wiremap) throws BundleException {
+        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+            XResource res = (XResource) entry.getKey();
+            if (res instanceof UserBundleRevision) {
+                UserBundleRevision userRev = (UserBundleRevision) res;
+                Deployment deployment = userRev.getDeployment();
 
-                    // Resolve the native code libraries, if there are any
-                    NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
-                    if (libMetaData != null) {
-                        NativeCodePlugin nativeCodePlugin = injectedNativeCode.getValue();
-                        nativeCodePlugin.resolveNativeCode(userRev);
-                    }
+                // Resolve the native code libraries, if there are any
+                NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
+                if (libMetaData != null) {
+                    NativeCodePlugin nativeCodePlugin = injectedNativeCode.getValue();
+                    nativeCodePlugin.resolveNativeCode(userRev);
                 }
             }
         }
+    }
 
-        private void addModules(Map<Resource, List<Wire>> wiremap) {
-            ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
-            for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-                XResource res = (XResource) entry.getKey();
-                if (res.isFragment() == false) {
-                    List<Wire> wires = wiremap.get(res);
-                    moduleManager.addModule(res, wires);
+    private void addModules(Map<Resource, List<Wire>> wiremap) {
+        ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
+        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+            XResource res = (XResource) entry.getKey();
+            if (res.isFragment() == false) {
+                List<Wire> wires = wiremap.get(res);
+                moduleManager.addModule(res, wires);
+            }
+        }
+    }
+
+    private void loadModules(Map<Resource, List<Wire>> wiremap) {
+        ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
+        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+            XResource res = (XResource) entry.getKey();
+            if (res.isFragment() == false) {
+                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(res);
+                try {
+                    moduleManager.loadModule(identifier);
+                } catch (ModuleLoadException ex) {
+                    throw new IllegalStateException("Cannot load module: " + identifier, ex);
                 }
             }
         }
+    }
 
-        private void loadModules(Map<Resource, List<Wire>> wiremap) {
-            ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
-            for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-                XResource res = (XResource) entry.getKey();
-                if (res.isFragment() == false) {
-                    ModuleIdentifier identifier = moduleManager.getModuleIdentifier(res);
-                    try {
-                        moduleManager.loadModule(identifier);
-                    } catch (ModuleLoadException ex) {
-                        throw new IllegalStateException("Cannot load module: " + identifier, ex);
-                    }
-                }
-            }
-        }
-
-        private void setBundleToResolved(Map<Resource, List<Wire>> wiremap) {
-            for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-                AbstractBundleRevision brev = (AbstractBundleRevision) entry.getKey();
-                AbstractBundleState bundleState = brev.getBundleState();
-                bundleState.changeState(Bundle.RESOLVED);
-            }
+    private void setBundleToResolved(Map<Resource, List<Wire>> wiremap) {
+        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+            AbstractBundleRevision brev = (AbstractBundleRevision) entry.getKey();
+            AbstractBundleState bundleState = brev.getBundleState();
+            bundleState.changeState(Bundle.RESOLVED);
         }
     }
 }

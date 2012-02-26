@@ -94,14 +94,14 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
         EnvironmentPlugin envPlugin = injectedEnvironmentPlugin.getValue();
         Collection<Resource> allOptional = appendOptionalFragments(mandatory, optional);
         Collection<Resource> filteredMandatory = envPlugin.filterSingletons(mandatory);
-        return resolver.resolve(envPlugin.getEnvironment(), filteredMandatory, allOptional);
+        return resolver.resolve(envPlugin, filteredMandatory, allOptional);
     }
 
     @Override
     public boolean resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
         Map<Resource, List<Wire>> result = resolve(mandatory, optional);
         EnvironmentPlugin envPlugin = injectedEnvironmentPlugin.getValue();
-        envPlugin.getEnvironment().applyResolverResults(result);
+        envPlugin.applyResolverResults(result);
         return result.size() > 0;
     }
 
