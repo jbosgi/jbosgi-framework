@@ -354,13 +354,7 @@ abstract class UserBundleState extends AbstractBundleState {
             OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
             dep.addAttachment(OSGiMetaData.class, metadata);
             dep.addAttachment(Bundle.class, this);
-
-            XModule resModule = createResolverModule(dep);
             BundleRevision brev = createRevision(dep);
-
-            LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
-            legacyResolver.addModule(resModule);
-
             EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
             envPlugin.installResources(brev);
         } catch (BundleException ex) {
@@ -410,15 +404,9 @@ abstract class UserBundleState extends AbstractBundleState {
         UserBundleRevision currentRev = getCurrentRevision();
         for (AbstractBundleRevision brev : getRevisions()) {
 
-            if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
-                LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
-                XModule resModule = brev.getResolverModule();
-                legacyResolver.removeModule(resModule);
-            } else {
-                EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
-                if (currentRev != brev)
-                    envPlugin.uninstallResources(brev);
-            }
+            EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
+            if (currentRev != brev)
+                envPlugin.uninstallResources(brev);
 
             ModuleIdentifier identifier = brev.getModuleIdentifier();
             moduleManager.removeModule(identifier);

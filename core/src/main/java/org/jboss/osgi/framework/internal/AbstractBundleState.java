@@ -63,7 +63,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * An abstract representation of a {@link Bundle} state.
- *
+ * <p/>
  * It is used by the various {@link AbstractBundleService}s.
  * The state is never given to the client.
  *
@@ -401,11 +401,11 @@ abstract class AbstractBundleState implements Bundle {
 
     /**
      * The framework must search for localization entries using the following search rules based on the bundle type:
-     *
+     * <p/>
      * fragment bundle - If the bundle is a resolved fragment, then the search for localization data must delegate to the
      * attached host bundle with the highest version. If the fragment is not resolved, then the framework must search the
      * fragment's JAR for the localization entry.
-     *
+     * <p/>
      * other bundle - The framework must first search in the bundle’s JAR for the localization entry. If the entry is not found
      * and the bundle has fragments, then the attached fragment JARs must be searched for the localization entry.
      */
@@ -541,7 +541,7 @@ abstract class AbstractBundleState implements Bundle {
     abstract void uninstallInternal() throws BundleException;
 
     boolean ensureResolved(boolean fireEvent) {
-        
+
         if (isUninstalled())
             throw new IllegalStateException("Bundle already uninstalled: " + this);
 
@@ -553,16 +553,11 @@ abstract class AbstractBundleState implements Bundle {
                 return true;
 
             try {
-                if (DefaultEnvironmentPlugin.USE_NEW_PATH) {
-                    try {
-                        ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
-                        resolverPlugin.resolveAndApply(Collections.singleton(getCurrentRevision()), null);
-                    } catch (ResolutionException ex) {
-                        throw new BundleException(ex.getMessage(), ex);
-                    }
-                } else {
-                    LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
-                    legacyResolver.resolve(getResolverModule());
+                try {
+                    ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
+                    resolverPlugin.resolveAndApply(Collections.singleton(getCurrentRevision()), null);
+                } catch (ResolutionException ex) {
+                    throw new BundleException(ex.getMessage(), ex);
                 }
 
                 // Activate the service that represents bundle state RESOLVED

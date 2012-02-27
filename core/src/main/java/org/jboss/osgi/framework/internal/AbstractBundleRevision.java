@@ -88,9 +88,6 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
         // Initialize the bundle caps/reqs
         XResourceBuilder.create(this).load(metadata);
-
-        // Add bidirectional one-to-one association between a revision and a resolver module
-        resModule.addAttachment(AbstractBundleRevision.class, this);
     }
 
     @Override
@@ -211,12 +208,7 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
     }
 
     ModuleIdentifier getModuleIdentifier() {
-        try {
-            ModuleManagerPlugin moduleManager = bundleState.getFrameworkState().getModuleManagerPlugin();
-            return moduleManager.getModuleIdentifier(resModule);
-        } catch (Exception ex) {
-            throw new IllegalStateException("Cannot get module identifier for: " + resModule, ex);
-        }
+        return getAttachment(ModuleIdentifier.class);
     }
 
     ModuleClassLoader getModuleClassLoader() throws ModuleLoadException {
@@ -270,6 +262,6 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
     @Override
     public String toString() {
-        return "Revision[" + resModule.getModuleId() + "]";
+        return "Revision[" + getModuleIdentifier() + "]";
     }
 }

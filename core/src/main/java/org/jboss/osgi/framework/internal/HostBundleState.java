@@ -315,8 +315,7 @@ import org.osgi.service.startlevel.StartLevel;
         }
 
         // #8 The BundleActivator.start(BundleContext) method of this bundle is called
-        XModule resModule = getResolverModule();
-        String bundleActivatorClassName = resModule.getModuleActivator();
+        String bundleActivatorClassName = getOSGiMetaData().getBundleActivator();
         if (bundleActivatorClassName != null) {
             ClassLoader tccl = Thread.currentThread().getContextClassLoader();
             try {

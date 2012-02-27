@@ -493,10 +493,8 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
             storageState.deleteBundleStorage();
         }
 
-        LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
         EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
         for (AbstractBundleRevision abr : userBundle.getRevisions()) {
-            legacyResolver.removeModule(abr.getResolverModule());
             envPlugin.uninstallResources(abr);
         }
 
@@ -507,7 +505,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         for (AbstractBundleRevision rev : userBundle.getRevisions()) {
             UserBundleRevision userRev = (UserBundleRevision) rev;
             if (userBundle.isFragment() == false) {
-                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(rev.getResolverModule());
+                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(rev);
                 moduleManager.removeModule(identifier);
             }
             userRev.close();

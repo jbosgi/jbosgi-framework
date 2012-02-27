@@ -21,6 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import org.apache.felix.framework.resolver.ResolveException;
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -86,9 +87,6 @@ public final class FrameworkActive extends AbstractFrameworkService {
         super.start(context);
         try {
             // Resolve the system bundle
-            LegacyResolverPlugin legacyResolver = getValue().getLegacyResolverPlugin();
-            legacyResolver.resolve(getSystemBundle().getResolverModule());
-
             ResolverPlugin resolverPlugin = getValue().getResolverPlugin();
             BundleRevision sysrev = getSystemBundle().getCurrentRevision();
             resolverPlugin.resolveAndApply(Collections.singleton(sysrev), null);
@@ -105,7 +103,7 @@ public final class FrameworkActive extends AbstractFrameworkService {
             eventsPlugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
 
             log.infof("OSGi Framework started");
-        } catch (BundleException ex) {
+        } catch (ResolveException ex) {
             throw new StartException(ex);
         }
     }
