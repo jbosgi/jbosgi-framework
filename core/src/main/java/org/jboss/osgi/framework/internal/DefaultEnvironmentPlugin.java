@@ -84,7 +84,7 @@ final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Serv
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
-    static boolean USE_NEW_PATH = false;
+    static boolean USE_NEW_PATH = true;
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultEnvironmentPlugin service = new DefaultEnvironmentPlugin();

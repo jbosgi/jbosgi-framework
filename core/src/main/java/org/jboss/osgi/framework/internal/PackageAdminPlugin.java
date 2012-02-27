@@ -38,10 +38,10 @@ import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
 import org.osgi.framework.resource.Capability;
-import org.osgi.framework.resource.Requirement;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.packageadmin.ExportedPackage;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.packageadmin.RequiredBundle;
@@ -52,19 +52,18 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-import static org.osgi.framework.resource.ResourceConstants.WIRING_BUNDLE_NAMESPACE;
+import static org.osgi.framework.resource.ResourceConstants.IDENTITY_NAMESPACE;
 import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
 
 /**
@@ -229,19 +228,13 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             return null;
     }
 
-    private boolean isWired(XPackageCapability capability) {
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        for (AbstractBundleState ab : bundleManager.getBundles()) {
-            /*
-            for (XModule module : ab.getAllResolverModules()) {
-                if (module.isResolved() == false)
-                    continue;
-                for (XWire wire : module.getWires()) {
-                    if (wire.getCapability().equals(capability))
-                        return true;
-                }
+    private boolean isWired(XPackageCapability cap) {
+        BundleWiring wiring = ((BundleRevision) cap.getResource()).getWiring();
+        if (wiring != null) {
+            for (Wire wire : wiring.getProvidedResourceWires(cap.getNamespace())) {
+                if (wire.getCapability() == cap)
+                    return true;
             }
-            */
         }
         return false;
     }
@@ -396,50 +389,38 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     @Override
     public RequiredBundle[] getRequiredBundles(String symbolicName) {
         BundleManager bundleManager = injectedBundleManager.getValue();
-        Map<AbstractBundleState, Collection<AbstractBundleState>> matchingBundles = new HashMap<AbstractBundleState, Collection<AbstractBundleState>>();
-        // Make a defensive copy to ensure thread safety as we are running through the list twice
-        List<AbstractBundleState> bundles = new ArrayList<AbstractBundleState>(bundleManager.getBundles());
+        List<HostBundleState> matchingHosts = new ArrayList<HostBundleState>();
         if (symbolicName != null) {
-            for (AbstractBundleState aux : bundles) {
-                if (symbolicName.equals(aux.getSymbolicName()))
-                    matchingBundles.put(aux, new ArrayList<AbstractBundleState>());
+            for (AbstractBundleState aux : bundleManager.getBundles(symbolicName, null)) {
+                if (aux instanceof HostBundleState)
+                    matchingHosts.add((HostBundleState) aux);
             }
         } else {
-            for (AbstractBundleState aux : bundles) {
-                if (!aux.isFragment())
-                    matchingBundles.put(aux, new ArrayList<AbstractBundleState>());
+            for (AbstractBundleState aux : bundleManager.getBundles()) {
+                if (aux instanceof HostBundleState)
+                    matchingHosts.add((HostBundleState) aux);
             }
         }
-
-        if (matchingBundles.size() == 0)
+        if (matchingHosts.isEmpty()) {
             return null;
-
-        for (AbstractBundleState aux : bundles) {
-            AbstractBundleRevision resModule = aux.getCurrentRevision();
-            for (Requirement req : resModule.getRequirements(WIRING_BUNDLE_NAMESPACE)) {
-                /*
-                if (req.getName().equals(symbolicName)) {
-                    for (XWire wire : req.getModule().getWires()) {
-                        if (wire.getRequirement().equals(req)) {
-                            XCapability wiredCap = wire.getCapability();
-                            XModule module = wiredCap.getModule();
-                            Bundle bundle = module.getAttachment(Bundle.class);
-                            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-                            Collection<AbstractBundleState> requiring = matchingBundles.get(bundleState);
-                            if (requiring != null)
-                                requiring.add(aux);
-                        }
-                    }
-                }
-                */
-            }
         }
-
-        List<RequiredBundle> result = new ArrayList<RequiredBundle>(matchingBundles.size());
-        for (Map.Entry<AbstractBundleState, Collection<AbstractBundleState>> entry : matchingBundles.entrySet())
-            result.add(new RequiredBundleImpl(entry.getKey(), entry.getValue()));
-
-        return result.toArray(new RequiredBundle[matchingBundles.size()]);
+        List<RequiredBundle> result = new ArrayList<RequiredBundle>();
+        Iterator<HostBundleState> hostit = matchingHosts.iterator();
+        while (hostit.hasNext()) {
+            AbstractBundleState bundleState = hostit.next();
+            BundleRevision brev = bundleState.getCurrentRevision();
+            Set<AbstractBundleState> requiringBundles = new HashSet<AbstractBundleState>();
+            BundleWiring wiring = brev.getWiring();
+            if (wiring != null) {
+                List<Wire> providedWires = wiring.getProvidedResourceWires(IDENTITY_NAMESPACE);
+                for (Wire wire : providedWires) {
+                    Bundle bundle = ((BundleRevision) wire.getRequirer()).getBundle();
+                    requiringBundles.add(AbstractBundleState.assertBundleState(bundle));
+                }
+            }
+            result.add(new RequiredBundleImpl(bundleState, requiringBundles));
+        }
+        return result.toArray(new RequiredBundle[matchingHosts.size()]);
     }
 
     /**
@@ -575,7 +556,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         @Override
         public boolean isRemovalPending() {
             AbstractBundleRevision brev = (AbstractBundleRevision) capability.getResource();
-            return brev.getBundleState().getState() == Bundle.UNINSTALLED;
+            AbstractBundleState bundleState = brev.getBundleState();
+            return brev != bundleState.getCurrentRevision() || bundleState.getState() == Bundle.UNINSTALLED;
         }
 
         private XPackageCapability getCapability() {
