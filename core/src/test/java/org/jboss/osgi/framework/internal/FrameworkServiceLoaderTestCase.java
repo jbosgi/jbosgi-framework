@@ -21,23 +21,21 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
+import org.junit.Test;
 
 import java.net.URL;
 import java.net.URLStreamHandlerFactory;
 import java.util.Iterator;
 
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
-import org.jboss.osgi.framework.internal.ModuleManagerPlugin;
-import org.jboss.osgi.framework.internal.SystemBundleState;
-import org.junit.Test;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 /**
  * Test whether we can load a service through the framework module
- * 
+ *
  * @author Thomas.Diesler@jboss.com
  * @since 10-Jan-2011
  */
@@ -45,7 +43,7 @@ public class FrameworkServiceLoaderTestCase extends AbstractFrameworkTest {
 
     @Test
     public void testServiceLoaderFails() throws Exception {
-        
+
         // The {@link ModularURLStreamHandlerFactory} follows a pattern similar to this.
         SystemBundleState systemBundle = getBundleManager().getSystemBundle();
         ModuleManagerPlugin plugin = getFrameworkState().getModuleManagerPlugin();

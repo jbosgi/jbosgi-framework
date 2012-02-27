@@ -225,7 +225,7 @@ final class LegacyResolverPlugin extends AbstractPluginService<LegacyResolverPlu
         resolveNativeCodeLibraries(resolved);
 
         // For every resolved host bundle create the {@link ModuleSpec}
-        addModules(resolved);
+        //addModules(resolved);
 
         // For every resolved host bundle load the module. This creates the {@link ModuleClassLoader}
         loadModules(resolved);
@@ -246,15 +246,6 @@ final class LegacyResolverPlugin extends AbstractPluginService<LegacyResolverPlu
                         fragRev.attachToHost(hostRev);
                     }
                 }
-            }
-        }
-    }
-
-    private void addModules(List<XModule> resolved) {
-        ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
-        for (XModule aux : resolved) {
-            if (aux.isFragment() == false) {
-                moduleManager.addModule(aux);
             }
         }
     }

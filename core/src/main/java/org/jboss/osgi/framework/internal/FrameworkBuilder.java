@@ -134,7 +134,6 @@ public final class FrameworkBuilder {
         LifecycleInterceptorPlugin.addService(serviceTarget);
         ModuleManagerPlugin.addService(serviceTarget);
         NativeCodePlugin.addService(serviceTarget);
-        LegacyPackageAdminPlugin.addService(serviceTarget);
         PackageAdminPlugin.addService(serviceTarget);
         PersistentBundlesInstaller.addService(serviceTarget);
         LegacyResolverPlugin.addService(serviceTarget);
