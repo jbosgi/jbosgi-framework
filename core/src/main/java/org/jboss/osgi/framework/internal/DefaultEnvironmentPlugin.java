@@ -36,6 +36,8 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
+import org.jboss.osgi.resolver.v2.VersionRange;
+import org.jboss.osgi.resolver.v2.XHostRequirement;
 import org.jboss.osgi.resolver.v2.XIdentityCapability;
 import org.jboss.osgi.resolver.v2.XPackageRequirement;
 import org.jboss.osgi.resolver.v2.XResource;
@@ -80,6 +82,7 @@ final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Serv
 
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
+    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
     static boolean USE_NEW_PATH = false;
 
@@ -88,6 +91,7 @@ final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Serv
         ServiceBuilder<EnvironmentPlugin> builder = serviceTarget.addService(Services.ENVIRONMENT_PLUGIN, service);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -187,7 +191,37 @@ final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Serv
             }
         }
 
+        // Possibly reduce the set of provided capabilities
+        BundleManager bundleManager = injectedBundleManager.getValue();
         SortedSet<Capability> providers = super.findProviders(req);
+        Iterator<Capability> capit = providers.iterator();
+        while(capit.hasNext()) {
+            Capability cap = capit.next();
+            XResource res = (XResource) cap.getResource();
+
+            // A fragment can only provide a capability if it is either already attached
+            // or if there is one possible hosts that it can attach to
+            // i.e. one of the hosts in the range is not resolved already
+            if (res instanceof FragmentBundleRevision) {
+                FragmentBundleRevision fragrev = (FragmentBundleRevision) res;
+                if (fragrev.getAttachedHosts().isEmpty()) {
+                    XHostRequirement hostreq = (XHostRequirement) res.getRequirements(WIRING_HOST_NAMESPACE).get(0);
+                    String symbolicName = hostreq.getSymbolicName();
+                    VersionRange versionRange = hostreq.getVersionRange();
+                    boolean unresolvedHost = false;
+                    Set<AbstractBundleState> hosts = bundleManager.getBundles(symbolicName, versionRange != null ? versionRange.toString() : null);
+                    for (AbstractBundleState host : hosts) {
+                        if (host.isResolved() == false) {
+                            unresolvedHost = true;
+                            break;
+                        }
+                    }
+                    if (unresolvedHost == false) {
+                        capit.remove();
+                    }
+                }
+            }
+        }
         return providers;
     }
 

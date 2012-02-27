@@ -29,11 +29,11 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.ResolverPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundleCapability;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
+import org.jboss.osgi.resolver.XModuleIdentity;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XRequireBundleRequirement;
 import org.jboss.osgi.resolver.XRequirement;
@@ -43,12 +43,10 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
-import org.osgi.framework.resource.Resource;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.service.packageadmin.ExportedPackage;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.packageadmin.RequiredBundle;
-import org.osgi.service.resolver.ResolutionException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,44 +66,44 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * An implementation of the {@link PackageAdmin} service.
+ * An implementation of the {@link org.osgi.service.packageadmin.PackageAdmin} service.
  *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2010
  */
-public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdmin> implements PackageAdmin {
+public final class LegacyPackageAdminPlugin extends AbstractExecutorService<PackageAdmin> implements PackageAdmin {
 
     // Provide logging
-    static final Logger log = Logger.getLogger(PackageAdminPlugin.class);
+    static final Logger log = Logger.getLogger(LegacyPackageAdminPlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
-    private final InjectedValue<ResolverPlugin> injectedResolver = new InjectedValue<ResolverPlugin>();
+    private final InjectedValue<LegacyResolverPlugin> injectedLegacyResolver = new InjectedValue<LegacyResolverPlugin>();
     private ServiceRegistration registration;
 
     static void addService(ServiceTarget serviceTarget) {
-        PackageAdminPlugin service = new PackageAdminPlugin();
-        ServiceBuilder<PackageAdmin> builder = serviceTarget.addService(Services.PACKAGE_ADMIN, service);
+        LegacyPackageAdminPlugin service = new LegacyPackageAdminPlugin();
+        ServiceBuilder<PackageAdmin> builder = serviceTarget.addService(Services.LEGACY_PACKAGE_ADMIN, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(Services.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolver);
+        builder.addDependency(InternalServices.LEGACY_RESOLVER_PLUGIN, LegacyResolverPlugin.class, service.injectedLegacyResolver);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    private PackageAdminPlugin() {
+    private LegacyPackageAdminPlugin() {
     }
 
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        if (DefaultEnvironmentPlugin.USE_NEW_PATH == true) {
+        if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
             BundleContext systemContext = injectedSystemContext.getValue();
             registration = systemContext.registerService(PackageAdmin.class.getName(), this, null);
         }
@@ -118,7 +116,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     }
 
     @Override
-    public PackageAdminPlugin getValue() {
+    public LegacyPackageAdminPlugin getValue() {
         return this;
     }
 
@@ -180,7 +178,10 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     @Override
     public ExportedPackage[] getExportedPackages(String name) {
         ExportedPackage[] pkgs = getExportedPackagesInternal(name);
-        return pkgs.length == 0 ? null : pkgs;
+        if (pkgs.length == 0)
+            return null; // a bit ugly, but the spec mandates this
+
+        return pkgs;
     }
 
     private ExportedPackage[] getExportedPackagesInternal(String name) {
@@ -188,15 +189,15 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             throw new IllegalArgumentException("Null name");
 
         Set<ExportedPackage> result = new HashSet<ExportedPackage>();
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        for (AbstractBundleState aux : bundleManager.getBundles()) {
-            if (aux.isResolved() && aux.isFragment() == false) {
-                //for (XCapability cap : aux.getCapabilities()) {
-                //    if (cap instanceof XPackageCapability) {
-                //        if (name.equals(cap.getName()))
-                //            result.add(new ExportedPackageImpl((XPackageCapability) cap));
-                //    }
-                //}
+        LegacyResolverPlugin plugin = injectedLegacyResolver.getValue();
+        for (XModule mod : plugin.getResolver().getModules()) {
+            if (mod.isResolved() && mod.isFragment() == false) {
+                for (XCapability cap : mod.getCapabilities()) {
+                    if (cap instanceof XPackageCapability) {
+                        if (name.equals(cap.getName()))
+                            result.add(new ExportedPackageImpl((XPackageCapability) cap));
+                    }
+                }
             }
         }
         return result.toArray(new ExportedPackage[result.size()]);
@@ -367,27 +368,20 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         boolean result;
         // Only bundles that are in state INSTALLED and are
         // registered with the resolver qualify as resolvable
-            ResolverPlugin resolverPlugin = injectedResolver.getValue();
-            BundleManager bundleManager = injectedBundleManager.getValue();
-            if (bundles == null) {
-                Set<AbstractBundleState> bset = bundleManager.getBundles(Bundle.INSTALLED);
-                bundles = new Bundle[bset.size()];
-                bset.toArray(bundles);
-            }
-            Set<Resource> unresolved = new LinkedHashSet<Resource>();
+        LegacyResolverPlugin resolverPlugin = injectedLegacyResolver.getValue();
+        Set<XModule> unresolved = null;
+        if (bundles != null) {
+            unresolved = new LinkedHashSet<XModule>();
             for (Bundle aux : bundles) {
                 AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
-                if (bundleState.getState() == Bundle.INSTALLED) {
-                    unresolved.add(bundleState.getCurrentRevision());
+                XModuleIdentity moduleId = bundleState.getResolverModule().getModuleId();
+                if (bundleState.getState() == Bundle.INSTALLED && resolverPlugin.getModuleById(moduleId) != null) {
+                    unresolved.add(bundleState.getResolverModule());
                 }
             }
-            log.debugf("Resolve bundles: %s", unresolved);
-            try {
-                result = resolverPlugin.resolveAndApply(unresolved, null);
-            } catch (ResolutionException ex) {
-                log.debugf(ex, "Cannot resolve: " + unresolved);
-                result = false;
-            }
+        }
+        log.debugf("Resolve bundles: %s", unresolved);
+        result = resolverPlugin.resolveAll(unresolved);
         return result;
     }
 

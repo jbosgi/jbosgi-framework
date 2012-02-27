@@ -80,6 +80,7 @@ final class HostBundleRevision extends UserBundleRevision {
     }
 
     void refreshRevisionInternal() {
+        super.refreshRevisionInternal();
         attachedFragments = null;
     }
 

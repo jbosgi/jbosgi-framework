@@ -21,18 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Dictionary;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
@@ -58,6 +46,18 @@ import org.osgi.framework.Version;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.packageadmin.PackageAdmin;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Dictionary;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This is the internal implementation of a Bundle based on a user {@link Deployment}.
@@ -322,7 +322,7 @@ abstract class UserBundleState extends AbstractBundleState {
      * Creates a new Bundle Revision when the bundle is updated. Multiple Bundle Revisions can co-exist at the same time.
      *
      * @param input The stream to create the bundle revision from or <tt>null</tt> if the new revision needs to be created from
-     *        the same location as where the bundle was initially installed.
+     *              the same location as where the bundle was initially installed.
      * @throws Exception If the bundle cannot be read, or if the update attempt to change the BSN.
      */
     private void createUpdateRevision(InputStream input) throws Exception {
@@ -404,16 +404,19 @@ abstract class UserBundleState extends AbstractBundleState {
             throw new IllegalStateException("Attempt to refresh an unresolved bundle: " + this);
 
         // Remove the revisions from the resolver
-        LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
         UserBundleRevision currentRev = getCurrentRevision();
         for (AbstractBundleRevision brev : getRevisions()) {
-            XModule resModule = brev.getResolverModule();
-            legacyResolver.removeModule(resModule);
 
-            if (currentRev != brev)
-                envPlugin.uninstallResources(brev);
+            if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
+                LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
+                XModule resModule = brev.getResolverModule();
+                legacyResolver.removeModule(resModule);
+            } else {
+                EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
+                if (currentRev != brev)
+                    envPlugin.uninstallResources(brev);
+            }
 
             ModuleIdentifier identifier = brev.getModuleIdentifier();
             moduleManager.removeModule(identifier);
@@ -427,8 +430,11 @@ abstract class UserBundleState extends AbstractBundleState {
         // Update the resolver module for the current revision
         currentRev.refreshRevision();
 
-        XModule resModule = currentRev.getResolverModule();
-        legacyResolver.addModule(resModule);
+        if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
+            LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
+            XModule resModule = currentRev.getResolverModule();
+            legacyResolver.addModule(resModule);
+        }
 
         changeState(Bundle.INSTALLED);
 

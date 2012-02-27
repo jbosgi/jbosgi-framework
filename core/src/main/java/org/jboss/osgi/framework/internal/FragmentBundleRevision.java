@@ -53,7 +53,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
      *
      * @throws IllegalArgumentException if the given bundleRev is not an instance of FragmentRevision
      */
-    static FragmentBundleRevision assertUserRevision(AbstractBundleRevision bundleRev) {
+    static FragmentBundleRevision assertFragmentRevision(AbstractBundleRevision bundleRev) {
         if (bundleRev == null)
             throw new IllegalArgumentException("Null bundleRev");
 

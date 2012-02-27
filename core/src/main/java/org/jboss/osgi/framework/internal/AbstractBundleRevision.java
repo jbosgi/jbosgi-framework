@@ -233,7 +233,9 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
         refreshRevisionInternal();
     }
 
-    abstract void refreshRevisionInternal();
+    void refreshRevisionInternal() {
+        wiring = null;
+    }
 
     void createResolverModule(AbstractBundleState bundleState, OSGiMetaData metadata) throws BundleException {
         final String symbolicName = metadata.getBundleSymbolicName();

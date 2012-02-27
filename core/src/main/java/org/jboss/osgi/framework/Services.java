@@ -81,6 +81,9 @@ public interface Services {
     ServiceName FRAMEWORK_ACTIVATOR = FRAMEWORK_BASE_NAME.append("ACTIVATOR");
 
     /** The service name for the {@link PackageAdmin} service */
+    ServiceName LEGACY_PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("LegacyPackageAdmin");
+
+    /** The service name for the {@link PackageAdmin} service */
     ServiceName PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("PackageAdmin");
 
     /** The {@link Resolver} service name */

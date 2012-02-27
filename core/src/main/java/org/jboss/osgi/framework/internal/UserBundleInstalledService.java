@@ -117,10 +117,12 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
             }
         }
         FrameworkState frameworkState = userBundle.getFrameworkState();
-        LegacyResolverPlugin legacyResolver = frameworkState.getLegacyResolverPlugin();
-        legacyResolver.addModule(userBundle.getResolverModule());
-
-        EnvironmentPlugin envPlugin = frameworkState.getEnvironmentPlugin();
-        envPlugin.installResources(userBundle.getCurrentRevision());
+        if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
+            LegacyResolverPlugin legacyResolver = frameworkState.getLegacyResolverPlugin();
+            legacyResolver.addModule(userBundle.getResolverModule());
+        } else {
+            EnvironmentPlugin envPlugin = frameworkState.getEnvironmentPlugin();
+            envPlugin.installResources(userBundle.getCurrentRevision());
+        }
     }
 }

@@ -551,8 +551,7 @@ abstract class AbstractBundleState implements Bundle {
         // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired
         // containing a BundleException with details of the reason this bundle could not be resolved.
         synchronized (this) {
-            XModule resModule = getResolverModule();
-            if (resModule.isResolved())
+            if (isResolved())
                 return true;
 
             try {
@@ -565,7 +564,7 @@ abstract class AbstractBundleState implements Bundle {
                     }
                 } else {
                     LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
-                    legacyResolver.resolve(resModule);
+                    legacyResolver.resolve(getResolverModule());
                 }
 
                 // Activate the service that represents bundle state RESOLVED
