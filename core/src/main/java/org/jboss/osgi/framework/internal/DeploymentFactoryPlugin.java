@@ -21,9 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.io.IOException;
-import java.util.jar.Manifest;
-
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
@@ -36,13 +33,14 @@ import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.spi.util.BundleInfo;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
+
+import java.io.IOException;
+import java.util.jar.Manifest;
 
 /**
  * A plugin taht create bundle {@link Deployment} objects.
@@ -201,9 +199,9 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
             metadata = toOSGiMetaData(info);
 
         // #3 we support deployments that contain XModule
-        XModule resModule = dep.getAttachment(XModule.class);
-        if (metadata == null && resModule != null)
-            metadata = toOSGiMetaData(dep, resModule);
+        //XModule resModule = dep.getAttachment(XModule.class);
+        //if (metadata == null && resModule != null)
+        //    metadata = toOSGiMetaData(dep, resModule);
 
         // #4 check if we have a valid OSGi manifest
         if (metadata == null) {
@@ -256,16 +254,5 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
     private OSGiMetaData toOSGiMetaData(final BundleInfo info) {
         Manifest manifest = info.getManifest();
         return OSGiMetaDataBuilder.load(manifest);
-    }
-
-    private OSGiMetaData toOSGiMetaData(final Deployment dep, final XModule resModule) {
-        String symbolicName = dep.getSymbolicName();
-        Version version = Version.parseVersion(dep.getVersion());
-        if (symbolicName.equals(resModule.getName()) == false || version.equals(resModule.getVersion()) == false)
-            throw new IllegalArgumentException("Inconsistent bundle metadata: " + resModule);
-
-        // Create dummy OSGiMetaData from the user provided XModule
-        OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(symbolicName, version);
-        return builder.getOSGiMetaData();
     }
 }

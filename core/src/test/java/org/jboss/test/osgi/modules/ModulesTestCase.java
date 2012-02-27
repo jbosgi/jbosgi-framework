@@ -21,9 +21,6 @@
  */
 package org.jboss.test.osgi.modules;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
@@ -47,6 +44,9 @@ import org.jboss.test.osgi.modules.d.D;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Test low level modules use cases.

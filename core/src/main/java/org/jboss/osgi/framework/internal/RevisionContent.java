@@ -21,17 +21,17 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import org.jboss.logging.Logger;
+import org.jboss.osgi.vfs.AbstractVFS;
+import org.jboss.osgi.vfs.VFSUtils;
+import org.jboss.osgi.vfs.VirtualFile;
+
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.util.Enumeration;
 import java.util.Vector;
-
-import org.jboss.logging.Logger;
-import org.jboss.osgi.vfs.AbstractVFS;
-import org.jboss.osgi.vfs.VFSUtils;
-import org.jboss.osgi.vfs.VirtualFile;
 
 /**
  * An abstraction for the revision content

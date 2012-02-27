@@ -23,12 +23,8 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.resolver.v2.spi.AbstractCapability;
-import org.jboss.osgi.resolver.v2.spi.AbstractWire;
 import org.osgi.framework.wiring.BundleCapability;
-import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;
-import org.osgi.framework.wiring.BundleWire;
-import org.osgi.framework.wiring.BundleWiring;
 
 import java.util.Map;
 

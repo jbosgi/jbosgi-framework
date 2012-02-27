@@ -21,7 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.apache.felix.framework.resolver.ResolveException;
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -37,6 +36,7 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.service.resolver.ResolutionException;
 
 import java.util.Collections;
 
@@ -103,7 +103,7 @@ public final class FrameworkActive extends AbstractFrameworkService {
             eventsPlugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
 
             log.infof("OSGi Framework started");
-        } catch (ResolveException ex) {
+        } catch (ResolutionException ex) {
             throw new StartException(ex);
         }
     }

@@ -21,9 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -38,10 +35,12 @@ import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemPathsProvider;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
-import org.jboss.osgi.resolver.XModule;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents the ACTIVE state of the system bundle.
@@ -82,8 +81,7 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
             bundleState = createBundleState();
             bundleState.changeState(Bundle.STARTING);
             OSGiMetaData metadata = createOSGiMetaData();
-            XModule resModule = bundleState.createResolverModule(metadata);
-            SystemBundleRevision sysrev = bundleState.createBundleRevision(metadata, resModule);
+            SystemBundleRevision sysrev = bundleState.createBundleRevision(metadata);
             injectedEnvironmentPlugin.getValue().installResources(sysrev);
             bundleState.createBundleContext();
             bundleState.createStorageState(injectedBundleStorage.getValue());

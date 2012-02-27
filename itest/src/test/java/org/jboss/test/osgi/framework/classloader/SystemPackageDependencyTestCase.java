@@ -21,14 +21,6 @@
  */
 package org.jboss.test.osgi.framework.classloader;
 
-import static org.junit.Assert.fail;
-
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.management.MBeanServer;
-
 import org.jboss.logging.Logger;
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
@@ -48,6 +40,13 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
+
+import javax.management.MBeanServer;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.fail;
 
 /**
  * Test requirements on the system bundle

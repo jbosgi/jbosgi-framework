@@ -21,21 +21,20 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import org.jboss.logging.Logger;
+import org.jboss.modules.Module;
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.vfs.AbstractVFS;
+import org.jboss.osgi.vfs.VirtualFile;
+import org.osgi.framework.BundleException;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
-
-import org.jboss.logging.Logger;
-import org.jboss.modules.Module;
-import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.vfs.AbstractVFS;
-import org.jboss.osgi.vfs.VirtualFile;
-import org.osgi.framework.BundleException;
 
 /**
  * An abstract bundle revision that is based on a user {@link Deployment}.
@@ -67,10 +66,6 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
 
     private static OSGiMetaData getOSGiMetaData(Deployment dep) {
         return dep.getAttachment(OSGiMetaData.class);
-    }
-
-    private static XModule getXModule(Deployment dep) {
-        return dep.getAttachment(XModule.class);
     }
 
     private static int getRevisionId(Deployment dep) {

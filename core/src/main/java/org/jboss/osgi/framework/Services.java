@@ -26,9 +26,9 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
 import org.osgi.service.packageadmin.PackageAdmin;
-import org.osgi.service.startlevel.StartLevel;
 import org.osgi.service.resolver.Environment;
 import org.osgi.service.resolver.Resolver;
+import org.osgi.service.startlevel.StartLevel;
 
 /**
  * A collection of public service names.

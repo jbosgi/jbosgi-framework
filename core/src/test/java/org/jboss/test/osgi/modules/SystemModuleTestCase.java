@@ -21,10 +21,6 @@
  */
 package org.jboss.test.osgi.modules;
 
-import java.io.InputStream;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
@@ -42,6 +38,10 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Test delegation to the system module

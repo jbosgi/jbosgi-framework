@@ -21,12 +21,12 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import org.jboss.logging.Logger;
+import org.jboss.modules.Module;
+
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.Vector;
-
-import org.jboss.logging.Logger;
-import org.jboss.modules.Module;
 
 /**
  * A bundle entries provider.

@@ -23,8 +23,6 @@ package org.jboss.test.osgi.framework.jbosgi323;
 
 // 
 
-import java.io.InputStream;
-
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -34,6 +32,8 @@ import org.jboss.test.osgi.framework.classloader.support.a.A;
 import org.jboss.test.osgi.framework.classloader.support.b.B;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+
+import java.io.InputStream;
 
 /**
  * [JBOSGI-323] DynamicImport-Package takes presendence over embedded classes

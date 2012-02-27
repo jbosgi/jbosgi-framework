@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import org.osgi.framework.ServiceReference;
+
 import java.net.URL;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
@@ -30,8 +32,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
-import org.osgi.framework.ServiceReference;
 
 /**
  * There can only ever be one URLStreamHandlerFactory active in the system and it can only be set once, using

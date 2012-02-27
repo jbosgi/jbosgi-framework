@@ -21,17 +21,16 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.Enumeration;
-
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XModule;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.Enumeration;
 
 /**
  * An abstract bundle revision that is based on a user {@link Deployment}.
@@ -44,7 +43,7 @@ final class SystemBundleRevision extends AbstractBundleRevision {
 
     static final Logger log = Logger.getLogger(SystemBundleRevision.class);
 
-    SystemBundleRevision(SystemBundleState bundleState, OSGiMetaData metadata, XModule resModule) throws BundleException {
+    SystemBundleRevision(SystemBundleState bundleState, OSGiMetaData metadata) throws BundleException {
         super(bundleState, metadata, 0);
     }
 

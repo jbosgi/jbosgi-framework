@@ -21,10 +21,6 @@
  */
 package org.jboss.test.osgi.framework.jbosgi476;
 
-import static org.junit.Assert.assertTrue;
-
-import java.io.InputStream;
-
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -34,6 +30,10 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.Constants;
+
+import java.io.InputStream;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * [JBOSGI-476] Cannot acquire start/stop lock for lazy bundles

@@ -21,17 +21,11 @@
  */
 package org.jboss.osgi.framework;
 
-import java.util.List;
-
-import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.Service;
-import org.jboss.osgi.resolver.XModule;
-import org.osgi.framework.wiring.BundleRevision;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -42,8 +36,6 @@ import org.osgi.framework.wiring.BundleRevision;
 public interface ModuleLoaderProvider extends Service<ModuleLoaderProvider> {
 
     ModuleLoader getModuleLoader();
-
-    ModuleIdentifier getModuleIdentifier(XModule resModule);
 
     void addModule(ModuleSpec moduleSpec);
 

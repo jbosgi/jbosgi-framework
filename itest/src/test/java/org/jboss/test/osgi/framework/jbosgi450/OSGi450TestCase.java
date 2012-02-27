@@ -21,20 +21,6 @@
  */
 package org.jboss.test.osgi.framework.jbosgi450;
 
-import static java.util.jar.JarFile.MANIFEST_NAME;
-import static org.jboss.osgi.spi.util.ConstantsHelper.bundleEvent;
-import static org.jboss.osgi.spi.util.ConstantsHelper.bundleState;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-
-import java.io.InputStream;
-import java.net.URL;
-import java.util.EventObject;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -46,6 +32,20 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.SynchronousBundleListener;
+
+import java.io.InputStream;
+import java.net.URL;
+import java.util.EventObject;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import static java.util.jar.JarFile.MANIFEST_NAME;
+import static org.jboss.osgi.spi.util.ConstantsHelper.bundleEvent;
+import static org.jboss.osgi.spi.util.ConstantsHelper.bundleState;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 /**
  * [JBOSGI-450] Bundle containing a BundleTracker causes subsequent bundle install/starts to fail

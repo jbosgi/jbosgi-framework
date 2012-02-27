@@ -21,13 +21,13 @@
  */
 package org.jboss.test.osgi.framework.service.support.d;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jboss.test.osgi.framework.service.support.a.A;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceRegistration;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author <a href="mailto:ales.justin@jboss.org">Ales Justin</a>

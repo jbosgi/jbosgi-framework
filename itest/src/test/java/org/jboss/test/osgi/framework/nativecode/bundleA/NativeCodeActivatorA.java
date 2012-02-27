@@ -21,14 +21,14 @@
  */
 package org.jboss.test.osgi.framework.nativecode.bundleA;
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 public class NativeCodeActivatorA implements BundleActivator {
 

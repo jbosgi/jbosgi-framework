@@ -21,20 +21,20 @@
  */
 package org.jboss.test.osgi.framework.launch;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.FilenameFilter;
-import java.util.Arrays;
-
 import org.jboss.osgi.framework.internal.FrameworkFactoryImpl;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.launch.Framework;
+
+import java.io.File;
+import java.io.FilenameFilter;
+import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test aggregated framework bootstrap.

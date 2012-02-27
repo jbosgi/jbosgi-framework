@@ -21,10 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
 import org.jboss.logging.Logger;
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.LocalLoader;
@@ -49,6 +45,10 @@ import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemPathsProvider;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 /**
  * The system module provider plugin.

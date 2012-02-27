@@ -21,11 +21,11 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import org.osgi.service.url.AbstractURLStreamHandlerService;
+
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
-
-import org.osgi.service.url.AbstractURLStreamHandlerService;
 
 /**
  * A handler for the 'bundle' protocol.

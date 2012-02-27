@@ -21,9 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.osgi.framework.internal.BundleManager;
-import org.jboss.osgi.framework.internal.AbstractBundleState;
-import org.jboss.osgi.framework.internal.FrameworkState;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;

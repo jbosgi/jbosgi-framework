@@ -21,21 +21,9 @@
  */
 package org.jboss.osgi.framework;
 
-import org.jboss.logging.Logger;
-import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.StopContext;
-import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.EnvironmentPlugin;
-import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.resolver.v2.FelixResolver;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
 import org.osgi.service.resolver.ResolutionException;
-import org.osgi.service.resolver.Resolver;
 
 import java.util.Collection;
 import java.util.List;

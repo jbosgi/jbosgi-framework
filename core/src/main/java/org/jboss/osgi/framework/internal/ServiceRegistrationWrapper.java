@@ -21,10 +21,10 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.util.Dictionary;
-
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+
+import java.util.Dictionary;
 
 /**
  * ServiceRegistrationWrapper

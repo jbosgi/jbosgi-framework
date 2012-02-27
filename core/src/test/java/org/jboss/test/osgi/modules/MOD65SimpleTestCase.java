@@ -21,16 +21,6 @@
  */
 package org.jboss.test.osgi.modules;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
-
 import org.jboss.modules.ClassSpec;
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
@@ -52,6 +42,16 @@ import org.jboss.test.osgi.modules.a.ModuleActivatorA;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.Stack;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * [MODULES-65] Deadlock on circular class load

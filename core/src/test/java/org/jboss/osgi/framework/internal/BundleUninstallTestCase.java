@@ -21,16 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.osgi.framework.Bundle.INSTALLED;
-import static org.osgi.framework.Bundle.RESOLVED;
-import static org.osgi.framework.Bundle.UNINSTALLED;
-
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.testing.OSGiManifestBuilder;
@@ -41,6 +31,16 @@ import org.jboss.test.osgi.framework.subA.SimpleActivator;
 import org.jboss.test.osgi.framework.subA.SimpleService;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.osgi.framework.Bundle.INSTALLED;
+import static org.osgi.framework.Bundle.RESOLVED;
+import static org.osgi.framework.Bundle.UNINSTALLED;
 
 /**
  * Verify bundle services on install/uninstall.

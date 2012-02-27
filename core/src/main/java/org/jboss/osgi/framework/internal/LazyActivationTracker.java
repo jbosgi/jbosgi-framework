@@ -21,9 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.util.Stack;
-
 import org.jboss.logging.Logger;
+
+import java.util.Stack;
 
 /**
  * A {@link ThreadLocal} of bundles that need to get started caused by lazy activation.

@@ -21,6 +21,13 @@
  */
 package org.jboss.osgi.framework.util;
 
+import org.jboss.modules.ClassSpec;
+import org.jboss.modules.PackageSpec;
+import org.jboss.modules.Resource;
+import org.jboss.modules.ResourceLoader;
+import org.jboss.osgi.vfs.VFSUtils;
+import org.jboss.osgi.vfs.VirtualFile;
+
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -35,13 +42,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-
-import org.jboss.modules.ClassSpec;
-import org.jboss.modules.PackageSpec;
-import org.jboss.modules.Resource;
-import org.jboss.modules.ResourceLoader;
-import org.jboss.osgi.vfs.VFSUtils;
-import org.jboss.osgi.vfs.VirtualFile;
 
 /**
  * An {@link ResourceLoader} that is backed by a {@link VirtualFile} pointing to an archive.

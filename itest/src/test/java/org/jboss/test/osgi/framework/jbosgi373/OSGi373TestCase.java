@@ -21,12 +21,12 @@
  */
 package org.jboss.test.osgi.framework.jbosgi373;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.test.osgi.framework.jbosgi373.bundleA.OSGi373ServiceImpl;
+import org.jboss.test.osgi.framework.jbosgi373.bundleB.ObjectB;
+import org.junit.Test;
+import org.osgi.framework.Bundle;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -36,12 +36,12 @@ import java.net.URL;
 import java.util.NoSuchElementException;
 import java.util.ServiceLoader;
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.shrinkwrap.api.Archive;
-import org.jboss.test.osgi.framework.jbosgi373.bundleA.OSGi373ServiceImpl;
-import org.jboss.test.osgi.framework.jbosgi373.bundleB.ObjectB;
-import org.junit.Test;
-import org.osgi.framework.Bundle;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * [JBOSGI-373] Cannot load service through java.util.ServiceLoader

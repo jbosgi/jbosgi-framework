@@ -21,11 +21,11 @@
  */
 package org.jboss.test.osgi.framework.classloader.support;
 
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
 
 public class SimpleManagementActivator implements BundleActivator {
 

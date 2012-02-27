@@ -21,10 +21,10 @@
  */
 package org.jboss.osgi.framework.util;
 
+import org.jboss.osgi.vfs.VirtualFile;
+
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import org.jboss.osgi.vfs.VirtualFile;
 
 /**
  * A collection of IO utilities.

@@ -21,11 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.List;
-
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceName;
@@ -33,12 +28,14 @@ import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XModuleBuilder;
-import org.jboss.osgi.resolver.XResolverFactory;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Represents the state of the system {@link Bundle}.
@@ -78,17 +75,9 @@ final class SystemBundleState extends AbstractBundleState {
         return frameworkModuleProvider.getFrameworkModule(this);
     }
 
-    SystemBundleRevision createBundleRevision(OSGiMetaData metadata, XModule resModule) throws BundleException {
-        revision = new SystemBundleRevision(this, metadata, resModule);
+    SystemBundleRevision createBundleRevision(OSGiMetaData metadata) throws BundleException {
+        revision = new SystemBundleRevision(this, metadata);
         return revision;
-    }
-
-    XModule createResolverModule(OSGiMetaData metadata) throws BundleException {
-        XResolverFactory factory = XResolverFactory.getInstance(getClass().getClassLoader());
-        XModuleBuilder moduleBuilder = factory.newModuleBuilder();
-        XModule resModule = moduleBuilder.createModule(metadata, 0).getModule();
-        resModule.addAttachment(Bundle.class, this);
-        return resModule;
     }
 
     @Override

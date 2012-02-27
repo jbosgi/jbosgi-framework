@@ -21,22 +21,22 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.metadata.PackageAttribute;
+import org.jboss.osgi.metadata.ParameterizedAttribute;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import static org.osgi.framework.Constants.EXTENSION_BOOTCLASSPATH;
 import static org.osgi.framework.Constants.EXTENSION_DIRECTIVE;
 import static org.osgi.framework.Constants.EXTENSION_FRAMEWORK;
 import static org.osgi.framework.Constants.PACKAGE_SPECIFICATION_VERSION;
 import static org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
 import static org.osgi.framework.Constants.VERSION_ATTRIBUTE;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.metadata.PackageAttribute;
-import org.jboss.osgi.metadata.ParameterizedAttribute;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
 
 /**
  * A bundle validator for OSGi R4.

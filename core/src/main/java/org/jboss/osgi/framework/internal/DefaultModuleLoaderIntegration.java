@@ -21,12 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.jboss.logging.Logger;
-import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
@@ -38,12 +33,11 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.ModuleLoaderProvider;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XModuleIdentity;
-import org.osgi.framework.wiring.BundleRevision;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -140,18 +134,6 @@ final class DefaultModuleLoaderIntegration extends ModuleLoader implements Modul
         } catch (ModuleLoadException ex) {
             // ignore
         }
-    }
-
-    @Override
-    public ModuleIdentifier getModuleIdentifier(XModule resModule) {
-        XModuleIdentity moduleId = resModule.getModuleId();
-        String slot = moduleId.getVersion().toString();
-        int revision = moduleId.getRevision();
-        if (revision > 0) {
-            slot += "-rev" + revision;
-        }
-        String name = Constants.JBOSGI_PREFIX + "." + moduleId.getName();
-        return ModuleIdentifier.create(name, slot);
     }
 
     @Override

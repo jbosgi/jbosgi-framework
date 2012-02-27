@@ -21,20 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.osgi.framework.Constants.FRAMEWORK_BOOTDELEGATION;
-import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT;
-import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT_BOOT;
-import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT_EXT;
-import static org.osgi.framework.Constants.FRAMEWORK_SYSTEMPACKAGES;
-import static org.osgi.framework.Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
 import org.jboss.logging.Logger;
 import org.jboss.modules.filter.MultiplePathFilterBuilder;
 import org.jboss.modules.filter.PathFilter;
@@ -46,6 +32,20 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemPathsProvider;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+import static org.osgi.framework.Constants.FRAMEWORK_BOOTDELEGATION;
+import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT;
+import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT_BOOT;
+import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT_EXT;
+import static org.osgi.framework.Constants.FRAMEWORK_SYSTEMPACKAGES;
+import static org.osgi.framework.Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA;
 
 /**
  * A plugin manages the Framework's system packages.

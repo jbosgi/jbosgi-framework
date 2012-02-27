@@ -21,22 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.Services.BUNDLE_BASE_NAME;
-
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
@@ -56,8 +40,7 @@ import org.jboss.osgi.framework.BundleManagerService;
 import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.framework.util.Java;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XVersionRange;
+import org.jboss.osgi.resolver.v2.VersionRange;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
@@ -65,6 +48,22 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
+
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.jboss.osgi.framework.Services.BUNDLE_BASE_NAME;
 
 /**
  * The BundleManager is the central managing entity for OSGi bundles.
@@ -344,7 +343,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         synchronized (bundleMap) {
             for (AbstractBundleState aux : bundleMap.values()) {
                 if (symbolicName == null || symbolicName.equals(aux.getSymbolicName())) {
-                    if (versionRange == null || XVersionRange.parse(versionRange).isInRange(aux.getVersion())) {
+                    if (versionRange == null || VersionRange.parse(versionRange).isInRange(aux.getVersion())) {
                         resultSet.add(aux);
                     }
                 }

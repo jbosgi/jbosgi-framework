@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.util.Set;
-
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -40,6 +38,8 @@ import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
+
+import java.util.Set;
 
 /**
  * The lifecycle interceptor that verifies that deployments ending in '.war' have a WEB-INF/web.xml descriptor.

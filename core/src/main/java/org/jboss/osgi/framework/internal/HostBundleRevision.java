@@ -21,6 +21,13 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import org.jboss.logging.Logger;
+import org.jboss.modules.ModuleClassLoader;
+import org.jboss.modules.ModuleLoadException;
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.vfs.VirtualFile;
+import org.osgi.framework.BundleException;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -30,21 +37,10 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.jboss.logging.Logger;
-import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleLoadException;
-import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.vfs.VirtualFile;
-import org.osgi.framework.BundleException;
-
 /**
  * A {@link HostBundleRevision} is responsible for the classloading and resource loading of a bundle.
  *
- * It is associated with a {@link XModule} which holds the wiring information of the bundle.
- * <p/>
- *
- * Every time a bundle is updated a new {@link HostBundleRevision} is created and referenced from the {@link HostBundle}.
+ * Every time a bundle is updated a new {@link HostBundleRevision} is created and referenced from the {@link HostBundleState}.
  *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
