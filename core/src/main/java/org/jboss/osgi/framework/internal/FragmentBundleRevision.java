@@ -115,7 +115,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
 
         // If the bundle is a resolved fragment, then the search for localization data must
         // delegate to the attached host bundle with the highest version.
-        if (getResolverModule().isResolved()) {
+        if (isResolved()) {
             HostBundleRevision highest = null;
             for (HostBundleRevision hostrev : getAttachedHosts()) {
                 if (highest == null)

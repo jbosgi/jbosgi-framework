@@ -28,7 +28,6 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.ResolverPlugin;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.osgi.framework.Bundle;
@@ -358,10 +357,6 @@ abstract class AbstractBundleState implements Bundle {
         return getCurrentRevision().getOSGiMetaData();
     }
 
-    XModule getResolverModule() {
-        return getCurrentRevision().getResolverModule();
-    }
-
     boolean isResolved() {
         return getCurrentRevision().isResolved();
     }
@@ -573,14 +568,6 @@ abstract class AbstractBundleState implements Bundle {
             }
         }
     }
-
-    /**
-     * This method returns all the resolver modules of the bundle, including those of revisions that may since have been
-     * updated. These obsolete resolver modules disappear when PackageAdmin.refreshPackages() is called.
-     *
-     * @return A list of all the resolver modules
-     */
-    abstract List<XModule> getAllResolverModules();
 
     void assertNotUninstalled() {
         if (getState() == Bundle.UNINSTALLED)

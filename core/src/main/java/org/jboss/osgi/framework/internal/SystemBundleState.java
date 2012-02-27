@@ -92,11 +92,6 @@ final class SystemBundleState extends AbstractBundleState {
     }
 
     @Override
-    List<XModule> getAllResolverModules() {
-        return Collections.singletonList(getResolverModule());
-    }
-
-    @Override
     List<AbstractBundleRevision> getRevisions() {
         return Collections.singletonList((AbstractBundleRevision)revision);
     }

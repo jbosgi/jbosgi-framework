@@ -56,13 +56,11 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
     private static final Logger log = Logger.getLogger(DeploymentFactoryPlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-    private final InjectedValue<LegacyResolverPlugin> injectedResolver = new InjectedValue<LegacyResolverPlugin>();
 
     static void addService(ServiceTarget serviceTarget) {
         DeploymentFactoryPlugin service = new DeploymentFactoryPlugin();
         ServiceBuilder<DeploymentFactoryPlugin> builder = serviceTarget.addService(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(InternalServices.LEGACY_RESOLVER_PLUGIN, LegacyResolverPlugin.class, service.injectedResolver);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -130,34 +128,6 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
         String location = module.getIdentifier().toString();
         Deployment dep = DeploymentFactory.createDeployment(location, symbolicName, version);
 
-        LegacyResolverPlugin resolverPlugin = injectedResolver.getValue();
-        XModuleBuilder builder = resolverPlugin.getModuleBuilder();
-
-        // Build the resolver capabilities, which exports every package
-        XModule resModule;
-        if (metadata == null) {
-            builder.createModule(symbolicName, version, 0);
-            builder.addBundleCapability(symbolicName, version);
-            for (String path : module.getExportedPaths()) {
-                if (path.startsWith("/"))
-                    path = path.substring(1);
-                if (path.endsWith("/"))
-                    path = path.substring(0, path.length() - 1);
-                if (path.isEmpty() || path.startsWith("META-INF"))
-                    continue;
-
-                String packageName = path.replace('/', '.');
-                builder.addPackageCapability(packageName, null, null);
-            }
-            resModule = builder.getModule();
-        }
-        else {
-            builder.createModule(metadata, 0);
-            resModule = builder.getModule();
-            dep.addAttachment(OSGiMetaData.class, metadata);
-        }
-        resModule.addAttachment(Module.class, module);
-        dep.addAttachment(XModule.class, resModule);
         dep.addAttachment(Module.class, module);
         return dep;
     }

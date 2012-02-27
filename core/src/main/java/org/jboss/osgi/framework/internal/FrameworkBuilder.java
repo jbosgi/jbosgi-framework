@@ -136,7 +136,6 @@ public final class FrameworkBuilder {
         NativeCodePlugin.addService(serviceTarget);
         PackageAdminPlugin.addService(serviceTarget);
         PersistentBundlesInstaller.addService(serviceTarget);
-        LegacyResolverPlugin.addService(serviceTarget);
         DefaultResolverPlugin.addService(serviceTarget);
         ServiceManagerPlugin.addService(serviceTarget);
         StartLevelPlugin.addService(serviceTarget);

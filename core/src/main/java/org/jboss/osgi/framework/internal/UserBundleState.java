@@ -30,10 +30,8 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallProvider;
 import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
-import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.spi.util.ConstantsHelper;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -54,7 +52,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -128,40 +125,6 @@ abstract class UserBundleState extends AbstractBundleState {
         return revision;
     }
 
-    XModule createResolverModule(Deployment dep) throws BundleException {
-        XModule resModule = dep.getAttachment(XModule.class);
-        if (resModule == null) {
-            OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
-            String symbolicName = metadata.getBundleSymbolicName();
-            Version version = metadata.getBundleVersion();
-
-            BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
-            int modulerev = storageState.getRevisionId();
-
-            // An UNINSTALLED module with active wires may still be registered in with the Resolver
-            // Make sure we have a unique module identifier
-            for (AbstractBundleState aux : getBundleManager().getBundles(symbolicName, version.toString())) {
-                if (aux.getState() == Bundle.UNINSTALLED) {
-                    XModule auxmod = aux.getResolverModule();
-                    int auxrev = auxmod.getModuleId().getRevision();
-                    modulerev = Math.max(modulerev + 100, auxrev + 100);
-                }
-            }
-            FrameworkState frameworkState = getFrameworkState();
-            LegacyResolverPlugin resolverPlugin = frameworkState.getLegacyResolverPlugin();
-            XModuleBuilder builder = resolverPlugin.getModuleBuilder();
-            resModule = builder.createModule(metadata, modulerev).getModule();
-
-            Module module = dep.getAttachment(Module.class);
-            if (module != null)
-                resModule.addAttachment(Module.class, module);
-
-            dep.addAttachment(XModule.class, resModule);
-        }
-        resModule.addAttachment(Bundle.class, this);
-        return resModule;
-    }
-
     abstract void initUserBundleState(OSGiMetaData metadata);
 
     abstract UserBundleRevision createRevisionInternal(Deployment dep) throws BundleException;
@@ -231,34 +194,8 @@ abstract class UserBundleState extends AbstractBundleState {
     }
 
     boolean hasActiveWires() {
-        if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
-            XModule resModule = getResolverModule();
-            if (resModule.isResolved() == false)
-                return false;
-
-            for (XCapability cap : resModule.getCapabilities()) {
-                Set<XRequirement> wiredReqs = cap.getWiredRequirements();
-                for (XRequirement req : wiredReqs) {
-                    Bundle bundle = req.getModule().getAttachment(Bundle.class);
-                    AbstractBundleState importer = AbstractBundleState.assertBundleState(bundle);
-                    if (importer.getState() != Bundle.UNINSTALLED)
-                        return true;
-                }
-            }
-            return false;
-        } else {
-            BundleWiring wiring = getCurrentRevision().getWiring();
-            return wiring != null ? wiring.isInUse() : false;
-        }
-    }
-
-    @Override
-    List<XModule> getAllResolverModules() {
-        List<XModule> allModules = new ArrayList<XModule>();
-        for (AbstractBundleRevision rev : getRevisions())
-            allModules.add(rev.getResolverModule());
-
-        return allModules;
+        BundleWiring wiring = getCurrentRevision().getWiring();
+        return wiring != null ? wiring.isInUse() : false;
     }
 
     @Override
@@ -419,12 +356,6 @@ abstract class UserBundleState extends AbstractBundleState {
 
         // Update the resolver module for the current revision
         currentRev.refreshRevision();
-
-        if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
-            LegacyResolverPlugin legacyResolver = getFrameworkState().getLegacyResolverPlugin();
-            XModule resModule = currentRev.getResolverModule();
-            legacyResolver.addModule(resModule);
-        }
 
         changeState(Bundle.INSTALLED);
 

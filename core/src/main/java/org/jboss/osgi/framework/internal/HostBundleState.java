@@ -21,14 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -36,8 +28,6 @@ import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.modules.ModuleActivator;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XWire;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -47,9 +37,16 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
 import org.osgi.framework.wiring.BundleRevision;
-import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.startlevel.StartLevel;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Represents the INSTALLED state of a host bundle.
@@ -57,7 +54,7 @@ import org.osgi.service.startlevel.StartLevel;
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
- final class HostBundleState extends UserBundleState {
+final class HostBundleState extends UserBundleState {
 
     static final Logger log = Logger.getLogger(HostBundleState.class);
 
@@ -186,20 +183,11 @@ import org.osgi.service.startlevel.StartLevel;
     Set<BundleRevision> getDependentRevisions() {
         Set<BundleRevision> result = new HashSet<BundleRevision>();
         if (isResolved() == true) {
-            if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
-                XModule resModule = getResolverModule();
-                for (XWire wire : resModule.getWires()) {
-                    XModule exporter = wire.getExporter();
-                    BundleRevision provider = exporter.getAttachment(AbstractBundleRevision.class);
-                    result.add(provider);
-                }
-            } else {
-                BundleWiring wiring = getCurrentRevision().getWiring();
-                List<Wire> wires = wiring.getRequiredResourceWires(null);
-                for (Wire wire : wires) {
-                    Resource provider = wire.getProvider();
-                    result.add((BundleRevision) provider);
-                }
+            BundleWiring wiring = getCurrentRevision().getWiring();
+            List<Wire> wires = wiring.getRequiredResourceWires(null);
+            for (Wire wire : wires) {
+                Resource provider = wire.getProvider();
+                result.add((BundleRevision) provider);
             }
         }
         return result;
@@ -355,8 +343,7 @@ import org.osgi.service.startlevel.StartLevel;
                     throw (BundleException) th;
 
                 throw new BundleException("Cannot start bundle: " + this, th);
-            }
-            finally {
+            } finally {
                 Thread.currentThread().setContextClassLoader(tccl);
             }
         }

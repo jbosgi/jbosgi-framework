@@ -57,7 +57,6 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
     private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
     private final InjectedValue<FrameworkModuleProvider> injectedModuleProvider = new InjectedValue<FrameworkModuleProvider>();
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
-    private final InjectedValue<LegacyResolverPlugin> injectedLegacyResolver = new InjectedValue<LegacyResolverPlugin>();
     private final InjectedValue<EnvironmentPlugin> injectedEnvironmentPlugin = new InjectedValue<EnvironmentPlugin>();
     private SystemBundleState bundleState;
 
@@ -68,7 +67,6 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
         builder.addDependency(Services.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, service.injectedModuleProvider);
         builder.addDependency(Services.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
-        builder.addDependency(InternalServices.LEGACY_RESOLVER_PLUGIN, LegacyResolverPlugin.class, service.injectedLegacyResolver);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -89,7 +87,6 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
             injectedEnvironmentPlugin.getValue().installResources(sysrev);
             bundleState.createBundleContext();
             bundleState.createStorageState(injectedBundleStorage.getValue());
-            injectedLegacyResolver.getValue().addModule(resModule);
             BundleManager bundleManager = getBundleManager();
             bundleManager.injectedSystemBundle.inject(bundleState);
             bundleManager.addBundle(bundleState);

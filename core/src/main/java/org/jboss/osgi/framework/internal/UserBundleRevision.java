@@ -53,7 +53,7 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
     private final EntriesProvider entriesProvider;
 
     UserBundleRevision(UserBundleState userBundle, Deployment dep) throws BundleException {
-        super(userBundle, getOSGiMetaData(dep), getXModule(dep), getRevisionId(dep));
+        super(userBundle, getOSGiMetaData(dep), getRevisionId(dep));
         this.deployment = dep;
 
         if (dep.getRoot() != null) {

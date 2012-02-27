@@ -21,15 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
@@ -37,8 +28,6 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.v2.XIdentityCapability;
 import org.jboss.osgi.resolver.v2.XResourceBuilder;
 import org.jboss.osgi.resolver.v2.spi.AbstractBundleCapability;
@@ -53,6 +42,15 @@ import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.osgi.framework.resource.ResourceConstants.IDENTITY_TYPE_FRAGMENT;
 
@@ -73,9 +71,8 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
     private Map<String, List<BundleCapability>> bundleCapabilities;
     private Map<String, List<BundleRequirement>> bundleRequirements;
     private BundleWiring wiring;
-    private XModule resModule;
 
-    AbstractBundleRevision(AbstractBundleState bundleState, OSGiMetaData metadata, XModule resModule, int revision) throws BundleException {
+    AbstractBundleRevision(AbstractBundleState bundleState, OSGiMetaData metadata, int revision) throws BundleException {
         if (bundleState == null)
             throw new IllegalArgumentException("Null bundleState");
         if (metadata == null)
@@ -84,7 +81,6 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
         this.bundleState = bundleState;
         this.metadata = metadata;
         this.revision = revision;
-        this.resModule = resModule;
 
         // Initialize the bundle caps/reqs
         XResourceBuilder.create(this).load(metadata);
@@ -171,10 +167,6 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
         return revision;
     }
 
-    XModule getResolverModule() {
-        return resModule;
-    }
-
     AbstractBundleState getBundleState() {
         return bundleState;
     }
@@ -200,11 +192,7 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
     abstract URL getLocalizationEntry(String path);
 
     boolean isResolved() {
-        if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
-            return getResolverModule().isResolved();
-        } else {
-            return wiring != null;
-        }
+        return wiring != null;
     }
 
     ModuleIdentifier getModuleIdentifier() {
@@ -226,8 +214,6 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
         // if (refreshAllowed == false)
         // throw new IllegalStateException("External XModule, refresh not allowed");
 
-        createResolverModule(getBundleState(), getOSGiMetaData());
-
         EnvironmentPlugin envPlugin = bundleState.getFrameworkState().getEnvironmentPlugin();
         envPlugin.refreshResources(this);
         refreshRevisionInternal();
@@ -235,29 +221,6 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
     void refreshRevisionInternal() {
         wiring = null;
-    }
-
-    void createResolverModule(AbstractBundleState bundleState, OSGiMetaData metadata) throws BundleException {
-        final String symbolicName = metadata.getBundleSymbolicName();
-        final Version version = metadata.getBundleVersion();
-
-        int modulerev = getRevisionId();
-
-        // An UNINSTALLED module with active wires may still be registered in with the Resolver
-        // Make sure we have a unique module identifier
-        BundleManager bundleManager = bundleState.getBundleManager();
-        for (AbstractBundleState aux : bundleManager.getBundles(symbolicName, version.toString())) {
-            if (aux.getState() == Bundle.UNINSTALLED) {
-                XModule resModule = aux.getResolverModule();
-                int auxrev = resModule.getModuleId().getRevision();
-                modulerev = Math.max(modulerev + 100, auxrev + 100);
-            }
-        }
-        LegacyResolverPlugin legacyResolver = bundleState.getFrameworkState().getLegacyResolverPlugin();
-        XModuleBuilder builder = legacyResolver.getModuleBuilder();
-        resModule = builder.createModule(metadata, modulerev).getModule();
-        resModule.addAttachment(AbstractBundleRevision.class, this);
-        resModule.addAttachment(Bundle.class, bundleState);
     }
 
     @Override

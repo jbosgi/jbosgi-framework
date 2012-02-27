@@ -59,7 +59,6 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
             dep.addAttachment(Bundle.class, bundleState);
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
             storageState = bundleState.createStorageState(dep);
-            bundleState.createResolverModule(dep);
             bundleState.createRevision(dep);
             bundleState.initUserBundleState(metadata);
             validateBundle(bundleState, metadata);
@@ -117,12 +116,7 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
             }
         }
         FrameworkState frameworkState = userBundle.getFrameworkState();
-        if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
-            LegacyResolverPlugin legacyResolver = frameworkState.getLegacyResolverPlugin();
-            legacyResolver.addModule(userBundle.getResolverModule());
-        } else {
-            EnvironmentPlugin envPlugin = frameworkState.getEnvironmentPlugin();
-            envPlugin.installResources(userBundle.getCurrentRevision());
-        }
+        EnvironmentPlugin envPlugin = frameworkState.getEnvironmentPlugin();
+        envPlugin.installResources(userBundle.getCurrentRevision());
     }
 }

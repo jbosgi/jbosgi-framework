@@ -50,7 +50,6 @@ final class FrameworkState {
     final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
     final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
     final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
-    final InjectedValue<LegacyResolverPlugin> injectedLegacyResolver = new InjectedValue<LegacyResolverPlugin>();
     final InjectedValue<ResolverPlugin> injectedResolverPlugin = new InjectedValue<ResolverPlugin>();
     final InjectedValue<ServiceManagerPlugin> injectedServiceManager = new InjectedValue<ServiceManagerPlugin>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
@@ -86,10 +85,6 @@ final class FrameworkState {
 
     NativeCodePlugin getNativeCodePlugin() {
         return injectedNativeCode.getValue();
-    }
-
-    LegacyResolverPlugin getLegacyResolverPlugin() {
-        return injectedLegacyResolver.getValue();
     }
 
     ResolverPlugin getResolverPlugin() {

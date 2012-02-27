@@ -45,7 +45,7 @@ final class SystemBundleRevision extends AbstractBundleRevision {
     static final Logger log = Logger.getLogger(SystemBundleRevision.class);
 
     SystemBundleRevision(SystemBundleState bundleState, OSGiMetaData metadata, XModule resModule) throws BundleException {
-        super(bundleState, metadata, resModule, 0);
+        super(bundleState, metadata, 0);
     }
 
     @Override
