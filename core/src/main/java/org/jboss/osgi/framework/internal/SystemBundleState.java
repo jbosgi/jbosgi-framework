@@ -96,6 +96,11 @@ final class SystemBundleState extends AbstractBundleState {
         return Collections.singletonList(getResolverModule());
     }
 
+    @Override
+    List<AbstractBundleRevision> getRevisions() {
+        return Collections.singletonList((AbstractBundleRevision)revision);
+    }
+
     void createStorageState(BundleStoragePlugin storagePlugin) {
         try {
             storageState = storagePlugin.createStorageState(0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME, null);

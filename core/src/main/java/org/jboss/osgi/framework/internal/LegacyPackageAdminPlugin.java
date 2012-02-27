@@ -274,10 +274,11 @@ public final class LegacyPackageAdminPlugin extends AbstractExecutorService<Pack
                 Set<UserBundleRevision> refreshRevs = new LinkedHashSet<UserBundleRevision>();
                 for (Bundle aux : bundles) {
                     AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
-                    if (bundleState instanceof UserBundleState == false)
-                        continue;
-
-                    refreshRevs.addAll(((UserBundleState) bundleState).getRevisions());
+                    if (bundleState instanceof UserBundleState) {
+                        for (AbstractBundleRevision brev : bundleState.getRevisions()) {
+                            refreshRevs.add((UserBundleRevision) brev);
+                        }
+                    }
                 }
 
                 Set<HostBundleState> stopBundles = new HashSet<HostBundleState>();

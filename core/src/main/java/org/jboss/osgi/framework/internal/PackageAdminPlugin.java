@@ -31,19 +31,16 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.ResolverPlugin;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.resolver.XBundleCapability;
-import org.jboss.osgi.resolver.XCapability;
-import org.jboss.osgi.resolver.XModule;
-import org.jboss.osgi.resolver.XPackageCapability;
-import org.jboss.osgi.resolver.XRequireBundleRequirement;
-import org.jboss.osgi.resolver.XRequirement;
-import org.jboss.osgi.resolver.XWire;
+import org.jboss.osgi.resolver.v2.XPackageCapability;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
+import org.osgi.framework.resource.Capability;
+import org.osgi.framework.resource.Requirement;
 import org.osgi.framework.resource.Resource;
+import org.osgi.framework.resource.Wire;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.service.packageadmin.ExportedPackage;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -66,6 +63,9 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+
+import static org.osgi.framework.resource.ResourceConstants.WIRING_BUNDLE_NAMESPACE;
+import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
 
 /**
  * An implementation of the {@link PackageAdmin} service.
@@ -150,12 +150,11 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             return null;
 
         List<ExportedPackage> result = new ArrayList<ExportedPackage>();
-        for (XModule resModule : bundleState.getAllResolverModules()) {
-            if (resModule.isResolved() == false)
-                continue;
-
-            for (XPackageCapability cap : resModule.getPackageCapabilities())
-                result.add(new ExportedPackageImpl(cap));
+        for (AbstractBundleRevision brev : bundleState.getRevisions()) {
+            if (brev.isResolved()) {
+                for (Capability cap : brev.getCapabilities(WIRING_PACKAGE_NAMESPACE))
+                    result.add(new ExportedPackageImpl((XPackageCapability) cap));
+            }
         }
 
         // mandated by spec
@@ -190,13 +189,13 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         Set<ExportedPackage> result = new HashSet<ExportedPackage>();
         BundleManager bundleManager = injectedBundleManager.getValue();
         for (AbstractBundleState aux : bundleManager.getBundles()) {
-            if (aux.isResolved() && aux.isFragment() == false) {
-                //for (XCapability cap : aux.getCapabilities()) {
-                //    if (cap instanceof XPackageCapability) {
-                //        if (name.equals(cap.getName()))
-                //            result.add(new ExportedPackageImpl((XPackageCapability) cap));
-                //    }
-                //}
+            AbstractBundleRevision brev = aux.getCurrentRevision();
+            if (brev.isResolved() && brev.isFragment() == false) {
+                for (Capability cap : brev.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
+                    XPackageCapability xcap = (XPackageCapability) cap;
+                    if (xcap.getPackageName().equals(name))
+                        result.add(new ExportedPackageImpl(xcap));
+                }
             }
         }
         return result.toArray(new ExportedPackage[result.size()]);
@@ -212,8 +211,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         List<ExportedPackage> notWired = new ArrayList<ExportedPackage>();
 
         for (ExportedPackage ep : exported) {
-            XPackageCapability capability = ((ExportedPackageImpl) ep).getCapability();
-            if (isWired(capability))
+            XPackageCapability cap = ((ExportedPackageImpl) ep).getCapability();
+            if (isWired(cap))
                 wired.add(ep);
             else
                 notWired.add(ep);
@@ -233,6 +232,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     private boolean isWired(XPackageCapability capability) {
         BundleManager bundleManager = injectedBundleManager.getValue();
         for (AbstractBundleState ab : bundleManager.getBundles()) {
+            /*
             for (XModule module : ab.getAllResolverModules()) {
                 if (module.isResolved() == false)
                     continue;
@@ -241,6 +241,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                         return true;
                 }
             }
+            */
         }
         return false;
     }
@@ -273,10 +274,11 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 Set<UserBundleRevision> refreshRevs = new LinkedHashSet<UserBundleRevision>();
                 for (Bundle aux : bundles) {
                     AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
-                    if (bundleState instanceof UserBundleState == false)
-                        continue;
-
-                    refreshRevs.addAll(((UserBundleState) bundleState).getRevisions());
+                    if (bundleState instanceof UserBundleState) {
+                        for (AbstractBundleRevision brev : bundleState.getRevisions()) {
+                            refreshRevs.add((UserBundleRevision) brev);
+                        }
+                    }
                 }
 
                 Set<HostBundleState> stopBundles = new HashSet<HostBundleState>();
@@ -367,27 +369,27 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         boolean result;
         // Only bundles that are in state INSTALLED and are
         // registered with the resolver qualify as resolvable
-            ResolverPlugin resolverPlugin = injectedResolver.getValue();
-            BundleManager bundleManager = injectedBundleManager.getValue();
-            if (bundles == null) {
-                Set<AbstractBundleState> bset = bundleManager.getBundles(Bundle.INSTALLED);
-                bundles = new Bundle[bset.size()];
-                bset.toArray(bundles);
+        ResolverPlugin resolverPlugin = injectedResolver.getValue();
+        BundleManager bundleManager = injectedBundleManager.getValue();
+        if (bundles == null) {
+            Set<AbstractBundleState> bset = bundleManager.getBundles(Bundle.INSTALLED);
+            bundles = new Bundle[bset.size()];
+            bset.toArray(bundles);
+        }
+        Set<Resource> unresolved = new LinkedHashSet<Resource>();
+        for (Bundle aux : bundles) {
+            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
+            if (bundleState.getState() == Bundle.INSTALLED) {
+                unresolved.add(bundleState.getCurrentRevision());
             }
-            Set<Resource> unresolved = new LinkedHashSet<Resource>();
-            for (Bundle aux : bundles) {
-                AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
-                if (bundleState.getState() == Bundle.INSTALLED) {
-                    unresolved.add(bundleState.getCurrentRevision());
-                }
-            }
-            log.debugf("Resolve bundles: %s", unresolved);
-            try {
-                result = resolverPlugin.resolveAndApply(unresolved, null);
-            } catch (ResolutionException ex) {
-                log.debugf(ex, "Cannot resolve: " + unresolved);
-                result = false;
-            }
+        }
+        log.debugf("Resolve bundles: %s", unresolved);
+        try {
+            result = resolverPlugin.resolveAndApply(unresolved, null);
+        } catch (ResolutionException ex) {
+            log.debugf(ex, "Cannot resolve: " + unresolved);
+            result = false;
+        }
         return result;
     }
 
@@ -413,8 +415,9 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             return null;
 
         for (AbstractBundleState aux : bundles) {
-            XModule resModule = aux.getResolverModule();
-            for (XRequireBundleRequirement req : resModule.getBundleRequirements()) {
+            AbstractBundleRevision resModule = aux.getCurrentRevision();
+            for (Requirement req : resModule.getRequirements(WIRING_BUNDLE_NAMESPACE)) {
+                /*
                 if (req.getName().equals(symbolicName)) {
                     for (XWire wire : req.getModule().getWires()) {
                         if (wire.getRequirement().equals(req)) {
@@ -428,6 +431,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                         }
                     }
                 }
+                */
             }
         }
 
@@ -535,14 +539,12 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         @Override
         public String getName() {
-            return capability.getName();
+            return capability.getPackageName();
         }
 
         @Override
         public Bundle getExportingBundle() {
-            Bundle bundle = capability.getModule().getAttachment(Bundle.class);
-            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-            return bundleState;
+            return ((BundleRevision) capability.getResource()).getBundle();
         }
 
         @Override
@@ -550,35 +552,12 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             if (isRemovalPending())
                 return null;
 
-            XModule capModule = capability.getModule();
-            if (capModule.isResolved() == false)
-                return null;
-
-            Set<XRequirement> reqset = new HashSet<XRequirement>();
-            Set<XRequirement> pkgReqSet = capability.getWiredRequirements();
-            if (pkgReqSet != null)
-                reqset.addAll(pkgReqSet);
-
-            // Bundles which require the exporting bundle associated with this exported
-            // package are considered to be wired to this exported package are included in
-            // the returned array.
-            XBundleCapability bundleCap = capModule.getBundleCapability();
-            Set<XRequirement> bundleReqSet = bundleCap.getWiredRequirements();
-            if (bundleReqSet != null)
-                reqset.addAll(bundleReqSet);
-
             Set<Bundle> bundles = new HashSet<Bundle>();
-            for (XRequirement req : reqset) {
-                XModule reqmod = req.getModule();
-                Bundle bundle = reqmod.getAttachment(Bundle.class);
-                AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-                bundles.add(bundleState);
+            BundleRevision brev = (BundleRevision) capability.getResource();
+            for (Wire wire : brev.getWiring().getProvidedResourceWires(capability.getNamespace())) {
+                AbstractBundleRevision req = (AbstractBundleRevision) wire.getRequirer();
+                bundles.add(req.getBundle());
             }
-
-            // Remove the exporting bundle from the result
-            Bundle capBundle = capModule.getAttachment(Bundle.class);
-            AbstractBundleState capAbstractBundle = AbstractBundleState.assertBundleState(capBundle);
-            bundles.remove(capAbstractBundle);
 
             return bundles.toArray(new Bundle[bundles.size()]);
         }
@@ -595,11 +574,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         @Override
         public boolean isRemovalPending() {
-            XModule module = capability.getModule();
-            AbstractBundleRevision rev = module.getAttachment(AbstractBundleRevision.class);
-            Bundle b = module.getAttachment(Bundle.class);
-            AbstractBundleState ab = AbstractBundleState.assertBundleState(b);
-            return !ab.getCurrentRevision().equals(rev) || ab.getState() == Bundle.UNINSTALLED;
+            AbstractBundleRevision brev = (AbstractBundleRevision) capability.getResource();
+            return brev.getBundleState().getState() == Bundle.UNINSTALLED;
         }
 
         private XPackageCapability getCapability() {

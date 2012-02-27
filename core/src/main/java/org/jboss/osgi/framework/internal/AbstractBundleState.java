@@ -133,6 +133,8 @@ abstract class AbstractBundleState implements Bundle {
 
     abstract AbstractBundleRevision getRevisionById(int revisionId);
 
+    abstract List<AbstractBundleRevision> getRevisions();
+
     abstract ServiceName getServiceName(int state);
 
     abstract boolean isFragment();
@@ -361,11 +363,7 @@ abstract class AbstractBundleState implements Bundle {
     }
 
     boolean isResolved() {
-        if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
-            return getResolverModule().isResolved();
-        } else {
-            return getCurrentRevision().getWiring() != null;
-        }
+        return getCurrentRevision().isResolved();
     }
 
     boolean isUninstalled() {

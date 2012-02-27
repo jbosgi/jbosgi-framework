@@ -202,6 +202,14 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
     abstract URL getLocalizationEntry(String path);
 
+    boolean isResolved() {
+        if (DefaultEnvironmentPlugin.USE_NEW_PATH == false) {
+            return getResolverModule().isResolved();
+        } else {
+            return wiring != null;
+        }
+    }
+
     ModuleIdentifier getModuleIdentifier() {
         try {
             ModuleManagerPlugin moduleManager = bundleState.getFrameworkState().getModuleManagerPlugin();

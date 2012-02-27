@@ -190,8 +190,10 @@ abstract class UserBundleState extends AbstractBundleState {
         return revisions.get(0);
     }
 
-    List<UserBundleRevision> getRevisions() {
-        return Collections.unmodifiableList(revisions);
+    @Override
+    List<AbstractBundleRevision> getRevisions() {
+        List<AbstractBundleRevision> result = new ArrayList<AbstractBundleRevision>(revisions);
+        return Collections.unmodifiableList(result);
     }
 
     void clearOldRevisions() {
