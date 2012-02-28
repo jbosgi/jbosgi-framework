@@ -31,7 +31,7 @@ import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.Parameter;
 import org.jboss.osgi.metadata.ParameterizedAttribute;
-import org.jboss.osgi.resolver.v2.VersionRange;
+import org.jboss.osgi.metadata.VersionRange;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;

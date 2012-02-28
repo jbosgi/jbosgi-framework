@@ -40,7 +40,7 @@ import org.jboss.osgi.framework.BundleManagerService;
 import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.framework.util.Java;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.v2.VersionRange;
+import org.jboss.osgi.metadata.VersionRange;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
