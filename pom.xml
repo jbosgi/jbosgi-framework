@@ -24,7 +24,7 @@
     <artifactId>jbosgi-framework-parent</artifactId>
     <packaging>pom</packaging>
 
-    <version>1.1.6</version>
+    <version>1.1.7-SNAPSHOT</version>
 
     <!-- Source Control -->
     <scm>
