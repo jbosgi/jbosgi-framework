@@ -41,6 +41,7 @@ public interface SystemPathsProvider extends Service<SystemPathsProvider> {
             "org.jboss.osgi.deployment.interceptor;version=1.0",
             "org.jboss.osgi.framework;version=1.0",
             "org.jboss.osgi.framework.url;version=1.0",
+            "org.jboss.osgi.metadata;version=2.0",
             "org.jboss.osgi.modules;version=1.0",
             "org.jboss.osgi.spi.util;version=2.0",
             "org.jboss.osgi.testing;version=2.0",

@@ -17,6 +17,7 @@
                 <include>*:args4j:jar</include>
                 <include>*:org.apache.felix.resolver</include>
                 <include>*:jbosgi-framework-core:jar</include>
+                <include>*:jbosgi-metadata:jar</include>
                 <include>*:jbosgi-resolver-api-v2:jar</include>
                 <include>*:jbosgi-resolver-felix-v2:jar</include>
                 <include>*:jboss-logging:jar</include>
