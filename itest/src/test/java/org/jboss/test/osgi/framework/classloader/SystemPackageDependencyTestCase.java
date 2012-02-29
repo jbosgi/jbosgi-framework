@@ -31,7 +31,7 @@ import javax.management.MBeanServer;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.spi.util.ServiceLoader;
-import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;

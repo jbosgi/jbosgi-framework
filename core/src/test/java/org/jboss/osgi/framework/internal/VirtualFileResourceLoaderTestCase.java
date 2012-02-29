@@ -33,7 +33,7 @@ import org.jboss.modules.PackageSpec;
 import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
-import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiTestHelper;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;

@@ -49,7 +49,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.util.NoFilter;
 import org.jboss.osgi.framework.util.RemoveOnlyCollection;
-import org.jboss.osgi.spi.util.ConstantsHelper;
+import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.AllServiceListener;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;

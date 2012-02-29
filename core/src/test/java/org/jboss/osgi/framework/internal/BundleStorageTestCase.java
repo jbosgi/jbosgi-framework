@@ -32,7 +32,7 @@ import java.io.InputStream;
 import org.jboss.osgi.framework.internal.BundleManager;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin;
 import org.jboss.osgi.framework.internal.BundleStorageState;
-import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;

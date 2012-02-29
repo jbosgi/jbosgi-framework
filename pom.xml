@@ -24,7 +24,7 @@
     <artifactId>jbosgi-framework-parent</artifactId>
     <packaging>pom</packaging>
 
-    <version>1.1.7-SNAPSHOT</version>
+    <version>1.1.7</version>
 
     <!-- Source Control -->
     <scm>
@@ -40,13 +40,14 @@
         <version.jboss.arquillian.osgi>1.0.0</version.jboss.arquillian.osgi>
         <version.jboss.logging>3.1.0.GA</version.jboss.logging>
         <version.jboss.logmanager>1.2.2.GA</version.jboss.logmanager>
-        <version.jboss.modules>1.1.0.GA</version.jboss.modules>
+        <version.jboss.modules>1.1.1.GA</version.jboss.modules>
         <version.jboss.msc>1.0.1.GA</version.jboss.msc>
-        <version.jboss.osgi.deployment>1.0.10</version.jboss.osgi.deployment>
+        <version.jboss.osgi.deployment>1.0.11</version.jboss.osgi.deployment>
         <version.jboss.osgi.equinox>3.5.2</version.jboss.osgi.equinox>
         <version.jboss.osgi.felix>3.0.4</version.jboss.osgi.felix>
         <version.jboss.osgi.resolver>1.0.12</version.jboss.osgi.resolver>
-        <version.jboss.osgi.spi>2.0.4</version.jboss.osgi.spi>
+        <version.jboss.osgi.spi>3.0.0</version.jboss.osgi.spi>
+        <version.jboss.osgi.testing>1.0.1</version.jboss.osgi.testing>
         <version.jboss.osgi.vfs>1.0.6</version.jboss.osgi.vfs>
         <version.mockito>1.8.4</version.mockito>
         <version.osgi>4.2.0</version.osgi>
@@ -81,11 +82,6 @@
 
             <!-- JBoss OSGi Dependencies -->
             <dependency>
-                <groupId>org.jboss.osgi.spi</groupId>
-                <artifactId>jbosgi-spi</artifactId>
-                <version>${version.jboss.osgi.spi}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.jboss.osgi.deployment</groupId>
                 <artifactId>jbosgi-deployment</artifactId>
                 <version>${version.jboss.osgi.deployment}</version>
@@ -94,6 +90,16 @@
                 <groupId>org.jboss.osgi.resolver</groupId>
                 <artifactId>jbosgi-resolver-api</artifactId>
                 <version>${version.jboss.osgi.resolver}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.osgi.spi</groupId>
+                <artifactId>jbosgi-spi</artifactId>
+                <version>${version.jboss.osgi.spi}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.osgi.testing</groupId>
+                <artifactId>jbosgi-testing</artifactId>
+                <version>${version.jboss.osgi.testing}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.osgi.vfs</groupId>

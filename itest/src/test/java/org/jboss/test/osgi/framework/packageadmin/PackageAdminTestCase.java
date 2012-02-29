@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;

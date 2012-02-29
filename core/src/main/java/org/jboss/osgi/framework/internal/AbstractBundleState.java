@@ -49,7 +49,7 @@ import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.spi.NotImplementedException;
-import org.jboss.osgi.spi.util.ConstantsHelper;
+import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;

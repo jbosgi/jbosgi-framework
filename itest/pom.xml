@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.jboss.osgi.framework</groupId>
         <artifactId>jbosgi-framework-parent</artifactId>
-        <version>1.1.7-SNAPSHOT</version>
+        <version>1.1.7</version>
     </parent>
 
     <name>JBossOSGi Framework iTest</name>
@@ -53,6 +53,11 @@
         <dependency>
             <groupId>org.jboss.logmanager</groupId>
             <artifactId>jboss-logmanager</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.osgi.testing</groupId>
+            <artifactId>jbosgi-testing</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -45,7 +45,7 @@ import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XModule;
 import org.jboss.osgi.resolver.XModuleBuilder;
 import org.jboss.osgi.resolver.XRequirement;
-import org.jboss.osgi.spi.util.ConstantsHelper;
+import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;

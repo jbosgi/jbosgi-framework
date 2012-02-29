@@ -33,7 +33,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.jboss.osgi.spi.util.ConstantsHelper;
+import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.Test;
 import org.osgi.framework.BundleContext;

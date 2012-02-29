@@ -43,7 +43,7 @@ import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.AutoInstallProvider;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.spi.util.BundleInfo;
+import org.jboss.osgi.spi.BundleInfo;
 import org.jboss.osgi.spi.util.StringPropertyReplacer;
 import org.jboss.osgi.spi.util.StringPropertyReplacer.PropertyProvider;
 import org.osgi.framework.Bundle;

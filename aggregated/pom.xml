@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.jboss.osgi.framework</groupId>
         <artifactId>jbosgi-framework-parent</artifactId>
-        <version>1.1.7-SNAPSHOT</version>
+        <version>1.1.7</version>
     </parent>
 
     <name>JBossOSGi Framework Aggregated</name>
@@ -52,6 +52,11 @@
         <dependency>
             <groupId>org.jboss.osgi.vfs</groupId>
             <artifactId>jbosgi-vfs30</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.osgi.testing</groupId>
+            <artifactId>jbosgi-testing</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
