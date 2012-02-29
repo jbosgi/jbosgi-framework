@@ -37,7 +37,7 @@
     <properties>
         <version.javax.inject>1</version.javax.inject>
         <version.jboss.arquillian.core>1.0.0.CR7</version.jboss.arquillian.core>
-        <version.jboss.arquillian.osgi>1.0.0</version.jboss.arquillian.osgi>
+        <version.jboss.arquillian.osgi>1.0.1-SNAPSHOT</version.jboss.arquillian.osgi>
         <version.jboss.logging>3.1.0.GA</version.jboss.logging>
         <version.jboss.logmanager>1.2.2.GA</version.jboss.logmanager>
         <version.jboss.modules>1.1.0.GA</version.jboss.modules>
@@ -47,7 +47,7 @@
         <version.jboss.osgi.felix>3.0.4</version.jboss.osgi.felix>
         <version.jboss.osgi.resolver.v2>2.0.0.Beta2</version.jboss.osgi.resolver.v2>
         <version.jboss.osgi.spi>3.0.0</version.jboss.osgi.spi>
-        <version.jboss.osgi.testing>1.0.1</version.jboss.osgi.testing>
+        <version.jboss.osgi.testing>1.0.2</version.jboss.osgi.testing>
         <version.jboss.osgi.vfs>1.0.6</version.jboss.osgi.vfs>
         <version.mockito>1.8.4</version.mockito>
         <version.osgi>4.2.0</version.osgi>
