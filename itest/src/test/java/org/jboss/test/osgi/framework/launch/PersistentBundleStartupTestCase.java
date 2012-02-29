@@ -23,7 +23,7 @@ package org.jboss.test.osgi.framework.launch;
 
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

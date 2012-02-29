@@ -31,7 +31,7 @@ import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
 import org.jboss.osgi.spi.NotImplementedException;
-import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;

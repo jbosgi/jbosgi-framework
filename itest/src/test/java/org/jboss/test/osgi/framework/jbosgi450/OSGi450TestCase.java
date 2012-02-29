@@ -21,8 +21,8 @@
  */
 package org.jboss.test.osgi.framework.jbosgi450;
 
+import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.osgi.testing.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -42,8 +42,8 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static java.util.jar.JarFile.MANIFEST_NAME;
-import static org.jboss.osgi.spi.util.ConstantsHelper.bundleEvent;
-import static org.jboss.osgi.spi.util.ConstantsHelper.bundleState;
+import static org.jboss.osgi.spi.ConstantsHelper.bundleEvent;
+import static org.jboss.osgi.spi.ConstantsHelper.bundleState;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 

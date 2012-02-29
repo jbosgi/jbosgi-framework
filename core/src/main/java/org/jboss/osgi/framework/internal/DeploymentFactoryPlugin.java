@@ -33,7 +33,7 @@ import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
-import org.jboss.osgi.spi.util.BundleInfo;
+import org.jboss.osgi.spi.BundleInfo;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;

@@ -29,7 +29,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallProvider;
 import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.spi.util.ConstantsHelper;
+import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;

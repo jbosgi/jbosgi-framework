@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.osgi.testing.OSGiManifestBuilder;
+import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;

@@ -21,9 +21,7 @@
  */
 package org.jboss.test.osgi.framework.service;
 
-// Id: $
-
-import org.jboss.osgi.spi.util.ConstantsHelper;
+import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.Test;
 import org.osgi.framework.BundleContext;
