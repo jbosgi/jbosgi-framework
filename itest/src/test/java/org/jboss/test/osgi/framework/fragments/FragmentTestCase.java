@@ -502,6 +502,24 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         fragE1.uninstall();
 	}
     
+    @Test
+    public void testFragmentBundleContext() throws Exception {
+
+        Bundle fragA = installBundle(getFragmentA());
+        Bundle hostA = installBundle(getHostA());
+
+        hostA.start();
+        assertNotNull("Host context not null", hostA.getBundleContext());
+        assertNull("Fragment context null", fragA.getBundleContext());
+
+        hostA.stop();
+        assertNull("Host context null", hostA.getBundleContext());
+        assertNull("Fragment context null", fragA.getBundleContext());
+
+        fragA.uninstall();
+        hostA.uninstall();
+    }
+    
     private JavaArchive getHostA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostA");
         archive.addClasses(HostAActivator.class, SubBeanA.class);
