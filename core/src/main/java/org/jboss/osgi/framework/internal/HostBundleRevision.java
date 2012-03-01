@@ -21,21 +21,24 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.Vector;
+
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.vfs.VirtualFile;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Vector;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * A {@link HostBundleRevision} is responsible for the classloading and resource loading of a bundle.
@@ -50,7 +53,7 @@ final class HostBundleRevision extends UserBundleRevision {
 
     static final Logger log = Logger.getLogger(HostBundleRevision.class);
 
-    private List<FragmentBundleRevision> attachedFragments;
+    private Set<FragmentBundleRevision> attachedFragments;
 
     HostBundleRevision(HostBundleState hostBundle, Deployment dep) throws BundleException {
         super(hostBundle, dep);
@@ -81,17 +84,26 @@ final class HostBundleRevision extends UserBundleRevision {
     }
 
     void attachFragment(FragmentBundleRevision fragRev) {
-        if (attachedFragments == null)
-            attachedFragments = new CopyOnWriteArrayList<FragmentBundleRevision>();
-
+        if (attachedFragments == null) {
+        	Comparator<FragmentBundleRevision> comp = new Comparator<FragmentBundleRevision>(){
+				@Override
+				public int compare(FragmentBundleRevision rev1, FragmentBundleRevision rev2) {
+					Bundle b1 = rev1.getBundle();
+					Bundle b2 = rev2.getBundle();
+					return (int)(b1.getBundleId() - b2.getBundleId());
+				}
+        		
+        	};
+            attachedFragments = new TreeSet<FragmentBundleRevision>(comp);
+        }
         attachedFragments.add(fragRev);
     }
 
-    List<FragmentBundleRevision> getAttachedFragments() {
+    Set<FragmentBundleRevision> getAttachedFragments() {
         if (attachedFragments == null)
-            return Collections.emptyList();
+            return Collections.emptySet();
 
-        return Collections.unmodifiableList(attachedFragments);
+        return Collections.unmodifiableSet(attachedFragments);
     }
 
     @Override
@@ -121,7 +133,7 @@ final class HostBundleRevision extends UserBundleRevision {
     Enumeration<URL> findResolvedEntries(String path, String pattern, boolean recurse) {
         Enumeration<URL> hostEntries = super.findEntries(path, pattern, recurse);
 
-        List<FragmentBundleRevision> fragments = getAttachedFragments();
+        Set<FragmentBundleRevision> fragments = getAttachedFragments();
         if (fragments.size() == 0)
             return hostEntries;
 

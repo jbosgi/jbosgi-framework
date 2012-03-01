@@ -31,7 +31,8 @@ import org.jboss.test.osgi.framework.fragments.fragA.FragBeanA;
 import org.jboss.test.osgi.framework.fragments.fragB.FragBeanB;
 import org.jboss.test.osgi.framework.fragments.fragC.FragBeanC;
 import org.jboss.test.osgi.framework.fragments.fragD.FragDClass;
-import org.jboss.test.osgi.framework.fragments.fragE.FragEClass;
+import org.jboss.test.osgi.framework.fragments.fragE1.FragE1Class;
+import org.jboss.test.osgi.framework.fragments.fragE2.FragE2Class;
 import org.jboss.test.osgi.framework.fragments.hostA.HostAActivator;
 import org.jboss.test.osgi.framework.fragments.hostB.HostBActivator;
 import org.jboss.test.osgi.framework.fragments.hostC.HostCActivator;
@@ -51,6 +52,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.security.ProtectionDomain;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
@@ -98,7 +100,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         assertEquals("/resource.txt", entryURL.getPath());
 
         BufferedReader br = new BufferedReader(new InputStreamReader(entryURL.openStream()));
-        assertEquals("fragment resource", br.readLine());
+        assertEquals("fragA", br.readLine());
 
         URL resourceURL = fragA.getResource("resource.txt");
         assertNull("Resource URL null", resourceURL);
@@ -134,7 +136,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         assertEquals("/resource.txt", resourceURL.getPath());
 
         BufferedReader br = new BufferedReader(new InputStreamReader(resourceURL.openStream()));
-        assertEquals("fragment resource", br.readLine());
+        assertEquals("fragA", br.readLine());
 
         // Load class provided by the fragment
         assertLoadClass(hostA, FragBeanA.class.getName());
@@ -373,14 +375,14 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         Bundle hostE = installBundle(getHostE());
         assertBundleState(Bundle.INSTALLED, hostE.getState());
 
-        Bundle fragE = installBundle(getFragmentE());
+        Bundle fragE = installBundle(getFragmentE1());
         assertBundleState(Bundle.INSTALLED, fragE.getState());
 
         hostE.start();
         assertBundleState(Bundle.ACTIVE, hostE.getState());
         assertBundleState(Bundle.RESOLVED, fragE.getState());
         assertLoadClass(hostE, HostEInterface.class.getName());
-        assertLoadClass(hostE, FragEClass.class.getName());
+        assertLoadClass(hostE, FragE1Class.class.getName());
 
         hostE.uninstall();
         assertBundleState(Bundle.UNINSTALLED, hostE.getState());
@@ -468,6 +470,36 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         
         hostA.uninstall();
         fragA.uninstall();
+	}
+    
+    @Test
+	public void testFragmentAttachOrder() throws Exception {
+		
+        Bundle fragE1 = installBundle(getFragmentE1());
+        Bundle fragE2 = installBundle(getFragmentE2());
+        Bundle hostE = installBundle(getHostE());
+        Bundle hostF = installBundle(getHostF());
+
+        hostE.start();
+        
+        assertTrue(fragE1.getBundleId() < fragE2.getBundleId());
+        
+        // Load class provided by the fragment
+        assertLoadClass(hostE, FragE1Class.class.getName());
+        assertLoadClass(hostE, FragE2Class.class.getName());
+
+        // Tests that if a classpath entry cannot be located in the bundle, then the
+        // Framework attempts to locate the classpath entry in each attached
+        // fragment bundle. The attached fragment bundles are searched in ascending
+        // bundle id order.
+        URL resourceURL = hostE.getResource("resource.txt");
+        BufferedReader br = new BufferedReader(new InputStreamReader(resourceURL.openStream()));
+        assertEquals("fragE1", br.readLine());
+        
+        hostF.uninstall();
+        hostE.uninstall();
+        fragE2.uninstall();
+        fragE1.uninstall();
 	}
     
     private JavaArchive getHostA() {
@@ -569,7 +601,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
     private JavaArchive getFragmentA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-fragA");
         archive.addClasses(FragBeanA.class);
-        archive.addAsResource(getResourceFile("fragments/resource.txt"));
+        archive.addAsResource(getResourceFile("fragments/fragA.txt"), "resource.txt");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
@@ -634,15 +666,33 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         return archive;
     }
 
-    private JavaArchive getFragmentE() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-fragE");
-        archive.addClasses(FragEClass.class);
+    private JavaArchive getFragmentE1() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-fragE1");
+        archive.addClasses(FragE1Class.class);
+        archive.addAsResource(getResourceFile("fragments/fragE1.txt"), "resource.txt");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
-                builder.addExportPackages(FragEClass.class);
+                builder.addExportPackages(FragE1Class.class);
+                builder.addFragmentHost("simple-hostE");
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getFragmentE2() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-fragE2");
+        archive.addClasses(FragE2Class.class);
+        archive.addAsResource(getResourceFile("fragments/fragE2.txt"), "resource.txt");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addExportPackages(FragE2Class.class);
                 builder.addFragmentHost("simple-hostE");
                 return builder.openStream();
             }

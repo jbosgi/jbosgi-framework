@@ -21,15 +21,15 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.osgi.deployment.deployer.Deployment;
-import org.osgi.framework.BundleException;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.osgi.framework.BundleException;
 
 /**
  * A {@link FragmentBundleRevision} is responsible for the classloading and resource loading of a fragment.
@@ -42,7 +42,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 final class FragmentBundleRevision extends UserBundleRevision {
 
-    private List<HostBundleRevision> attachedHosts;
+    private Set<HostBundleRevision> attachedHosts;
 
     FragmentBundleRevision(FragmentBundleState bundleState, Deployment dep) throws BundleException {
         super(bundleState, dep);
@@ -72,11 +72,11 @@ final class FragmentBundleRevision extends UserBundleRevision {
         attachedHosts = null;
     }
 
-    List<HostBundleRevision> getAttachedHosts() {
+    Set<HostBundleRevision> getAttachedHosts() {
         if (attachedHosts == null)
-            return Collections.emptyList();
+            return Collections.emptySet();
 
-        return Collections.unmodifiableList(attachedHosts);
+        return Collections.unmodifiableSet(attachedHosts);
     }
 
     @Override
@@ -98,7 +98,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
 
     void attachToHost(HostBundleRevision hostRev) {
         if (attachedHosts == null)
-            attachedHosts = new CopyOnWriteArrayList<HostBundleRevision>();
+            attachedHosts = new HashSet<HostBundleRevision>();
 
         hostRev.attachFragment(this);
         attachedHosts.add(hostRev);

@@ -272,7 +272,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
             // Process fragment wires
             Set<String> allPaths = new HashSet<String>();
-            List<FragmentBundleRevision> fragRevs = brev.getAttachedFragments();
+            Set<FragmentBundleRevision> fragRevs = brev.getAttachedFragments();
             for (FragmentBundleRevision fragRev : fragRevs) {
                 // This takes care of Package-Imports and Require-Bundle on the fragment
                 //List<Wire> fragWires = fragRev.getResolverModule().getWires();
