@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- ====================================================================== -->
-<!--                                                                        -->
-<!-- JBoss, the OpenSource J2EE webOS                                       -->
-<!--                                                                        -->
-<!-- Distributable under LGPL license.                                      -->
-<!-- See terms of license at http://www.gnu.org.                            -->
-<!--                                                                        -->
+<!-- -->
+<!-- JBoss, the OpenSource J2EE webOS -->
+<!-- -->
+<!-- Distributable under LGPL license. -->
+<!-- See terms of license at http://www.gnu.org. -->
+<!-- -->
 <!-- ====================================================================== -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -37,18 +38,18 @@
     <properties>
         <version.javax.inject>1</version.javax.inject>
         <version.jboss.arquillian.core>1.0.0.CR7</version.jboss.arquillian.core>
-        <version.jboss.arquillian.osgi>1.0.1-SNAPSHOT</version.jboss.arquillian.osgi>
+        <version.jboss.arquillian.osgi>1.0.2.Final</version.jboss.arquillian.osgi>
         <version.jboss.logging>3.1.0.GA</version.jboss.logging>
         <version.jboss.logmanager>1.2.2.GA</version.jboss.logmanager>
-        <version.jboss.modules>1.1.0.GA</version.jboss.modules>
+        <version.jboss.modules>1.1.1.GA</version.jboss.modules>
         <version.jboss.msc>1.0.1.GA</version.jboss.msc>
-        <version.jboss.osgi.deployment>1.0.11</version.jboss.osgi.deployment>
+        <version.jboss.osgi.deployment>1.0.12.Final</version.jboss.osgi.deployment>
         <version.jboss.osgi.equinox>3.5.2</version.jboss.osgi.equinox>
         <version.jboss.osgi.felix>3.0.4</version.jboss.osgi.felix>
-        <version.jboss.osgi.resolver.v2>2.0.0.Beta2</version.jboss.osgi.resolver.v2>
-        <version.jboss.osgi.spi>3.0.0</version.jboss.osgi.spi>
-        <version.jboss.osgi.testing>1.0.2</version.jboss.osgi.testing>
-        <version.jboss.osgi.vfs>1.0.6</version.jboss.osgi.vfs>
+        <version.jboss.osgi.resolver.v2>2.0.0.Beta3-SNAPSHOT</version.jboss.osgi.resolver.v2>
+        <version.jboss.osgi.spi>3.0.1.Final</version.jboss.osgi.spi>
+        <version.jboss.osgi.testing>1.0.3.Final</version.jboss.osgi.testing>
+        <version.jboss.osgi.vfs>1.0.7.Final</version.jboss.osgi.vfs>
         <version.mockito>1.8.4</version.mockito>
         <version.osgi>4.2.0</version.osgi>
 
@@ -168,6 +169,7 @@
         <module>itest</module>
     </modules>
 
+    <!-- Repositories -->
     <repositories>
         <repository>
             <id>jboss-public-repository-group</id>
@@ -185,11 +187,56 @@
         </repository>
     </repositories>
 
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- This plugin's configuration is used to store Eclipse 
+                    m2e settings only. It has no influence on the Maven build itself. -->
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>org.apache.maven.plugins</groupId>
+                                        <artifactId>maven-assembly-plugin</artifactId>
+                                        <versionRange> [2.2.2,)</versionRange>
+                                        <goals>
+                                            <goal> directory-single</goal>
+                                            <goal>single</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore />
+                                    </action>
+                                </pluginExecution>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>org.apache.maven.plugins</groupId>
+                                        <artifactId>maven-antrun-plugin</artifactId>
+                                        <versionRange>[1.7,)</versionRange>
+                                        <goals>
+                                            <goal>run</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore/>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+    
+    <!-- Profiles -->
     <profiles>
-        <!--
-          Name: all
-          Desc: Build the aggregated framework jar
-        -->
+        <!-- Name: all Desc: Build the aggregated framework jar -->
         <profile>
             <id>all</id>
             <modules>
@@ -197,10 +244,7 @@
             </modules>
         </profile>
 
-        <!--
-          Name: yourkit
-          Descr: Enable YourKit remote profiling
-        -->
+        <!-- Name: yourkit Descr: Enable YourKit remote profiling -->
         <profile>
             <id>yourkit</id>
             <activation>

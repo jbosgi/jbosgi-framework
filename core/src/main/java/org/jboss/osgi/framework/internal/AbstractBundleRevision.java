@@ -96,6 +96,10 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
         return metadata.getBundleVersion();
     }
 
+    String getCanonicalName() {
+        return getSymbolicName() + ":" + getVersion();
+    }
+
     @Override
     public List<BundleCapability> getDeclaredCapabilities(String namespace) {
         if (bundleCapabilities == null) {
@@ -225,6 +229,6 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
     @Override
     public String toString() {
-        return "Revision[" + getModuleIdentifier() + "]";
+        return "Revision[" + getCanonicalName() + "]";
     }
 }

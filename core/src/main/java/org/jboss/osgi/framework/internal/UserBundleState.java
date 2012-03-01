@@ -224,17 +224,14 @@ abstract class UserBundleState extends AbstractBundleState {
             // completion of the remaining steps.
             createUpdateRevision(input);
         } catch (BundleException ex) {
-            if (restart) {
+            if (restart) 
                 startInternal(Bundle.START_TRANSIENT);
-            }
             throw ex;
         } catch (Exception ex) {
             BundleException be = new BundleException("Problem updating bundle");
             be.initCause(ex);
-
             if (restart)
                 startInternal(Bundle.START_TRANSIENT);
-
             throw be;
         }
 
@@ -332,7 +329,7 @@ abstract class UserBundleState extends AbstractBundleState {
         if (isResolved() == false)
             throw new IllegalStateException("Attempt to refresh an unresolved bundle: " + this);
 
-        // Remove the revisions from the resolver
+        // Remove the revisions from the environment
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
         UserBundleRevision currentRev = getCurrentRevision();
         for (AbstractBundleRevision brev : getRevisions()) {
@@ -340,7 +337,16 @@ abstract class UserBundleState extends AbstractBundleState {
             EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
             if (currentRev != brev)
                 envPlugin.uninstallResources(brev);
-
+            
+            if (brev instanceof HostBundleRevision) {
+            	HostBundleRevision hostRev = (HostBundleRevision) brev;
+            	for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
+            		if (fragRev != fragRev.getBundleState().getCurrentRevision()) {
+                        envPlugin.uninstallResources(fragRev);
+            		}
+            	}
+            }
+            
             ModuleIdentifier identifier = brev.getModuleIdentifier();
             moduleManager.removeModule(identifier);
         }
@@ -350,7 +356,7 @@ abstract class UserBundleState extends AbstractBundleState {
         FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
         eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
 
-        // Update the resolver module for the current revision
+        // Update the the current revision
         currentRev.refreshRevision();
 
         changeState(Bundle.INSTALLED);

@@ -21,6 +21,14 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -36,17 +44,8 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
-import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.startlevel.StartLevel;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Represents the INSTALLED state of a host bundle.
@@ -180,14 +179,16 @@ final class HostBundleState extends UserBundleState {
         return alreadyStarting.get();
     }
 
-    Set<BundleRevision> getDependentRevisions() {
-        Set<BundleRevision> result = new HashSet<BundleRevision>();
+    Set<UserBundleState> getDependentBundles() {
+        Set<UserBundleState> result = new HashSet<UserBundleState>();
         if (isResolved() == true) {
             BundleWiring wiring = getCurrentRevision().getWiring();
             List<Wire> wires = wiring.getRequiredResourceWires(null);
             for (Wire wire : wires) {
                 Resource provider = wire.getProvider();
-                result.add((BundleRevision) provider);
+				AbstractBundleState bundleState = ((AbstractBundleRevision) provider).getBundleState();
+				if (bundleState instanceof UserBundleState)
+					result.add((UserBundleState)bundleState);
             }
         }
         return result;

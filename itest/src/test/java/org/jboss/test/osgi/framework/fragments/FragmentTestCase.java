@@ -439,6 +439,37 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         }
     }
 
+    @Test
+	public void testFragmentUpdate() throws Exception {
+		
+        Bundle hostA = installBundle(getHostA());
+        assertBundleState(Bundle.INSTALLED, hostA.getState());
+
+        Bundle fragA = installBundle(getFragmentA());
+        assertBundleState(Bundle.INSTALLED, fragA.getState());
+
+        hostA.start();
+        
+        // Load class provided by the fragment
+        assertLoadClass(hostA, FragBeanA.class.getName());
+
+        // Tests that when an attached fragment bundle is updated, the content of
+        // the previous fragment remains attached to the host bundle. The new
+   	    // content of the updated fragment must not be allowed to attach to the host
+   	    // bundle until the Framework is restarted or the host bundle is refreshed.
+        fragA.update(toInputStream(getFragmentB()));
+
+        // Load class provided by the fragment
+        assertLoadClass(hostA, FragBeanA.class.getName());
+        
+        refreshPackages(new Bundle[] { hostA });
+
+        assertLoadClassFail(hostA, FragBeanA.class.getName());
+        
+        hostA.uninstall();
+        fragA.uninstall();
+	}
+    
     private JavaArchive getHostA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostA");
         archive.addClasses(HostAActivator.class, SubBeanA.class);

@@ -264,22 +264,17 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                     bundles = bundlesToRefresh.toArray(new Bundle[bundlesToRefresh.size()]);
                 }
 
-                Set<UserBundleRevision> refreshRevs = new LinkedHashSet<UserBundleRevision>();
+                Set<UserBundleState> providedBundles = new LinkedHashSet<UserBundleState>();
                 for (Bundle aux : bundles) {
-                    AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
-                    if (bundleState instanceof UserBundleState) {
-                        for (AbstractBundleRevision brev : bundleState.getRevisions()) {
-                            refreshRevs.add((UserBundleRevision) brev);
-                        }
-                    }
+                	UserBundleState bundleState = UserBundleState.assertBundleState(aux);
+                	providedBundles.add(bundleState);
                 }
 
                 Set<HostBundleState> stopBundles = new HashSet<HostBundleState>();
                 Set<UserBundleState> refreshBundles = new HashSet<UserBundleState>();
                 Set<UserBundleState> uninstallBundles = new HashSet<UserBundleState>();
 
-                for (UserBundleRevision brev : refreshRevs) {
-                    UserBundleState userBundle = brev.getBundleState();
+                for (UserBundleState userBundle : providedBundles) {
                     if (userBundle.getState() == Bundle.UNINSTALLED)
                         uninstallBundles.add(userBundle);
                     else if (userBundle.isResolved() == true)
@@ -290,9 +285,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 for (AbstractBundleState aux : bundleManager.getBundles()) {
                     if (aux instanceof HostBundleState && aux.isResolved()) {
                         HostBundleState hostBundle = HostBundleState.assertBundleState(aux);
-                        Set<BundleRevision> dependentRevs = hostBundle.getDependentRevisions();
-                        for (BundleRevision brev : dependentRevs) {
-                            if (refreshRevs.contains(brev)) {
+                        for (UserBundleState depBundle : hostBundle.getDependentBundles()) {
+                            if (providedBundles.contains(depBundle)) {
                                 // Bundles can be either ACTIVE or RESOLVED
                                 int state = hostBundle.getState();
                                 if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
@@ -306,8 +300,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 }
 
                 // Add relevant bundles to be refreshed also to the stop list.
-                for (UserBundleRevision brev : refreshRevs) {
-                    UserBundleState aux = brev.getBundleState();
+                for (UserBundleState aux : refreshBundles) {
                     if (aux instanceof HostBundleState) {
                         int state = aux.getState();
                         if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
@@ -354,7 +347,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 eventsPlugin.fireFrameworkEvent(bundleManager.getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
             }
         };
-        getExecutorService().execute(runner);
+        runner.run();
+        //getExecutorService().execute(runner);
     }
 
     @Override
