@@ -21,6 +21,25 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.osgi.framework.resource.ResourceConstants.IDENTITY_NAMESPACE;
+import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
 import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -47,28 +66,9 @@ import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.packageadmin.RequiredBundle;
 import org.osgi.service.resolver.ResolutionException;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-
-import static org.osgi.framework.resource.ResourceConstants.IDENTITY_NAMESPACE;
-import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
-
 /**
  * An implementation of the {@link PackageAdmin} service.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2010
@@ -189,11 +189,12 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         BundleManager bundleManager = injectedBundleManager.getValue();
         for (AbstractBundleState aux : bundleManager.getBundles()) {
             AbstractBundleRevision brev = aux.getCurrentRevision();
-            if (brev.isResolved() && brev.isFragment() == false) {
+            if (brev.isResolved() && !brev.isFragment()) {
                 for (Capability cap : brev.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
                     XPackageCapability xcap = (XPackageCapability) cap;
-                    if (xcap.getPackageName().equals(name))
+                    if (xcap.getPackageName().equals(name)) {
                         result.add(new ExportedPackageImpl(xcap));
+                    }
                 }
             }
         }
@@ -202,9 +203,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     @Override
     public ExportedPackage getExportedPackage(String name) {
-        // This implementation is flawed but the design of this API is PackageAdmin
-        // is also flawed and from 4.3 deprecated so we're doing a best effort to
-        // return a best effort result.
+        // This implementation is flawed but the design of this API in PackageAdmin
+        // is also flawed and from 4.3 deprecated so we're doing a best effort
         ExportedPackage[] exported = getExportedPackagesInternal(name);
         List<ExportedPackage> wired = new ArrayList<ExportedPackage>();
         List<ExportedPackage> notWired = new ArrayList<ExportedPackage>();
@@ -235,6 +235,9 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 if (wire.getCapability() == cap)
                     return true;
             }
+            List<Wire> requireBundleWires = wiring.getProvidedResourceWires(IDENTITY_NAMESPACE);
+            if (requireBundleWires.size() > 0)
+                return true;
         }
         return false;
     }
@@ -266,8 +269,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
                 Set<UserBundleState> providedBundles = new LinkedHashSet<UserBundleState>();
                 for (Bundle aux : bundles) {
-                	UserBundleState bundleState = UserBundleState.assertBundleState(aux);
-                	providedBundles.add(bundleState);
+                    UserBundleState bundleState = UserBundleState.assertBundleState(aux);
+                    providedBundles.add(bundleState);
                 }
 
                 Set<HostBundleState> stopBundles = new HashSet<HostBundleState>();
@@ -315,7 +318,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator();
                 Collections.sort(stopList, startLevelComparator);
 
-                for (ListIterator<HostBundleState> it = stopList.listIterator(stopList.size()); it.hasPrevious(); ) {
+                for (ListIterator<HostBundleState> it = stopList.listIterator(stopList.size()); it.hasPrevious();) {
                     HostBundleState hostBundle = it.previous();
                     try {
                         hostBundle.stop(Bundle.STOP_TRANSIENT);
@@ -348,12 +351,11 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             }
         };
         runner.run();
-        //getExecutorService().execute(runner);
+        // getExecutorService().execute(runner);
     }
 
     @Override
     public boolean resolveBundles(Bundle[] bundles) {
-        boolean result;
         // Only bundles that are in state INSTALLED and are
         // registered with the resolver qualify as resolvable
         ResolverPlugin resolverPlugin = injectedResolver.getValue();
@@ -363,18 +365,24 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             bundles = new Bundle[bset.size()];
             bset.toArray(bundles);
         }
-        Set<Resource> unresolved = new LinkedHashSet<Resource>();
+        Set<Resource> resolve = new LinkedHashSet<Resource>();
         for (Bundle aux : bundles) {
             AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
-            if (bundleState.getState() == Bundle.INSTALLED) {
-                unresolved.add(bundleState.getCurrentRevision());
-            }
+            resolve.add(bundleState.getCurrentRevision());
         }
-        log.debugf("Resolve bundles: %s", unresolved);
+
+        boolean result = true;
+        log.debugf("Resolve bundles: %s", resolve);
         try {
-            result = resolverPlugin.resolveAndApply(unresolved, null);
+            resolverPlugin.resolveAndApply(resolve, null);
+            for (Resource aux : resolve) {
+                if (((AbstractBundleRevision)aux).isResolved() == false) {
+                    result = false;
+                    break;
+                }
+            }
         } catch (ResolutionException ex) {
-            log.debugf(ex, "Cannot resolve: " + unresolved);
+            log.debugf(ex, "Cannot resolve: " + resolve);
             result = false;
         }
         return result;
@@ -423,7 +431,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
      * specified, then only the bundles that have the specified symbolic name and whose bundle versions belong to the specified
      * version range are returned. The returned bundles are ordered by version in descending version order so that the first
      * element of the array contains the bundle with the highest version.
-     *
+     * 
      * @param symbolicName The symbolic name of the desired bundles.
      * @param versionRange The version range of the desired bundles, or <code>null</code> if all versions are desired.
      * @return An array of bundles with the specified name belonging to the specified version range ordered in descending
@@ -528,8 +536,12 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 return null;
 
             Set<Bundle> bundles = new HashSet<Bundle>();
-            BundleRevision brev = (BundleRevision) capability.getResource();
-            for (Wire wire : brev.getWiring().getProvidedResourceWires(capability.getNamespace())) {
+            BundleWiring wiring = ((BundleRevision) capability.getResource()).getWiring();
+            for (Wire wire : wiring.getProvidedResourceWires(capability.getNamespace())) {
+                AbstractBundleRevision req = (AbstractBundleRevision) wire.getRequirer();
+                bundles.add(req.getBundle());
+            }
+            for (Wire wire : wiring.getProvidedResourceWires(IDENTITY_NAMESPACE)) {
                 AbstractBundleRevision req = (AbstractBundleRevision) wire.getRequirer();
                 bundles.add(req.getBundle());
             }
@@ -556,6 +568,11 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         private XPackageCapability getCapability() {
             return capability;
+        }
+
+        @Override
+        public String toString() {
+            return "ExportedPackage[" + capability + "]";
         }
     }
 

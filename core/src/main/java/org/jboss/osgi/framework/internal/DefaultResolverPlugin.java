@@ -98,11 +98,10 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     }
 
     @Override
-    public boolean resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
-        Map<Resource, List<Wire>> result = resolve(mandatory, optional);
+    public void resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
+        Map<Resource, List<Wire>> wiremap = resolve(mandatory, optional);
         EnvironmentPlugin envPlugin = injectedEnvironmentPlugin.getValue();
-        envPlugin.applyResolverResults(result);
-        return result.size() > 0;
+        envPlugin.applyResolverResults(wiremap);
     }
 
     private Collection<Resource> appendOptionalFragments(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) {

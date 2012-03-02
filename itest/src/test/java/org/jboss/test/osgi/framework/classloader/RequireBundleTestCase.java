@@ -30,12 +30,17 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.classloader.support.a.A;
 import org.jboss.test.osgi.framework.classloader.support.b.B;
 import org.jboss.test.osgi.framework.classloader.support.c.C;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 /**
@@ -75,7 +80,7 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
-            
+
             // Bundle-SymbolicName: classloader.bundleB
             // Require-Bundle: doesnotexist
             Archive<?> assemblyB = assembleArchive("simplerequirebundlefails", "/bundles/classloader/simplerequirebundlefails", B.class);
@@ -99,7 +104,7 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
-            
+
             // Bundle-SymbolicName: classloader.bundleB
             // Require-Bundle: classloader.bundleA;bundle-version="[0.0.0,1.0.0]"
             Archive<?> assemblyB = assembleArchive("versionrequirebundleA", "/bundles/classloader/versionrequirebundleA", B.class);
@@ -122,7 +127,7 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
-            
+
             // Bundle-SymbolicName: classloader.bundleB
             // Require-Bundle: classloader.bundleA;bundle-version="[0.0.0,1.0.0)"
             Archive<?> assemblyB = assembleArchive("versionrequirebundlefails", "/bundles/classloader/versionrequirebundlefails", B.class);
@@ -146,8 +151,7 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
-            
-            
+
             // Bundle-SymbolicName: classloader.bundleB
             // Require-Bundle: classloader.bundleA;resolution:=optional
             Archive<?> assemblyB = assembleArchive("optionalrequirebundleA", "/bundles/classloader/optionalrequirebundleA", B.class);
@@ -170,7 +174,7 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
-            
+
             // Bundle-SymbolicName: classloader.bundleB
             // Require-Bundle: doesnotexist;resolution:=optional
             Archive<?> assemblyB = assembleArchive("optionalrequirebundlefails", "/bundles/classloader/optionalrequirebundlefails", B.class);
@@ -235,7 +239,7 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
         try {
             bundleA.start();
             assertLoadClass(bundleA, A.class.getName());
-            
+
             // Bundle-SymbolicName: classloader.bundleB
             // Require-Bundle: classloader.bundleA
             // Export-Package: org.jboss.test.osgi.framework.classloader.support.b
@@ -264,6 +268,39 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
         }
     }
 
+    @Test
+    @Ignore("[FELIX-3370] Wires E to B instead of C") 
+    // https://issues.apache.org/jira/browse/FELIX-3370
+    public void testImportBySymbolicName() throws Exception {
+        Bundle bundleB = installBundle(getBundleB());
+        Bundle bundleC = installBundle(getBundleC());
+        try {
+            bundleB.start();
+            bundleC.start();
+
+            Bundle bundleD = installBundle(getBundleD());
+            try {
+                bundleD.start();
+                
+                Bundle bundleE = installBundle(getBundleE());
+                try {
+                    bundleE.start();
+                    
+                    URL resourceURL = bundleE.getResource("/resources/resource.txt");
+                    BufferedReader br = new BufferedReader(new InputStreamReader(resourceURL.openStream()));
+                    assertEquals("resC", br.readLine());
+                } finally {
+                    bundleE.uninstall();
+                }
+            } finally {
+                bundleD.uninstall();
+            }
+        } finally {
+            bundleC.uninstall();
+            bundleB.uninstall();
+        }
+    }
+
     private JavaArchive getBundleA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "classloader.bundleA");
         archive.addClasses(A.class, C.class);
@@ -274,6 +311,65 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleVersion("1.0.0");
                 builder.addExportPackages(A.class.getPackage().getName() + ";version=1.0.0;test=x");
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "classloader.bundleB");
+        archive.addAsResource(getResourceFile("bundles/classloader/resB.txt"), "resources/resource.txt");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addExportPackages("resources");
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleC() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "classloader.bundleC");
+        archive.addAsResource(getResourceFile("bundles/classloader/resC.txt"), "resources/resource.txt");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addExportPackages("resources");
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleD() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "classloader.bundleD");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages("resources;bundle-symbolic-name=classloader.bundleC");
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleE() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "classloader.bundleE");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addRequireBundle("classloader.bundleD");
+                builder.addImportPackages("resources");
                 return builder.openStream();
             }
         });

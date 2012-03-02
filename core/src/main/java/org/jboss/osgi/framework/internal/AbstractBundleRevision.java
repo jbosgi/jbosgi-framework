@@ -229,6 +229,6 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
     @Override
     public String toString() {
-        return "Revision[" + getCanonicalName() + "]";
+        return getClass().getSimpleName() + "[" + getCanonicalName() + "]";
     }
 }

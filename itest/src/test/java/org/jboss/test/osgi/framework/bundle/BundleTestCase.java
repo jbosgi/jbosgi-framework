@@ -202,8 +202,9 @@ public class BundleTestCase extends OSGiFrameworkTest {
             Archive<?> assemblyB = getSingletonArchiveB();
             Bundle bundleB = installBundle(assemblyB);
             try {
-                boolean resolved = getPackageAdmin().resolveBundles(new Bundle[]{bundleA, bundleB});
-                assertTrue("Bundles resolved", resolved);
+                //boolean resolved = getPackageAdmin().resolveBundles(new Bundle[]{bundleA, bundleB});
+                //assertTrue("Bundles resolved", resolved);
+                getPackageAdmin().resolveBundles(new Bundle[]{bundleA, bundleB});
                 int stateA = bundleA.getState();
                 int stateB = bundleB.getState();
                 assertTrue("One Bundle resolved", stateA == INSTALLED && stateB == RESOLVED || stateA == RESOLVED && stateB == INSTALLED);

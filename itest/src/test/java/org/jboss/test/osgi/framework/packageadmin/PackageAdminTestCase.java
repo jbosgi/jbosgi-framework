@@ -283,6 +283,48 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     }
 
     @Test
+    public void testGetExportedPackageWired() throws Exception {
+        Bundle bundleA = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+        Bundle bundleB = installBundle(assembleArchive("import-export", "/bundles/package-admin/import-export", ImportExport.class));
+
+        bundleA.start();
+        bundleB.start();
+
+        try {
+            PackageAdmin pa = getPackageAdmin();
+            ExportedPackage ep = pa.getExportedPackage(Exported.class.getPackage().getName());
+            assertEquals(bundleA, ep.getExportingBundle());
+            Bundle[] importingBundles = ep.getImportingBundles();
+            assertEquals(1, importingBundles.length);
+            assertEquals(bundleB, importingBundles[0]);
+        } finally {
+            bundleB.uninstall();
+            bundleA.uninstall();
+        }
+    }
+    
+    @Test
+    public void testGetExportedPackageRequireBundle() throws Exception {
+        Bundle bundleA = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+        Bundle bundleR = installBundle(assembleArchive("requiring", "/bundles/package-admin/requiring"));
+
+        bundleA.start();
+        bundleR.start();
+
+        try {
+            PackageAdmin pa = getPackageAdmin();
+            ExportedPackage ep = pa.getExportedPackage(Exported.class.getPackage().getName());
+            assertEquals(bundleA, ep.getExportingBundle());
+            Bundle[] importingBundles = ep.getImportingBundles();
+            assertEquals(1, importingBundles.length);
+            assertEquals(bundleR, importingBundles[0]);
+        } finally {
+            bundleR.uninstall();
+            bundleA.uninstall();
+        }
+    }
+    
+    @Test
     public void testUpdateExportedPackageRemovalPending() throws Exception {
         JavaArchive archive1 = assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class);
         JavaArchive archive2 = assembleArchive("exporter_2", "/bundles/package-admin/exporter_2", Exported.class);
@@ -355,7 +397,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    public void testGetExportedPackagesByName() throws Exception {
+    public void testGetExportedPackageByName() throws Exception {
         PackageAdmin pa = getPackageAdmin();
         Bundle bundleA = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
         try {

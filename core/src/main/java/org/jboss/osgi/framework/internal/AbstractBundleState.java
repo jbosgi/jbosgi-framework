@@ -38,6 +38,8 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
+import org.osgi.framework.resource.Wire;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.resolver.ResolutionException;
 
 import java.io.IOException;
@@ -557,6 +559,18 @@ abstract class AbstractBundleState implements Bundle {
 
                 // Activate the service that represents bundle state RESOLVED
                 getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.ACTIVE);
+                
+                if (log.isDebugEnabled()) {
+                    BundleWiring wiring = getCurrentRevision().getWiring();
+                    log.debugf("Required resource wires for: %s", wiring.getResource());
+                    for (Wire wire : wiring.getRequiredResourceWires(null)) {
+                        log.debugf("   %s", wire);
+                    }
+                    log.debugf("Provided resource wires for: %s", wiring.getResource());
+                    for (Wire wire : wiring.getProvidedResourceWires(null)) {
+                        log.debugf("   %s", wire);
+                    }
+                }
 
                 return true;
             } catch (BundleException ex) {
@@ -613,5 +627,4 @@ abstract class AbstractBundleState implements Bundle {
     public String toString() {
         return getCanonicalName();
     }
-
 }
