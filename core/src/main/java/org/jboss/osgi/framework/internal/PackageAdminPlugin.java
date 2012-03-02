@@ -582,7 +582,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         private final Bundle[] requiringBundles;
         private final AbstractBundleRevision bundleRevision;
 
-        public RequiredBundleImpl(AbstractBundleState requiredBundle, Collection<AbstractBundleState> requiringBundles) {
+        RequiredBundleImpl(AbstractBundleState requiredBundle, Collection<AbstractBundleState> requiringBundles) {
             this.requiredBundle = AbstractBundleState.assertBundleState(requiredBundle);
             this.bundleRevision = requiredBundle.getCurrentRevision();
 
@@ -625,6 +625,11 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 return true;
 
             return !bundleRevision.equals(bundleRevision.getBundleState().getCurrentRevision());
+        }
+
+        @Override
+        public String toString() {
+            return "RequiredBundle[" + requiredBundle + "]";
         }
     }
 
