@@ -28,7 +28,6 @@
 
     <name>JBossOSGi Framework iTest</name>
 
-    <groupId>org.jboss.osgi.framework</groupId>
     <artifactId>jbosgi-framework-itest</artifactId>
     <packaging>jar</packaging>
 
@@ -36,7 +35,7 @@
     <dependencies>
         <dependency>
             <groupId>biz.aQute</groupId>
-            <artifactId>bnd</artifactId>
+            <artifactId>aQute.bnd</artifactId>
         </dependency>
 
         <!-- Test Dependencies -->
