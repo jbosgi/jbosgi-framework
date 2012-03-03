@@ -21,8 +21,16 @@
  */
 package org.jboss.test.osgi.framework.classloader;
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
@@ -30,18 +38,9 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.classloader.support.a.A;
 import org.jboss.test.osgi.framework.classloader.support.b.B;
 import org.jboss.test.osgi.framework.classloader.support.c.C;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * RequireBundleTest.
@@ -269,8 +268,6 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    @Ignore("[FELIX-3370] Wires E to B instead of C") 
-    // https://issues.apache.org/jira/browse/FELIX-3370
     public void testImportBySymbolicName() throws Exception {
         Bundle bundleB = installBundle(getBundleB());
         Bundle bundleC = installBundle(getBundleC());
@@ -354,6 +351,7 @@ public class RequireBundleTestCase extends OSGiFrameworkTest {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
+                builder.addExportPackages("org.acme.foo;uses:=resources");
                 builder.addImportPackages("resources;bundle-symbolic-name=classloader.bundleC");
                 return builder.openStream();
             }

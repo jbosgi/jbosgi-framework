@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.osgi.framework.resource.ResourceConstants.IDENTITY_NAMESPACE;
+import static org.osgi.framework.resource.ResourceConstants.WIRING_BUNDLE_NAMESPACE;
 import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
 
 import java.util.ArrayList;
@@ -235,7 +235,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 if (wire.getCapability() == cap)
                     return true;
             }
-            List<Wire> requireBundleWires = wiring.getProvidedResourceWires(IDENTITY_NAMESPACE);
+            List<Wire> requireBundleWires = wiring.getProvidedResourceWires(WIRING_BUNDLE_NAMESPACE);
             if (requireBundleWires.size() > 0)
                 return true;
         }
@@ -414,7 +414,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             Set<AbstractBundleState> requiringBundles = new HashSet<AbstractBundleState>();
             BundleWiring wiring = brev.getWiring();
             if (wiring != null) {
-                List<Wire> providedWires = wiring.getProvidedResourceWires(IDENTITY_NAMESPACE);
+                List<Wire> providedWires = wiring.getProvidedResourceWires(WIRING_BUNDLE_NAMESPACE);
                 for (Wire wire : providedWires) {
                     Bundle bundle = ((BundleRevision) wire.getRequirer()).getBundle();
                     requiringBundles.add(AbstractBundleState.assertBundleState(bundle));
@@ -541,7 +541,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 AbstractBundleRevision req = (AbstractBundleRevision) wire.getRequirer();
                 bundles.add(req.getBundle());
             }
-            for (Wire wire : wiring.getProvidedResourceWires(IDENTITY_NAMESPACE)) {
+            for (Wire wire : wiring.getProvidedResourceWires(WIRING_BUNDLE_NAMESPACE)) {
                 AbstractBundleRevision req = (AbstractBundleRevision) wire.getRequirer();
                 bundles.add(req.getBundle());
             }

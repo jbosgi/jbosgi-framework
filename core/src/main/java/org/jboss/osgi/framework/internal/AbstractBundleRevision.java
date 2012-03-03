@@ -30,8 +30,6 @@ import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.v2.XIdentityCapability;
 import org.jboss.osgi.resolver.v2.XResourceBuilder;
-import org.jboss.osgi.resolver.v2.spi.AbstractBundleCapability;
-import org.jboss.osgi.resolver.v2.spi.AbstractBundleRequirement;
 import org.jboss.osgi.resolver.v2.spi.AbstractResource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;

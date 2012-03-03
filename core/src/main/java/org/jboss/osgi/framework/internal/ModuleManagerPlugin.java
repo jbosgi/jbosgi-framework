@@ -47,7 +47,7 @@ import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.v2.XIdentityCapability;
-import org.jboss.osgi.resolver.v2.XIdentityRequirement;
+import org.jboss.osgi.resolver.v2.XBundleRequirement;
 import org.jboss.osgi.resolver.v2.XResource;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.BundleReference;
@@ -386,7 +386,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             }
 
             // Dependency for Require-Bundle
-            if (req instanceof XIdentityRequirement) {
+            if (req instanceof XBundleRequirement) {
                 bundleWires.add(wire);
                 continue;
             }
@@ -411,7 +411,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             if (packageExporters.contains(exporter))
                 continue;
 
-            XIdentityRequirement req = (XIdentityRequirement) wire.getRequirement();
+            XBundleRequirement req = (XBundleRequirement) wire.getRequirement();
             ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
             holder.setImportFilter(PathFilters.not(importedPathsFilter));
             holder.setOptional(req.isOptional());
