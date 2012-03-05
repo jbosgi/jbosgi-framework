@@ -290,7 +290,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                     final ServiceState.ValueProvider valueProvider = new ServiceState.ValueProvider() {
                         @Override
                         public Object getValue() {
-                            AbstractBundleRevision currentRevision = bundleState.getCurrentRevision();
+                            AbstractBundleRevision currentRevision = bundleState.getCurrentBundleRevision();
                             ModuleClassLoader classLoader = null;
                             try {
                                 classLoader = currentRevision.getModuleClassLoader();

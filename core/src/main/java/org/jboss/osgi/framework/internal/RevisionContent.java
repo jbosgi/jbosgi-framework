@@ -83,7 +83,7 @@ final class RevisionContent implements EntriesProvider {
         AbstractBundleState bundleState = bundleManager.getBundleById(bundleId);
         if (bundleState == null)
             return null;
-        AbstractBundleRevision bundleRev = bundleState.getRevisionById(revisionId);
+        AbstractBundleRevision bundleRev = bundleState.getBundleRevisionById(revisionId);
         if (bundleRev == null)
             return null;
         UserBundleRevision userRev = (UserBundleRevision) bundleRev;

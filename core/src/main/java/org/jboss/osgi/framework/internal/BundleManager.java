@@ -493,7 +493,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         }
 
         EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
-        for (AbstractBundleRevision abr : userBundle.getRevisions()) {
+        for (AbstractBundleRevision abr : userBundle.getAllBundleRevisions()) {
             envPlugin.uninstallResources(abr);
         }
 
@@ -501,7 +501,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         eventsPlugin.fireBundleEvent(userBundle, BundleEvent.UNRESOLVED);
 
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        for (AbstractBundleRevision rev : userBundle.getRevisions()) {
+        for (AbstractBundleRevision rev : userBundle.getAllBundleRevisions()) {
             UserBundleRevision userRev = (UserBundleRevision) rev;
             if (userBundle.isFragment() == false) {
                 ModuleIdentifier identifier = moduleManager.getModuleIdentifier(rev);

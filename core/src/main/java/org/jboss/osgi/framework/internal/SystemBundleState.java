@@ -81,7 +81,7 @@ final class SystemBundleState extends AbstractBundleState {
     }
 
     @Override
-    List<AbstractBundleRevision> getRevisions() {
+    List<AbstractBundleRevision> getAllBundleRevisions() {
         return Collections.singletonList((AbstractBundleRevision)revision);
     }
 
@@ -114,7 +114,7 @@ final class SystemBundleState extends AbstractBundleState {
     }
 
     @Override
-    SystemBundleRevision getCurrentRevision() {
+    SystemBundleRevision getCurrentBundleRevision() {
         return revision;
     }
 
@@ -134,7 +134,7 @@ final class SystemBundleState extends AbstractBundleState {
     }
 
     @Override
-    SystemBundleRevision getRevisionById(int revisionId) {
+    SystemBundleRevision getBundleRevisionById(int revisionId) {
         if (revisionId != 0)
             throw new IllegalArgumentException("System bundle does not have a revision with id: " + revisionId);
         return revision;

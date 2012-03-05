@@ -112,8 +112,8 @@ final class HostBundleState extends UserBundleState {
     }
 
     @Override
-    HostBundleRevision getCurrentRevision() {
-        return (HostBundleRevision) super.getCurrentRevision();
+    HostBundleRevision getCurrentBundleRevision() {
+        return (HostBundleRevision) super.getCurrentBundleRevision();
     }
 
     boolean isPersistentlyStarted() {
@@ -182,7 +182,7 @@ final class HostBundleState extends UserBundleState {
     Set<UserBundleState> getDependentBundles() {
         Set<UserBundleState> result = new HashSet<UserBundleState>();
         if (isResolved() == true) {
-            BundleWiring wiring = getCurrentRevision().getWiring();
+            BundleWiring wiring = getCurrentBundleRevision().getWiring();
             List<Wire> wires = wiring.getRequiredResourceWires(null);
             for (Wire wire : wires) {
                 Resource provider = wire.getProvider();

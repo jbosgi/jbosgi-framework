@@ -130,11 +130,11 @@ abstract class AbstractBundleState implements Bundle {
 
     abstract AbstractBundleContext createContextInternal();
 
-    abstract AbstractBundleRevision getCurrentRevision();
+    abstract AbstractBundleRevision getCurrentBundleRevision();
 
-    abstract AbstractBundleRevision getRevisionById(int revisionId);
+    abstract AbstractBundleRevision getBundleRevisionById(int revisionId);
 
-    abstract List<AbstractBundleRevision> getRevisions();
+    abstract List<AbstractBundleRevision> getAllBundleRevisions();
 
     abstract ServiceName getServiceName(int state);
 
@@ -145,7 +145,7 @@ abstract class AbstractBundleState implements Bundle {
     abstract BundleStorageState getBundleStorageState();
 
     ModuleIdentifier getModuleIdentifier() {
-        return getCurrentRevision().getModuleIdentifier();
+        return getCurrentBundleRevision().getModuleIdentifier();
     }
 
     void changeState(int state) {
@@ -283,7 +283,7 @@ abstract class AbstractBundleState implements Bundle {
 
     @Override
     public URL getResource(String name) {
-        return getCurrentRevision().getResource(name);
+        return getCurrentBundleRevision().getResource(name);
     }
 
     @Override
@@ -356,11 +356,11 @@ abstract class AbstractBundleState implements Bundle {
     }
 
     OSGiMetaData getOSGiMetaData() {
-        return getCurrentRevision().getOSGiMetaData();
+        return getCurrentBundleRevision().getOSGiMetaData();
     }
 
     boolean isResolved() {
-        return getCurrentRevision().isResolved();
+        return getCurrentBundleRevision().isResolved();
     }
 
     boolean isUninstalled() {
@@ -407,28 +407,28 @@ abstract class AbstractBundleState implements Bundle {
      * and the bundle has fragments, then the attached fragment JARs must be searched for the localization entry.
      */
     private URL getLocalizationEntry(String entryPath) {
-        return getCurrentRevision().getLocalizationEntry(entryPath);
+        return getCurrentBundleRevision().getLocalizationEntry(entryPath);
     }
 
     @Override
     public Class<?> loadClass(String className) throws ClassNotFoundException {
         assertNotUninstalled();
-        return getCurrentRevision().loadClass(className);
+        return getCurrentBundleRevision().loadClass(className);
     }
 
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
-        return getCurrentRevision().getResources(name);
+        return getCurrentBundleRevision().getResources(name);
     }
 
     @Override
     public Enumeration<String> getEntryPaths(String path) {
-        return getCurrentRevision().getEntryPaths(path);
+        return getCurrentBundleRevision().getEntryPaths(path);
     }
 
     @Override
     public URL getEntry(String path) {
-        return getCurrentRevision().getEntry(path);
+        return getCurrentBundleRevision().getEntry(path);
     }
 
     @Override
@@ -443,7 +443,7 @@ abstract class AbstractBundleState implements Bundle {
 
     @Override
     public Enumeration<URL> findEntries(String path, String filePattern, boolean recurse) {
-        return getCurrentRevision().findEntries(path, filePattern, recurse);
+        return getCurrentBundleRevision().findEntries(path, filePattern, recurse);
     }
 
     AbstractBundleContext getBundleContextInternal() {
@@ -480,7 +480,7 @@ abstract class AbstractBundleState implements Bundle {
 
     @Override
     public Version getVersion() {
-        return getCurrentRevision().getVersion();
+        return getCurrentBundleRevision().getVersion();
     }
 
     @Override
@@ -552,7 +552,7 @@ abstract class AbstractBundleState implements Bundle {
             try {
                 try {
                     ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
-                    resolverPlugin.resolveAndApply(Collections.singleton(getCurrentRevision()), null);
+                    resolverPlugin.resolveAndApply(Collections.singleton(getCurrentBundleRevision()), null);
                 } catch (ResolutionException ex) {
                     throw new BundleException(ex.getMessage(), ex);
                 }
@@ -561,7 +561,7 @@ abstract class AbstractBundleState implements Bundle {
                 getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.ACTIVE);
                 
                 if (log.isDebugEnabled()) {
-                    BundleWiring wiring = getCurrentRevision().getWiring();
+                    BundleWiring wiring = getCurrentBundleRevision().getWiring();
                     log.debugf("Required resource wires for: %s", wiring.getResource());
                     for (Wire wire : wiring.getRequiredResourceWires(null)) {
                         log.debugf("   %s", wire);

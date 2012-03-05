@@ -96,19 +96,19 @@ abstract class UserBundleState extends AbstractBundleState {
 
     @Override
     public String getLocation() {
-        return getCurrentRevision().getLocation();
+        return getCurrentBundleRevision().getLocation();
     }
 
     Deployment getDeployment() {
-        return getCurrentRevision().getDeployment();
+        return getCurrentBundleRevision().getDeployment();
     }
 
     RevisionContent getFirstContentRoot() {
-        return getCurrentRevision().getRootContent();
+        return getCurrentBundleRevision().getRootContent();
     }
 
     List<RevisionContent> getContentRoots() {
-        return getCurrentRevision().getContentList();
+        return getCurrentBundleRevision().getContentList();
     }
 
     boolean isSingleton() {
@@ -145,24 +145,24 @@ abstract class UserBundleState extends AbstractBundleState {
     }
 
     @Override
-    UserBundleRevision getCurrentRevision() {
+    UserBundleRevision getCurrentBundleRevision() {
         return revisions.get(0);
     }
 
     @Override
-    List<AbstractBundleRevision> getRevisions() {
+    List<AbstractBundleRevision> getAllBundleRevisions() {
         List<AbstractBundleRevision> result = new ArrayList<AbstractBundleRevision>(revisions);
         return Collections.unmodifiableList(result);
     }
 
     void clearOldRevisions() {
-        UserBundleRevision rev = getCurrentRevision();
+        UserBundleRevision rev = getCurrentBundleRevision();
         revisions.clear();
         revisions.add(rev);
     }
 
     @Override
-    AbstractBundleRevision getRevisionById(int revisionId) {
+    AbstractBundleRevision getBundleRevisionById(int revisionId) {
         for (AbstractBundleRevision rev : revisions) {
             if (rev.getRevisionId() == revisionId) {
                 return rev;
@@ -190,7 +190,7 @@ abstract class UserBundleState extends AbstractBundleState {
     }
 
     boolean hasActiveWires() {
-        BundleWiring wiring = getCurrentRevision().getWiring();
+        BundleWiring wiring = getCurrentBundleRevision().getWiring();
         return wiring != null ? wiring.isInUse() : false;
     }
 
@@ -331,8 +331,8 @@ abstract class UserBundleState extends AbstractBundleState {
 
         // Remove the revisions from the environment
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        UserBundleRevision currentRev = getCurrentRevision();
-        for (AbstractBundleRevision brev : getRevisions()) {
+        UserBundleRevision currentRev = getCurrentBundleRevision();
+        for (AbstractBundleRevision brev : getAllBundleRevisions()) {
 
             EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
             if (currentRev != brev)
@@ -341,7 +341,7 @@ abstract class UserBundleState extends AbstractBundleState {
             if (brev instanceof HostBundleRevision) {
             	HostBundleRevision hostRev = (HostBundleRevision) brev;
             	for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
-            		if (fragRev != fragRev.getBundleState().getCurrentRevision()) {
+            		if (fragRev != fragRev.getBundleState().getCurrentBundleRevision()) {
                         envPlugin.uninstallResources(fragRev);
             		}
             	}

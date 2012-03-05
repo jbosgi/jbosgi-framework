@@ -117,6 +117,6 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
         }
         FrameworkState frameworkState = userBundle.getFrameworkState();
         EnvironmentPlugin envPlugin = frameworkState.getEnvironmentPlugin();
-        envPlugin.installResources(userBundle.getCurrentRevision());
+        envPlugin.installResources(userBundle.getCurrentBundleRevision());
     }
 }
