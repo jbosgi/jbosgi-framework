@@ -24,11 +24,11 @@ package org.jboss.test.osgi.framework.packageadmin.optimporter;
 /**
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public class Importing {
+public class OptionalImport {
 
     public Object imported;
 
-    public Importing() {
+    public OptionalImport() {
         try {
             Class<?> cls = getClass().getClassLoader().loadClass("org.jboss.test.osgi.framework.packageadmin.exported.Exported");
             imported = cls.newInstance();

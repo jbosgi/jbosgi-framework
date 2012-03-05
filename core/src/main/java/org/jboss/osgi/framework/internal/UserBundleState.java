@@ -377,10 +377,6 @@ abstract class UserBundleState extends AbstractBundleState {
         BundleInstallProvider installHandler = getCoreServices().getInstallHandler();
         installHandler.uninstallBundle(deployment);
 
-        // Always uninstall from the bundle manager
-        BundleManager bundleManager = getBundleManager();
-        bundleManager.uninstallBundle(deployment);
-
         log.infof("Bundle uninstalled: %s", this);
     }
 

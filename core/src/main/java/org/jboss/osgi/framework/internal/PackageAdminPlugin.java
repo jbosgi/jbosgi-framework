@@ -187,7 +187,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         Set<ExportedPackage> result = new HashSet<ExportedPackage>();
         BundleManager bundleManager = injectedBundleManager.getValue();
-        for (AbstractBundleState aux : bundleManager.getBundles()) {
+        for (AbstractBundleState aux : bundleManager.getBundles(null)) {
             AbstractBundleRevision brev = aux.getCurrentRevision();
             if (brev.isResolved() && !brev.isFragment()) {
                 for (Capability cap : brev.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {

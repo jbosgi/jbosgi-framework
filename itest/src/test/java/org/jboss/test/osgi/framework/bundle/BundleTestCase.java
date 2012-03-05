@@ -196,10 +196,10 @@ public class BundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testSingleton() throws Exception {
-        Archive<?> assemblyA = getSingletonArchiveA();
+        Archive<?> assemblyA = assembleArchive("bundle10", "/bundles/singleton/singleton1");
         Bundle bundleA = installBundle(assemblyA);
         try {
-            Archive<?> assemblyB = getSingletonArchiveB();
+            Archive<?> assemblyB = assembleArchive("bundle20", "/bundles/singleton/singleton2");
             Bundle bundleB = installBundle(assemblyB);
             try {
                 boolean resolved = getPackageAdmin().resolveBundles(new Bundle[]{bundleA, bundleB});
@@ -217,10 +217,13 @@ public class BundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testNotSingleton() throws Exception {
-        Archive<?> assemblyA = getSingletonArchiveA();
+        // Bundle-SymbolicName: singleton;singleton:=true
+        Archive<?> assemblyA = assembleArchive("bundle1", "/bundles/singleton/singleton1");
         Bundle bundleA = installBundle(assemblyA);
         try {
-            Archive<?> assemblyB = getSingletonArchiveC();
+            // Bundle-SymbolicName: singleton
+            // Bundle-Version: 2.0.0
+            Archive<?> assemblyB = assembleArchive("not-singleton", "/bundles/singleton/not-singleton");
             Bundle bundleB = installBundle(assemblyB);
             try {
                 assertEquals(bundleA.getSymbolicName(), bundleB.getSymbolicName());
@@ -333,7 +336,8 @@ public class BundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testBundleReference() throws Exception {
-        Bundle bundle = installBundle(getUpdateBundle1());
+        Archive<?> assembly = assembleArchive("bundle1", "/bundles/update/update-bundle1", ObjectA.class);
+        Bundle bundle = installBundle(assembly);
         try {
             Class<?> clazz = bundle.loadClass(ObjectA.class.getName());
             ClassLoader classLoader = clazz.getClassLoader();
@@ -368,64 +372,6 @@ public class BundleTestCase extends OSGiFrameworkTest {
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addImportPackages(BundleActivator.class);
-                return builder.openStream();
-            }
-        });
-        return archive;
-    }
-
-    private JavaArchive getSingletonArchiveA() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "singletonA");
-        archive.setManifest(new Asset() {
-            public InputStream openStream() {
-                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-                builder.addBundleManifestVersion(2);
-                builder.addBundleSymbolicName("singleton;singleton:=true");
-                builder.addBundleVersion("1");
-                return builder.openStream();
-            }
-        });
-        return archive;
-    }
-
-    private JavaArchive getSingletonArchiveB() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "singletonB");
-        archive.setManifest(new Asset() {
-            public InputStream openStream() {
-                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-                builder.addBundleManifestVersion(2);
-                builder.addBundleSymbolicName("singleton;singleton:=true");
-                builder.addBundleVersion("2");
-                return builder.openStream();
-            }
-        });
-        return archive;
-    }
-
-    private JavaArchive getSingletonArchiveC() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "singletonC");
-        archive.setManifest(new Asset() {
-            public InputStream openStream() {
-                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-                builder.addBundleManifestVersion(2);
-                builder.addBundleSymbolicName("singleton");
-                builder.addBundleVersion("2.0.0");
-                return builder.openStream();
-            }
-        });
-        return archive;
-    }
-
-    private JavaArchive getUpdateBundle1() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundle1");
-        archive.addClasses(ObjectA.class);
-        archive.setManifest(new Asset() {
-            public InputStream openStream() {
-                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-                builder.addBundleManifestVersion(2);
-                builder.addBundleSymbolicName(archive.getName());
-                builder.addBundleVersion("1.0.0");
-                builder.addExportPackages(ObjectA.class);
                 return builder.openStream();
             }
         });

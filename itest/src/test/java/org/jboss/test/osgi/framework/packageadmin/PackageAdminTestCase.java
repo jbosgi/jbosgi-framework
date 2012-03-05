@@ -21,11 +21,25 @@
  */
 package org.jboss.test.osgi.framework.packageadmin;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.Archive;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.bundle.support.a.ObjectA;
 import org.jboss.test.osgi.framework.bundle.support.a.ObjectA2;
@@ -36,13 +50,11 @@ import org.jboss.test.osgi.framework.packageadmin.exportB.ExportB;
 import org.jboss.test.osgi.framework.packageadmin.exported.Exported;
 import org.jboss.test.osgi.framework.packageadmin.importA.ImportingA;
 import org.jboss.test.osgi.framework.packageadmin.importexport.ImportExport;
-import org.jboss.test.osgi.framework.packageadmin.optimporter.Importing;
+import org.jboss.test.osgi.framework.packageadmin.optimporter.OptionalImport;
 import org.jboss.test.osgi.framework.service.support.a.PA;
-import org.jboss.test.osgi.framework.service.support.b.Other;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
@@ -52,24 +64,6 @@ import org.osgi.framework.Version;
 import org.osgi.service.packageadmin.ExportedPackage;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.packageadmin.RequiredBundle;
-
-import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Test PackageAdmin service.
@@ -94,17 +88,6 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
 
             Bundle notFound = pa.getBundle(getClass());
             assertNull(notFound);
-
-            Bundle bundleB = installBundle(getBundleArchiveB());
-            try {
-                bundleB.start();
-                Class<?> otherClass = assertLoadClass(bundleB, Other.class.getName());
-
-                found = pa.getBundle(otherClass);
-                assertSame(bundleB, found);
-            } finally {
-                bundleB.uninstall();
-            }
         } finally {
             bundleA.uninstall();
         }
@@ -193,7 +176,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     @Test
     public void testGetExportedPackagesByBundle() throws Exception {
         Bundle bundleA = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
-        Bundle bundleB = installBundle(assembleArchive("opt-importer", "/bundles/package-admin/opt-importer", Importing.class));
+        Bundle bundleB = installBundle(assembleArchive("opt-importer", "/bundles/package-admin/opt-importer", OptionalImport.class));
 
         bundleA.start();
         bundleB.start();
@@ -250,6 +233,36 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
             fail("Should have thrown an Illegal Argument Exception");
         } catch (IllegalArgumentException e) {
             // good
+        }
+    }
+
+    @Test
+    public void testGetExportedPackagesUninstalled() throws Exception {
+        Bundle bundleA = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+        Bundle bundleB = installBundle(assembleArchive("import-export", "/bundles/package-admin/import-export", ImportExport.class));
+
+        bundleA.start();
+        bundleB.start();
+
+        try {
+            PackageAdmin pa = getPackageAdmin();
+            ExportedPackage[] pkgsA = pa.getExportedPackages(bundleA);
+            assertEquals(1, pkgsA.length);
+            ExportedPackage pkgA = pkgsA[0];
+            assertSame(bundleA, pkgA.getExportingBundle());
+            assertEquals(Exported.class.getPackage().getName(), pkgA.getName());
+            assertEquals(1, pkgA.getImportingBundles().length);
+            assertSame(bundleB, pkgA.getImportingBundles()[0]);
+            assertEquals(Version.parseVersion("1.7"), pkgA.getVersion());
+            
+            bundleA.stop();
+            bundleA.uninstall();
+            pkgA = pa.getExportedPackage(Exported.class.getPackage().getName());
+            assertSame(bundleA, pkgA.getExportingBundle());
+            assertEquals(Exported.class.getPackage().getName(), pkgA.getName());
+            assertNull(pkgA.getImportingBundles());
+        } finally {
+            bundleB.uninstall();
         }
     }
 
@@ -513,7 +526,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     public void testRefreshPackages() throws Exception {
         PackageAdmin pa = getPackageAdmin();
         Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
-        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", Importing.class));
+        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", OptionalImport.class));
 
         try {
             bundleI.start();
@@ -544,9 +557,14 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     @Test
     public void testRefreshPackagesNull() throws Exception {
         PackageAdmin pa = getPackageAdmin();
-        Bundle bundleA = installBundle(getUpdateBundle1());
-        Bundle bundleX = installBundle(getUpdateBundleX());
-        Bundle bundleY = installBundle(getUpdateBundleY());
+        Archive<?> assemblyx = assembleArchive("bundlex", "/bundles/update/update-bundlex", ObjectX.class);
+        Archive<?> assemblyy = assembleArchive("bundley", "/bundles/update/update-bundley", ObjectY.class);
+        Archive<?> assembly1 = assembleArchive("bundle1", new String[] { "/bundles/update/update-bundle1", "/bundles/update/classes1" });
+        Archive<?> assembly2 = assembleArchive("bundle2", new String[] { "/bundles/update/update-bundle102", "/bundles/update/classes2" });
+
+        Bundle bundleA = installBundle(assembly1);
+        Bundle bundleX = installBundle(assemblyx);
+        Bundle bundleY = installBundle(assemblyy);
         BundleListener bl = null;
         try {
             BundleContext systemContext = getFramework().getBundleContext();
@@ -567,7 +585,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
 
             Class<?> cls = bundleX.loadClass(ObjectX.class.getName());
 
-            bundleA.update(toInputStream(getUpdateBundle102()));
+            bundleA.update(toInputStream(assembly2));
             assertBundleState(Bundle.ACTIVE, bundleA.getState());
             assertBundleState(Bundle.ACTIVE, bundleX.getState());
             assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());
@@ -624,7 +642,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     public void testRefreshPackagesNullUninstall() throws Exception {
         PackageAdmin pa = getPackageAdmin();
         Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
-        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", Importing.class));
+        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", OptionalImport.class));
 
         try {
             bundleI.start();
@@ -653,7 +671,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     }
 
     private Object getImportedFieldValue(Bundle bundleI) throws Exception {
-        Class<?> iCls = bundleI.loadClass(Importing.class.getName());
+        Class<?> iCls = bundleI.loadClass(OptionalImport.class.getName());
         Object importing = iCls.newInstance();
         Field field = iCls.getDeclaredField("imported");
         return field.get(importing);
@@ -663,7 +681,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     public void testResolveBundles() throws Exception {
         PackageAdmin pa = getPackageAdmin();
         Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
-        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", Importing.class));
+        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", OptionalImport.class));
 
         try {
             assertBundleState(Bundle.INSTALLED, bundleE.getState());
@@ -681,7 +699,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     public void testResolveBundlesNull() throws Exception {
         PackageAdmin pa = getPackageAdmin();
         Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
-        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", Importing.class));
+        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", OptionalImport.class));
 
         try {
             assertBundleState(Bundle.INSTALLED, bundleE.getState());
@@ -698,7 +716,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     @Test
     public void testCantResolveAllBundles() throws Exception {
         PackageAdmin pa = getPackageAdmin();
-        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", Importing.class));
+        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", OptionalImport.class));
         Bundle bundleR = installBundle(assembleArchive("requiring", "/bundles/package-admin/requiring"));
 
         try {
@@ -781,84 +799,5 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
             bundleU.uninstall();
             bundleE.uninstall();
         }
-    }
-
-    private JavaArchive getBundleArchiveB() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
-        archive.addClasses(Other.class);
-        archive.setManifest(new Asset() {
-            public InputStream openStream() {
-                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-                builder.addBundleManifestVersion(2);
-                builder.addBundleSymbolicName(archive.getName());
-                builder.addImportPackages(BundleActivator.class);
-                return builder.openStream();
-            }
-        });
-        return archive;
-    }
-
-    private JavaArchive getUpdateBundle1() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundle1");
-        archive.addClasses(ObjectA.class);
-        archive.setManifest(new Asset() {
-            public InputStream openStream() {
-                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-                builder.addBundleManifestVersion(2);
-                builder.addBundleSymbolicName(archive.getName());
-                builder.addBundleVersion("1.0.0");
-                builder.addExportPackages(ObjectA.class);
-                return builder.openStream();
-            }
-        });
-        return archive;
-    }
-
-    private JavaArchive getUpdateBundle102() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundle102");
-        archive.addClasses(ObjectA2.class);
-        archive.setManifest(new Asset() {
-            public InputStream openStream() {
-                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-                builder.addBundleManifestVersion(2);
-                builder.addBundleSymbolicName("update-bundle1");
-                builder.addBundleVersion("1.0.2");
-                builder.addExportPackages(ObjectA.class);
-                return builder.openStream();
-            }
-        });
-        return archive;
-    }
-
-    private JavaArchive getUpdateBundleX() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundlex");
-        archive.addClasses(ObjectX.class);
-        archive.setManifest(new Asset() {
-            public InputStream openStream() {
-                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-                builder.addBundleManifestVersion(2);
-                builder.addBundleSymbolicName(archive.getName());
-                builder.addBundleVersion("1.0.0");
-                builder.addImportPackages(ObjectA.class);
-                return builder.openStream();
-            }
-        });
-        return archive;
-    }
-
-    private JavaArchive getUpdateBundleY() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "update-bundley");
-        archive.addClasses(ObjectY.class);
-        archive.setManifest(new Asset() {
-            public InputStream openStream() {
-                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-                builder.addBundleManifestVersion(2);
-                builder.addBundleSymbolicName(archive.getName());
-                builder.addBundleVersion("1.0.0");
-                builder.addExportPackages(ObjectY.class);
-                return builder.openStream();
-            }
-        });
-        return archive;
     }
 }
