@@ -37,20 +37,20 @@ import org.osgi.framework.Version;
  */
 public class VersionRangeTestCase {
 
+    Version v200 = Version.parseVersion("2.0.0");
+    Version v200Alpha1 = Version.parseVersion("2.0.0.Alpha1");
+    Version v200Alpha2 = Version.parseVersion("2.0.0.Alpha2");
+    Version v200Beta1 = Version.parseVersion("2.0.0.Beta1");
+    Version v200Beta2 = Version.parseVersion("2.0.0.Beta2");
+    Version v200CR1 = Version.parseVersion("2.0.0.CR1");
+    Version v200CR2 = Version.parseVersion("2.0.0.CR2");
+    Version v200GA = Version.parseVersion("2.0.0.GA");
+    Version v200Final = Version.parseVersion("2.0.0.Final");
+    Version v200SP1 = Version.parseVersion("2.0.0.SP1");
+    Version v200SP2 = Version.parseVersion("2.0.0.SP2");
+    
     @Test
-    public void testBundleLifecycle() throws Exception {
-        
-        Version v200 = Version.parseVersion("2.0.0");
-        Version v200Alpha1 = Version.parseVersion("2.0.0.Alpha1");
-        Version v200Alpha2 = Version.parseVersion("2.0.0.Alpha2");
-        Version v200Beta1 = Version.parseVersion("2.0.0.Beta1");
-        Version v200Beta2 = Version.parseVersion("2.0.0.Beta2");
-        Version v200CR1 = Version.parseVersion("2.0.0.CR1");
-        Version v200CR2 = Version.parseVersion("2.0.0.CR2");
-        Version v200GA = Version.parseVersion("2.0.0.GA");
-        Version v200Final = Version.parseVersion("2.0.0.Final");
-        Version v200SP1 = Version.parseVersion("2.0.0.SP1");
-        Version v200SP2 = Version.parseVersion("2.0.0.SP2");
+    public void testVersionOrdering() throws Exception {
         
         assertTrue(v200SP2.compareTo(v200SP1) > 0);
         assertTrue(v200SP1.compareTo(v200GA) > 0);
@@ -64,6 +64,10 @@ public class VersionRangeTestCase {
         
         // 2.0.0.Alpha1 > 2.0.0
         Assert.assertTrue(v200Alpha1.compareTo(v200) > 0);
+    }
+
+    @Test
+    public void testVersionRange() throws Exception {
         
         VersionRange rA = VersionRange.parse("[1.0,3.0)");
         assertTrue(rA.isInRange(v200Final));
@@ -88,5 +92,15 @@ public class VersionRangeTestCase {
         assertFalse(rC.isInRange(v200Beta1));
         assertFalse(rC.isInRange(v200Alpha1));
         assertFalse(rC.isInRange(v200));
+
+        VersionRange rD = VersionRange.parse("[2.0,2.0]");
+        assertTrue(rD.isInRange(v200));
+        
+        // Versions with qualifier not in range
+        assertFalse(rD.isInRange(v200Final));
+        assertFalse(rD.isInRange(v200GA));
+        assertFalse(rD.isInRange(v200CR1));
+        assertFalse(rD.isInRange(v200Beta1));
+        assertFalse(rD.isInRange(v200Alpha1));
     }
 }
