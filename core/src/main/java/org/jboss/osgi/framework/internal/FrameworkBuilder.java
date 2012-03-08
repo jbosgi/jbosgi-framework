@@ -21,6 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import org.jboss.modules.Module;
+import org.jboss.modules.log.JDKModuleLogger;
+import org.jboss.modules.log.ModuleLogger;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
@@ -120,6 +123,12 @@ public final class FrameworkBuilder {
         // Do this first so this URLStreamHandlerFactory gets installed
         URLHandlerPlugin.addService(serviceTarget);
 
+        // Setup the logging system for jboss-modules
+        ModuleLogger logger = (ModuleLogger) getProperty(ModuleLogger.class.getName());
+        if (logger == null) {
+            Module.setModuleLogger(new JDKModuleLogger());
+        }
+        
         BundleManager bundleManager = BundleManager.addService(serviceTarget, this);
         FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
 
