@@ -76,31 +76,36 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
 
     private static OSGiContentHandlerFactoryDelegate contentHandlerDelegate;
     private static OSGiStreamHandlerFactoryDelegate streamHandlerDelegate;
-    static {
-        streamHandlerDelegate = new OSGiStreamHandlerFactoryDelegate();
-        AccessController.doPrivileged(new PrivilegedAction<Void>() {
-            public Void run() {
-                try {
-                    URL.setURLStreamHandlerFactory(streamHandlerDelegate);
-                } catch (Throwable th) {
-                    // [MODULES-44] Provide an API that allows adding of URLStreamHandlerFactories
-                    log.debugf("Unable to set the URLStreamHandlerFactory");
+    
+    public static void initURLHandlerPlugin() {
+    	if (streamHandlerDelegate == null) {
+            streamHandlerDelegate = new OSGiStreamHandlerFactoryDelegate();
+            AccessController.doPrivileged(new PrivilegedAction<Void>() {
+                public Void run() {
+                    try {
+                        URL.setURLStreamHandlerFactory(streamHandlerDelegate);
+                    } catch (Throwable th) {
+                        // [MODULES-44] Provide an API that allows adding of URLStreamHandlerFactories
+                        log.debugf("Unable to set the URLStreamHandlerFactory");
+                    }
+                    return null;
                 }
-                return null;
-            }
-        });
-        contentHandlerDelegate = new OSGiContentHandlerFactoryDelegate();
-        AccessController.doPrivileged(new PrivilegedAction<Void>() {
-            public Void run() {
-                try {
-                    URLConnection.setContentHandlerFactory(contentHandlerDelegate);
-                } catch (Throwable th) {
-                    // [MODULES-44] Provide an API that allows adding of URLStreamHandlerFactories
-                    log.debugf("Unable to set the ContentHandlerFactory");
+            });
+    	}
+    	if (contentHandlerDelegate == null) {
+            contentHandlerDelegate = new OSGiContentHandlerFactoryDelegate();
+            AccessController.doPrivileged(new PrivilegedAction<Void>() {
+                public Void run() {
+                    try {
+                        URLConnection.setContentHandlerFactory(contentHandlerDelegate);
+                    } catch (Throwable th) {
+                        // [MODULES-44] Provide an API that allows adding of URLStreamHandlerFactories
+                        log.debugf("Unable to set the ContentHandlerFactory");
+                    }
+                    return null;
                 }
-                return null;
-            }
-        });
+            });
+    	}
     }
 
     static void addService(ServiceTarget serviceTarget) {
@@ -114,6 +119,7 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
     }
 
     private URLHandlerPlugin() {
+    	initURLHandlerPlugin();
     }
 
     @Override

@@ -67,42 +67,62 @@
     </dependencies>
 
     <!-- Build -->
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>build-test-jars</id>
-                        <phase>test-compile</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <tasks>
-                                <property name="maven.runtime.classpath" refid="maven.runtime.classpath" />
-                                <property name="tests.output.dir" value="${project.build.directory}" />
-                                <ant antfile="scripts/antrun-test-jars.xml" />
-                            </tasks>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <argLine>${surefire.system.args}</argLine>
-                    <systemPropertyVariables>
-                        <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                        <jboss.osgi.framework.properties>${jboss.osgi.framework.properties}</jboss.osgi.framework.properties>
-                        <jboss.osgi.vfs.leakDebugging>true</jboss.osgi.vfs.leakDebugging>
-                        <test.archive.directory>${project.build.directory}/test-libs</test.archive.directory>
-                    </systemPropertyVariables>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>build-test-jars</id>
+						<phase>test-compile</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<tasks>
+								<property name="maven.runtime.classpath" refid="maven.runtime.classpath" />
+								<property name="tests.output.dir" value="${project.build.directory}" />
+								<ant antfile="scripts/antrun-test-jars.xml" />
+							</tasks>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>compendium</id>
+						<phase>test-compile</phase>
+						<goals>
+							<goal>directory-single</goal>
+						</goals>
+						<configuration>
+							<finalName>test-libs</finalName>
+							<ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
+							<appendAssemblyId>false</appendAssemblyId>
+							<descriptors>
+								<descriptor>scripts/assembly-compendium.xml</descriptor>
+							</descriptors>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>${surefire.system.args}</argLine>
+					<systemPropertyVariables>
+						<java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+						<java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+						<jboss.osgi.framework.properties>${jboss.osgi.framework.properties}</jboss.osgi.framework.properties>
+						<jboss.osgi.vfs.leakDebugging>true</jboss.osgi.vfs.leakDebugging>
+						<test.archive.directory>${project.build.directory}/test-libs</test.archive.directory>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 
     <profiles>
         <!--
