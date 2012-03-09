@@ -272,12 +272,6 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
             // Process fragment wires
             Set<String> allPaths = new HashSet<String>();
-            Set<FragmentBundleRevision> fragRevs = brev.getAttachedFragments();
-            for (FragmentBundleRevision fragRev : fragRevs) {
-                // This takes care of Package-Imports and Require-Bundle on the fragment
-                //List<Wire> fragWires = fragRev.getResolverModule().getWires();
-                //processModuleWires(fragWires, specHolderMap);
-            }
 
             // Add the holder values to dependencies
             for (ModuleDependencyHolder holder : specHolderMap.values())
@@ -295,6 +289,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             }
 
             // Process fragment local content and more resource roots
+            Set<FragmentBundleRevision> fragRevs = brev.getAttachedFragments();
             for (FragmentBundleRevision fragRev : fragRevs) {
                 for (RevisionContent revContent : fragRev.getContentList()) {
                     ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
@@ -325,12 +320,13 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
                     return true;
                 }
             };
-            final PathFilter filter = getExportClassFilter(brev);
+            final PathFilter cefPath = getExportClassFilter(brev);
             ClassFilter classExportFilter = new ClassFilter() {
                 public boolean accept(String className) {
-                    return filter.accept(className);
+                    return cefPath.accept(className);
                 }
             };
+            log.debugf("createLocalDependencySpec: [if=%s,ef=%s,rif=%s,ref=%s,cf=%s,]", importFilter, exportFilter, resImportFilter, resExportFilter, cefPath);
             DependencySpec localDep = DependencySpec.createLocalDependencySpec(importFilter, exportFilter, resImportFilter, resExportFilter, classImportFilter, classExportFilter);
             specBuilder.addDependency(localDep);
 
@@ -508,11 +504,8 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     }
 
     private void addNativeResourceLoader(HostBundleRevision hostrev, ModuleSpec.Builder specBuilder) {
-
         Deployment deployment = hostrev.getDeployment();
-        HostBundleState hostBundle = hostrev.getBundleState();
         addNativeResourceLoader(specBuilder, hostrev, deployment);
-
         if (hostrev instanceof HostBundleRevision) {
             for (FragmentBundleRevision fragRev : hostrev.getAttachedFragments()) {
                 addNativeResourceLoader(specBuilder, hostrev, fragRev.getDeployment());
@@ -630,6 +623,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             }
             Module frameworkModule = getFrameworkModule();
             ModuleLoader depLoader = (frameworkModule.getIdentifier().equals(identifier) ? frameworkModule.getModuleLoader() : getModuleLoader());
+            log.debugf("createModuleDependencySpec: [id=%s,if=%s,ef=%s,loader=%s,optional=%s]", identifier, importFilter, exportFilter, depLoader, optional);
             return DependencySpec.createModuleDependencySpec(importFilter, exportFilter, depLoader, identifier, optional);
         }
 
