@@ -326,7 +326,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
                     return cefPath.accept(className);
                 }
             };
-            log.debugf("createLocalDependencySpec: [if=%s,ef=%s,rif=%s,ref=%s,cf=%s,]", importFilter, exportFilter, resImportFilter, resExportFilter, cefPath);
+            log.debugf("createLocalDependencySpec: [if=%s,ef=%s,rif=%s,ref=%s,cf=%s]", importFilter, exportFilter, resImportFilter, resExportFilter, cefPath);
             DependencySpec localDep = DependencySpec.createLocalDependencySpec(importFilter, exportFilter, resImportFilter, resExportFilter, classImportFilter, classExportFilter);
             specBuilder.addDependency(localDep);
 
