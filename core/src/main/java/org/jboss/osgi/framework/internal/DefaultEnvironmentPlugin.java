@@ -21,6 +21,21 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.osgi.framework.resource.ResourceConstants.IDENTITY_TYPE_FRAGMENT;
+import static org.osgi.framework.resource.ResourceConstants.WIRING_HOST_NAMESPACE;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
@@ -39,7 +54,6 @@ import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.metadata.VersionRange;
 import org.jboss.osgi.resolver.v2.XHostRequirement;
 import org.jboss.osgi.resolver.v2.XIdentityCapability;
-import org.jboss.osgi.resolver.v2.XPackageRequirement;
 import org.jboss.osgi.resolver.v2.XResource;
 import org.jboss.osgi.resolver.v2.spi.AbstractEnvironment;
 import org.jboss.osgi.resolver.v2.spi.FrameworkPreferencesComparator;
@@ -52,22 +66,6 @@ import org.osgi.framework.resource.Wire;
 import org.osgi.framework.resource.Wiring;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.resolver.ResolutionException;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-
-import static org.osgi.framework.resource.ResourceConstants.IDENTITY_TYPE_FRAGMENT;
-import static org.osgi.framework.resource.ResourceConstants.WIRING_HOST_NAMESPACE;
 
 /**
  * The default delegate plugin.
@@ -179,18 +177,6 @@ final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Serv
     @Override
     public SortedSet<Capability> findProviders(Requirement req) {
 
-        // Currently, there is no notion of dynamic package imports
-        // in the resource API. They are treaded like optional
-        // requirements and may cause resolver exceptions
-        // When we detect a dynamic package import, we return an
-        // empty set of capabilities
-        if (req instanceof XPackageRequirement) {
-            XPackageRequirement packreq = (XPackageRequirement) req;
-            if (packreq.isDynamic()) {
-                return new TreeSet<Capability>();
-            }
-        }
-
         // Possibly reduce the set of provided capabilities
         BundleManager bundleManager = injectedBundleManager.getValue();
         SortedSet<Capability> providers = super.findProviders(req);
@@ -198,7 +184,10 @@ final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Serv
         while(capit.hasNext()) {
             Capability cap = capit.next();
             XResource res = (XResource) cap.getResource();
+            Wiring wiring = getWiring(res);
 
+            boolean removeCapability = false;
+            
             // A fragment can only provide a capability if it is either already attached
             // or if there is one possible hosts that it can attach to
             // i.e. one of the hosts in the range is not resolved already
@@ -216,10 +205,23 @@ final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Serv
                             break;
                         }
                     }
-                    if (unresolvedHost == false) {
-                        capit.remove();
-                    }
+                    removeCapability = !unresolvedHost;
                 }
+            }
+            /*
+            else if (wiring != null) {
+            	for (Wire wire : wiring.getRequiredResourceWires(cap.getNamespace())) {
+            		Requirement wirereq = wire.getRequirement();
+            		if (wirereq.matches(cap)) {
+            			removeCapability = true;
+            			break;
+            		}
+            	}
+            }
+            */
+            if (removeCapability) {
+            	log.debugf("Remove capability: %s", cap);
+        		capit.remove();
             }
         }
         return providers;

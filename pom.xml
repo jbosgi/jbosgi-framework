@@ -47,7 +47,7 @@
         <version.jboss.osgi.deployment>1.0.12.Final</version.jboss.osgi.deployment>
         <version.jboss.osgi.equinox>3.5.2</version.jboss.osgi.equinox>
         <version.jboss.osgi.felix>3.0.4</version.jboss.osgi.felix>
-        <version.jboss.osgi.resolver.v2>2.0.0.Beta4-SNAPSHOT</version.jboss.osgi.resolver.v2>
+        <version.jboss.osgi.resolver.v2>2.0.0.Beta4</version.jboss.osgi.resolver.v2>
         <version.jboss.osgi.spi>3.0.1.Final</version.jboss.osgi.spi>
         <version.jboss.osgi.testing>1.0.3.Final</version.jboss.osgi.testing>
         <version.jboss.osgi.vfs>1.0.7.Final</version.jboss.osgi.vfs>
