@@ -22,7 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import org.jboss.logging.Logger;
-import org.jboss.osgi.resolver.v2.spi.AbstractRequirement;
+import org.jboss.osgi.resolver.spi.AbstractRequirement;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;

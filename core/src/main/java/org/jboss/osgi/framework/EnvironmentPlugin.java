@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework;
 
-import org.jboss.osgi.resolver.v2.XEnvironment;
+import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.resource.Capability;
 import org.osgi.framework.resource.Resource;
 

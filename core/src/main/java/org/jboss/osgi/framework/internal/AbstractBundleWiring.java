@@ -23,7 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.osgi.resolver.v2.spi.AbstractWiring;
+import org.jboss.osgi.resolver.spi.AbstractWiring;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.resource.Capability;

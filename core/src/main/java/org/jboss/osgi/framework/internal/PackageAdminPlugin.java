@@ -50,7 +50,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.ResolverPlugin;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.resolver.v2.XPackageCapability;
+import org.jboss.osgi.resolver.XPackageCapability;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkEvent;

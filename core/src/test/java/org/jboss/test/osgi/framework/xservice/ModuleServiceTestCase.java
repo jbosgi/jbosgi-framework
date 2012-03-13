@@ -21,8 +21,15 @@
  */
 package org.jboss.test.osgi.framework.xservice;
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -34,19 +41,11 @@ import org.jboss.test.osgi.framework.xservice.moduleA.ModuleActivatorA;
 import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
 import org.jboss.test.osgi.framework.xservice.moduleB.ModuleActivatorB;
 import org.jboss.test.osgi.framework.xservice.moduleB.ModuleServiceB;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
-
-import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * Test that an MSC module can have a dependency on an OSGi bundle and vice versa.
@@ -54,7 +53,6 @@ import static org.junit.Assert.assertNotNull;
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jul-2010
  */
-@Ignore
 public class ModuleServiceTestCase extends OSGiFrameworkTest {
 
     @Test

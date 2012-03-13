@@ -46,9 +46,9 @@ import org.jboss.osgi.framework.SystemPathsProvider;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
-import org.jboss.osgi.resolver.v2.XIdentityCapability;
-import org.jboss.osgi.resolver.v2.XBundleRequirement;
-import org.jboss.osgi.resolver.v2.XResource;
+import org.jboss.osgi.resolver.XBundleRequirement;
+import org.jboss.osgi.resolver.XIdentityCapability;
+import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.BundleReference;
 import org.osgi.framework.resource.Capability;
@@ -374,7 +374,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             //}
 
             // Dependency for Import-Package
-            if (req instanceof org.jboss.osgi.resolver.v2.XPackageRequirement) {
+            if (req instanceof org.jboss.osgi.resolver.XPackageRequirement) {
                 packageWires.add(wire);
                 continue;
             }
@@ -391,7 +391,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         for (Wire wire : packageWires) {
             XResource exporter = (XResource) wire.getProvider();
             packageExporters.add(exporter);
-            org.jboss.osgi.resolver.v2.XPackageRequirement req = (org.jboss.osgi.resolver.v2.XPackageRequirement) wire.getRequirement();
+            org.jboss.osgi.resolver.XPackageRequirement req = (org.jboss.osgi.resolver.XPackageRequirement) wire.getRequirement();
             ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
             String path = VFSUtils.getPathFromPackageName(req.getPackageName());
             holder.setOptional(req.isOptional());
@@ -414,7 +414,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             if (reexport == true) {
                 Set<String> exportedPaths = new HashSet<String>();
                 for (Capability auxcap : exporter.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
-                    org.jboss.osgi.resolver.v2.XPackageCapability packcap = (org.jboss.osgi.resolver.v2.XPackageCapability) auxcap;
+                    org.jboss.osgi.resolver.XPackageCapability packcap = (org.jboss.osgi.resolver.XPackageCapability) auxcap;
                     String path = packcap.getPackageName().replace('.', '/');
                     if (importedPaths.contains(path) == false)
                         exportedPaths.add(path);
@@ -430,7 +430,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         PathFilter includeFilter = null;
         PathFilter excludeFilter = null;
         for (Capability auxcap : resModule.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
-            org.jboss.osgi.resolver.v2.XPackageCapability packageCap = (org.jboss.osgi.resolver.v2.XPackageCapability) auxcap;
+            org.jboss.osgi.resolver.XPackageCapability packageCap = (org.jboss.osgi.resolver.XPackageCapability) auxcap;
             String includeDirective = packageCap.getDirective(Constants.INCLUDE_DIRECTIVE);
             if (includeDirective != null) {
                 String packageName = packageCap.getPackageName();

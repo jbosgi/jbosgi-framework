@@ -32,7 +32,7 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.framework.ResolverPlugin;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.resolver.v2.FelixResolver;
+import org.jboss.osgi.resolver.felix.FelixResolver;
 import org.osgi.framework.resource.Capability;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
