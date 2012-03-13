@@ -222,16 +222,14 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         if (res instanceof FragmentBundleRevision)
             throw new IllegalStateException("Fragments cannot be added: " + res);
 
-        /*
-        Module module = resModule.getAttachment(Module.class);
+        Module module = res.getAttachment(Module.class);
         if (module != null) {
-            AbstractBundleRevision bundleRev = resModule.getAttachment(AbstractBundleRevision.class);
+            AbstractBundleRevision bundleRev = (AbstractBundleRevision)res;
             ModuleIdentifier identifier = module.getIdentifier();
             modules.put(identifier, bundleRev);
             getModuleLoaderIntegration().addModule(module);
             return identifier;
         }
-        */
 
         ModuleIdentifier identifier;
         XIdentityCapability icap = res.getIdentityCapability();

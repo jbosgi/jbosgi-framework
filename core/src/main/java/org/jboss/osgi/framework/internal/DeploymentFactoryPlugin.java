@@ -117,6 +117,8 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
             } catch (IllegalArgumentException ex) {
                 version = Version.emptyVersion;
             }
+            OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(symbolicName, version);
+            metadata = builder.getOSGiMetaData();
         } else
         {
             symbolicName = metadata.getBundleSymbolicName();
@@ -125,7 +127,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
 
         String location = module.getIdentifier().toString();
         Deployment dep = DeploymentFactory.createDeployment(location, symbolicName, version);
-
+        dep.addAttachment(OSGiMetaData.class, metadata);
         dep.addAttachment(Module.class, module);
         return dep;
     }
@@ -174,10 +176,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
         }
 
         // Rethrow root cause if we have one
-        if (cause != null)
-            throw cause;
-
-        throw new BundleException("Cannot create deployment from: " + rootFile);
+        throw (cause != null ? cause : new BundleException("Cannot create deployment from: " + rootFile));
     }
 
     /**
@@ -198,12 +197,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
         if (info != null)
             metadata = toOSGiMetaData(info);
 
-        // #3 we support deployments that contain XModule
-        //XModule resModule = dep.getAttachment(XModule.class);
-        //if (metadata == null && resModule != null)
-        //    metadata = toOSGiMetaData(dep, resModule);
-
-        // #4 check if we have a valid OSGi manifest
+        // #3 check if we have a valid OSGi manifest
         if (metadata == null) {
             VirtualFile rootFile = dep.getRoot();
             String location = dep.getLocation();

@@ -59,8 +59,10 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
             contentList = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
             entriesProvider = getRootContent();
         } else {
-            entriesProvider = new ModuleEntriesProvider(dep.getAttachment(Module.class));
+            Module module = dep.getAttachment(Module.class);
+            entriesProvider = new ModuleEntriesProvider(module);
             contentList = Collections.emptyList();
+            addAttachment(Module.class, module);
         }
     }
 
