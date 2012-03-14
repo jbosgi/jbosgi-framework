@@ -21,14 +21,19 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.osgi.framework.resource.ResourceConstants.IDENTITY_TYPE_FRAGMENT;
 import static org.osgi.framework.resource.ResourceConstants.WIRING_HOST_NAMESPACE;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
@@ -41,15 +46,16 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.EnvironmentPlugin;
-import org.jboss.osgi.framework.ResolverPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
+import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.resolver.XIdentityCapability;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.felix.FelixResolver;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.resource.Capability;
+import org.osgi.framework.resource.Requirement;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
 import org.osgi.framework.resource.Wiring;
@@ -70,13 +76,13 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
 
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
-    private final InjectedValue<EnvironmentPlugin> injectedEnvironmentPlugin = new InjectedValue<EnvironmentPlugin>();
+    private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private Resolver resolver;
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultResolverPlugin service = new DefaultResolverPlugin();
-        ServiceBuilder<ResolverPlugin> builder = serviceTarget.addService(Services.RESOLVER_PLUGIN, service);
-        builder.addDependency(Services.ENVIRONMENT_PLUGIN, EnvironmentPlugin.class, service.injectedEnvironmentPlugin);
+        ServiceBuilder<ResolverPlugin> builder = serviceTarget.addService(InternalServices.RESOLVER_PLUGIN, service);
+        builder.addDependency(Services.ENVIRONMENT_PLUGIN, XEnvironment.class, service.injectedEnvironment);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -105,10 +111,10 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
 
     @Override
     public Map<Resource, List<Wire>> resolve(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
-        EnvironmentPlugin envPlugin = injectedEnvironmentPlugin.getValue();
+        XEnvironment env = injectedEnvironment.getValue();
         Collection<Resource> allOptional = appendOptionalFragments(mandatory, optional);
-        Collection<Resource> filteredMandatory = envPlugin.filterSingletons(mandatory);
-        return resolver.resolve(envPlugin, filteredMandatory, allOptional);
+        Collection<Resource> filteredMandatory = filterSingletons(mandatory);
+        return resolver.resolve(env, filteredMandatory, allOptional);
     }
 
     @Override
@@ -121,12 +127,11 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     }
 
     private Collection<Resource> appendOptionalFragments(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) {
-        EnvironmentPlugin envPlugin = injectedEnvironmentPlugin.getValue();
         Collection<Capability> hostcaps = getHostCapabilities(mandatory);
         Collection<Resource> result = new HashSet<Resource>();
         if (hostcaps.isEmpty() == false) {
             result.addAll(optional != null ? optional : Collections.EMPTY_SET);
-            result.addAll(envPlugin.findAttachableFragments(hostcaps));
+            result.addAll(findAttachableFragments(hostcaps));
         }
         return result;
     }
@@ -141,6 +146,39 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
         return result;
     }
 
+    private Collection<Resource> filterSingletons(Collection<? extends Resource> resources) {
+        Map<String, Resource> singletons = new HashMap<String, Resource>();
+        List<Resource> result = new ArrayList<Resource>(resources);
+        Iterator<Resource> iterator = result.iterator();
+        while (iterator.hasNext()) {
+            XResource xres = (XResource) iterator.next();
+            XIdentityCapability icap = xres.getIdentityCapability();
+            if (icap.isSingleton()) {
+                if (singletons.get(icap.getSymbolicName()) != null) {
+                    iterator.remove();
+                } else {
+                    singletons.put(icap.getSymbolicName(), xres);
+                }
+            }
+        }
+        return Collections.unmodifiableList(result);
+    }
+    
+    private Collection<? extends Resource> findAttachableFragments(Collection<? extends Capability> hostcaps) {
+        Set<Resource> result = new HashSet<Resource>();
+        XEnvironment env = injectedEnvironment.getValue();
+        for (Resource res : env.getResources(IDENTITY_TYPE_FRAGMENT)) {
+            Requirement req = res.getRequirements(WIRING_HOST_NAMESPACE).get(0);
+            for (Capability cap : hostcaps) {
+                if (req.matches(cap)) {
+                    result.add(res);
+                }
+            }
+        }
+        log.debugf("attachable fragments: %s", result);
+        return result;
+    }
+    
     private Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) {
 
         // [TODO] Revisit how we apply the resolution results
@@ -168,8 +206,8 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
         setBundleToResolved(wiremap);
 
         // Construct and apply the resource wiring map
-        EnvironmentPlugin envPlugin = injectedEnvironmentPlugin.getValue();
-        return envPlugin.updateWiring(wiremap);
+        XEnvironment env = injectedEnvironment.getValue();
+        return env.updateWiring(wiremap);
     }
 
     private void attachFragmentsToHost(Map<Resource, List<Wire>> wiremap) {

@@ -27,7 +27,6 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.resolver.Environment;
-import org.osgi.service.resolver.Resolver;
 import org.osgi.service.startlevel.StartLevel;
 
 /**
@@ -81,13 +80,7 @@ public interface Services {
     ServiceName FRAMEWORK_ACTIVATOR = FRAMEWORK_BASE_NAME.append("ACTIVATOR");
 
     /** The service name for the {@link PackageAdmin} service */
-    ServiceName LEGACY_PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("LegacyPackageAdmin");
-
-    /** The service name for the {@link PackageAdmin} service */
     ServiceName PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("PackageAdmin");
-
-    /** The {@link Resolver} service name */
-    ServiceName RESOLVER_PLUGIN = JBOSGI_BASE_NAME.append("Resolver");
 
     /** The service name for the {@link StartLevel} service */
     ServiceName START_LEVEL = JBOSGI_BASE_NAME.append("StartLevel");

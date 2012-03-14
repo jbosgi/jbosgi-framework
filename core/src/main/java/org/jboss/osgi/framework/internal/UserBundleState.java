@@ -27,8 +27,8 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallProvider;
-import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -285,8 +285,8 @@ abstract class UserBundleState extends AbstractBundleState {
             dep.addAttachment(OSGiMetaData.class, metadata);
             dep.addAttachment(Bundle.class, this);
             BundleRevision brev = createRevision(dep);
-            EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
-            envPlugin.installResources(brev);
+            XEnvironment env = getFrameworkState().getEnvironment();
+            env.installResources(brev);
         } catch (BundleException ex) {
             throw ex;
         }
@@ -334,15 +334,15 @@ abstract class UserBundleState extends AbstractBundleState {
         UserBundleRevision currentRev = getCurrentBundleRevision();
         for (AbstractBundleRevision brev : getAllBundleRevisions()) {
 
-            EnvironmentPlugin envPlugin = getFrameworkState().getEnvironmentPlugin();
+            XEnvironment env = getFrameworkState().getEnvironment();
             if (currentRev != brev)
-                envPlugin.uninstallResources(brev);
+                env.uninstallResources(brev);
             
             if (brev instanceof HostBundleRevision) {
             	HostBundleRevision hostRev = (HostBundleRevision) brev;
             	for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
             		if (fragRev != fragRev.getBundleState().getCurrentBundleRevision()) {
-                        envPlugin.uninstallResources(fragRev);
+                        env.uninstallResources(fragRev);
             		}
             	}
             }

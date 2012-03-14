@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Services;
+import org.osgi.service.resolver.Resolver;
 
 /**
  * The collection of internal service names.
@@ -53,6 +54,8 @@ interface InternalServices {
     ServiceName PERSISTENT_BUNDLES_INSTALLER = INTERNAL_SERVICE_BASE.append("PersistentBundles");
     /** The {@link PersistentBundlesInstaller} nested activator service name */
     ServiceName PERSISTENT_BUNDLES_INSTALLER_COMPLETE = PERSISTENT_BUNDLES_INSTALLER.append("COMPLETE");
+    /** The {@link Resolver} service name */
+    ServiceName RESOLVER_PLUGIN = INTERNAL_SERVICE_BASE.append("Resolver");
     /** The {@link ServiceManagerPlugin} service name */
     ServiceName SERVICE_MANAGER_PLUGIN = INTERNAL_SERVICE_BASE.append("ServiceManager");
     /** The {@link WebXMLVerifierInterceptor} service name */

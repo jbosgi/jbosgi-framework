@@ -23,8 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.logging.Logger;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.EnvironmentPlugin;
-import org.jboss.osgi.framework.ResolverPlugin;
+import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.launch.Framework;
 
 /**
@@ -46,7 +45,7 @@ final class FrameworkState {
     final InjectedValue<CoreServices> injectedCoreServices = new InjectedValue<CoreServices>();
     final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
     final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
-    final InjectedValue<EnvironmentPlugin> injectedEnvironmentPlugin = new InjectedValue<EnvironmentPlugin>();
+    final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
     final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
     final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
@@ -91,8 +90,8 @@ final class FrameworkState {
         return injectedResolverPlugin.getValue();
     }
 
-    EnvironmentPlugin getEnvironmentPlugin() {
-        return injectedEnvironmentPlugin.getValue();
+    XEnvironment getEnvironment() {
+        return injectedEnvironment.getValue();
     }
 
     ServiceManagerPlugin getServiceManagerPlugin() {

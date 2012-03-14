@@ -21,13 +21,24 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.osgi.framework.resource.ResourceConstants.IDENTITY_TYPE_FRAGMENT;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XIdentityCapability;
 import org.jboss.osgi.resolver.XResourceBuilder;
 import org.jboss.osgi.resolver.spi.AbstractResource;
@@ -40,17 +51,6 @@ import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.osgi.framework.resource.ResourceConstants.IDENTITY_TYPE_FRAGMENT;
 
 /**
  * An abstract bundle revision.
@@ -216,8 +216,8 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
         // if (refreshAllowed == false)
         // throw new IllegalStateException("External XModule, refresh not allowed");
 
-        EnvironmentPlugin envPlugin = bundleState.getFrameworkState().getEnvironmentPlugin();
-        envPlugin.refreshResources(this);
+        XEnvironment env = bundleState.getFrameworkState().getEnvironment();
+        env.refreshResources(this);
         refreshRevisionInternal();
     }
 

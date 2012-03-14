@@ -19,28 +19,25 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework;
-
-import org.jboss.osgi.resolver.XEnvironment;
-import org.osgi.framework.resource.Capability;
-import org.osgi.framework.resource.Resource;
+package org.jboss.osgi.framework.internal;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import org.osgi.framework.resource.Resource;
+import org.osgi.framework.resource.Wire;
+import org.osgi.service.resolver.ResolutionException;
 
 /**
- * The environment plugin.
+ * The resolver plugin.
  *
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-public interface EnvironmentPlugin extends XEnvironment {
+interface ResolverPlugin {
 
-    /**
-     * Currently, the client must have knowlege about the fragments that exist in the environment
-     * and pass them in as optional resources. We extend the environment to find the fragments
-     * that can potentially attach to the given host capabilities.
-     */
-    Collection<? extends Resource> findAttachableFragments(Collection<? extends Capability> hosts);
+    Map<Resource, List<Wire>> resolve(Collection<? extends Resource> mandatoryResources, Collection<? extends Resource> optionalResources) throws ResolutionException;
 
-    Collection<Resource> filterSingletons(Collection<? extends Resource> resources);
+    void resolveAndApply(Collection<? extends Resource> mandatoryResources, Collection<? extends Resource> optionalResources) throws ResolutionException;
 }

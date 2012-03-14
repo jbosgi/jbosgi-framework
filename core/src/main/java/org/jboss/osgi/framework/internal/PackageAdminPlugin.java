@@ -48,7 +48,6 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.ResolverPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.osgi.framework.Bundle;
@@ -92,7 +91,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(Services.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolver);
+        builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolver);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
@@ -104,10 +103,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        if (DefaultEnvironmentPlugin.USE_NEW_PATH == true) {
-            BundleContext systemContext = injectedSystemContext.getValue();
-            registration = systemContext.registerService(PackageAdmin.class.getName(), this, null);
-        }
+        BundleContext systemContext = injectedSystemContext.getValue();
+        registration = systemContext.registerService(PackageAdmin.class.getName(), this, null);
     }
 
     @Override

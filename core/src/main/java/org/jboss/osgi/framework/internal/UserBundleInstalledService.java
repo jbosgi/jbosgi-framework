@@ -25,8 +25,8 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.EnvironmentPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
@@ -116,7 +116,7 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
             }
         }
         FrameworkState frameworkState = userBundle.getFrameworkState();
-        EnvironmentPlugin envPlugin = frameworkState.getEnvironmentPlugin();
-        envPlugin.installResources(userBundle.getCurrentBundleRevision());
+        XEnvironment env = frameworkState.getEnvironment();
+        env.installResources(userBundle.getCurrentBundleRevision());
     }
 }
