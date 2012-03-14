@@ -21,6 +21,13 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -28,13 +35,6 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
 
 /**
  * An abstract bundle revision that is based on a user {@link Deployment}.
@@ -53,6 +53,7 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
 
     UserBundleRevision(UserBundleState userBundle, Deployment dep) throws BundleException {
         super(userBundle, getOSGiMetaData(dep), getRevisionId(dep));
+        
         this.deployment = dep;
 
         if (dep.getRoot() != null) {

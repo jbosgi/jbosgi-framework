@@ -167,7 +167,7 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     private Collection<? extends Resource> findAttachableFragments(Collection<? extends Capability> hostcaps) {
         Set<Resource> result = new HashSet<Resource>();
         XEnvironment env = injectedEnvironment.getValue();
-        for (Resource res : env.getResources(IDENTITY_TYPE_FRAGMENT)) {
+        for (Resource res : env.getResources(Collections.singleton(IDENTITY_TYPE_FRAGMENT))) {
             Requirement req = res.getRequirements(WIRING_HOST_NAMESPACE).get(0);
             for (Capability cap : hostcaps) {
                 if (req.matches(cap)) {

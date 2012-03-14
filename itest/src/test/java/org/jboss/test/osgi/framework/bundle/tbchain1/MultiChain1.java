@@ -1,35 +1,28 @@
 /*
- * $Id$
- * 
- * Copyright (c) The OSGi Alliance (2007). All Rights Reserved.
- * 
- * Implementation of certain elements of the OSGi Specification may be subject
- * to third party intellectual property rights, including without limitation,
- * patent rights (such a third party may or may not be a member of the OSGi
- * Alliance). The OSGi Alliance is not responsible and shall not be held
- * responsible in any manner for identifying or failing to identify any or all
- * such third party intellectual property rights.
- * 
- * This document and the information contained herein are provided on an "AS IS"
- * basis and THE OSGI ALLIANCE DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED,
- * INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION
- * HEREIN WILL NOT INFRINGE ANY RIGHTS AND ANY IMPLIED WARRANTIES OF
- * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE. IN NO EVENT WILL THE
- * OSGI ALLIANCE BE LIABLE FOR ANY LOSS OF PROFITS, LOSS OF BUSINESS, LOSS OF
- * USE OF DATA, INTERRUPTION OF BUSINESS, OR FOR DIRECT, INDIRECT, SPECIAL OR
- * EXEMPLARY, INCIDENTIAL, PUNITIVE OR CONSEQUENTIAL DAMAGES OF ANY KIND IN
- * CONNECTION WITH THIS DOCUMENT OR THE INFORMATION CONTAINED HEREIN, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH LOSS OR DAMAGE.
- * 
- * All Company, brand and product names may be trademarks that are the sole
- * property of their respective owners. All rights reserved.
+ * JBoss, Home of Professional Open Source
+ * Copyright 2009, Red Hat Middleware LLC, and individual contributors
+ * as indicated by the @author tags. See the copyright.txt file in the
+ * distribution for a full listing of individual contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-
 package org.jboss.test.osgi.framework.bundle.tbchain1;
 
 import org.jboss.test.osgi.framework.bundle.tbchain2.AMultiChain1;
 import org.jboss.test.osgi.framework.bundle.tbchain3.BMultiChain2;
 
 public class MultiChain1 implements AMultiChain1, BMultiChain2 {
-//
 }

@@ -184,7 +184,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
 
         Bundle bundleB = installBundle(getBundleArchiveB());
         long idB = bundleB.getBundleId();
-        assertTrue("Bundle id incremented", idB == idA + 1);
+        assertTrue("Bundle id incremented", idB > idA);
         assertFalse("Bundles not equal", bundleA.equals(bundleB));
 
         bundleB.start();

@@ -59,13 +59,12 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
             dep.addAttachment(Bundle.class, bundleState);
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
             storageState = bundleState.createStorageState(dep);
-            bundleState.createRevision(dep);
+            UserBundleRevision userRev = bundleState.createRevision(dep);
             bundleState.initUserBundleState(metadata);
             validateBundle(bundleState, metadata);
             processNativeCode(bundleState, dep);
-            getBundleManager().addBundle(bundleState);
+            addToEnvironment(userRev);
             bundleState.changeState(Bundle.INSTALLED, 0);
-            addToEnvironment(bundleState);
             bundleState.fireBundleEvent(BundleEvent.INSTALLED);
         } catch (BundleException ex) {
             if (storageState != null)
@@ -105,7 +104,8 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
         }
     }
 
-    private void addToEnvironment(UserBundleState userBundle) {
+    private void addToEnvironment(UserBundleRevision userRev) {
+        UserBundleState userBundle = userRev.getBundleState();
         if (userBundle.isSingleton()) {
             String symbolicName = getBundleState().getSymbolicName();
             for (AbstractBundleState aux : getBundleManager().getBundles(symbolicName, null)) {
@@ -117,6 +117,6 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
         }
         FrameworkState frameworkState = userBundle.getFrameworkState();
         XEnvironment env = frameworkState.getEnvironment();
-        env.installResources(userBundle.getCurrentBundleRevision());
+        env.installResources(userRev);
     }
 }

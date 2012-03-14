@@ -56,7 +56,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
         assertNotNull("BundleStoragePlugin not null", plugin);
 
         JavaArchive archive = getArchive();
-        BundleStorageState storageState = plugin.createStorageState(bundleManager.getNextBundleId(), archive.getName(), toVirtualFile(archive));
+        BundleStorageState storageState = plugin.createStorageState(bundleManager.nextBundleId(), archive.getName(), toVirtualFile(archive));
         assertStorageState(storageState);
 
         storageState.deleteBundleStorage();
@@ -64,7 +64,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
         assertFalse("Storage dir deleted", storageDir.exists());
 
         // Try this a second time
-        storageState = plugin.createStorageState(bundleManager.getNextBundleId(), archive.getName(), toVirtualFile(archive));
+        storageState = plugin.createStorageState(bundleManager.nextBundleId(), archive.getName(), toVirtualFile(archive));
         assertStorageState(storageState);
 
         storageState.deleteBundleStorage();
@@ -84,7 +84,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
         fos.close();
 
         VirtualFile rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
-        BundleStorageState storageState = plugin.createStorageState(bundleManager.getNextBundleId(), file.getAbsolutePath(), rootFile);
+        BundleStorageState storageState = plugin.createStorageState(bundleManager.nextBundleId(), file.getAbsolutePath(), rootFile);
         assertStorageState(storageState);
 
         storageState.deleteBundleStorage();

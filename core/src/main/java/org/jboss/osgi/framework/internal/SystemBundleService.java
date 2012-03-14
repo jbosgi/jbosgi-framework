@@ -82,12 +82,11 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
             bundleState.changeState(Bundle.STARTING);
             OSGiMetaData metadata = createOSGiMetaData();
             SystemBundleRevision sysrev = bundleState.createBundleRevision(metadata);
-            injectedEnvironmentPlugin.getValue().installResources(sysrev);
+            addToEnvironment(sysrev);
             bundleState.createBundleContext();
             bundleState.createStorageState(injectedBundleStorage.getValue());
             BundleManager bundleManager = getBundleManager();
             bundleManager.injectedSystemBundle.inject(bundleState);
-            bundleManager.addBundle(bundleState);
         } catch (BundleException ex) {
             throw new StartException(ex);
         }
@@ -136,5 +135,10 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
             builder.addExportPackages(packname + ";version=" + version);
         }
         return builder.getOSGiMetaData();
+    }
+
+    private void addToEnvironment(SystemBundleRevision sysrev) {
+        XEnvironment env = injectedEnvironmentPlugin.getValue();
+        env.installResources(sysrev);
     }
 }

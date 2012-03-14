@@ -47,6 +47,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 import org.osgi.framework.resource.Capability;
 import org.osgi.framework.resource.Requirement;
+import org.osgi.framework.resource.Resource;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;
@@ -82,6 +83,18 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
         // Initialize the bundle caps/reqs
         XResourceBuilder.create(this).load(metadata);
+    }
+
+    /**
+     * Assert that the given resource is an instance of {@link AbstractBundleRevision}
+     *
+     * @throws IllegalArgumentException if the given resource is not an instance of {@link AbstractBundleRevision}
+     */
+    static AbstractBundleRevision assertBundleRevision(Resource resource) {
+        if (resource instanceof AbstractBundleRevision == false)
+            throw new IllegalArgumentException("Not an AbstractBundleRevision: " + resource);
+
+        return (AbstractBundleRevision) resource;
     }
 
     @Override

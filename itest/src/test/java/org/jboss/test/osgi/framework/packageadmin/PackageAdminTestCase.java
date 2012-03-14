@@ -254,7 +254,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
             assertEquals(1, pkgA.getImportingBundles().length);
             assertSame(bundleB, pkgA.getImportingBundles()[0]);
             assertEquals(Version.parseVersion("1.7"), pkgA.getVersion());
-            
+
             bundleA.stop();
             bundleA.uninstall();
             pkgA = pa.getExportedPackage(Exported.class.getPackage().getName());
@@ -315,7 +315,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
             bundleA.uninstall();
         }
     }
-    
+
     @Test
     public void testGetExportedPackageRequireBundle() throws Exception {
         Bundle bundleA = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
@@ -336,7 +336,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
             bundleA.uninstall();
         }
     }
-    
+
     @Test
     public void testUpdateExportedPackageRemovalPending() throws Exception {
         JavaArchive archive1 = assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class);
@@ -751,7 +751,6 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
 
         Bundle bundleE = installBundle(assembleArchive("ExportA", "/bundles/package-admin/exportA", ExportA.class));
         Bundle bundleU = installBundle(assembleArchive("ExportU", "/bundles/package-admin/exporter", Exported.class));
-        Bundle bundleI = null;
 
         Archive<?> assemblyE = assembleArchive("ExportA2", "/bundles/package-admin/exportB", ExportB.class);
         try {
@@ -771,31 +770,33 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
             bundleE.update(toInputStream(assemblyE));
 
             // This bundle imports the old version of bundleE, should still be available!
-            bundleI = installBundle(assembleArchive("ImportA", "/bundles/package-admin/importA", ImportingA.class));
-            bundleI.start();
+            Bundle bundleI = installBundle(assembleArchive("ImportA", "/bundles/package-admin/importA", ImportingA.class));
+            try {
+                bundleI.start();
 
-            // PackageAdmin should report both the old and the new package as exported
-            List<String> exported = new ArrayList<String>();
-            for (ExportedPackage ex : pa.getExportedPackages(bundleE))
-                exported.add(ex.getName());
-            assertTrue(exported.contains(ExportA.class.getPackage().getName()));
-            assertTrue(exported.contains(ExportB.class.getPackage().getName()));
-            assertEquals(2, exported.size());
+                // PackageAdmin should report both the old and the new package as exported
+                List<String> exported = new ArrayList<String>();
+                for (ExportedPackage ex : pa.getExportedPackages(bundleE)) {
+                    exported.add(ex.getName());
+                }
+                assertTrue(exported.contains(ExportA.class.getPackage().getName()));
+                assertTrue(exported.contains(ExportB.class.getPackage().getName()));
+                assertEquals(2, exported.size());
 
-            refreshPackages(new Bundle[] { bundleE, bundleU, bundleI });
+                refreshPackages(new Bundle[] { bundleE, bundleU, bundleI });
 
-            assertEquals(Bundle.ACTIVE, bundleE.getState());
-            assertEquals(Bundle.ACTIVE, bundleU.getState());
-            assertTrue(Bundle.ACTIVE != bundleI.getState());
+                assertEquals(Bundle.ACTIVE, bundleE.getState());
+                assertEquals(Bundle.ACTIVE, bundleU.getState());
+                assertTrue(Bundle.ACTIVE != bundleI.getState());
 
-            ExportedPackage[] eex2 = pa.getExportedPackages(bundleE);
-            assertEquals(1, eex2.length);
-            assertEquals(ExportB.class.getPackage().getName(), eex2[0].getName());
-            assertSame(bundleE, eex2[0].getExportingBundle());
-        } finally {
-            if (bundleI != null)
+                ExportedPackage[] eex2 = pa.getExportedPackages(bundleE);
+                assertEquals(1, eex2.length);
+                assertEquals(ExportB.class.getPackage().getName(), eex2[0].getName());
+                assertSame(bundleE, eex2[0].getExportingBundle());
+            } finally {
                 bundleI.uninstall();
-
+            }
+        } finally {
             bundleU.uninstall();
             bundleE.uninstall();
         }

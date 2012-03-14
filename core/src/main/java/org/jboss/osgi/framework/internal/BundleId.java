@@ -41,7 +41,7 @@ class BundleId {
         this.value = new Long(value);
     }
 
-    long longValue() {
+    Long longValue() {
         return value;
     }
 

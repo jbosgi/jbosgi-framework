@@ -53,6 +53,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleManagerService;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.util.Java;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.VersionRange;
@@ -64,6 +65,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
+import org.osgi.framework.resource.Resource;
 
 /**
  * The BundleManager is the central managing entity for OSGi bundles.
@@ -101,18 +103,19 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
 
     final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
+    final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
 
     private final FrameworkBuilder frameworkBuilder;
-    private final Map<String, Object> properties = new HashMap<String, Object>();
     private final AtomicLong identityGenerator = new AtomicLong();
+    private final Map<String, Object> properties = new HashMap<String, Object>();
     private final AtomicBoolean shutdownInitiated = new AtomicBoolean();
-    private final Map<Long, AbstractBundleState> bundleMap = Collections.synchronizedMap(new HashMap<Long, AbstractBundleState>());
     private final ServiceTarget serviceTarget;
     private ServiceContainer serviceContainer;
 
     static BundleManager addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
         BundleManager service = new BundleManager(frameworkBuilder, serviceTarget);
         ServiceBuilder<BundleManagerService> builder = serviceTarget.addService(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, service);
+        builder.addDependency(Services.ENVIRONMENT_PLUGIN, XEnvironment.class, service.injectedEnvironment);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
         return service;
@@ -245,29 +248,18 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         return ServiceName.of(BUNDLE_BASE_NAME, "" + bundleId, "" + symbolicName, "" + version);
     }
 
-    void addBundle(AbstractBundleState bundleState) {
-        if (bundleState == null)
-            throw new IllegalArgumentException("Null bundleState");
-
-        long bundleId = bundleState.getBundleId();
-        if (bundleMap.containsKey(bundleId) == true)
-            throw new IllegalStateException("Bundle already added: " + bundleState);
-
-        log.infof("Install bundle: %s", bundleState);
-        bundleMap.put(bundleState.getBundleId(), bundleState);
-    }
-
     /**
      * Get the set of installed bundles.
      * Bundles in state UNINSTALLED are not returned.
      */
     Set<AbstractBundleState> getBundles() {
         Set<AbstractBundleState> result = new HashSet<AbstractBundleState>();
-        synchronized (bundleMap) {
-            for (AbstractBundleState aux : bundleMap.values()) {
-                if (aux.getState() != Bundle.UNINSTALLED)
-                    result.add(aux);
-            }
+        XEnvironment env = injectedEnvironment.getValue();
+        for (Resource aux : env.getResources(null)) {
+            AbstractBundleRevision brev = AbstractBundleRevision.assertBundleRevision(aux);
+            AbstractBundleState bundleState = brev.getBundleState();
+            if (bundleState.getState() != Bundle.UNINSTALLED)
+                result.add(bundleState);
         }
         return Collections.unmodifiableSet(result);
     }
@@ -280,11 +272,12 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
      */
     Set<AbstractBundleState> getBundles(Integer states) {
         Set<AbstractBundleState> result = new HashSet<AbstractBundleState>();
-        synchronized (bundleMap) {
-            for (AbstractBundleState aux : bundleMap.values()) {
-                if (states == null || (aux.getState() & states.intValue()) != 0)
-                    result.add(aux);
-            }
+        XEnvironment env = injectedEnvironment.getValue();
+        for (Resource aux : env.getResources(null)) {
+            AbstractBundleRevision brev = AbstractBundleRevision.assertBundleRevision(aux);
+            AbstractBundleState bundleState = brev.getBundleState();
+            if (states == null || (bundleState.getState() & states.intValue()) != 0)
+                result.add(bundleState);
         }
         return Collections.unmodifiableSet(result);
     }
@@ -298,7 +291,18 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
      * @return The bundle or null if there is no bundle with that id
      */
     AbstractBundleState getBundleById(long bundleId) {
-        return bundleId == 0 ? getFrameworkState().getSystemBundle() : bundleMap.get(bundleId);
+        if (bundleId == 0) {
+            return getFrameworkState().getSystemBundle();
+        }
+        XEnvironment env = injectedEnvironment.getValue();
+        for (Resource aux : env.getResources(null)) {
+            AbstractBundleRevision brev = AbstractBundleRevision.assertBundleRevision(aux);
+            AbstractBundleState bundleState = brev.getBundleState();
+            if (bundleState.getBundleId() == bundleId) {
+                return bundleState;
+            }
+        }
+        return null;
     }
 
     /**
@@ -340,18 +344,15 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
      */
     Set<AbstractBundleState> getBundles(String symbolicName, String versionRange) {
         Set<AbstractBundleState> resultSet = new HashSet<AbstractBundleState>();
-        synchronized (bundleMap) {
-            for (AbstractBundleState aux : bundleMap.values()) {
-                if (symbolicName == null || symbolicName.equals(aux.getSymbolicName())) {
-                    if (versionRange == null || VersionRange.parse(versionRange).isInRange(aux.getVersion())) {
-                        resultSet.add(aux);
-                    }
+        for (AbstractBundleState aux : getBundles(null)) {
+            if (symbolicName == null || symbolicName.equals(aux.getSymbolicName())) {
+                if (versionRange == null || VersionRange.parse(versionRange).isInRange(aux.getVersion())) {
+                    resultSet.add(aux);
                 }
             }
         }
         return Collections.unmodifiableSet(resultSet);
     }
-
 
     @Override
     public ServiceName registerModule(ServiceTarget serviceTarget, Module module, OSGiMetaData metadata) throws BundleException {
@@ -378,7 +379,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
             try {
                 // The storage state exists when we re-create the bundle from persistent storage
                 BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
-                long bundleId = storageState != null ? storageState.getBundleId() : getNextBundleId();
+                long bundleId = (storageState != null ? storageState.getBundleId() : nextBundleId());
                 dep.addAttachment(BundleId.class, new BundleId(bundleId));
 
                 // Check that we have valid metadata
@@ -410,7 +411,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         return serviceName;
     }
 
-    long getNextBundleId() {
+    long nextBundleId() {
         return identityGenerator.incrementAndGet();
     }
 
@@ -510,8 +511,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
             userRev.close();
         }
 
-        log.debugf("Remove bundle: %s", userBundle);
-        bundleMap.remove(userBundle.getBundleId());
+        log.debugf("Removed bundle: %s", userBundle);
     }
 
     void setServiceMode(ServiceName serviceName, Mode mode) {
