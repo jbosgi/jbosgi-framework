@@ -23,6 +23,7 @@ package org.jboss.osgi.framework;
 
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
+import org.osgi.framework.resource.Wiring;
 import org.osgi.service.resolver.ResolutionException;
 
 import java.util.Collection;

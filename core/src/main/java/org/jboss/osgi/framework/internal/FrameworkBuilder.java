@@ -159,7 +159,7 @@ public final class FrameworkBuilder {
         if (isProvidedService(Services.FRAMEWORK_MODULE_PROVIDER) == false)
             DefaultFrameworkModuleProvider.addService(serviceTarget);
         if (isProvidedService(Services.MODULE_LOADER_PROVIDER) == false)
-            DefaultModuleLoaderIntegration.addService(serviceTarget);
+            DefaultModuleLoaderProvider.addService(serviceTarget);
         if (isProvidedService(Services.SYSTEM_PATHS_PROVIDER) == false)
             DefaultSystemPathsProvider.addService(serviceTarget, this);
         if (isProvidedService(Services.SYSTEM_SERVICES_PROVIDER) == false)

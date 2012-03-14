@@ -45,21 +45,21 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author thomas.diesler@jboss.com
  * @since 20-Apr-2011
  */
-final class DefaultModuleLoaderIntegration extends ModuleLoader implements ModuleLoaderProvider {
+final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLoaderProvider {
 
     // Provide logging
-    static final Logger log = Logger.getLogger(DefaultModuleLoaderIntegration.class);
+    static final Logger log = Logger.getLogger(DefaultModuleLoaderProvider.class);
 
     private Map<ModuleIdentifier, ModuleHolder> moduleSpecs = new ConcurrentHashMap<ModuleIdentifier, ModuleHolder>();
 
     static void addService(ServiceTarget serviceTarget) {
-        ModuleLoaderProvider service = new DefaultModuleLoaderIntegration();
+        ModuleLoaderProvider service = new DefaultModuleLoaderProvider();
         ServiceBuilder<ModuleLoaderProvider> builder = serviceTarget.addService(Services.MODULE_LOADER_PROVIDER, service);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    private DefaultModuleLoaderIntegration() {
+    private DefaultModuleLoaderProvider() {
     }
 
     @Override
@@ -138,7 +138,7 @@ final class DefaultModuleLoaderIntegration extends ModuleLoader implements Modul
 
     @Override
     public String toString() {
-        return DefaultModuleLoaderIntegration.class.getSimpleName();
+        return DefaultModuleLoaderProvider.class.getSimpleName();
     }
 
     static class ModuleHolder {
