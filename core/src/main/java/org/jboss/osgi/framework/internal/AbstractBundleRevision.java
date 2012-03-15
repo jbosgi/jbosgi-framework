@@ -41,7 +41,7 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.ResourceBuilderException;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XIdentityCapability;
-import org.jboss.osgi.resolver.XResourceBuilder;
+import org.jboss.osgi.resolver.XResourceBuilderFactory;
 import org.jboss.osgi.resolver.spi.AbstractResource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -84,7 +84,13 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
         // Initialize the bundle caps/reqs
         try {
-            XResourceBuilder.create(this).loadFrom(metadata);
+            final AbstractBundleRevision brev = this;
+            XResourceBuilderFactory factory = new XResourceBuilderFactory() {
+                public AbstractResource createResource() {
+                    return brev;
+                }
+            };
+            XResourceBuilderFactory.create(factory).loadFrom(metadata);
         } catch (ResourceBuilderException ex) {
             throw new BundleException(ex. getMessage(), ex);
         }

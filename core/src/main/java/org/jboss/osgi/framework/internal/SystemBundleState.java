@@ -27,9 +27,10 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
-import org.jboss.osgi.framework.ServiceContainerReference;
+import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
@@ -45,7 +46,7 @@ import java.util.List;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class SystemBundleState extends AbstractBundleState implements ServiceContainerReference {
+final class SystemBundleState extends AbstractBundleState implements TypeAdaptor {
 
     // Provide logging
     static final Logger log = Logger.getLogger(SystemBundleState.class);
@@ -84,7 +85,7 @@ final class SystemBundleState extends AbstractBundleState implements ServiceCont
 
     @Override
     List<AbstractBundleRevision> getAllBundleRevisions() {
-        return Collections.singletonList((AbstractBundleRevision)revision);
+        return Collections.singletonList((AbstractBundleRevision) revision);
     }
 
     void createStorageState(BundleStoragePlugin storagePlugin) {
@@ -126,8 +127,15 @@ final class SystemBundleState extends AbstractBundleState implements ServiceCont
     }
 
     @Override
-    public ServiceContainer getServiceContainer() {
-        return getBundleManager().getServiceContainer();
+    @SuppressWarnings("unchecked")
+    public <T> T adapt(Class<T> type) {
+        T result = null;
+        if (type.isAssignableFrom(ServiceContainer.class)) {
+            result = (T) getBundleManager().getServiceContainer();
+        } else if (type.isAssignableFrom(XEnvironment.class)) {
+            result = (T) getFrameworkState().getEnvironment();
+        }
+        return result;
     }
 
     @Override

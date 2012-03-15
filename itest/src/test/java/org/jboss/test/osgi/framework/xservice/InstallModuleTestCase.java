@@ -34,12 +34,10 @@ import javax.inject.Inject;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceContainer;
-import org.jboss.osgi.framework.ServiceContainerReference;
-import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
-import org.jboss.osgi.resolver.XResourceBuilder;
+import org.jboss.osgi.resolver.XResourceBuilderFactory;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -78,25 +76,23 @@ public class InstallModuleTestCase extends OSGiFrameworkTest {
             assertEquals("javax.inject", req.getAttributes().get(namespace));
         }
 
-        // Build and install the Module resource
+        // Build the Module resource
         ModuleIdentifier identifier = ModuleIdentifier.create("javax.inject.api");
         Module module = Module.getBootModuleLoader().loadModule(identifier);
-        XResource res = XResourceBuilder.create().loadFrom(module).getResource();
+        XResource res = XResourceBuilderFactory.create().loadFrom(module).getResource();
         assertEquals(3, res.getCapabilities(null).size());
         assertEquals(1, res.getCapabilities(IDENTITY_NAMESPACE).size());
         assertEquals(2, res.getCapabilities(WIRING_PACKAGE_NAMESPACE).size());
         assertEquals("javax.inject.api", res.getIdentityCapability().getSymbolicName());
         assertEquals(Version.emptyVersion, res.getIdentityCapability().getVersion());
         assertEquals(IDENTITY_TYPE_UNKNOWN, res.getIdentityCapability().getType());
-        getEnvironment().installResources(res);
+        
+        // Install the resource into the environment
+        XEnvironment env = ((TypeAdaptor) getSystemContext()).adapt(XEnvironment.class);
+        env.installResources(res);
 
         bundleA.start();
         assertLoadClass(bundleA, Inject.class.getName());
-    }
-
-    private XEnvironment getEnvironment() throws BundleException {
-        ServiceContainer container = ((ServiceContainerReference) getSystemContext()).getServiceContainer();
-        return (XEnvironment) container.getService(Services.ENVIRONMENT).getValue();
     }
 
     private JavaArchive getBundleA() {

@@ -21,15 +21,19 @@
  */
 package org.jboss.osgi.framework;
 
-import org.jboss.msc.service.ServiceContainer;
 
 /**
- * Provides a reference to the {@link ServiceContainer}.
+ * Adapt a type to another.
  *
  * @author thomas.diesler@jboss.com
  * @since 14-Mar-2012
  */
-public interface ServiceContainerReference {
+public interface TypeAdaptor {
 
-    ServiceContainer getServiceContainer();
+    /**
+     * Adapt this type to another that corresponds to the given type.
+     * 
+     * @return An instance instance of the target type or null 
+     */
+    <T> T adapt(Class<T> type);
 }
