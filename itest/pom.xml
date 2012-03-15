@@ -13,6 +13,7 @@
   Set these VM properties in your IDE debugger 
   
   -Djava.util.logging.manager=org.jboss.logmanager.LogManager
+  -Dmodule.path=${workspace_loc:jbosgi-framework-itest/target}/test-modules 
   -Dtest.archive.directory=${workspace_loc:jbosgi-framework-itest/target}/test-libs
   -Djboss.osgi.vfs.leakDebugging=true
 -->
@@ -39,6 +40,11 @@
         </dependency>
 
         <!-- Test Dependencies -->
+        <dependency>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.jboss.arquillian.container</groupId>
             <artifactId>arquillian-container-osgi-embedded</artifactId>
@@ -106,6 +112,21 @@
 							</descriptors>
 						</configuration>
 					</execution>
+                    <execution>
+                        <id>modules</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>directory-single</goal>
+                        </goals>
+                        <configuration>
+                            <finalName>test-modules</finalName>
+                            <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
+                            <appendAssemblyId>false</appendAssemblyId>
+                            <descriptors>
+                                <descriptor>scripts/assembly-modules.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
 				</executions>
 			</plugin>
 			<plugin>
@@ -117,6 +138,7 @@
 						<java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
 						<jboss.osgi.framework.properties>${jboss.osgi.framework.properties}</jboss.osgi.framework.properties>
 						<jboss.osgi.vfs.leakDebugging>true</jboss.osgi.vfs.leakDebugging>
+                        <module.path>${project.build.directory}/test-modules</module.path>
 						<test.archive.directory>${project.build.directory}/test-libs</test.archive.directory>
 					</systemPropertyVariables>
 				</configuration>

@@ -60,7 +60,7 @@ public final class FrameworkCreate extends AbstractFrameworkService {
         builder.addDependency(InternalServices.SERVICE_MANAGER_PLUGIN, ServiceManagerPlugin.class, frameworkState.injectedServiceManager);
         builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, frameworkState.injectedSystemBundle);
         builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, frameworkState.injectedResolverPlugin);
-        builder.addDependency(Services.ENVIRONMENT_PLUGIN, XEnvironment.class, frameworkState.injectedEnvironment);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, frameworkState.injectedEnvironment);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
         return frameworkState;

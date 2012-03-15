@@ -38,6 +38,7 @@ import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.ResourceBuilderException;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XIdentityCapability;
 import org.jboss.osgi.resolver.XResourceBuilder;
@@ -48,6 +49,7 @@ import org.osgi.framework.Version;
 import org.osgi.framework.resource.Capability;
 import org.osgi.framework.resource.Requirement;
 import org.osgi.framework.resource.Resource;
+import org.osgi.framework.resource.Wiring;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;
@@ -69,7 +71,6 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
     private final OSGiMetaData metadata;
     private Map<String, List<BundleCapability>> bundleCapabilities;
     private Map<String, List<BundleRequirement>> bundleRequirements;
-    private BundleWiring wiring;
 
     AbstractBundleRevision(AbstractBundleState bundleState, OSGiMetaData metadata, int revision) throws BundleException {
         if (bundleState == null)
@@ -82,7 +83,11 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
         this.revision = revision;
 
         // Initialize the bundle caps/reqs
-        XResourceBuilder.create(this).load(metadata);
+        try {
+            XResourceBuilder.create(this).loadFrom(metadata);
+        } catch (ResourceBuilderException ex) {
+            throw new BundleException(ex. getMessage(), ex);
+        }
     }
 
     /**
@@ -166,11 +171,7 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
     @Override
     public BundleWiring getWiring() {
-        return wiring;
-    }
-
-    void setWiring(BundleWiring wiring) {
-        this.wiring = wiring;
+        return (BundleWiring) getAttachment(Wiring.class);
     }
 
     @Override
@@ -207,7 +208,7 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
     abstract URL getLocalizationEntry(String path);
 
     boolean isResolved() {
-        return wiring != null;
+        return getWiring() != null;
     }
 
     ModuleIdentifier getModuleIdentifier() {
@@ -235,7 +236,7 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
     }
 
     void refreshRevisionInternal() {
-        wiring = null;
+        removeAttachment(Wiring.class);
     }
 
     @Override

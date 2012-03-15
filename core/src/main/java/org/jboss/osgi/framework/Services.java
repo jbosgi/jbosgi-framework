@@ -62,7 +62,7 @@ public interface Services {
     ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("BundleManager");
 
     /** The {@link Environment} service name */
-    ServiceName ENVIRONMENT_PLUGIN = JBOSGI_BASE_NAME.append("Environment");
+    ServiceName ENVIRONMENT = JBOSGI_BASE_NAME.append("Environment");
 
     /** The base name of all framework services */
     ServiceName FRAMEWORK_BASE_NAME = JBOSGI_BASE_NAME.append("Framework");

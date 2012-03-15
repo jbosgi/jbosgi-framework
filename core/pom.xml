@@ -13,7 +13,6 @@
 	Set these VM properties in your IDE debugger 
 
 	-Djava.util.logging.manager=org.jboss.logmanager.LogManager 
-	-Dmodule.path=${workspace_loc:jbosgi-framework-core/target}/test-modules 
 	-Djboss.osgi.vfs.leakDebugging=true 
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -97,33 +96,12 @@
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>modules</id>
-                        <phase>test-compile</phase>
-                        <goals>
-                            <goal>directory-single</goal>
-                        </goals>
-                        <configuration>
-                            <finalName>test-modules</finalName>
-                            <ignoreDirFormatExtensions>true</ignoreDirFormatExtensions>
-                            <appendAssemblyId>false</appendAssemblyId>
-                            <descriptors>
-                                <descriptor>scripts/assembly-modules.xml</descriptor>
-                            </descriptors>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <systemPropertyVariables>
                         <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
                         <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         <jboss.osgi.vfs.leakDebugging>true</jboss.osgi.vfs.leakDebugging>
-                        <module.path>${project.build.directory}/test-modules</module.path>
                         <test.archive.directory>${project.build.directory}/test-libs</test.archive.directory>
                     </systemPropertyVariables>
                 </configuration>

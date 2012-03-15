@@ -35,12 +35,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Test the default resolver integration.
+ * Test the resolver integration.
  * 
  * @author thomas.diesler@jboss.com
  * @since 31-May-2010
  */
-public class DefaultResolverTestCase extends OSGiFrameworkTest {
+public class ResolverTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testSimpleImport() throws Exception {

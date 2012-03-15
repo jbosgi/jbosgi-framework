@@ -23,9 +23,11 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
+import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
+import org.jboss.osgi.framework.ServiceContainerReference;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.Bundle;
@@ -43,7 +45,7 @@ import java.util.List;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class SystemBundleState extends AbstractBundleState {
+final class SystemBundleState extends AbstractBundleState implements ServiceContainerReference {
 
     // Provide logging
     static final Logger log = Logger.getLogger(SystemBundleState.class);
@@ -121,6 +123,11 @@ final class SystemBundleState extends AbstractBundleState {
     @Override
     BundleStorageState getBundleStorageState() {
         return storageState;
+    }
+
+    @Override
+    public ServiceContainer getServiceContainer() {
+        return getBundleManager().getServiceContainer();
     }
 
     @Override

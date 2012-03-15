@@ -115,7 +115,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     static BundleManager addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
         BundleManager service = new BundleManager(frameworkBuilder, serviceTarget);
         ServiceBuilder<BundleManagerService> builder = serviceTarget.addService(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, service);
-        builder.addDependency(Services.ENVIRONMENT_PLUGIN, XEnvironment.class, service.injectedEnvironment);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
         return service;
@@ -256,10 +256,12 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         Set<AbstractBundleState> result = new HashSet<AbstractBundleState>();
         XEnvironment env = injectedEnvironment.getValue();
         for (Resource aux : env.getResources(null)) {
-            AbstractBundleRevision brev = AbstractBundleRevision.assertBundleRevision(aux);
-            AbstractBundleState bundleState = brev.getBundleState();
-            if (bundleState.getState() != Bundle.UNINSTALLED)
-                result.add(bundleState);
+            if (aux instanceof AbstractBundleRevision) {
+                AbstractBundleRevision brev = (AbstractBundleRevision) aux;
+                AbstractBundleState bundleState = brev.getBundleState();
+                if (bundleState.getState() != Bundle.UNINSTALLED)
+                    result.add(bundleState);
+            }
         }
         return Collections.unmodifiableSet(result);
     }
@@ -274,10 +276,12 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         Set<AbstractBundleState> result = new HashSet<AbstractBundleState>();
         XEnvironment env = injectedEnvironment.getValue();
         for (Resource aux : env.getResources(null)) {
-            AbstractBundleRevision brev = AbstractBundleRevision.assertBundleRevision(aux);
-            AbstractBundleState bundleState = brev.getBundleState();
-            if (states == null || (bundleState.getState() & states.intValue()) != 0)
-                result.add(bundleState);
+            if (aux instanceof AbstractBundleRevision) {
+                AbstractBundleRevision brev = (AbstractBundleRevision) aux;
+                AbstractBundleState bundleState = brev.getBundleState();
+                if (states == null || (bundleState.getState() & states.intValue()) != 0)
+                    result.add(bundleState);
+            }
         }
         return Collections.unmodifiableSet(result);
     }
@@ -296,10 +300,12 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         }
         XEnvironment env = injectedEnvironment.getValue();
         for (Resource aux : env.getResources(null)) {
-            AbstractBundleRevision brev = AbstractBundleRevision.assertBundleRevision(aux);
-            AbstractBundleState bundleState = brev.getBundleState();
-            if (bundleState.getBundleId() == bundleId) {
-                return bundleState;
+            if (aux instanceof AbstractBundleRevision) {
+                AbstractBundleRevision brev = (AbstractBundleRevision) aux;
+                AbstractBundleState bundleState = brev.getBundleState();
+                if (bundleState.getBundleId() == bundleId) {
+                    return bundleState;
+                }
             }
         }
         return null;

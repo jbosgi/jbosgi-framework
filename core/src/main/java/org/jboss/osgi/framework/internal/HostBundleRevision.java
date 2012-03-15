@@ -39,6 +39,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
+import org.osgi.service.resolver.ResolutionException;
 
 /**
  * A {@link HostBundleRevision} is responsible for the classloading and resource loading of a bundle.
@@ -110,8 +111,9 @@ final class HostBundleRevision extends UserBundleRevision {
     Class<?> loadClass(String className) throws ClassNotFoundException {
         
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-        if (getBundleState().ensureResolved(true) == false)
-            throw new ClassNotFoundException("Class '" + className + "' not found in: " + this);
+        ResolutionException resex = getBundleState().ensureResolved(true);
+        if (resex != null)
+            throw new ClassNotFoundException("Class '" + className + "' not found in: " + this, resex);
 
         // Load the class through the module
         ModuleClassLoader loader;
@@ -156,7 +158,7 @@ final class HostBundleRevision extends UserBundleRevision {
         getBundleState().assertNotUninstalled();
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-        if (getBundleState().ensureResolved(false)) {
+        if (getBundleState().ensureResolved(false) == null) {
             ModuleClassLoader moduleClassLoader;
             try {
                 moduleClassLoader = getModuleClassLoader();
@@ -176,7 +178,7 @@ final class HostBundleRevision extends UserBundleRevision {
         getBundleState().assertNotUninstalled();
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-        if (getBundleState().ensureResolved(true) == true) {
+        if (getBundleState().ensureResolved(true) == null) {
             ModuleClassLoader moduleClassLoader;
             try {
                 moduleClassLoader = getModuleClassLoader();

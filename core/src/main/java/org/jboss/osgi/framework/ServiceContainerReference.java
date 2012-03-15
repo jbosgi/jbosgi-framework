@@ -1,8 +1,8 @@
 /*
  * JBoss, Home of Professional Open Source
- * Copyright 2009, Red Hat Middleware LLC, and individual contributors
- * as indicated by the @author tags. See the copyright.txt file in the
- * distribution for a full listing of individual contributors.
+ * Copyright 2005, JBoss Inc., and individual contributors as indicated
+ * by the @authors tag. See the copyright.txt in the distribution for a
+ * full listing of individual contributors.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -19,31 +19,17 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework.internal;
+package org.jboss.osgi.framework;
 
 import org.jboss.msc.service.ServiceContainer;
-import org.jboss.osgi.framework.ServiceContainerReference;
-import org.osgi.framework.BundleContext;
 
 /**
- * The system {@link BundleContext}.
+ * Provides a reference to the {@link ServiceContainer}.
  *
  * @author thomas.diesler@jboss.com
- * @since 29-Jun-2010
+ * @since 14-Mar-2012
  */
-final class SystemBundleContext extends AbstractBundleContext implements ServiceContainerReference {
+public interface ServiceContainerReference {
 
-    SystemBundleContext(SystemBundleState bundle) {
-        super(bundle);
-    }
-
-    @Override
-    public ServiceContainer getServiceContainer() {
-        return getBundleState().getServiceContainer();
-    }
-
-    @Override
-    SystemBundleState getBundleState() {
-        return (SystemBundleState) super.getBundleState();
-    }
+    ServiceContainer getServiceContainer();
 }

@@ -45,6 +45,7 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
 import org.osgi.framework.wiring.BundleWiring;
+import org.osgi.service.resolver.ResolutionException;
 import org.osgi.service.startlevel.StartLevel;
 
 /**
@@ -227,8 +228,9 @@ final class HostBundleState extends UserBundleState {
 
             // #4 If this bundle's state is not RESOLVED, an attempt is made to resolve this bundle.
             // If the Framework cannot resolve this bundle, a BundleException is thrown.
-            if (ensureResolved(true) == false)
-                throw new BundleException("Cannot resolve bundle: " + this);
+            ResolutionException resex = ensureResolved(true);
+            if (resex != null)
+                throw new BundleException("Cannot resolve bundle: " + this, resex);
 
             // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
             if (getBundleContextInternal() == null)

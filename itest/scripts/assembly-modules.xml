@@ -10,24 +10,6 @@
   <!-- Dependency Sets -->
   <dependencySets>
     <dependencySet>
-      <outputDirectory>org/osgi/compendium/main</outputDirectory>
-      <includes>
-        <include>org.osgi:org.osgi.compendium:jar</include>
-      </includes>
-      <useStrictFiltering>true</useStrictFiltering>
-      <scope>compile</scope>
-      <unpack>false</unpack>
-    </dependencySet>
-    <dependencySet>
-      <outputDirectory>org/osgi/core/main</outputDirectory>
-      <includes>
-        <include>org.osgi:org.osgi.core:jar</include>
-      </includes>
-      <useStrictFiltering>true</useStrictFiltering>
-      <scope>compile</scope>
-      <unpack>false</unpack>
-    </dependencySet>
-    <dependencySet>
       <outputDirectory>javax/inject/api/main</outputDirectory>
       <includes>
         <include>javax.inject:javax.inject:jar</include>

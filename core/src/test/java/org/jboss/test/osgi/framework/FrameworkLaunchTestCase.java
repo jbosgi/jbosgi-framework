@@ -127,7 +127,6 @@ public class FrameworkLaunchTestCase extends OSGiTest {
         Map<String, String> props = new HashMap<String, String>();
         props.put("org.osgi.framework.storage", "target/osgi-store");
         props.put("org.osgi.framework.storage.clean", "onFirstInit");
-
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
         Framework framework = factory.newFramework(props);
         return framework;

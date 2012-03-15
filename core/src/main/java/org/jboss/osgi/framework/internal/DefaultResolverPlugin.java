@@ -59,7 +59,6 @@ import org.osgi.framework.resource.Requirement;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
 import org.osgi.framework.resource.Wiring;
-import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.resolver.ResolutionException;
 import org.osgi.service.resolver.Resolver;
 
@@ -82,7 +81,7 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     static void addService(ServiceTarget serviceTarget) {
         DefaultResolverPlugin service = new DefaultResolverPlugin();
         ServiceBuilder<ResolverPlugin> builder = serviceTarget.addService(InternalServices.RESOLVER_PLUGIN, service);
-        builder.addDependency(Services.ENVIRONMENT_PLUGIN, XEnvironment.class, service.injectedEnvironment);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -121,8 +120,8 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     public void resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
         Map<Resource, List<Wire>> wiremap = resolve(mandatory, optional);
         for (Entry<Resource, Wiring> entry : applyResolverResults(wiremap).entrySet()) {
-            AbstractBundleRevision brev = (AbstractBundleRevision) entry.getKey();
-            brev.setWiring((BundleWiring) entry.getValue());
+            XResource res = (XResource) entry.getKey();
+            res.addAttachment(Wiring.class, entry.getValue());
         }
     }
 
@@ -271,9 +270,10 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
 
     private void setBundleToResolved(Map<Resource, List<Wire>> wiremap) {
         for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-            AbstractBundleRevision brev = (AbstractBundleRevision) entry.getKey();
-            AbstractBundleState bundleState = brev.getBundleState();
-            bundleState.changeState(Bundle.RESOLVED);
+            if (entry.getKey() instanceof AbstractBundleRevision) {
+                AbstractBundleRevision brev = (AbstractBundleRevision) entry.getKey();
+                brev.getBundleState().changeState(Bundle.RESOLVED);
+            }
         }
     }
 }

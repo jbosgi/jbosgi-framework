@@ -29,6 +29,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.Resource;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
+import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
@@ -60,19 +61,25 @@ final class FallbackLoader implements LocalLoader {
 
     private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
     private final HostBundleState hostBundle;
+    private final HostBundleRevision hostRev;
     private final ModuleIdentifier identifier;
     private final Set<String> importedPaths;
+    private final BundleManager bundleManager;
+    private final ModuleManagerPlugin moduleManager;
 
-    FallbackLoader(HostBundleState hostBundle, ModuleIdentifier identifier, Set<String> importedPaths) {
-        if (hostBundle == null)
-            throw new IllegalArgumentException("Null hostBundle");
+    FallbackLoader(HostBundleRevision hostRev, ModuleIdentifier identifier, Set<String> importedPaths) {
+        if (hostRev == null)
+            throw new IllegalArgumentException("Null hostRev");
         if (identifier == null)
             throw new IllegalArgumentException("Null identifier");
         if (importedPaths == null)
             throw new IllegalArgumentException("Null importedPaths");
         this.identifier = identifier;
         this.importedPaths = importedPaths;
-        this.hostBundle = hostBundle;
+        this.hostRev = hostRev;
+        this.hostBundle = hostRev.getBundleState();
+        this.bundleManager = hostBundle.getBundleManager();
+        this.moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
     }
 
     @Override
@@ -172,13 +179,11 @@ final class FallbackLoader implements LocalLoader {
 
     private List<XPackageRequirement> findMatchingPatterns(String resName) {
 
-        ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
-        AbstractBundleRevision bundleRev = moduleManager.getBundleRevision(identifier);
-        List<XPackageRequirement> dynamicRequirements = getDynamicPackageRequirements(bundleRev);
+        List<XPackageRequirement> dynamicRequirements = getDynamicPackageRequirements(hostRev);
 
         // Dynamic imports may not be used when the package is exported
         String pathName = VFSUtils.getPathFromClassName(resName);
-        List<XPackageCapability> packageCapabilities = getPackageCapabilities(bundleRev);
+        List<XPackageCapability> packageCapabilities = getPackageCapabilities(hostRev);
         for (XPackageCapability packageCap : packageCapabilities) {
             String packagePath = packageCap.getPackageName().replace('.', '/');
             if (pathName.equals(packagePath))
@@ -211,14 +216,12 @@ final class FallbackLoader implements LocalLoader {
 
     private Module findInResolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
         log.tracef("Attempt to find path dynamically in resolved modules ...");
-        BundleManager bundleManager = hostBundle.getFrameworkState().getBundleManager();
-        ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
-        for (XPackageRequirement packageReq : matchingPatterns) {
+        for (XPackageRequirement pkgreq : matchingPatterns) {
             for (AbstractBundleState bundleState : bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE)) {
                 if (bundleState.isResolved() && !bundleState.isFragment()) {
                     ModuleIdentifier identifier = bundleState.getModuleIdentifier();
                     Module candidate = moduleManager.getModule(identifier);
-                    if (isValidCandidate(resName, packageReq, candidate))
+                    if (isValidCandidate(resName, pkgreq, candidate))
                         return candidate;
                 }
             }
@@ -228,7 +231,7 @@ final class FallbackLoader implements LocalLoader {
 
     private Module findInUnresolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
         log.tracef("Attempt to find path dynamically in unresolved modules ...");
-        for (AbstractBundleState bundleState : hostBundle.getBundleManager().getBundles()) {
+        for (AbstractBundleState bundleState : bundleManager.getBundles()) {
             if (bundleState.getState() == Bundle.INSTALLED) {
                 bundleState.ensureResolved(false);
             }
@@ -236,7 +239,7 @@ final class FallbackLoader implements LocalLoader {
         return findInResolvedModules(resName, matchingPatterns);
     }
 
-    private boolean isValidCandidate(String resName, XPackageRequirement packageReq, Module candidate) {
+    private boolean isValidCandidate(String resName, XPackageRequirement pkgreq, Module candidate) {
 
         if (candidate == null)
             return false;
@@ -252,14 +255,13 @@ final class FallbackLoader implements LocalLoader {
             return false;
 
         log.tracef("Found path [%s] in %s", resName, candidate);
-        ModuleManagerPlugin moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
-        AbstractBundleRevision brev = moduleManager.getBundleRevision(candidateId);
-        XPackageCapability candidateCap = getCandidateCapability(brev, packageReq);
+        XResource res = moduleManager.getResource(candidateId);
+        XPackageCapability candidateCap = getCandidateCapability(res, pkgreq);
         return (candidateCap != null);
     }
 
-    private XPackageCapability getCandidateCapability(AbstractBundleRevision brev, XPackageRequirement packageReq) {
-        for (XPackageCapability packageCap : getPackageCapabilities(brev)) {
+    private XPackageCapability getCandidateCapability(XResource res, XPackageRequirement packageReq) {
+        for (XPackageCapability packageCap : getPackageCapabilities(res)) {
             if (packageReq.matches(packageCap)) {
                 log.tracef("Matching package capability: %s", packageCap);
                 return packageCap;
@@ -278,9 +280,9 @@ final class FallbackLoader implements LocalLoader {
         return patternPath;
     }
 
-    private List<XPackageCapability> getPackageCapabilities(BundleRevision brev) {
+    private List<XPackageCapability> getPackageCapabilities(XResource res) {
         List<XPackageCapability> result = new ArrayList<XPackageCapability>();
-        for (Capability aux : brev.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
+        for (Capability aux : res.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
             XPackageCapability cap = (XPackageCapability) aux;
             result.add(cap);
         }

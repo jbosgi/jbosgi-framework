@@ -268,9 +268,9 @@ public class BundleTestCase extends OSGiFrameworkTest {
             fail("BundleException expected");
         } catch (BundleException ex) {
             String message = ex.getMessage();
-            Assert.assertTrue("Contains Export-Package", message.contains("Export-Package"));
-            Assert.assertTrue("Contains version", message.contains("version"));
-            Assert.assertTrue("Contains foo", message.contains("foo"));
+            assertTrue("Contains Export-Package: " + message, message.contains("Export-Package"));
+            assertTrue("Contains version: " + message, message.contains("version"));
+            assertTrue("Contains foo: " + message, message.contains("foo"));
         }
     }
 

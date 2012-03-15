@@ -536,7 +536,7 @@ abstract class AbstractBundleState implements Bundle {
 
     abstract void uninstallInternal() throws BundleException;
 
-    boolean ensureResolved(boolean fireEvent) {
+    ResolutionException ensureResolved(boolean fireEvent) {
 
         if (isUninstalled())
             throw new IllegalStateException("Bundle already uninstalled: " + this);
@@ -546,15 +546,11 @@ abstract class AbstractBundleState implements Bundle {
         // containing a BundleException with details of the reason this bundle could not be resolved.
         synchronized (this) {
             if (isResolved())
-                return true;
+                return null;
 
             try {
-                try {
-                    ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
-                    resolverPlugin.resolveAndApply(Collections.singleton(getCurrentBundleRevision()), null);
-                } catch (ResolutionException ex) {
-                    throw new BundleException(ex.getMessage(), ex);
-                }
+                ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
+                resolverPlugin.resolveAndApply(Collections.singleton(getCurrentBundleRevision()), null);
 
                 // Activate the service that represents bundle state RESOLVED
                 getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.ACTIVE);
@@ -571,13 +567,13 @@ abstract class AbstractBundleState implements Bundle {
                     }
                 }
 
-                return true;
-            } catch (BundleException ex) {
+                return null;
+            } catch (ResolutionException ex) {
                 if (fireEvent == true) {
                     FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
-                    eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, ex);
+                    eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, new BundleException(ex.getMessage(), ex));
                 }
-                return false;
+                return ex;
             }
         }
     }
