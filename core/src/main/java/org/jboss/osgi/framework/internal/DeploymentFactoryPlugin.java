@@ -118,6 +118,16 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
                 version = Version.emptyVersion;
             }
             OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(symbolicName, version);
+            for (String path : module.getExportedPaths()) {
+                if (path.startsWith("/"))
+                    path = path.substring(1);
+                if (path.endsWith("/"))
+                    path = path.substring(0, path.length() - 1);
+                if (!path.isEmpty() && !path.startsWith("META-INF")) {
+                    String packageName = path.replace('/', '.');
+                    builder.addExportPackages(packageName);
+                }
+            }
             metadata = builder.getOSGiMetaData();
         } else
         {

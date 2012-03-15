@@ -116,48 +116,28 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         return getModuleLoaderIntegration().getModuleLoader();
     }
 
-    ModuleIdentifier getModuleIdentifier(final XResource brev) {
-        if (brev == null)
-            throw new IllegalArgumentException("Null revision");
-        if (brev instanceof FragmentBundleRevision)
+    ModuleIdentifier getModuleIdentifier(final XResource xres) {
+        if (xres == null)
+            throw new IllegalArgumentException("Null resource");
+        if (xres instanceof FragmentBundleRevision)
             throw new IllegalArgumentException("A fragment is not a module");
 
-        ModuleIdentifier identifier = brev.getAttachment(ModuleIdentifier.class);
+        ModuleIdentifier identifier = xres.getAttachment(ModuleIdentifier.class);
         if (identifier != null)
             return identifier;
 
-        Module module = brev.getAttachment(Module.class);
+        XIdentityCapability icap = xres.getIdentityCapability();
+        Module module = xres.getAttachment(Module.class);
         if (module != null) {
             identifier = module.getIdentifier();
-        }
-
-        XIdentityCapability icap = brev.getIdentityCapability();
-        if (identifier == null && SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getSymbolicName())) {
+        } else if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getSymbolicName())) {
             identifier = getFrameworkModule().getIdentifier();
+        } else {
+            int revision = (xres instanceof AbstractBundleRevision ? ((AbstractBundleRevision)xres).getRevisionId() : 0);
+            identifier = getModuleLoaderIntegration().getModuleIdentifier(xres, revision);
         }
 
-        if (identifier == null) {
-            identifier = createModuleIdentifier(brev);
-        }
-
-        brev.addAttachment(ModuleIdentifier.class, identifier);
-        return identifier;
-    }
-
-    private ModuleIdentifier createModuleIdentifier(final XResource res) {
-        XIdentityCapability icap = res.getIdentityCapability();
-        String symbolicName = icap.getSymbolicName();
-        String slot = icap.getVersion().toString();
-        if (res instanceof AbstractBundleRevision) {
-            AbstractBundleRevision brev = (AbstractBundleRevision) res;
-            int revision = brev.getRevisionId();
-            if (revision > 0) {
-                slot += "-rev" + revision;
-            }
-        }
-        String name = Constants.JBOSGI_PREFIX + "." + symbolicName;
-        ModuleIdentifier identifier = ModuleIdentifier.create(name, slot);
-        res.addAttachment(ModuleIdentifier.class, identifier);
+        xres.addAttachment(ModuleIdentifier.class, identifier);
         return identifier;
     }
 
@@ -228,10 +208,9 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
         Module module = res.getAttachment(Module.class);
         if (module != null) {
-            ModuleIdentifier identifier = module.getIdentifier();
+            modules.put(module.getIdentifier(), res);
             getModuleLoaderIntegration().addModule(module);
-            modules.put(identifier, res);
-            return identifier;
+            return module.getIdentifier();
         }
 
         ModuleIdentifier identifier;
@@ -252,99 +231,96 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         HostBundleState hostBundle = hostRev.getBundleState();
         List<RevisionContent> contentRoots = hostBundle.getContentRoots();
 
-        ModuleSpec moduleSpec = hostRev.getAttachment(ModuleSpec.class);
-        if (moduleSpec == null) {
-            ModuleIdentifier identifier = getModuleIdentifier(hostRev);
-            ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
-            List<DependencySpec> moduleDependencies = new ArrayList<DependencySpec>();
+        ModuleIdentifier identifier = getModuleIdentifier(hostRev);
+        ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
+        List<DependencySpec> moduleDependencies = new ArrayList<DependencySpec>();
 
-            // Add a system dependency
-            SystemPathsProvider plugin = injectedSystemPaths.getValue();
-            Set<String> bootPaths = plugin.getBootDelegationPaths();
-            PathFilter bootFilter = plugin.getBootDelegationFilter();
-            PathFilter acceptAll = PathFilters.acceptAll();
-            moduleDependencies.add(DependencySpec.createSystemDependencySpec(bootFilter, acceptAll, bootPaths));
+        // Add a system dependency
+        SystemPathsProvider plugin = injectedSystemPaths.getValue();
+        Set<String> bootPaths = plugin.getBootDelegationPaths();
+        PathFilter bootFilter = plugin.getBootDelegationFilter();
+        PathFilter acceptAll = PathFilters.acceptAll();
+        moduleDependencies.add(DependencySpec.createSystemDependencySpec(bootFilter, acceptAll, bootPaths));
 
-            // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
-            Map<XResource, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XResource, ModuleDependencyHolder>();
+        // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
+        Map<XResource, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XResource, ModuleDependencyHolder>();
 
-            // For every {@link XWire} add a dependency on the exporter
-            processModuleWireList(wires, specHolderMap);
+        // For every {@link XWire} add a dependency on the exporter
+        processModuleWireList(wires, specHolderMap);
 
-            // Process fragment wires
-            Set<String> allPaths = new HashSet<String>();
+        // Process fragment wires
+        Set<String> allPaths = new HashSet<String>();
 
-            // Add the holder values to dependencies
-            for (ModuleDependencyHolder holder : specHolderMap.values())
-                moduleDependencies.add(holder.create());
+        // Add the holder values to dependencies
+        for (ModuleDependencyHolder holder : specHolderMap.values())
+            moduleDependencies.add(holder.create());
 
-            // Add the module dependencies to the builder
-            for (DependencySpec dep : moduleDependencies)
-                specBuilder.addDependency(dep);
+        // Add the module dependencies to the builder
+        for (DependencySpec dep : moduleDependencies)
+            specBuilder.addDependency(dep);
 
-            // Add resource roots the local bundle content
-            for (RevisionContent revContent : contentRoots) {
+        // Add resource roots the local bundle content
+        for (RevisionContent revContent : contentRoots) {
+            ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
+            specBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resLoader));
+            allPaths.addAll(resLoader.getPaths());
+        }
+
+        // Process fragment local content and more resource roots
+        Set<FragmentBundleRevision> fragRevs = hostRev.getAttachedFragments();
+        for (FragmentBundleRevision fragRev : fragRevs) {
+            for (RevisionContent revContent : fragRev.getContentList()) {
                 ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
                 specBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resLoader));
                 allPaths.addAll(resLoader.getPaths());
             }
-
-            // Process fragment local content and more resource roots
-            Set<FragmentBundleRevision> fragRevs = hostRev.getAttachedFragments();
-            for (FragmentBundleRevision fragRev : fragRevs) {
-                for (RevisionContent revContent : fragRev.getContentList()) {
-                    ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
-                    specBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resLoader));
-                    allPaths.addAll(resLoader.getPaths());
-                }
-            }
-
-            // Get the set of imported paths
-            Set<String> importedPaths = new HashSet<String>();
-            for (ModuleDependencyHolder holder : specHolderMap.values()) {
-                Set<String> paths = holder.getImportPaths();
-                if (paths != null) {
-                    importedPaths.addAll(paths);
-                }
-            }
-
-            // Setup the local loader dependency
-            PathFilter importFilter = acceptAll;
-            PathFilter exportFilter = acceptAll;
-            if (importedPaths.isEmpty() == false) {
-                importFilter = PathFilters.not(PathFilters.in(importedPaths));
-            }
-            PathFilter resImportFilter = PathFilters.acceptAll();
-            PathFilter resExportFilter = PathFilters.acceptAll();
-            ClassFilter classImportFilter = new ClassFilter() {
-                public boolean accept(String className) {
-                    return true;
-                }
-            };
-            final PathFilter cefPath = getExportClassFilter(hostRev);
-            ClassFilter classExportFilter = new ClassFilter() {
-                public boolean accept(String className) {
-                    return cefPath.accept(className);
-                }
-            };
-            log.debugf("createLocalDependencySpec: [if=%s,ef=%s,rif=%s,ref=%s,cf=%s]", importFilter, exportFilter, resImportFilter, resExportFilter, cefPath);
-            DependencySpec localDep = DependencySpec.createLocalDependencySpec(importFilter, exportFilter, resImportFilter, resExportFilter, classImportFilter, classExportFilter);
-            specBuilder.addDependency(localDep);
-
-            // Native - Hack
-            addNativeResourceLoader(hostRev, specBuilder);
-
-            PathFilter lazyActivationFilter = getLazyPackagesFilter(hostBundle);
-            specBuilder.setModuleClassLoaderFactory(new HostBundleClassLoader.Factory(hostBundle, lazyActivationFilter));
-            specBuilder.setFallbackLoader(new FallbackLoader(hostRev, identifier, importedPaths));
-
-            // Build the ModuleSpec
-            moduleSpec = specBuilder.create();
         }
 
-        ModuleIdentifier identifier = moduleSpec.getModuleIdentifier();
-        getModuleLoaderIntegration().addModule(moduleSpec);
+        // Get the set of imported paths
+        Set<String> importedPaths = new HashSet<String>();
+        for (ModuleDependencyHolder holder : specHolderMap.values()) {
+            Set<String> paths = holder.getImportPaths();
+            if (paths != null) {
+                importedPaths.addAll(paths);
+            }
+        }
+
+        // Setup the local loader dependency
+        PathFilter importFilter = acceptAll;
+        PathFilter exportFilter = acceptAll;
+        if (importedPaths.isEmpty() == false) {
+            importFilter = PathFilters.not(PathFilters.in(importedPaths));
+        }
+        PathFilter resImportFilter = PathFilters.acceptAll();
+        PathFilter resExportFilter = PathFilters.acceptAll();
+        ClassFilter classImportFilter = new ClassFilter() {
+            public boolean accept(String className) {
+                return true;
+            }
+        };
+        final PathFilter cefPath = getExportClassFilter(hostRev);
+        ClassFilter classExportFilter = new ClassFilter() {
+            public boolean accept(String className) {
+                return cefPath.accept(className);
+            }
+        };
+        log.debugf("createLocalDependencySpec: [if=%s,ef=%s,rif=%s,ref=%s,cf=%s]", importFilter, exportFilter, resImportFilter, resExportFilter, cefPath);
+        DependencySpec localDep = DependencySpec.createLocalDependencySpec(importFilter, exportFilter, resImportFilter, resExportFilter, classImportFilter,
+                classExportFilter);
+        specBuilder.addDependency(localDep);
+
+        // Native - Hack
+        addNativeResourceLoader(hostRev, specBuilder);
+
+        PathFilter lazyActivationFilter = getLazyPackagesFilter(hostBundle);
+        specBuilder.setModuleClassLoaderFactory(new HostBundleClassLoader.Factory(hostBundle, lazyActivationFilter));
+        specBuilder.setFallbackLoader(new FallbackLoader(hostRev, identifier, importedPaths));
+
+        // Build the ModuleSpec
+        ModuleSpec moduleSpec = specBuilder.create();
+
         modules.put(identifier, hostRev);
+        getModuleLoaderIntegration().addModule(moduleSpec);
         return identifier;
     }
 

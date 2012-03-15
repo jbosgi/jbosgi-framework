@@ -26,6 +26,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.Service;
+import org.jboss.osgi.resolver.XResource;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -42,4 +43,6 @@ public interface ModuleLoaderProvider extends Service<ModuleLoaderProvider> {
     void addModule(Module module);
 
     void removeModule(ModuleIdentifier identifier);
+
+    ModuleIdentifier getModuleIdentifier(XResource resource, int revision);
 }

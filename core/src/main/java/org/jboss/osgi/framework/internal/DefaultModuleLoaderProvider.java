@@ -21,6 +21,11 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.Constants.JBOSGI_PREFIX;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
@@ -35,9 +40,8 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.framework.ModuleLoaderProvider;
 import org.jboss.osgi.framework.Services;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import org.jboss.osgi.resolver.XIdentityCapability;
+import org.jboss.osgi.resolver.XResource;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -100,6 +104,14 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
             }
         }
         return module;
+    }
+
+    @Override
+    public ModuleIdentifier getModuleIdentifier(XResource resource, int rev) {
+        XIdentityCapability icap = resource.getIdentityCapability();
+        String name = icap.getSymbolicName();
+        String slot = icap.getVersion() + (rev > 0 ? "-rev" + rev : "");
+        return ModuleIdentifier.create(JBOSGI_PREFIX + "." + name, slot);
     }
 
     @Override
