@@ -21,13 +21,10 @@
  */
 package org.jboss.osgi.framework;
 
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -53,20 +50,4 @@ public interface BundleManagerService extends Service<BundleManagerService> {
      * Uninstall the given deployment
      */
     void uninstallBundle(Deployment dep);
-
-    /**
-     * Get the bundle base name for the module identifier.
-     */
-    Bundle getBundle(ModuleIdentifier identifier);
-
-    /**
-     * Register a module with the OSGi layer.
-     */
-    ServiceName registerModule(ServiceTarget serviceTarget, Module module, OSGiMetaData metadata) throws BundleException;
-
-    /**
-     * Unregister a module from the OSGi layer.
-     */
-    void unregisterModule(ModuleIdentifier identifier);
-
 }

@@ -162,7 +162,7 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
         }
         return Collections.unmodifiableList(result);
     }
-    
+
     private Collection<? extends Resource> findAttachableFragments(Collection<? extends Capability> hostcaps) {
         Set<Resource> result = new HashSet<Resource>();
         XEnvironment env = injectedEnvironment.getValue();
@@ -177,7 +177,7 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
         log.debugf("attachable fragments: %s", result);
         return result;
     }
-    
+
     private Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) {
 
         // [TODO] Revisit how we apply the resolution results

@@ -39,6 +39,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.resource.Resource;
 import org.osgi.service.resolver.ResolutionException;
 
 /**
@@ -61,17 +62,14 @@ final class HostBundleRevision extends UserBundleRevision {
     }
 
     /**
-     * Assert that the given bundleRev is an instance of HostRevision
-     * @throws IllegalArgumentException if the given bundleRev is not an instance of HostRevision
+     * Assert that the given resource is an instance of HostBundleRevision
+     * @throws IllegalArgumentException if the given resource is not an instance of HostBundleRevision
      */
-    static HostBundleRevision assertUserRevision(AbstractBundleRevision bundleRev) {
-        if (bundleRev == null)
-            throw new IllegalArgumentException("Null bundleRev");
+    static HostBundleRevision assertHostRevision(Resource res) {
+        if (res instanceof HostBundleRevision == false)
+            throw new IllegalArgumentException("Not an HostRevision: " + res);
 
-        if (bundleRev instanceof HostBundleRevision == false)
-            throw new IllegalArgumentException("Not an HostRevision: " + bundleRev);
-
-        return (HostBundleRevision) bundleRev;
+        return (HostBundleRevision) res;
     }
 
     @Override
@@ -93,7 +91,7 @@ final class HostBundleRevision extends UserBundleRevision {
 					Bundle b2 = rev2.getBundle();
 					return (int)(b1.getBundleId() - b2.getBundleId());
 				}
-        		
+
         	};
             attachedFragments = new TreeSet<FragmentBundleRevision>(comp);
         }
@@ -109,7 +107,7 @@ final class HostBundleRevision extends UserBundleRevision {
 
     @Override
     Class<?> loadClass(String className) throws ClassNotFoundException {
-        
+
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         ResolutionException resex = getBundleState().ensureResolved(true);
         if (resex != null)

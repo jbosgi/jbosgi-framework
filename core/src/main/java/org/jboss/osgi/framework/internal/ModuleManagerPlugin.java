@@ -37,7 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jboss.logging.Logger;
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
@@ -66,12 +65,12 @@ import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VFSUtils;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
 import org.osgi.framework.resource.Capability;
 import org.osgi.framework.resource.Requirement;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
+import org.osgi.framework.wiring.BundleRevision;
 
 /**
  * The module manager plugin.
@@ -88,7 +87,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
     private final InjectedValue<ModuleLoaderProvider> injectedModuleLoader = new InjectedValue<ModuleLoaderProvider>();
 
-    private Map<ModuleIdentifier, XResource> modules = new ConcurrentHashMap<ModuleIdentifier, XResource>();
+    private Map<ModuleIdentifier, BundleRevision> modules = new ConcurrentHashMap<ModuleIdentifier, BundleRevision>();
 
     static void addService(ServiceTarget serviceTarget) {
         ModuleManagerPlugin service = new ModuleManagerPlugin();
@@ -155,23 +154,11 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     }
 
     /**
-     * Get the associated resource for the given identifier
-     *
-     * @return The resource or null
+     * Get the associated bundle revision for the given identifier
+     * @return The revision or null
      */
-    XResource getResource(ModuleIdentifier identifier) {
+    BundleRevision getBundleRevision(ModuleIdentifier identifier) {
         return modules.get(identifier);
-    }
-
-    /**
-     * Get the bundle for the given identifier
-     *
-     * @return The bundle or null
-     */
-    AbstractBundleState getBundleState(ModuleIdentifier identifier) {
-        XResource res = getResource(identifier);
-        Bundle bundle = res != null ? res.getAttachment(Bundle.class) : null;
-        return bundle != null ? AbstractBundleState.assertBundleState(bundle) : null;
     }
 
     /**
@@ -188,9 +175,6 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         if (loader instanceof BundleReference) {
             BundleReference bundleRef = (BundleReference) loader;
             result = AbstractBundleState.assertBundleState(bundleRef.getBundle());
-        } else if (loader instanceof ModuleClassLoader) {
-            ModuleClassLoader moduleCL = (ModuleClassLoader) loader;
-            result = getBundleState(moduleCL.getModule().getIdentifier());
         }
         if (result == null)
             log.debugf("Cannot obtain bundle for: %s", clazz.getName());
@@ -202,13 +186,11 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             throw new IllegalArgumentException("Null res");
         if (wires == null)
             throw new IllegalArgumentException("Null wires");
-
         if (res instanceof FragmentBundleRevision)
             throw new IllegalStateException("Fragments cannot be added: " + res);
 
         Module module = res.getAttachment(Module.class);
         if (module != null) {
-            modules.put(module.getIdentifier(), res);
             getModuleLoaderIntegration().addModule(module);
             return module.getIdentifier();
         }
@@ -218,7 +200,8 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getSymbolicName())) {
             identifier = getFrameworkModule().getIdentifier();
         } else {
-            identifier = createHostModule((HostBundleRevision) res, wires);
+            HostBundleRevision hostRev = HostBundleRevision.assertHostRevision(res);
+            identifier = createHostModule(hostRev, wires);
         }
         return identifier;
     }

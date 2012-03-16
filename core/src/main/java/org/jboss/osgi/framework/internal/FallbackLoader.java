@@ -21,21 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
-import org.jboss.modules.LocalLoader;
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.Resource;
-import org.jboss.osgi.resolver.XPackageCapability;
-import org.jboss.osgi.resolver.XPackageRequirement;
-import org.jboss.osgi.resolver.XResource;
-import org.jboss.osgi.spi.NotImplementedException;
-import org.jboss.osgi.vfs.VFSUtils;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.resource.Capability;
-import org.osgi.framework.resource.Requirement;
-import org.osgi.framework.wiring.BundleRevision;
+import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -46,7 +32,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
+import org.jboss.logging.Logger;
+import org.jboss.modules.LocalLoader;
+import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.modules.Resource;
+import org.jboss.osgi.resolver.XPackageCapability;
+import org.jboss.osgi.resolver.XPackageRequirement;
+import org.jboss.osgi.spi.NotImplementedException;
+import org.jboss.osgi.vfs.VFSUtils;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.resource.Capability;
+import org.osgi.framework.resource.Requirement;
+import org.osgi.framework.wiring.BundleRevision;
 
 /**
  * A fallback loader that takes care of dynamic class/resource loads.
@@ -255,13 +254,13 @@ final class FallbackLoader implements LocalLoader {
             return false;
 
         log.tracef("Found path [%s] in %s", resName, candidate);
-        XResource res = moduleManager.getResource(candidateId);
-        XPackageCapability candidateCap = getCandidateCapability(res, pkgreq);
+        BundleRevision brev = moduleManager.getBundleRevision(candidateId);
+        XPackageCapability candidateCap = getCandidateCapability(brev, pkgreq);
         return (candidateCap != null);
     }
 
-    private XPackageCapability getCandidateCapability(XResource res, XPackageRequirement packageReq) {
-        for (XPackageCapability packageCap : getPackageCapabilities(res)) {
+    private XPackageCapability getCandidateCapability(BundleRevision brev, XPackageRequirement packageReq) {
+        for (XPackageCapability packageCap : getPackageCapabilities(brev)) {
             if (packageReq.matches(packageCap)) {
                 log.tracef("Matching package capability: %s", packageCap);
                 return packageCap;
@@ -280,9 +279,9 @@ final class FallbackLoader implements LocalLoader {
         return patternPath;
     }
 
-    private List<XPackageCapability> getPackageCapabilities(XResource res) {
+    private List<XPackageCapability> getPackageCapabilities(BundleRevision brev) {
         List<XPackageCapability> result = new ArrayList<XPackageCapability>();
-        for (Capability aux : res.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
+        for (Capability aux : brev.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
             XPackageCapability cap = (XPackageCapability) aux;
             result.add(cap);
         }

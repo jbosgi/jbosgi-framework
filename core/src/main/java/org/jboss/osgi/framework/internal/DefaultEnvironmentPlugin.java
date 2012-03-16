@@ -21,7 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.jboss.logging.Logger;
@@ -34,13 +33,11 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XEnvironment;
-import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.spi.AbstractEnvironment;
 import org.jboss.osgi.resolver.spi.AbstractWiring;
 import org.osgi.framework.resource.Resource;
 import org.osgi.framework.resource.Wire;
 import org.osgi.framework.resource.Wiring;
-import org.osgi.framework.wiring.BundleRevision;
 
 /**
  * The default {@link XEnvironment} plugin.
@@ -74,21 +71,6 @@ final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Serv
     @Override
     public XEnvironment getValue() {
         return this;
-    }
-
-    @Override
-    public synchronized void installResources(Resource... resarr) {
-        List<BundleRevision> brevs = new ArrayList<BundleRevision>();
-        for (Resource res : resarr) {
-            BundleRevision brev;
-            if (res instanceof BundleRevision) {
-                brev = (BundleRevision) res;
-            } else {
-                brev = new FabricatedBundleRevision((XResource) res);
-            }
-            brevs.add(brev);
-        }
-        super.installResources(brevs.toArray(new Resource[resarr.length]));
     }
 
     @Override

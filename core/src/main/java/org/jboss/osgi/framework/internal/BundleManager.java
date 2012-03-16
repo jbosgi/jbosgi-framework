@@ -38,7 +38,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.logging.Logger;
-import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
@@ -145,11 +144,6 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         if (getProperty(Constants.FRAMEWORK_VERSION) == null)
             setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
 
-        log.debugf("Framework properties");
-        for (Entry<String, Object> entry : properties.entrySet()) {
-            log.debugf(" %s = %s", entry.getKey(), entry.getValue());
-        }
-
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
                 shutdownInitiated.set(true);
@@ -162,6 +156,10 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         super.start(context);
         log.infof(implementationTitle + " - " + implementationVersion);
         serviceContainer = context.getController().getServiceContainer();
+        log.debugf("Framework properties");
+        for (Entry<String, Object> entry : properties.entrySet()) {
+            log.debugf(" %s = %s", entry.getKey(), entry.getValue());
+        }
     }
 
     @Override
@@ -332,13 +330,6 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         return null;
     }
 
-    @Override
-    public Bundle getBundle(ModuleIdentifier identifier) {
-        ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        AbstractBundleState bundleState = moduleManager.getBundleState(identifier);
-        return bundleState != null ? bundleState : null;
-    }
-
     /**
      * Get the set of bundles with the given symbolic name and version
      *
@@ -358,14 +349,6 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
             }
         }
         return Collections.unmodifiableSet(resultSet);
-    }
-
-    @Override
-    public ServiceName registerModule(ServiceTarget serviceTarget, Module module, OSGiMetaData metadata) throws BundleException {
-        DeploymentFactoryPlugin plugin = getFrameworkState().getDeploymentFactoryPlugin();
-        Deployment dep = plugin.createDeployment(module, metadata);
-        plugin.createOSGiMetaData(dep);
-        return installBundle(serviceTarget, dep);
     }
 
     @Override
@@ -425,18 +408,6 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     public void uninstallBundle(Deployment dep) {
         Bundle bundle = dep.getAttachment(Bundle.class);
         UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
-        uninstallBundle(userBundle, 0);
-    }
-
-    @Override
-    public void unregisterModule(ModuleIdentifier identifier) {
-        ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        AbstractBundleState bundleState = moduleManager.getBundleState(identifier);
-        if (bundleState == null) {
-            log.errorf("Cannot find bundle associated with module: %s", identifier);
-            return;
-        }
-        UserBundleState userBundle = UserBundleState.assertBundleState(bundleState);
         uninstallBundle(userBundle, 0);
     }
 

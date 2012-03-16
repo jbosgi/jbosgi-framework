@@ -21,9 +21,10 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import java.io.IOException;
+import java.util.jar.Manifest;
+
 import org.jboss.logging.Logger;
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -38,9 +39,6 @@ import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
-
-import java.io.IOException;
-import java.util.jar.Manifest;
 
 /**
  * A plugin taht create bundle {@link Deployment} objects.
@@ -95,51 +93,6 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
             storageState.deleteBundleStorage();
             throw ex;
         }
-    }
-
-    /**
-     * Create a {@link Deployment} from the given module.
-     *
-     * @param module The module
-     */
-    Deployment createDeployment(Module module, OSGiMetaData metadata) throws BundleException {
-        if (module == null)
-            throw new IllegalArgumentException("Null module");
-
-        // Get the symbolic name and version
-        String symbolicName;
-        Version version;
-        if (metadata == null) {
-            ModuleIdentifier identifier = module.getIdentifier();
-            symbolicName = identifier.getName();
-            try {
-                version = Version.parseVersion(identifier.getSlot());
-            } catch (IllegalArgumentException ex) {
-                version = Version.emptyVersion;
-            }
-            OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(symbolicName, version);
-            for (String path : module.getExportedPaths()) {
-                if (path.startsWith("/"))
-                    path = path.substring(1);
-                if (path.endsWith("/"))
-                    path = path.substring(0, path.length() - 1);
-                if (!path.isEmpty() && !path.startsWith("META-INF")) {
-                    String packageName = path.replace('/', '.');
-                    builder.addExportPackages(packageName);
-                }
-            }
-            metadata = builder.getOSGiMetaData();
-        } else
-        {
-            symbolicName = metadata.getBundleSymbolicName();
-            version = metadata.getBundleVersion();
-        }
-
-        String location = module.getIdentifier().toString();
-        Deployment dep = DeploymentFactory.createDeployment(location, symbolicName, version);
-        dep.addAttachment(OSGiMetaData.class, metadata);
-        dep.addAttachment(Module.class, module);
-        return dep;
     }
 
     Deployment createDeployment(String location, VirtualFile rootFile) throws BundleException {
