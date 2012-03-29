@@ -117,7 +117,7 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     }
 
     @Override
-    public void resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
+    public synchronized void resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
         Map<Resource, List<Wire>> wiremap = resolve(mandatory, optional);
         for (Entry<Resource, Wiring> entry : applyResolverResults(wiremap).entrySet()) {
             XResource res = (XResource) entry.getKey();
