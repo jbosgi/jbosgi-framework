@@ -21,9 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.osgi.framework.resource.ResourceConstants.IDENTITY_TYPE_FRAGMENT;
-import static org.osgi.framework.resource.ResourceConstants.WIRING_HOST_NAMESPACE;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,17 +45,23 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
+import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XIdentityCapability;
+import org.jboss.osgi.resolver.XRequirement;
+import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.felix.FelixResolver;
+import org.jboss.osgi.resolver.spi.AbstractResolveContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.resource.Capability;
-import org.osgi.framework.resource.Requirement;
-import org.osgi.framework.resource.Resource;
-import org.osgi.framework.resource.Wire;
-import org.osgi.framework.resource.Wiring;
+import org.osgi.framework.namespace.HostNamespace;
+import org.osgi.framework.namespace.IdentityNamespace;
+import org.osgi.resource.Capability;
+import org.osgi.resource.Requirement;
+import org.osgi.resource.Resource;
+import org.osgi.resource.Wire;
+import org.osgi.resource.Wiring;
 import org.osgi.service.resolver.ResolutionException;
 import org.osgi.service.resolver.Resolver;
 
@@ -109,11 +112,20 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     }
 
     @Override
-    public Map<Resource, List<Wire>> resolve(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
-        XEnvironment env = injectedEnvironment.getValue();
-        Collection<Resource> allOptional = appendOptionalFragments(mandatory, optional);
-        Collection<Resource> filteredMandatory = filterSingletons(mandatory);
-        return resolver.resolve(env, filteredMandatory, allOptional);
+    public Map<Resource, List<Wire>> resolve(final Collection<? extends Resource> mandatory, final Collection<? extends Resource> optional) throws ResolutionException {
+        XResolveContext context = new AbstractResolveContext(injectedEnvironment.getValue()) {
+
+            @Override
+            public Collection<Resource> getMandatoryResources() {
+                return filterSingletons(mandatory);
+            }
+
+            @Override
+            public Collection<Resource> getOptionalResources() {
+                return appendOptionalFragments(mandatory, optional);
+            }
+        };
+        return resolver.resolve(context);
     }
 
     @Override
@@ -138,7 +150,7 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     private Collection<Capability> getHostCapabilities(Collection<? extends Resource> resources) {
         Collection<Capability> result = new HashSet<Capability>();
         for (Resource res : resources) {
-            List<Capability> caps = res.getCapabilities(WIRING_HOST_NAMESPACE);
+            List<Capability> caps = res.getCapabilities(HostNamespace.HOST_NAMESPACE);
             if (caps.size() == 1)
                 result.add(caps.get(0));
         }
@@ -166,10 +178,10 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     private Collection<? extends Resource> findAttachableFragments(Collection<? extends Capability> hostcaps) {
         Set<Resource> result = new HashSet<Resource>();
         XEnvironment env = injectedEnvironment.getValue();
-        for (Resource res : env.getResources(Collections.singleton(IDENTITY_TYPE_FRAGMENT))) {
-            Requirement req = res.getRequirements(WIRING_HOST_NAMESPACE).get(0);
+        for (Resource res : env.getResources(Collections.singleton(IdentityNamespace.TYPE_FRAGMENT))) {
+            Requirement req = res.getRequirements(HostNamespace.HOST_NAMESPACE).get(0);
             for (Capability cap : hostcaps) {
-                if (req.matches(cap)) {
+                if (env.matches((XRequirement)req, (XCapability)cap)) {
                     result.add(res);
                 }
             }
@@ -178,7 +190,7 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
         return result;
     }
 
-    private Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) {
+    private Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) throws ResolutionException {
 
         // [TODO] Revisit how we apply the resolution results
         // An exception in one of the steps may leave the framework partially modified
@@ -216,7 +228,7 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
                 FragmentBundleRevision fragRev = (FragmentBundleRevision) res;
                 for (Wire wire : entry.getValue()) {
                     Capability cap = wire.getCapability();
-                    if (WIRING_HOST_NAMESPACE.equals(cap.getNamespace())) {
+                    if (HostNamespace.HOST_NAMESPACE.equals(cap.getNamespace())) {
                         HostBundleRevision hostRev = (HostBundleRevision) cap.getResource();
                         fragRev.attachToHost(hostRev);
                     }

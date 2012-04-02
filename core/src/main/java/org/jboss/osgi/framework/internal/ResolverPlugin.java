@@ -25,8 +25,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import org.osgi.framework.resource.Resource;
-import org.osgi.framework.resource.Wire;
+import org.osgi.resource.Resource;
+import org.osgi.resource.Wire;
 import org.osgi.service.resolver.ResolutionException;
 
 /**

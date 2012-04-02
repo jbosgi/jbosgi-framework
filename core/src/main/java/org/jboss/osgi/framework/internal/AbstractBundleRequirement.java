@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import org.jboss.logging.Logger;
+import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.spi.AbstractRequirement;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
@@ -56,6 +57,6 @@ class AbstractBundleRequirement extends AbstractRequirement implements BundleReq
 
     @Override
     public boolean matches(BundleCapability capability) {
-        return super.matches(capability);
+        return super.matches((XCapability) capability);
     }
 }

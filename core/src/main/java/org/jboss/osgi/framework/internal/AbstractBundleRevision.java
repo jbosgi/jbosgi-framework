@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.osgi.framework.resource.ResourceConstants.IDENTITY_TYPE_FRAGMENT;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -46,10 +44,11 @@ import org.jboss.osgi.resolver.spi.AbstractResource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
-import org.osgi.framework.resource.Capability;
-import org.osgi.framework.resource.Requirement;
-import org.osgi.framework.resource.Resource;
-import org.osgi.framework.resource.Wiring;
+import org.osgi.resource.Capability;
+import org.osgi.resource.Requirement;
+import org.osgi.resource.Resource;
+import org.osgi.resource.Wiring;
+import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;
@@ -171,7 +170,7 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
     @Override
     public int getTypes() {
         XIdentityCapability idcap = getIdentityCapability();
-        boolean isfragment = IDENTITY_TYPE_FRAGMENT.equals(idcap.getType());
+        boolean isfragment = IdentityNamespace.TYPE_FRAGMENT.equals(idcap.getType());
         return isfragment ? TYPE_FRAGMENT : 0;
     }
 

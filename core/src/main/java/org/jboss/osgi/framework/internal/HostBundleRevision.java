@@ -39,7 +39,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.resource.Resource;
+import org.osgi.resource.Resource;
 import org.osgi.service.resolver.ResolutionException;
 
 /**

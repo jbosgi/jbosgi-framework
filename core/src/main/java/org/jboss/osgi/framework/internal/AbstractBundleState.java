@@ -37,7 +37,7 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
-import org.osgi.framework.resource.Wire;
+import org.osgi.resource.Wire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.resolver.ResolutionException;
 

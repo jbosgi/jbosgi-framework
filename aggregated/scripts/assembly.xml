@@ -15,7 +15,6 @@
             </outputFileNameMapping>
             <includes>
                 <include>*:args4j:jar</include>
-                <include>*:org.apache.felix.resolver</include>
                 <include>*:jbosgi-framework-core:jar</include>
                 <include>*:jbosgi-metadata:jar</include>
                 <include>*:jbosgi-resolver-api:jar</include>

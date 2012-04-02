@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import static org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
 import static org.osgi.framework.Constants.VISIBILITY_REEXPORT;
-import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -66,10 +65,11 @@ import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.BundleReference;
-import org.osgi.framework.resource.Capability;
-import org.osgi.framework.resource.Requirement;
-import org.osgi.framework.resource.Resource;
-import org.osgi.framework.resource.Wire;
+import org.osgi.resource.Capability;
+import org.osgi.resource.Requirement;
+import org.osgi.resource.Resource;
+import org.osgi.resource.Wire;
+import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleRevision;
 
 /**
@@ -368,7 +368,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             boolean reexport = VISIBILITY_REEXPORT.equals(req.getVisibility());
             if (reexport == true) {
                 Set<String> exportedPaths = new HashSet<String>();
-                for (Capability auxcap : exporter.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
+                for (Capability auxcap : exporter.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
                     XPackageCapability packcap = (XPackageCapability) auxcap;
                     String path = packcap.getPackageName().replace('.', '/');
                     if (importedPaths.contains(path) == false)
@@ -384,7 +384,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     private PathFilter getExportClassFilter(XResource resModule) {
         PathFilter includeFilter = null;
         PathFilter excludeFilter = null;
-        for (Capability auxcap : resModule.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
+        for (Capability auxcap : resModule.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
             XPackageCapability packageCap = (XPackageCapability) auxcap;
             String includeDirective = packageCap.getDirective(Constants.INCLUDE_DIRECTIVE);
             if (includeDirective != null) {

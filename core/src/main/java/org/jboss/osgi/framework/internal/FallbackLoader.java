@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
-
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,8 +41,9 @@ import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.resource.Capability;
-import org.osgi.framework.resource.Requirement;
+import org.osgi.resource.Capability;
+import org.osgi.resource.Requirement;
+import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleRevision;
 
 /**
@@ -281,7 +280,7 @@ final class FallbackLoader implements LocalLoader {
 
     private List<XPackageCapability> getPackageCapabilities(BundleRevision brev) {
         List<XPackageCapability> result = new ArrayList<XPackageCapability>();
-        for (Capability aux : brev.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
+        for (Capability aux : brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
             XPackageCapability cap = (XPackageCapability) aux;
             result.add(cap);
         }
@@ -290,7 +289,7 @@ final class FallbackLoader implements LocalLoader {
 
     private List<XPackageRequirement> getDynamicPackageRequirements(BundleRevision brev) {
         List<XPackageRequirement> result = new ArrayList<XPackageRequirement>();
-        for (Requirement aux : brev.getRequirements(WIRING_PACKAGE_NAMESPACE)) {
+        for (Requirement aux : brev.getRequirements(PackageNamespace.PACKAGE_NAMESPACE)) {
             XPackageRequirement req = (XPackageRequirement) aux;
             if (req.isDynamic()) {
                 result.add(req);

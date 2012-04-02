@@ -35,9 +35,9 @@ import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.spi.AbstractEnvironment;
 import org.jboss.osgi.resolver.spi.AbstractWiring;
-import org.osgi.framework.resource.Resource;
-import org.osgi.framework.resource.Wire;
-import org.osgi.framework.resource.Wiring;
+import org.osgi.resource.Resource;
+import org.osgi.resource.Wire;
+import org.osgi.resource.Wiring;
 
 /**
  * The default {@link XEnvironment} plugin.

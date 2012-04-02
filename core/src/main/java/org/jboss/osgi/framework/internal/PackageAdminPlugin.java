@@ -21,9 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.osgi.framework.resource.ResourceConstants.WIRING_BUNDLE_NAMESPACE;
-import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,9 +52,11 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
-import org.osgi.framework.resource.Capability;
-import org.osgi.framework.resource.Resource;
-import org.osgi.framework.resource.Wire;
+import org.osgi.resource.Capability;
+import org.osgi.resource.Resource;
+import org.osgi.resource.Wire;
+import org.osgi.framework.namespace.BundleNamespace;
+import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.packageadmin.ExportedPackage;
@@ -148,7 +147,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         List<ExportedPackage> result = new ArrayList<ExportedPackage>();
         for (AbstractBundleRevision brev : bundleState.getAllBundleRevisions()) {
             if (brev.isResolved()) {
-                for (Capability cap : brev.getCapabilities(WIRING_PACKAGE_NAMESPACE))
+                for (Capability cap : brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE))
                     result.add(new ExportedPackageImpl((XPackageCapability) cap));
             }
         }
@@ -187,7 +186,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         for (AbstractBundleState bundleState : bundleManager.getBundles(null)) {
             for (AbstractBundleRevision brev : bundleState.getAllBundleRevisions()) {
                 if (brev.isResolved() && !brev.isFragment()) {
-                    for (Capability cap : brev.getCapabilities(WIRING_PACKAGE_NAMESPACE)) {
+                    for (Capability cap : brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
                         XPackageCapability xcap = (XPackageCapability) cap;
                         if (xcap.getPackageName().equals(name)) {
                             result.add(new ExportedPackageImpl(xcap));
@@ -233,7 +232,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 if (wire.getCapability() == cap)
                     return true;
             }
-            List<Wire> requireBundleWires = wiring.getProvidedResourceWires(WIRING_BUNDLE_NAMESPACE);
+            List<Wire> requireBundleWires = wiring.getProvidedResourceWires(BundleNamespace.BUNDLE_NAMESPACE);
             if (requireBundleWires.size() > 0)
                 return true;
         }
@@ -412,7 +411,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             Set<AbstractBundleState> requiringBundles = new HashSet<AbstractBundleState>();
             BundleWiring wiring = brev.getWiring();
             if (wiring != null) {
-                List<Wire> providedWires = wiring.getProvidedResourceWires(WIRING_BUNDLE_NAMESPACE);
+                List<Wire> providedWires = wiring.getProvidedResourceWires(BundleNamespace.BUNDLE_NAMESPACE);
                 for (Wire wire : providedWires) {
                     Bundle bundle = ((BundleRevision) wire.getRequirer()).getBundle();
                     requiringBundles.add(AbstractBundleState.assertBundleState(bundle));
@@ -539,7 +538,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 AbstractBundleRevision req = (AbstractBundleRevision) wire.getRequirer();
                 bundles.add(req.getBundle());
             }
-            for (Wire wire : wiring.getProvidedResourceWires(WIRING_BUNDLE_NAMESPACE)) {
+            for (Wire wire : wiring.getProvidedResourceWires(BundleNamespace.BUNDLE_NAMESPACE)) {
                 AbstractBundleRevision req = (AbstractBundleRevision) wire.getRequirer();
                 bundles.add(req.getBundle());
             }

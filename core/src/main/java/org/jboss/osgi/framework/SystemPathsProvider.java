@@ -51,7 +51,7 @@ public interface SystemPathsProvider extends Service<SystemPathsProvider> {
             "org.osgi.framework.hooks;version=1.0",
             "org.osgi.framework.hooks.service;version=1.0",
             "org.osgi.framework.launch;version=1.0",
-        	"org.osgi.framework.resource;version=1.0",
+        	"org.osgi.resource;version=1.0",
         	"org.osgi.framework.wiring;version=1.0",
             "org.osgi.service.condpermadmin;version=1.1",
             "org.osgi.service.packageadmin;version=1.2",

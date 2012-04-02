@@ -64,7 +64,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
-import org.osgi.framework.resource.Resource;
+import org.osgi.resource.Resource;
 
 /**
  * The BundleManager is the central managing entity for OSGi bundles.

@@ -23,9 +23,6 @@ package org.jboss.test.osgi.framework.xservice;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.osgi.framework.resource.ResourceConstants.IDENTITY_NAMESPACE;
-import static org.osgi.framework.resource.ResourceConstants.IDENTITY_TYPE_UNKNOWN;
-import static org.osgi.framework.resource.ResourceConstants.WIRING_PACKAGE_NAMESPACE;
 
 import java.io.InputStream;
 import java.util.Collection;
@@ -47,7 +44,9 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
-import org.osgi.framework.resource.Requirement;
+import org.osgi.framework.namespace.IdentityNamespace;
+import org.osgi.framework.namespace.PackageNamespace;
+import org.osgi.resource.Requirement;
 import org.osgi.service.resolver.ResolutionException;
 
 /**
@@ -72,7 +71,7 @@ public class InstallModuleTestCase extends OSGiFrameworkTest {
             assertEquals(1, reqs.size());
             Requirement req = reqs.iterator().next();
             String namespace = req.getNamespace();
-            assertEquals(WIRING_PACKAGE_NAMESPACE, namespace);
+            assertEquals(PackageNamespace.PACKAGE_NAMESPACE, namespace);
             assertEquals("javax.inject", req.getAttributes().get(namespace));
         }
 
@@ -81,11 +80,11 @@ public class InstallModuleTestCase extends OSGiFrameworkTest {
         Module module = Module.getBootModuleLoader().loadModule(identifier);
         XResource res = XResourceBuilderFactory.create().loadFrom(module).getResource();
         assertEquals(3, res.getCapabilities(null).size());
-        assertEquals(1, res.getCapabilities(IDENTITY_NAMESPACE).size());
-        assertEquals(2, res.getCapabilities(WIRING_PACKAGE_NAMESPACE).size());
+        assertEquals(1, res.getCapabilities(IdentityNamespace.IDENTITY_NAMESPACE).size());
+        assertEquals(2, res.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE).size());
         assertEquals("javax.inject.api", res.getIdentityCapability().getSymbolicName());
         assertEquals(Version.emptyVersion, res.getIdentityCapability().getVersion());
-        assertEquals(IDENTITY_TYPE_UNKNOWN, res.getIdentityCapability().getType());
+        assertEquals(IdentityNamespace.TYPE_UNKNOWN, res.getIdentityCapability().getType());
         
         // Install the resource into the environment
         XEnvironment env = ((TypeAdaptor) getSystemContext()).adapt(XEnvironment.class);

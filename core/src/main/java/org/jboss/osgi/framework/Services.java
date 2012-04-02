@@ -26,7 +26,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
 import org.osgi.service.packageadmin.PackageAdmin;
-import org.osgi.service.resolver.Environment;
 import org.osgi.service.startlevel.StartLevel;
 
 /**
@@ -61,7 +60,7 @@ public interface Services {
     /** The {@link BundleManagerService} service name. */
     ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("BundleManager");
 
-    /** The {@link Environment} service name */
+    /** The {@link XEnvironment} service name */
     ServiceName ENVIRONMENT = JBOSGI_BASE_NAME.append("Environment");
 
     /** The base name of all framework services */
