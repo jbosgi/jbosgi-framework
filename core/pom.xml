@@ -21,7 +21,7 @@
     <parent>
         <groupId>org.jboss.osgi.framework</groupId>
         <artifactId>jbosgi-framework-parent</artifactId>
-        <version>1.2.0.CR2-SNAPSHOT</version>
+        <version>1.2.0.CR2</version>
     </parent>
 
     <name>JBossOSGi Framework Core</name>
