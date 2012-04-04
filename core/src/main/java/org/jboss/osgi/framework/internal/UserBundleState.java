@@ -21,6 +21,17 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Dictionary;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+
 import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -37,20 +48,8 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.packageadmin.PackageAdmin;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Dictionary;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This is the internal implementation of a Bundle based on a user {@link Deployment}.
@@ -284,7 +283,7 @@ abstract class UserBundleState extends AbstractBundleState {
             OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
             dep.addAttachment(OSGiMetaData.class, metadata);
             dep.addAttachment(Bundle.class, this);
-            BundleRevision brev = createRevision(dep);
+            UserBundleRevision brev = createRevision(dep);
             XEnvironment env = getFrameworkState().getEnvironment();
             env.installResources(brev);
         } catch (BundleException ex) {

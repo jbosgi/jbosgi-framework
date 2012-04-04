@@ -84,5 +84,4 @@ final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Serv
         }
         return result;
     }
-
 }

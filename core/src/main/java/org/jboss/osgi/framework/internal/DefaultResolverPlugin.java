@@ -50,8 +50,9 @@ import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XIdentityCapability;
 import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XResolveContext;
+import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResource;
-import org.jboss.osgi.resolver.felix.FelixResolver;
+import org.jboss.osgi.resolver.felix.StatelessResolver;
 import org.jboss.osgi.resolver.spi.AbstractResolveContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -79,7 +80,7 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
-    private Resolver resolver;
+    private XResolver resolver;
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultResolverPlugin service = new DefaultResolverPlugin();
@@ -97,7 +98,7 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        resolver = new FelixResolver();
+        resolver = new StatelessResolver();
     }
 
     @Override
@@ -113,18 +114,10 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
 
     @Override
     public Map<Resource, List<Wire>> resolve(final Collection<? extends Resource> mandatory, final Collection<? extends Resource> optional) throws ResolutionException {
-        XResolveContext context = new AbstractResolveContext(injectedEnvironment.getValue()) {
-
-            @Override
-            public Collection<Resource> getMandatoryResources() {
-                return filterSingletons(mandatory);
-            }
-
-            @Override
-            public Collection<Resource> getOptionalResources() {
-                return appendOptionalFragments(mandatory, optional);
-            }
-        };
+        XEnvironment env = injectedEnvironment.getValue();
+        Collection<Resource> manres = filterSingletons(mandatory);
+        Collection<Resource> optres = appendOptionalFragments(mandatory, optional);
+        XResolveContext context = resolver.createResolverContext(env, manres, optres);
         return resolver.resolve(context);
     }
 
@@ -180,8 +173,9 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
         XEnvironment env = injectedEnvironment.getValue();
         for (Resource res : env.getResources(Collections.singleton(IdentityNamespace.TYPE_FRAGMENT))) {
             Requirement req = res.getRequirements(HostNamespace.HOST_NAMESPACE).get(0);
+            XRequirement xreq = (XRequirement)req;
             for (Capability cap : hostcaps) {
-                if (env.matches((XRequirement)req, (XCapability)cap)) {
+                if (xreq.matches((XCapability)cap)) {
                     result.add(res);
                 }
             }
