@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,7 +39,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -52,13 +53,13 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
-import org.osgi.resource.Capability;
-import org.osgi.resource.Resource;
-import org.osgi.resource.Wire;
 import org.osgi.framework.namespace.BundleNamespace;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
+import org.osgi.resource.Capability;
+import org.osgi.resource.Resource;
+import org.osgi.resource.Wire;
 import org.osgi.service.packageadmin.ExportedPackage;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.packageadmin.RequiredBundle;
@@ -72,9 +73,6 @@ import org.osgi.service.resolver.ResolutionException;
  * @since 06-Jul-2010
  */
 public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdmin> implements PackageAdmin {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(PackageAdminPlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
@@ -178,8 +176,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     }
 
     private ExportedPackage[] getExportedPackagesInternal(String name) {
-        if (name == null)
-            throw new IllegalArgumentException("Null name");
+        assert name != null : "Null name";
 
         Set<ExportedPackage> result = new HashSet<ExportedPackage>();
         BundleManager bundleManager = injectedBundleManager.getValue();
@@ -369,7 +366,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         }
 
         boolean result = true;
-        log.debugf("Resolve bundles: %s", resolve);
+        LOGGER.debugf("Resolve bundles: %s", resolve);
         try {
             resolverPlugin.resolveAndApply(resolve, null);
             for (Resource aux : resolve) {
@@ -379,7 +376,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 }
             }
         } catch (ResolutionException ex) {
-            log.debugf(ex, "Cannot resolve: " + resolve);
+            LOGGER.debugf(ex, "Cannot resolve: " + resolve);
             result = false;
         }
         return result;

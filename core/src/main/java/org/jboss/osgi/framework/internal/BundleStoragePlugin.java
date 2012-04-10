@@ -21,6 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -30,7 +33,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -49,9 +51,6 @@ import org.osgi.framework.Constants;
  * @since 18-Aug-2009
  */
 final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugin> {
-
-    // Provide logging
-    final Logger log = Logger.getLogger(BundleStoragePlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private boolean firstInit;
@@ -86,8 +85,7 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
     }
 
     BundleStorageState createStorageState(long bundleId, String location, VirtualFile rootFile) throws IOException {
-        if (location == null)
-            throw new IllegalArgumentException("Null location");
+        assert location != null : "Null location";
 
         // Make the bundle's storage dir
         String bundlePath = getStorageDir(bundleId).getAbsolutePath();
@@ -125,7 +123,7 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
         File[] storageDirs = getStorageArea().listFiles();
         if (storageDirs != null) {
             for (File storageDir : storageDirs) {
-                log.debugf("Creating storage state from: %s", storageDir);
+                LOGGER.debugf("Creating storage state from: %s", storageDir);
                 BundleStorageState storageState = BundleStorageState.createFromStorage(storageDir);
                 states.add(storageState);
             }
@@ -163,11 +161,11 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
 
     private void cleanStorage() {
         File storage = getStorageArea();
-        log.debugf("Deleting storage: %s", storage.getAbsolutePath());
+        LOGGER.debugf("Deleting storage: %s", storage.getAbsolutePath());
         try {
             deleteRecursively(storage);
         } catch (IOException ex) {
-            log.errorf(ex, "Cannot delete storage area");
+            LOGGER.errorCannotDeleteStorageArea(ex);
         }
     }
 
@@ -180,8 +178,7 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
                     File storageDir = new File("./osgi-store");
                     dirName = storageDir.getCanonicalPath();
                 } catch (IOException ex) {
-                    log.errorf(ex, "Cannot create storage area");
-                    throw new IllegalStateException("Cannot create storage area");
+                    throw MESSAGES.illegalStateCannotCreateStorageArea(ex);
                 }
             }
             storageArea = new File(dirName).getAbsoluteFile();

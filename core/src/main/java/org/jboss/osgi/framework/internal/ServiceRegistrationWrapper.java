@@ -21,10 +21,10 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import java.util.Dictionary;
+
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
-
-import java.util.Dictionary;
 
 /**
  * ServiceRegistrationWrapper
@@ -37,8 +37,7 @@ final class ServiceRegistrationWrapper implements ServiceRegistration {
     private ServiceState delegate;
 
     ServiceRegistrationWrapper(ServiceState serviceState) {
-        if (serviceState == null)
-            throw new IllegalArgumentException("Null serviceState");
+        assert serviceState != null : "Null serviceState";
         this.delegate = serviceState;
     }
 

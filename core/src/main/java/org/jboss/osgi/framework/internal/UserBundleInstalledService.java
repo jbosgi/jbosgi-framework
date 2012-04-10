@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
@@ -110,7 +112,7 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
             String symbolicName = getBundleState().getSymbolicName();
             for (AbstractBundleState aux : getBundleManager().getBundles(symbolicName, null)) {
                 if (aux != userBundle && aux.isSingleton()) {
-                    log.infof("No resolvable singleton bundle: %s", this);
+                    LOGGER.infoNoResolvableSingleton(userBundle);
                     return;
                 }
             }

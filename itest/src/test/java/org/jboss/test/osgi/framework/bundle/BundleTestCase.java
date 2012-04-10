@@ -289,7 +289,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
             fail("BundleException expected");
         } catch (BundleException ex) {
             String message = ex.getMessage();
-            Assert.assertEquals("Invalid Bundle-ManifestVersion for: simple1", message);
+            Assert.assertEquals("JBOSGI010321: Invalid Bundle-ManifestVersion for: simple1", message);
         }
 
         final JavaArchive archive2 = ShrinkWrap.create(JavaArchive.class, "simple1");
@@ -306,7 +306,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
             fail("BundleException expected");
         } catch (BundleException ex) {
             String message = ex.getMessage();
-            Assert.assertEquals("Unsupported Bundle-ManifestVersion: 3", message);
+            Assert.assertEquals("JBOSGI010320: Unsupported Bundle-ManifestVersion: 3", message);
         }
     }
 

@@ -21,6 +21,14 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.jboss.modules.Module;
 import org.jboss.modules.log.JDKModuleLogger;
 import org.jboss.modules.log.ModuleLogger;
@@ -30,12 +38,6 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.launch.Framework;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * A builder for the {@link Framework} implementation. Provides hooks for various integration aspects.
@@ -168,6 +170,6 @@ public final class FrameworkBuilder {
 
     private void assertNotClosed() {
         if (closed == true)
-            throw new IllegalStateException("Framework builder already closed");
+            throw MESSAGES.illegalStateFrameworkBuilderClosed();
     }
 }

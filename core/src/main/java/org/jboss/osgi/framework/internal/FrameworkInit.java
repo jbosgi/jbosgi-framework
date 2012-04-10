@@ -21,7 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -41,9 +42,6 @@ import org.osgi.framework.launch.Framework;
  */
 public final class FrameworkInit extends AbstractFrameworkService {
 
-    // Provide logging
-    static final Logger log = Logger.getLogger(FrameworkInit.class);
-
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
 
     static void addService(ServiceTarget serviceTarget) {
@@ -62,7 +60,7 @@ public final class FrameworkInit extends AbstractFrameworkService {
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        log.debugf("OSGi Framework initialized");
+        LOGGER.debugf("OSGi Framework initialized");
     }
 
     @Override

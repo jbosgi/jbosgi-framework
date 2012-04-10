@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.util;
 
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -37,7 +39,7 @@ public class RemoveOnlyCollection<T> implements Collection<T> {
 
     public RemoveOnlyCollection(Collection<T> delegate) {
         if (delegate == null)
-            throw new IllegalArgumentException("Null delegate");
+            throw MESSAGES.illegalArgumentNull("delegate");
         this.delegate = delegate;
     }
 
@@ -74,7 +76,7 @@ public class RemoveOnlyCollection<T> implements Collection<T> {
 
     @Override
     public boolean add(Object e) {
-        throw new UnsupportedOperationException("Add not supported");
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -89,7 +91,7 @@ public class RemoveOnlyCollection<T> implements Collection<T> {
 
     @Override
     public boolean addAll(Collection c) {
-        throw new UnsupportedOperationException("Add not supported");
+        throw new UnsupportedOperationException();
     }
 
     @Override

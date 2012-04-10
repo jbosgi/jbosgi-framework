@@ -22,11 +22,12 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.Constants.JBOSGI_PREFIX;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
@@ -51,9 +52,6 @@ import org.jboss.osgi.resolver.XResource;
  */
 final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLoaderProvider {
 
-    // Provide logging
-    static final Logger log = Logger.getLogger(DefaultModuleLoaderProvider.class);
-
     private Map<ModuleIdentifier, ModuleHolder> moduleSpecs = new ConcurrentHashMap<ModuleIdentifier, ModuleHolder>();
 
     static void addService(ServiceTarget serviceTarget) {
@@ -68,12 +66,12 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
 
     @Override
     public void start(StartContext context) throws StartException {
-        log.debugf("Starting: %s", context.getController().getName());
+        LOGGER.debugf("Starting: %s", context.getController().getName());
     }
 
     @Override
     public void stop(StopContext context) {
-        log.debugf("Stopping: %s", context.getController().getName());
+        LOGGER.debugf("Stopping: %s", context.getController().getName());
     }
 
     @Override
@@ -116,27 +114,27 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
 
     @Override
     public void addModule(ModuleSpec moduleSpec) {
-        log.tracef("addModule: %s", moduleSpec.getModuleIdentifier());
+        LOGGER.tracef("addModule: %s", moduleSpec.getModuleIdentifier());
         ModuleIdentifier identifier = moduleSpec.getModuleIdentifier();
         if (moduleSpecs.get(identifier) != null)
-            throw new IllegalStateException("Module already exists: " + identifier);
+            throw MESSAGES.illegalStateModuleAlreadyExists(identifier);
         ModuleHolder moduleHolder = new ModuleHolder(moduleSpec);
         moduleSpecs.put(identifier, moduleHolder);
     }
 
     @Override
     public void addModule(Module module) {
-        log.tracef("addModule: %s", module.getIdentifier());
+        LOGGER.tracef("addModule: %s", module.getIdentifier());
         ModuleIdentifier identifier = module.getIdentifier();
         if (moduleSpecs.get(identifier) != null)
-            throw new IllegalStateException("Module already exists: " + identifier);
+            throw MESSAGES.illegalStateModuleAlreadyExists(identifier);
         ModuleHolder moduleHolder = new ModuleHolder(module);
         moduleSpecs.put(identifier, moduleHolder);
     }
 
     @Override
     public void removeModule(ModuleIdentifier identifier) {
-        log.tracef("removeModule: %s", identifier);
+        LOGGER.tracef("removeModule: %s", identifier);
         moduleSpecs.remove(identifier);
         try {
             Module module = loadModuleLocal(identifier);
@@ -159,14 +157,12 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
         private Module module;
 
         ModuleHolder(ModuleSpec moduleSpec) {
-            if (moduleSpec == null)
-                throw new IllegalArgumentException("Null moduleSpec");
+            assert moduleSpec != null : "Null moduleSpec";
             this.moduleSpec = moduleSpec;
         }
 
         ModuleHolder(Module module) {
-            if (module == null)
-                throw new IllegalArgumentException("Null module");
+            assert module != null : "Null module";
             this.module = module;
         }
 

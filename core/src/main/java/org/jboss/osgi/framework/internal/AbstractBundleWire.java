@@ -21,7 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
 import org.jboss.osgi.resolver.spi.AbstractWire;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
@@ -36,9 +35,6 @@ import org.osgi.framework.wiring.BundleWiring;
  * @since 23-Feb-2012
  */
 class AbstractBundleWire extends AbstractWire implements BundleWire {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(AbstractBundleWire.class);
 
     AbstractBundleWire(BundleCapability cap, BundleRequirement req, BundleRevision provider, BundleRevision requirer) {
         super(cap, req, provider, requirer);

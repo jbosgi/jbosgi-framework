@@ -21,7 +21,10 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+
+import java.util.Collections;
+
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -37,8 +40,6 @@ import org.osgi.framework.launch.Framework;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.service.resolver.ResolutionException;
 
-import java.util.Collections;
-
 /**
  * A service that represents the ACTIVE state of the {@link Framework}.
  *
@@ -48,9 +49,6 @@ import java.util.Collections;
  * @since 04-Apr-2011
  */
 public final class FrameworkActive extends AbstractFrameworkService {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(FrameworkActive.class);
 
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
 
@@ -101,7 +99,7 @@ public final class FrameworkActive extends AbstractFrameworkService {
             FrameworkEventsPlugin eventsPlugin = getValue().getFrameworkEventsPlugin();
             eventsPlugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
 
-            log.infof("OSGi Framework started");
+            LOGGER.infoFrameworkStarted();
         } catch (ResolutionException ex) {
             throw new StartException(ex);
         }
@@ -113,15 +111,14 @@ public final class FrameworkActive extends AbstractFrameworkService {
     }
 
     private int getBeginningStartLevel() {
-        String beginning = (String) getBundleManager().getProperty(Constants.FRAMEWORK_BEGINNING_STARTLEVEL);
-        if (beginning == null)
-            return 1;
-
-        try {
-            return Integer.parseInt(beginning);
-        } catch (NumberFormatException nfe) {
-            log.errorf("Could not set beginning start level to: %s", beginning);
-            return 1;
+        String levelSpec = (String) getBundleManager().getProperty(Constants.FRAMEWORK_BEGINNING_STARTLEVEL);
+        if (levelSpec != null) {
+            try {
+                return Integer.parseInt(levelSpec);
+            } catch (NumberFormatException nfe) {
+                LOGGER.errorInvalidBeginningStartLevel(levelSpec);
+            }
         }
+        return 1;
     }
 }

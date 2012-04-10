@@ -21,11 +21,11 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import java.util.concurrent.ExecutorService;
+
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-
-import java.util.concurrent.ExecutorService;
 
 
 /**

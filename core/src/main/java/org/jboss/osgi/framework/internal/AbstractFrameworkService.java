@@ -21,7 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.StartContext;
@@ -36,19 +37,16 @@ import org.jboss.msc.service.StopContext;
  */
 abstract class AbstractFrameworkService implements Service<FrameworkState> {
 
-    // Provide logging
-    static final Logger log = Logger.getLogger(AbstractFrameworkService.class);
-
     @Override
     public void start(StartContext context) throws StartException {
         ServiceController<?> controller = context.getController();
-        log.debugf("Starting: %s in mode %s", controller.getName(), controller.getMode());
+        LOGGER.debugf("Starting: %s in mode %s", controller.getName(), controller.getMode());
     }
 
     @Override
     public void stop(StopContext context) {
         ServiceController<?> controller = context.getController();
-        log.debugf("Stopping: %s in mode %s", controller.getName(), controller.getMode());
+        LOGGER.debugf("Stopping: %s in mode %s", controller.getName(), controller.getMode());
     }
 
     BundleManager getBundleManager() {

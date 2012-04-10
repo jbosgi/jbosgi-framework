@@ -21,6 +21,12 @@
  */
 package org.jboss.test.osgi.modules;
 
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.ModuleIdentifier;
@@ -30,7 +36,6 @@ import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -41,12 +46,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
-
-import java.io.InputStream;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Test delegation to the framework module
@@ -204,7 +203,7 @@ public class FrameworkModuleTestCase extends ModulesTestBase {
 
         @Override
         public Package loadPackageLocal(String name) {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override

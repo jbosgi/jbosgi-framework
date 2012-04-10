@@ -16,6 +16,9 @@
 
 package org.osgi.util.tracker;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+
 import org.osgi.framework.AllServiceListener;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
@@ -25,9 +28,6 @@ import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
-
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 
 /**
  * The <code>ServiceTracker</code> class simplifies using services from the

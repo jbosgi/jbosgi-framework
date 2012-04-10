@@ -21,11 +21,11 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.modules.Resource;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+
+import org.jboss.modules.Resource;
 
 /**
  * A {@link Resource} that is backed by an URL.

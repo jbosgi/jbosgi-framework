@@ -21,10 +21,10 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import java.util.Map;
+
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
-
-import java.util.Map;
 
 /**
  * An impementation of an OSGi FrameworkFactory

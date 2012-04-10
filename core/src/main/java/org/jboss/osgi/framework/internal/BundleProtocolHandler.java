@@ -21,11 +21,13 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.osgi.service.url.AbstractURLStreamHandlerService;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
+
+import org.osgi.service.url.AbstractURLStreamHandlerService;
 
 /**
  * A handler for the 'bundle' protocol.
@@ -47,10 +49,10 @@ public class BundleProtocolHandler extends AbstractURLStreamHandlerService {
     public URLConnection openConnection(URL url) throws IOException {
         RevisionContent revContent = RevisionContent.findRevisionContent(bundleManager, url.getHost());
         if (revContent == null)
-            throw new IOException("Cannot obtain revision content for: " + url);
+            throw MESSAGES.ioCannotObtainRevisionContent(url);
         URL entry = revContent.getEntry(url.getPath());
         if (entry == null)
-            throw new IOException("Cannot obtain content for: " + url);
+            throw MESSAGES.ioCannotObtainContent(url);
         return entry.openConnection();
     }
 

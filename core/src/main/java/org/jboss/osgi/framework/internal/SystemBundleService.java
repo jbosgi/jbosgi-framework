@@ -24,7 +24,6 @@ package org.jboss.osgi.framework.internal;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -49,9 +48,6 @@ import org.osgi.framework.Version;
  * @since 04-Apr-2011
  */
 public final class SystemBundleService extends AbstractBundleService<SystemBundleState> {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(SystemBundleService.class);
 
     private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
     private final InjectedValue<FrameworkModuleProvider> injectedModuleProvider = new InjectedValue<FrameworkModuleProvider>();
@@ -117,9 +113,6 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
 
         List<String> exportedPackages = new ArrayList<String>();
         exportedPackages.addAll(systemPackages.getSystemPackages());
-
-        if (exportedPackages.isEmpty() == true)
-            throw new IllegalStateException("Framework system packages not available");
 
         // Construct framework capabilities from system packages
         for (String packageSpec : exportedPackages) {

@@ -21,10 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
-import org.jboss.osgi.vfs.AbstractVFS;
-import org.jboss.osgi.vfs.VFSUtils;
-import org.jboss.osgi.vfs.VirtualFile;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.io.IOException;
 import java.net.URL;
@@ -32,6 +29,10 @@ import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.util.Enumeration;
 import java.util.Vector;
+
+import org.jboss.osgi.vfs.AbstractVFS;
+import org.jboss.osgi.vfs.VFSUtils;
+import org.jboss.osgi.vfs.VirtualFile;
 
 /**
  * An abstraction for the revision content
@@ -42,18 +43,14 @@ import java.util.Vector;
  */
 final class RevisionContent implements EntriesProvider {
 
-    static final Logger log = Logger.getLogger(RevisionContent.class);
-
     private final UserBundleRevision userRev;
     private final VirtualFile virtualFile;
     private final String identity;
     private final int contentId;
 
     RevisionContent(UserBundleRevision userRev, int contentId, VirtualFile rootFile) {
-        if (userRev == null)
-            throw new IllegalArgumentException("Null userRev");
-        if (rootFile == null)
-            throw new IllegalArgumentException("Null rootFile");
+        assert userRev != null : "Null userRev";
+        assert rootFile != null : "Null rootFile";
         this.userRev = userRev;
         this.virtualFile = rootFile;
         this.contentId = contentId;
@@ -72,11 +69,9 @@ final class RevisionContent implements EntriesProvider {
     }
 
     static RevisionContent findRevisionContent(BundleManager bundleManager, String identity) {
-        if (identity == null)
-            throw new IllegalArgumentException("Null identity");
+        assert identity != null : "Null identity";
         String[] parts = identity.split("-");
-        if (parts.length != 4)
-            throw new IllegalArgumentException("Invalid identity: " + identity);
+        assert parts.length == 4 : "Invalid identity: " + identity;
         long bundleId = Long.parseLong(parts[1]);
         int revisionId = Integer.parseInt(parts[2]);
         int contentId = Integer.parseInt(parts[3]);
@@ -114,7 +109,7 @@ final class RevisionContent implements EntriesProvider {
             child = virtualFile.getChild(path);
             return child != null ? getBundleURL(child) : null;
         } catch (IOException ex) {
-            log.errorf(ex, "Cannot get entry: %s", path);
+            LOGGER.errorCannotGetEntry(ex, path, userRev);
             return null;
         }
     }

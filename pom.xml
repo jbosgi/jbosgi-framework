@@ -24,7 +24,7 @@
     <artifactId>jbosgi-framework-parent</artifactId>
     <packaging>pom</packaging>
 
-    <version>1.2.0.CR3-SNAPSHOT</version>
+    <version>1.3.0-SNAPSHOT</version>
 
     <!-- Source Control -->
     <scm>
@@ -41,20 +41,20 @@
         <version.jboss.arquillian.osgi>1.0.2.Final</version.jboss.arquillian.osgi>
         <version.jboss.logging>3.1.0.GA</version.jboss.logging>
         <version.jboss.logmanager>1.2.2.GA</version.jboss.logmanager>
+        <version.jboss.logging.processor>1.0.0.Final</version.jboss.logging.processor>
         <version.jboss.modules>1.1.1.GA</version.jboss.modules>
         <version.jboss.msc>1.0.1.GA</version.jboss.msc>
-        <version.jboss.osgi.deployment>1.0.12.Final</version.jboss.osgi.deployment>
+        <version.jboss.osgi.deployment>1.1.0-SNAPSHOT</version.jboss.osgi.deployment>
         <version.jboss.osgi.equinox>3.5.2</version.jboss.osgi.equinox>
         <version.jboss.osgi.felix>3.0.4</version.jboss.osgi.felix>
-        <version.jboss.osgi.resolver>2.0.0.CR2</version.jboss.osgi.resolver>
-        <version.jboss.osgi.spi>3.0.1.Final</version.jboss.osgi.spi>
+        <version.jboss.osgi.resolver>2.1.0-SNAPSHOT</version.jboss.osgi.resolver>
+        <version.jboss.osgi.spi>3.1.0-SNAPSHOT</version.jboss.osgi.spi>
         <version.jboss.osgi.testing>1.0.3.Final</version.jboss.osgi.testing>
-        <version.jboss.osgi.vfs>1.0.7.Final</version.jboss.osgi.vfs>
         <version.mockito>1.8.4</version.mockito>
         <version.osgi>4.2.0</version.osgi>
 
         <surefire.profiler.args />
-        <surefire.system.args>-da ${surefire.profiler.args}</surefire.system.args>
+        <surefire.system.args>-ea ${surefire.profiler.args}</surefire.system.args>
     </properties>
 
     <!-- Dependency Management -->
@@ -75,6 +75,11 @@
                 <artifactId>jboss-logmanager</artifactId>
                 <version>${version.jboss.logmanager}</version>
             </dependency>
+	        <dependency>
+	            <groupId>org.jboss.logging</groupId>
+	            <artifactId>jboss-logging-processor</artifactId>
+	            <version>${version.jboss.logging.processor}</version>
+	        </dependency>
             <dependency>
                 <groupId>org.jboss.modules</groupId>
                 <artifactId>jboss-modules</artifactId>
@@ -106,16 +111,6 @@
                 <groupId>org.jboss.osgi.testing</groupId>
                 <artifactId>jbosgi-testing</artifactId>
                 <version>${version.jboss.osgi.testing}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.osgi.vfs</groupId>
-                <artifactId>jbosgi-vfs</artifactId>
-                <version>${version.jboss.osgi.vfs}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.osgi.vfs</groupId>
-                <artifactId>jbosgi-vfs30</artifactId>
-                <version>${version.jboss.osgi.vfs}</version>
             </dependency>
 
             <!-- Equinox Dependencies -->

@@ -21,7 +21,14 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -36,11 +43,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.launch.Framework;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * A service that represents the INIT state of the {@link Framework}.
  *
@@ -50,9 +52,6 @@ import java.util.Map;
  * @since 04-Apr-2011
  */
 public final class PersistentBundlesInstaller extends AbstractPluginService<Void> {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(PersistentBundlesInstaller.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
@@ -101,19 +100,19 @@ public final class PersistentBundlesInstaller extends AbstractPluginService<Void
                         ServiceName serviceName = bundleManager.installBundle(serviceTarget, dep);
                         pendingServices.put(serviceName, dep);
                     } catch (BundleException ex) {
-                        log.errorf(ex, "Cannot install persistet bundle: %s", storageState);
+                        LOGGER.errorCannotInstallPersistentBundlle(ex, storageState);
                     }
                 }
             }
         } catch (IOException ex) {
-            throw new BundleException("Cannot install persisted bundles", ex);
+            throw MESSAGES.bundleCannotInstallPersistedBundles(ex);
         }
 
         // Install a service that has a dependency on all pending bundle INSTALLED services
         ServiceName servicesInstalled = InternalServices.PERSISTENT_BUNDLES_INSTALLER.append("INSTALLED");
         ServiceBuilder<Void> builder = serviceTarget.addService(servicesInstalled, new AbstractService<Void>() {
             public void start(StartContext context) throws StartException {
-                log.debugf("Persistent bundles installed");
+                LOGGER.debugf("Persistent bundles installed");
             }
         });
         builder.addDependencies(pendingServices.keySet());
@@ -128,11 +127,11 @@ public final class PersistentBundlesInstaller extends AbstractPluginService<Void
                         try {
                             bundle.start();
                         } catch (BundleException ex) {
-                            log.errorf(ex, "Cannot start persistent bundle: %s", bundle);
+                            LOGGER.errorCannotStartPersistentBundle(ex, bundle);
                         }
                     }
                 }
-                log.debugf("Persistent bundles started");
+                LOGGER.debugf("Persistent bundles started");
             }
         });
         builder.addDependencies(servicesInstalled);

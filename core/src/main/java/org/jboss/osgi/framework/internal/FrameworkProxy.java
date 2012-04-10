@@ -25,6 +25,8 @@ import static org.jboss.osgi.framework.Constants.DEFAULT_FRAMEWORK_INIT_TIMEOUT;
 import static org.jboss.osgi.framework.Constants.DEFAULT_FRAMEWORK_START_TIMEOUT;
 import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_INIT_TIMEOUT;
 import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_START_TIMEOUT;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,14 +34,12 @@ import java.net.URL;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jboss.logging.Logger;
 import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
@@ -49,7 +49,6 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FutureServiceValue;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -69,9 +68,6 @@ import org.osgi.framework.launch.Framework;
  * @since 04-Apr-2011
  */
 final class FrameworkProxy implements Framework {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(FrameworkProxy.class);
 
     private final AtomicInteger proxyState;
     private final FrameworkBuilder frameworkBuilder;
@@ -134,7 +130,7 @@ final class FrameworkProxy implements Framework {
         if (state == Bundle.STARTING || state == Bundle.ACTIVE || state == Bundle.STOPPING)
             return;
 
-        log.debugf("init framework");
+        LOGGER.debugf("Init framework");
         try {
             frameworkStopped.set(false);
 
@@ -155,10 +151,7 @@ final class FrameworkProxy implements Framework {
             firstInit = false;
 
         } catch (Exception ex) {
-            ServiceController<?> controller = lenientContainer.getRequiredService(InternalServices.PERSISTENT_BUNDLES_INSTALLER);
-            Set<ServiceName> unavailableDependencies = controller.getImmediateUnavailableDependencies();
-            log.errorf("Unavailable for %s: %s", controller, unavailableDependencies);
-            throw new BundleException(ex.getMessage(), ex);
+            throw MESSAGES.bundleCannotInitializeFramework(ex);
         }
     }
 
@@ -189,12 +182,12 @@ final class FrameworkProxy implements Framework {
         if (getState() != Bundle.STARTING)
             init();
 
-        log.debugf("start framework");
+        LOGGER.debugf("start framework");
         try {
             awaitActiveFramework();
             proxyState.set(Bundle.ACTIVE);
         } catch (Exception ex) {
-            throw new BundleException(ex.getMessage(), ex);
+            throw MESSAGES.bundleCannotStartFramework(ex);
         }
     }
 
@@ -230,7 +223,7 @@ final class FrameworkProxy implements Framework {
         if (state != Bundle.STARTING && state != Bundle.ACTIVE)
             return;
 
-        log.debugf("stop framework");
+        LOGGER.debugf("stop framework");
 
         CoreServices coreServices = frameworkState.getCoreServices();
         SystemBundleState systemBundle = frameworkState.getSystemBundle();
@@ -305,7 +298,7 @@ final class FrameworkProxy implements Framework {
         if (state != Bundle.STARTING && state != Bundle.ACTIVE)
             return;
 
-        log.debugf("update framework");
+        LOGGER.debugf("update framework");
 
         final int targetState = getState();
         Runnable cmd = new Runnable() {
@@ -320,8 +313,7 @@ final class FrameworkProxy implements Framework {
                         start();
                     }
                 } catch (Exception ex) {
-                    ex.printStackTrace();
-                    log.errorf(ex, "Error updating framework");
+                    LOGGER.errorCannotUpdateFramework(ex);
                 }
             }
         };
@@ -330,7 +322,7 @@ final class FrameworkProxy implements Framework {
 
     @Override
     public void uninstall() throws BundleException {
-        throw new BundleException("The system bundle cannot be uninstalled");
+        throw MESSAGES.bundleCannotUninstallSystemBundle();
     }
 
     @Override
@@ -418,7 +410,7 @@ final class FrameworkProxy implements Framework {
     @Override
     @SuppressWarnings("rawtypes")
     public Map getSignerCertificates(int signersType) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     private boolean isNotStopped() {
@@ -428,12 +420,12 @@ final class FrameworkProxy implements Framework {
 
     private void assertNotStopped() {
         if (isNotStopped() == false)
-            throw new IllegalStateException("Framework already stopped");
+            throw MESSAGES.illegalStateFrameworkAlreadyStopped();
     }
 
     private SystemBundleState getSystemBundle() {
         if (frameworkState == null)
-            throw new IllegalStateException("Framework not initialized");
+            throw MESSAGES.illegalStateFrameworkNotInitialized();
         return frameworkState.getSystemBundle();
     }
 
@@ -443,7 +435,7 @@ final class FrameworkProxy implements Framework {
         final String serviceName = controller.getName().getCanonicalName();
         controller.addListener(new AbstractServiceListener<FrameworkState>() {
             public void transition(final ServiceController<? extends FrameworkState> controller, final ServiceController.Transition transition) {
-                log.tracef("awaitFrameworkState %s => %s", serviceName, transition);
+                LOGGER.tracef("awaitFrameworkState %s => %s", serviceName, transition);
                 switch (transition) {
                     case STARTING_to_START_FAILED:
                     case STOPPING_to_DOWN:
@@ -496,17 +488,17 @@ final class FrameworkProxy implements Framework {
                 serviceContainer.shutdown();
                 synchronized (shutdownInitiated) {
                     shutdownInitiated.set(true);
-                    log.debugf("shutdownInitiated.notifyAll");
+                    LOGGER.debugf("shutdownInitiated.notifyAll");
                     shutdownInitiated.notifyAll();
                 }
             }
         }
 
         void awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-            log.debugf("awaitTermination");
+            LOGGER.debugf("awaitTermination");
             synchronized (shutdownInitiated) {
                 if (shutdownInitiated.get() == false) {
-                    log.debugf("shutdownInitiated.wait");
+                    LOGGER.debugf("shutdownInitiated.wait");
                     shutdownInitiated.wait(2000);
                 }
             }

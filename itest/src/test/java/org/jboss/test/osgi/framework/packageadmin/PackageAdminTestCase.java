@@ -226,17 +226,6 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    public void testGetExportedPackagesUnknownBundle() throws Exception {
-        PackageAdmin pa = getPackageAdmin();
-        try {
-            pa.getExportedPackages(Mockito.mock(Bundle.class));
-            fail("Should have thrown an Illegal Argument Exception");
-        } catch (IllegalArgumentException e) {
-            // good
-        }
-    }
-
-    @Test
     public void testGetExportedPackagesUninstalled() throws Exception {
         Bundle bundleA = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
         Bundle bundleB = installBundle(assembleArchive("import-export", "/bundles/package-admin/import-export", ImportExport.class));
@@ -728,17 +717,6 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
         } finally {
             bundleI.uninstall();
             bundleR.uninstall();
-        }
-    }
-
-    @Test
-    public void testResolveUnknownBundle() throws Exception {
-        PackageAdmin pa = getPackageAdmin();
-        try {
-            pa.resolveBundles(new Bundle[] { Mockito.mock(Bundle.class) });
-            fail("Should have thrown an Illegal Argument Exception");
-        } catch (IllegalArgumentException e) {
-            // good
         }
     }
 

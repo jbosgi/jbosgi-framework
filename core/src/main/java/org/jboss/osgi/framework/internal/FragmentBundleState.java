@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.Bundle;
@@ -42,10 +44,7 @@ final class FragmentBundleState extends UserBundleState {
 
     static FragmentBundleState assertBundleState(Bundle bundle) {
         AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-
-        if (bundleState instanceof FragmentBundleState == false)
-            throw new IllegalArgumentException("Not a FragmentBundleState: " + bundleState);
-
+        assert bundleState instanceof FragmentBundleState : "Not a FragmentBundleState: " + bundleState;
         return (FragmentBundleState) bundleState;
     }
 
@@ -76,11 +75,11 @@ final class FragmentBundleState extends UserBundleState {
 
     @Override
     void startInternal(int options) throws BundleException {
-        throw new BundleException("Fragments cannot be started");
+        throw MESSAGES.bundleCannotStartFragment();
     }
 
     @Override
     void stopInternal(int options) throws BundleException {
-        throw new BundleException("Fragments cannot be stoped");
+        throw MESSAGES.bundleCannotStopFragment();
     }
 }

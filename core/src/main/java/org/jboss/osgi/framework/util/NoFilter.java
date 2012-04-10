@@ -21,10 +21,10 @@
  */
 package org.jboss.osgi.framework.util;
 
+import java.util.Dictionary;
+
 import org.osgi.framework.Filter;
 import org.osgi.framework.ServiceReference;
-
-import java.util.Dictionary;
 
 /**
  * Dummy filter implementation

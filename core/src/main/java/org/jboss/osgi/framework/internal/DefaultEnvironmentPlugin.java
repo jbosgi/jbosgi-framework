@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import java.util.List;
 
-import org.jboss.logging.Logger;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -46,9 +45,6 @@ import org.osgi.resource.Wiring;
  * @since 15-Feb-2012
  */
 final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Service<XEnvironment> {
-
-    // Provide logging
-    final Logger log = Logger.getLogger(DefaultEnvironmentPlugin.class);
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultEnvironmentPlugin service = new DefaultEnvironmentPlugin();

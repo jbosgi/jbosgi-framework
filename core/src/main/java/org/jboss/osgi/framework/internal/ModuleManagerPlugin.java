@@ -21,6 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
 import static org.osgi.framework.Constants.VISIBILITY_REEXPORT;
 
@@ -33,7 +34,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.jboss.logging.Logger;
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
@@ -65,12 +65,12 @@ import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.BundleReference;
+import org.osgi.framework.namespace.PackageNamespace;
+import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
 import org.osgi.resource.Resource;
 import org.osgi.resource.Wire;
-import org.osgi.framework.namespace.PackageNamespace;
-import org.osgi.framework.wiring.BundleRevision;
 
 /**
  * The module manager plugin.
@@ -79,9 +79,6 @@ import org.osgi.framework.wiring.BundleRevision;
  * @since 06-Jul-2009
  */
 final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugin> {
-
-    // Provide logging
-    final Logger log = Logger.getLogger(ModuleManagerPlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
@@ -115,28 +112,26 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         return getModuleLoaderIntegration().getModuleLoader();
     }
 
-    ModuleIdentifier getModuleIdentifier(final XResource xres) {
-        if (xres == null)
-            throw new IllegalArgumentException("Null resource");
-        if (xres instanceof FragmentBundleRevision)
-            throw new IllegalArgumentException("A fragment is not a module");
+    ModuleIdentifier getModuleIdentifier(final XResource res) {
+        assert res != null : "Null resource";
+        assert !res.isFragment() : "A fragment is not a module";
 
-        ModuleIdentifier identifier = xres.getAttachment(ModuleIdentifier.class);
+        ModuleIdentifier identifier = res.getAttachment(ModuleIdentifier.class);
         if (identifier != null)
             return identifier;
 
-        XIdentityCapability icap = xres.getIdentityCapability();
-        Module module = xres.getAttachment(Module.class);
+        XIdentityCapability icap = res.getIdentityCapability();
+        Module module = res.getAttachment(Module.class);
         if (module != null) {
             identifier = module.getIdentifier();
         } else if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getSymbolicName())) {
             identifier = getFrameworkModule().getIdentifier();
         } else {
-            int revision = (xres instanceof AbstractBundleRevision ? ((AbstractBundleRevision)xres).getRevisionId() : 0);
-            identifier = getModuleLoaderIntegration().getModuleIdentifier(xres, revision);
+            int revision = (res instanceof AbstractBundleRevision ? ((AbstractBundleRevision)res).getRevisionId() : 0);
+            identifier = getModuleLoaderIntegration().getModuleIdentifier(res, revision);
         }
 
-        xres.addAttachment(ModuleIdentifier.class, identifier);
+        res.addAttachment(ModuleIdentifier.class, identifier);
         return identifier;
     }
 
@@ -167,8 +162,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      * @return The bundle or null
      */
     AbstractBundleState getBundleState(Class<?> clazz) {
-        if (clazz == null)
-            throw new IllegalArgumentException("Null clazz");
+        assert clazz != null : "Null clazz";
 
         AbstractBundleState result = null;
         ClassLoader loader = clazz.getClassLoader();
@@ -177,17 +171,14 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             result = AbstractBundleState.assertBundleState(bundleRef.getBundle());
         }
         if (result == null)
-            log.debugf("Cannot obtain bundle for: %s", clazz.getName());
+            LOGGER.debugf("Cannot obtain bundle for: %s", clazz.getName());
         return result;
     }
 
     ModuleIdentifier addModule(final XResource res, final List<Wire> wires) {
-        if (res == null)
-            throw new IllegalArgumentException("Null res");
-        if (wires == null)
-            throw new IllegalArgumentException("Null wires");
-        if (res instanceof FragmentBundleRevision)
-            throw new IllegalStateException("Fragments cannot be added: " + res);
+        assert res != null : "Null res";
+        assert wires != null : "Null wires";
+        assert !res.isFragment() : "Fragments cannot be added: " + res;
 
         Module module = res.getAttachment(Module.class);
         if (module != null) {
@@ -287,7 +278,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
                 return cefPath.accept(className);
             }
         };
-        log.debugf("createLocalDependencySpec: [if=%s,ef=%s,rif=%s,ref=%s,cf=%s]", importFilter, exportFilter, resImportFilter, resExportFilter, cefPath);
+        LOGGER.debugf("createLocalDependencySpec: [if=%s,ef=%s,rif=%s,ref=%s,cf=%s]", importFilter, exportFilter, resImportFilter, resExportFilter, cefPath);
         DependencySpec localDep = DependencySpec.createLocalDependencySpec(importFilter, exportFilter, resImportFilter, resExportFilter, classImportFilter,
                 classExportFilter);
         specBuilder.addDependency(localDep);
@@ -576,13 +567,12 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             }
             Module frameworkModule = getFrameworkModule();
             ModuleLoader depLoader = (frameworkModule.getIdentifier().equals(identifier) ? frameworkModule.getModuleLoader() : getModuleLoader());
-            log.debugf("createModuleDependencySpec: [id=%s,if=%s,ef=%s,loader=%s,optional=%s]", identifier, importFilter, exportFilter, depLoader, optional);
+            LOGGER.debugf("createModuleDependencySpec: [id=%s,if=%s,ef=%s,loader=%s,optional=%s]", identifier, importFilter, exportFilter, depLoader, optional);
             return DependencySpec.createModuleDependencySpec(importFilter, exportFilter, depLoader, identifier, optional);
         }
 
         private void assertNotCreated() {
-            if (dependencySpec != null)
-                throw new IllegalStateException("DependencySpec already created");
+            assert dependencySpec == null : "DependencySpec already created";
         }
     }
 }

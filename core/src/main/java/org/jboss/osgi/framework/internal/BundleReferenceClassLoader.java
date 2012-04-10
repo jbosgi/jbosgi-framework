@@ -38,8 +38,7 @@ class BundleReferenceClassLoader<T extends AbstractBundleState> extends ModuleCl
 
     BundleReferenceClassLoader(Configuration configuration, T bundleState) {
         super(configuration);
-        if (bundleState == null)
-            throw new IllegalArgumentException("Null bundleState");
+        assert bundleState != null : "Null bundleState";
         this.bundleState = bundleState;
     }
 

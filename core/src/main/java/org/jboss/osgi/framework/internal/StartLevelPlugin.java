@@ -21,7 +21,14 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
+import java.util.Collection;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -38,11 +45,6 @@ import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.launch.Framework;
 import org.osgi.service.startlevel.StartLevel;
 
-import java.util.Collection;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-
 /**
  * An implementation of the {@link StartLevel} service.
  *
@@ -51,8 +53,6 @@ import java.util.concurrent.ThreadFactory;
 public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> implements StartLevel {
 
     static final int BUNDLE_STARTLEVEL_UNSPECIFIED = -1;
-
-    final Logger log = Logger.getLogger(StartLevelPlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
@@ -118,23 +118,21 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         final FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
         final AbstractBundleState bundleState = injectedSystemBundle.getValue();
         if (level > getStartLevel()) {
-            log.infof("About to increase start level from %s to %s", getStartLevel(), level);
             getExecutorService().execute(new Runnable() {
 
                 @Override
                 public void run() {
-                    log.infof("Increasing start level from %s to %s", getStartLevel(), level);
+                    LOGGER.infoIncreasingStartLevel(getStartLevel(), level);
                     increaseStartLevel(level);
                     eventsPlugin.fireFrameworkEvent(bundleState, FrameworkEvent.STARTLEVEL_CHANGED, null);
                 }
             });
         } else if (level < getStartLevel()) {
-            log.infof("About to decrease start level from %s to %s", getStartLevel(), level);
             getExecutorService().execute(new Runnable() {
 
                 @Override
                 public void run() {
-                    log.infof("Decreasing start level from %s to %s", getStartLevel(), level);
+                    LOGGER.infoDecreasingStartLevel(getStartLevel(), level);
                     decreaseStartLevel(level);
                     eventsPlugin.fireFrameworkEvent(bundleState, FrameworkEvent.STARTLEVEL_CHANGED, null);
                 }
@@ -157,9 +155,9 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
     }
 
     @Override
-    public void setBundleStartLevel(Bundle bundle, int level) {
+    public void setBundleStartLevel(final Bundle bundle, final int level) {
         if (bundle.getBundleId() == 0)
-            throw new IllegalArgumentException("Cannot set the start level of the System Bundle");
+            throw MESSAGES.illegalArgumentStartLevelOnSystemBundles();
 
         final FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
         final HostBundleState hostBundle = HostBundleState.assertBundleState(bundle);
@@ -170,12 +168,9 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
             if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) > 0)
                 return;
 
-            log.infof("Start Level Service about to start: %s", hostBundle);
+            LOGGER.infoStartingBundleDueToStartLevel(hostBundle);
             getExecutorService().execute(new Runnable() {
-
-                @Override
                 public void run() {
-                    log.infof("Start Level Service starting: %s", hostBundle);
                     try {
                         int opts = Bundle.START_TRANSIENT;
                         if (isBundleActivationPolicyUsed(hostBundle))
@@ -192,12 +187,9 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
             if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) == 0)
                 return;
 
-            log.infof("Start Level Service about to stop: %s", hostBundle);
+            LOGGER.infoStoppingBundleDueToStartLevel(hostBundle);
             getExecutorService().execute(new Runnable() {
-
-                @Override
                 public void run() {
-                    log.infof("Start Level Service stopping: %s", hostBundle);
                     try {
                         hostBundle.stop(Bundle.STOP_TRANSIENT);
                     } catch (BundleException e) {
@@ -242,7 +234,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         Collection<AbstractBundleState> bundles = bundleManager.getBundles();
         while (startLevel < level) {
             startLevel++;
-            log.infof("Starting bundles for start level: %s", startLevel);
+            LOGGER.infoStartingBundlesForStartLevel(level);
             for (AbstractBundleState bundle : bundles) {
                 if (!(bundle instanceof HostBundleState))
                     continue;
@@ -267,12 +259,12 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
     /**
      * Decreases the Start Level of the Framework in the current thread.
      *
-     * @param sl the target Start Level to which the Framework should move.
+     * @param level the target Start Level to which the Framework should move.
      */
-    synchronized void decreaseStartLevel(int sl) {
+    synchronized void decreaseStartLevel(int level) {
         BundleManager bundleManager = injectedBundleManager.getValue();
-        while (startLevel > sl) {
-            log.infof("Stopping bundles for start level: %s", startLevel);
+        while (startLevel > level) {
+            LOGGER.infoStoppingBundlesForStartLevel(level);
             Collection<AbstractBundleState> bundles = bundleManager.getBundles();
             for (AbstractBundleState bundleState : bundles) {
                 if (bundleState instanceof HostBundleState) {

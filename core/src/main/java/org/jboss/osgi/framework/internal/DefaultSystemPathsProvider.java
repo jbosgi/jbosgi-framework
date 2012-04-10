@@ -21,7 +21,22 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.osgi.framework.Constants.FRAMEWORK_BOOTDELEGATION;
+import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT;
+import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT_BOOT;
+import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT_EXT;
+import static org.osgi.framework.Constants.FRAMEWORK_SYSTEMPACKAGES;
+import static org.osgi.framework.Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.jboss.modules.filter.MultiplePathFilterBuilder;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
@@ -33,20 +48,6 @@ import org.jboss.msc.service.StartException;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemPathsProvider;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-
-import static org.osgi.framework.Constants.FRAMEWORK_BOOTDELEGATION;
-import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT;
-import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT_BOOT;
-import static org.osgi.framework.Constants.FRAMEWORK_BUNDLE_PARENT_EXT;
-import static org.osgi.framework.Constants.FRAMEWORK_SYSTEMPACKAGES;
-import static org.osgi.framework.Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA;
-
 /**
  * A plugin manages the Framework's system packages.
  *
@@ -54,9 +55,6 @@ import static org.osgi.framework.Constants.FRAMEWORK_SYSTEMPACKAGES_EXTRA;
  * @since 18-Aug-2009
  */
 public final class DefaultSystemPathsProvider extends AbstractPluginService<SystemPathsProvider> implements SystemPathsProvider {
-
-    // Provide logging
-    final Logger log = Logger.getLogger(DefaultSystemPathsProvider.class);
 
     private final FrameworkBuilder frameworkBuilder;
     // The derived combination of all system packages
@@ -149,7 +147,7 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
                 }
             }
             cachedBootDelegationFilter = builder.create();
-            log.debugf("BootDelegationFilter: %s", cachedBootDelegationFilter);
+            LOGGER.debugf("BootDelegationFilter: %s", cachedBootDelegationFilter);
         }
         return cachedBootDelegationFilter;
     }
@@ -179,7 +177,7 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
                 }
             }
             cachedBootDelegationPaths = Collections.unmodifiableSet(result);
-            log.debugf("BootDelegationPaths: %s", cachedBootDelegationPaths);
+            LOGGER.debugf("BootDelegationPaths: %s", cachedBootDelegationPaths);
         }
         return cachedBootDelegationPaths;
     }
@@ -206,7 +204,7 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
             }
             builder.addFilter(PathFilters.in(paths), true);
             cachedSystemFilter = builder.create();
-            log.debugf("SystemFilter: %s", cachedSystemFilter);
+            LOGGER.debugf("SystemFilter: %s", cachedSystemFilter);
         }
         return cachedSystemFilter;
     }
@@ -225,7 +223,7 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
                 result.add(path);
             }
             cachedSystemPaths = Collections.unmodifiableSet(result);
-            log.debugf("SystemPaths: %s", cachedSystemPaths);
+            LOGGER.debugf("SystemPaths: %s", cachedSystemPaths);
         }
         return cachedSystemPaths;
     }
@@ -245,7 +243,7 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
                 paths.add(packageSpec.replace('.', '/'));
             }
             cachedFrameworkPaths = Collections.unmodifiableSet(paths);
-            log.debugf("FrameworkPaths: %s", cachedFrameworkPaths);
+            LOGGER.debugf("FrameworkPaths: %s", cachedFrameworkPaths);
         }
         return cachedFrameworkPaths;
     }
@@ -254,7 +252,7 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
         assertInitialized();
         if (cachedFrameworkFilter == null) {
             cachedFrameworkFilter = PathFilters.in(getFrameworkPaths());
-            log.debugf("FrameworkFilter: %s", cachedFrameworkFilter);
+            LOGGER.debugf("FrameworkFilter: %s", cachedFrameworkFilter);
         }
         return cachedFrameworkFilter;
     }
@@ -280,6 +278,6 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
 
     private void assertInitialized() {
         if (systemPackages.isEmpty())
-            throw new IllegalStateException(getClass().getSimpleName() + " not initialized");
+            throw MESSAGES.illegalStateSystemPathsNotInitialized();
     }
 }

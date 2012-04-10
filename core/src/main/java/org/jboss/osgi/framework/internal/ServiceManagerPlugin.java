@@ -21,7 +21,20 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import static org.jboss.osgi.framework.Services.JBOSGI_SERVICE_BASE_NAME;
+import static org.jboss.osgi.framework.Services.JBOSGI_XSERVICE_BASE_NAME;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Dictionary;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.AbstractService;
@@ -50,19 +63,6 @@ import org.osgi.framework.hooks.service.FindHook;
 import org.osgi.framework.hooks.service.ListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Dictionary;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static org.jboss.osgi.framework.Services.JBOSGI_SERVICE_BASE_NAME;
-import static org.jboss.osgi.framework.Services.JBOSGI_XSERVICE_BASE_NAME;
-
 /**
  * A plugin that manages OSGi services
  *
@@ -70,9 +70,6 @@ import static org.jboss.osgi.framework.Services.JBOSGI_XSERVICE_BASE_NAME;
  * @since 18-Aug-2009
  */
 final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlugin> {
-
-    // Provide logging
-    private final Logger log = Logger.getLogger(ServiceManagerPlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
@@ -132,15 +129,14 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
      * of the bundle registering the service and should not be shared with other bundles. The registering bundle is defined to
      * be the context bundle.
      *
-     * @param clazzes The class names under which the service can be located.
+     * @param classNames The class names under which the service can be located.
      * @param serviceValue The service object or a <code>ServiceFactory</code> object.
      * @param properties The properties for this service.
      * @return A <code>ServiceRegistration</code> object for use by the bundle registering the service
      */
     @SuppressWarnings({ "rawtypes" })
-    ServiceState registerService(final AbstractBundleState bundleState, final String[] clazzes, final Object serviceValue, final Dictionary properties) {
-        if (clazzes == null || clazzes.length == 0)
-            throw new IllegalArgumentException("Null service classes");
+    ServiceState registerService(final AbstractBundleState bundleState, final String[] classNames, final Object serviceValue, final Dictionary properties) {
+        assert classNames != null && classNames.length > 0 : "Null service classes";
 
         // Immediately after registration of a {@link ListenerHook}, the ListenerHook.added() method will be called
         // to provide the current collection of service listeners which had been added prior to the hook being registered.
@@ -157,8 +153,8 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
         };
 
         long serviceId = getNextServiceId();
-        ServiceState serviceState = new ServiceState(this, bundleState, serviceId, clazzes, valueProvider, properties);
-        log.debugf("Register service: %s", serviceState);
+        ServiceState serviceState = new ServiceState(this, bundleState, serviceId, classNames, valueProvider, properties);
+        LOGGER.debugf("Register service: %s", serviceState);
 
         for (ServiceName serviceName : serviceState.getServiceNames()) {
             // Obtain an interned string representation of the service name
@@ -168,7 +164,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
 
             // Now synchronize on the string representation so that two concurrent
             // registrations of two services with the same name will not race to create an MSC service.
-            synchronized(sns) {
+            synchronized (sns) {
                 @SuppressWarnings("unchecked")
                 ServiceController<List<ServiceState>> controller = (ServiceController<List<ServiceState>>) serviceContainer.getService(serviceName);
                 if (controller != null) {
@@ -210,8 +206,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
      * @return A <code>ServiceReference</code> object, or <code>null</code>
      */
     ServiceState getServiceReference(AbstractBundleState bundleState, String clazz) {
-        if (clazz == null)
-            throw new IllegalArgumentException("Null clazz");
+        assert clazz != null : "Null clazz";
 
         boolean checkAssignable = (bundleState.getBundleId() != 0);
         List<ServiceState> result = getServiceReferencesInternal(bundleState, clazz, NoFilter.INSTANCE, checkAssignable);
@@ -246,12 +241,9 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
     }
 
     @SuppressWarnings("unchecked")
-    private List<ServiceState> getServiceReferencesInternal(final AbstractBundleState bundleState, final String className, final Filter filter,
-            final boolean checkAssignable) {
-        if (bundleState == null)
-            throw new IllegalArgumentException("Null bundleState");
-        if (filter == null)
-            throw new IllegalArgumentException("Null filter");
+    private List<ServiceState> getServiceReferencesInternal(final AbstractBundleState bundleState, String className, Filter filter, boolean checkAssignable) {
+        assert bundleState != null : "Null bundleState";
+        assert filter != null : "Null filter";
 
         Set<ServiceName> serviceNames = new HashSet<ServiceName>();
         if (className != null) {
@@ -295,7 +287,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                             try {
                                 classLoader = currentRevision.getModuleClassLoader();
                             } catch (ModuleLoadException ex) {
-                                log.errorf(ex, "Cannot obtain class loader for: %s", currentRevision);
+                                LOGGER.errorCannotObtainClassLoader(ex, currentRevision);
                             }
                             ClassLoader ctxLoader = SecurityActions.getContextClassLoader();
                             try {
@@ -373,7 +365,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                 return;
 
             for (ServiceName serviceName : serviceState.getServiceNames()) {
-                log.debugf("Unregister service: %s", serviceName);
+                LOGGER.debugf("Unregister service: %s", serviceName);
                 try {
                     ServiceController<?> controller = serviceContainer.getService(serviceName);
                     if (controller != null) {
@@ -385,7 +377,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                         }
                     }
                 } catch (RuntimeException ex) {
-                    log.errorf(ex, "Cannot remove service: %s", serviceName);
+                    LOGGER.errorCannotRemoveService(ex, serviceName);
                 }
             }
 
@@ -458,7 +450,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
             try {
                 hook.find(context, clazz, filterStr, !checkAssignable, hookParam);
             } catch (Exception ex) {
-                log.warnf(ex, "Error while calling FindHook: %s", hook);
+                LOGGER.warnErrorWhileCallingFindHook(ex, hook);
             }
         }
 

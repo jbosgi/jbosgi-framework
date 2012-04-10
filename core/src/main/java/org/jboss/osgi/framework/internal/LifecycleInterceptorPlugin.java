@@ -21,7 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -36,7 +37,7 @@ import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
 import org.jboss.osgi.deployment.internal.InvocationContextImpl;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.spi.util.AttachmentSupport;
+import org.jboss.osgi.spi.AttachmentSupport;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -49,9 +50,6 @@ import org.osgi.framework.ServiceRegistration;
  * @since 19-Oct-2009
  */
 final class LifecycleInterceptorPlugin extends AbstractPluginService<LifecycleInterceptorPlugin> implements LifecycleInterceptorService {
-
-    // Provide logging
-    final Logger log = Logger.getLogger(LifecycleInterceptorPlugin.class);
 
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private AbstractLifecycleInterceptorService delegate;
@@ -77,11 +75,10 @@ final class LifecycleInterceptorPlugin extends AbstractPluginService<LifecycleIn
 
             @Override
             protected InvocationContext getInvocationContext(Bundle bundle) {
-                AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-                if (bundleState == null)
-                    throw new IllegalStateException("Cannot obtain bundleState for: " + bundle);
+                if (bundle == null)
+                    throw MESSAGES.illegalArgumentNull("bundle");
 
-                UserBundleState userBundle = UserBundleState.assertBundleState(bundleState);
+                UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
                 Deployment dep = userBundle.getDeployment();
 
                 InvocationContext inv = dep.getAttachment(InvocationContext.class);
@@ -90,7 +87,7 @@ final class LifecycleInterceptorPlugin extends AbstractPluginService<LifecycleIn
                     RevisionContent revContent = userBundle.getFirstContentRoot();
                     VirtualFile rootFile = revContent != null ? revContent.getVirtualFile() : null;
                     LifecycleInterceptorAttachments att = new LifecycleInterceptorAttachments();
-                    inv = new InvocationContextImpl(systemContext, bundleState, rootFile, att);
+                    inv = new InvocationContextImpl(systemContext, userBundle, rootFile, att);
                     dep.addAttachment(InvocationContext.class, inv);
                 }
                 return inv;

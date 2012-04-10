@@ -21,7 +21,26 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -50,24 +69,6 @@ import org.osgi.framework.hooks.service.EventHook;
 import org.osgi.framework.hooks.service.ListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 
-import java.security.AccessControlContext;
-import java.security.AccessController;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-
 /**
  * A plugin that manages {@link FrameworkListener}, {@link BundleListener}, {@link ServiceListener} and their associated
  * {@link FrameworkEvent}, {@link BundleEvent}, {@link ServiceEvent}.
@@ -76,9 +77,6 @@ import java.util.concurrent.ThreadFactory;
  * @since 18-Aug-2009
  */
 final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsPlugin> {
-
-    // Provide logging
-    final Logger log = Logger.getLogger(FrameworkEventsPlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
@@ -163,9 +161,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
     }
 
     void addBundleListener(final AbstractBundleState bundleState, final BundleListener listener) {
-        if (listener == null)
-            throw new IllegalArgumentException("Null listener");
-
+        assert listener != null : "Null listener";
         synchronized (bundleListeners) {
             List<BundleListener> listeners = bundleListeners.get(bundleState);
             if (listeners == null) {
@@ -178,9 +174,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
     }
 
     void removeBundleListener(final AbstractBundleState bundleState, final BundleListener listener) {
-        if (listener == null)
-            throw new IllegalArgumentException("Null listener");
-
+        assert listener != null : "Null listener";
         synchronized (bundleListeners) {
             List<BundleListener> listeners = bundleListeners.get(bundleState);
             if (listeners != null) {
@@ -199,9 +193,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
     }
 
     void addFrameworkListener(final AbstractBundleState bundleState, final FrameworkListener listener) {
-        if (listener == null)
-            throw new IllegalArgumentException("Null listener");
-
+        assert listener != null : "Null listener";
         synchronized (frameworkListeners) {
             List<FrameworkListener> listeners = frameworkListeners.get(bundleState);
             if (listeners == null) {
@@ -214,9 +206,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
     }
 
     void removeFrameworkListener(final AbstractBundleState bundleState, final FrameworkListener listener) {
-        if (listener == null)
-            throw new IllegalArgumentException("Null listener");
-
+        assert listener != null : "Null listener";
         synchronized (frameworkListeners) {
             List<FrameworkListener> listeners = frameworkListeners.get(bundleState);
             if (listeners != null) {
@@ -235,9 +225,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
     }
 
     void addServiceListener(final AbstractBundleState bundleState, final ServiceListener listener, final String filterstr) throws InvalidSyntaxException {
-        if (listener == null)
-            throw new IllegalArgumentException("Null listener");
-
+        assert listener != null : "Null listener";
         synchronized (serviceListeners) {
             List<ServiceListenerRegistration> listeners = serviceListeners.get(bundleState);
             if (listeners == null) {
@@ -260,7 +248,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
                 try {
                     hook.added(Collections.singleton(slreg.getListenerInfo()));
                 } catch (RuntimeException ex) {
-                    log.errorf(ex, "Error processing ListenerHook: %s", hook);
+                    LOGGER.errorProcessingServiceListenerHook(ex, hook);
                 }
             }
 
@@ -283,9 +271,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
     }
 
     void removeServiceListener(final AbstractBundleState bundleState, final ServiceListener listener) {
-        if (listener == null)
-            throw new IllegalArgumentException("Null listener");
-
+        assert listener != null : "Null listener";
         synchronized (serviceListeners) {
             List<ServiceListenerRegistration> listeners = serviceListeners.get(bundleState);
             if (listeners != null) {
@@ -303,7 +289,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
                             info.setRemoved(true);
                             hook.removed(Collections.singleton(info));
                         } catch (RuntimeException ex) {
-                            log.errorf(ex, "Error processing ListenerHook: %s", hook);
+                            LOGGER.errorProcessingServiceListenerHook(ex, hook);
                         }
                     }
                 }
@@ -323,7 +309,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
                 try {
                     hook.removed(listenerInfos);
                 } catch (RuntimeException ex) {
-                    log.errorf(ex, "Error processing ListenerHook: %s", hook);
+                    LOGGER.errorProcessingServiceListenerHook(ex, hook);
                 }
             }
         }
@@ -367,7 +353,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         final BundleEvent event = new BundleEventImpl(type, bundleState);
         final String typeName = ConstantsHelper.bundleEvent(event.getType());
 
-        log.tracef("AbstractBundleState %s: %s", typeName, bundleState);
+        LOGGER.tracef("AbstractBundleState %s: %s", typeName, bundleState);
 
         // Are we active?
         BundleManager bundleManager = injectedBundleManager.getValue();
@@ -384,12 +370,11 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
                 if (listener instanceof SynchronousBundleListener)
                     listener.bundleChanged(event);
             } catch (Throwable th) {
-                log.warnf(th, "Error while firing %s for bundleState: %s", typeName, bundleState);
+                LOGGER.warnErrorWhileFiringBundleEvent(th, typeName, bundleState);
             }
         }
 
         Runnable runnable = new Runnable() {
-
             public void run() {
                 // BundleListeners are called with a BundleEvent object when a bundleState has been
                 // installed, resolved, started, stopped, updated, unresolved, or uninstalled
@@ -399,7 +384,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
                             if (listener instanceof SynchronousBundleListener == false)
                                 listener.bundleChanged(event);
                         } catch (Throwable th) {
-                            log.warnf(th, "Error while firing %s for bundleState: ", typeName, bundleState);
+                            LOGGER.warnErrorWhileFiringBundleEvent(th, typeName, bundleState);
                         }
                     }
                 }
@@ -427,13 +412,13 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
 
         switch (event.getType()) {
             case FrameworkEvent.ERROR:
-                log.errorf(th, "Framework %s", typeName);
+                LOGGER.errorFrameworkEvent(th);
                 break;
             case FrameworkEvent.WARNING:
-                log.warnf(th, "Framework %s", typeName);
+                LOGGER.warnFrameworkEvent(th);
                 break;
             default:
-                log.tracef(th, "Framework %s", typeName);
+                LOGGER.debugf(th, "Framework %s", typeName);
         }
 
         // Are we active?
@@ -446,14 +431,13 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
             return;
 
         Runnable runnable = new Runnable() {
-
             public void run() {
                 // Call the listeners
                 for (FrameworkListener listener : listeners) {
                     try {
                         listener.frameworkEvent(event);
                     } catch (RuntimeException ex) {
-                        log.warnf(ex, "Error while firing %s for framework", typeName);
+                        LOGGER.warnErrorWhileFiringEvent(ex, typeName);
 
                         // The Framework must publish a FrameworkEvent.ERROR if a callback to an
                         // event listener generates an unchecked exception - except when the callback
@@ -462,7 +446,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
                             fireFrameworkEvent(bundleState, FrameworkEvent.ERROR, ex);
                         }
                     } catch (Throwable th) {
-                        log.warnf(th, "Error while firing %s for framework", typeName);
+                        LOGGER.warnErrorWhileFiringEvent(th, typeName);
                     }
                 }
             }
@@ -489,7 +473,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         // Expose the wrapper not the state itself
         ServiceEvent event = new ServiceEventImpl(type, serviceState);
         String typeName = ConstantsHelper.serviceEvent(event.getType());
-        log.tracef("Service %s: %s", typeName, serviceState);
+        LOGGER.tracef("Service %s: %s", typeName, serviceState);
 
         // Do nothing if the Framework is not active
         BundleManager bundleManager = injectedBundleManager.getValue();
@@ -539,7 +523,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
                     }
                 }
             } catch (Throwable th) {
-                log.warnf(th, "Error while firing %s for service: %s", typeName, serviceState);
+                LOGGER.warnErrorWhileFiringServiceEvent(th, typeName, serviceState);
             }
         }
     }
@@ -560,7 +544,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
             try {
                 hook.event(event, contexts);
             } catch (Exception ex) {
-                log.warnf(ex, "Error while calling EventHook: %s", hook);
+                LOGGER.warnErrorWhileCallingEventHook(ex, hook);
             }
         }
 
@@ -610,18 +594,13 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         AccessControlContext accessControlContext;
 
         ServiceListenerRegistration(final AbstractBundleState bundleState, final ServiceListener listener, final Filter filter) {
-            if (bundleState == null)
-                throw new IllegalArgumentException("Null bundleState");
-            if (listener == null)
-                throw new IllegalArgumentException("Null listener");
-            if (filter == null)
-                throw new IllegalArgumentException("Null filter");
-
+            assert bundleState != null : "Null bundleState";
+            assert listener != null : "Null listener";
+            assert filter != null : "Null filter";
             this.bundleState = bundleState;
             this.listener = listener;
             this.filter = filter;
             this.info = new ListenerInfoImpl(this);
-
             if (System.getSecurityManager() != null)
                 accessControlContext = AccessController.getContext();
         }

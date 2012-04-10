@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.util.Stack;
 
@@ -33,39 +33,34 @@ import java.util.Stack;
  */
 final class LazyActivationTracker {
 
-    // Provide logging
-    static final Logger log = Logger.getLogger(LazyActivationTracker.class);
-
     private final static ThreadLocal<Stack<HostBundleState>> stackAssociation = new ThreadLocal<Stack<HostBundleState>>();
     private final static ThreadLocal<HostBundleState> initiatorAssociation = new ThreadLocal<HostBundleState>();
 
     static void startTracking(HostBundleState hostBundle, String className) {
-        log.tracef("startTracking %s from: %s", className, hostBundle);
+        LOGGER.tracef("startTracking %s from: %s", className, hostBundle);
         initiatorAssociation.set(hostBundle);
     }
 
     static void processLoadedClass(Class<?> loadedClass) {
-        if (initiatorAssociation.get() == null)
-            throw new IllegalStateException("No activation initiator");
-
-        log.tracef("processLoadedClass: %s", loadedClass.getName());
+        assert initiatorAssociation.get() != null : "No activation initiator";
+        LOGGER.tracef("processLoadedClass: %s", loadedClass.getName());
         processActivationStack();
     }
 
     static void preDefineClass(HostBundleState hostBundle, String className) {
-        log.tracef("preDefineClass %s from: %s", className, hostBundle);
+        LOGGER.tracef("preDefineClass %s from: %s", className, hostBundle);
         addDefinedClass(hostBundle, className);
     }
 
     static void postDefineClass(HostBundleState hostBundle, Class<?> definedClass) {
-        log.tracef("postDefineClass %s from: %s", definedClass.getName(), hostBundle);
+        LOGGER.tracef("postDefineClass %s from: %s", definedClass.getName(), hostBundle);
         if (initiatorAssociation.get() == null) {
             processActivationStack();
         }
     }
 
     static void stopTracking(HostBundleState hostBundle, String className) {
-        log.tracef("stopTracking %s from: %s", className, hostBundle);
+        LOGGER.tracef("stopTracking %s from: %s", className, hostBundle);
         initiatorAssociation.remove();
         stackAssociation.remove();
     }
@@ -78,7 +73,7 @@ final class LazyActivationTracker {
                 stackAssociation.set(stack);
             }
             if (stack.contains(hostBundle) == false) {
-                log.tracef("addDefinedClass %s from: %s", className, hostBundle);
+                LOGGER.tracef("addDefinedClass %s from: %s", className, hostBundle);
                 stack.push(hostBundle);
             }
         }
@@ -87,14 +82,14 @@ final class LazyActivationTracker {
     private static void processActivationStack() {
         Stack<HostBundleState> stack = stackAssociation.get();
         if (stack != null) {
-            log.tracef("processActivationStack: %s", stack);
+            LOGGER.tracef("processActivationStack: %s", stack);
             while (stack.isEmpty() == false) {
                 HostBundleState hostBundle = stack.pop();
                 if (hostBundle.awaitLazyActivation()) {
                     try {
                         hostBundle.activateLazily();
                     } catch (Throwable th) {
-                        log.errorf(th, "Cannot activate lazily: %s", hostBundle);
+                        LOGGER.errorCannotActivateBundleLazily(th, hostBundle);
                     }
                 }
             }

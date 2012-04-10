@@ -21,7 +21,12 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
@@ -43,12 +48,7 @@ import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemPathsProvider;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.osgi.framework.Bundle;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
 
 /**
  * The system module provider plugin.
@@ -57,9 +57,6 @@ import java.util.Set;
  * @since 04-Feb-2011
  */
 final class DefaultFrameworkModuleProvider extends AbstractPluginService<FrameworkModuleProvider> implements FrameworkModuleProvider {
-
-    // Provide logging
-    final Logger log = Logger.getLogger(DefaultFrameworkModuleProvider.class);
 
     private static final ModuleIdentifier FRAMEWORK_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".framework");
     private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
@@ -125,7 +122,7 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
 
             @Override
             public Package loadPackageLocal(String name) {
-                throw new NotImplementedException();
+                throw new UnsupportedOperationException();
             }
 
             @Override
@@ -154,7 +151,7 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
             };
             return moduleLoader.loadModule(specBuilder.getIdentifier());
         } catch (ModuleLoadException ex) {
-            throw new IllegalStateException(ex);
+            throw MESSAGES.illegalStateCannotCreateFrameworkModule(ex);
         }
     }
 }

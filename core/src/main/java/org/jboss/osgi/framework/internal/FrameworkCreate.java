@@ -21,7 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -42,9 +41,6 @@ import org.osgi.framework.launch.Framework;
  * @since 04-Apr-2011
  */
 public final class FrameworkCreate extends AbstractFrameworkService {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(FrameworkCreate.class);
 
     private final FrameworkState frameworkState;
 

@@ -21,15 +21,15 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import java.io.IOException;
+import java.net.URL;
+import java.util.Collection;
+
 import org.jboss.modules.ClassSpec;
 import org.jboss.modules.PackageSpec;
 import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoader;
 import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.Collection;
 
 /**
  * An {@link ResourceLoader} that is backed by a {@link RevisionContent} pointing to an archive.
@@ -43,9 +43,7 @@ final class RevisionContentResourceLoader implements ResourceLoader {
     private final VirtualFileResourceLoader delegate;
 
     RevisionContentResourceLoader(RevisionContent revContent) {
-        if (revContent == null)
-            throw new IllegalArgumentException("Null revContent");
-
+        assert revContent != null : "Null revContent";
         this.delegate = new VirtualFileResourceLoader(revContent.getVirtualFile());
         this.revContent = revContent;
     }

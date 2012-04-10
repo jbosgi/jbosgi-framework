@@ -21,24 +21,25 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
-import org.jboss.modules.Module;
-import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.FrameworkModuleProvider;
-import org.jboss.osgi.framework.TypeAdaptor;
-import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XEnvironment;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.Version;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
+
+import org.jboss.modules.Module;
+import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.FrameworkModuleProvider;
+import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.TypeAdaptor;
+import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XEnvironment;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.Version;
 
 /**
  * Represents the state of the system {@link Bundle}.
@@ -47,9 +48,6 @@ import java.util.List;
  * @since 04-Apr-2011
  */
 final class SystemBundleState extends AbstractBundleState implements TypeAdaptor {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(SystemBundleState.class);
 
     private final FrameworkModuleProvider frameworkModuleProvider;
     private BundleStorageState storageState;
@@ -62,15 +60,10 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
 
     /**
      * Assert that the given bundle is an instance of {@link UserBundleState}
-     *
-     * @throws IllegalArgumentException if the given bundle is not an instance of {@link UserBundleState}
      */
     static SystemBundleState assertBundleState(Bundle bundle) {
         bundle = AbstractBundleState.assertBundleState(bundle);
-
-        if (bundle instanceof UserBundleState == false)
-            throw new IllegalArgumentException("Not an UserBundleState: " + bundle);
-
+        assert bundle instanceof SystemBundleState : "Not an SystemBundleState: " + bundle;
         return (SystemBundleState) bundle;
     }
 
@@ -92,7 +85,7 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
         try {
             storageState = storagePlugin.createStorageState(0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME, null);
         } catch (IOException ex) {
-            throw new IllegalStateException("Cannot create system persistence storage", ex);
+            throw MESSAGES.illegalStateCannotCreateSystemBundleStorage(ex);
         }
     }
 
@@ -150,8 +143,7 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
 
     @Override
     SystemBundleRevision getBundleRevisionById(int revisionId) {
-        if (revisionId != 0)
-            throw new IllegalArgumentException("System bundle does not have a revision with id: " + revisionId);
+        assert revisionId == 0 : "System bundle does not have a revision with id: " + revisionId;
         return revision;
     }
 
@@ -172,6 +164,6 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
 
     @Override
     void uninstallInternal() throws BundleException {
-        throw new BundleException("Cannot uninstall the system bundle");
+        throw MESSAGES.bundleCannotUninstallSystemBundle();
     }
 }

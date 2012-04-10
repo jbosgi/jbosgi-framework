@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.BundleException;
 
@@ -36,6 +38,6 @@ final class BundleValidatorR3 implements BundleValidator {
     public void validateBundle(UserBundleState userBundle, OSGiMetaData osgiMetaData) throws BundleException {
         int manifestVersion = osgiMetaData.getBundleManifestVersion();
         if (manifestVersion != 1)
-            throw new BundleException("Unsupported manifest version " + manifestVersion + " for " + userBundle);
+            throw MESSAGES.bundleUnsupportedBundleManifestVersion(manifestVersion, userBundle);
     }
 }

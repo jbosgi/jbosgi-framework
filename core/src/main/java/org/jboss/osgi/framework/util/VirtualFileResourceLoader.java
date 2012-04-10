@@ -21,12 +21,7 @@
  */
 package org.jboss.osgi.framework.util;
 
-import org.jboss.modules.ClassSpec;
-import org.jboss.modules.PackageSpec;
-import org.jboss.modules.Resource;
-import org.jboss.modules.ResourceLoader;
-import org.jboss.osgi.vfs.VFSUtils;
-import org.jboss.osgi.vfs.VirtualFile;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -43,6 +38,13 @@ import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+import org.jboss.modules.ClassSpec;
+import org.jboss.modules.PackageSpec;
+import org.jboss.modules.Resource;
+import org.jboss.modules.ResourceLoader;
+import org.jboss.osgi.vfs.VFSUtils;
+import org.jboss.osgi.vfs.VirtualFile;
+
 /**
  * An {@link ResourceLoader} that is backed by a {@link VirtualFile} pointing to an archive.
  * 
@@ -56,9 +58,8 @@ public final class VirtualFileResourceLoader implements ResourceLoader {
     private final Set<String> localPaths;
 
     public VirtualFileResourceLoader(VirtualFile virtualFile) {
-        if (virtualFile == null)
-            throw new IllegalArgumentException("Null virtualFile");
-
+        if (virtualFile == null) 
+            throw MESSAGES.illegalArgumentNull("virtualFile");
         this.virtualFile = virtualFile;
         this.localPaths = getLocalPaths();
     }
@@ -155,10 +156,10 @@ public final class VirtualFileResourceLoader implements ResourceLoader {
                 }
             }
         } catch (IOException ex) {
-            throw new IllegalArgumentException("Cannot obtain paths from: " + virtualFile, ex);
+            throw MESSAGES.illegalArgumentCannotObtainPaths(ex,  virtualFile);
         }
         if (result.size() == 0)
-            throw new IllegalArgumentException("Cannot obtain paths from: " + virtualFile);
+            throw MESSAGES.illegalArgumentCannotObtainPaths(null,  virtualFile);
 
         return Collections.unmodifiableSet(result);
     }
@@ -178,8 +179,7 @@ public final class VirtualFileResourceLoader implements ResourceLoader {
         VirtualFile child;
 
         VirtualResource(VirtualFile child) {
-            if (child == null)
-                throw new IllegalArgumentException("Null child");
+            assert child != null : "Null child";
             this.child = child;
         }
 
@@ -193,7 +193,7 @@ public final class VirtualFileResourceLoader implements ResourceLoader {
             try {
                 return child.toURL();
             } catch (IOException ex) {
-                throw new IllegalStateException("Cannot obtain URL for: " + child);
+                throw MESSAGES.illegalStateCannotObtainURL(child);
             }
         }
 

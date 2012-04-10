@@ -21,26 +21,22 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
-import org.jboss.modules.ModuleLoadException;
-import org.jboss.osgi.resolver.spi.AbstractWiring;
-import org.jboss.osgi.spi.NotImplementedException;
-import org.osgi.framework.Bundle;
-import org.osgi.resource.Capability;
-import org.osgi.resource.Requirement;
-import org.osgi.resource.Wire;
-import org.osgi.framework.wiring.BundleCapability;
-import org.osgi.framework.wiring.BundleRequirement;
-import org.osgi.framework.wiring.BundleRevision;
-import org.osgi.framework.wiring.BundleWire;
-import org.osgi.framework.wiring.BundleWiring;
-
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+
+import org.jboss.modules.ModuleLoadException;
+import org.jboss.osgi.resolver.spi.AbstractWiring;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.wiring.BundleCapability;
+import org.osgi.framework.wiring.BundleRequirement;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWire;
+import org.osgi.framework.wiring.BundleWiring;
+import org.osgi.resource.Wire;
 
 /**
  * The {@link BundleWiring} implementation.
@@ -49,9 +45,6 @@ import java.util.List;
  * @since 23-Feb-2012
  */
 class AbstractBundleWiring extends AbstractWiring implements BundleWiring {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(AbstractBundleWiring.class);
 
     AbstractBundleWiring(AbstractBundleRevision brev, List<Wire> wires) {
         super(brev, wires);
@@ -85,12 +78,12 @@ class AbstractBundleWiring extends AbstractWiring implements BundleWiring {
 
     @Override
     public List<BundleWire> getProvidedWires(String namespace) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public List<BundleWire> getRequiredWires(String namespace) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -126,30 +119,12 @@ class AbstractBundleWiring extends AbstractWiring implements BundleWiring {
 
     @Override
     public Collection<String> listResources(String path, String filePattern, int options) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Bundle getBundle() {
         AbstractBundleRevision brev = (AbstractBundleRevision) getRevision();
         return brev.getBundle();
-    }
-
-    private AbstractBundleWire toBundleWire(Wire wire) {
-        BundleCapability bcap = toBundleCapability(wire.getCapability());
-        BundleRequirement breq = toBundleRequirement(wire.getRequirement());
-        BundleRevision provider = (BundleRevision) wire.getProvider();
-        BundleRevision requirer = (BundleRevision) wire.getRequirer();
-        return new AbstractBundleWire(bcap, breq, provider, requirer);
-    }
-
-   private BundleCapability toBundleCapability(Capability cap) {
-        BundleRevision brev = (BundleRevision) cap.getResource();
-        return new AbstractBundleCapability(brev, cap.getNamespace(), cap.getAttributes(), cap.getDirectives());
-    }
-
-    private BundleRequirement toBundleRequirement(Requirement req) {
-        BundleRevision brev = (BundleRevision) req.getResource();
-        return new AbstractBundleRequirement(brev, req.getNamespace(), req.getAttributes(), req.getDirectives());
     }
 }

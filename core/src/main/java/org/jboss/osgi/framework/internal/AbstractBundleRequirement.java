@@ -21,14 +21,13 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import java.util.Map;
+
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.spi.AbstractRequirement;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;
-
-import java.util.Map;
 
 /**
  * The {@link BundleRequirement} implementation.
@@ -37,9 +36,6 @@ import java.util.Map;
  * @since 23-Feb-2012
  */
 class AbstractBundleRequirement extends AbstractRequirement implements BundleRequirement {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(AbstractBundleRequirement.class);
 
     AbstractBundleRequirement(BundleRevision brev, String namespace, Map<String, Object> atts, Map<String, String> dirs) {
         super(brev, namespace, atts, dirs);

@@ -21,11 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
-import org.jboss.modules.ClassSpec;
-import org.jboss.modules.PackageSpec;
-import org.jboss.modules.Resource;
-import org.jboss.modules.ResourceLoader;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,14 +30,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.jboss.modules.ClassSpec;
+import org.jboss.modules.PackageSpec;
+import org.jboss.modules.Resource;
+import org.jboss.modules.ResourceLoader;
+
 /**
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
 final class NativeResourceLoader implements ResourceLoader {
-
-    // Provide logging
-    private static final Logger log = Logger.getLogger(NativeResourceLoader.class);
 
     // List of native library providers
     private volatile List<NativeLibraryProvider> nativeLibraries;
@@ -77,7 +75,7 @@ final class NativeResourceLoader implements ResourceLoader {
         try {
             libfile = libProvider.getLibraryLocation();
         } catch (IOException ex) {
-            log.errorf(ex, "Cannot provide native library location for: %s", libname);
+            LOGGER.errorCannotProvideNativeLibraryLocation(ex, libname);
             return null;
         }
 
@@ -86,7 +84,7 @@ final class NativeResourceLoader implements ResourceLoader {
 
     @Override
     public String getRootName() {
-        return "??osgi-native??";
+        return "undefined";
     }
 
     @Override

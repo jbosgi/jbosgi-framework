@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -28,7 +30,6 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
-import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -44,8 +45,6 @@ import org.osgi.framework.BundleException;
  * @since 29-Jun-2010
  */
 abstract class UserBundleRevision extends AbstractBundleRevision {
-
-    static final Logger log = Logger.getLogger(UserBundleRevision.class);
 
     private final Deployment deployment;
     private List<RevisionContent> contentList;
@@ -143,8 +142,7 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
     }
 
     private List<RevisionContent> getBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata) {
-        if (rootFile == null)
-            throw new IllegalArgumentException("Null rootFile");
+        assert rootFile != null : "Null rootFile";
 
         // Setup single root file list, if there is no Bundle-ClassPath
         if (metadata.getBundleClassPath().size() == 0) {
@@ -167,7 +165,7 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
                         rootList.add(revContent);
                     }
                 } catch (IOException ex) {
-                    log.errorf(ex, "Cannot get class path element: %s", path);
+                    LOGGER.errorCannotGetClassPathEntry(ex, path, this);
                 }
             }
         }

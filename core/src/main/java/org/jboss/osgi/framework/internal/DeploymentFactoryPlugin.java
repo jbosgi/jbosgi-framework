@@ -21,10 +21,12 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
 import java.io.IOException;
 import java.util.jar.Manifest;
 
-import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -47,9 +49,6 @@ import org.osgi.framework.Version;
  * @since 12-Jul-2010
  */
 final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFactoryPlugin> {
-
-    // Provide logging
-    private static final Logger log = Logger.getLogger(DeploymentFactoryPlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
@@ -76,9 +75,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
      * @throws BundleException If the given root file does not
      */
     Deployment createDeployment(BundleStorageState storageState) throws BundleException {
-        if (storageState == null)
-            throw new IllegalArgumentException("Null storageState");
-
+        assert storageState != null : "Null storageState";
         try {
             String location = storageState.getLocation();
             VirtualFile rootFile = storageState.getRootFile();
@@ -106,7 +103,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
             dep.addAttachment(OSGiMetaData.class, metadata);
             return dep;
         } catch (NumberFormatException nfe) {
-            throw new BundleException("Invalid number format: " + nfe.getMessage(), nfe);
+            throw FrameworkMessages.MESSAGES.bundleInvalidNumberFormat(nfe, nfe.getMessage());
         } catch (BundleException ex) {
             // No valid OSGi manifest. Fallback to jbosgi-xservice.properties
             cause = ex;
@@ -148,22 +145,22 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
      * @return The OSGiMetaData
      * @throws BundleException If OSGiMetaData could not be constructed from the deployment
      */
-    OSGiMetaData createOSGiMetaData(Deployment dep) throws BundleException {
+    OSGiMetaData createOSGiMetaData(Deployment deployment) throws BundleException {
 
         // #1 check if the Deployment already contains a OSGiMetaData
-        OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
+        OSGiMetaData metadata = deployment.getAttachment(OSGiMetaData.class);
         if (metadata != null)
             return metadata;
 
         // #2 check if the Deployment contains valid BundleInfo
-        BundleInfo info = dep.getAttachment(BundleInfo.class);
+        BundleInfo info = deployment.getAttachment(BundleInfo.class);
         if (info != null)
             metadata = toOSGiMetaData(info);
 
         // #3 check if we have a valid OSGi manifest
         if (metadata == null) {
-            VirtualFile rootFile = dep.getRoot();
-            String location = dep.getLocation();
+            VirtualFile rootFile = deployment.getRoot();
+            String location = deployment.getLocation();
             try {
                 info = BundleInfo.createBundleInfo(rootFile, location);
                 metadata = toOSGiMetaData(info);
@@ -174,14 +171,14 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
 
         // #5 check if we have META-INF/jbosgi-xservice.properties
         if (metadata == null) {
-            VirtualFile rootFile = dep.getRoot();
+            VirtualFile rootFile = deployment.getRoot();
             metadata = getXServiceMetaData(rootFile);
         }
 
         if (metadata == null)
-            throw new BundleException("Not a valid OSGi deployment: " + dep);
+            throw MESSAGES.bundleInvalidDeployment(deployment);
 
-        dep.addAttachment(OSGiMetaData.class, metadata);
+        deployment.addAttachment(OSGiMetaData.class, metadata);
         return metadata;
     }
 
@@ -203,7 +200,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
                 }
             }
         } catch (IOException ex) {
-            log.warnf(ex, "Cannot process XService metadata: %s", rootFile);
+            LOGGER.warnCannotProcessMetadataProperties(ex, rootFile);
         }
         return null;
     }

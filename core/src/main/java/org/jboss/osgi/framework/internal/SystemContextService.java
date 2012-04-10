@@ -21,7 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -41,9 +40,6 @@ import org.osgi.framework.BundleContext;
  * @since 04-Apr-2011
  */
 public final class SystemContextService implements Service<BundleContext> {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(SystemContextService.class);
 
     final InjectedValue<Bundle> injectedSystemBundle = new InjectedValue<Bundle>();
 

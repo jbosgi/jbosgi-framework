@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
@@ -50,16 +52,10 @@ final class FragmentBundleRevision extends UserBundleRevision {
 
     /**
      * Assert that the given bundleRev is an instance of FragmentRevision
-     *
-     * @throws IllegalArgumentException if the given bundleRev is not an instance of FragmentRevision
      */
     static FragmentBundleRevision assertFragmentRevision(AbstractBundleRevision bundleRev) {
-        if (bundleRev == null)
-            throw new IllegalArgumentException("Null bundleRev");
-
-        if (bundleRev instanceof FragmentBundleRevision == false)
-            throw new IllegalArgumentException("Not an FragmentRevision: " + bundleRev);
-
+        assert bundleRev != null : "Null bundleRev";
+        assert bundleRev instanceof FragmentBundleRevision : "Not an FragmentRevision: " + bundleRev;
         return (FragmentBundleRevision) bundleRev;
     }
 
@@ -81,7 +77,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
 
     @Override
     Class<?> loadClass(String className) throws ClassNotFoundException {
-        throw new ClassNotFoundException("Cannot load class from a fragment: " + this);
+        throw MESSAGES.cannotLoadClassFromFragment(this);
     }
 
     @Override
@@ -124,7 +120,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
                     highest = hostrev;
             }
             if (highest == null)
-                throw new IllegalStateException("Cannot abtain attached host for: " + this);
+                throw FrameworkMessages.MESSAGES.illegalStateCannotObtainAttachedHost(this);
 
             boolean hostUninstalled = highest.getBundleState().isUninstalled();
             result = (hostUninstalled ? getEntry(path) : highest.getLocalizationEntry(path));

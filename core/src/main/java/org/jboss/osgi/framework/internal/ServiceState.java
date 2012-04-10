@@ -21,18 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.Constants;
-import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.ServiceEvent;
-import org.osgi.framework.ServiceException;
-import org.osgi.framework.ServiceFactory;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,6 +38,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.Constants;
+import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.ServiceEvent;
+import org.osgi.framework.ServiceException;
+import org.osgi.framework.ServiceFactory;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
+
 /**
  * The service implementation.
  *
@@ -57,8 +59,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @SuppressWarnings("rawtypes")
 final class ServiceState implements ServiceRegistration, ServiceReference {
-    // Provide logging
-    private static final Logger log = Logger.getLogger(ServiceState.class);
 
     private final ServiceManagerPlugin serviceManager;
     private final AbstractBundleState ownerBundle;
@@ -76,14 +76,10 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
 
     @SuppressWarnings("unchecked")
     ServiceState(ServiceManagerPlugin serviceManager, AbstractBundleState owner, long serviceId, String[] classNames, ValueProvider valueProvider, Dictionary properties) {
-        if (serviceManager == null)
-            throw new IllegalArgumentException("Null serviceManager");
-        if (owner == null)
-            throw new IllegalArgumentException("Null owner");
-        if (classNames == null || classNames.length == 0)
-            throw new IllegalArgumentException("Null clazzes");
-        if (valueProvider == null)
-            throw new IllegalArgumentException("Null valueProvider");
+        assert serviceManager != null : "Null serviceManager";
+        assert owner != null : "Null owner";
+        assert classNames != null && classNames.length > 0 : "Null clazzes";
+        assert valueProvider != null : "Null valueProvider";
 
         this.serviceManager = serviceManager;
         this.ownerBundle = owner;
@@ -91,14 +87,11 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         this.valueProvider = valueProvider;
 
         if (checkValidClassNames(owner, classNames, valueProvider.getValue()) == false)
-            throw new IllegalArgumentException("Invalid object class in: " + Arrays.asList(classNames));
+            throw MESSAGES.illegalArgumentInvalidObjectClass(Arrays.toString(classNames));
 
         // Generate the service names
         serviceNames = new HashSet<ServiceName>(classNames.length);
         for (int i = 0; i < classNames.length; i++) {
-            if (classNames[i] == null)
-                throw new IllegalArgumentException("Null service class at index: " + i);
-
             ServiceName serviceName = ServiceState.createServiceName(classNames[i]);
             serviceNames.add(serviceName);
         }
@@ -117,16 +110,12 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
 
     /**
      * Assert that the given reference is an instance of ServiceState
-     *
-     * @throws IllegalArgumentException if the given reference is not an instance of ServiceState
      */
     static ServiceState assertServiceState(ServiceReference sref) {
-        if (sref == null)
-            throw new IllegalArgumentException("Null sref");
-
-        if (sref instanceof ServiceReferenceWrapper)
+        assert sref != null : "Null sref";
+        if (sref instanceof ServiceReferenceWrapper) {
             sref = ((ServiceReferenceWrapper) sref).getServiceState();
-
+        }
         return (ServiceState) sref;
     }
 
@@ -250,7 +239,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({ "unchecked" })
     public void setProperties(Dictionary properties) {
         assertNotUnregistered();
 
@@ -329,9 +318,9 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     @Override
     public boolean isAssignableTo(Bundle bundle, String className) {
         if (bundle == null)
-            throw new IllegalArgumentException("Null bundle");
+            throw MESSAGES.illegalArgumentNull("bundle");
         if (className == null)
-            throw new IllegalArgumentException("Null className");
+            throw MESSAGES.illegalArgumentNull("className");
 
         AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
         if (bundleState == ownerBundle)
@@ -343,7 +332,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         } catch (ClassNotFoundException ex) {
             // If the requesting bundle does not have a wire to the
             // service package it cannot be constraint on that package.
-            log.tracef("Requesting bundle [%s] cannot load class: %s", bundle, className);
+            LOGGER.tracef("Requesting bundle [%s] cannot load class: %s", bundle, className);
             return true;
         }
 
@@ -354,14 +343,14 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         try {
             serviceClass = ownerBundle.loadClass(className);
         } catch (ClassNotFoundException e) {
-            log.tracef("Registrant bundle [%s] cannot load class: %s", ownerBundle, className);
+            LOGGER.tracef("Registrant bundle [%s] cannot load class: %s", ownerBundle, className);
             return true;
         }
 
         // If the package source of the registrant bundle is equal to the package source of the specified bundle
         // then return true; otherwise return false.
         if (targetClass != serviceClass) {
-            log.tracef("Not assignable: %s", className);
+            LOGGER.tracef("Not assignable: %s", className);
             return false;
         }
 
@@ -371,7 +360,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     @Override
     public int compareTo(Object sref) {
         if (sref instanceof ServiceReference == false)
-            throw new IllegalArgumentException("Invalid sref: " + sref);
+            throw MESSAGES.illegalArgumentInvalidServiceRef(sref);
 
         Comparator<ServiceReference> comparator = ServiceReferenceComparator.getInstance();
         return comparator.compare(this, (ServiceReference) sref);
@@ -391,40 +380,40 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
 
     void assertNotUnregistered() {
         if (isUnregistered())
-            throw new IllegalStateException("Service is unregistered: " + this);
+            throw MESSAGES.illegalStateServiceUnregistered(this);
     }
 
     private boolean checkValidClassNames(AbstractBundleState bundleState, String[] classNames, Object value) {
-        if (bundleState == null)
-            throw new IllegalArgumentException("Null bundleState");
-        if (classNames == null || classNames.length == 0)
-            throw new IllegalArgumentException("Null classNames");
-        if (value == null)
-            throw new IllegalArgumentException("Null value");
+        assert bundleState != null : "Null bundleState";
+        assert classNames != null && classNames.length > 0 : "Null service classes";
+        assert value != null : "Null value";
 
         if (value instanceof ServiceFactory)
             return true;
 
+        boolean result = true;
         for (String className : classNames) {
-            if (className == null)
-                throw new IllegalArgumentException("Null className");
-
+            if (className == null) {
+                result = false;
+                break;
+            }
             try {
                 Class<?> valueClass = value.getClass();
                 // Use Class.forName with classloader argument as the classloader
                 // might be null (for JRE provided types).
                 Class<?> clazz = Class.forName(className, false, valueClass.getClassLoader());
                 if (clazz.isAssignableFrom(valueClass) == false) {
-                    String format = "Service interface [%s] loaded from [%s] is not assignable from [%s] loaded from [%s]";
-                    log.errorf(format, className, clazz.getClassLoader(), valueClass.getName(), valueClass.getClassLoader());
-                    return false;
+                    LOGGER.errorServiceNotAssignable(className, clazz.getClassLoader(), valueClass.getName(), valueClass.getClassLoader());
+                    result = false;
+                    break;
                 }
             } catch (ClassNotFoundException ex) {
-                log.errorf("Cannot load [%s] from: %s", className, bundleState);
-                return false;
+                LOGGER.errorCannotLoadService(className, bundleState);
+                result = false;
+                break;
             }
         }
-        return true;
+        return result;
     }
 
     @Override

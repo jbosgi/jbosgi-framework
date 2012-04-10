@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.jboss.logging.Logger;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
@@ -44,15 +43,15 @@ import org.jboss.osgi.resolver.spi.AbstractResource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
-import org.osgi.resource.Capability;
-import org.osgi.resource.Requirement;
-import org.osgi.resource.Resource;
-import org.osgi.resource.Wiring;
 import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
+import org.osgi.resource.Capability;
+import org.osgi.resource.Requirement;
+import org.osgi.resource.Resource;
+import org.osgi.resource.Wiring;
 
 /**
  * An abstract bundle revision.
@@ -63,8 +62,6 @@ import org.osgi.framework.wiring.BundleWiring;
  */
 abstract class AbstractBundleRevision extends AbstractResource implements BundleRevision {
 
-    static final Logger log = Logger.getLogger(AbstractBundleRevision.class);
-
     private final int revision;
     private final AbstractBundleState bundleState;
     private final OSGiMetaData metadata;
@@ -72,10 +69,8 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
     private Map<String, List<BundleRequirement>> bundleRequirements;
 
     AbstractBundleRevision(AbstractBundleState bundleState, OSGiMetaData metadata, int revision) throws BundleException {
-        if (bundleState == null)
-            throw new IllegalArgumentException("Null bundleState");
-        if (metadata == null)
-            throw new IllegalArgumentException("Null metadata");
+        assert bundleState != null : "Null bundleState";
+        assert metadata != null : "Null metadata";
 
         this.bundleState = bundleState;
         this.metadata = metadata;
@@ -91,19 +86,15 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
             };
             XResourceBuilderFactory.create(factory).loadFrom(metadata);
         } catch (ResourceBuilderException ex) {
-            throw new BundleException(ex. getMessage(), ex);
+            throw new BundleException(ex.getMessage(), ex);
         }
     }
 
     /**
      * Assert that the given resource is an instance of {@link AbstractBundleRevision}
-     *
-     * @throws IllegalArgumentException if the given resource is not an instance of {@link AbstractBundleRevision}
      */
     static AbstractBundleRevision assertBundleRevision(Resource resource) {
-        if (resource instanceof AbstractBundleRevision == false)
-            throw new IllegalArgumentException("Not an AbstractBundleRevision: " + resource);
-
+        assert resource instanceof AbstractBundleRevision : "Not an AbstractBundleRevision: " + resource;
         return (AbstractBundleRevision) resource;
     }
 
@@ -228,13 +219,6 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
     }
 
     void refreshRevision() throws BundleException {
-        // [TODO] In case of an externally provided XModule, we generate dummy OSGiMetaData
-        // with considerable data loss. A new XModule cannot get created from that
-        // OSGiMetaData. An acceptable fix would be to allow refresh on the XModule
-        // or otherwise create a clone of the original XModule.
-        // if (refreshAllowed == false)
-        // throw new IllegalStateException("External XModule, refresh not allowed");
-
         XEnvironment env = bundleState.getFrameworkState().getEnvironment();
         env.refreshResources(this);
         refreshRevisionInternal();

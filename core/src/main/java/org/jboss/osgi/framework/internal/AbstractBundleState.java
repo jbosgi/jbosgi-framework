@@ -21,25 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
-import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.spi.NotImplementedException;
-import org.jboss.osgi.spi.ConstantsHelper;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleEvent;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
-import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.Version;
-import org.osgi.resource.Wire;
-import org.osgi.framework.wiring.BundleWiring;
-import org.osgi.service.resolver.ResolutionException;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,6 +44,24 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
+import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.spi.ConstantsHelper;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
+import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.Version;
+import org.osgi.framework.wiring.BundleWiring;
+import org.osgi.resource.Wire;
+import org.osgi.service.resolver.ResolutionException;
+
 /**
  * An abstract representation of a {@link Bundle} state.
  * <p/>
@@ -72,9 +73,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 abstract class AbstractBundleState implements Bundle {
 
-    // Provide logging
-    static final Logger log = Logger.getLogger(AbstractBundleState.class);
-
     private final long bundleId;
     private final String symbolicName;
     private final FrameworkState frameworkState;
@@ -84,8 +82,7 @@ abstract class AbstractBundleState implements Bundle {
     private AbstractBundleContext bundleContext;
 
     AbstractBundleState(FrameworkState frameworkState, long bundleId, String symbolicName) {
-        if (frameworkState == null)
-            throw new IllegalStateException("Null frameworkState");
+        assert frameworkState != null : "Null frameworkState";
 
         // strip-off the directives
         if (symbolicName != null && symbolicName.indexOf(';') > 0)
@@ -170,7 +167,7 @@ abstract class AbstractBundleState implements Bundle {
                 bundleEvent = BundleEvent.RESOLVED;
                 break;
             default:
-                throw new IllegalArgumentException("Unknown bundle state: " + state);
+                throw MESSAGES.illegalArgumentUnknownBundleState(state);
         }
 
         changeState(state, bundleEvent);
@@ -178,7 +175,7 @@ abstract class AbstractBundleState implements Bundle {
 
     void changeState(int state, int eventType) {
 
-        log.tracef("changeState: %s -> %s", this, ConstantsHelper.bundleState(state));
+        LOGGER.tracef("changeState: %s -> %s", this, ConstantsHelper.bundleState(state));
 
         // Invoke the lifecycle interceptors
         boolean frameworkActive = getBundleManager().isFrameworkActive();
@@ -201,12 +198,12 @@ abstract class AbstractBundleState implements Bundle {
     }
 
     void addRegisteredService(ServiceState serviceState) {
-        log.tracef("Add registered service %s to: %s", serviceState, this);
+        LOGGER.tracef("Add registered service %s to: %s", serviceState, this);
         registeredServices.add(serviceState);
     }
 
     void removeRegisteredService(ServiceState serviceState) {
-        log.tracef("Remove registered service %s from: %s", serviceState, this);
+        LOGGER.tracef("Remove registered service %s from: %s", serviceState, this);
         registeredServices.remove(serviceState);
     }
 
@@ -247,14 +244,14 @@ abstract class AbstractBundleState implements Bundle {
     }
 
     void addServiceInUse(ServiceState serviceState) {
-        log.tracef("Add service in use %s to: %s", serviceState, this);
+        LOGGER.tracef("Add service in use %s to: %s", serviceState, this);
         usedServices.putIfAbsent(serviceState, new AtomicInteger());
         AtomicInteger count = usedServices.get(serviceState);
         count.incrementAndGet();
     }
 
     int removeServiceInUse(ServiceState serviceState) {
-        log.tracef("Remove service in use %s from: %s", serviceState, this);
+        LOGGER.tracef("Remove service in use %s from: %s", serviceState, this);
         AtomicInteger count = usedServices.get(serviceState);
         if (count == null)
             return -1;
@@ -328,7 +325,7 @@ abstract class AbstractBundleState implements Bundle {
             try {
                 resBundle = new PropertyResourceBundle(entryURL.openStream());
             } catch (IOException ex) {
-                throw new IllegalStateException("Cannot read resouce bundle: " + entryURL, ex);
+                throw MESSAGES.illegalStateCannotReadResourceBundle(ex, entryURL);
             }
         }
 
@@ -450,8 +447,7 @@ abstract class AbstractBundleState implements Bundle {
     }
 
     AbstractBundleContext createBundleContext() {
-        if (bundleContext != null)
-            throw new IllegalStateException("BundleContext already available");
+        assert bundleContext == null : "BundleContext already available";
         return bundleContext = createContextInternal();
     }
 
@@ -474,7 +470,7 @@ abstract class AbstractBundleState implements Bundle {
     @Override
     @SuppressWarnings("rawtypes")
     public Map getSignerCertificates(int signersType) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -514,7 +510,7 @@ abstract class AbstractBundleState implements Bundle {
     public void update() throws BundleException {
         assertNotUninstalled();
         updateInternal(null);
-        log.infof("Bundle updated: %s", this);
+        LOGGER.infoBundleUpdated(this);
         updateLastModified();
     }
 
@@ -522,7 +518,7 @@ abstract class AbstractBundleState implements Bundle {
     public void update(InputStream input) throws BundleException {
         assertNotUninstalled();
         updateInternal(input);
-        log.infof("Bundle updated: %s", this);
+        LOGGER.infoBundleUpdated(this);
         updateLastModified();
     }
 
@@ -539,7 +535,7 @@ abstract class AbstractBundleState implements Bundle {
     ResolutionException ensureResolved(boolean fireEvent) {
 
         if (isUninstalled())
-            throw new IllegalStateException("Bundle already uninstalled: " + this);
+            throw MESSAGES.illegalStateBundleAlreadyUninstalled(this);
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired
@@ -555,15 +551,15 @@ abstract class AbstractBundleState implements Bundle {
                 // Activate the service that represents bundle state RESOLVED
                 getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.ACTIVE);
                 
-                if (log.isDebugEnabled()) {
+                if (LOGGER.isDebugEnabled()) {
                     BundleWiring wiring = getCurrentBundleRevision().getWiring();
-                    log.debugf("Required resource wires for: %s", wiring.getResource());
+                    LOGGER.debugf("Required resource wires for: %s", wiring.getResource());
                     for (Wire wire : wiring.getRequiredResourceWires(null)) {
-                        log.debugf("   %s", wire);
+                        LOGGER.debugf("   %s", wire);
                     }
-                    log.debugf("Provided resource wires for: %s", wiring.getResource());
+                    LOGGER.debugf("Provided resource wires for: %s", wiring.getResource());
                     for (Wire wire : wiring.getProvidedResourceWires(null)) {
-                        log.debugf("   %s", wire);
+                        LOGGER.debugf("   %s", wire);
                     }
                 }
 
@@ -580,21 +576,15 @@ abstract class AbstractBundleState implements Bundle {
 
     void assertNotUninstalled() {
         if (getState() == Bundle.UNINSTALLED)
-            throw new IllegalStateException("Bundle uninstalled: " + this);
+            throw MESSAGES.illegalStateBundleAlreadyUninstalled(this);
     }
 
     /**
      * Assert that the given bundle is an instance of AbstractBundleState
-     *
-     * @throws IllegalArgumentException if the given bundle is not an instance of AbstractBundleState
      */
     static AbstractBundleState assertBundleState(Bundle bundle) {
-        if (bundle == null)
-            throw new IllegalArgumentException("Null bundle");
-
-        if (bundle instanceof AbstractBundleState == false)
-            throw new IllegalArgumentException("Not a BundleState: " + bundle);
-
+        assert bundle != null : "Null bundle";
+        assert bundle instanceof AbstractBundleState : "Not a BundleState: " + bundle;
         return (AbstractBundleState) bundle;
     }
 

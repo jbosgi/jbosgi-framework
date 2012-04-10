@@ -35,8 +35,7 @@ final class ServiceReferenceWrapper implements ServiceReference {
     private ServiceState delegate;
 
     ServiceReferenceWrapper(ServiceState serviceState) {
-        if (serviceState == null)
-            throw new IllegalArgumentException("Null serviceState");
+        assert serviceState != null : "Null serviceState";
         this.delegate = serviceState;
     }
 

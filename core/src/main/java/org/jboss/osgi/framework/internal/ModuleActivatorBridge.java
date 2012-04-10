@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceContainer;
@@ -82,15 +84,10 @@ final class ModuleActivatorBridge implements BundleActivator {
         private Bundle bundle;
 
         ModuleContextImpl(ServiceContainer serviceContainer, Module module, BundleContext systemContext, Bundle bundle) {
-            if (serviceContainer == null)
-                throw new IllegalArgumentException("Null serviceContainer");
-            if (module == null)
-                throw new IllegalArgumentException("Null module");
-            if (systemContext == null)
-                throw new IllegalArgumentException("Null systemContext");
-            if (bundle == null)
-                throw new IllegalArgumentException("Null bundle");
-
+            assert serviceContainer != null : "Null serviceContainer";
+            assert module != null : "Null module";
+            assert systemContext != null : "Null systemContext";
+            assert bundle != null : "Null bundle";
             this.serviceContainer = serviceContainer;
             this.module = module;
             this.systemContext = systemContext;
@@ -100,7 +97,7 @@ final class ModuleActivatorBridge implements BundleActivator {
         @Override
         public ServiceName getServiceName(Class<?> service) {
             if (service == null)
-                throw new IllegalArgumentException("Null service");
+                throw MESSAGES.illegalArgumentNull("service");
             return ServiceState.createXServiceName(service.getName());
         }
 

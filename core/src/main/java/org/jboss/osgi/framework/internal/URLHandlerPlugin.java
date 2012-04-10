@@ -21,22 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
-import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.StopContext;
-import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.Services;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.url.URLConstants;
-import org.osgi.service.url.URLStreamHandlerService;
-import org.osgi.service.url.URLStreamHandlerSetter;
-import org.osgi.util.tracker.ServiceTracker;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -56,6 +42,22 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
 
+import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.StopContext;
+import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.url.URLConstants;
+import org.osgi.service.url.URLStreamHandlerService;
+import org.osgi.service.url.URLStreamHandlerSetter;
+import org.osgi.util.tracker.ServiceTracker;
+
 /**
  * This plugin provides OSGi URL handler support as per the specification.
  * The interface is through the java.net.URL class and the OSGi Service Registry.
@@ -65,8 +67,6 @@ import java.util.List;
  * @since 10-Jan-2011
  */
 final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> implements URLStreamHandlerFactory, ContentHandlerFactory {
-
-    private static final Logger log = Logger.getLogger(URLHandlerPlugin.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
@@ -86,7 +86,7 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
                         URL.setURLStreamHandlerFactory(streamHandlerDelegate);
                     } catch (Throwable th) {
                         // [MODULES-44] Provide an API that allows adding of URLStreamHandlerFactories
-                        log.debugf("Unable to set the URLStreamHandlerFactory");
+                        LOGGER.debugf("Unable to set the URLStreamHandlerFactory");
                     }
                     return null;
                 }
@@ -100,7 +100,7 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
                         URLConnection.setContentHandlerFactory(contentHandlerDelegate);
                     } catch (Throwable th) {
                         // [MODULES-44] Provide an API that allows adding of URLStreamHandlerFactories
-                        log.debugf("Unable to set the ContentHandlerFactory");
+                        LOGGER.debugf("Unable to set the ContentHandlerFactory");
                     }
                     return null;
                 }
@@ -167,17 +167,15 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
 
             @Override
             public Object addingService(ServiceReference reference) {
-                Object svc = super.addingService(reference);
+                Object service = super.addingService(reference);
                 String[] mimeTypes = parseServiceProperty(reference.getProperty(URLConstants.URL_CONTENT_MIMETYPE));
-                if (mimeTypes != null && svc instanceof ContentHandler) {
+                if (mimeTypes != null && service instanceof ContentHandler) {
+                    LOGGER.debugf("Adding content handler '%s' for: %s", service, Arrays.asList(mimeTypes));
                     for (String mimeType : mimeTypes) {
                         contentHandlerDelegate.addHandler(mimeType, reference);
                     }
-                } else {
-                    log.errorf("A non-compliant instance of %s has been registered for mime types %s for %s", ContentHandler.class.getName(),
-                            Arrays.toString(mimeTypes), svc);
-                }
-                return svc;
+                } 
+                return service;
             }
 
             @Override
@@ -201,17 +199,15 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
 
             @Override
             public Object addingService(ServiceReference reference) {
-                Object svc = super.addingService(reference);
+                Object service = super.addingService(reference);
                 String[] protocols = parseServiceProperty(reference.getProperty(URLConstants.URL_HANDLER_PROTOCOL));
-                if (protocols != null && svc instanceof URLStreamHandlerService) {
+                if (protocols != null && service instanceof URLStreamHandlerService) {
+                    LOGGER.debugf("Adding stream handler '%s' for: %s", service, Arrays.asList(protocols));
                     for (String protocol : protocols) {
                         streamHandlerDelegate.addHandler(protocol, reference);
                     }
-                } else {
-                    log.errorf("A non-compliant instance of %s has been registered for protocols %s for: %s", URLStreamHandlerService.class.getName(),
-                            Arrays.asList(protocols), svc);
-                }
-                return svc;
+                } 
+                return service;
             }
 
             @Override
@@ -326,12 +322,10 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
             try {
                 Method method = handler.getClass().getDeclaredMethod("openConnection", URL.class, Proxy.class);
                 return (URLConnection) method.invoke(handler, u, p);
-            } catch (NoSuchMethodException e) {
-                throw new IOException("openConnection(URL,Proxy) not found on " + handler, e);
-            } catch (IllegalAccessException e) {
-                throw new IOException("openConnection(URL,Proxy) not accessible on " + handler, e);
-            } catch (InvocationTargetException e) {
-                throw new IOException("Problem invoking openConnection(URL,Proxy) on " + handler, e);
+            } catch (Throwable th) {
+                if (th instanceof InvocationTargetException)
+                    th = ((InvocationTargetException)th).getTargetException();
+                throw MESSAGES.ioCannotOpenConnectionOnHandler(th, handler);
             }
         }
 
@@ -367,14 +361,10 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
 
         private URLStreamHandlerService getHandlerService() {
             if (serviceReferences.isEmpty())
-                throw new IllegalStateException("No handlers in the OSGi Service registry for protocol: " + protocol);
-
+                throw MESSAGES.illegalStateNoStreamHandlersForProtocol(protocol);
             ServiceReference ref = serviceReferences.get(0);
             Object service = ref.getBundle().getBundleContext().getService(ref);
-            if (service instanceof URLStreamHandlerService) {
-                return (URLStreamHandlerService) service;
-            }
-            throw new IllegalStateException("Problem with OSGi URL handler service " + service + " for url:" + protocol);
+            return (URLStreamHandlerService) service;
         }
     }
 }

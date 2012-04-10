@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework;
 
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;

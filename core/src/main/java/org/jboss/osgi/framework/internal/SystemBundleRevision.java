@@ -21,16 +21,15 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Enumeration;
+
 import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.Enumeration;
 
 /**
  * An abstract bundle revision that is based on a user {@link Deployment}.
@@ -40,8 +39,6 @@ import java.util.Enumeration;
  * @since 29-Jun-2010
  */
 final class SystemBundleRevision extends AbstractBundleRevision {
-
-    static final Logger log = Logger.getLogger(SystemBundleRevision.class);
 
     SystemBundleRevision(SystemBundleState bundleState, OSGiMetaData metadata) throws BundleException {
         super(bundleState, metadata, 0);
@@ -59,7 +56,7 @@ final class SystemBundleRevision extends AbstractBundleRevision {
 
     @Override
     void refreshRevisionInternal() {
-        throw new IllegalStateException("Cannot refresh the system bundle revision");
+        assert false : "Cannot refresh the system bundle revision";
     }
     
     @Override

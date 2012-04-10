@@ -21,7 +21,10 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
+import java.util.Set;
+
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -39,8 +42,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 
-import java.util.Set;
-
 /**
  * The lifecycle interceptor that verifies that deployments ending in '.war' have a WEB-INF/web.xml descriptor.
  *
@@ -48,9 +49,6 @@ import java.util.Set;
  * @since 20-Oct-2009
  */
 final class WebXMLVerifierInterceptor extends AbstractPluginService<WebXMLVerifierInterceptor> implements LifecycleInterceptor {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(WebXMLVerifierInterceptor.class);
 
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private LifecycleInterceptor delegate;
@@ -82,15 +80,13 @@ final class WebXMLVerifierInterceptor extends AbstractPluginService<WebXMLVerifi
                             String contextPath = (String) context.getBundle().getHeaders().get("Web-ContextPath");
                             boolean isWebApp = contextPath != null || root.getName().endsWith(".war");
                             if (isWebApp == true && webXML == null) {
-                                RuntimeException rte = new LifecycleInterceptorException("Cannot obtain web.xml from: " + root.toURL());
-                                log.errorf(rte, rte.getMessage());
-                                throw rte;
+                                throw MESSAGES.lifecycleInterceptorCannotObtainWebXML(root.toURL());
                             }
                         }
                     } catch (RuntimeException rte) {
                         throw rte;
                     } catch (Exception ex) {
-                        throw new LifecycleInterceptorException("Cannot check for web.xml", ex);
+                        throw MESSAGES.lifecycleInterceptorCannotObtainWebXML(ex);
                     }
                 }
             }

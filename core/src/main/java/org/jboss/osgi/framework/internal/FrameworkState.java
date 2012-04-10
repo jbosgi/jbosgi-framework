@@ -21,7 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.launch.Framework;
@@ -36,9 +35,6 @@ import org.osgi.framework.launch.Framework;
  * @since 04-Apr-2011
  */
 final class FrameworkState {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(FrameworkState.class);
 
     private final BundleManager bundleManager;
 

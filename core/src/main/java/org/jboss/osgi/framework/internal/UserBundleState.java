@@ -21,6 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -32,7 +35,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
@@ -59,9 +61,6 @@ import org.osgi.service.packageadmin.PackageAdmin;
  */
 abstract class UserBundleState extends AbstractBundleState {
 
-    // Provide logging
-    static final Logger log = Logger.getLogger(UserBundleState.class);
-
     private final Semaphore uninstallSemaphore = new Semaphore(1);
 
     private final ServiceName serviceName;
@@ -76,15 +75,10 @@ abstract class UserBundleState extends AbstractBundleState {
 
     /**
      * Assert that the given bundle is an instance of {@link UserBundleState}
-     *
-     * @throws IllegalArgumentException if the given bundle is not an instance of {@link UserBundleState}
      */
     static UserBundleState assertBundleState(Bundle bundle) {
         bundle = AbstractBundleState.assertBundleState(bundle);
-
-        if (bundle instanceof UserBundleState == false)
-            throw new IllegalArgumentException("Not an UserBundleState: " + bundle);
-
+        assert bundle instanceof UserBundleState : "Not an UserBundleState: " + bundle;
         return (UserBundleState) bundle;
     }
 
@@ -172,19 +166,19 @@ abstract class UserBundleState extends AbstractBundleState {
 
     boolean aquireUninstallLock() {
         try {
-            log.tracef("Aquire uninstall lock: %s", this);
+            LOGGER.tracef("Aquire uninstall lock: %s", this);
             boolean result = uninstallSemaphore.tryAcquire(10, TimeUnit.SECONDS);
             if (result == false)
-                log.warnf("Cannot acquire unstall lock for: %s", this);
+                LOGGER.errorCannotAquireUninstallLock(this);
             return result;
         } catch (InterruptedException ex) {
-            // ignore
+            LOGGER.debugf("Interupted while trying to uninstall bundle: %s", this);
             return false;
         }
     }
 
     void releaseUninstallLock() {
-        log.tracef("Release uninstall lock: %s", this);
+        LOGGER.tracef("Release uninstall lock: %s", this);
         uninstallSemaphore.release();
     }
 
@@ -302,7 +296,7 @@ abstract class UserBundleState extends AbstractBundleState {
                 storageState = storagePlugin.createStorageState(getBundleId(), location, rootFile);
                 dep.addAttachment(BundleStorageState.class, storageState);
             } catch (IOException ex) {
-                throw new BundleException("Cannot setup storage for: " + rootFile, ex);
+                throw MESSAGES.bundleCannotSetupStorage(ex, rootFile);
             }
         }
         return storageState;
@@ -314,7 +308,7 @@ abstract class UserBundleState extends AbstractBundleState {
             BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
             storageState = storagePlugin.createStorageState(getBundleId(), location, rootFile);
         } catch (IOException ex) {
-            throw new BundleException("Cannot setup storage for: " + rootFile, ex);
+            throw MESSAGES.bundleCannotSetupStorage(ex, rootFile);
         }
         return storageState;
     }
@@ -326,7 +320,7 @@ abstract class UserBundleState extends AbstractBundleState {
     void refresh() throws BundleException {
         assertNotUninstalled();
         if (isResolved() == false)
-            throw new IllegalStateException("Attempt to refresh an unresolved bundle: " + this);
+            throw MESSAGES.illegalStateRefreshUnresolvedBundle(this);
 
         // Remove the revisions from the environment
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
@@ -376,11 +370,11 @@ abstract class UserBundleState extends AbstractBundleState {
         BundleInstallProvider installHandler = getCoreServices().getInstallHandler();
         installHandler.uninstallBundle(deployment);
 
-        log.infof("Bundle uninstalled: %s", this);
+        LOGGER.infoBundleUninstalled(this);
     }
 
     void removeServices() {
-        log.debugf("Remove services for: %s", this);
+        LOGGER.debugf("Remove services for: %s", this);
         BundleManager bundleManager = getBundleManager();
         bundleManager.setServiceMode(getServiceName(ACTIVE), Mode.REMOVE);
         bundleManager.setServiceMode(getServiceName(RESOLVED), Mode.REMOVE);

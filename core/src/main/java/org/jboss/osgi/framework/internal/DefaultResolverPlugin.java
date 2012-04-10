@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,7 +34,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.ServiceBuilder;
@@ -53,7 +54,6 @@ import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.felix.StatelessResolver;
-import org.jboss.osgi.resolver.spi.AbstractResolveContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.namespace.HostNamespace;
@@ -64,7 +64,6 @@ import org.osgi.resource.Resource;
 import org.osgi.resource.Wire;
 import org.osgi.resource.Wiring;
 import org.osgi.service.resolver.ResolutionException;
-import org.osgi.service.resolver.Resolver;
 
 /**
  * The resolver plugin.
@@ -73,9 +72,6 @@ import org.osgi.service.resolver.Resolver;
  * @since 15-Feb-2012
  */
 final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> implements ResolverPlugin {
-
-    // Provide logging
-    final Logger log = Logger.getLogger(DefaultResolverPlugin.class);
 
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
@@ -180,7 +176,7 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
                 }
             }
         }
-        log.debugf("attachable fragments: %s", result);
+        LOGGER.debugf("attachable fragments: %s", result);
         return result;
     }
 
@@ -268,7 +264,7 @@ final class DefaultResolverPlugin extends AbstractPluginService<ResolverPlugin> 
                 try {
                     moduleManager.loadModule(identifier);
                 } catch (ModuleLoadException ex) {
-                    throw new IllegalStateException("Cannot load module: " + identifier, ex);
+                    throw FrameworkMessages.MESSAGES.illegalStateCannotLoadModule(ex, identifier);
                 }
             }
         }

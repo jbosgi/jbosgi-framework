@@ -21,12 +21,11 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
-import org.jboss.modules.Module;
-
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.Vector;
+
+import org.jboss.modules.Module;
 
 /**
  * A bundle entries provider.
@@ -36,13 +35,10 @@ import java.util.Vector;
  */
 final class ModuleEntriesProvider implements EntriesProvider {
 
-    static final Logger log = Logger.getLogger(ModuleEntriesProvider.class);
-
     private final Module module;
 
     ModuleEntriesProvider(Module module) {
-        if (module == null)
-            throw new IllegalArgumentException("Null module");
+        assert module != null : "Null module";
         this.module = module;
     }
 
@@ -66,7 +62,6 @@ final class ModuleEntriesProvider implements EntriesProvider {
 
     @Override
     public Enumeration<URL> findEntries(String path, String pattern, boolean recurse) {
-        log.warnf("[JBOSGI-408] Bundle entry related functionality for plain modules");
         return null;
     }
 }

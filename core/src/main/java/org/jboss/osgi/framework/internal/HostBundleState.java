@@ -21,6 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -29,7 +32,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.jboss.logging.Logger;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
@@ -42,9 +44,9 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.resource.Resource;
 import org.osgi.resource.Wire;
-import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.resolver.ResolutionException;
 import org.osgi.service.startlevel.StartLevel;
 
@@ -55,8 +57,6 @@ import org.osgi.service.startlevel.StartLevel;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
 final class HostBundleState extends UserBundleState {
-
-    static final Logger log = Logger.getLogger(HostBundleState.class);
 
     private final Semaphore activationSemaphore = new Semaphore(1);
     private final AtomicBoolean alreadyStarting = new AtomicBoolean();
@@ -70,10 +70,7 @@ final class HostBundleState extends UserBundleState {
 
     static HostBundleState assertBundleState(Bundle bundle) {
         AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-
-        if (bundleState instanceof HostBundleState == false)
-            throw new IllegalArgumentException("Not a HostBundleState: " + bundleState);
-
+        assert bundleState instanceof HostBundleState : "Not a HostBundleState: " + bundleState;
         return (HostBundleState) bundleState;
     }
 
@@ -109,6 +106,7 @@ final class HostBundleState extends UserBundleState {
     }
 
     void setStartLevel(int level) {
+        LOGGER.debugf("Setting bundle start level %d for: %s", level, this);
         startLevel = level;
     }
 
@@ -143,7 +141,7 @@ final class HostBundleState extends UserBundleState {
                 if (isBundleActivationPolicyUsed()) {
                     options |= START_ACTIVATION_POLICY;
                 }
-                log.debugf("Lazy activation of: %s", this);
+                LOGGER.debugf("Lazy activation of: %s", this);
                 startInternal(options);
             }
         }
@@ -205,7 +203,7 @@ final class HostBundleState extends UserBundleState {
             // If the START_TRANSIENT option is set, then a BundleException is thrown
             // indicating this bundle cannot be started due to the Framework's current start level
             if ((options & START_TRANSIENT) != 0)
-                throw new BundleException("Bundle cannot be started due to the Framework's current start level");
+                throw MESSAGES.bundleCannotStartBundleDueToStartLevel();
 
             // Set this bundle's autostart setting
             persistAutoStartSettings(options);
@@ -230,7 +228,7 @@ final class HostBundleState extends UserBundleState {
             // If the Framework cannot resolve this bundle, a BundleException is thrown.
             ResolutionException resex = ensureResolved(true);
             if (resex != null)
-                throw new BundleException("Cannot resolve bundle: " + this, resex);
+                throw MESSAGES.bundleCannotResolveBundle(resex, this);
 
             // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
             if (getBundleContextInternal() == null)
@@ -265,7 +263,7 @@ final class HostBundleState extends UserBundleState {
                 }
             }
             if (foundSupportedEnv == false)
-                throw new BundleException("Unsupported execution environment " + requiredEnvs + " we have " + availableEnvs);
+                throw MESSAGES.bundleUnsupportedExecutionEnvironment(requiredEnvs, availableEnvs);
         }
     }
 
@@ -302,16 +300,16 @@ final class HostBundleState extends UserBundleState {
         try {
             changeState(STARTING);
         } catch (LifecycleInterceptorException ex) {
-            throw new BundleException("Cannot transition to STARTING: " + this, ex);
+            throw MESSAGES.bundleCannotTransitionToStarting(ex, this);
         }
 
         // #8 The BundleActivator.start(BundleContext) method of this bundle is called
-        String bundleActivatorClassName = getOSGiMetaData().getBundleActivator();
-        if (bundleActivatorClassName != null) {
+        String className = getOSGiMetaData().getBundleActivator();
+        if (className != null) {
             ClassLoader tccl = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(null);
-                Object result = loadClass(bundleActivatorClassName).newInstance();
+                Object result = loadClass(className).newInstance();
                 if (result instanceof ModuleActivator) {
                     bundleActivator = new ModuleActivatorBridge((ModuleActivator) result);
                     bundleActivator.start(getBundleContext());
@@ -319,7 +317,7 @@ final class HostBundleState extends UserBundleState {
                     bundleActivator = (BundleActivator) result;
                     bundleActivator.start(getBundleContext());
                 } else {
-                    throw new BundleException(bundleActivatorClassName + " is not an implementation of " + BundleActivator.class.getName());
+                    throw MESSAGES.bundleInvalidBundleActivator(className);
                 }
             }
 
@@ -345,8 +343,8 @@ final class HostBundleState extends UserBundleState {
                 if (th instanceof BundleException)
                     throw (BundleException) th;
 
-                throw new BundleException("Cannot start bundle: " + this, th);
-            } finally {
+                throw MESSAGES.bundleCannotStartBundle(th, this);
+           } finally {
                 Thread.currentThread().setContextClassLoader(tccl);
             }
         }
@@ -354,7 +352,7 @@ final class HostBundleState extends UserBundleState {
         // #9 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while
         // the BundleActivator.start method was running, a BundleException is thrown
         if (getState() == UNINSTALLED)
-            throw new BundleException("Bundle was uninstalled while activator was running: " + this);
+            throw MESSAGES.bundleBundleUninstalledDuringActivatorStart(this);
 
         // #10 This bundle's state is set to ACTIVE.
         // #11 A bundle event of type BundleEvent.STARTED is fired
@@ -363,7 +361,7 @@ final class HostBundleState extends UserBundleState {
         // Activate the service that represents bundle state ACTIVE
         getBundleManager().setServiceMode(getServiceName(ACTIVE), Mode.ACTIVE);
 
-        log.infof("Bundle started: %s", this);
+        LOGGER.infoBundleStarted(this);
     }
 
     @Override
@@ -426,7 +424,7 @@ final class HostBundleState extends UserBundleState {
             // #11 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while the
             // BundleActivator.stop method was running, a BundleException must be thrown
             if (getState() == UNINSTALLED)
-                throw new BundleException("Bundle uninstalled during activator stop: " + this);
+                throw MESSAGES.bundleBundleUninstalledDuringActivatorStop(this);
 
             // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
             destroyBundleContext();
@@ -438,10 +436,10 @@ final class HostBundleState extends UserBundleState {
             // Deactivate the service that represents bundle state ACTIVE
             getBundleManager().setServiceMode(getServiceName(ACTIVE), Mode.NEVER);
 
-            log.infof("Bundle stopped: %s", this);
+            LOGGER.infoBundleStopped(this);
 
             if (rethrow != null)
-                throw new BundleException("Error during stop of bundle: " + this, rethrow);
+                throw MESSAGES.bundleErrorDuringActivatorStop(rethrow, this);
         } finally {
             releaseActivationLock();
         }
@@ -449,17 +447,17 @@ final class HostBundleState extends UserBundleState {
 
     private void aquireActivationLock() throws BundleException {
         try {
-            log.tracef("Aquire activation lock: %s", this);
+            LOGGER.tracef("Aquire activation lock: %s", this);
             if (activationSemaphore.tryAcquire(10, TimeUnit.SECONDS) == false)
-                throw new BundleException("Cannot acquire start/stop lock for: " + this);
+                throw MESSAGES.bundleCannotAcquireStartStopLock(this);
         } catch (InterruptedException ex) {
-            log.warnf("Interupted while trying to start/stop bundle: %s", this);
+            LOGGER.debugf("Interupted while trying to start/stop bundle: %s", this);
             return;
         }
     }
 
     private void releaseActivationLock() {
-        log.tracef("Release activation lock: %s", this);
+        LOGGER.tracef("Release activation lock: %s", this);
         activationSemaphore.release();
     }
 

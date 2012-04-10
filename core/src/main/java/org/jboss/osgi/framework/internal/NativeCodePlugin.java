@@ -21,6 +21,22 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Dictionary;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -40,20 +56,6 @@ import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.Version;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Dictionary;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
 
 /**
  * The bundle native code plugin
@@ -144,13 +146,13 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
 
     void resolveNativeCode(UserBundleRevision userRev) throws BundleException {
         OSGiMetaData osgiMetaData = userRev.getOSGiMetaData();
-        List<ParameterizedAttribute> nativeCodeParams = osgiMetaData.getBundleNativeCode();
-        if (nativeCodeParams == null)
-            throw new BundleException("Cannot find Bundle-NativeCode header for: " + userRev);
+        List<ParameterizedAttribute> params = osgiMetaData.getBundleNativeCode();
+        if (params == null)
+            throw MESSAGES.bundleCannotFindNativeCodeHeader(userRev);
 
         // Find the matching parameters
         List<ParameterizedAttribute> matchedParams = new ArrayList<ParameterizedAttribute>();
-        for (ParameterizedAttribute param : nativeCodeParams) {
+        for (ParameterizedAttribute param : params) {
             if (matchParameter(param))
                 matchedParams.add(param);
         }
@@ -161,7 +163,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
         // If no native clauses were selected in step 1, this algorithm is terminated
         // and a BundleException is thrown if the optional clause is not present
         if (matchedParams.size() == 0) {
-            if (nativeCodeParams.size() > 0 && "*".equals(nativeCodeParams.get(nativeCodeParams.size() - 1).getAttribute())) {
+            if (params.size() > 0 && "*".equals(params.get(params.size() - 1).getAttribute())) {
                 // This Bundle-NativeCode clause is optional but we're not selecting any native code clauses
                 // so remove the marker deployment attachment
                 dep.removeAttachment(NativeLibraryMetaData.class);
@@ -169,7 +171,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
                 return;
             }
 
-            throw new BundleException("No native clauses selected from: " + nativeCodeParams);
+            throw MESSAGES.bundleNoNativeCodeClauseSelected(params);
         }
 
         // The selected clauses are now sorted in the following priority order:
@@ -283,16 +285,16 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
         if (match && filterSelectionParam != null) {
             boolean filterMatch = false;
             Dictionary<String, Object> frameworkProps = new Hashtable<String, Object>(bundleManager.getProperties());
-            for (String f : getCollection(filterSelectionParam.getValue())) {
+            for (String filterSpec : getCollection(filterSelectionParam.getValue())) {
                 try {
-                    Filter filter = FrameworkUtil.createFilter(f);
+                    Filter filter = FrameworkUtil.createFilter(filterSpec);
                     if (filter.match(frameworkProps)) {
                         filterMatch = true;
                         break;
                     }
 
-                } catch (InvalidSyntaxException e) {
-                    throw new BundleException("Illegal filter expression: " + f, e);
+                } catch (InvalidSyntaxException ex) {
+                    throw MESSAGES.bundleInvalidFilterExpression(ex, filterSpec);
                 }
             }
 
@@ -328,7 +330,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
             }
             Enumeration<URL> urls = hostrev.findResolvedEntries(path, filename, false);
             if (urls == null || urls.hasMoreElements() == false)
-                throw new IllegalStateException("Cannot find native library: " + libpath);
+                throw MESSAGES.illegalStateCannotFindNativeLibrary(libpath);
 
             this.libURL = urls.nextElement();
         }

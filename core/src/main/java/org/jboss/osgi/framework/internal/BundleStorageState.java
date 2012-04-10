@@ -21,10 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
-import org.jboss.osgi.vfs.AbstractVFS;
-import org.jboss.osgi.vfs.VFSUtils;
-import org.jboss.osgi.vfs.VirtualFile;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,6 +33,10 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
+import org.jboss.osgi.vfs.AbstractVFS;
+import org.jboss.osgi.vfs.VFSUtils;
+import org.jboss.osgi.vfs.VirtualFile;
+
 /**
  * An abstraction of a bundle persistent storage.
  * 
@@ -42,9 +44,6 @@ import java.util.Set;
  * @since 18-Aug-2009
  */
 final class BundleStorageState {
-
-    // Provide logging
-    final Logger log = Logger.getLogger(BundleStorageState.class);
 
     static final String PROPERTY_BUNDLE_FILE = "BundleFile";
     static final String PROPERTY_BUNDLE_ID = "BundleId";
@@ -73,7 +72,7 @@ final class BundleStorageState {
     }
 
     static BundleStorageState createFromStorage(File storageDir) throws IOException {
-        
+
         Properties props = loadProperties(storageDir);
 
         VirtualFile rootFile = null;
@@ -106,19 +105,17 @@ final class BundleStorageState {
         return storageState;
     }
 
-    private BundleStorageState(File storageDir, VirtualFile rootFile, Properties props) throws IOException {
-        if (storageDir == null)
-            throw new IllegalArgumentException("Null storageDir");
-        if (storageDir.isDirectory() == false)
-            throw new IllegalArgumentException("Not a directory: " + storageDir);
-        if (props == null)
-            throw new IllegalArgumentException("Null properties");
+    private BundleStorageState(File storageFile, VirtualFile rootFile, Properties props) throws IOException {
+        assert storageFile != null : "Null storageFile";
+        assert props != null : "Null properties";
+        assert storageFile.isDirectory() : "Not a directory: " + storageFile;
 
-        for (String key : requiredProps)
+        for (String key : requiredProps) {
             if (props.get(key) == null)
-                throw new IllegalArgumentException("Required property missing '" + key + "' in: " + storageDir);
+                throw MESSAGES.illegalArgumentRequiredPropertyMissing(key, storageFile);
+        }
 
-        this.bundleDir = storageDir;
+        this.bundleDir = storageFile;
         this.rootFile = rootFile;
         this.props = props;
 
@@ -206,7 +203,7 @@ final class BundleStorageState {
                 VFSUtils.safeClose(output);
             }
         } catch (IOException ex) {
-            log.errorf(ex, "Cannot write persistent storage: %s", bundleDir);
+            LOGGER.errorCannotWritePersistentStorage(ex, bundleDir);
         }
     }
 

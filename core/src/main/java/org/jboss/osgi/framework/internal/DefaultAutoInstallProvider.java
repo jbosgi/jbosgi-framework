@@ -21,7 +21,17 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
+import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -41,14 +51,6 @@ import org.jboss.osgi.spi.util.StringPropertyReplacer.PropertyProvider;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
-import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * A plugin that installs/starts bundles on framework startup.
  *
@@ -56,9 +58,6 @@ import java.util.Map;
  * @since 18-Aug-2009
  */
 final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstallProvider> implements AutoInstallProvider {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(DefaultAutoInstallProvider.class);
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
@@ -103,7 +102,7 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
             ServiceTarget serviceTarget = context.getChildTarget();
             installBundles(serviceTarget, autoInstall, autoStart);
         } catch (BundleException ex) {
-            throw new IllegalStateException("Cannot start auto install bundles", ex);
+            throw MESSAGES.illegalStateCannotStartAutoinstallBundles(ex);
         }
     }
 
@@ -134,7 +133,7 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
         ServiceName servicesInstalled = Services.AUTOINSTALL_PROVIDER.append("INSTALLED");
         ServiceBuilder<Void> builder = serviceTarget.addService(servicesInstalled, new AbstractService<Void>() {
             public void start(StartContext context) throws StartException {
-                log.debugf("Auto bundles installed");
+                LOGGER.debugf("Auto bundles installed");
             }
         });
         builder.addDependencies(pendingServices.keySet());
@@ -149,11 +148,11 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
                         try {
                             bundle.start();
                         } catch (BundleException ex) {
-                            log.errorf(ex, "Cannot start persistent bundle: %s", bundle);
+                            LOGGER.errorCannotAutomaticallyStartBundle(ex, bundle);
                         }
                     }
                 }
-                log.debugf("Auto bundles started");
+                LOGGER.debugf("Auto bundles started");
             }
         });
         builder.addDependencies(servicesInstalled);
@@ -182,12 +181,12 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
                 if (file.exists())
                     pathURL = file.toURI().toURL();
             } catch (MalformedURLException ex) {
-                throw new IllegalArgumentException("Invalid path: " + realPath, ex);
+                throw MESSAGES.illegalArgumentInvalidPath(ex, realPath);
             }
         }
 
         if (pathURL == null)
-            throw new IllegalArgumentException("Invalid path: " + realPath);
+            throw MESSAGES.illegalArgumentInvalidPath(null, realPath);
 
         return pathURL;
     }

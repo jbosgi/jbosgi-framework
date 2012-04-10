@@ -21,6 +21,9 @@
  */
 package org.jboss.test.osgi.modules;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
@@ -32,7 +35,6 @@ import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -44,9 +46,6 @@ import org.jboss.test.osgi.modules.d.D;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Test low level modules use cases.
@@ -435,7 +434,7 @@ public class ModulesTestCase extends ModulesTestBase {
 
         @Override
         public Package loadPackageLocal(String name) {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         }
 
         @Override

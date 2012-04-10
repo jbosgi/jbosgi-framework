@@ -21,23 +21,20 @@
  */
 package org.jboss.osgi.framework;
 
-import org.jboss.logging.Logger;
-import org.jboss.msc.service.AbstractServiceListener;
-import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceController.State;
-import org.jboss.msc.service.ServiceListener;
-import org.jboss.msc.service.StartException;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import org.jboss.msc.service.AbstractServiceListener;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.State;
+import org.jboss.msc.service.ServiceListener;
+import org.jboss.msc.service.StartException;
 
 /**
  * A Future that waits for the given service to come up and returns it's value.
@@ -49,14 +46,12 @@ import java.util.concurrent.TimeoutException;
  */
 public final class FutureServiceValue<T> implements Future<T> {
 
-    private static final Logger log = Logger.getLogger(FutureServiceValue.class);
-
     private ServiceController<T> controller;
 
     public FutureServiceValue(ServiceController<T> controller) {
         if (controller == null)
-            throw new IllegalArgumentException("Null controller");
-        this.controller = controller;
+            throw MESSAGES.illegalArgumentNull("controller");
+       this.controller = controller;
     }
 
     @Override
@@ -106,7 +101,7 @@ public final class FutureServiceValue<T> implements Future<T> {
             }
 
             public void transition(final ServiceController<? extends T> controller, final ServiceController.Transition transition) {
-                log.tracef("transition %s %s => %s", futureServiceValue, serviceName, transition);
+                LOGGER.tracef("transition %s %s => %s", futureServiceValue, serviceName, transition);
                 switch (transition) {
                     case STARTING_to_UP:
                     case STARTING_to_START_FAILED:
@@ -124,9 +119,7 @@ public final class FutureServiceValue<T> implements Future<T> {
 
         try {
             if (latch.await(timeout, unit) == false) {
-                TimeoutException ex = new TimeoutException("Timeout getting " + serviceName);
-                processTimeoutException(ex);
-                throw ex;
+                throw MESSAGES.timeoutGettingService(serviceName);
             }
         } catch (InterruptedException e) {
             // ignore;
@@ -140,23 +133,6 @@ public final class FutureServiceValue<T> implements Future<T> {
         if (cause instanceof RuntimeException) { 
             throw (RuntimeException)cause;
         }
-        throw new ExecutionException("Cannot get service value for: " + serviceName, cause);
-    }
-
-    private void processTimeoutException(TimeoutException exception) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream(baos);
-        controller.getServiceContainer().dumpServices(out);
-        String serviceName = controller.getName().getCanonicalName();
-        log.errorf("Cannot get service value for: %s\n%s", serviceName, new String(baos.toByteArray()));
-        ThreadMXBean bean = ManagementFactory.getThreadMXBean();
-        ThreadInfo[] infos = bean.dumpAllThreads(true, true);
-        for (ThreadInfo info : infos) {
-            if (info.getThreadName().contains("MSC")) {
-                StringBuffer buffer = new StringBuffer();
-                buffer.append("ThreadInfo: " + info);
-                log.errorf("%s", buffer);
-            }
-        }
+        throw MESSAGES.executionCannotGetServiceValue(cause, serviceName);
     }
 }

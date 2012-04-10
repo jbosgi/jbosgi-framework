@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,7 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jboss.logging.Logger;
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
@@ -38,13 +39,12 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.Resource;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
-import org.jboss.osgi.spi.NotImplementedException;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
-import org.osgi.resource.Capability;
-import org.osgi.resource.Requirement;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.resource.Capability;
+import org.osgi.resource.Requirement;
 
 /**
  * A fallback loader that takes care of dynamic class/resource loads.
@@ -53,9 +53,6 @@ import org.osgi.framework.wiring.BundleRevision;
  * @since 24-Feb-2012
  */
 final class FallbackLoader implements LocalLoader {
-
-    // Provide logging
-    private static final Logger log = Logger.getLogger(FallbackLoader.class);
 
     private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
     private final HostBundleState hostBundle;
@@ -66,12 +63,9 @@ final class FallbackLoader implements LocalLoader {
     private final ModuleManagerPlugin moduleManager;
 
     FallbackLoader(HostBundleRevision hostRev, ModuleIdentifier identifier, Set<String> importedPaths) {
-        if (hostRev == null)
-            throw new IllegalArgumentException("Null hostRev");
-        if (identifier == null)
-            throw new IllegalArgumentException("Null identifier");
-        if (importedPaths == null)
-            throw new IllegalArgumentException("Null importedPaths");
+        assert hostRev != null : "Null hostRev";
+        assert identifier != null : "Null identifier";
+        assert importedPaths != null : "Null importedPaths";
         this.identifier = identifier;
         this.importedPaths = importedPaths;
         this.hostRev = hostRev;
@@ -96,14 +90,14 @@ final class FallbackLoader implements LocalLoader {
         try {
             return moduleClassLoader.loadClass(className);
         } catch (ClassNotFoundException ex) {
-            log.tracef("Cannot load class [%s] from module: %s", className, module);
+            LOGGER.tracef("Cannot load class [%s] from module: %s", className, module);
             return null;
         }
     }
 
     @Override
     public Package loadPackageLocal(String name) {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -122,7 +116,7 @@ final class FallbackLoader implements LocalLoader {
 
         URL resURL = module.getExportedResource(resName);
         if (resURL == null) {
-            log.tracef("Cannot load resource [%s] from module: %s", resName, module);
+            LOGGER.tracef("Cannot load resource [%s] from module: %s", resName, module);
             return Collections.emptyList();
         }
 
@@ -205,15 +199,15 @@ final class FallbackLoader implements LocalLoader {
         }
 
         if (foundMatch.isEmpty() == false)
-            log.tracef("Found match for path [%s] with Dynamic-ImportPackage pattern: %s", resName, foundMatch);
+            LOGGER.tracef("Found match for path [%s] with Dynamic-ImportPackage pattern: %s", resName, foundMatch);
         else
-            log.tracef("Class [%s] does not match Dynamic-ImportPackage patterns", resName);
+            LOGGER.tracef("Class [%s] does not match Dynamic-ImportPackage patterns", resName);
 
         return foundMatch;
     }
 
     private Module findInResolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
-        log.tracef("Attempt to find path dynamically in resolved modules ...");
+        LOGGER.tracef("Attempt to find path dynamically in resolved modules ...");
         for (XPackageRequirement pkgreq : matchingPatterns) {
             for (AbstractBundleState bundleState : bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE)) {
                 if (bundleState.isResolved() && !bundleState.isFragment()) {
@@ -228,7 +222,7 @@ final class FallbackLoader implements LocalLoader {
     }
 
     private Module findInUnresolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
-        log.tracef("Attempt to find path dynamically in unresolved modules ...");
+        LOGGER.tracef("Attempt to find path dynamically in unresolved modules ...");
         for (AbstractBundleState bundleState : bundleManager.getBundles()) {
             if (bundleState.getState() == Bundle.INSTALLED) {
                 bundleState.ensureResolved(false);
@@ -247,12 +241,12 @@ final class FallbackLoader implements LocalLoader {
         if (candidateId.equals(identifier))
             return false;
 
-        log.tracef("Attempt to find path dynamically [%s] in %s ...", resName, candidateId);
+        LOGGER.tracef("Attempt to find path dynamically [%s] in %s ...", resName, candidateId);
         URL resURL = candidate.getExportedResource(resName);
         if (resURL == null)
             return false;
 
-        log.tracef("Found path [%s] in %s", resName, candidate);
+        LOGGER.tracef("Found path [%s] in %s", resName, candidate);
         BundleRevision brev = moduleManager.getBundleRevision(candidateId);
         XPackageCapability candidateCap = getCandidateCapability(brev, pkgreq);
         return (candidateCap != null);
@@ -261,7 +255,7 @@ final class FallbackLoader implements LocalLoader {
     private XPackageCapability getCandidateCapability(BundleRevision brev, XPackageRequirement packageReq) {
         for (XPackageCapability packageCap : getPackageCapabilities(brev)) {
             if (packageReq.matches(packageCap)) {
-                log.tracef("Matching package capability: %s", packageCap);
+                LOGGER.tracef("Matching package capability: %s", packageCap);
                 return packageCap;
             }
         }

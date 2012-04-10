@@ -21,12 +21,11 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.logging.Logger;
+import java.util.Map;
+
 import org.jboss.osgi.resolver.spi.AbstractCapability;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRevision;
-
-import java.util.Map;
 
 /**
  * The {@link BundleCapability} implementation.
@@ -35,9 +34,6 @@ import java.util.Map;
  * @since 23-Feb-2012
  */
 class AbstractBundleCapability extends AbstractCapability implements BundleCapability {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(AbstractBundleCapability.class);
 
     AbstractBundleCapability(BundleRevision brev, String namespace, Map<String, Object> atts, Map<String, String> dirs) {
         super(brev, namespace, atts, dirs);

@@ -21,9 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.osgi.framework.ServiceReference;
-
 import java.util.Comparator;
+
+import org.osgi.framework.ServiceReference;
 
 /**
  * If this ServiceReference and the specified ServiceReference have the same service id they are equal. This ServiceReference is

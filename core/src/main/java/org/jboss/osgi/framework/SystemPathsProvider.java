@@ -21,10 +21,10 @@
  */
 package org.jboss.osgi.framework;
 
+import java.util.Set;
+
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.msc.service.Service;
-
-import java.util.Set;
 
 /**
  * A plugin manages the Framework's system packages.

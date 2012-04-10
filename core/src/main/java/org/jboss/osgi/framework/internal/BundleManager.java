@@ -22,6 +22,8 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.Services.BUNDLE_BASE_NAME;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -37,7 +39,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
@@ -74,9 +75,6 @@ import org.osgi.resource.Resource;
  * @since 29-Jun-2010
  */
 public final class BundleManager extends AbstractService<BundleManagerService> implements BundleManagerService {
-
-    // Provide logging
-    static final Logger log = Logger.getLogger(BundleManager.class);
 
     // The framework execution environment
     private static String OSGi_FRAMEWORK_EXECUTIONENVIRONMENT;
@@ -154,11 +152,11 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        log.infof(implementationTitle + " - " + implementationVersion);
+        LOGGER.infoFrameworkImplementation(implementationTitle, implementationVersion);
         serviceContainer = context.getController().getServiceContainer();
-        log.debugf("Framework properties");
+        LOGGER.debugf("Framework properties");
         for (Entry<String, Object> entry : properties.entrySet()) {
-            log.debugf(" %s = %s", entry.getKey(), entry.getValue());
+            LOGGER.debugf(" %s = %s", entry.getKey(), entry.getValue());
         }
     }
 
@@ -194,7 +192,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
 
     void assertFrameworkActive() {
         if (isFrameworkActive() == false)
-            throw new IllegalStateException("Framework not ACTIVE");
+            throw MESSAGES.illegalStateFrameworkNotActive();
     }
 
     FrameworkState getFrameworkState() {
@@ -225,7 +223,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
 
     void setProperty(String key, Object value) {
         if (isFrameworkActive())
-            throw new IllegalStateException("Cannot add property to ACTIVE framwork");
+            throw MESSAGES.illegalStateCannotAddProperty();
 
         properties.put(key, value);
     }
@@ -318,9 +316,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
      * @return the bundle or null if there is no bundle with that location
      */
     AbstractBundleState getBundleByLocation(String location) {
-        if (location == null)
-            throw new IllegalArgumentException("Null location");
-
+        assert location != null : "Null location";
         for (AbstractBundleState aux : getBundles()) {
             String auxLocation = aux.getLocation();
             if (location.equals(auxLocation)) {
@@ -352,51 +348,48 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     }
 
     @Override
-    public ServiceName installBundle(ServiceTarget serviceTarget, Deployment dep) throws BundleException {
-        if (dep == null)
-            throw new IllegalArgumentException("Null deployment");
-
+    public ServiceName installBundle(ServiceTarget serviceTarget, Deployment deployment) throws BundleException {
+        if (deployment == null) 
+            throw MESSAGES.illegalArgumentNull("deployment");
         ServiceName serviceName;
-
         // If a bundle containing the same location identifier is already installed,
         // the Bundle object for that bundle is returned.
-        AbstractBundleState bundleState = getBundleByLocation(dep.getLocation());
+        AbstractBundleState bundleState = getBundleByLocation(deployment.getLocation());
         if (bundleState != null) {
             serviceName = bundleState.getServiceName(Bundle.INSTALLED);
-            VFSUtils.safeClose(dep.getRoot());
+            VFSUtils.safeClose(deployment.getRoot());
         } else {
             try {
                 // The storage state exists when we re-create the bundle from persistent storage
-                BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
+                BundleStorageState storageState = deployment.getAttachment(BundleStorageState.class);
                 long bundleId = (storageState != null ? storageState.getBundleId() : nextBundleId());
-                dep.addAttachment(BundleId.class, new BundleId(bundleId));
+                deployment.addAttachment(BundleId.class, new BundleId(bundleId));
 
                 // Check that we have valid metadata
-                OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
+                OSGiMetaData metadata = deployment.getAttachment(OSGiMetaData.class);
                 if (metadata == null) {
                     DeploymentFactoryPlugin plugin = getFrameworkState().getDeploymentFactoryPlugin();
-                    metadata = plugin.createOSGiMetaData(dep);
+                    metadata = plugin.createOSGiMetaData(deployment);
                 }
 
                 // Create the bundle services
                 if (metadata.getFragmentHost() == null) {
-                    serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep);
+                    serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), deployment);
                     HostBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                     HostBundleActiveService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 } else {
-                    serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep);
+                    serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), deployment);
                     FragmentBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 }
             } catch (RuntimeException rte) {
-                VFSUtils.safeClose(dep.getRoot());
+                VFSUtils.safeClose(deployment.getRoot());
                 throw rte;
             } catch (BundleException ex) {
-                VFSUtils.safeClose(dep.getRoot());
+                VFSUtils.safeClose(deployment.getRoot());
                 throw ex;
             }
         }
-
-        dep.addAttachment(ServiceName.class, serviceName);
+        deployment.addAttachment(ServiceName.class, serviceName);
         return serviceName;
     }
 
@@ -463,7 +456,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     }
 
     void removeBundle(UserBundleState userBundle, int options) {
-        log.tracef("Start removing bundle: %s", userBundle);
+        LOGGER.tracef("Start removing bundle: %s", userBundle);
 
         if ((options & Bundle.STOP_TRANSIENT) == 0) {
             BundleStorageState storageState = userBundle.getBundleStorageState();
@@ -488,20 +481,20 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
             userRev.close();
         }
 
-        log.debugf("Removed bundle: %s", userBundle);
+        LOGGER.debugf("Removed bundle: %s", userBundle);
     }
 
     void setServiceMode(ServiceName serviceName, Mode mode) {
         ServiceController<?> controller = serviceContainer.getService(serviceName);
         if (controller == null)
-            log.debugf("Cannot set mode %s on non-existing service: %s", mode, serviceName);
+            LOGGER.debugf("Cannot set mode %s on non-existing service: %s", mode, serviceName);
         else
             setServiceMode(controller, mode);
     }
 
     void setServiceMode(ServiceController<?> controller, Mode mode) {
         try {
-            log.tracef("Set mode %s on service: %s", mode, controller.getName());
+            LOGGER.tracef("Set mode %s on service: %s", mode, controller.getName());
             controller.setMode(mode);
         } catch (IllegalArgumentException rte) {
             // [MSC-105] Cannot determine whether container is shutting down

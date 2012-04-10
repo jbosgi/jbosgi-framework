@@ -21,6 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -32,7 +35,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
 
-import org.jboss.logging.Logger;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -53,8 +55,6 @@ import org.osgi.service.resolver.ResolutionException;
  */
 final class HostBundleRevision extends UserBundleRevision {
 
-    static final Logger log = Logger.getLogger(HostBundleRevision.class);
-
     private Set<FragmentBundleRevision> attachedFragments;
 
     HostBundleRevision(HostBundleState hostBundle, Deployment dep) throws BundleException {
@@ -63,12 +63,9 @@ final class HostBundleRevision extends UserBundleRevision {
 
     /**
      * Assert that the given resource is an instance of HostBundleRevision
-     * @throws IllegalArgumentException if the given resource is not an instance of HostBundleRevision
      */
     static HostBundleRevision assertHostRevision(Resource res) {
-        if (res instanceof HostBundleRevision == false)
-            throw new IllegalArgumentException("Not an HostRevision: " + res);
-
+        assert res instanceof HostBundleRevision : "Not a HostRevision: " + res;
         return (HostBundleRevision) res;
     }
 
@@ -111,14 +108,14 @@ final class HostBundleRevision extends UserBundleRevision {
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         ResolutionException resex = getBundleState().ensureResolved(true);
         if (resex != null)
-            throw new ClassNotFoundException("Class '" + className + "' not found in: " + this, resex);
+            throw MESSAGES.classNotFoundInRevision(className, this);
 
         // Load the class through the module
         ModuleClassLoader loader;
         try {
             loader = getModuleClassLoader();
         } catch (ModuleLoadException ex) {
-            throw new ClassNotFoundException("Cannot load class: " + className, ex);
+            throw MESSAGES.cannotLoadClassFromBundleRevision(ex, className, this);
         }
         return loader.loadClass(className, true);
     }
@@ -161,7 +158,7 @@ final class HostBundleRevision extends UserBundleRevision {
             try {
                 moduleClassLoader = getModuleClassLoader();
             } catch (ModuleLoadException ex) {
-                log.debugf("Cannot get resource, because of: %s", ex);
+                LOGGER.debugf("Cannot get resource, because of: %s", ex);
                 return null;
             }
             return moduleClassLoader.getResource(path);
@@ -181,7 +178,7 @@ final class HostBundleRevision extends UserBundleRevision {
             try {
                 moduleClassLoader = getModuleClassLoader();
             } catch (ModuleLoadException ex) {
-                log.debugf("Cannot get resources, because of: %s", ex);
+                LOGGER.debugf("Cannot get resources, because of: %s", ex);
                 return null;
             }
             Enumeration<URL> resources = moduleClassLoader.getResources(path);
@@ -199,7 +196,7 @@ final class HostBundleRevision extends UserBundleRevision {
                 vector.add(child.toURL());
                 return vector.elements();
             } catch (IOException ex) {
-                log.errorf(ex, "Cannot get resources: %s", path);
+                LOGGER.errorCannotGetResources(ex, path, this);
                 return null;
             }
         }
