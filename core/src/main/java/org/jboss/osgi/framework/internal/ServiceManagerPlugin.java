@@ -58,6 +58,7 @@ import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceEvent;
+import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.hooks.service.FindHook;
 import org.osgi.framework.hooks.service.ListenerHook;
@@ -147,6 +148,9 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
         }
 
         ServiceState.ValueProvider valueProvider = new ServiceState.ValueProvider() {
+            public boolean isFactoryValue() {
+                return serviceValue instanceof ServiceFactory;
+            }
             public Object getValue() {
                 return serviceValue;
             }
@@ -280,14 +284,18 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                     }
                 } else if (JBOSGI_XSERVICE_BASE_NAME.isParentOf(serviceName)) {
                     final ServiceState.ValueProvider valueProvider = new ServiceState.ValueProvider() {
-                        @Override
+                        ModuleClassLoader classLoader = null;
+                        public boolean isFactoryValue() {
+                            return false;
+                        }
                         public Object getValue() {
-                            AbstractBundleRevision currentRevision = bundleState.getCurrentBundleRevision();
-                            ModuleClassLoader classLoader = null;
-                            try {
-                                classLoader = currentRevision.getModuleClassLoader();
-                            } catch (ModuleLoadException ex) {
-                                LOGGER.errorCannotObtainClassLoader(ex, currentRevision);
+                            if (classLoader == null) {
+                                AbstractBundleRevision currentRevision = bundleState.getCurrentBundleRevision();
+                                try {
+                                    classLoader = currentRevision.getModuleClassLoader();
+                                } catch (ModuleLoadException ex) {
+                                    LOGGER.errorCannotObtainClassLoader(ex, currentRevision);
+                                }
                             }
                             ClassLoader ctxLoader = SecurityActions.getContextClassLoader();
                             try {
@@ -299,8 +307,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                         }
                     };
                     final long serviceId = getNextServiceId();
-                    final Object value = valueProvider.getValue();
-                    final AbstractBundleState auxBundle = injectedModuleManager.getValue().getBundleState(value.getClass());
+                    final AbstractBundleState auxBundle = injectedModuleManager.getValue().getBundleState(valueProvider.getValue().getClass());
                     final AbstractBundleState owner = (auxBundle != null ? auxBundle : injectedBundleManager.getValue().getSystemBundle());
                     final String auxName = (className != null ? className : serviceName.getSimpleName());
                     ServiceState serviceState = new ServiceState(this, owner, serviceId, new String[] { auxName }, valueProvider, null);

@@ -86,7 +86,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         this.serviceId = serviceId;
         this.valueProvider = valueProvider;
 
-        if (checkValidClassNames(owner, classNames, valueProvider.getValue()) == false)
+        if (!valueProvider.isFactoryValue() && !checkValidClassNames(owner, classNames, valueProvider.getValue()))
             throw MESSAGES.illegalArgumentInvalidObjectClass(Arrays.toString(classNames));
 
         // Generate the service names
@@ -138,9 +138,8 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     Object getScopedValue(AbstractBundleState bundleState) {
 
         // For non-factory services, return the value
-        Object value = valueProvider.getValue();
-        if (value instanceof ServiceFactory == false)
-            return value;
+        if (valueProvider.isFactoryValue() == false)
+            return valueProvider.getValue();
 
         // Get the ServiceFactory value
         Object result = null;
@@ -150,7 +149,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
 
             ServiceFactoryHolder factoryHolder = getFactoryHolder(bundleState);
             if (factoryHolder == null) {
-                ServiceFactory factory = (ServiceFactory) value;
+                ServiceFactory factory = (ServiceFactory) valueProvider.getValue();
                 factoryHolder = new ServiceFactoryHolder(bundleState, factory);
                 factoryValues.put(bundleState.getBundleId(), factoryHolder);
             }
@@ -175,8 +174,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     }
 
     void ungetScopedValue(AbstractBundleState bundleState) {
-        Object value = valueProvider.getValue();
-        if (value instanceof ServiceFactory) {
+        if (valueProvider.isFactoryValue()) {
             ServiceFactoryHolder factoryHolder = getFactoryHolder(bundleState);
             if (factoryHolder != null) {
                 try {
@@ -426,6 +424,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     }
 
     interface ValueProvider {
+        boolean isFactoryValue();
         Object getValue();
     }
 
