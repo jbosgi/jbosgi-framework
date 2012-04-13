@@ -81,7 +81,7 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
         return Collections.singletonList((AbstractBundleRevision) revision);
     }
 
-    void createStorageState(BundleStoragePlugin storagePlugin) {
+    void createStorageState(BundleStorageProvider storagePlugin) {
         try {
             storageState = storagePlugin.createStorageState(0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME, null);
         } catch (IOException ex) {

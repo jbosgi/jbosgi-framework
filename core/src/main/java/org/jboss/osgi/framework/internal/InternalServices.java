@@ -31,7 +31,7 @@ import org.osgi.service.resolver.Resolver;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-interface InternalServices {
+public interface InternalServices {
 
     /** The base name of all internal services */
     ServiceName INTERNAL_SERVICE_BASE = Services.JBOSGI_BASE_NAME.append("internal");
@@ -50,10 +50,8 @@ interface InternalServices {
     ServiceName MODULE_MANGER_PLUGIN = INTERNAL_SERVICE_BASE.append("ModuleManager");
     /** The {@link NativeCodePlugin} service name */
     ServiceName NATIVE_CODE_PLUGIN = INTERNAL_SERVICE_BASE.append("NativeCode");
-    /** The {@link PersistentBundlesInstaller} service name */
-    ServiceName PERSISTENT_BUNDLES_INSTALLER = INTERNAL_SERVICE_BASE.append("PersistentBundles");
-    /** The {@link PersistentBundlesInstaller} nested activator service name */
-    ServiceName PERSISTENT_BUNDLES_INSTALLER_COMPLETE = PERSISTENT_BUNDLES_INSTALLER.append("COMPLETE");
+    /** The {@link PersistentBundlesStarter} nested activator service name */
+    ServiceName PERSISTENT_BUNDLES_STARTER = INTERNAL_SERVICE_BASE.append("PersistentBundlesStarter");
     /** The {@link Resolver} service name */
     ServiceName RESOLVER_PLUGIN = INTERNAL_SERVICE_BASE.append("Resolver");
     /** The {@link ServiceManagerPlugin} service name */

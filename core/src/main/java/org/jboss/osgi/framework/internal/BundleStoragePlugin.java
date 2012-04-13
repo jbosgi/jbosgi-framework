@@ -25,9 +25,7 @@ import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -39,7 +37,6 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
@@ -50,21 +47,21 @@ import org.osgi.framework.Constants;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugin> {
+final class DefaultBundleStorageProvider extends AbstractPluginService<BundleStorageProvider> implements BundleStorageProvider {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private boolean firstInit;
     private File storageArea;
 
     static void addService(ServiceTarget serviceTarget, boolean firstInit) {
-        BundleStoragePlugin service = new BundleStoragePlugin(firstInit);
-        ServiceBuilder<BundleStoragePlugin> builder = serviceTarget.addService(InternalServices.BUNDLE_STORAGE_PLUGIN, service);
+        DefaultBundleStorageProvider service = new DefaultBundleStorageProvider(firstInit);
+        ServiceBuilder<BundleStorageProvider> builder = serviceTarget.addService(InternalServices.BUNDLE_STORAGE_PLUGIN, service);
         builder.addDependency(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    private BundleStoragePlugin(boolean firstInit) {
+    private DefaultBundleStorageProvider(boolean firstInit) {
         this.firstInit = firstInit;
     }
 
@@ -80,34 +77,19 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
     }
 
     @Override
-    public BundleStoragePlugin getValue() {
+    public BundleStorageProvider getValue() {
         return this;
     }
 
-    BundleStorageState createStorageState(long bundleId, String location, VirtualFile rootFile) throws IOException {
+    @Override
+    public BundleStorageState createStorageState(long bundleId, String location, VirtualFile rootFile) throws IOException {
         assert location != null : "Null location";
 
         // Make the bundle's storage dir
-        String bundlePath = getStorageDir(bundleId).getAbsolutePath();
-        File bundleDir = new File(bundlePath);
-        bundleDir.mkdirs();
-
+        File bundleDir = getStorageDir(bundleId);
         Properties props = BundleStorageState.loadProperties(bundleDir);
         String previousRev = props.getProperty(BundleStorageState.PROPERTY_BUNDLE_REV);
         int revision = (previousRev != null ? Integer.parseInt(previousRev) + 1 : 0);
-
-        if (rootFile != null) {
-            File revFile = new File(bundlePath + "/bundle-" + bundleId + "-rev-" + revision + ".jar");
-            FileOutputStream output = new FileOutputStream(revFile);
-            InputStream input = rootFile.openStream();
-            try {
-                VFSUtils.copyStream(input, output);
-            } finally {
-                input.close();
-                output.close();
-            }
-            props.put(BundleStorageState.PROPERTY_BUNDLE_FILE, revFile.getName());
-        }
 
         // Write the bundle properties
         props.put(BundleStorageState.PROPERTY_BUNDLE_LOCATION, location);
@@ -118,7 +100,8 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
         return BundleStorageState.createBundleStorageState(bundleDir, rootFile, props);
     }
 
-    List<BundleStorageState> getBundleStorageStates() throws IOException {
+    @Override
+    public List<BundleStorageState> getBundleStorageStates() throws IOException {
         List<BundleStorageState> states = new ArrayList<BundleStorageState>();
         File[] storageDirs = getStorageArea().listFiles();
         if (storageDirs != null) {
@@ -131,7 +114,8 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
         return Collections.unmodifiableList(states);
     }
 
-    File getDataFile(Bundle bundle, String filename) {
+    @Override
+    public File getDataFile(Bundle bundle, String filename) {
         File bundleDir = getStorageDir(bundle.getBundleId());
         File dataFile = new File(bundleDir.getAbsolutePath() + "/" + filename);
         dataFile.getParentFile().mkdirs();
@@ -145,7 +129,8 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
         return new File(filePath);
     }
 
-    File getStorageDir(long bundleId) {
+    @Override
+    public File getStorageDir(long bundleId) {
         File bundleDir = new File(getStorageArea() + "/bundle-" + bundleId);
         if (bundleDir.exists() == false)
             bundleDir.mkdirs();

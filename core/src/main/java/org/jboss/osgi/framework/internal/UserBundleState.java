@@ -217,7 +217,7 @@ abstract class UserBundleState extends AbstractBundleState {
             // completion of the remaining steps.
             createUpdateRevision(input);
         } catch (BundleException ex) {
-            if (restart) 
+            if (restart)
                 startInternal(Bundle.START_TRANSIENT);
             throw ex;
         } catch (Exception ex) {
@@ -292,7 +292,7 @@ abstract class UserBundleState extends AbstractBundleState {
             String location = dep.getLocation();
             VirtualFile rootFile = dep.getRoot();
             try {
-                BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+                BundleStorageProvider storagePlugin = getFrameworkState().getBundleStorageProvider();
                 storageState = storagePlugin.createStorageState(getBundleId(), location, rootFile);
                 dep.addAttachment(BundleStorageState.class, storageState);
             } catch (IOException ex) {
@@ -305,7 +305,7 @@ abstract class UserBundleState extends AbstractBundleState {
     BundleStorageState createStorageState(String location, VirtualFile rootFile) throws BundleException {
         BundleStorageState storageState;
         try {
-            BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+            BundleStorageProvider storagePlugin = getFrameworkState().getBundleStorageProvider();
             storageState = storagePlugin.createStorageState(getBundleId(), location, rootFile);
         } catch (IOException ex) {
             throw MESSAGES.bundleCannotSetupStorage(ex, rootFile);
@@ -330,7 +330,7 @@ abstract class UserBundleState extends AbstractBundleState {
             XEnvironment env = getFrameworkState().getEnvironment();
             if (currentRev != brev)
                 env.uninstallResources(brev);
-            
+
             if (brev instanceof HostBundleRevision) {
             	HostBundleRevision hostRev = (HostBundleRevision) brev;
             	for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
@@ -339,7 +339,7 @@ abstract class UserBundleState extends AbstractBundleState {
             		}
             	}
             }
-            
+
             ModuleIdentifier identifier = brev.getModuleIdentifier();
             moduleManager.removeModule(identifier);
         }

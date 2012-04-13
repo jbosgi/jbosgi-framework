@@ -350,7 +350,9 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     public ServiceName installBundle(ServiceTarget serviceTarget, Deployment deployment) throws BundleException {
         if (deployment == null)
             throw MESSAGES.illegalArgumentNull("deployment");
+
         ServiceName serviceName;
+
         // If a bundle containing the same location identifier is already installed,
         // the Bundle object for that bundle is returned.
         AbstractBundleState bundleState = getBundleByLocation(deployment.getLocation());

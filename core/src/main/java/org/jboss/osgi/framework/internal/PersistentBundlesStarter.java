@@ -23,47 +23,57 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
+import java.util.Map;
+
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.Services;
-import org.osgi.framework.launch.Framework;
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.IntegrationServices;
+import org.jboss.osgi.framework.PersistentBundlesInstaller;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleException;
 
 /**
- * A service that represents the INIT state of the {@link Framework}.
- *
- *  See {@link Framework#init()} for details.
+ * A service that starts persistent bundles on framework startup.
  *
  * @author thomas.diesler@jboss.com
- * @since 04-Apr-2011
+ * @since 12-Apr-2012
  */
-public final class FrameworkInit extends AbstractFrameworkService {
+public final class PersistentBundlesStarter extends AbstractPluginService<Void> {
 
-    private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
+    private final InjectedValue<PersistentBundlesInstaller> injectedPersistentBundles = new InjectedValue<PersistentBundlesInstaller>();
 
     static void addService(ServiceTarget serviceTarget) {
-        FrameworkInit service = new FrameworkInit();
-        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_INIT, service);
-        builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
-        builder.addDependencies(InternalServices.CORE_SERVICES, InternalServices.PERSISTENT_BUNDLES_STARTER);
+        PersistentBundlesStarter service = new PersistentBundlesStarter();
+        ServiceBuilder<Void> builder = serviceTarget.addService(InternalServices.PERSISTENT_BUNDLES_STARTER, service);
+        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLES_INSTALLER, PersistentBundlesInstaller.class, service.injectedPersistentBundles);
+        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLES_INSTALLER_COMPLETE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    private FrameworkInit() {
+    private PersistentBundlesStarter() {
     }
 
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        LOGGER.debugf("OSGi Framework initialized");
-    }
-
-    @Override
-    public FrameworkState getValue() {
-        return injectedFramework.getValue();
+        Map<ServiceName, Deployment> pendingServices = injectedPersistentBundles.getValue().getInstalledServices();
+        for (Deployment dep : pendingServices.values()) {
+            if (dep.isAutoStart()) {
+                Bundle bundle = dep.getAttachment(Bundle.class);
+                try {
+                    bundle.start();
+                } catch (BundleException ex) {
+                    LOGGER.errorCannotStartPersistentBundle(ex, bundle);
+                }
+            }
+        }
+        LOGGER.debugf("Persistent bundles started");
     }
 }

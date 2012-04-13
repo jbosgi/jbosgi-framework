@@ -29,6 +29,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -39,7 +40,7 @@ import org.jboss.osgi.vfs.VirtualFile;
 
 /**
  * An abstraction of a bundle persistent storage.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
@@ -101,6 +102,21 @@ final class BundleStorageState {
 
     static BundleStorageState createBundleStorageState(File storageDir, VirtualFile rootFile, Properties props) throws IOException {
         BundleStorageState storageState = new BundleStorageState(storageDir, rootFile, props);
+        if (rootFile != null) {
+            String bundleId = props.getProperty(PROPERTY_BUNDLE_ID);
+            String revision = props.getProperty(PROPERTY_BUNDLE_REV);
+            File revFile = new File(storageDir + "/bundle-" + bundleId + "-rev-" + revision + ".jar");
+            FileOutputStream output = new FileOutputStream(revFile);
+            storageDir.mkdirs();
+            InputStream input = rootFile.openStream();
+            try {
+                VFSUtils.copyStream(input, output);
+            } finally {
+                input.close();
+                output.close();
+            }
+            props.put(BundleStorageState.PROPERTY_BUNDLE_FILE, revFile.getName());
+        }
         storageState.writeProperties();
         return storageState;
     }

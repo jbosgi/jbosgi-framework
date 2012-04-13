@@ -113,7 +113,8 @@ public final class FrameworkBuilder {
             FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
 
             DeploymentFactoryPlugin.addService(serviceTarget);
-            BundleStoragePlugin.addService(serviceTarget, firstInit);
+            DefaultBundleStorageProvider.addService(serviceTarget, firstInit);
+            DefaultResolverPlugin.addService(serviceTarget);
             CoreServices.addService(serviceTarget);
             DefaultEnvironmentPlugin.addService(serviceTarget);
             FrameworkActive.addService(serviceTarget);
@@ -124,8 +125,7 @@ public final class FrameworkBuilder {
             ModuleManagerPlugin.addService(serviceTarget);
             NativeCodePlugin.addService(serviceTarget);
             PackageAdminPlugin.addService(serviceTarget);
-            PersistentBundlesInstaller.addService(serviceTarget);
-            DefaultResolverPlugin.addService(serviceTarget);
+            PersistentBundlesStarter.addService(serviceTarget);
             ServiceManagerPlugin.addService(serviceTarget);
             StartLevelPlugin.addService(serviceTarget);
             SystemBundleService.addService(serviceTarget, frameworkState);
@@ -149,6 +149,8 @@ public final class FrameworkBuilder {
                         DefaultFrameworkModuleProvider.addService(serviceTarget);
                     } else if (IntegrationServices.MODULE_LOADER_PROVIDER.equals(sname)) {
                         DefaultModuleLoaderProvider.addService(serviceTarget);
+                    } else if (IntegrationServices.PERSISTENT_BUNDLES_INSTALLER.equals(sname)) {
+                        DefaultPersistentBundlesInstaller.addService(serviceTarget);
                     } else if (IntegrationServices.SYSTEM_PATHS_PROVIDER.equals(sname)) {
                         DefaultSystemPathsProvider.addService(serviceTarget, this);
                     } else if (IntegrationServices.SYSTEM_SERVICES_PROVIDER.equals(sname)) {

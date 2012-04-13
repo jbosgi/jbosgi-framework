@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework;
 
+import static org.jboss.osgi.framework.Services.INTEGRATION_BASE_NAME;
+
 import org.jboss.msc.service.ServiceName;
 
 
@@ -33,23 +35,29 @@ import org.jboss.msc.service.ServiceName;
 public interface IntegrationServices {
 
     /** The service name for the {@link AutoInstallProvider} */
-    ServiceName AUTOINSTALL_PROVIDER = Services.JBOSGI_BASE_NAME.append("AutoInstallProvider");
+    ServiceName AUTOINSTALL_PROVIDER = INTEGRATION_BASE_NAME.append("AutoInstallProvider");
 
     /** The {@link AutoInstallProvider} nested service that indicates completion */
     ServiceName AUTOINSTALL_PROVIDER_COMPLETE = AUTOINSTALL_PROVIDER.append("COMPLETE");
 
     /** The service name for the {@link BundleInstallProvider} */
-    ServiceName BUNDLE_INSTALL_PROVIDER = Services.JBOSGI_BASE_NAME.append("BundleInstallProvider");
+    ServiceName BUNDLE_INSTALL_PROVIDER = INTEGRATION_BASE_NAME.append("BundleInstallProvider");
 
     /** The service name for the {@link FrameworkModuleProvider} */
-    ServiceName FRAMEWORK_MODULE_PROVIDER = Services.JBOSGI_BASE_NAME.append("FrameworkModuleProvider");
+    ServiceName FRAMEWORK_MODULE_PROVIDER = INTEGRATION_BASE_NAME.append("FrameworkModuleProvider");
 
     /** The service name for the {@link ModuleLoaderProvider} */
-    ServiceName MODULE_LOADER_PROVIDER = Services.JBOSGI_BASE_NAME.append("ModuleLoaderProvider");
+    ServiceName MODULE_LOADER_PROVIDER = INTEGRATION_BASE_NAME.append("ModuleLoaderProvider");
+
+    /** The {@link PersistentBundlesInstaller} service name */
+    ServiceName PERSISTENT_BUNDLES_INSTALLER = INTEGRATION_BASE_NAME.append("PersistentBundlesInstaller");
+
+    /** The {@link PersistentBundlesInstaller} service name */
+    ServiceName PERSISTENT_BUNDLES_INSTALLER_COMPLETE = PERSISTENT_BUNDLES_INSTALLER.append("COMPLETE");
 
     /** The service name for the {@link SystemPathsProvider} */
-    ServiceName SYSTEM_PATHS_PROVIDER = Services.JBOSGI_BASE_NAME.append("SystemPathsProvider");
+    ServiceName SYSTEM_PATHS_PROVIDER = INTEGRATION_BASE_NAME.append("SystemPathsProvider");
 
     /** The service name for the {@link SystemServicesProvider} */
-    ServiceName SYSTEM_SERVICES_PROVIDER = Services.JBOSGI_BASE_NAME.append("SystemServicesProvider");
+    ServiceName SYSTEM_SERVICES_PROVIDER = INTEGRATION_BASE_NAME.append("SystemServicesProvider");
 }

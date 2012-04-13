@@ -43,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * Test bundle storage
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 13-Aug-2010
  */
@@ -52,7 +52,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
     @Test
     public void testBundleStorageForInputStream() throws Exception {
         BundleManager bundleManager = getBundleManager();
-        BundleStoragePlugin plugin = getFrameworkState().getBundleStoragePlugin();
+        BundleStorageProvider plugin = getFrameworkState().getBundleStorageProvider();
         assertNotNull("BundleStoragePlugin not null", plugin);
 
         JavaArchive archive = getArchive();
@@ -75,7 +75,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
     @Test
     public void testBundleStorageForExternalFile() throws Exception {
         BundleManager bundleManager = getBundleManager();
-        BundleStoragePlugin plugin = bundleManager.getFrameworkState().getBundleStoragePlugin();
+        BundleStorageProvider plugin = bundleManager.getFrameworkState().getBundleStorageProvider();
         assertNotNull("BundleStoragePlugin not null", plugin);
 
         File file = new File(plugin.getStorageDir(0) + "/testBundleExternalFile.jar");

@@ -43,6 +43,8 @@ public interface Services {
     ServiceName BUNDLE_BASE_NAME = JBOSGI_BASE_NAME.append("bundle");
     /** The base name of all framework services */
     ServiceName FRAMEWORK_BASE_NAME = JBOSGI_BASE_NAME.append("framework");
+    /** The prefix for all integration plugin services */
+    ServiceName INTEGRATION_BASE_NAME = JBOSGI_BASE_NAME.append("integration");
     /** The prefix for all OSGi services */
     ServiceName SERVICE_BASE_NAME = JBOSGI_BASE_NAME.append("service");
     /** The base name of all framework OSGi services that were registered outside the OSGi layer */

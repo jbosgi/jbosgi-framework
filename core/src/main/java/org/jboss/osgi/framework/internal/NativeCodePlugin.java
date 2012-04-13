@@ -381,7 +381,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
         }
 
         private File getUniqueLibraryFile(final UserBundleState userBundle, final String libpath) {
-            BundleStoragePlugin storagePlugin = userBundle.getFrameworkState().getBundleStoragePlugin();
+            BundleStorageProvider storagePlugin = userBundle.getFrameworkState().getBundleStorageProvider();
             return storagePlugin.getDataFile(userBundle, libpath);
         }
     }

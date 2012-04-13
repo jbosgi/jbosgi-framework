@@ -46,7 +46,7 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * Test persistent bundle startup
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 20-Oct-2010
  */
@@ -145,13 +145,9 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
     }
 
     private JavaArchive getBundleArchive() {
-        // Bundle-Version: 1.0.0
-        // Bundle-SymbolicName: simple-bundle
-        // Bundle-Activator: org.jboss.osgi.msc.framework.simple.bundle.SimpleActivator
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
         archive.addClasses(SimpleService.class, SimpleActivator.class);
         archive.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

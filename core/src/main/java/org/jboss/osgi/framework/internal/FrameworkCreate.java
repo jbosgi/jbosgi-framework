@@ -49,7 +49,7 @@ public final class FrameworkCreate extends AbstractFrameworkService {
         FrameworkCreate service = new FrameworkCreate(frameworkState);
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_CREATE, service);
         builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, frameworkState.injectedDeploymentFactory);
-        builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, frameworkState.injectedBundleStorage);
+        builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStorageProvider.class, frameworkState.injectedBundleStorage);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, frameworkState.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, frameworkState.injectedModuleManager);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, frameworkState.injectedNativeCode);
