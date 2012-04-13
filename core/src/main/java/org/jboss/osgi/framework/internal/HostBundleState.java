@@ -35,6 +35,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
+import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.modules.ModuleActivator;
@@ -116,7 +118,7 @@ final class HostBundleState extends UserBundleState {
     }
 
     boolean isPersistentlyStarted() {
-        BundleStorageState storageState = getBundleStorageState();
+        StorageState storageState = getStorageState();
         return storageState.isPersistentlyStarted();
     }
 
@@ -165,12 +167,12 @@ final class HostBundleState extends UserBundleState {
     }
 
     private boolean isBundleActivationPolicyUsed() {
-        BundleStorageState storageState = getBundleStorageState();
+        StorageState storageState = getStorageState();
         return storageState.isBundleActivationPolicyUsed();
     }
 
     private void setBundleActivationPolicyUsed(boolean usePolicy) {
-        BundleStorageState storageState = getBundleStorageState();
+        InternalStorageState storageState = getStorageState();
         storageState.setBundleActivationPolicyUsed(usePolicy);
     }
 
@@ -280,7 +282,7 @@ final class HostBundleState extends UserBundleState {
     }
 
     private void setPersistentlyStarted(boolean started) {
-        BundleStorageState storageState = getBundleStorageState();
+        InternalStorageState storageState = getStorageState();
         storageState.setPersistentlyStarted(started);
     }
 

@@ -21,11 +21,13 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.IntegrationServices.SYSTEM_SERVICES_PROVIDER;
+
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.SystemServicesProvider;
 import org.osgi.framework.BundleContext;
 
@@ -37,11 +39,13 @@ import org.osgi.framework.BundleContext;
  */
 final class DefaultSystemServicesProvider extends AbstractService<SystemServicesProvider> implements SystemServicesProvider {
 
-    static void addService(ServiceTarget serviceTarget) {
-        DefaultSystemServicesProvider service = new DefaultSystemServicesProvider();
-        ServiceBuilder<SystemServicesProvider> builder = serviceTarget.addService(IntegrationServices.SYSTEM_SERVICES_PROVIDER, service);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
+        if (registry.getService(SYSTEM_SERVICES_PROVIDER) == null) {
+            DefaultSystemServicesProvider service = new DefaultSystemServicesProvider();
+            ServiceBuilder<SystemServicesProvider> builder = serviceTarget.addService(SYSTEM_SERVICES_PROVIDER, service);
+            builder.setInitialMode(Mode.ON_DEMAND);
+            builder.install();
+        }
     }
 
     private DefaultSystemServicesProvider() {

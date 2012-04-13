@@ -25,10 +25,16 @@ import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.jboss.msc.service.ServiceBuilder;
@@ -37,8 +43,11 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.vfs.AbstractVFS;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 
 /**
@@ -47,90 +56,97 @@ import org.osgi.framework.Constants;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class DefaultBundleStorageProvider extends AbstractPluginService<BundleStorageProvider> implements BundleStorageProvider {
+final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugin> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-    private boolean firstInit;
+    private final Map<String, InternalStorageState> storageStates = new LinkedHashMap<String, InternalStorageState>();
     private File storageArea;
+    private boolean firstInit;
 
     static void addService(ServiceTarget serviceTarget, boolean firstInit) {
-        DefaultBundleStorageProvider service = new DefaultBundleStorageProvider(firstInit);
-        ServiceBuilder<BundleStorageProvider> builder = serviceTarget.addService(InternalServices.BUNDLE_STORAGE_PLUGIN, service);
-        builder.addDependency(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        BundleStoragePlugin service = new BundleStoragePlugin(firstInit);
+        ServiceBuilder<BundleStoragePlugin> builder = serviceTarget.addService(InternalServices.BUNDLE_STORAGE_PLUGIN, service);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    private DefaultBundleStorageProvider(boolean firstInit) {
+    private BundleStoragePlugin(boolean firstInit) {
         this.firstInit = firstInit;
     }
 
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        // Cleanup the storage area
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        String storageClean = (String) bundleManager.getProperty(Constants.FRAMEWORK_STORAGE_CLEAN);
-        if (firstInit == true && Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT.equals(storageClean))
-            cleanStorage();
 
+        try {
+            // Cleanup the storage area
+            BundleManager bundleManager = injectedBundleManager.getValue();
+            String storageClean = (String) bundleManager.getProperty(Constants.FRAMEWORK_STORAGE_CLEAN);
+            if (firstInit == true && Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT.equals(storageClean)) {
+                File storage = getStorageArea();
+                LOGGER.debugf("Deleting storage: %s", storage.getAbsolutePath());
+                deleteRecursive(storage);
+            }
+
+            // Initialize storage states
+            File[] storageDirs = getStorageArea().listFiles();
+            if (storageDirs != null) {
+                for (File storageDir : storageDirs) {
+                    LOGGER.debugf("Creating storage state from: %s", storageDir);
+                    InternalStorageState storageState = InternalStorageState.createStorageState(storageDir);
+                    storageStates.put(storageState.getLocation(), storageState);
+                }
+            }
+        } catch (IOException ex) {
+            throw new StartException(ex);
+        }
     }
 
     @Override
-    public BundleStorageProvider getValue() {
+    public BundleStoragePlugin getValue() {
         return this;
     }
 
-    @Override
-    public BundleStorageState createStorageState(long bundleId, String location, VirtualFile rootFile) throws IOException {
+    InternalStorageState createStorageState(long bundleId, String location, VirtualFile rootFile) throws IOException {
         assert location != null : "Null location";
 
         // Make the bundle's storage dir
         File bundleDir = getStorageDir(bundleId);
-        Properties props = BundleStorageState.loadProperties(bundleDir);
-        String previousRev = props.getProperty(BundleStorageState.PROPERTY_BUNDLE_REV);
+        Properties props = InternalStorageState.loadProperties(bundleDir);
+        String previousRev = props.getProperty(StorageState.PROPERTY_BUNDLE_REV);
         int revision = (previousRev != null ? Integer.parseInt(previousRev) + 1 : 0);
 
         // Write the bundle properties
-        props.put(BundleStorageState.PROPERTY_BUNDLE_LOCATION, location);
-        props.put(BundleStorageState.PROPERTY_BUNDLE_ID, new Long(bundleId).toString());
-        props.put(BundleStorageState.PROPERTY_BUNDLE_REV, new Integer(revision).toString());
-        props.put(BundleStorageState.PROPERTY_LAST_MODIFIED, new Long(System.currentTimeMillis()).toString());
+        props.put(StorageState.PROPERTY_BUNDLE_LOCATION, location);
+        props.put(StorageState.PROPERTY_BUNDLE_ID, new Long(bundleId).toString());
+        props.put(StorageState.PROPERTY_BUNDLE_REV, new Integer(revision).toString());
+        props.put(StorageState.PROPERTY_LAST_MODIFIED, new Long(System.currentTimeMillis()).toString());
 
-        return BundleStorageState.createBundleStorageState(bundleDir, rootFile, props);
-    }
-
-    @Override
-    public List<BundleStorageState> getBundleStorageStates() throws IOException {
-        List<BundleStorageState> states = new ArrayList<BundleStorageState>();
-        File[] storageDirs = getStorageArea().listFiles();
-        if (storageDirs != null) {
-            for (File storageDir : storageDirs) {
-                LOGGER.debugf("Creating storage state from: %s", storageDir);
-                BundleStorageState storageState = BundleStorageState.createFromStorage(storageDir);
-                states.add(storageState);
-            }
+        InternalStorageState storageState = InternalStorageState.createStorageState(bundleDir, rootFile, props);
+        synchronized (storageStates) {
+            storageStates.put(storageState.getLocation(), storageState);
         }
-        return Collections.unmodifiableList(states);
+        return storageState;
     }
 
-    @Override
-    public File getDataFile(Bundle bundle, String filename) {
-        File bundleDir = getStorageDir(bundle.getBundleId());
-        File dataFile = new File(bundleDir.getAbsolutePath() + "/" + filename);
-        dataFile.getParentFile().mkdirs();
-
-        String filePath = dataFile.getAbsolutePath();
-        try {
-            filePath = dataFile.getCanonicalPath();
-        } catch (IOException ex) {
-            // ignore
+    void deleteStorageState(InternalStorageState storageState) {
+        VFSUtils.safeClose(storageState.getRootFile());
+        deleteRecursive(storageState.getStorageDir());
+        synchronized (storageStates) {
+            storageStates.remove(storageState.getLocation());
         }
-        return new File(filePath);
     }
 
-    @Override
-    public File getStorageDir(long bundleId) {
+    List<InternalStorageState> getBundleStorageStates() {
+        return Collections.unmodifiableList(new ArrayList<InternalStorageState>(storageStates.values()));
+    }
+
+    InternalStorageState getStorageState(String location) {
+        return location != null ? storageStates.get(location) : null;
+    }
+
+    File getStorageDir(long bundleId) {
         File bundleDir = new File(getStorageArea() + "/bundle-" + bundleId);
         if (bundleDir.exists() == false)
             bundleDir.mkdirs();
@@ -144,17 +160,7 @@ final class DefaultBundleStorageProvider extends AbstractPluginService<BundleSto
         return new File(filePath);
     }
 
-    private void cleanStorage() {
-        File storage = getStorageArea();
-        LOGGER.debugf("Deleting storage: %s", storage.getAbsolutePath());
-        try {
-            deleteRecursively(storage);
-        } catch (IOException ex) {
-            LOGGER.errorCannotDeleteStorageArea(ex);
-        }
-    }
-
-    private File getStorageArea() {
+    File getStorageArea() {
         if (storageArea == null) {
             BundleManager bundleManager = injectedBundleManager.getValue();
             String dirName = (String) bundleManager.getProperty(Constants.FRAMEWORK_STORAGE);
@@ -171,11 +177,108 @@ final class DefaultBundleStorageProvider extends AbstractPluginService<BundleSto
         return storageArea;
     }
 
-    private void deleteRecursively(File file) throws IOException {
+    File getDataFile(long bundleId, String filename) {
+        File bundleDir = getStorageDir(bundleId);
+        File dataFile = new File(bundleDir.getAbsolutePath() + File.separator + filename);
+        dataFile.getParentFile().mkdirs();
+
+        String filePath = dataFile.getAbsolutePath();
+        try {
+            filePath = dataFile.getCanonicalPath();
+        } catch (IOException ex) {
+            // ignore
+        }
+        return new File(filePath);
+    }
+
+    private void deleteRecursive(File file) {
         if (file.isDirectory()) {
             for (File aux : file.listFiles())
-                deleteRecursively(aux);
+                deleteRecursive(aux);
         }
         file.delete();
+    }
+
+    static class InternalStorageState extends StorageState {
+
+        private static InternalStorageState createStorageState(File storageDir) throws IOException {
+            VirtualFile rootFile = null;
+            Properties props = loadProperties(storageDir);
+            String vfsLocation = props.getProperty(PROPERTY_BUNDLE_FILE);
+            if (vfsLocation != null) {
+                File revFile = new File(storageDir + "/" + vfsLocation);
+                rootFile = AbstractVFS.toVirtualFile(revFile.toURI());
+            }
+            return new InternalStorageState(storageDir, rootFile, props);
+        }
+
+        private static InternalStorageState createStorageState(File storageDir, VirtualFile rootFile, Properties props) throws IOException {
+            InternalStorageState storageState = new InternalStorageState(storageDir, rootFile, props);
+            if (rootFile != null) {
+                String bundleId = props.getProperty(StorageState.PROPERTY_BUNDLE_ID);
+                String revision = props.getProperty(StorageState.PROPERTY_BUNDLE_REV);
+                File revFile = new File(storageDir + "/bundle-" + bundleId + "-rev-" + revision + ".jar");
+                FileOutputStream output = new FileOutputStream(revFile);
+                storageDir.mkdirs();
+                InputStream input = rootFile.openStream();
+                try {
+                    VFSUtils.copyStream(input, output);
+                } finally {
+                    input.close();
+                    output.close();
+                }
+                props.put(StorageState.PROPERTY_BUNDLE_FILE, revFile.getName());
+            }
+            storageState.writeProperties();
+            return storageState;
+        }
+
+        private static Properties loadProperties(File storageDir) throws FileNotFoundException, IOException {
+            Properties props = new Properties();
+            File propsFile = new File(storageDir + "/" + BUNDLE_PERSISTENT_PROPERTIES);
+            if (propsFile.exists()) {
+                FileInputStream input = new FileInputStream(propsFile);
+                try {
+                    props.load(input);
+                } finally {
+                    VFSUtils.safeClose(input);
+                }
+            }
+            return props;
+        }
+
+        private InternalStorageState(File storageDir, VirtualFile rootFile, Properties props) {
+            super(storageDir, rootFile, props);
+        }
+
+        void updateLastModified() {
+            getProperties().setProperty(PROPERTY_LAST_MODIFIED, new Long(System.currentTimeMillis()).toString());
+            writeProperties();
+        }
+
+        void setPersistentlyStarted(boolean started) {
+            getProperties().setProperty(PROPERTY_PERSISTENTLY_STARTED, new Boolean(started).toString());
+            writeProperties();
+        }
+
+        void setBundleActivationPolicyUsed(boolean usePolicy) {
+            getProperties().setProperty(PROPERTY_ACTIVATION_POLICY_USED, new Boolean(usePolicy).toString());
+            writeProperties();
+        }
+
+        private void writeProperties() {
+            try {
+                File propsFile = new File(getStorageDir() + "/" + BUNDLE_PERSISTENT_PROPERTIES);
+                FileOutputStream output = new FileOutputStream(propsFile);
+                try {
+                    getProperties().store(output, "Persistent Bundle Properties");
+                } finally {
+                    VFSUtils.safeClose(output);
+                }
+            } catch (IOException ex) {
+                LOGGER.errorCannotWritePersistentStorage(ex, getStorageDir());
+            }
+        }
+
     }
 }

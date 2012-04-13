@@ -50,7 +50,7 @@ public final class SystemContextService implements Service<BundleContext> {
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
-    
+
     private SystemContextService() {
     }
 
@@ -61,7 +61,7 @@ public final class SystemContextService implements Service<BundleContext> {
     @Override
     public void stop(StopContext context) {
     }
-    
+
     @Override
     public BundleContext getValue()  {
         return injectedSystemBundle.getValue().getBundleContext();

@@ -35,6 +35,7 @@ import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.TypeAdaptor;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
@@ -50,7 +51,7 @@ import org.osgi.framework.Version;
 final class SystemBundleState extends AbstractBundleState implements TypeAdaptor {
 
     private final FrameworkModuleProvider frameworkModuleProvider;
-    private BundleStorageState storageState;
+    private InternalStorageState storageState;
     private SystemBundleRevision revision;
 
     SystemBundleState(FrameworkState frameworkState, FrameworkModuleProvider frameworkModuleProvider) {
@@ -81,7 +82,7 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
         return Collections.singletonList((AbstractBundleRevision) revision);
     }
 
-    void createStorageState(BundleStorageProvider storagePlugin) {
+    void createStorageState(BundleStoragePlugin storagePlugin) {
         try {
             storageState = storagePlugin.createStorageState(0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME, null);
         } catch (IOException ex) {
@@ -115,7 +116,7 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
     }
 
     @Override
-    BundleStorageState getBundleStorageState() {
+    InternalStorageState getStorageState() {
         return storageState;
     }
 

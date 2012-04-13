@@ -30,10 +30,9 @@ import java.util.jar.Manifest;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
-import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.spi.BundleInfo;
@@ -50,12 +49,9 @@ import org.osgi.framework.Version;
  */
 final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFactoryPlugin> {
 
-    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-
     static void addService(ServiceTarget serviceTarget) {
         DeploymentFactoryPlugin service = new DeploymentFactoryPlugin();
         ServiceBuilder<DeploymentFactoryPlugin> builder = serviceTarget.addService(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -74,22 +70,14 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
      * @param storageState The bundle storage to be associated with the deployment
      * @throws BundleException If the given root file does not
      */
-    Deployment createDeployment(BundleStorageState storageState) throws BundleException {
+    Deployment createDeployment(StorageState storageState) throws BundleException {
         assert storageState != null : "Null storageState";
-        try {
-            String location = storageState.getLocation();
-            VirtualFile rootFile = storageState.getRootFile();
-            Deployment dep = createDeployment(location, rootFile);
-            dep.setAutoStart(storageState.isPersistentlyStarted());
-            dep.addAttachment(BundleStorageState.class, storageState);
-            return dep;
-        } catch (BundleException ex) {
-            storageState.deleteBundleStorage();
-            throw ex;
-        } catch (RuntimeException ex) {
-            storageState.deleteBundleStorage();
-            throw ex;
-        }
+        String location = storageState.getLocation();
+        VirtualFile rootFile = storageState.getRootFile();
+        Deployment dep = createDeployment(location, rootFile);
+        dep.setAutoStart(storageState.isPersistentlyStarted());
+        dep.addAttachment(StorageState.class, storageState);
+        return dep;
     }
 
     Deployment createDeployment(String location, VirtualFile rootFile) throws BundleException {
@@ -118,7 +106,6 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
             dep.addAttachment(OSGiMetaData.class, metadata);
             return dep;
         }
-
 
         Manifest manifest = null;
         try {

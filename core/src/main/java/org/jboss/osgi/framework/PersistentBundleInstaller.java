@@ -33,7 +33,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-public interface PersistentBundlesInstaller extends Service<PersistentBundlesInstaller> {
+public interface PersistentBundleInstaller extends Service<PersistentBundleInstaller> {
 
     public Map<ServiceName, Deployment> getInstalledServices();
 }

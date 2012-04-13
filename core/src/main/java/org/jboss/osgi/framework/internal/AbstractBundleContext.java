@@ -376,8 +376,8 @@ abstract class AbstractBundleContext implements BundleContext {
     @Override
     public File getDataFile(String filename) {
         checkValidBundleContext();
-        BundleStorageProvider storagePlugin = getFrameworkState().getBundleStorageProvider();
-        return storagePlugin.getDataFile(bundleState, filename);
+        BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+        return storagePlugin.getDataFile(bundleState.getBundleId(), filename);
     }
 
     @Override

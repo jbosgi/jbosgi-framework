@@ -27,6 +27,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
@@ -55,7 +56,7 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
     public void start(StartContext context) throws StartException {
         super.start(context);
         Deployment dep = initialDeployment;
-        BundleStorageState storageState = null;
+        InternalStorageState storageState = null;
         try {
             bundleState = createBundleState(dep);
             dep.addAttachment(Bundle.class, bundleState);
@@ -69,8 +70,10 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
             bundleState.changeState(Bundle.INSTALLED, 0);
             bundleState.fireBundleEvent(BundleEvent.INSTALLED);
         } catch (BundleException ex) {
-            if (storageState != null)
-                storageState.deleteBundleStorage();
+            if (storageState != null) {
+                BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+                storagePlugin.deleteStorageState(storageState);
+            }
             throw new StartException(ex);
         }
     }

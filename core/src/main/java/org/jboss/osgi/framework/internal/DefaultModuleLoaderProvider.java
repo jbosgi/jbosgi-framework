@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.Constants.JBOSGI_PREFIX;
+import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PROVIDER;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
@@ -35,11 +36,11 @@ import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.ModuleLoaderProvider;
 import org.jboss.osgi.resolver.XIdentityCapability;
 import org.jboss.osgi.resolver.XResource;
@@ -54,11 +55,13 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
 
     private Map<ModuleIdentifier, ModuleHolder> moduleSpecs = new ConcurrentHashMap<ModuleIdentifier, ModuleHolder>();
 
-    static void addService(ServiceTarget serviceTarget) {
-        ModuleLoaderProvider service = new DefaultModuleLoaderProvider();
-        ServiceBuilder<ModuleLoaderProvider> builder = serviceTarget.addService(IntegrationServices.MODULE_LOADER_PROVIDER, service);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
+        if (registry.getService(MODULE_LOADER_PROVIDER) == null) {
+            ModuleLoaderProvider service = new DefaultModuleLoaderProvider();
+            ServiceBuilder<ModuleLoaderProvider> builder = serviceTarget.addService(MODULE_LOADER_PROVIDER, service);
+            builder.setInitialMode(Mode.ON_DEMAND);
+            builder.install();
+        }
     }
 
     private DefaultModuleLoaderProvider() {

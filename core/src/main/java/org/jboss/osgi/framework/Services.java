@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework;
 
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.internal.FrameworkCoreServices;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -50,7 +51,7 @@ public interface Services {
     /** The base name of all framework OSGi services that were registered outside the OSGi layer */
     ServiceName XSERVICE_BASE_NAME = JBOSGI_BASE_NAME.append("xservice");
 
-    /** The {@link BundleManagerService} service name. */
+    /** The {@link BundleManagerIntegration} service name. */
     ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("BundleManager");
 
     /** The {@link XEnvironment} service name */
@@ -59,8 +60,11 @@ public interface Services {
     /** The service name for the created {@link Framework} */
     ServiceName FRAMEWORK_CREATE = FRAMEWORK_BASE_NAME.append("CREATED");
 
+    /** The {@link FrameworkCoreServices} service name. */
+    ServiceName FRAMEWORK_CORE_SERVICES = FRAMEWORK_BASE_NAME.append("CoreServices");
+    
     /** The service name for the initialized {@link Framework} */
-    ServiceName FRAMEWORK_INIT = FRAMEWORK_BASE_NAME.append("INITIALIZED");
+    ServiceName FRAMEWORK_INIT = FRAMEWORK_BASE_NAME.append("INIT");
 
     /** The service name for the started {@link Framework} */
     ServiceName FRAMEWORK_ACTIVE = FRAMEWORK_BASE_NAME.append("ACTIVE");
@@ -73,6 +77,9 @@ public interface Services {
 
     /** The service name for the {@link StartLevel} service */
     ServiceName START_LEVEL = JBOSGI_BASE_NAME.append("StartLevel");
+
+    /** The service name for the {@link StorageStateProvider} */
+    ServiceName STORAGE_STATE_PROVIDER = JBOSGI_BASE_NAME.append("StorageStateProvider");
 
     /** The service name for the system {@link Bundle} */
     ServiceName SYSTEM_BUNDLE = JBOSGI_BASE_NAME.append("SystemBundle");

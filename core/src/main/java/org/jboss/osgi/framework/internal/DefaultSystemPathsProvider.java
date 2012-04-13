@@ -21,6 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.IntegrationServices.SYSTEM_PATHS_PROVIDER;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 import static org.osgi.framework.Constants.FRAMEWORK_BOOTDELEGATION;
@@ -42,10 +43,10 @@ import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.SystemPathsProvider;
 
 /**
@@ -71,11 +72,13 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
     private Set<String> cachedSystemPaths;
     private PathFilter cachedSystemFilter;
 
-    static void addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
-        SystemPathsProvider service = new DefaultSystemPathsProvider(frameworkBuilder);
-        ServiceBuilder<SystemPathsProvider> builder = serviceTarget.addService(IntegrationServices.SYSTEM_PATHS_PROVIDER, service);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
+        if (registry.getService(SYSTEM_PATHS_PROVIDER) == null) {
+            SystemPathsProvider service = new DefaultSystemPathsProvider(frameworkBuilder);
+            ServiceBuilder<SystemPathsProvider> builder = serviceTarget.addService(SYSTEM_PATHS_PROVIDER, service);
+            builder.setInitialMode(Mode.ON_DEMAND);
+            builder.install();
+        }
     }
 
     private DefaultSystemPathsProvider(FrameworkBuilder frameworkBuilder) {

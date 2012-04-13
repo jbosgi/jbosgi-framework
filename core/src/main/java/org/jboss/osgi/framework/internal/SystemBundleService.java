@@ -52,7 +52,7 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
 
     private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
     private final InjectedValue<FrameworkModuleProvider> injectedModuleProvider = new InjectedValue<FrameworkModuleProvider>();
-    private final InjectedValue<BundleStorageProvider> injectedBundleStorage = new InjectedValue<BundleStorageProvider>();
+    private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironmentPlugin = new InjectedValue<XEnvironment>();
     private SystemBundleState bundleState;
 
@@ -62,7 +62,7 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironmentPlugin);
         builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, service.injectedModuleProvider);
         builder.addDependency(IntegrationServices.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
-        builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStorageProvider.class, service.injectedBundleStorage);
+        builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

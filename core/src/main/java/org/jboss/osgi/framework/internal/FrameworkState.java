@@ -38,9 +38,9 @@ final class FrameworkState {
 
     private final BundleManager bundleManager;
 
-    final InjectedValue<CoreServices> injectedCoreServices = new InjectedValue<CoreServices>();
+    final InjectedValue<FrameworkCoreServices> injectedCoreServices = new InjectedValue<FrameworkCoreServices>();
     final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
-    final InjectedValue<BundleStorageProvider> injectedBundleStorage = new InjectedValue<BundleStorageProvider>();
+    final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
     final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
     final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
@@ -62,11 +62,11 @@ final class FrameworkState {
         return injectedDeploymentFactory.getValue();
     }
 
-    BundleStorageProvider getBundleStorageProvider() {
+    BundleStoragePlugin getBundleStoragePlugin() {
         return injectedBundleStorage.getValue();
     }
 
-    CoreServices getCoreServices() {
+    FrameworkCoreServices getCoreServices() {
         return injectedCoreServices.getValue();
     }
 

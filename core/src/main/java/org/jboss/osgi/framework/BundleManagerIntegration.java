@@ -34,12 +34,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 24-Mar-2011
  */
-public interface BundleManagerService extends Service<BundleManagerService> {
-
-    /**
-     * Get the service base name for the given bundle.
-     */
-    ServiceName getServiceName(Bundle bundle);
+public interface BundleManagerIntegration extends Service<BundleManagerIntegration> {
 
     /**
      * Install a bundle from the given deployment

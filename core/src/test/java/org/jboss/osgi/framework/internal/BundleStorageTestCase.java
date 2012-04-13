@@ -21,6 +21,17 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+
+import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -33,14 +44,6 @@ import org.jboss.test.osgi.framework.subA.SimpleService;
 import org.junit.Test;
 import org.osgi.framework.BundleActivator;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 /**
  * Test bundle storage
  *
@@ -52,55 +55,58 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
     @Test
     public void testBundleStorageForInputStream() throws Exception {
         BundleManager bundleManager = getBundleManager();
-        BundleStorageProvider plugin = getFrameworkState().getBundleStorageProvider();
-        assertNotNull("BundleStoragePlugin not null", plugin);
+        BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+        assertNotNull("BundleStoragePlugin not null", storagePlugin);
 
         JavaArchive archive = getArchive();
-        BundleStorageState storageState = plugin.createStorageState(bundleManager.nextBundleId(), archive.getName(), toVirtualFile(archive));
+        InternalStorageState storageState = storagePlugin.createStorageState(bundleManager.nextBundleId(), archive.getName(), toVirtualFile(archive));
         assertStorageState(storageState);
 
-        storageState.deleteBundleStorage();
-        File storageDir = storageState.getBundleStorageDir();
+        storagePlugin.deleteStorageState(storageState);
+        File storageDir = storageState.getStorageDir();
         assertFalse("Storage dir deleted", storageDir.exists());
 
+        String location = storageState.getLocation();
+        assertNull("StorageState deleted", storagePlugin.getStorageState(location));
+
         // Try this a second time
-        storageState = plugin.createStorageState(bundleManager.nextBundleId(), archive.getName(), toVirtualFile(archive));
+        storageState = storagePlugin.createStorageState(bundleManager.nextBundleId(), archive.getName(), toVirtualFile(archive));
         assertStorageState(storageState);
 
-        storageState.deleteBundleStorage();
-        storageDir = storageState.getBundleStorageDir();
+        storagePlugin.deleteStorageState(storageState);
+        storageDir = storageState.getStorageDir();
         assertFalse("Storage dir deleted", storageDir.exists());
     }
 
     @Test
     public void testBundleStorageForExternalFile() throws Exception {
         BundleManager bundleManager = getBundleManager();
-        BundleStorageProvider plugin = bundleManager.getFrameworkState().getBundleStorageProvider();
-        assertNotNull("BundleStoragePlugin not null", plugin);
+        BundleStoragePlugin storagePlugin = bundleManager.getFrameworkState().getBundleStoragePlugin();
+        assertNotNull("BundleStoragePlugin not null", storagePlugin);
 
-        File file = new File(plugin.getStorageDir(0) + "/testBundleExternalFile.jar");
+        File file = new File(storagePlugin.getStorageDir(0) + "/testBundleExternalFile.jar");
         FileOutputStream fos = new FileOutputStream(file);
         VFSUtils.copyStream(toInputStream(getArchive()), fos);
         fos.close();
 
         VirtualFile rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
-        BundleStorageState storageState = plugin.createStorageState(bundleManager.nextBundleId(), file.getAbsolutePath(), rootFile);
+        InternalStorageState storageState = storagePlugin.createStorageState(bundleManager.nextBundleId(), file.getAbsolutePath(), rootFile);
         assertStorageState(storageState);
 
-        storageState.deleteBundleStorage();
-        File storageDir = storageState.getBundleStorageDir();
+        storagePlugin.deleteStorageState(storageState);
+        File storageDir = storageState.getStorageDir();
         assertFalse("Storage dir deleted", storageDir.exists());
     }
 
-    private void assertStorageState(BundleStorageState storageState) {
+    private void assertStorageState(StorageState storageState) {
         assertNotNull("BundleStorageState not null", storageState);
 
-        File storageDir = storageState.getBundleStorageDir();
+        File storageDir = storageState.getStorageDir();
         assertNotNull("Storage dir not null", storageDir);
         assertNotNull("Location not null", storageState.getLocation());
         assertTrue("Storage dir exists", storageDir.exists());
 
-        File propertiesFile = new File(storageDir + "/" + BundleStorageState.BUNDLE_PERSISTENT_PROPERTIES);
+        File propertiesFile = new File(storageDir + "/" + StorageState.BUNDLE_PERSISTENT_PROPERTIES);
         assertTrue("Properties file exists", propertiesFile.exists());
     }
 

@@ -44,7 +44,33 @@ import org.osgi.service.resolver.ResolutionException;
 /**
  * A service that represents the ACTIVE state of the {@link Framework}.
  *
- *  See {@link Framework#start()} for details.
+ * See {@link Framework#start()} for details.
+ *
+ * The framework service dependency hierarchy
+ *
+ * {@link FrameworkActive}
+ *   {@link DefaultAutoInstallProvider}
+ *     {@link FrameworkInit}
+ *       {@link FrameworkCreate}
+ *         {@link DeploymentFactoryPlugin}
+ *         {@link FrameworkEventsPlugin}
+ *           {@link SystemContextService}
+ *             {@link SystemBundleService}
+ *               {@link DefaultEnvironmentPlugin}
+ *               {@link DefaultFrameworkModuleProvider}
+ *                 {@link DefaultSystemPathsProvider}
+ *               {@link BundleStoragePlugin}
+ *                 {@link BundleManager}
+ *
+ *         {@link FrameworkCoreServices}
+ *
+ *
+ *                {@link FrameworkCreate}
+ *          {@link ModuleManagerPlugin}
+ *          {@link NativeCodePlugin}
+ *          {@link ServiceManagerPlugin}
+ *          {@link ResolverPlugin}
+ *       {@link DefaultPersistentBundleInstaller}
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011

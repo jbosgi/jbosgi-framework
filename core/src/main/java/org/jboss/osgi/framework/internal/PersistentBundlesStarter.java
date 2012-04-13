@@ -34,7 +34,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.IntegrationServices;
-import org.jboss.osgi.framework.PersistentBundlesInstaller;
+import org.jboss.osgi.framework.PersistentBundleInstaller;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -46,13 +46,13 @@ import org.osgi.framework.BundleException;
  */
 public final class PersistentBundlesStarter extends AbstractPluginService<Void> {
 
-    private final InjectedValue<PersistentBundlesInstaller> injectedPersistentBundles = new InjectedValue<PersistentBundlesInstaller>();
+    private final InjectedValue<PersistentBundleInstaller> injectedPersistentBundles = new InjectedValue<PersistentBundleInstaller>();
 
     static void addService(ServiceTarget serviceTarget) {
         PersistentBundlesStarter service = new PersistentBundlesStarter();
-        ServiceBuilder<Void> builder = serviceTarget.addService(InternalServices.PERSISTENT_BUNDLES_STARTER, service);
-        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLES_INSTALLER, PersistentBundlesInstaller.class, service.injectedPersistentBundles);
-        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLES_INSTALLER_COMPLETE);
+        ServiceBuilder<Void> builder = serviceTarget.addService(InternalServices.PERSISTENT_BUNDLE_STARTER, service);
+        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLE_INSTALLER, PersistentBundleInstaller.class, service.injectedPersistentBundles);
+        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLE_INSTALLER_COMPLETE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

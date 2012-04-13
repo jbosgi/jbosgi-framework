@@ -36,6 +36,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -213,14 +214,14 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
     @Override
     public boolean isBundlePersistentlyStarted(Bundle bundle) {
         AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-        BundleStorageState storageState = bundleState.getBundleStorageState();
+        StorageState storageState = bundleState.getStorageState();
         return storageState.isPersistentlyStarted();
     }
 
     @Override
     public boolean isBundleActivationPolicyUsed(Bundle bundle) {
         AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-        BundleStorageState storageState = bundleState.getBundleStorageState();
+        StorageState storageState = bundleState.getStorageState();
         return storageState.isBundleActivationPolicyUsed();
     }
 

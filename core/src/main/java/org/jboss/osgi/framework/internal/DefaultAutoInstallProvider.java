@@ -21,6 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.IntegrationServices.AUTOINSTALL_PROVIDER;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
@@ -36,6 +37,7 @@ import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -62,13 +64,15 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
-    static void addService(ServiceTarget serviceTarget) {
-        DefaultAutoInstallProvider service = new DefaultAutoInstallProvider();
-        ServiceBuilder<AutoInstallProvider> builder = serviceTarget.addService(IntegrationServices.AUTOINSTALL_PROVIDER, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(Services.FRAMEWORK_INIT);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
+        if (registry.getService(AUTOINSTALL_PROVIDER) == null) {
+            DefaultAutoInstallProvider service = new DefaultAutoInstallProvider();
+            ServiceBuilder<AutoInstallProvider> builder = serviceTarget.addService(AUTOINSTALL_PROVIDER, service);
+            builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+            builder.addDependency(Services.FRAMEWORK_INIT);
+            builder.setInitialMode(Mode.ON_DEMAND);
+            builder.install();
+        }
     }
 
     private DefaultAutoInstallProvider() {

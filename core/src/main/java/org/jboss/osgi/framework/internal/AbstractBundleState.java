@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.spi.ConstantsHelper;
@@ -105,7 +106,7 @@ abstract class AbstractBundleState implements Bundle {
         return frameworkState.getSystemBundle();
     }
 
-    CoreServices getCoreServices() {
+    FrameworkCoreServices getCoreServices() {
         return frameworkState.getCoreServices();
     }
 
@@ -138,7 +139,7 @@ abstract class AbstractBundleState implements Bundle {
 
     abstract boolean isSingleton();
 
-    abstract BundleStorageState getBundleStorageState();
+    abstract InternalStorageState getStorageState();
 
     ModuleIdentifier getModuleIdentifier() {
         return getCurrentBundleRevision().getModuleIdentifier();
@@ -429,12 +430,12 @@ abstract class AbstractBundleState implements Bundle {
 
     @Override
     public long getLastModified() {
-        return getBundleStorageState().getLastModified();
+        return getStorageState().getLastModified();
     }
 
     void updateLastModified() {
         // A bundle is considered to be modified when it is installed, updated or uninstalled.
-        getBundleStorageState().updateLastModified();
+        getStorageState().updateLastModified();
     }
 
     @Override
@@ -550,7 +551,7 @@ abstract class AbstractBundleState implements Bundle {
 
                 // Activate the service that represents bundle state RESOLVED
                 getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.ACTIVE);
-                
+
                 if (LOGGER.isDebugEnabled()) {
                     BundleWiring wiring = getCurrentBundleRevision().getWiring();
                     LOGGER.debugf("Required resource wires for: %s", wiring.getResource());

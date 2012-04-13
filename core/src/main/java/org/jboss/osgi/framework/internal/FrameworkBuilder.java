@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
-import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,11 +31,9 @@ import org.jboss.modules.Module;
 import org.jboss.modules.log.JDKModuleLogger;
 import org.jboss.modules.log.ModuleLogger;
 import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.IntegrationServices;
 import org.osgi.framework.launch.Framework;
 
 /**
@@ -98,7 +95,7 @@ public final class FrameworkBuilder {
         createFrameworkServicesInternal(serviceContainer, serviceTarget, initialMode, firstInit);
     }
 
-    void createFrameworkServicesInternal(ServiceContainer serviceContainer, ServiceTarget serviceTarget, Mode initialMode, boolean firstInit) {
+    void createFrameworkServicesInternal(ServiceRegistry serviceRegistry, ServiceTarget serviceTarget, Mode initialMode, boolean firstInit) {
         try {
             // Do this first so this URLStreamHandlerFactory gets installed
             URLHandlerPlugin.addService(serviceTarget);
@@ -113,9 +110,8 @@ public final class FrameworkBuilder {
             FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
 
             DeploymentFactoryPlugin.addService(serviceTarget);
-            DefaultBundleStorageProvider.addService(serviceTarget, firstInit);
-            DefaultResolverPlugin.addService(serviceTarget);
-            CoreServices.addService(serviceTarget);
+            BundleStoragePlugin.addService(serviceTarget, firstInit);
+            FrameworkCoreServices.addService(serviceTarget);
             DefaultEnvironmentPlugin.addService(serviceTarget);
             FrameworkActive.addService(serviceTarget);
             FrameworkActivator.addService(serviceTarget, initialMode);
@@ -126,38 +122,22 @@ public final class FrameworkBuilder {
             NativeCodePlugin.addService(serviceTarget);
             PackageAdminPlugin.addService(serviceTarget);
             PersistentBundlesStarter.addService(serviceTarget);
+            ResolverPlugin.addService(serviceTarget);
             ServiceManagerPlugin.addService(serviceTarget);
             StartLevelPlugin.addService(serviceTarget);
+            StorageStateProviderPlugin.addService(serviceTarget);
             SystemBundleService.addService(serviceTarget, frameworkState);
             SystemContextService.addService(serviceTarget);
             WebXMLVerifierInterceptor.addService(serviceTarget);
 
-            for (Field field : IntegrationServices.class.getDeclaredFields()) {
-                ServiceName sname = null;
-                try {
-                    sname = (ServiceName) field.get(null);
-                } catch (Exception ex) {
-                    // ignore
-                }
-                ServiceController<?> service = serviceContainer.getService(sname);
-                if (service == null) {
-                    if (IntegrationServices.AUTOINSTALL_PROVIDER.equals(sname)) {
-                        DefaultAutoInstallProvider.addService(serviceTarget);
-                    } else if (IntegrationServices.BUNDLE_INSTALL_PROVIDER.equals(sname)) {
-                        DefaultBundleInstallProvider.addService(serviceTarget);
-                    } else if (IntegrationServices.FRAMEWORK_MODULE_PROVIDER.equals(sname)) {
-                        DefaultFrameworkModuleProvider.addService(serviceTarget);
-                    } else if (IntegrationServices.MODULE_LOADER_PROVIDER.equals(sname)) {
-                        DefaultModuleLoaderProvider.addService(serviceTarget);
-                    } else if (IntegrationServices.PERSISTENT_BUNDLES_INSTALLER.equals(sname)) {
-                        DefaultPersistentBundlesInstaller.addService(serviceTarget);
-                    } else if (IntegrationServices.SYSTEM_PATHS_PROVIDER.equals(sname)) {
-                        DefaultSystemPathsProvider.addService(serviceTarget, this);
-                    } else if (IntegrationServices.SYSTEM_SERVICES_PROVIDER.equals(sname)) {
-                        DefaultSystemServicesProvider.addService(serviceTarget);
-                    }
-                }
-            }
+            DefaultAutoInstallProvider.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultBundleInstallProvider.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultFrameworkModuleProvider.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultModuleLoaderProvider.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultPersistentBundleInstaller.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultSystemPathsProvider.addIntegrationService(serviceRegistry, serviceTarget, this);
+            DefaultSystemServicesProvider.addIntegrationService(serviceRegistry, serviceTarget);
+
         } finally {
             closed = true;
         }

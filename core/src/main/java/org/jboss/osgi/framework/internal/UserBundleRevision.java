@@ -32,6 +32,7 @@ import java.util.List;
 
 import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -71,7 +72,7 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
     }
 
     private static int getRevisionId(Deployment dep) {
-        BundleStorageState storageState = dep.getAttachment(BundleStorageState.class);
+        StorageState storageState = dep.getAttachment(StorageState.class);
         return storageState.getRevisionId();
     }
 

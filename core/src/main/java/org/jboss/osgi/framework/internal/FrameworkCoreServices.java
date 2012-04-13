@@ -44,7 +44,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 28-Mar-2011
  */
-public final class CoreServices extends AbstractService<CoreServices> {
+public final class FrameworkCoreServices extends AbstractService<FrameworkCoreServices> {
 
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     private final InjectedValue<BundleInstallProvider> injectedInstallProvider = new InjectedValue<BundleInstallProvider>();
@@ -55,8 +55,8 @@ public final class CoreServices extends AbstractService<CoreServices> {
     private final InjectedValue<SystemServicesProvider> injectedServicesProvider = new InjectedValue<SystemServicesProvider>();
 
     static void addService(ServiceTarget serviceTarget) {
-        CoreServices service = new CoreServices();
-        ServiceBuilder<CoreServices> builder = serviceTarget.addService(InternalServices.CORE_SERVICES, service);
+        FrameworkCoreServices service = new FrameworkCoreServices();
+        ServiceBuilder<FrameworkCoreServices> builder = serviceTarget.addService(Services.FRAMEWORK_CORE_SERVICES, service);
         builder.addDependency(IntegrationServices.BUNDLE_INSTALL_PROVIDER, BundleInstallProvider.class, service.injectedInstallProvider);
         builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
         builder.addDependency(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, service.injectedLifecycleInterceptor);
@@ -69,7 +69,7 @@ public final class CoreServices extends AbstractService<CoreServices> {
         builder.install();
     }
 
-    private CoreServices() {
+    private FrameworkCoreServices() {
     }
 
     @Override
@@ -88,7 +88,7 @@ public final class CoreServices extends AbstractService<CoreServices> {
     }
 
     @Override
-    public CoreServices getValue() throws IllegalStateException, IllegalArgumentException {
+    public FrameworkCoreServices getValue() throws IllegalStateException, IllegalArgumentException {
         return this;
     }
 

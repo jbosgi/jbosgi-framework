@@ -19,30 +19,25 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework.internal;
+package org.jboss.osgi.framework;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
 import org.jboss.msc.service.Service;
-import org.jboss.osgi.vfs.VirtualFile;
-import org.osgi.framework.Bundle;
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.osgi.framework.BundleException;
 
 /**
- * A provider of BundleStorage
+ * A provider of {@link StorageState}
  *
  * @author thomas.diesler@jboss.com
  * @since 12-Apr-2012
  */
-public interface BundleStorageProvider extends Service<BundleStorageProvider> {
+public interface StorageStateProvider extends Service<StorageStateProvider> {
 
-    File getDataFile(Bundle bundle, String filename);
+    List<StorageState> getStorageStates();
 
-    List<BundleStorageState> getBundleStorageStates() throws IOException;
+    StorageState getByLocation(String location);
 
-    BundleStorageState createStorageState(long bundleId, String location, VirtualFile rootFile) throws IOException;
-
-    File getStorageDir(long bundleId);
-
+    Deployment createDeployment(StorageState storageState) throws BundleException;
 }

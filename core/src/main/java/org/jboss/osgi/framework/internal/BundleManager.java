@@ -51,8 +51,9 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleManagerService;
+import org.jboss.osgi.framework.BundleManagerIntegration;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.util.Java;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.VersionRange;
@@ -73,7 +74,7 @@ import org.osgi.resource.Resource;
  * @author David Bosschaert
  * @since 29-Jun-2010
  */
-public final class BundleManager extends AbstractService<BundleManagerService> implements BundleManagerService {
+public final class BundleManager extends AbstractService<BundleManagerIntegration> implements BundleManagerIntegration {
 
     // The framework execution environment
     private static String OSGi_FRAMEWORK_EXECUTIONENVIRONMENT;
@@ -110,7 +111,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
 
     static BundleManager addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
         BundleManager service = new BundleManager(frameworkBuilder, serviceTarget);
-        ServiceBuilder<BundleManagerService> builder = serviceTarget.addService(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, service);
+        ServiceBuilder<BundleManagerIntegration> builder = serviceTarget.addService(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, service);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
@@ -230,11 +231,6 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     static ServiceName getServiceName(Deployment dep) {
         long bundleId = dep.getAttachment(BundleId.class).longValue();
         return getServiceNameInternal(bundleId, dep.getSymbolicName(), Version.parseVersion(dep.getVersion()));
-    }
-
-    @Override
-    public ServiceName getServiceName(Bundle bundle) {
-        return getServiceNameInternal(bundle.getBundleId(), bundle.getSymbolicName(), bundle.getVersion());
     }
 
     private static ServiceName getServiceNameInternal(long bundleId, String symbolicName, Version version) {
@@ -362,9 +358,16 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         } else {
             try {
                 // The storage state exists when we re-create the bundle from persistent storage
-                BundleStorageState storageState = deployment.getAttachment(BundleStorageState.class);
-                long bundleId = (storageState != null ? storageState.getBundleId() : nextBundleId());
-                deployment.addAttachment(BundleId.class, new BundleId(bundleId));
+                BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+                StorageState storageState = storagePlugin.getStorageState(deployment.getLocation());
+                if (deployment.isBundleUpdate() == false && storageState != null) {
+                    BundleId bundleId = new BundleId(storageState.getBundleId());
+                    deployment.addAttachment(StorageState.class, storageState);
+                    deployment.addAttachment(BundleId.class, bundleId);
+                } else {
+                    BundleId bundleId = new BundleId(nextBundleId());
+                    deployment.addAttachment(BundleId.class, bundleId);
+                }
 
                 // Check that we have valid metadata
                 OSGiMetaData metadata = deployment.getAttachment(OSGiMetaData.class);
@@ -460,8 +463,8 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
         LOGGER.tracef("Start removing bundle: %s", userBundle);
 
         if ((options & Bundle.STOP_TRANSIENT) == 0) {
-            BundleStorageState storageState = userBundle.getBundleStorageState();
-            storageState.deleteBundleStorage();
+            BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+            storagePlugin.deleteStorageState(userBundle.getStorageState());
         }
 
         XEnvironment env = getFrameworkState().getEnvironment();

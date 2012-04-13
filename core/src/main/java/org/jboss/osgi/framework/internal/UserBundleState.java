@@ -40,6 +40,8 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallProvider;
+import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.spi.ConstantsHelper;
@@ -66,7 +68,7 @@ abstract class UserBundleState extends AbstractBundleState {
     private final ServiceName serviceName;
     private final List<UserBundleRevision> revisions = new CopyOnWriteArrayList<UserBundleRevision>();
     private Dictionary<String, String> headersOnUninstall;
-    private BundleStorageState storageState;
+    private InternalStorageState storageState;
 
     UserBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
         super(frameworkState, bundleId, dep.getSymbolicName());
@@ -83,7 +85,7 @@ abstract class UserBundleState extends AbstractBundleState {
     }
 
     @Override
-    BundleStorageState getBundleStorageState() {
+    InternalStorageState getStorageState() {
         return storageState;
     }
 
@@ -270,7 +272,8 @@ abstract class UserBundleState extends AbstractBundleState {
         if (rootFile == null && input != null)
             rootFile = AbstractVFS.toVirtualFile(input);
 
-        BundleStorageState storageState = createStorageState(getLocation(), rootFile);
+        BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+        InternalStorageState storageState = createStorageState(storagePlugin, getLocation(), rootFile);
         try {
             DeploymentFactoryPlugin deploymentPlugin = getFrameworkState().getDeploymentFactoryPlugin();
             Deployment dep = deploymentPlugin.createDeployment(storageState);
@@ -281,31 +284,36 @@ abstract class UserBundleState extends AbstractBundleState {
             XEnvironment env = getFrameworkState().getEnvironment();
             env.installResources(brev);
         } catch (BundleException ex) {
+            storagePlugin.deleteStorageState(storageState);
+            throw ex;
+        } catch (RuntimeException ex) {
+            storagePlugin.deleteStorageState(storageState);
             throw ex;
         }
     }
 
-    BundleStorageState createStorageState(Deployment dep) throws BundleException {
+    InternalStorageState createStorageState(Deployment dep) throws BundleException {
         // The storage state exists when we re-create the bundle from persistent storage
-        storageState = dep.getAttachment(BundleStorageState.class);
-        if (storageState == null) {
+        StorageState attachedState = dep.getAttachment(StorageState.class);
+        if (attachedState == null) {
             String location = dep.getLocation();
             VirtualFile rootFile = dep.getRoot();
             try {
-                BundleStorageProvider storagePlugin = getFrameworkState().getBundleStorageProvider();
+                BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
                 storageState = storagePlugin.createStorageState(getBundleId(), location, rootFile);
-                dep.addAttachment(BundleStorageState.class, storageState);
+                dep.addAttachment(StorageState.class, storageState);
             } catch (IOException ex) {
                 throw MESSAGES.bundleCannotSetupStorage(ex, rootFile);
             }
+        } else {
+            storageState = (InternalStorageState) attachedState;
         }
         return storageState;
     }
 
-    BundleStorageState createStorageState(String location, VirtualFile rootFile) throws BundleException {
-        BundleStorageState storageState;
+    private InternalStorageState createStorageState(BundleStoragePlugin storagePlugin, String location, VirtualFile rootFile) throws BundleException {
+        InternalStorageState storageState;
         try {
-            BundleStorageProvider storagePlugin = getFrameworkState().getBundleStorageProvider();
             storageState = storagePlugin.createStorageState(getBundleId(), location, rootFile);
         } catch (IOException ex) {
             throw MESSAGES.bundleCannotSetupStorage(ex, rootFile);
@@ -332,12 +340,12 @@ abstract class UserBundleState extends AbstractBundleState {
                 env.uninstallResources(brev);
 
             if (brev instanceof HostBundleRevision) {
-            	HostBundleRevision hostRev = (HostBundleRevision) brev;
-            	for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
-            		if (fragRev != fragRev.getBundleState().getCurrentBundleRevision()) {
+                HostBundleRevision hostRev = (HostBundleRevision) brev;
+                for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
+                    if (fragRev != fragRev.getBundleState().getCurrentBundleRevision()) {
                         env.uninstallResources(fragRev);
-            		}
-            	}
+                    }
+                }
             }
 
             ModuleIdentifier identifier = brev.getModuleIdentifier();

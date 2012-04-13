@@ -21,6 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.IntegrationServices.FRAMEWORK_MODULE_PROVIDER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.util.Collections;
@@ -39,6 +40,7 @@ import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -63,12 +65,14 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
 
     private Module frameworkModule;
 
-    static void addService(ServiceTarget serviceTarget) {
-        DefaultFrameworkModuleProvider service = new DefaultFrameworkModuleProvider();
-        ServiceBuilder<FrameworkModuleProvider> builder = serviceTarget.addService(IntegrationServices.FRAMEWORK_MODULE_PROVIDER, service);
-        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
+        if (registry.getService(FRAMEWORK_MODULE_PROVIDER) == null) {
+            DefaultFrameworkModuleProvider service = new DefaultFrameworkModuleProvider();
+            ServiceBuilder<FrameworkModuleProvider> builder = serviceTarget.addService(FRAMEWORK_MODULE_PROVIDER, service);
+            builder.addDependency(IntegrationServices.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
+            builder.setInitialMode(Mode.ON_DEMAND);
+            builder.install();
+        }
     }
 
     private DefaultFrameworkModuleProvider() {

@@ -225,7 +225,7 @@ final class FrameworkProxy implements Framework {
 
         LOGGER.debugf("stop framework");
 
-        CoreServices coreServices = frameworkState.getCoreServices();
+        FrameworkCoreServices coreServices = frameworkState.getCoreServices();
         SystemBundleState systemBundle = frameworkState.getSystemBundle();
 
         stoppedEvent = stopForUpdate ? FrameworkEvent.STOPPED_UPDATE : FrameworkEvent.STOPPED;

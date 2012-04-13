@@ -62,58 +62,58 @@ public interface FrameworkLogger extends BasicLogger {
     @LogMessage(level = INFO)
     @Message(id = 11001, value = "Bundle started: %s")
     void infoBundleStarted(Bundle bundle);
-    
+
     @LogMessage(level = INFO)
     @Message(id = 11002, value = "Bundle stopped: %s")
     void infoBundleStopped(Bundle bundle);
-    
+
     @LogMessage(level = INFO)
     @Message(id = 11003, value = "Bundle updated: %s")
     void infoBundleUpdated(Bundle bundle);
     @LogMessage(level = INFO)
     @Message(id = 11004, value = "%s - %s")
     void infoFrameworkImplementation(String implementationTitle, String implementationVersion);
-    
+
     @LogMessage(level = INFO)
     @Message(id = 11005, value = "Increasing start level from %d to %d")
     void infoIncreasingStartLevel(int fromLevel, int toLevel);
-    
+
     @LogMessage(level = INFO)
     @Message(id = 11006, value = "Decreasing start level from %d to %d")
     void infoDecreasingStartLevel(int fromLevel, int toLevel);
-    
+
     @LogMessage(level = INFO)
     @Message(id = 11007, value = "Starting bundle due to start level change: %s")
     void infoStartingBundleDueToStartLevel(Bundle bundle);
-    
+
     @LogMessage(level = INFO)
     @Message(id = 11008, value = "Stopping bundle due to start level change: %s")
     void infoStoppingBundleDueToStartLevel(Bundle bundle);
-    
+
     @LogMessage(level = INFO)
     @Message(id = 11009, value = "Starting bundles for start level: %d")
     void infoStartingBundlesForStartLevel(int level);
-    
+
     @LogMessage(level = INFO)
     @Message(id = 11010, value = "Stopping bundles for start level: %d")
     void infoStoppingBundlesForStartLevel(int level);
-    
+
     @LogMessage(level = INFO)
     @Message(id = 11011, value = "No resolvable singleton bundle: %s")
     void infoNoResolvableSingleton(Bundle bundle);
-    
+
     @LogMessage(level = INFO)
     @Message(id = 11012, value = "Bundle uninstalled: %s")
     void infoBundleUninstalled(Bundle bundle);
-    
+
     @LogMessage(level = WARN)
     @Message(id = 11013, value = "Cannot process metadata from properties: %s")
     void warnCannotProcessMetadataProperties(@Cause Throwable cause, VirtualFile rootFile);
-    
+
     @LogMessage(level = WARN)
     @Message(id = 11014, value = "Error while firing bundle event %s for: %s")
     void warnErrorWhileFiringBundleEvent(@Cause Throwable cause, String eventType, Bundle bundle);
-    
+
     @LogMessage(level = ERROR)
     @Message(id = 11015, value = "Framework Warning")
     void warnFrameworkEvent(@Cause Throwable cause);
@@ -121,71 +121,71 @@ public interface FrameworkLogger extends BasicLogger {
     @LogMessage(level = WARN)
     @Message(id = 11016, value = "Error while firing %s event")
     void warnErrorWhileFiringEvent(@Cause Throwable cause, String eventType);
-    
+
     @LogMessage(level = WARN)
     @Message(id = 11017, value = "Error while firing service event %s for: %s")
     void warnErrorWhileFiringServiceEvent(@Cause Throwable cause, String eventType, ServiceReference sref);
-    
+
     @LogMessage(level = WARN)
     @Message(id = 11018, value = "Error while calling event hook: %s")
     void warnErrorWhileCallingEventHook(@Cause Throwable cause, EventHook hook);
-    
+
     @LogMessage(level = WARN)
     @Message(id = 11019, value = "Error while calling find hook: %s")
     void warnErrorWhileCallingFindHook(@Cause Throwable cause, FindHook hook);
-    
+
     @LogMessage(level = ERROR)
     @Message(id = 11020, value = "Cannot acquire uninstall lock for: %s")
     void errorCannotAquireUninstallLock(Bundle bundle);
-    
-    @LogMessage(level = ERROR)
-    @Message(id = 11021, value = "Cannot delete storage area")
-    void errorCannotDeleteStorageArea(@Cause Throwable cause);
-    
+
+    //@LogMessage(level = ERROR)
+    //@Message(id = 11021, value = "Cannot delete storage area")
+    //void errorCannotDeleteStorageArea(@Cause Throwable cause);
+
     @LogMessage(level = ERROR)
     @Message(id = 11023, value = "Cannot write persistent storage: %s")
     void errorCannotWritePersistentStorage(@Cause Throwable cause, File bundleDir);
-    
+
     @LogMessage(level = ERROR)
     @Message(id = 11024, value = "Cannot start persistent bundle: %s")
     void errorCannotAutomaticallyStartBundle(@Cause Throwable cause, Bundle bundle);
-    
+
     @LogMessage(level = ERROR)
     @Message(id = 11025, value = "Invalid beginning start level: %s")
     void errorInvalidBeginningStartLevel(String levelSpec);
-    
+
     @LogMessage(level = ERROR)
     @Message(id = 11026, value = "Error processing service listener hook: %s")
     void errorProcessingServiceListenerHook(@Cause Throwable cause, ListenerHook hook);
-    
+
     @LogMessage(level = ERROR)
     @Message(id = 11027, value = "Framework Error")
     void errorFrameworkEvent(@Cause Throwable cause);
-    
+
     @LogMessage(level = ERROR)
     @Message(id = 11028, value = "Cannot update framework")
     void errorCannotUpdateFramework(@Cause Throwable cause);
-    
+
     @LogMessage(level = ERROR)
     @Message(id = 11029, value = "Cannot get resources '%s' from: %s")
     void errorCannotGetResources(@Cause Throwable cause, String path, BundleRevision brev);
-    
+
     @LogMessage(level = ERROR)
     @Message(id = 11030, value = "Cannot activate bundle lazily: %s")
     void errorCannotActivateBundleLazily(@Cause Throwable cause, Bundle bundle);
-    
+
     @LogMessage(level = ERROR)
     @Message(id = 11031, value = "Cannot provide native library location for: %s")
     void errorCannotProvideNativeLibraryLocation(@Cause Throwable cause, String libname);
-    
-    @LogMessage(level = ERROR)
-    @Message(id = 11032, value = "Cannot install persistet bundle from: %s")
-    void errorCannotInstallPersistentBundlle(@Cause Throwable cause, BundleStorageState storageState);
-    
+
+    //@LogMessage(level = ERROR)
+    //@Message(id = 11032, value = "Cannot install persistet bundle from: %s")
+    //void errorCannotInstallPersistentBundle(@Cause Throwable cause, StorageState storageState);
+
     @LogMessage(level = ERROR)
     @Message(id = 11033, value = "Cannot start persistet bundle: %s")
     void errorCannotStartPersistentBundle(@Cause Throwable cause, Bundle bundle);
-    
+
     @LogMessage(level = ERROR)
     @Message(id = 11034, value = "Cannot get entry '%s' from: %s")
     void errorCannotGetEntry(@Cause Throwable cause, String path, BundleRevision brev);

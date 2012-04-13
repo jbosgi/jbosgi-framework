@@ -21,13 +21,15 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.IntegrationServices.BUNDLE_INSTALL_PROVIDER;
+
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallProvider;
-import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.BundleException;
 
@@ -41,13 +43,15 @@ final class DefaultBundleInstallProvider extends AbstractPluginService<BundleIns
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
-    static void addService(ServiceTarget serviceTarget) {
-        DefaultBundleInstallProvider service = new DefaultBundleInstallProvider();
-        ServiceBuilder<BundleInstallProvider> builder = serviceTarget.addService(IntegrationServices.BUNDLE_INSTALL_PROVIDER, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(Services.FRAMEWORK_CREATE);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
+        if (registry.getService(BUNDLE_INSTALL_PROVIDER) == null) {
+            DefaultBundleInstallProvider service = new DefaultBundleInstallProvider();
+            ServiceBuilder<BundleInstallProvider> builder = serviceTarget.addService(BUNDLE_INSTALL_PROVIDER, service);
+            builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+            builder.addDependency(Services.FRAMEWORK_CREATE);
+            builder.setInitialMode(Mode.ON_DEMAND);
+            builder.install();
+        }
     }
 
     private DefaultBundleInstallProvider() {
