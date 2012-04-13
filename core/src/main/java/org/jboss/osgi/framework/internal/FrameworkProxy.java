@@ -145,7 +145,7 @@ final class FrameworkProxy implements Framework {
             if (serviceTarget == null)
                 serviceTarget = serviceContainer.subTarget();
 
-            frameworkBuilder.createFrameworkServicesInternal(serviceTarget, Mode.ON_DEMAND, firstInit);
+            frameworkBuilder.createFrameworkServicesInternal(serviceContainer, serviceTarget, Mode.ON_DEMAND, firstInit);
             proxyState.set(Bundle.STARTING);
             frameworkState = awaitFrameworkState();
             firstInit = false;
@@ -469,8 +469,8 @@ final class FrameworkProxy implements Framework {
         private final AtomicBoolean shutdownInitiated;
         private final boolean allowContainerShutdown;
 
-        LenientShutdownContainer(final ServiceContainer providedContainer, boolean allowContainerShutdown) {
-            this.serviceContainer = providedContainer;
+        LenientShutdownContainer(final ServiceContainer serviceContainer, boolean allowContainerShutdown) {
+            this.serviceContainer = serviceContainer;
             this.allowContainerShutdown = allowContainerShutdown;
             this.shutdownInitiated = new AtomicBoolean(false);
         }

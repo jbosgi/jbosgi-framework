@@ -39,33 +39,20 @@ public interface Services {
 
     /** The prefix for all OSGi services */
     ServiceName JBOSGI_BASE_NAME = ServiceName.of(Constants.JBOSGI_PREFIX);
-
-    /** The prefix for all OSGi services */
-    ServiceName JBOSGI_SERVICE_BASE_NAME = JBOSGI_BASE_NAME.append("service");
-
-    /** The base name of all framework OSGi services that were registered outside the OSGi layer */
-    ServiceName JBOSGI_XSERVICE_BASE_NAME = JBOSGI_BASE_NAME.append("xservice");
-
     /** The prefix for all OSGi bundle services */
     ServiceName BUNDLE_BASE_NAME = JBOSGI_BASE_NAME.append("bundle");
-
-    /** The service name for the {@link AutoInstallProvider} */
-    ServiceName AUTOINSTALL_PROVIDER = JBOSGI_BASE_NAME.append("AutoInstallProvider");
-
-    /** The {@link AutoInstallProvider} nested service that indicates completion */
-    ServiceName AUTOINSTALL_PROVIDER_COMPLETE = AUTOINSTALL_PROVIDER.append("COMPLETE");
-
-    /** The service name for the {@link BundleInstallProvider} */
-    ServiceName BUNDLE_INSTALL_PROVIDER = JBOSGI_BASE_NAME.append("BundleInstallProvider");
+    /** The base name of all framework services */
+    ServiceName FRAMEWORK_BASE_NAME = JBOSGI_BASE_NAME.append("framework");
+    /** The prefix for all OSGi services */
+    ServiceName SERVICE_BASE_NAME = JBOSGI_BASE_NAME.append("service");
+    /** The base name of all framework OSGi services that were registered outside the OSGi layer */
+    ServiceName XSERVICE_BASE_NAME = JBOSGI_BASE_NAME.append("xservice");
 
     /** The {@link BundleManagerService} service name. */
     ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("BundleManager");
 
     /** The {@link XEnvironment} service name */
     ServiceName ENVIRONMENT = JBOSGI_BASE_NAME.append("Environment");
-
-    /** The base name of all framework services */
-    ServiceName FRAMEWORK_BASE_NAME = JBOSGI_BASE_NAME.append("Framework");
 
     /** The service name for the created {@link Framework} */
     ServiceName FRAMEWORK_CREATE = FRAMEWORK_BASE_NAME.append("CREATED");
@@ -90,16 +77,4 @@ public interface Services {
 
     /** The service name for the system {@link BundleContext} */
     ServiceName SYSTEM_CONTEXT = JBOSGI_BASE_NAME.append("SystemContext");
-
-    /** The service name for the {@link FrameworkModuleProvider} */
-    ServiceName FRAMEWORK_MODULE_PROVIDER = JBOSGI_BASE_NAME.append("FrameworkModuleProvider");
-
-    /** The service name for the {@link ModuleLoaderProvider} */
-    ServiceName MODULE_LOADER_PROVIDER = JBOSGI_BASE_NAME.append("ModuleLoaderProvider");
-
-    /** The service name for the {@link SystemServicesProvider} */
-    ServiceName SYSTEM_SERVICES_PROVIDER = JBOSGI_BASE_NAME.append("SystemServicesProvider");
-
-    /** The service name for the {@link SystemPathsProvider} */
-    ServiceName SYSTEM_PATHS_PROVIDER = JBOSGI_BASE_NAME.append("SystemPathsProvider");
 }

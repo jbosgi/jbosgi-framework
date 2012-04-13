@@ -23,20 +23,20 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.log.JDKModuleLogger;
 import org.jboss.modules.log.ModuleLogger;
 import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.IntegrationServices;
 import org.osgi.framework.launch.Framework;
 
 /**
@@ -48,14 +48,13 @@ import org.osgi.framework.launch.Framework;
 public final class FrameworkBuilder {
 
     private final Map<String, Object> initialProperties = new HashMap<String, Object>();
-    private Set<ServiceName> providedServices = new HashSet<ServiceName>();
     private ServiceContainer serviceContainer;
     private ServiceTarget serviceTarget;
     private boolean closed;
 
     public FrameworkBuilder(Map<String, Object> props) {
-        if (props != null)
-            initialProperties.putAll(props);
+        assert props != null : "Null props";
+        initialProperties.putAll(props);
     }
 
     public Object getProperty(String key) {
@@ -89,83 +88,77 @@ public final class FrameworkBuilder {
         this.serviceTarget = serviceTarget;
     }
 
-    public boolean isProvidedService(ServiceName serviceName) {
-        return providedServices.contains(serviceName);
-    }
-
-    public void addProvidedService(ServiceName serviceName) {
-        assertNotClosed();
-        providedServices.add(serviceName);
-    }
-
-    public Set<ServiceName> getProvidedServices() {
-        return Collections.unmodifiableSet(providedServices);
-    }
-
     public Framework createFramework() {
         assertNotClosed();
-        try {
-            return new FrameworkProxy(this);
-        } finally {
-            closed = true;
-        }
+        return new FrameworkProxy(this);
     }
 
     public void createFrameworkServices(Mode initialMode, boolean firstInit) {
         assertNotClosed();
+        createFrameworkServicesInternal(serviceContainer, serviceTarget, initialMode, firstInit);
+    }
+
+    void createFrameworkServicesInternal(ServiceContainer serviceContainer, ServiceTarget serviceTarget, Mode initialMode, boolean firstInit) {
         try {
-            createFrameworkServicesInternal(serviceTarget, initialMode, firstInit);
+            // Do this first so this URLStreamHandlerFactory gets installed
+            URLHandlerPlugin.addService(serviceTarget);
+
+            // Setup the logging system for jboss-modules
+            ModuleLogger logger = (ModuleLogger) getProperty(ModuleLogger.class.getName());
+            if (logger == null) {
+                Module.setModuleLogger(new JDKModuleLogger());
+            }
+
+            BundleManager bundleManager = BundleManager.addService(serviceTarget, this);
+            FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
+
+            DeploymentFactoryPlugin.addService(serviceTarget);
+            BundleStoragePlugin.addService(serviceTarget, firstInit);
+            CoreServices.addService(serviceTarget);
+            DefaultEnvironmentPlugin.addService(serviceTarget);
+            FrameworkActive.addService(serviceTarget);
+            FrameworkActivator.addService(serviceTarget, initialMode);
+            FrameworkEventsPlugin.addService(serviceTarget);
+            FrameworkInit.addService(serviceTarget);
+            LifecycleInterceptorPlugin.addService(serviceTarget);
+            ModuleManagerPlugin.addService(serviceTarget);
+            NativeCodePlugin.addService(serviceTarget);
+            PackageAdminPlugin.addService(serviceTarget);
+            PersistentBundlesInstaller.addService(serviceTarget);
+            DefaultResolverPlugin.addService(serviceTarget);
+            ServiceManagerPlugin.addService(serviceTarget);
+            StartLevelPlugin.addService(serviceTarget);
+            SystemBundleService.addService(serviceTarget, frameworkState);
+            SystemContextService.addService(serviceTarget);
+            WebXMLVerifierInterceptor.addService(serviceTarget);
+
+            for (Field field : IntegrationServices.class.getDeclaredFields()) {
+                ServiceName sname = null;
+                try {
+                    sname = (ServiceName) field.get(null);
+                } catch (Exception ex) {
+                    // ignore
+                }
+                ServiceController<?> service = serviceContainer.getService(sname);
+                if (service == null) {
+                    if (IntegrationServices.AUTOINSTALL_PROVIDER.equals(sname)) {
+                        DefaultAutoInstallProvider.addService(serviceTarget);
+                    } else if (IntegrationServices.BUNDLE_INSTALL_PROVIDER.equals(sname)) {
+                        DefaultBundleInstallProvider.addService(serviceTarget);
+                    } else if (IntegrationServices.FRAMEWORK_MODULE_PROVIDER.equals(sname)) {
+                        DefaultFrameworkModuleProvider.addService(serviceTarget);
+                    } else if (IntegrationServices.MODULE_LOADER_PROVIDER.equals(sname)) {
+                        DefaultModuleLoaderProvider.addService(serviceTarget);
+                    } else if (IntegrationServices.SYSTEM_PATHS_PROVIDER.equals(sname)) {
+                        DefaultSystemPathsProvider.addService(serviceTarget, this);
+                    } else if (IntegrationServices.SYSTEM_SERVICES_PROVIDER.equals(sname)) {
+                        DefaultSystemServicesProvider.addService(serviceTarget);
+                    }
+                }
+            }
         } finally {
             closed = true;
         }
-    }
-
-    void createFrameworkServicesInternal(ServiceTarget serviceTarget, Mode initialMode, boolean firstInit) {
-
-        // Do this first so this URLStreamHandlerFactory gets installed
-        URLHandlerPlugin.addService(serviceTarget);
-
-        // Setup the logging system for jboss-modules
-        ModuleLogger logger = (ModuleLogger) getProperty(ModuleLogger.class.getName());
-        if (logger == null) {
-            Module.setModuleLogger(new JDKModuleLogger());
-        }
-        
-        BundleManager bundleManager = BundleManager.addService(serviceTarget, this);
-        FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
-
-        DeploymentFactoryPlugin.addService(serviceTarget);
-        BundleStoragePlugin.addService(serviceTarget, firstInit);
-        CoreServices.addService(serviceTarget);
-        DefaultEnvironmentPlugin.addService(serviceTarget);
-        FrameworkActive.addService(serviceTarget);
-        FrameworkActivator.addService(serviceTarget, initialMode);
-        FrameworkEventsPlugin.addService(serviceTarget);
-        FrameworkInit.addService(serviceTarget);
-        LifecycleInterceptorPlugin.addService(serviceTarget);
-        ModuleManagerPlugin.addService(serviceTarget);
-        NativeCodePlugin.addService(serviceTarget);
-        PackageAdminPlugin.addService(serviceTarget);
-        PersistentBundlesInstaller.addService(serviceTarget);
-        DefaultResolverPlugin.addService(serviceTarget);
-        ServiceManagerPlugin.addService(serviceTarget);
-        StartLevelPlugin.addService(serviceTarget);
-        SystemBundleService.addService(serviceTarget, frameworkState);
-        SystemContextService.addService(serviceTarget);
-        WebXMLVerifierInterceptor.addService(serviceTarget);
-
-        if (isProvidedService(Services.AUTOINSTALL_PROVIDER) == false)
-            DefaultAutoInstallProvider.addService(serviceTarget);
-        if (isProvidedService(Services.BUNDLE_INSTALL_PROVIDER) == false)
-            DefaultBundleInstallProvider.addService(serviceTarget);
-        if (isProvidedService(Services.FRAMEWORK_MODULE_PROVIDER) == false)
-            DefaultFrameworkModuleProvider.addService(serviceTarget);
-        if (isProvidedService(Services.MODULE_LOADER_PROVIDER) == false)
-            DefaultModuleLoaderProvider.addService(serviceTarget);
-        if (isProvidedService(Services.SYSTEM_PATHS_PROVIDER) == false)
-            DefaultSystemPathsProvider.addService(serviceTarget, this);
-        if (isProvidedService(Services.SYSTEM_SERVICES_PROVIDER) == false)
-            DefaultSystemServicesProvider.addService(serviceTarget);
     }
 
     private void assertNotClosed() {

@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.Services.JBOSGI_SERVICE_BASE_NAME;
-import static org.jboss.osgi.framework.Services.JBOSGI_XSERVICE_BASE_NAME;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.util.ArrayList;
@@ -262,7 +260,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
             }
         } else {
             for (ServiceName aux : serviceContainer.getServiceNames()) {
-                if (JBOSGI_SERVICE_BASE_NAME.isParentOf(aux) || JBOSGI_XSERVICE_BASE_NAME.isParentOf(aux)) {
+                if (Services.SERVICE_BASE_NAME.isParentOf(aux) || Services.XSERVICE_BASE_NAME.isParentOf(aux)) {
                     serviceNames.add(aux);
                 }
             }
@@ -275,14 +273,14 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
         for (ServiceName serviceName : serviceNames) {
             final ServiceController<?> controller = serviceContainer.getService(serviceName);
             if (controller != null) {
-                if (JBOSGI_SERVICE_BASE_NAME.isParentOf(serviceName)) {
+                if (Services.SERVICE_BASE_NAME.isParentOf(serviceName)) {
                     List<ServiceState> serviceStates = (List<ServiceState>) controller.getValue();
                     for (ServiceState serviceState : serviceStates) {
                         if (isMatchingService(bundleState, serviceState, className, filter, checkAssignable)) {
                             resultset.add(serviceState);
                         }
                     }
-                } else if (JBOSGI_XSERVICE_BASE_NAME.isParentOf(serviceName)) {
+                } else if (Services.XSERVICE_BASE_NAME.isParentOf(serviceName)) {
                     final ServiceState.ValueProvider valueProvider = new ServiceState.ValueProvider() {
                         ModuleClassLoader classLoader = null;
                         public boolean isFactoryValue() {

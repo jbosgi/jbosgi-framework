@@ -39,8 +39,8 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.ModuleLoaderProvider;
-import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XIdentityCapability;
 import org.jboss.osgi.resolver.XResource;
 
@@ -56,7 +56,7 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
 
     static void addService(ServiceTarget serviceTarget) {
         ModuleLoaderProvider service = new DefaultModuleLoaderProvider();
-        ServiceBuilder<ModuleLoaderProvider> builder = serviceTarget.addService(Services.MODULE_LOADER_PROVIDER, service);
+        ServiceBuilder<ModuleLoaderProvider> builder = serviceTarget.addService(IntegrationServices.MODULE_LOADER_PROVIDER, service);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

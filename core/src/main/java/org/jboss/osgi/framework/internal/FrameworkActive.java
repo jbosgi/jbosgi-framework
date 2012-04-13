@@ -31,6 +31,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -56,7 +57,7 @@ public final class FrameworkActive extends AbstractFrameworkService {
         FrameworkActive service = new FrameworkActive();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
         builder.addDependency(Services.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
-        builder.addDependencies(Services.AUTOINSTALL_PROVIDER, Services.AUTOINSTALL_PROVIDER_COMPLETE);
+        builder.addDependencies(IntegrationServices.AUTOINSTALL_PROVIDER, IntegrationServices.AUTOINSTALL_PROVIDER_COMPLETE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

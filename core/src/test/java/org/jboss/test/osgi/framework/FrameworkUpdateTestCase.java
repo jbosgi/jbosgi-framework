@@ -40,7 +40,7 @@ import static org.junit.Assert.fail;
 
 /**
  * Test framework init/start/stop/update.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 29-Apr-2010
  */
@@ -139,18 +139,11 @@ public class FrameworkUpdateTestCase extends OSGiTest {
         } catch (BundleException e) {
             fail("Failed to update the framework: " + e);
         }
-        catch (InterruptedException e) {
-            fail("Unexpected interruption: " + e);
-        }
-        try {
-            waitForStop.join();
-        } catch (InterruptedException e) {
-            fail("Unexpected interruption: " + e);
-        }
+        waitForStop.join();
         if (failureException[0] != null)
             fail("Error occurred while waiting " + failureException[0]);
-        
-        assertNotNull("Wait for stop event not null", result[0]); 
+
+        assertNotNull("Wait for stop event not null", result[0]);
 
         // If the framework was not STARTING or ACTIVE then we assume the waitForStop returned immediately with a FrameworkEvent.STOPPED
         int expectedFrameworkEvent = (previousState & (Bundle.STARTING | Bundle.ACTIVE)) != 0 ? FrameworkEvent.STOPPED_UPDATE : FrameworkEvent.STOPPED;

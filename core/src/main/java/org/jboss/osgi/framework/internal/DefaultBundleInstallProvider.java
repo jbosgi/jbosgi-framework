@@ -27,6 +27,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallProvider;
+import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.BundleException;
 
@@ -42,7 +43,7 @@ final class DefaultBundleInstallProvider extends AbstractPluginService<BundleIns
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultBundleInstallProvider service = new DefaultBundleInstallProvider();
-        ServiceBuilder<BundleInstallProvider> builder = serviceTarget.addService(Services.BUNDLE_INSTALL_PROVIDER, service);
+        ServiceBuilder<BundleInstallProvider> builder = serviceTarget.addService(IntegrationServices.BUNDLE_INSTALL_PROVIDER, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);

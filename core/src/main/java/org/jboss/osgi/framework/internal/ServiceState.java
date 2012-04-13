@@ -124,11 +124,11 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     }
 
     static ServiceName createXServiceName(String clazz) {
-        return Services.JBOSGI_XSERVICE_BASE_NAME.append(clazz);
+        return Services.XSERVICE_BASE_NAME.append(clazz);
     }
 
     static ServiceName createServiceName(String clazz) {
-        return Services.JBOSGI_SERVICE_BASE_NAME.append(clazz);
+        return Services.SERVICE_BASE_NAME.append(clazz);
     }
 
     Object getRawValue() {

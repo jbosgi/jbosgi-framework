@@ -21,7 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.Services.BUNDLE_BASE_NAME;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
@@ -241,7 +240,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
     private static ServiceName getServiceNameInternal(long bundleId, String symbolicName, Version version) {
         // Currently the bundleId is needed for uniqueness because of
         // [MSC-97] Cannot re-install service with same name
-        return ServiceName.of(BUNDLE_BASE_NAME, "" + bundleId, "" + symbolicName, "" + version);
+        return ServiceName.of(Services.BUNDLE_BASE_NAME, "" + bundleId, "" + symbolicName, "" + version);
     }
 
     /**
@@ -349,7 +348,7 @@ public final class BundleManager extends AbstractService<BundleManagerService> i
 
     @Override
     public ServiceName installBundle(ServiceTarget serviceTarget, Deployment deployment) throws BundleException {
-        if (deployment == null) 
+        if (deployment == null)
             throw MESSAGES.illegalArgumentNull("deployment");
         ServiceName serviceName;
         // If a bundle containing the same location identifier is already installed,

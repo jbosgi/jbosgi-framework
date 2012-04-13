@@ -46,7 +46,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
-import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.SystemPathsProvider;
 import org.osgi.framework.Bundle;
 
@@ -65,8 +65,8 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultFrameworkModuleProvider service = new DefaultFrameworkModuleProvider();
-        ServiceBuilder<FrameworkModuleProvider> builder = serviceTarget.addService(Services.FRAMEWORK_MODULE_PROVIDER, service);
-        builder.addDependency(Services.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
+        ServiceBuilder<FrameworkModuleProvider> builder = serviceTarget.addService(IntegrationServices.FRAMEWORK_MODULE_PROVIDER, service);
+        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

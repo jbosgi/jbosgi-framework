@@ -51,6 +51,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.ModuleLoaderProvider;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemPathsProvider;
@@ -90,8 +91,8 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         ModuleManagerPlugin service = new ModuleManagerPlugin();
         ServiceBuilder<ModuleManagerPlugin> builder = serviceTarget.addService(InternalServices.MODULE_MANGER_PLUGIN, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-        builder.addDependency(Services.MODULE_LOADER_PROVIDER, ModuleLoaderProvider.class, service.injectedModuleLoader);
-        builder.addDependency(Services.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
+        builder.addDependency(IntegrationServices.MODULE_LOADER_PROVIDER, ModuleLoaderProvider.class, service.injectedModuleLoader);
+        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

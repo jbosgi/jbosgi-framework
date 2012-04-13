@@ -25,7 +25,7 @@ import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.SystemServicesProvider;
 import org.osgi.framework.BundleContext;
 
@@ -39,7 +39,7 @@ final class DefaultSystemServicesProvider extends AbstractService<SystemServices
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultSystemServicesProvider service = new DefaultSystemServicesProvider();
-        ServiceBuilder<SystemServicesProvider> builder = serviceTarget.addService(Services.SYSTEM_SERVICES_PROVIDER, service);
+        ServiceBuilder<SystemServicesProvider> builder = serviceTarget.addService(IntegrationServices.SYSTEM_SERVICES_PROVIDER, service);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

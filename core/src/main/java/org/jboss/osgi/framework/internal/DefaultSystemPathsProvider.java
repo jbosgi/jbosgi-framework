@@ -45,7 +45,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.SystemPathsProvider;
 
 /**
@@ -73,7 +73,7 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
 
     static void addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
         SystemPathsProvider service = new DefaultSystemPathsProvider(frameworkBuilder);
-        ServiceBuilder<SystemPathsProvider> builder = serviceTarget.addService(Services.SYSTEM_PATHS_PROVIDER, service);
+        ServiceBuilder<SystemPathsProvider> builder = serviceTarget.addService(IntegrationServices.SYSTEM_PATHS_PROVIDER, service);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
