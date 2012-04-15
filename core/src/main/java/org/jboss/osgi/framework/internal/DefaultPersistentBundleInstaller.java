@@ -40,6 +40,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.PersistentBundleInstaller;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
@@ -68,7 +69,7 @@ public final class DefaultPersistentBundleInstaller extends AbstractPluginServic
             builder.addDependency(Services.STORAGE_STATE_PROVIDER, StorageStateProvider.class, service.injectedStorageProvider);
             builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
             builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, service.injectedDeploymentFactory);
-            builder.addDependency(Services.FRAMEWORK_CORE_SERVICES);
+            builder.addDependencies(IntegrationServices.AUTOINSTALL_PROVIDER, IntegrationServices.AUTOINSTALL_PROVIDER_COMPLETE);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();
         }

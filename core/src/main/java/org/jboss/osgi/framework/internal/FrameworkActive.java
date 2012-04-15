@@ -31,7 +31,6 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -48,29 +47,36 @@ import org.osgi.service.resolver.ResolutionException;
  *
  * The framework service dependency hierarchy
  *
+ * <code>
  * {@link FrameworkActive}
- *   {@link DefaultAutoInstallProvider}
- *     {@link FrameworkInit}
- *       {@link FrameworkCreate}
- *         {@link DeploymentFactoryPlugin}
- *         {@link FrameworkEventsPlugin}
- *           {@link SystemContextService}
- *             {@link SystemBundleService}
- *               {@link DefaultEnvironmentPlugin}
- *               {@link DefaultFrameworkModuleProvider}
- *                 {@link DefaultSystemPathsProvider}
- *               {@link BundleStoragePlugin}
- *                 {@link BundleManager}
- *
- *         {@link FrameworkCoreServices}
- *
- *
- *                {@link FrameworkCreate}
- *          {@link ModuleManagerPlugin}
- *          {@link NativeCodePlugin}
- *          {@link ServiceManagerPlugin}
- *          {@link ResolverPlugin}
- *       {@link DefaultPersistentBundleInstaller}
+ * +---{@link FrameworkInit}
+ *     +---{@link DefaultPersistentBundleInstaller}
+ *         +---{@link DefaultAutoInstallProvider}
+ *             +---{@link FrameworkCoreServices}
+ *                 +---{@link LifecycleInterceptorPlugin}
+ *                 +---{@link PackageAdminPlugin}
+ *                 +---{@link StartLevelPlugin}
+ *                 +---{@link DefaultSystemServicesProvider}
+ *                 +---{@link URLHandlerPlugin}
+ *                 +---{@link DefaultBundleInstallProvider}
+ *                     +---{@link FrameworkCreate}
+ *                         +---{@link StorageStateProviderPlugin}
+ *                         +---{@link DeploymentFactoryPlugin}
+ *                         +---{@link ResolverPlugin}
+ *                         |   +---{@link NativeCodePlugin}
+ *                         +---{@link ServiceManagerPlugin}
+ *                             +---{@link ModuleManagerPlugin}
+ *                             |   +---{@link DefaultModuleLoaderProvider}
+ *                             +---{@link FrameworkEventsPlugin}
+ *                                 +---{@link SystemContextService}
+ *                                     +---{@link SystemBundleService}
+ *                                         +---{@link DefaultFrameworkModuleProvider}
+ *                                         |   +---{@link DefaultSystemPathsProvider}
+ *                                         +---{@link BundleStoragePlugin}
+ *                                             +---{@link BundleManager}
+ *                                                 +---{@link DefaultEnvironmentPlugin}
+ * </code>
+ *  
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
@@ -83,7 +89,6 @@ public final class FrameworkActive extends AbstractFrameworkService {
         FrameworkActive service = new FrameworkActive();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
         builder.addDependency(Services.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
-        builder.addDependencies(IntegrationServices.AUTOINSTALL_PROVIDER, IntegrationServices.AUTOINSTALL_PROVIDER_COMPLETE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
