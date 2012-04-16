@@ -122,7 +122,6 @@ public final class FrameworkBuilder {
             ModuleManagerPlugin.addService(serviceTarget);
             NativeCodePlugin.addService(serviceTarget);
             PackageAdminPlugin.addService(serviceTarget);
-            PersistentBundlesStarter.addService(serviceTarget);
             ResolverPlugin.addService(serviceTarget);
             ServiceManagerPlugin.addService(serviceTarget);
             StartLevelPlugin.addService(serviceTarget);
@@ -135,7 +134,7 @@ public final class FrameworkBuilder {
             DefaultBundleInstallProvider.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultFrameworkModuleProvider.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultModuleLoaderProvider.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultPersistentBundleInstaller.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultPersistentBundleProvider.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultSystemPathsProvider.addIntegrationService(serviceRegistry, serviceTarget, this);
             DefaultSystemServicesProvider.addIntegrationService(serviceRegistry, serviceTarget);
 

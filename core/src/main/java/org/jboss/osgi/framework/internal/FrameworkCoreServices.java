@@ -56,7 +56,7 @@ public final class FrameworkCoreServices extends AbstractService<FrameworkCoreSe
 
     static void addService(ServiceTarget serviceTarget) {
         FrameworkCoreServices service = new FrameworkCoreServices();
-        ServiceBuilder<FrameworkCoreServices> builder = serviceTarget.addService(Services.FRAMEWORK_CORE_SERVICES, service);
+        ServiceBuilder<FrameworkCoreServices> builder = serviceTarget.addService(InternalServices.FRAMEWORK_CORE_SERVICES, service);
         builder.addDependency(IntegrationServices.BUNDLE_INSTALL_PROVIDER, BundleInstallProvider.class, service.injectedInstallProvider);
         builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
         builder.addDependency(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, service.injectedLifecycleInterceptor);

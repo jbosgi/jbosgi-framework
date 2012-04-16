@@ -21,11 +21,7 @@
  */
 package org.jboss.osgi.framework;
 
-import java.util.Map;
-
 import org.jboss.msc.service.Service;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.deployment.deployer.Deployment;
 
 /**
  * A service that provides persistent bundles on framework startup.
@@ -33,7 +29,6 @@ import org.jboss.osgi.deployment.deployer.Deployment;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-public interface PersistentBundleInstaller extends Service<PersistentBundleInstaller> {
+public interface PersistentBundlesProvider extends Service<PersistentBundlesProvider> {
 
-    public Map<ServiceName, Deployment> getInstalledServices();
 }

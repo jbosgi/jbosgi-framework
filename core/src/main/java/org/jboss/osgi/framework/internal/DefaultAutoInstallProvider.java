@@ -22,7 +22,6 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.IntegrationServices.AUTOINSTALL_PROVIDER;
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.File;
@@ -33,7 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
@@ -45,13 +43,12 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.AutoInstallProvider;
+import org.jboss.osgi.framework.AutoInstallProviderComplete;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.spi.BundleInfo;
 import org.jboss.osgi.spi.util.StringPropertyReplacer;
 import org.jboss.osgi.spi.util.StringPropertyReplacer.PropertyProvider;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -69,7 +66,7 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
             DefaultAutoInstallProvider service = new DefaultAutoInstallProvider();
             ServiceBuilder<AutoInstallProvider> builder = serviceTarget.addService(AUTOINSTALL_PROVIDER, service);
             builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
-            builder.addDependency(Services.FRAMEWORK_CORE_SERVICES);
+            builder.addDependency(Services.FRAMEWORK_INIT);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();
         }
@@ -121,47 +118,18 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
         // Add the autoStart bundles to autoInstall
         autoInstall.addAll(autoStart);
 
-        final BundleManager bundleManager = injectedBundleManager.getValue();
-        final Map<ServiceName, Deployment> pendingServices = new HashMap<ServiceName, Deployment>();
-
-        // Install autoInstall bundles
+        Map<ServiceName, Deployment> installedBundles = new HashMap<ServiceName, Deployment>();
+        BundleManager bundleManager = injectedBundleManager.getValue();
         for (URL url : autoInstall) {
             BundleInfo info = BundleInfo.createBundleInfo(url);
             Deployment dep = DeploymentFactory.createDeployment(info);
             dep.setAutoStart(autoStart.contains(url));
-
             ServiceName serviceName = bundleManager.installBundle(serviceTarget, dep);
-            pendingServices.put(serviceName, dep);
+            installedBundles.put(serviceName, dep);
         }
 
-        // Install a service that has a dependency on all pending bundle INSTALLED services
-        ServiceName servicesInstalled = IntegrationServices.AUTOINSTALL_PROVIDER.append("INSTALLED");
-        ServiceBuilder<Void> builder = serviceTarget.addService(servicesInstalled, new AbstractService<Void>() {
-            public void start(StartContext context) throws StartException {
-                LOGGER.debugf("Auto bundles installed");
-            }
-        });
-        builder.addDependencies(pendingServices.keySet());
-        builder.install();
-
-        // Install a service that starts the bundles
-        builder = serviceTarget.addService(IntegrationServices.AUTOINSTALL_PROVIDER_COMPLETE, new AbstractService<Void>() {
-            public void start(StartContext context) throws StartException {
-                for (Deployment dep : pendingServices.values()) {
-                    if (dep.isAutoStart()) {
-                        Bundle bundle = dep.getAttachment(Bundle.class);
-                        try {
-                            bundle.start();
-                        } catch (BundleException ex) {
-                            LOGGER.errorCannotAutomaticallyStartBundle(ex, bundle);
-                        }
-                    }
-                }
-                LOGGER.debugf("Auto bundles started");
-            }
-        });
-        builder.addDependencies(servicesInstalled);
-        builder.install();
+        AutoInstallProviderComplete installComplete = new AutoInstallProviderComplete(installedBundles);
+        installComplete.install(serviceTarget);
     }
 
     private URL toURL(final BundleManager bundleManager, final String path) {

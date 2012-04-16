@@ -22,7 +22,6 @@
 package org.jboss.osgi.framework;
 
 import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.internal.FrameworkCoreServices;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -60,9 +59,6 @@ public interface Services {
     /** The service name for the created {@link Framework} */
     ServiceName FRAMEWORK_CREATE = FRAMEWORK_BASE_NAME.append("CREATED");
 
-    /** The {@link FrameworkCoreServices} service name. */
-    ServiceName FRAMEWORK_CORE_SERVICES = FRAMEWORK_BASE_NAME.append("CoreServices");
-    
     /** The service name for the initialized {@link Framework} */
     ServiceName FRAMEWORK_INIT = FRAMEWORK_BASE_NAME.append("INIT");
 

@@ -49,11 +49,11 @@ public interface IntegrationServices {
     /** The service name for the {@link ModuleLoaderProvider} */
     ServiceName MODULE_LOADER_PROVIDER = INTEGRATION_BASE_NAME.append("ModuleLoaderProvider");
 
-    /** The {@link PersistentBundleInstaller} service name */
-    ServiceName PERSISTENT_BUNDLE_INSTALLER = INTEGRATION_BASE_NAME.append("PersistentBundlesInstaller");
+    /** The {@link PersistentBundlesProvider} service name */
+    ServiceName PERSISTENT_BUNDLES_PROVIDER = INTEGRATION_BASE_NAME.append("PersistentBundlesProvider");
 
-    /** The {@link PersistentBundleInstaller} service name */
-    ServiceName PERSISTENT_BUNDLE_INSTALLER_COMPLETE = PERSISTENT_BUNDLE_INSTALLER.append("COMPLETE");
+    /** The {@link PersistentBundlesProvider} nested service that indicates completion */
+    ServiceName PERSISTENT_BUNDLES_PROVIDER_COMPLETE = PERSISTENT_BUNDLES_PROVIDER.append("COMPLETE");
 
     /** The service name for the {@link SystemPathsProvider} */
     ServiceName SYSTEM_PATHS_PROVIDER = INTEGRATION_BASE_NAME.append("SystemPathsProvider");

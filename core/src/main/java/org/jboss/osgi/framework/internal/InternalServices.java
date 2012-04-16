@@ -38,6 +38,8 @@ public interface InternalServices {
 
     /** The {@link BundleStoragePlugin} service name */
     ServiceName BUNDLE_STORAGE_PLUGIN = INTERNAL_SERVICE_BASE.append("BundleStorage");
+    /** The {@link FrameworkCoreServices} service name. */
+    ServiceName FRAMEWORK_CORE_SERVICES = INTERNAL_SERVICE_BASE.append("CoreServices");
     /** The {@link DeploymentFactoryPlugin} service name */
     ServiceName DEPLOYMENT_FACTORY_PLUGIN = INTERNAL_SERVICE_BASE.append("DeploymentFactory");
     /** The {@link FrameworkEventsPlugin} service name */
@@ -48,8 +50,6 @@ public interface InternalServices {
     ServiceName MODULE_MANGER_PLUGIN = INTERNAL_SERVICE_BASE.append("ModuleManager");
     /** The {@link NativeCodePlugin} service name */
     ServiceName NATIVE_CODE_PLUGIN = INTERNAL_SERVICE_BASE.append("NativeCode");
-    /** The {@link PersistentBundlesStarter} nested activator service name */
-    ServiceName PERSISTENT_BUNDLE_STARTER = INTERNAL_SERVICE_BASE.append("PersistentBundlesStarter");
     /** The {@link Resolver} service name */
     ServiceName RESOLVER_PLUGIN = INTERNAL_SERVICE_BASE.append("Resolver");
     /** The {@link ServiceManagerPlugin} service name */

@@ -19,13 +19,13 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework.internal;
+package org.jboss.osgi.framework;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.util.Map;
-import java.util.Map.Entry;
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
@@ -34,48 +34,52 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.IntegrationServices;
-import org.jboss.osgi.framework.PersistentBundleInstaller;
-import org.jboss.osgi.framework.StorageState;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
+import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
- * A service that starts persistent bundles on framework startup.
+ * Default implementation for the COMPLETE step of the {@link PersistentBundlesProvider}.
  *
  * @author thomas.diesler@jboss.com
- * @since 12-Apr-2012
+ * @since 16-Apr-2012
  */
-public final class PersistentBundlesStarter extends AbstractPluginService<Void> {
+public class PersistentBundlesProviderComplete extends AbstractService<Void> {
 
-    private final InjectedValue<PersistentBundleInstaller> injectedPersistentBundles = new InjectedValue<PersistentBundleInstaller>();
+    private final InjectedValue<PackageAdmin> injectedPackageAdmin = new InjectedValue<PackageAdmin>();
+    private final Map<ServiceName, Deployment> installedBundles;
 
-    static void addService(ServiceTarget serviceTarget) {
-        PersistentBundlesStarter service = new PersistentBundlesStarter();
-        ServiceBuilder<Void> builder = serviceTarget.addService(InternalServices.PERSISTENT_BUNDLE_STARTER, service);
-        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLE_INSTALLER, PersistentBundleInstaller.class, service.injectedPersistentBundles);
-        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLE_INSTALLER_COMPLETE);
+    public PersistentBundlesProviderComplete(Map<ServiceName, Deployment> installedBundles) {
+        this.installedBundles = installedBundles;
+    }
+
+    public void install(ServiceTarget serviceTarget) {
+        ServiceBuilder<Void> builder = serviceTarget.addService(IntegrationServices.PERSISTENT_BUNDLES_PROVIDER_COMPLETE, this);
+        builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
+        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLES_PROVIDER);
+        builder.addDependencies(installedBundles.keySet());
+        addAdditionalDependencies(builder);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    private PersistentBundlesStarter() {
+    protected void addAdditionalDependencies(ServiceBuilder<Void> builder) {
     }
 
-    @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
-        Map<ServiceName, Deployment> pendingServices = injectedPersistentBundles.getValue().getInstalledServices();
-        for (Entry<ServiceName, Deployment> entry : pendingServices.entrySet()) {
-            Deployment dep = entry.getValue();
+        LOGGER.debugf("Persistent bundles installed");
+        PackageAdmin packageAdmin = injectedPackageAdmin.getValue();
+        for (Deployment dep : installedBundles.values()) {
             StorageState storageState = dep.getAttachment(StorageState.class);
             if (storageState.isPersistentlyStarted()) {
                 Bundle bundle = dep.getAttachment(Bundle.class);
-                LOGGER.debugf("Autostart persistent bundle: %s", bundle);
-                try {
-                    bundle.start();
-                } catch (BundleException ex) {
-                    LOGGER.errorCannotStartPersistentBundle(ex, bundle);
+                if (packageAdmin.getBundleType(bundle) != PackageAdmin.BUNDLE_TYPE_FRAGMENT) {
+                    LOGGER.debugf("Auto start persistent bundle: %s", bundle);
+                    try {
+                        bundle.start(Bundle.START_TRANSIENT & Bundle.START_ACTIVATION_POLICY);
+                    } catch (BundleException ex) {
+                        LOGGER.errorCannotStartPersistentBundle(ex, bundle);
+                    }
                 }
             }
         }

@@ -31,6 +31,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -49,9 +50,9 @@ import org.osgi.service.resolver.ResolutionException;
  *
  * <code>
  * {@link FrameworkActive}
- * +---{@link FrameworkInit}
- *     +---{@link DefaultPersistentBundleInstaller}
- *         +---{@link DefaultAutoInstallProvider}
+ * +---{@link DefaultPersistentBundleProvider}
+ *     +---{@link DefaultAutoInstallProvider}
+ *         +---{@link FrameworkInit}
  *             +---{@link FrameworkCoreServices}
  *                 +---{@link LifecycleInterceptorPlugin}
  *                 +---{@link PackageAdminPlugin}
@@ -76,7 +77,7 @@ import org.osgi.service.resolver.ResolutionException;
  *                                             +---{@link BundleManager}
  *                                                 +---{@link DefaultEnvironmentPlugin}
  * </code>
- *  
+ *
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
@@ -89,6 +90,8 @@ public final class FrameworkActive extends AbstractFrameworkService {
         FrameworkActive service = new FrameworkActive();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
         builder.addDependency(Services.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
+        builder.addDependencies(IntegrationServices.AUTOINSTALL_PROVIDER, IntegrationServices.AUTOINSTALL_PROVIDER_COMPLETE);
+        builder.addDependencies(IntegrationServices.PERSISTENT_BUNDLES_PROVIDER, IntegrationServices.PERSISTENT_BUNDLES_PROVIDER_COMPLETE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
