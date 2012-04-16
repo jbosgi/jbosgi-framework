@@ -50,8 +50,9 @@ public final class FrameworkBuilder {
     private boolean closed;
 
     public FrameworkBuilder(Map<String, Object> props) {
-        assert props != null : "Null props";
-        initialProperties.putAll(props);
+        if (props != null) {
+            initialProperties.putAll(props);
+        }
     }
 
     public Object getProperty(String key) {
