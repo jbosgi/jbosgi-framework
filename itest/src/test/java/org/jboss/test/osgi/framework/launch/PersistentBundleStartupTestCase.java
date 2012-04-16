@@ -144,6 +144,46 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
         assertBundleState(Bundle.RESOLVED, framework.getState());
     }
 
+    @Test
+    public void testStoppedBundle() throws Exception {
+        Map<String, String> props = new HashMap<String, String>();
+        props.put("org.osgi.framework.storage", storageDir.getAbsolutePath());
+        props.put("org.osgi.framework.storage.clean", "onFirstInit");
+
+        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
+        Framework framework = factory.newFramework(props);
+
+        framework.start();
+        assertBundleState(Bundle.ACTIVE, framework.getState());
+
+        JavaArchive archive = getBundleArchive();
+        BundleContext context = framework.getBundleContext();
+        Bundle bundle = context.installBundle(archive.getName(), toInputStream(archive));
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
+
+        bundle.start();
+        assertBundleState(Bundle.ACTIVE, bundle.getState());
+
+        bundle.stop();
+        assertBundleState(Bundle.RESOLVED, bundle.getState());
+
+        framework.stop();
+        framework.waitForStop(2000);
+        assertBundleState(Bundle.RESOLVED, framework.getState());
+
+        // Restart the Framework
+        framework.start();
+        assertBundleState(Bundle.ACTIVE, framework.getState());
+
+        context = framework.getBundleContext();
+        bundle = context.getBundle(bundle.getBundleId());
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
+
+        framework.stop();
+        framework.waitForStop(2000);
+        assertBundleState(Bundle.RESOLVED, framework.getState());
+    }
+
     private JavaArchive getBundleArchive() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
         archive.addClasses(SimpleService.class, SimpleActivator.class);

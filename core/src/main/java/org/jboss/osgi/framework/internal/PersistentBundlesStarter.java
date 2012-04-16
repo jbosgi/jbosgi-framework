@@ -36,6 +36,7 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.PersistentBundleInstaller;
+import org.jboss.osgi.framework.StorageState;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -66,11 +67,11 @@ public final class PersistentBundlesStarter extends AbstractPluginService<Void> 
         super.start(context);
         Map<ServiceName, Deployment> pendingServices = injectedPersistentBundles.getValue().getInstalledServices();
         for (Entry<ServiceName, Deployment> entry : pendingServices.entrySet()) {
-            ServiceName key = entry.getKey();
             Deployment dep = entry.getValue();
-            if (dep.isAutoStart()) {
-                LOGGER.debugf("Autostart persistent bundle: %s", key);
+            StorageState storageState = dep.getAttachment(StorageState.class);
+            if (storageState.isPersistentlyStarted()) {
                 Bundle bundle = dep.getAttachment(Bundle.class);
+                LOGGER.debugf("Autostart persistent bundle: %s", bundle);
                 try {
                     bundle.start();
                 } catch (BundleException ex) {
