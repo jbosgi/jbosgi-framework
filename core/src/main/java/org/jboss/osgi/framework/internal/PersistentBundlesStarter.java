@@ -24,6 +24,7 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -64,8 +65,11 @@ public final class PersistentBundlesStarter extends AbstractPluginService<Void> 
     public void start(StartContext context) throws StartException {
         super.start(context);
         Map<ServiceName, Deployment> pendingServices = injectedPersistentBundles.getValue().getInstalledServices();
-        for (Deployment dep : pendingServices.values()) {
+        for (Entry<ServiceName, Deployment> entry : pendingServices.entrySet()) {
+            ServiceName key = entry.getKey();
+            Deployment dep = entry.getValue();
             if (dep.isAutoStart()) {
+                LOGGER.debugf("Autostart persistent bundle: %s", key);
                 Bundle bundle = dep.getAttachment(Bundle.class);
                 try {
                     bundle.start();

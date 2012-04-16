@@ -90,7 +90,7 @@ public final class DefaultPersistentBundleInstaller extends AbstractPluginServic
         List<StorageState> storageStates = storageStateProvider.getStorageStates();
         for (StorageState storageState : storageStates) {
             long bundleId = storageState.getBundleId();
-            if (bundleId != 0) {
+            if (bundleManager.getBundleById(bundleId) == null) {
                 try {
                     Deployment dep = deploymentPlugin.createDeployment(storageState);
                     ServiceName serviceName = bundleManager.installBundle(serviceTarget, dep);

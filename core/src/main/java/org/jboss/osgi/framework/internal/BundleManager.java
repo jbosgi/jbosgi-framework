@@ -358,9 +358,12 @@ public final class BundleManager extends AbstractService<BundleManagerIntegratio
         } else {
             try {
                 // The storage state exists when we re-create the bundle from persistent storage
-                BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
-                StorageState storageState = storagePlugin.getStorageState(deployment.getLocation());
-                if (deployment.isBundleUpdate() == false && storageState != null) {
+                StorageState storageState = deployment.getAttachment(StorageState.class);
+                if (storageState == null) {
+                    BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+                    storageState = storagePlugin.getStorageState(deployment.getLocation());
+                }
+                if (storageState != null && !deployment.isBundleUpdate()) {
                     BundleId bundleId = new BundleId(storageState.getBundleId());
                     deployment.addAttachment(StorageState.class, storageState);
                     deployment.addAttachment(BundleId.class, bundleId);
