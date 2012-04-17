@@ -21,21 +21,13 @@
  */
 package org.jboss.osgi.framework;
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
-
 import java.util.Map;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
-import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleException;
 import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
@@ -44,13 +36,10 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 16-Apr-2012
  */
-public class PersistentBundlesProviderComplete extends AbstractService<Void> {
-
-    private final InjectedValue<PackageAdmin> injectedPackageAdmin = new InjectedValue<PackageAdmin>();
-    private final Map<ServiceName, Deployment> installedBundles;
+public class PersistentBundlesProviderComplete extends AbstractInstallComplete {
 
     public PersistentBundlesProviderComplete(Map<ServiceName, Deployment> installedBundles) {
-        this.installedBundles = installedBundles;
+        super(installedBundles);
     }
 
     public void install(ServiceTarget serviceTarget) {
@@ -61,28 +50,5 @@ public class PersistentBundlesProviderComplete extends AbstractService<Void> {
         addAdditionalDependencies(builder);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
-    }
-
-    protected void addAdditionalDependencies(ServiceBuilder<Void> builder) {
-    }
-
-    public void start(StartContext context) throws StartException {
-        LOGGER.debugf("Persistent bundles installed");
-        PackageAdmin packageAdmin = injectedPackageAdmin.getValue();
-        for (Deployment dep : installedBundles.values()) {
-            StorageState storageState = dep.getAttachment(StorageState.class);
-            if (storageState.isPersistentlyStarted()) {
-                Bundle bundle = dep.getAttachment(Bundle.class);
-                if (packageAdmin.getBundleType(bundle) != PackageAdmin.BUNDLE_TYPE_FRAGMENT) {
-                    LOGGER.debugf("Auto start persistent bundle: %s", bundle);
-                    try {
-                        bundle.start(Bundle.START_TRANSIENT & Bundle.START_ACTIVATION_POLICY);
-                    } catch (BundleException ex) {
-                        LOGGER.errorCannotStartPersistentBundle(ex, bundle);
-                    }
-                }
-            }
-        }
-        LOGGER.debugf("Persistent bundles started");
     }
 }

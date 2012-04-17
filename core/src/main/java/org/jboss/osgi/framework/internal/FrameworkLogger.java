@@ -147,8 +147,8 @@ public interface FrameworkLogger extends BasicLogger {
     void errorCannotWritePersistentStorage(@Cause Throwable cause, File bundleDir);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11024, value = "Cannot start persistent bundle: %s")
-    void errorCannotAutomaticallyStartBundle(@Cause Throwable cause, Bundle bundle);
+    @Message(id = 11024, value = "Cannot start bundle: %s")
+    void errorCannotStartBundle(@Cause Throwable cause, Bundle bundle);
 
     @LogMessage(level = ERROR)
     @Message(id = 11025, value = "Invalid beginning start level: %s")
@@ -181,10 +181,6 @@ public interface FrameworkLogger extends BasicLogger {
     //@LogMessage(level = ERROR)
     //@Message(id = 11032, value = "Cannot install persistet bundle from: %s")
     //void errorCannotInstallPersistentBundle(@Cause Throwable cause, StorageState storageState);
-
-    @LogMessage(level = ERROR)
-    @Message(id = 11033, value = "Cannot start persistet bundle: %s")
-    void errorCannotStartPersistentBundle(@Cause Throwable cause, Bundle bundle);
 
     @LogMessage(level = ERROR)
     @Message(id = 11034, value = "Cannot get entry '%s' from: %s")
