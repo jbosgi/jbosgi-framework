@@ -58,7 +58,7 @@ import org.osgi.framework.Constants;
  */
 final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugin> {
 
-    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final Map<String, InternalStorageState> storageStates = new LinkedHashMap<String, InternalStorageState>();
     private File storageArea;
     private boolean firstInit;
@@ -66,7 +66,7 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
     static void addService(ServiceTarget serviceTarget, boolean firstInit) {
         BundleStoragePlugin service = new BundleStoragePlugin(firstInit);
         ServiceBuilder<BundleStoragePlugin> builder = serviceTarget.addService(InternalServices.BUNDLE_STORAGE_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -81,7 +81,7 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
 
         try {
             // Cleanup the storage area
-            BundleManager bundleManager = injectedBundleManager.getValue();
+            BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
             String storageClean = (String) bundleManager.getProperty(Constants.FRAMEWORK_STORAGE_CLEAN);
             if (firstInit == true && Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT.equals(storageClean)) {
                 File storage = getStorageArea();
@@ -162,7 +162,7 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
 
     File getStorageArea() {
         if (storageArea == null) {
-            BundleManager bundleManager = injectedBundleManager.getValue();
+            BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
             String dirName = (String) bundleManager.getProperty(Constants.FRAMEWORK_STORAGE);
             if (dirName == null) {
                 try {

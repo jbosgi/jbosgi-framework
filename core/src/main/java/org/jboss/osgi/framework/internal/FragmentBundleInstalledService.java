@@ -36,7 +36,7 @@ import org.osgi.framework.BundleException;
 final class FragmentBundleInstalledService extends UserBundleInstalledService<FragmentBundleState> {
 
     static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep) throws BundleException {
-        ServiceName serviceName = BundleManager.getServiceName(dep).append("INSTALLED");
+        ServiceName serviceName = BundleManagerPlugin.getServiceName(dep).append("INSTALLED");
         FragmentBundleInstalledService service = new FragmentBundleInstalledService(frameworkState, dep);
         ServiceBuilder<FragmentBundleState> builder = serviceTarget.addService(serviceName, service);
         builder.addDependency(InternalServices.FRAMEWORK_CORE_SERVICES);

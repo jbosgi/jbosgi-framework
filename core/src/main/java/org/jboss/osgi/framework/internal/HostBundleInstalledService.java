@@ -36,7 +36,7 @@ import org.osgi.framework.BundleException;
 final class HostBundleInstalledService extends UserBundleInstalledService<HostBundleState> {
 
     static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep) throws BundleException {
-        ServiceName serviceName = BundleManager.getServiceName(dep).append("INSTALLED");
+        ServiceName serviceName = BundleManagerPlugin.getServiceName(dep).append("INSTALLED");
         HostBundleInstalledService service = new HostBundleInstalledService(frameworkState, dep);
         ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, service);
         builder.addDependency(InternalServices.FRAMEWORK_CORE_SERVICES);

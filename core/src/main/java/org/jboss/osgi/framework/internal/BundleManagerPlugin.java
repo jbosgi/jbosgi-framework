@@ -51,7 +51,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleManagerIntegration;
+import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.util.Java;
@@ -74,7 +74,7 @@ import org.osgi.resource.Resource;
  * @author David Bosschaert
  * @since 29-Jun-2010
  */
-public final class BundleManager extends AbstractService<BundleManagerIntegration> implements BundleManagerIntegration {
+public final class BundleManagerPlugin extends AbstractService<BundleManager> implements BundleManager {
 
     // The framework execution environment
     private static String OSGi_FRAMEWORK_EXECUTIONENVIRONMENT;
@@ -94,13 +94,14 @@ public final class BundleManager extends AbstractService<BundleManagerIntegratio
     private static String implementationTitle;
     private static String implementationVersion;
     static {
-        implementationTitle = BundleManager.class.getPackage().getImplementationTitle();
-        implementationVersion = BundleManager.class.getPackage().getImplementationVersion();
+        implementationTitle = BundleManagerPlugin.class.getPackage().getImplementationTitle();
+        implementationVersion = BundleManagerPlugin.class.getPackage().getImplementationVersion();
     }
 
     final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
+    final InjectedValue<Boolean> injectedFrameworkActive = new InjectedValue<Boolean>();
 
     private final FrameworkBuilder frameworkBuilder;
     private final AtomicLong identityGenerator = new AtomicLong();
@@ -109,16 +110,16 @@ public final class BundleManager extends AbstractService<BundleManagerIntegratio
     private final ServiceTarget serviceTarget;
     private ServiceContainer serviceContainer;
 
-    static BundleManager addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
-        BundleManager service = new BundleManager(frameworkBuilder, serviceTarget);
-        ServiceBuilder<BundleManagerIntegration> builder = serviceTarget.addService(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, service);
+    static BundleManagerPlugin addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
+        BundleManagerPlugin service = new BundleManagerPlugin(frameworkBuilder, serviceTarget);
+        ServiceBuilder<BundleManager> builder = serviceTarget.addService(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, service);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
         return service;
     }
 
-    private BundleManager(FrameworkBuilder frameworkBuilder, ServiceTarget serviceTarget) {
+    private BundleManagerPlugin(FrameworkBuilder frameworkBuilder, ServiceTarget serviceTarget) {
         this.frameworkBuilder = frameworkBuilder;
         this.serviceTarget = serviceTarget;
 
@@ -166,7 +167,7 @@ public final class BundleManager extends AbstractService<BundleManagerIntegratio
     }
 
     @Override
-    public BundleManager getValue() throws IllegalStateException {
+    public BundleManagerPlugin getValue() throws IllegalStateException {
         return this;
     }
 
@@ -182,17 +183,27 @@ public final class BundleManager extends AbstractService<BundleManagerIntegratio
         return serviceTarget;
     }
 
-    SystemBundleState getSystemBundle() {
-        return injectedSystemBundle.getValue();
+    @Override
+    public SystemBundleState getSystemBundle() {
+        return injectedSystemBundle.getOptionalValue();
     }
 
-    boolean isFrameworkActive() {
+    /**
+     * True if shutdown has not been initiated and the framework
+     * has reached the {@link Services#FRAMEWORK_CREATE} state
+     */
+    boolean isFrameworkCreated() {
         return shutdownInitiated.get() == false && getFrameworkState() != null;
     }
 
-    void assertFrameworkActive() {
-        if (isFrameworkActive() == false)
+    void assertFrameworkCreated() {
+        if (isFrameworkCreated() == false)
             throw MESSAGES.illegalStateFrameworkNotActive();
+    }
+
+    @Override
+    public boolean isFrameworkActive() {
+        return Boolean.TRUE.equals(injectedFrameworkActive.getOptionalValue());
     }
 
     FrameworkState getFrameworkState() {
@@ -222,7 +233,7 @@ public final class BundleManager extends AbstractService<BundleManagerIntegratio
     }
 
     void setProperty(String key, Object value) {
-        if (isFrameworkActive())
+        if (isFrameworkCreated())
             throw MESSAGES.illegalStateCannotAddProperty();
 
         properties.put(key, value);
@@ -239,12 +250,9 @@ public final class BundleManager extends AbstractService<BundleManagerIntegratio
         return ServiceName.of(Services.BUNDLE_BASE_NAME, "" + bundleId, "" + symbolicName, "" + version);
     }
 
-    /**
-     * Get the set of installed bundles.
-     * Bundles in state UNINSTALLED are not returned.
-     */
-    Set<AbstractBundleState> getBundles() {
-        Set<AbstractBundleState> result = new HashSet<AbstractBundleState>();
+    @Override
+    public Set<Bundle> getBundles() {
+        Set<Bundle> result = new HashSet<Bundle>();
         XEnvironment env = injectedEnvironment.getValue();
         for (Resource aux : env.getResources(null)) {
             if (aux instanceof AbstractBundleRevision) {
@@ -257,14 +265,9 @@ public final class BundleManager extends AbstractService<BundleManagerIntegratio
         return Collections.unmodifiableSet(result);
     }
 
-    /**
-     * Get the set of bundles that are in one of the given states.
-     * If the states pattern is null, it returns all registered bundles.
-     *
-     * @param states The binary or combination of states or null
-     */
-    Set<AbstractBundleState> getBundles(Integer states) {
-        Set<AbstractBundleState> result = new HashSet<AbstractBundleState>();
+    @Override
+    public Set<Bundle> getBundles(Integer states) {
+        Set<Bundle> result = new HashSet<Bundle>();
         XEnvironment env = injectedEnvironment.getValue();
         for (Resource aux : env.getResources(null)) {
             if (aux instanceof AbstractBundleRevision) {
@@ -277,15 +280,8 @@ public final class BundleManager extends AbstractService<BundleManagerIntegratio
         return Collections.unmodifiableSet(result);
     }
 
-    /**
-     * Get a bundle by id
-     *
-     * Note, this will get the bundle regadless of its state. i.e. The returned bundle may have been UNINSTALLED
-     *
-     * @param bundleId The identifier of the bundle
-     * @return The bundle or null if there is no bundle with that id
-     */
-    AbstractBundleState getBundleById(long bundleId) {
+    @Override
+    public Bundle getBundleById(long bundleId) {
         if (bundleId == 0) {
             return getFrameworkState().getSystemBundle();
         }
@@ -302,17 +298,10 @@ public final class BundleManager extends AbstractService<BundleManagerIntegratio
         return null;
     }
 
-    /**
-     * Get a bundle by location
-     *
-     * Note, this will get the bundle regadless of its state. i.e. The returned bundle may have been UNINSTALLED
-     *
-     * @param location the location of the bundle
-     * @return the bundle or null if there is no bundle with that location
-     */
-    AbstractBundleState getBundleByLocation(String location) {
+    @Override
+    public Bundle getBundleByLocation(String location) {
         assert location != null : "Null location";
-        for (AbstractBundleState aux : getBundles()) {
+        for (Bundle aux : getBundles()) {
             String auxLocation = aux.getLocation();
             if (location.equals(auxLocation)) {
                 return aux;
@@ -321,18 +310,10 @@ public final class BundleManager extends AbstractService<BundleManagerIntegratio
         return null;
     }
 
-    /**
-     * Get the set of bundles with the given symbolic name and version
-     *
-     * Note, this will get bundles regadless of their state. i.e. The returned bundles may have been UNINSTALLED
-     *
-     * @param symbolicName The bundle symbolic name
-     * @param versionRange The optional bundle version
-     * @return The bundles or an empty list if there is no bundle with that name and version
-     */
-    Set<AbstractBundleState> getBundles(String symbolicName, String versionRange) {
-        Set<AbstractBundleState> resultSet = new HashSet<AbstractBundleState>();
-        for (AbstractBundleState aux : getBundles(null)) {
+    @Override
+    public Set<Bundle> getBundles(String symbolicName, String versionRange) {
+        Set<Bundle> resultSet = new HashSet<Bundle>();
+        for (Bundle aux : getBundles(null)) {
             if (symbolicName == null || symbolicName.equals(aux.getSymbolicName())) {
                 if (versionRange == null || VersionRange.parse(versionRange).isInRange(aux.getVersion())) {
                     resultSet.add(aux);
@@ -351,8 +332,9 @@ public final class BundleManager extends AbstractService<BundleManagerIntegratio
 
         // If a bundle containing the same location identifier is already installed,
         // the Bundle object for that bundle is returned.
-        AbstractBundleState bundleState = getBundleByLocation(deployment.getLocation());
-        if (bundleState != null) {
+        Bundle bundle = getBundleByLocation(deployment.getLocation());
+        if (bundle != null) {
+            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
             serviceName = bundleState.getServiceName(Bundle.INSTALLED);
             VFSUtils.safeClose(deployment.getRoot());
         } else {
@@ -450,8 +432,8 @@ public final class BundleManager extends AbstractService<BundleManagerIntegratio
                 eventsPlugin.fireBundleEvent(userBundle, BundleEvent.UNINSTALLED);
 
                 // Remove other uninstalled bundles that now also have no active wires any more
-                Set<AbstractBundleState> uninstalled = getBundles(Bundle.UNINSTALLED);
-                for (AbstractBundleState auxState : uninstalled) {
+                Set<Bundle> uninstalled = getBundles(Bundle.UNINSTALLED);
+                for (Bundle auxState : uninstalled) {
                     UserBundleState auxUser = UserBundleState.assertBundleState(auxState);
                     if (auxUser.hasActiveWires() == false) {
                         removeBundle(auxUser, options);

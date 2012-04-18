@@ -239,14 +239,15 @@ final class FrameworkProxy implements Framework {
         } else {
             // No Start Level Service available, stop all bundles individually...
             // All installed bundles must be stopped without changing each bundle's persistent autostart setting
-            BundleManager bundleManager = systemBundle.getBundleManager();
-            for (AbstractBundleState bundleState : bundleManager.getBundles()) {
-                if (bundleState.getBundleId() != 0) {
+            BundleManagerPlugin bundleManager = systemBundle.getBundleManager();
+            for (Bundle bundle : bundleManager.getBundles()) {
+                if (bundle.getBundleId() != 0) {
                     try {
-                        bundleState.stop(Bundle.STOP_TRANSIENT);
+                        bundle.stop(Bundle.STOP_TRANSIENT);
                     } catch (Exception ex) {
                         // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then
                         // published as a framework event of type FrameworkEvent.ERROR
+                        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
                         bundleManager.fireFrameworkError(bundleState, "stopping bundle", ex);
                     }
                 }

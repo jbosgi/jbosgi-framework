@@ -72,7 +72,7 @@ abstract class UserBundleState extends AbstractBundleState {
 
     UserBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
         super(frameworkState, bundleId, dep.getSymbolicName());
-        this.serviceName = BundleManager.getServiceName(dep);
+        this.serviceName = BundleManagerPlugin.getServiceName(dep);
     }
 
     /**
@@ -383,7 +383,7 @@ abstract class UserBundleState extends AbstractBundleState {
 
     void removeServices() {
         LOGGER.debugf("Remove services for: %s", this);
-        BundleManager bundleManager = getBundleManager();
+        BundleManagerPlugin bundleManager = getBundleManager();
         bundleManager.setServiceMode(getServiceName(ACTIVE), Mode.REMOVE);
         bundleManager.setServiceMode(getServiceName(RESOLVED), Mode.REMOVE);
         bundleManager.setServiceMode(getServiceName(INSTALLED), Mode.REMOVE);

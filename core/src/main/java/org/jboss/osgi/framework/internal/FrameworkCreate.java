@@ -44,7 +44,7 @@ public final class FrameworkCreate extends AbstractFrameworkService {
 
     private final FrameworkState frameworkState;
 
-    static FrameworkState addService(ServiceTarget serviceTarget, BundleManager bundleManager) {
+    static FrameworkState addService(ServiceTarget serviceTarget, BundleManagerPlugin bundleManager) {
         FrameworkState frameworkState = new FrameworkState(bundleManager);
         FrameworkCreate service = new FrameworkCreate(frameworkState);
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_CREATE, service);

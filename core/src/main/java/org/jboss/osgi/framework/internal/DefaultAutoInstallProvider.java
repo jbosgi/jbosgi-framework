@@ -59,13 +59,13 @@ import org.osgi.framework.BundleException;
  */
 final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstallProvider> implements AutoInstallProvider {
 
-    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
         if (registry.getService(AUTOINSTALL_PROVIDER) == null) {
             DefaultAutoInstallProvider service = new DefaultAutoInstallProvider();
             ServiceBuilder<AutoInstallProvider> builder = serviceTarget.addService(AUTOINSTALL_PROVIDER, service);
-            builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+            builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
             builder.addDependency(Services.FRAMEWORK_INIT);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();
@@ -82,7 +82,7 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
             List<URL> autoInstall = new ArrayList<URL>();
             List<URL> autoStart = new ArrayList<URL>();
 
-            BundleManager bundleManager = injectedBundleManager.getValue();
+            BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
             String propValue = (String) bundleManager.getProperty(Constants.PROPERTY_AUTO_INSTALL_URLS);
             if (propValue != null) {
                 for (String path : propValue.split(",")) {
@@ -119,7 +119,7 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
         autoInstall.addAll(autoStart);
 
         Map<ServiceName, Deployment> installedBundles = new HashMap<ServiceName, Deployment>();
-        BundleManager bundleManager = injectedBundleManager.getValue();
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         for (URL url : autoInstall) {
             BundleInfo info = BundleInfo.createBundleInfo(url);
             Deployment dep = DeploymentFactory.createDeployment(info);
@@ -132,7 +132,7 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
         installComplete.install(serviceTarget);
     }
 
-    private URL toURL(final BundleManager bundleManager, final String path) {
+    private URL toURL(final BundleManagerPlugin bundleManager, final String path) {
 
         URL pathURL = null;
         PropertyProvider provider = new PropertyProvider() {

@@ -52,7 +52,7 @@ import org.osgi.framework.BundleException;
  */
 final class DefaultPersistentBundleProvider extends AbstractPluginService<PersistentBundlesProvider> implements PersistentBundlesProvider {
 
-    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
     private final InjectedValue<StorageStateProvider> injectedStorageProvider = new InjectedValue<StorageStateProvider>();
     private final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
@@ -61,7 +61,7 @@ final class DefaultPersistentBundleProvider extends AbstractPluginService<Persis
         if (registry.getService(PERSISTENT_BUNDLES_PROVIDER) == null) {
             DefaultPersistentBundleProvider service = new DefaultPersistentBundleProvider();
             ServiceBuilder<PersistentBundlesProvider> builder = serviceTarget.addService(PERSISTENT_BUNDLES_PROVIDER, service);
-            builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+            builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
             builder.addDependency(Services.STORAGE_STATE_PROVIDER, StorageStateProvider.class, service.injectedStorageProvider);
             builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
             builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, service.injectedDeploymentFactory);
@@ -78,7 +78,7 @@ final class DefaultPersistentBundleProvider extends AbstractPluginService<Persis
     public void start(StartContext context) throws StartException {
         super.start(context);
         ServiceTarget serviceTarget = context.getChildTarget();
-        BundleManager bundleManager = injectedBundleManager.getValue();
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         DeploymentFactoryPlugin deploymentPlugin = injectedDeploymentFactory.getValue();
 
         final Map<ServiceName, Deployment> installedBundles = new HashMap<ServiceName, Deployment>();

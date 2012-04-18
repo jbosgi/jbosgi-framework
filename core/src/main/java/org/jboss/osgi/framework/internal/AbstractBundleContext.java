@@ -87,7 +87,7 @@ abstract class AbstractBundleContext implements BundleContext {
         return bundleState;
     }
 
-    BundleManager getBundleManager() {
+    BundleManagerPlugin getBundleManager() {
         return bundleState.getBundleManager();
     }
 
@@ -98,7 +98,7 @@ abstract class AbstractBundleContext implements BundleContext {
     @Override
     public String getProperty(String key) {
         checkValidBundleContext();
-        getBundleManager().assertFrameworkActive();
+        getBundleManager().assertFrameworkCreated();
         Object value = getBundleManager().getProperty(key);
         return (value instanceof String ? (String) value : null);
     }
@@ -192,7 +192,7 @@ abstract class AbstractBundleContext implements BundleContext {
         checkValidBundleContext();
 
         FrameworkState frameworkState = getFrameworkState();
-        BundleManager bundleManager = frameworkState.getBundleManager();
+        BundleManagerPlugin bundleManager = frameworkState.getBundleManager();
         ServiceTarget serviceTarget = bundleManager.getServiceTarget();
 
         String location = deployment.getLocation();
@@ -220,16 +220,15 @@ abstract class AbstractBundleContext implements BundleContext {
     @Override
     public Bundle getBundle(long id) {
         checkValidBundleContext();
-        AbstractBundleState bundleState = getBundleManager().getBundleById(id);
-        return (bundleState != null ? bundleState : null);
+        return getBundleManager().getBundleById(id);
     }
 
     @Override
     public Bundle[] getBundles() {
         checkValidBundleContext();
         List<Bundle> result = new ArrayList<Bundle>();
-        for (AbstractBundleState bundleState : getBundleManager().getBundles())
-            result.add(bundleState);
+        for (Bundle bundle : getBundleManager().getBundles())
+            result.add(bundle);
         return result.toArray(new Bundle[result.size()]);
     }
 

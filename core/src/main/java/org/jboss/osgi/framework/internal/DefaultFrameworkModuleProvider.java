@@ -112,7 +112,7 @@ final class DefaultFrameworkModuleProvider extends AbstractPluginService<Framewo
         PathFilter acceptAll = PathFilters.acceptAll();
         specBuilder.addDependency(DependencySpec.createSystemDependencySpec(bootFilter, acceptAll, bootPaths));
 
-        final ClassLoader classLoader = BundleManager.class.getClassLoader();
+        final ClassLoader classLoader = BundleManagerPlugin.class.getClassLoader();
         LocalLoader localLoader = new LocalLoader() {
 
             @Override

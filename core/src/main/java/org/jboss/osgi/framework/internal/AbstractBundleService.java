@@ -47,7 +47,7 @@ abstract class AbstractBundleService<T extends AbstractBundleState> implements S
         return frameworkState;
     }
 
-    BundleManager getBundleManager() {
+    BundleManagerPlugin getBundleManager() {
         return frameworkState.getBundleManager();
     }
 

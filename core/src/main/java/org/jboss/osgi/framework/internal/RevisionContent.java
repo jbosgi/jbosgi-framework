@@ -33,6 +33,7 @@ import java.util.Vector;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
+import org.osgi.framework.Bundle;
 
 /**
  * An abstraction for the revision content
@@ -68,16 +69,17 @@ final class RevisionContent implements EntriesProvider {
         identity = symbolicName + "-" + bundleId + "-" + revisionId + "-" + contentId;
     }
 
-    static RevisionContent findRevisionContent(BundleManager bundleManager, String identity) {
+    static RevisionContent findRevisionContent(BundleManagerPlugin bundleManager, String identity) {
         assert identity != null : "Null identity";
         String[] parts = identity.split("-");
         assert parts.length == 4 : "Invalid identity: " + identity;
         long bundleId = Long.parseLong(parts[1]);
         int revisionId = Integer.parseInt(parts[2]);
         int contentId = Integer.parseInt(parts[3]);
-        AbstractBundleState bundleState = bundleManager.getBundleById(bundleId);
-        if (bundleState == null)
+        Bundle bundle = bundleManager.getBundleById(bundleId);
+        if (bundle == null)
             return null;
+        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
         AbstractBundleRevision bundleRev = bundleState.getBundleRevisionById(revisionId);
         if (bundleRev == null)
             return null;

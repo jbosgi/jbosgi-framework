@@ -115,12 +115,12 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
         osAlias.put("WinXP", "WindowsXP");
     }
 
-    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
 
     static void addService(ServiceTarget serviceTarget) {
         NativeCodePlugin service = new NativeCodePlugin();
         ServiceBuilder<NativeCodePlugin> builder = serviceTarget.addService(InternalServices.NATIVE_CODE_PLUGIN, service);
-        builder.addDependency(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -210,7 +210,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
 
         // osname ~= [org.osgi.framework.os.name]
         Parameter osnameParam = param.getAttribute(Constants.BUNDLE_NATIVECODE_OSNAME);
-        BundleManager bundleManager = injectedBundleManager.getValue();
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         BundleContext systemContext = bundleManager.getSystemBundle().getBundleContext();
         boolean match = (osnameParam != null);
         if (match == true && osnameParam != null) {

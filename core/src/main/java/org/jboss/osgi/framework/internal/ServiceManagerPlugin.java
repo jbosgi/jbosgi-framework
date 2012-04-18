@@ -70,7 +70,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
  */
 final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlugin> {
 
-    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
 
@@ -84,7 +84,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
     static void addService(ServiceTarget serviceTarget) {
         ServiceManagerPlugin service = new ServiceManagerPlugin();
         ServiceBuilder<ServiceManagerPlugin> builder = serviceTarget.addService(InternalServices.SERVICE_MANAGER_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -377,7 +377,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                         List<ServiceState> serviceStates = (List<ServiceState>) controller.getValue();
                         serviceStates.remove(serviceState);
                         if (serviceStates.isEmpty()) {
-                            BundleManager bundleManager = injectedBundleManager.getValue();
+                            BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
                             bundleManager.setServiceMode(controller, Mode.REMOVE);
                         }
                     }

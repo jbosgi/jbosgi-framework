@@ -81,7 +81,7 @@ import org.osgi.resource.Wire;
  */
 final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugin> {
 
-    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
     private final InjectedValue<ModuleLoaderProvider> injectedModuleLoader = new InjectedValue<ModuleLoaderProvider>();
 
@@ -90,7 +90,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     static void addService(ServiceTarget serviceTarget) {
         ModuleManagerPlugin service = new ModuleManagerPlugin();
         ServiceBuilder<ModuleManagerPlugin> builder = serviceTarget.addService(InternalServices.MODULE_MANGER_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(IntegrationServices.MODULE_LOADER_PROVIDER, ModuleLoaderProvider.class, service.injectedModuleLoader);
         builder.addDependency(IntegrationServices.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -515,7 +515,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     }
 
     private Module getFrameworkModule() {
-        BundleManager bundleManager = injectedBundleManager.getValue();
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         return bundleManager.getSystemBundle().getFrameworkModule();
     }
 

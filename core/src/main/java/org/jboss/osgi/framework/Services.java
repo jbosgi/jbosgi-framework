@@ -50,7 +50,7 @@ public interface Services {
     /** The base name of all framework OSGi services that were registered outside the OSGi layer */
     ServiceName XSERVICE_BASE_NAME = JBOSGI_BASE_NAME.append("xservice");
 
-    /** The {@link BundleManagerIntegration} service name. */
+    /** The {@link BundleManager} service name. */
     ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("BundleManager");
 
     /** The {@link XEnvironment} service name */

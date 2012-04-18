@@ -54,7 +54,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
 
     @Test
     public void testBundleStorageForInputStream() throws Exception {
-        BundleManager bundleManager = getBundleManager();
+        BundleManagerPlugin bundleManager = getBundleManager();
         BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
         assertNotNull("BundleStoragePlugin not null", storagePlugin);
 
@@ -80,7 +80,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
 
     @Test
     public void testBundleStorageForExternalFile() throws Exception {
-        BundleManager bundleManager = getBundleManager();
+        BundleManagerPlugin bundleManager = getBundleManager();
         BundleStoragePlugin storagePlugin = bundleManager.getFrameworkState().getBundleStoragePlugin();
         assertNotNull("BundleStoragePlugin not null", storagePlugin);
 

@@ -82,7 +82,7 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
             addToEnvironment(sysrev);
             bundleState.createBundleContext();
             bundleState.createStorageState(injectedBundleStorage.getValue());
-            BundleManager bundleManager = getBundleManager();
+            BundleManagerPlugin bundleManager = getBundleManager();
             bundleManager.injectedSystemBundle.inject(bundleState);
         } catch (BundleException ex) {
             throw new StartException(ex);
@@ -101,7 +101,7 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
     @Override
     public void stop(StopContext context) {
         super.stop(context);
-        BundleManager bundleManager = getBundleManager();
+        BundleManagerPlugin bundleManager = getBundleManager();
         bundleManager.injectedSystemBundle.uninject();
     }
 

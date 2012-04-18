@@ -41,13 +41,13 @@ import org.osgi.framework.BundleException;
  */
 final class DefaultBundleInstallProvider extends AbstractPluginService<BundleInstallProvider> implements BundleInstallProvider {
 
-    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
         if (registry.getService(BUNDLE_INSTALL_PROVIDER) == null) {
             DefaultBundleInstallProvider service = new DefaultBundleInstallProvider();
             ServiceBuilder<BundleInstallProvider> builder = serviceTarget.addService(BUNDLE_INSTALL_PROVIDER, service);
-            builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+            builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
             builder.addDependency(Services.FRAMEWORK_CREATE);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();
@@ -64,13 +64,13 @@ final class DefaultBundleInstallProvider extends AbstractPluginService<BundleIns
 
     @Override
     public void installBundle(ServiceTarget serviceTarget, Deployment dep) throws BundleException {
-        BundleManager bundleManager = injectedBundleManager.getValue();
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         bundleManager.installBundle(serviceTarget, dep);
     }
 
     @Override
     public void uninstallBundle(Deployment dep) {
-        BundleManager bundleManager = injectedBundleManager.getValue();
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         bundleManager.uninstallBundle(dep);
     }
 }

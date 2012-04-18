@@ -33,9 +33,9 @@ import org.osgi.framework.BundleException;
  */
 public abstract class AbstractFrameworkTest extends OSGiFrameworkTest {
 
-    protected BundleManager getBundleManager() throws BundleException {
+    protected BundleManagerPlugin getBundleManager() throws BundleException {
         Bundle systemBundle = getSystemContext().getBundle();
-        BundleManager bundleManager = AbstractBundleState.assertBundleState(systemBundle).getBundleManager();
+        BundleManagerPlugin bundleManager = AbstractBundleState.assertBundleState(systemBundle).getBundleManager();
         return bundleManager;
     }
     

@@ -113,8 +113,9 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
         UserBundleState userBundle = userRev.getBundleState();
         if (userBundle.isSingleton()) {
             String symbolicName = getBundleState().getSymbolicName();
-            for (AbstractBundleState aux : getBundleManager().getBundles(symbolicName, null)) {
-                if (aux != userBundle && aux.isSingleton()) {
+            for (Bundle bundle : getBundleManager().getBundles(symbolicName, null)) {
+                AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+                if (bundleState != userBundle && bundleState.isSingleton()) {
                     LOGGER.infoNoResolvableSingleton(userBundle);
                     return;
                 }

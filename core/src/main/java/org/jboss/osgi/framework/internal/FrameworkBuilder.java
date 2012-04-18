@@ -107,7 +107,7 @@ public final class FrameworkBuilder {
                 Module.setModuleLogger(new JDKModuleLogger());
             }
 
-            BundleManager bundleManager = BundleManager.addService(serviceTarget, this);
+            BundleManagerPlugin bundleManager = BundleManagerPlugin.addService(serviceTarget, this);
             FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
 
             DeploymentFactoryPlugin.addService(serviceTarget);

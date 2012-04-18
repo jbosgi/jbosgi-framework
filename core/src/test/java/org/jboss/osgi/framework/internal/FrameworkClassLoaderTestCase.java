@@ -47,7 +47,7 @@ public class FrameworkClassLoaderTestCase extends AbstractFrameworkTest {
 
     @Before
     public void before() throws Exception {
-        BundleManager bundleManager = getBundleManager();
+        BundleManagerPlugin bundleManager = getBundleManager();
         Module frameworkModule = bundleManager.getSystemBundle().getFrameworkModule();
         classLoader = frameworkModule.getClassLoader();
     }

@@ -49,7 +49,7 @@ abstract class AbstractFrameworkService implements Service<FrameworkState> {
         LOGGER.debugf("Stopping: %s in mode %s", controller.getName(), controller.getMode());
     }
 
-    BundleManager getBundleManager() {
+    BundleManagerPlugin getBundleManager() {
         return getValue().getBundleManager();
     }
 

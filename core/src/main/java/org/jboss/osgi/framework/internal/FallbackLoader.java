@@ -59,7 +59,7 @@ final class FallbackLoader implements LocalLoader {
     private final HostBundleRevision hostRev;
     private final ModuleIdentifier identifier;
     private final Set<String> importedPaths;
-    private final BundleManager bundleManager;
+    private final BundleManagerPlugin bundleManager;
     private final ModuleManagerPlugin moduleManager;
 
     FallbackLoader(HostBundleRevision hostRev, ModuleIdentifier identifier, Set<String> importedPaths) {
@@ -209,7 +209,8 @@ final class FallbackLoader implements LocalLoader {
     private Module findInResolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
         LOGGER.tracef("Attempt to find path dynamically in resolved modules ...");
         for (XPackageRequirement pkgreq : matchingPatterns) {
-            for (AbstractBundleState bundleState : bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE)) {
+            for (Bundle bundle : bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE)) {
+                AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
                 if (bundleState.isResolved() && !bundleState.isFragment()) {
                     ModuleIdentifier identifier = bundleState.getModuleIdentifier();
                     Module candidate = moduleManager.getModule(identifier);
@@ -223,8 +224,9 @@ final class FallbackLoader implements LocalLoader {
 
     private Module findInUnresolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
         LOGGER.tracef("Attempt to find path dynamically in unresolved modules ...");
-        for (AbstractBundleState bundleState : bundleManager.getBundles()) {
-            if (bundleState.getState() == Bundle.INSTALLED) {
+        for (Bundle bundle : bundleManager.getBundles()) {
+            if (bundle.getState() == Bundle.INSTALLED) {
+                AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
                 bundleState.ensureResolved(false);
             }
         }

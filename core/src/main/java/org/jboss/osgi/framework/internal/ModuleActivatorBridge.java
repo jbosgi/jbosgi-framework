@@ -41,7 +41,7 @@ import org.osgi.framework.BundleContext;
  */
 final class ModuleActivatorBridge implements BundleActivator {
 
-    private BundleManager bundleManager;
+    private BundleManagerPlugin bundleManager;
     private ModuleActivator moduleActivator;
     private ModuleContext moduleContext;
 

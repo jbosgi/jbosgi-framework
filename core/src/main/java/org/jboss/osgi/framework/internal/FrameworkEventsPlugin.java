@@ -52,6 +52,7 @@ import org.jboss.osgi.framework.util.NoFilter;
 import org.jboss.osgi.framework.util.RemoveOnlyCollection;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.AllServiceListener;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
@@ -78,7 +79,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
  */
 final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsPlugin> {
 
-    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
 
     /** The bundleState listeners */
@@ -95,11 +96,11 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
 
     private final ExecutorService bundleEventExecutor;
     private final ExecutorService frameworkEventExecutor;
-    
+
     static void addService(ServiceTarget serviceTarget) {
         FrameworkEventsPlugin service = new FrameworkEventsPlugin();
         ServiceBuilder<FrameworkEventsPlugin> builder = serviceTarget.addService(InternalServices.FRAMEWORK_EVENTS_PLUGIN, service);
-        builder.addDependency(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(org.jboss.osgi.framework.Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
@@ -317,8 +318,8 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
 
     private List<ListenerHook> getServiceListenerHooks() {
 
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        if (bundleManager.isFrameworkActive() == false)
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        if (bundleManager.isFrameworkCreated() == false)
             return Collections.emptyList();
 
         BundleContext context = injectedSystemContext.getValue();
@@ -356,8 +357,8 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         LOGGER.tracef("AbstractBundleState %s: %s", typeName, bundleState);
 
         // Are we active?
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        if (bundleManager.isFrameworkActive() == false)
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        if (bundleManager.isFrameworkCreated() == false)
             return;
 
         // Nobody is interested
@@ -395,7 +396,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         bundleEventExecutor.execute(runnable);
     }
 
-    void fireFrameworkEvent(final AbstractBundleState bundleState, final int type, final Throwable th) {
+    void fireFrameworkEvent(final Bundle bundle, final int type, final Throwable th) {
         // Get a snapshot of the current listeners
         final ArrayList<FrameworkListener> listeners = new ArrayList<FrameworkListener>();
         synchronized (frameworkListeners) {
@@ -406,8 +407,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
             }
         }
 
-        // Expose the wrapper not the state itself
-        final FrameworkEvent event = new FrameworkEventImpl(type, bundleState, th);
+        final FrameworkEvent event = new FrameworkEventImpl(type, bundle, th);
         final String typeName = ConstantsHelper.frameworkEvent(event.getType());
 
         switch (event.getType()) {
@@ -422,8 +422,8 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         }
 
         // Are we active?
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        if (bundleManager.isFrameworkActive() == false)
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        if (bundleManager.isFrameworkCreated() == false)
             return;
 
         // Nobody is interested
@@ -443,7 +443,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
                         // event listener generates an unchecked exception - except when the callback
                         // happens while delivering a FrameworkEvent.ERROR
                         if (type != FrameworkEvent.ERROR) {
-                            fireFrameworkEvent(bundleState, FrameworkEvent.ERROR, ex);
+                            fireFrameworkEvent(bundle, FrameworkEvent.ERROR, ex);
                         }
                     } catch (Throwable th) {
                         LOGGER.warnErrorWhileFiringEvent(th, typeName);
@@ -476,8 +476,8 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         LOGGER.tracef("Service %s: %s", typeName, serviceState);
 
         // Do nothing if the Framework is not active
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        if (bundleManager.isFrameworkActive() == false)
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        if (bundleManager.isFrameworkCreated() == false)
             return;
 
         // Call the registered event hooks
@@ -699,8 +699,8 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
 
         private static final long serialVersionUID = 6505331543651318189L;
 
-        public FrameworkEventImpl(int type, AbstractBundleState bundleState, Throwable throwable) {
-            super(type, bundleState, throwable);
+        public FrameworkEventImpl(int type, Bundle bundle, Throwable throwable) {
+            super(type, bundle, throwable);
         }
 
         @Override
@@ -713,8 +713,8 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
 
         private static final long serialVersionUID = -2705304702665185935L;
 
-        public BundleEventImpl(int type, AbstractBundleState bundleState) {
-            super(type, bundleState);
+        public BundleEventImpl(int type, Bundle bundle) {
+            super(type, bundle);
         }
 
         @Override

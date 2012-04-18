@@ -36,12 +36,13 @@ import java.util.Set;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.PackageAttribute;
 import org.jboss.osgi.metadata.ParameterizedAttribute;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 
 /**
  * A bundle validator for OSGi R4.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @version $Revision: 1.1 $
  */
@@ -91,16 +92,16 @@ final class BundleValidatorR4 implements BundleValidator {
                 String packageName = packageAttr.getAttribute();
                 if (packageName.startsWith("java."))
                     throw MESSAGES.bundleNotAllowdToExportJavaPackage(userBundle);
-                
+
                 String versionAttr = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
                 String specificationAttr = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
                 if (versionAttr != null && specificationAttr != null && versionAttr.equals(specificationAttr) == false)
                     throw MESSAGES.bundlePackageVersionAndSpecificationVersionMissmatch(packageName, userBundle);
-                
+
                 String symbolicNameAttr = packageAttr.getAttributeValue(Constants.BUNDLE_SYMBOLICNAME_ATTRIBUTE, String.class);
                 if (symbolicNameAttr != null)
                     throw MESSAGES.bundlePackageCannotSpecifyBundleSymbolicName(packageName, userBundle);
-                
+
                 String bundleVersionAttr = packageAttr.getAttributeValue(Constants.BUNDLE_VERSION_ATTRIBUTE, String.class);
                 if (bundleVersionAttr != null)
                     throw MESSAGES.bundlePackageCannotSpecifyBundleVersion(packageName, userBundle);
@@ -118,10 +119,11 @@ final class BundleValidatorR4 implements BundleValidator {
                     throw MESSAGES.bundlePackageVersionAndSpecificationVersionMissmatch(packageName, userBundle);
             }
         }
-        
+
         // Installing a bundle that has the same symbolic name and version as an already installed bundle.
-        for (AbstractBundleState aux : userBundle.getBundleManager().getBundles()) {
-            if (userBundle.getCanonicalName().equals(aux.getCanonicalName())) {
+        for (Bundle bundle : userBundle.getBundleManager().getBundles()) {
+            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+            if (userBundle.getCanonicalName().equals(bundleState.getCanonicalName())) {
                 throw MESSAGES.bundleNameAndVersionAlreadyInstalled(userBundle);
             }
         }

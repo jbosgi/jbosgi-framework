@@ -36,7 +36,7 @@ import org.osgi.framework.launch.Framework;
  */
 final class FrameworkState {
 
-    private final BundleManager bundleManager;
+    private final BundleManagerPlugin bundleManager;
 
     final InjectedValue<FrameworkCoreServices> injectedCoreServices = new InjectedValue<FrameworkCoreServices>();
     final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
@@ -50,11 +50,11 @@ final class FrameworkState {
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     private int startStopOptions;
 
-    FrameworkState(BundleManager bundleManager) {
+    FrameworkState(BundleManagerPlugin bundleManager) {
         this.bundleManager = bundleManager;
     }
 
-    BundleManager getBundleManager() {
+    BundleManagerPlugin getBundleManager() {
         return bundleManager;
     }
 

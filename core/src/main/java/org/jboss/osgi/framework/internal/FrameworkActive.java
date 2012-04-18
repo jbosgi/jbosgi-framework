@@ -30,6 +30,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
@@ -74,7 +75,7 @@ import org.osgi.service.resolver.ResolutionException;
  *                                         +---{@link DefaultFrameworkModuleProvider}
  *                                         |   +---{@link DefaultSystemPathsProvider}
  *                                         +---{@link BundleStoragePlugin}
- *                                             +---{@link BundleManager}
+ *                                             +---{@link BundleManagerPlugin}
  *                                                 +---{@link DefaultEnvironmentPlugin}
  * </code>
  *
@@ -84,11 +85,13 @@ import org.osgi.service.resolver.ResolutionException;
  */
 public final class FrameworkActive extends AbstractFrameworkService {
 
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
 
     static void addService(ServiceTarget serviceTarget) {
         FrameworkActive service = new FrameworkActive();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
         builder.addDependencies(IntegrationServices.AUTOINSTALL_PROVIDER, IntegrationServices.AUTOINSTALL_PROVIDER_COMPLETE);
         builder.addDependencies(IntegrationServices.PERSISTENT_BUNDLES_PROVIDER, IntegrationServices.PERSISTENT_BUNDLES_PROVIDER_COMPLETE);
@@ -130,6 +133,10 @@ public final class FrameworkActive extends AbstractFrameworkService {
             StartLevelPlugin startLevelPlugin = getValue().getCoreServices().getStartLevelPlugin();
             startLevelPlugin.increaseStartLevel(getBeginningStartLevel());
 
+            // Mark Framework as active in the bundle manager
+            BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+            bundleManager.injectedFrameworkActive.inject(Boolean.TRUE);
+
             // A framework event of type STARTED is fired
             FrameworkEventsPlugin eventsPlugin = getValue().getFrameworkEventsPlugin();
             eventsPlugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
@@ -138,6 +145,13 @@ public final class FrameworkActive extends AbstractFrameworkService {
         } catch (ResolutionException ex) {
             throw new StartException(ex);
         }
+    }
+
+    @Override
+    public void stop(StopContext context) {
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        bundleManager.injectedFrameworkActive.inject(Boolean.FALSE);
+        super.stop(context);
     }
 
     @Override

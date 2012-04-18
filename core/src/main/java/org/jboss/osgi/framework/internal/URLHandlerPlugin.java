@@ -68,7 +68,7 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> implements URLStreamHandlerFactory, ContentHandlerFactory {
 
-    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private ServiceTracker streamServiceTracker;
     private ServiceTracker contentServiceTracker;
@@ -111,7 +111,7 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
     static void addService(ServiceTarget serviceTarget) {
         URLHandlerPlugin service = new URLHandlerPlugin();
         ServiceBuilder<URLHandlerPlugin> builder = serviceTarget.addService(InternalServices.URL_HANDLER_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -155,7 +155,7 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
         // Register the 'bundle' protocol
         Dictionary<String, Object> props = new Hashtable<String, Object>();
         props.put(URLConstants.URL_HANDLER_PROTOCOL, BundleProtocolHandler.PROTOCOL_NAME);
-        BundleManager bundleManager = injectedBundleManager.getValue();
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         BundleProtocolHandler service = new BundleProtocolHandler(bundleManager);
         BundleContext systemContext = injectedSystemContext.getValue();
         registration = systemContext.registerService(URLStreamHandlerService.class.getName(), service, props);

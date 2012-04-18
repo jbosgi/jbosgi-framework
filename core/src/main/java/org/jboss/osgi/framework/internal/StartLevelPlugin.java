@@ -55,7 +55,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
 
     static final int BUNDLE_STARTLEVEL_UNSPECIFIED = -1;
 
-    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
 
@@ -66,7 +66,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
     static void addService(ServiceTarget serviceTarget) {
         StartLevelPlugin service = new StartLevelPlugin();
         ServiceBuilder<StartLevel> builder = serviceTarget.addService(Services.START_LEVEL, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, service.injectedBundleManager);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
         builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
         builder.addDependency(Services.FRAMEWORK_CREATE);
@@ -231,12 +231,12 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
      * @param level the target Start Level to which the Framework should move.
      */
     synchronized void increaseStartLevel(int level) {
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        Collection<AbstractBundleState> bundles = bundleManager.getBundles();
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        Collection<Bundle> bundles = bundleManager.getBundles();
         while (startLevel < level) {
             startLevel++;
             LOGGER.infoStartingBundlesForStartLevel(level);
-            for (AbstractBundleState bundle : bundles) {
+            for (Bundle bundle : bundles) {
                 if (!(bundle instanceof HostBundleState))
                     continue;
 
@@ -263,19 +263,19 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
      * @param level the target Start Level to which the Framework should move.
      */
     synchronized void decreaseStartLevel(int level) {
-        BundleManager bundleManager = injectedBundleManager.getValue();
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         while (startLevel > level) {
             LOGGER.infoStoppingBundlesForStartLevel(level);
-            Collection<AbstractBundleState> bundles = bundleManager.getBundles();
-            for (AbstractBundleState bundleState : bundles) {
-                if (bundleState instanceof HostBundleState) {
-                    HostBundleState hostBundle = (HostBundleState) bundleState;
+            Collection<Bundle> bundles = bundleManager.getBundles();
+            for (Bundle bundle : bundles) {
+                if (bundle instanceof HostBundleState) {
+                    HostBundleState hostBundle = (HostBundleState) bundle;
                     if (hostBundle.getStartLevel() == startLevel) {
                         try {
-                            bundleState.stopInternal(Bundle.STOP_TRANSIENT);
+                            hostBundle.stopInternal(Bundle.STOP_TRANSIENT);
                         } catch (Throwable e) {
                             FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
-                            eventsPlugin.fireFrameworkEvent(bundleState, FrameworkEvent.ERROR, e);
+                            eventsPlugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, e);
                         }
                     }
                 }

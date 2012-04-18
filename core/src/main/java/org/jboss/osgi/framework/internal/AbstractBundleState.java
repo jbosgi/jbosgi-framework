@@ -98,7 +98,7 @@ abstract class AbstractBundleState implements Bundle {
         return frameworkState;
     }
 
-    BundleManager getBundleManager() {
+    BundleManagerPlugin getBundleManager() {
         return frameworkState.getBundleManager();
     }
 
@@ -179,7 +179,7 @@ abstract class AbstractBundleState implements Bundle {
         LOGGER.tracef("changeState: %s -> %s", this, ConstantsHelper.bundleState(state));
 
         // Invoke the lifecycle interceptors
-        boolean frameworkActive = getBundleManager().isFrameworkActive();
+        boolean frameworkActive = getBundleManager().isFrameworkCreated();
         if (frameworkActive && bundleId > 0) {
             LifecycleInterceptorPlugin plugin = getCoreServices().getLifecycleInterceptorPlugin();
             plugin.handleStateChange(state, this);

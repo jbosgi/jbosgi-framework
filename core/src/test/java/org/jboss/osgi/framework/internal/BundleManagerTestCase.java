@@ -27,7 +27,7 @@ import org.osgi.framework.Version;
 
 import java.util.Properties;
 
-import static org.jboss.osgi.framework.internal.BundleManager.getOSVersionInOSGiFormat;
+import static org.jboss.osgi.framework.internal.BundleManagerPlugin.getOSVersionInOSGiFormat;
 
 /**
  * Unit tests for the FrameworkState class.
