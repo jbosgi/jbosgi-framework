@@ -32,7 +32,6 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -51,9 +50,9 @@ import org.osgi.service.resolver.ResolutionException;
  *
  * <code>
  * {@link FrameworkActive}
- * +---{@link DefaultPersistentBundleProvider}
- *     +---{@link DefaultAutoInstallProvider}
  *         +---{@link FrameworkInit}
+ *             +---{@link DefaultPersistentBundleProvider}
+ *                 +---{@link DefaultAutoInstallProvider}
  *             +---{@link FrameworkCoreServices}
  *                 +---{@link LifecycleInterceptorPlugin}
  *                 +---{@link PackageAdminPlugin}
@@ -93,8 +92,6 @@ public final class FrameworkActive extends AbstractFrameworkService {
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
-        builder.addDependencies(IntegrationServices.AUTOINSTALL_PROVIDER, IntegrationServices.AUTOINSTALL_PROVIDER_COMPLETE);
-        builder.addDependencies(IntegrationServices.PERSISTENT_BUNDLES_PROVIDER, IntegrationServices.PERSISTENT_BUNDLES_PROVIDER_COMPLETE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -150,7 +147,7 @@ public final class FrameworkActive extends AbstractFrameworkService {
     @Override
     public void stop(StopContext context) {
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        bundleManager.injectedFrameworkActive.inject(Boolean.FALSE);
+        bundleManager.injectedFrameworkActive.uninject();
         super.stop(context);
     }
 

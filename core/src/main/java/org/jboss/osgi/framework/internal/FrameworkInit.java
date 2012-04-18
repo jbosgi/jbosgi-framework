@@ -29,6 +29,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.launch.Framework;
 
@@ -48,6 +49,8 @@ public final class FrameworkInit extends AbstractFrameworkService {
         FrameworkInit service = new FrameworkInit();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_INIT, service);
         builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
+        builder.addDependencies(IntegrationServices.AUTOINSTALL_PROVIDER, IntegrationServices.AUTOINSTALL_PROVIDER_COMPLETE);
+        builder.addDependencies(IntegrationServices.PERSISTENT_BUNDLES_PROVIDER, IntegrationServices.PERSISTENT_BUNDLES_PROVIDER_COMPLETE);
         builder.addDependencies(InternalServices.FRAMEWORK_CORE_SERVICES);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();

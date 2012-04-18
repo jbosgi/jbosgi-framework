@@ -66,7 +66,7 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
             DefaultAutoInstallProvider service = new DefaultAutoInstallProvider();
             ServiceBuilder<AutoInstallProvider> builder = serviceTarget.addService(AUTOINSTALL_PROVIDER, service);
             builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-            builder.addDependency(Services.FRAMEWORK_INIT);
+            builder.addDependency(Services.FRAMEWORK_CREATE);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();
         }

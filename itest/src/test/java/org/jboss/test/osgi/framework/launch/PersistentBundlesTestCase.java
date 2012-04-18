@@ -21,6 +21,7 @@
  */
 package org.jboss.test.osgi.framework.launch;
 
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
@@ -29,6 +30,7 @@ import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.simple.bundleC.SimpleActivator;
 import org.jboss.test.osgi.framework.simple.bundleC.SimpleService;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
@@ -45,12 +47,12 @@ import java.util.Map;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Test persistent bundle startup
+ * Test persistent bundles
  *
  * @author thomas.diesler@jboss.com
  * @since 20-Oct-2010
  */
-public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
+public class PersistentBundlesTestCase extends OSGiFrameworkTest {
 
     File storageDir = new File("target/test-osgi-store").getAbsoluteFile();
 
@@ -61,12 +63,8 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testInstalledBundle() throws Exception {
-        Map<String, String> props = new HashMap<String, String>();
-        props.put("org.osgi.framework.storage", storageDir.getAbsolutePath());
-        props.put("org.osgi.framework.storage.clean", "onFirstInit");
-
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-        Framework framework = factory.newFramework(props);
+        Framework framework = factory.newFramework(getFrameworkInitProperties(true));
 
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
@@ -100,6 +98,7 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
 
         context = framework.getBundleContext();
         bundle = context.getBundle(bundle.getBundleId());
+        Assert.assertNotNull("Bundle available", bundle);
         assertBundleState(Bundle.INSTALLED, bundle.getState());
 
         framework.stop();
@@ -109,12 +108,8 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testActiveBundle() throws Exception {
-        Map<String, String> props = new HashMap<String, String>();
-        props.put("org.osgi.framework.storage", storageDir.getAbsolutePath());
-        props.put("org.osgi.framework.storage.clean", "onFirstInit");
-
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-        Framework framework = factory.newFramework(props);
+        Framework framework = factory.newFramework(getFrameworkInitProperties(true));
 
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
@@ -137,6 +132,7 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
 
         context = framework.getBundleContext();
         bundle = context.getBundle(bundle.getBundleId());
+        Assert.assertNotNull("Bundle available", bundle);
         assertBundleState(Bundle.ACTIVE, bundle.getState());
 
         framework.stop();
@@ -146,12 +142,8 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testStoppedBundle() throws Exception {
-        Map<String, String> props = new HashMap<String, String>();
-        props.put("org.osgi.framework.storage", storageDir.getAbsolutePath());
-        props.put("org.osgi.framework.storage.clean", "onFirstInit");
-
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-        Framework framework = factory.newFramework(props);
+        Framework framework = factory.newFramework(getFrameworkInitProperties(true));
 
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
@@ -177,11 +169,53 @@ public class PersistentBundleStartupTestCase extends OSGiFrameworkTest {
 
         context = framework.getBundleContext();
         bundle = context.getBundle(bundle.getBundleId());
+        Assert.assertNotNull("Bundle available", bundle);
         assertBundleState(Bundle.INSTALLED, bundle.getState());
 
         framework.stop();
         framework.waitForStop(2000);
         assertBundleState(Bundle.RESOLVED, framework.getState());
+    }
+
+    @Test
+    public void testFrameworkInit() throws Exception {
+        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
+        Framework framework = factory.newFramework(getFrameworkInitProperties(true));
+
+        framework.start();
+        assertBundleState(Bundle.ACTIVE, framework.getState());
+
+        JavaArchive archive = getBundleArchive();
+        BundleContext context = framework.getBundleContext();
+        Bundle bundle = context.installBundle(archive.getName(), toInputStream(archive));
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
+
+        framework.stop();
+        framework.waitForStop(2000);
+        assertBundleState(Bundle.RESOLVED, framework.getState());
+
+        // Create a new framework and init
+        framework = factory.newFramework(getFrameworkInitProperties(false));
+        framework.init();
+        assertBundleState(Bundle.STARTING, framework.getState());
+
+        context = framework.getBundleContext();
+        bundle = context.getBundle(bundle.getBundleId());
+        Assert.assertNotNull("Bundle available", bundle);
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
+
+        framework.stop();
+        framework.waitForStop(2000);
+        assertBundleState(Bundle.RESOLVED, framework.getState());
+    }
+
+    private Map<String, String> getFrameworkInitProperties(boolean cleanOnInit) {
+        Map<String, String> props = new HashMap<String, String>();
+        props.put(Constants.FRAMEWORK_STORAGE, storageDir.getAbsolutePath());
+        if (cleanOnInit == true) {
+            props.put(Constants.FRAMEWORK_STORAGE_CLEAN, Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT);
+        }
+        return props;
     }
 
     private JavaArchive getBundleArchive() {
