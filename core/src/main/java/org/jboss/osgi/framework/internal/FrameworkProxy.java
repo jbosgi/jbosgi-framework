@@ -233,7 +233,7 @@ final class FrameworkProxy implements Framework {
         proxyState.set(Bundle.STOPPING);
 
         // Move to start level 0 in the current thread
-        StartLevelPlugin startLevel = coreServices.getStartLevelPlugin();
+        StartLevelPlugin startLevel = coreServices.getStartLevel();
         if (startLevel != null) {
             startLevel.decreaseStartLevel(0);
         } else {

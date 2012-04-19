@@ -116,7 +116,7 @@ abstract class UserBundleState extends AbstractBundleState {
         return revision;
     }
 
-    abstract void initUserBundleState(OSGiMetaData metadata);
+    abstract void initLazyActivation();
 
     abstract UserBundleRevision createRevisionInternal(Deployment dep) throws BundleException;
 
@@ -300,7 +300,11 @@ abstract class UserBundleState extends AbstractBundleState {
             VirtualFile rootFile = dep.getRoot();
             try {
                 BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
-                storageState = storagePlugin.createStorageState(getBundleId(), location, rootFile);
+                Integer startlevel = dep.getStartLevel();
+                if (startlevel == null) {
+                    startlevel = getCoreServices().getStartLevel().getInitialBundleStartLevel();
+                }
+                storageState = storagePlugin.createStorageState(getBundleId(), location, startlevel, rootFile);
                 dep.addAttachment(StorageState.class, storageState);
             } catch (IOException ex) {
                 throw MESSAGES.bundleCannotSetupStorage(ex, rootFile);
@@ -314,7 +318,8 @@ abstract class UserBundleState extends AbstractBundleState {
     private InternalStorageState createStorageState(BundleStoragePlugin storagePlugin, String location, VirtualFile rootFile) throws BundleException {
         InternalStorageState storageState;
         try {
-            storageState = storagePlugin.createStorageState(getBundleId(), location, rootFile);
+            int startlevel = getCoreServices().getStartLevel().getInitialBundleStartLevel();
+            storageState = storagePlugin.createStorageState(getBundleId(), location, startlevel, rootFile);
         } catch (IOException ex) {
             throw MESSAGES.bundleCannotSetupStorage(ex, rootFile);
         }

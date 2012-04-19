@@ -59,7 +59,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
         assertNotNull("BundleStoragePlugin not null", storagePlugin);
 
         JavaArchive archive = getArchive();
-        InternalStorageState storageState = storagePlugin.createStorageState(bundleManager.nextBundleId(), archive.getName(), toVirtualFile(archive));
+        InternalStorageState storageState = storagePlugin.createStorageState(bundleManager.nextBundleId(), archive.getName(), 1, toVirtualFile(archive));
         assertStorageState(storageState);
 
         storagePlugin.deleteStorageState(storageState);
@@ -70,7 +70,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
         assertNull("StorageState deleted", storagePlugin.getStorageState(location));
 
         // Try this a second time
-        storageState = storagePlugin.createStorageState(bundleManager.nextBundleId(), archive.getName(), toVirtualFile(archive));
+        storageState = storagePlugin.createStorageState(bundleManager.nextBundleId(), archive.getName(), 1, toVirtualFile(archive));
         assertStorageState(storageState);
 
         storagePlugin.deleteStorageState(storageState);
@@ -90,7 +90,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
         fos.close();
 
         VirtualFile rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
-        InternalStorageState storageState = storagePlugin.createStorageState(bundleManager.nextBundleId(), file.getAbsolutePath(), rootFile);
+        InternalStorageState storageState = storagePlugin.createStorageState(bundleManager.nextBundleId(), file.getAbsolutePath(), 1, rootFile);
         assertStorageState(storageState);
 
         storagePlugin.deleteStorageState(storageState);

@@ -341,19 +341,14 @@ public final class BundleManagerPlugin extends AbstractService<BundleManager> im
             try {
                 // The storage state exists when we re-create the bundle from persistent storage
                 StorageState storageState = deployment.getAttachment(StorageState.class);
-                if (storageState == null) {
-                    BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
-                    storageState = storagePlugin.getStorageState(deployment.getLocation());
-                }
-                BundleId bundleId;
-                if (storageState != null && !deployment.isBundleUpdate()) {
-                    bundleId = new BundleId(storageState.getBundleId());
+                if (storageState != null) {
+                    BundleId bundleId = new BundleId(storageState.getBundleId());
                     deployment.setAutoStart(storageState.isPersistentlyStarted());
-                    deployment.addAttachment(StorageState.class, storageState);
+                    deployment.addAttachment(BundleId.class, bundleId);
                 } else {
-                    bundleId = new BundleId(nextBundleId());
+                    BundleId bundleId = new BundleId(nextBundleId());
+                    deployment.addAttachment(BundleId.class, bundleId);
                 }
-                deployment.addAttachment(BundleId.class, bundleId);
 
                 // Check that we have valid metadata
                 OSGiMetaData metadata = deployment.getAttachment(OSGiMetaData.class);

@@ -19,7 +19,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.framework.bundle.support.lifecycle1;
+package org.jboss.test.osgi.framework.bundle.support.lifecycle2;
 
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -27,14 +27,14 @@ import org.osgi.framework.BundleContext;
 /**
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public class Activator implements BundleActivator {
+public class ActivatorB implements BundleActivator {
 
     private static final String COMMUNICATION_STRING = "LifecycleOrdering";
 
     public void start(BundleContext context) {
         synchronized (COMMUNICATION_STRING) {
             String prop = System.getProperty(COMMUNICATION_STRING, "");
-            prop += "start1";
+            prop += "start2";
             System.setProperty(COMMUNICATION_STRING, prop);
         }
     }
@@ -42,7 +42,7 @@ public class Activator implements BundleActivator {
     public void stop(BundleContext context) {
         synchronized (COMMUNICATION_STRING) {
             String prop = System.getProperty(COMMUNICATION_STRING, "");
-            prop += "stop1";
+            prop += "stop2";
             System.setProperty(COMMUNICATION_STRING, prop);
         }
     }

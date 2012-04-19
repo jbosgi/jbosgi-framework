@@ -108,7 +108,7 @@ public final class FrameworkCoreServices extends AbstractService<FrameworkCoreSe
         return injectedPackageAdmin.getValue();
     }
 
-    StartLevelPlugin getStartLevelPlugin() {
+    StartLevelPlugin getStartLevel() {
         return injectedStartLevel.getValue();
     }
 }

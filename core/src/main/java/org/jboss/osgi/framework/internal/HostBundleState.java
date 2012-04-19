@@ -38,7 +38,6 @@ import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
-import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.modules.ModuleActivator;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -64,7 +63,6 @@ final class HostBundleState extends UserBundleState {
     private final AtomicBoolean alreadyStarting = new AtomicBoolean();
     private final AtomicBoolean awaitLazyActivation = new AtomicBoolean();
     private BundleActivator bundleActivator;
-    private int startLevel;
 
     HostBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
         super(frameworkState, bundleId, dep);
@@ -76,9 +74,7 @@ final class HostBundleState extends UserBundleState {
         return (HostBundleState) bundleState;
     }
 
-    void initUserBundleState(OSGiMetaData metadata) {
-        StartLevel startLevelService = getCoreServices().getStartLevelPlugin();
-        startLevel = startLevelService.getInitialBundleStartLevel();
+    void initLazyActivation() {
         awaitLazyActivation.set(isActivationLazy());
     }
 
@@ -104,12 +100,13 @@ final class HostBundleState extends UserBundleState {
     }
 
     int getStartLevel() {
-        return startLevel;
+        return getStorageState().getStartLevel();
     }
 
     void setStartLevel(int level) {
         LOGGER.debugf("Setting bundle start level %d for: %s", level, this);
-        startLevel = level;
+        InternalStorageState storageState = getStorageState();
+        storageState.setStartLevel(level);
     }
 
     @Override
@@ -162,7 +159,7 @@ final class HostBundleState extends UserBundleState {
     }
 
     private boolean startLevelValidForStart() {
-        StartLevel startLevelPlugin = getCoreServices().getStartLevelPlugin();
+        StartLevel startLevelPlugin = getCoreServices().getStartLevel();
         return getStartLevel() <= startLevelPlugin.getStartLevel();
     }
 

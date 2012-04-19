@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -84,7 +85,7 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
 
     void createStorageState(BundleStoragePlugin storagePlugin) {
         try {
-            storageState = storagePlugin.createStorageState(0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME, null);
+            storageState = storagePlugin.createStorageState(0, SYSTEM_BUNDLE_SYMBOLICNAME, 0, null);
         } catch (IOException ex) {
             throw MESSAGES.illegalStateCannotCreateSystemBundleStorage(ex);
         }

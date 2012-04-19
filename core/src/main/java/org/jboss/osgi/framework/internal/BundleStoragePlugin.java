@@ -108,7 +108,7 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
         return this;
     }
 
-    InternalStorageState createStorageState(long bundleId, String location, VirtualFile rootFile) throws IOException {
+    InternalStorageState createStorageState(long bundleId, String location, int startlevel, VirtualFile rootFile) throws IOException {
         assert location != null : "Null location";
 
         // Make the bundle's storage dir
@@ -121,6 +121,7 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
         props.put(StorageState.PROPERTY_BUNDLE_LOCATION, location);
         props.put(StorageState.PROPERTY_BUNDLE_ID, new Long(bundleId).toString());
         props.put(StorageState.PROPERTY_BUNDLE_REV, new Integer(revision).toString());
+        props.put(StorageState.PROPERTY_START_LEVEL, new Integer(startlevel).toString());
         props.put(StorageState.PROPERTY_LAST_MODIFIED, new Long(System.currentTimeMillis()).toString());
 
         InternalStorageState storageState = InternalStorageState.createStorageState(bundleDir, rootFile, props);
@@ -266,6 +267,11 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
             writeProperties();
         }
 
+        void setStartLevel(int level) {
+            getProperties().setProperty(PROPERTY_START_LEVEL, new Integer(level).toString());
+            writeProperties();
+        }
+        
         private void writeProperties() {
             try {
                 File propsFile = new File(getStorageDir() + "/" + BUNDLE_PERSISTENT_PROPERTIES);
@@ -279,6 +285,5 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
                 LOGGER.errorCannotWritePersistentStorage(ex, getStorageDir());
             }
         }
-
     }
 }

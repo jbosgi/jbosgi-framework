@@ -21,10 +21,17 @@
  */
 package org.jboss.test.osgi.framework.launch;
 
+import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -36,15 +43,11 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
-
-import java.io.File;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.assertTrue;
+import org.osgi.service.startlevel.StartLevel;
 
 /**
  * Test persistent bundles
@@ -115,8 +118,8 @@ public class PersistentBundlesTestCase extends OSGiFrameworkTest {
         assertBundleState(Bundle.ACTIVE, framework.getState());
 
         JavaArchive archive = getBundleArchive();
-        BundleContext context = framework.getBundleContext();
-        Bundle bundle = context.installBundle(archive.getName(), toInputStream(archive));
+        BundleContext syscontext = framework.getBundleContext();
+        Bundle bundle = syscontext.installBundle(archive.getName(), toInputStream(archive));
         assertBundleState(Bundle.INSTALLED, bundle.getState());
 
         bundle.start();
@@ -130,10 +133,52 @@ public class PersistentBundlesTestCase extends OSGiFrameworkTest {
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
 
-        context = framework.getBundleContext();
-        bundle = context.getBundle(bundle.getBundleId());
+        syscontext = framework.getBundleContext();
+        bundle = syscontext.getBundle(bundle.getBundleId());
         Assert.assertNotNull("Bundle available", bundle);
+        
         assertBundleState(Bundle.ACTIVE, bundle.getState());
+
+        framework.stop();
+        framework.waitForStop(2000);
+        assertBundleState(Bundle.RESOLVED, framework.getState());
+    }
+
+    @Test
+    public void testBundleStartLevel() throws Exception {
+        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
+        Framework framework = factory.newFramework(getFrameworkInitProperties(true));
+
+        framework.start();
+        assertBundleState(Bundle.ACTIVE, framework.getState());
+
+        JavaArchive archive = getBundleArchive();
+        BundleContext syscontext = framework.getBundleContext();
+        Bundle bundle = syscontext.installBundle(archive.getName(), toInputStream(archive));
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
+
+        StartLevel startLevel = getStartLevel(syscontext);
+        startLevel.setBundleStartLevel(bundle, 3);
+        
+        bundle.start();
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
+
+        framework.stop();
+        framework.waitForStop(2000);
+        assertBundleState(Bundle.RESOLVED, framework.getState());
+
+        // Restart the Framework
+        framework.start();
+        assertBundleState(Bundle.ACTIVE, framework.getState());
+
+        syscontext = framework.getBundleContext();
+        bundle = syscontext.getBundle(bundle.getBundleId());
+        Assert.assertNotNull("Bundle available", bundle);
+        
+        startLevel = getStartLevel(syscontext);
+        Assert.assertEquals(3, startLevel.getBundleStartLevel(bundle));
+        
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
 
         framework.stop();
         framework.waitForStop(2000);
@@ -216,6 +261,11 @@ public class PersistentBundlesTestCase extends OSGiFrameworkTest {
             props.put(Constants.FRAMEWORK_STORAGE_CLEAN, Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT);
         }
         return props;
+    }
+
+    private StartLevel getStartLevel(BundleContext syscontext) throws BundleException {
+        ServiceReference sref = syscontext.getServiceReference(StartLevel.class.getName());
+        return (StartLevel) syscontext.getService(sref);
     }
 
     private JavaArchive getBundleArchive() {

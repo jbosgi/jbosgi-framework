@@ -127,7 +127,7 @@ public final class FrameworkActive extends AbstractFrameworkService {
             getSystemBundle().changeState(Bundle.ACTIVE);
 
             // Increase to initial start level
-            StartLevelPlugin startLevelPlugin = getValue().getCoreServices().getStartLevelPlugin();
+            StartLevelPlugin startLevelPlugin = getValue().getCoreServices().getStartLevel();
             startLevelPlugin.increaseStartLevel(getBeginningStartLevel());
 
             // Mark Framework as active in the bundle manager

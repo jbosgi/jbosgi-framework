@@ -44,7 +44,7 @@ import static org.junit.Assert.fail;
 /**
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public class StartLevelTestCase extends OSGiFrameworkTest {
+public class StartLevelPluginTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testStartLevel() throws Exception {

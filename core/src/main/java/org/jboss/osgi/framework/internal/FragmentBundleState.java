@@ -24,7 +24,6 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -54,7 +53,7 @@ final class FragmentBundleState extends UserBundleState {
     }
 
     @Override
-    void initUserBundleState(OSGiMetaData metadata) {
+    void initLazyActivation() {
         // do nothing
     }
 

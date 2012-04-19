@@ -63,7 +63,7 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
             storageState = bundleState.createStorageState(dep);
             UserBundleRevision userRev = bundleState.createRevision(dep);
-            bundleState.initUserBundleState(metadata);
+            bundleState.initLazyActivation();
             validateBundle(bundleState, metadata);
             processNativeCode(bundleState, dep);
             addToEnvironment(userRev);

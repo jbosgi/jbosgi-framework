@@ -45,6 +45,7 @@ public class StorageState {
     public static final String PROPERTY_LAST_MODIFIED = "LastModified";
     public static final String PROPERTY_PERSISTENTLY_STARTED = "PersistentlyStarted";
     public static final String PROPERTY_ACTIVATION_POLICY_USED = "ActivationPolicyUsed";
+    public static final String PROPERTY_START_LEVEL = "StartLevel";
     public static final String BUNDLE_PERSISTENT_PROPERTIES = "bundle-persistent.properties";
 
     private final File storageDir;
@@ -59,6 +60,7 @@ public class StorageState {
         requiredProps.add(PROPERTY_BUNDLE_ID);
         requiredProps.add(PROPERTY_BUNDLE_REV);
         requiredProps.add(PROPERTY_BUNDLE_LOCATION);
+        requiredProps.add(PROPERTY_START_LEVEL);
         requiredProps.add(PROPERTY_LAST_MODIFIED);
     }
 
@@ -118,6 +120,11 @@ public class StorageState {
     public boolean isBundleActivationPolicyUsed() {
         String value = props.getProperty(PROPERTY_ACTIVATION_POLICY_USED);
         return value != null ? new Boolean(value) : false;
+    }
+
+    public int getStartLevel() {
+        String value = props.getProperty(PROPERTY_START_LEVEL);
+        return Integer.parseInt(value);
     }
 
     @Override
