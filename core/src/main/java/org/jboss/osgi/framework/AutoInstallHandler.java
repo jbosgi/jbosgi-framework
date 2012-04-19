@@ -29,6 +29,6 @@ import org.jboss.msc.service.Service;
  * @author thomas.diesler@jboss.com
  * @since 30-Mar-2011
  */
-public interface AutoInstallProvider extends Service<AutoInstallProvider> {
+public interface AutoInstallHandler extends Service<AutoInstallHandler> {
 
 }

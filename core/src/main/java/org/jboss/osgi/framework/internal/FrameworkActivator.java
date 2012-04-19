@@ -45,11 +45,11 @@ final class FrameworkActivator extends AbstractFrameworkService {
 
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     
-    static void addService(ServiceTarget serviceTarget, Mode initialMode) {
+    static void addService(ServiceTarget serviceTarget) {
         FrameworkActivator service = new FrameworkActivator();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVATOR, service);
         builder.addDependency(Services.FRAMEWORK_ACTIVE, FrameworkState.class, service.injectedFramework);
-        builder.setInitialMode(initialMode);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 

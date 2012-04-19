@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_PROVIDER;
+import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_HANDLER;
 
 import java.util.HashMap;
 import java.util.List;
@@ -37,8 +37,8 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.IntegrationServices;
-import org.jboss.osgi.framework.PersistentBundlesProvider;
-import org.jboss.osgi.framework.PersistentBundlesProviderComplete;
+import org.jboss.osgi.framework.PersistentBundlesHandler;
+import org.jboss.osgi.framework.PersistentBundlesHandlerComplete;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.StorageStateProvider;
@@ -50,7 +50,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class DefaultPersistentBundleProvider extends AbstractPluginService<PersistentBundlesProvider> implements PersistentBundlesProvider {
+final class DefaultPersistentBundlesHandler extends AbstractPluginService<PersistentBundlesHandler> implements PersistentBundlesHandler {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
@@ -58,20 +58,20 @@ final class DefaultPersistentBundleProvider extends AbstractPluginService<Persis
     private final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(PERSISTENT_BUNDLES_PROVIDER) == null) {
-            DefaultPersistentBundleProvider service = new DefaultPersistentBundleProvider();
-            ServiceBuilder<PersistentBundlesProvider> builder = serviceTarget.addService(PERSISTENT_BUNDLES_PROVIDER, service);
+        if (registry.getService(PERSISTENT_BUNDLES_HANDLER) == null) {
+            DefaultPersistentBundlesHandler service = new DefaultPersistentBundlesHandler();
+            ServiceBuilder<PersistentBundlesHandler> builder = serviceTarget.addService(PERSISTENT_BUNDLES_HANDLER, service);
             builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
             builder.addDependency(Services.STORAGE_STATE_PROVIDER, StorageStateProvider.class, service.injectedStorageProvider);
             builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
             builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, service.injectedDeploymentFactory);
-            builder.addDependencies(IntegrationServices.AUTOINSTALL_PROVIDER_COMPLETE);
+            builder.addDependencies(IntegrationServices.AUTOINSTALL_HANDLER_COMPLETE);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();
         }
     }
 
-    private DefaultPersistentBundleProvider() {
+    private DefaultPersistentBundlesHandler() {
     }
 
     @Override
@@ -99,12 +99,12 @@ final class DefaultPersistentBundleProvider extends AbstractPluginService<Persis
             }
         }
 
-        PersistentBundlesProviderComplete installComplete = new PersistentBundlesProviderComplete(installedBundles);
+        PersistentBundlesHandlerComplete installComplete = new PersistentBundlesHandlerComplete(installedBundles);
         installComplete.install(context.getChildTarget());
     }
 
     @Override
-    public PersistentBundlesProvider getValue() throws IllegalStateException {
+    public PersistentBundlesHandler getValue() throws IllegalStateException {
         return this;
     }
 }

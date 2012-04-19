@@ -43,9 +43,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FutureServiceValue;
 import org.jboss.osgi.framework.Services;
@@ -145,9 +145,9 @@ final class FrameworkProxy implements Framework {
             if (serviceTarget == null)
                 serviceTarget = serviceContainer.subTarget();
 
-            frameworkBuilder.createFrameworkServicesInternal(serviceContainer, serviceTarget, Mode.ON_DEMAND, firstInit);
+            frameworkBuilder.createFrameworkServicesInternal(serviceContainer, serviceTarget, firstInit);
             proxyState.set(Bundle.STARTING);
-            frameworkState = awaitFrameworkState();
+            frameworkState = awaitFrameworkInit();
             firstInit = false;
 
         } catch (Exception ex) {
@@ -184,7 +184,7 @@ final class FrameworkProxy implements Framework {
 
         LOGGER.debugf("start framework");
         try {
-            awaitActiveFramework();
+            awaitFrameworkActive();
             proxyState.set(Bundle.ACTIVE);
         } catch (Exception ex) {
             throw MESSAGES.bundleCannotStartFramework(ex);
@@ -224,7 +224,7 @@ final class FrameworkProxy implements Framework {
             return;
 
         LOGGER.debugf("stop framework");
-
+        
         FrameworkCoreServices coreServices = frameworkState.getCoreServices();
         SystemBundleState systemBundle = frameworkState.getSystemBundle();
 
@@ -431,12 +431,12 @@ final class FrameworkProxy implements Framework {
     }
 
     @SuppressWarnings("unchecked")
-    private FrameworkState awaitFrameworkState() throws ExecutionException, TimeoutException {
+    private FrameworkState awaitFrameworkInit() throws ExecutionException, TimeoutException {
         final ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) lenientContainer.getRequiredService(Services.FRAMEWORK_INIT);
         final String serviceName = controller.getName().getCanonicalName();
         controller.addListener(new AbstractServiceListener<FrameworkState>() {
             public void transition(final ServiceController<? extends FrameworkState> controller, final ServiceController.Transition transition) {
-                LOGGER.tracef("awaitFrameworkState %s => %s", serviceName, transition);
+                LOGGER.tracef("awaitFrameworkInit %s => %s", serviceName, transition);
                 switch (transition) {
                     case STARTING_to_START_FAILED:
                     case STOPPING_to_DOWN:
@@ -454,7 +454,7 @@ final class FrameworkProxy implements Framework {
     }
 
     @SuppressWarnings("unchecked")
-    private void awaitActiveFramework() throws ExecutionException, TimeoutException {
+    private void awaitFrameworkActive() throws ExecutionException, TimeoutException {
         final ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) lenientContainer.getRequiredService(Services.FRAMEWORK_ACTIVE);
         controller.setMode(Mode.ACTIVE);
         FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);

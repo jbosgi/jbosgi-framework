@@ -53,12 +53,20 @@ import org.jboss.msc.service.StartException;
  */
 public final class FutureServiceValue<T> implements Future<T> {
 
-    private ServiceController<T> controller;
+    private final ServiceController<T> controller;
+    private final State expectedState;
 
     public FutureServiceValue(ServiceController<T> controller) {
+        this(controller, State.UP);
+    }
+
+    public FutureServiceValue(ServiceController<T> controller, State state) {
         if (controller == null)
             throw MESSAGES.illegalArgumentNull("controller");
+        if (state == null)
+            throw MESSAGES.illegalArgumentNull("state");
        this.controller = controller;
+       this.expectedState = state;
     }
 
     @Override
@@ -73,7 +81,7 @@ public final class FutureServiceValue<T> implements Future<T> {
 
     @Override
     public boolean isDone() {
-        return controller.getState() == State.UP;
+        return controller.getState() == expectedState;
     }
 
     @Override
@@ -92,7 +100,7 @@ public final class FutureServiceValue<T> implements Future<T> {
 
     private T getValue(long timeout, TimeUnit unit) throws ExecutionException, TimeoutException {
 
-        if (controller.getState() == State.UP)
+        if (controller.getState() == expectedState)
             return controller.getValue();
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -103,17 +111,33 @@ public final class FutureServiceValue<T> implements Future<T> {
             @Override
             public void listenerAdded(ServiceController<? extends T> controller) {
                 State state = controller.getState();
-                if (state == State.UP || state == State.START_FAILED)
+                if (state == expectedState || state == State.START_FAILED)
                     listenerDone(controller);
             }
 
             public void transition(final ServiceController<? extends T> controller, final ServiceController.Transition transition) {
                 LOGGER.tracef("transition %s %s => %s", futureServiceValue, serviceName, transition);
-                switch (transition) {
-                    case STARTING_to_UP:
-                    case STARTING_to_START_FAILED:
-                        listenerDone(controller);
-                        break;
+                if (expectedState == State.UP) {
+                    switch (transition) {
+                        case STARTING_to_UP:
+                        case STARTING_to_START_FAILED:
+                            listenerDone(controller);
+                            break;
+                    }
+                } else if (expectedState == State.DOWN) {
+                    switch (transition) {
+                        case STOPPING_to_DOWN:
+                        case REMOVING_to_DOWN:
+                        case WAITING_to_DOWN:
+                            listenerDone(controller);
+                            break;
+                    }
+                } else if (expectedState == State.REMOVED) {
+                    switch (transition) {
+                        case REMOVING_to_REMOVED:
+                            listenerDone(controller);
+                            break;
+                    }
                 }
             }
 
@@ -134,7 +158,7 @@ public final class FutureServiceValue<T> implements Future<T> {
             // ignore;
         }
 
-        if (controller.getState() == State.UP)
+        if (controller.getState() == expectedState)
             return controller.getValue();
 
         StartException startException = controller.getStartException();

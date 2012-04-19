@@ -21,26 +21,34 @@
  */
 package org.jboss.osgi.framework;
 
-import org.jboss.msc.service.Service;
+import java.util.Map;
+
+import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.osgi.framework.BundleException;
+import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
- * A handler for bundle deployments.
+ * Default implementation for the COMPLETE step of the {@link AutoInstallHandler}.
  *
  * @author thomas.diesler@jboss.com
- * @since 29-Mar-2011
+ * @since 16-Apr-2012
  */
-public interface BundleInstallProvider extends Service<BundleInstallProvider> {
+public class AutoInstallHandlerComplete extends AbstractInstallComplete {
 
-    /**
-     * Install the bundle service for the given deployment.
-     */
-    void installBundle(ServiceTarget serviceTarget, Deployment dep) throws BundleException;
+    public AutoInstallHandlerComplete(Map<ServiceName, Deployment> installedBundles) {
+        super(installedBundles);
+    }
 
-    /**
-     * Uninstall the bundle associated with the given deployment.
-     */
-    void uninstallBundle(Deployment dep);
+    public void install(ServiceTarget serviceTarget) {
+        ServiceBuilder<Void> builder = serviceTarget.addService(IntegrationServices.AUTOINSTALL_HANDLER_COMPLETE, this);
+        builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
+        builder.addDependency(IntegrationServices.AUTOINSTALL_HANDLER);
+        builder.addDependencies(installedBundles.keySet());
+        addAdditionalDependencies(builder);
+        builder.setInitialMode(Mode.ON_DEMAND);
+        builder.install();
+    }
 }

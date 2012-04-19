@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.BUNDLE_INSTALL_PROVIDER;
+import static org.jboss.osgi.framework.IntegrationServices.BUNDLE_INSTALL_HANDLER;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -29,7 +29,7 @@ import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleInstallProvider;
+import org.jboss.osgi.framework.BundleInstallHandler;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.BundleException;
 
@@ -39,14 +39,14 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-final class DefaultBundleInstallProvider extends AbstractPluginService<BundleInstallProvider> implements BundleInstallProvider {
+final class DefaultBundleInstallHandler extends AbstractPluginService<BundleInstallHandler> implements BundleInstallHandler {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(BUNDLE_INSTALL_PROVIDER) == null) {
-            DefaultBundleInstallProvider service = new DefaultBundleInstallProvider();
-            ServiceBuilder<BundleInstallProvider> builder = serviceTarget.addService(BUNDLE_INSTALL_PROVIDER, service);
+        if (registry.getService(BUNDLE_INSTALL_HANDLER) == null) {
+            DefaultBundleInstallHandler service = new DefaultBundleInstallHandler();
+            ServiceBuilder<BundleInstallHandler> builder = serviceTarget.addService(BUNDLE_INSTALL_HANDLER, service);
             builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
             builder.addDependency(Services.FRAMEWORK_CREATE);
             builder.setInitialMode(Mode.ON_DEMAND);
@@ -54,11 +54,11 @@ final class DefaultBundleInstallProvider extends AbstractPluginService<BundleIns
         }
     }
 
-    private DefaultBundleInstallProvider() {
+    private DefaultBundleInstallHandler() {
     }
 
     @Override
-    public BundleInstallProvider getValue() {
+    public BundleInstallHandler getValue() {
         return this;
     }
 

@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.AUTOINSTALL_PROVIDER;
+import static org.jboss.osgi.framework.IntegrationServices.AUTOINSTALL_HANDLER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.File;
@@ -42,8 +42,8 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
-import org.jboss.osgi.framework.AutoInstallProvider;
-import org.jboss.osgi.framework.AutoInstallProviderComplete;
+import org.jboss.osgi.framework.AutoInstallHandler;
+import org.jboss.osgi.framework.AutoInstallHandlerComplete;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.spi.BundleInfo;
@@ -57,14 +57,14 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstallProvider> implements AutoInstallProvider {
+final class DefaultAutoInstallHandler extends AbstractPluginService<AutoInstallHandler> implements AutoInstallHandler {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(AUTOINSTALL_PROVIDER) == null) {
-            DefaultAutoInstallProvider service = new DefaultAutoInstallProvider();
-            ServiceBuilder<AutoInstallProvider> builder = serviceTarget.addService(AUTOINSTALL_PROVIDER, service);
+        if (registry.getService(AUTOINSTALL_HANDLER) == null) {
+            DefaultAutoInstallHandler service = new DefaultAutoInstallHandler();
+            ServiceBuilder<AutoInstallHandler> builder = serviceTarget.addService(AUTOINSTALL_HANDLER, service);
             builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
             builder.addDependency(Services.FRAMEWORK_CREATE);
             builder.setInitialMode(Mode.ON_DEMAND);
@@ -72,7 +72,7 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
         }
     }
 
-    private DefaultAutoInstallProvider() {
+    private DefaultAutoInstallHandler() {
     }
 
     @Override
@@ -109,7 +109,7 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
     }
 
     @Override
-    public DefaultAutoInstallProvider getValue() {
+    public DefaultAutoInstallHandler getValue() {
         return this;
     }
 
@@ -128,7 +128,7 @@ final class DefaultAutoInstallProvider extends AbstractPluginService<AutoInstall
             installedBundles.put(serviceName, dep);
         }
 
-        AutoInstallProviderComplete installComplete = new AutoInstallProviderComplete(installedBundles);
+        AutoInstallHandlerComplete installComplete = new AutoInstallHandlerComplete(installedBundles);
         installComplete.install(serviceTarget);
     }
 

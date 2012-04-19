@@ -51,15 +51,15 @@ import org.osgi.service.resolver.ResolutionException;
  * <code>
  * {@link FrameworkActive}
  *         +---{@link FrameworkInit}
- *             +---{@link DefaultPersistentBundleProvider}
- *                 +---{@link DefaultAutoInstallProvider}
+ *             +---{@link DefaultPersistentBundlesHandler}
+ *                 +---{@link DefaultAutoInstallHandler}
  *             +---{@link FrameworkCoreServices}
  *                 +---{@link LifecycleInterceptorPlugin}
  *                 +---{@link PackageAdminPlugin}
  *                 +---{@link StartLevelPlugin}
  *                 +---{@link DefaultSystemServicesProvider}
  *                 +---{@link URLHandlerPlugin}
- *                 +---{@link DefaultBundleInstallProvider}
+ *                 +---{@link DefaultBundleInstallHandler}
  *                     +---{@link FrameworkCreate}
  *                         +---{@link StorageStateProviderPlugin}
  *                         +---{@link DeploymentFactoryPlugin}
@@ -87,12 +87,12 @@ public final class FrameworkActive extends AbstractFrameworkService {
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
 
-    static void addService(ServiceTarget serviceTarget) {
+    static void addService(ServiceTarget serviceTarget, Mode initialMode) {
         FrameworkActive service = new FrameworkActive();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
-        builder.setInitialMode(Mode.ON_DEMAND);
+        builder.setInitialMode(initialMode);
         builder.install();
     }
 

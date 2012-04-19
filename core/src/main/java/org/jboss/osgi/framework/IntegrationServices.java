@@ -34,14 +34,14 @@ import org.jboss.msc.service.ServiceName;
  */
 public interface IntegrationServices {
 
-    /** The service name for the {@link AutoInstallProvider} */
-    ServiceName AUTOINSTALL_PROVIDER = INTEGRATION_BASE_NAME.append("AutoInstallProvider");
+    /** The service name for the {@link AutoInstallHandler} */
+    ServiceName AUTOINSTALL_HANDLER = INTEGRATION_BASE_NAME.append("AutoInstallHandler");
 
-    /** The {@link AutoInstallProvider} nested service that indicates completion */
-    ServiceName AUTOINSTALL_PROVIDER_COMPLETE = AUTOINSTALL_PROVIDER.append("COMPLETE");
+    /** The {@link AutoInstallHandler} nested service that indicates completion */
+    ServiceName AUTOINSTALL_HANDLER_COMPLETE = AUTOINSTALL_HANDLER.append("COMPLETE");
 
-    /** The service name for the {@link BundleInstallProvider} */
-    ServiceName BUNDLE_INSTALL_PROVIDER = INTEGRATION_BASE_NAME.append("BundleInstallProvider");
+    /** The service name for the {@link BundleInstallHandler} */
+    ServiceName BUNDLE_INSTALL_HANDLER = INTEGRATION_BASE_NAME.append("BundleInstallHandler");
 
     /** The service name for the {@link FrameworkModuleProvider} */
     ServiceName FRAMEWORK_MODULE_PROVIDER = INTEGRATION_BASE_NAME.append("FrameworkModuleProvider");
@@ -49,11 +49,11 @@ public interface IntegrationServices {
     /** The service name for the {@link ModuleLoaderProvider} */
     ServiceName MODULE_LOADER_PROVIDER = INTEGRATION_BASE_NAME.append("ModuleLoaderProvider");
 
-    /** The {@link PersistentBundlesProvider} service name */
-    ServiceName PERSISTENT_BUNDLES_PROVIDER = INTEGRATION_BASE_NAME.append("PersistentBundlesProvider");
+    /** The {@link PersistentBundlesHandler} service name */
+    ServiceName PERSISTENT_BUNDLES_HANDLER = INTEGRATION_BASE_NAME.append("PersistentBundlesHandler");
 
-    /** The {@link PersistentBundlesProvider} nested service that indicates completion */
-    ServiceName PERSISTENT_BUNDLES_PROVIDER_COMPLETE = PERSISTENT_BUNDLES_PROVIDER.append("COMPLETE");
+    /** The {@link PersistentBundlesHandler} nested service that indicates completion */
+    ServiceName PERSISTENT_BUNDLES_HANDLER_COMPLETE = PERSISTENT_BUNDLES_HANDLER.append("COMPLETE");
 
     /** The service name for the {@link SystemPathsProvider} */
     ServiceName SYSTEM_PATHS_PROVIDER = INTEGRATION_BASE_NAME.append("SystemPathsProvider");

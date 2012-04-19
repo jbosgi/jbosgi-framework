@@ -527,6 +527,7 @@ abstract class AbstractBundleState implements Bundle {
 
     @Override
     public void uninstall() throws BundleException {
+        // #1 If this bundle's state is UNINSTALLED then an IllegalStateException is thrown
         assertNotUninstalled();
         uninstallInternal();
     }

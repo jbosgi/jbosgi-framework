@@ -31,21 +31,21 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
- * Default implementation for the COMPLETE step of the {@link PersistentBundlesProvider}.
+ * Default implementation for the COMPLETE step of the {@link PersistentBundlesHandler}.
  *
  * @author thomas.diesler@jboss.com
  * @since 16-Apr-2012
  */
-public class PersistentBundlesProviderComplete extends AbstractInstallComplete {
+public class PersistentBundlesHandlerComplete extends AbstractInstallComplete {
 
-    public PersistentBundlesProviderComplete(Map<ServiceName, Deployment> installedBundles) {
+    public PersistentBundlesHandlerComplete(Map<ServiceName, Deployment> installedBundles) {
         super(installedBundles);
     }
 
     public void install(ServiceTarget serviceTarget) {
-        ServiceBuilder<Void> builder = serviceTarget.addService(IntegrationServices.PERSISTENT_BUNDLES_PROVIDER_COMPLETE, this);
+        ServiceBuilder<Void> builder = serviceTarget.addService(IntegrationServices.PERSISTENT_BUNDLES_HANDLER_COMPLETE, this);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
-        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLES_PROVIDER);
+        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLES_HANDLER);
         builder.addDependencies(installedBundles.keySet());
         addAdditionalDependencies(builder);
         builder.setInitialMode(Mode.ON_DEMAND);

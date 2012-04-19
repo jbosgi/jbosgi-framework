@@ -45,11 +45,15 @@ import org.osgi.framework.launch.Framework;
 public final class FrameworkBuilder {
 
     private final Map<String, Object> initialProperties = new HashMap<String, Object>();
+    private final Mode initialMode;
     private ServiceContainer serviceContainer;
     private ServiceTarget serviceTarget;
     private boolean closed;
 
-    public FrameworkBuilder(Map<String, Object> props) {
+    public FrameworkBuilder(Map<String, Object> props, Mode initialMode) {
+        if (initialMode == null)
+            throw MESSAGES.illegalArgumentNull("initialMode");
+        this.initialMode = initialMode;
         if (props != null) {
             initialProperties.putAll(props);
         }
@@ -91,12 +95,12 @@ public final class FrameworkBuilder {
         return new FrameworkProxy(this);
     }
 
-    public void createFrameworkServices(Mode initialMode, boolean firstInit) {
+    public void createFrameworkServices(boolean firstInit) {
         assertNotClosed();
-        createFrameworkServicesInternal(serviceContainer, serviceTarget, initialMode, firstInit);
+        createFrameworkServicesInternal(serviceContainer, serviceTarget, firstInit);
     }
 
-    void createFrameworkServicesInternal(ServiceRegistry serviceRegistry, ServiceTarget serviceTarget, Mode initialMode, boolean firstInit) {
+    void createFrameworkServicesInternal(ServiceRegistry serviceRegistry, ServiceTarget serviceTarget, boolean firstInit) {
         try {
             // Do this first so this URLStreamHandlerFactory gets installed
             URLHandlerPlugin.addService(serviceTarget);
@@ -110,12 +114,12 @@ public final class FrameworkBuilder {
             BundleManagerPlugin bundleManager = BundleManagerPlugin.addService(serviceTarget, this);
             FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
 
-            DeploymentFactoryPlugin.addService(serviceTarget);
             BundleStoragePlugin.addService(serviceTarget, firstInit);
-            FrameworkCoreServices.addService(serviceTarget);
             DefaultEnvironmentPlugin.addService(serviceTarget);
-            FrameworkActive.addService(serviceTarget);
-            FrameworkActivator.addService(serviceTarget, initialMode);
+            DeploymentFactoryPlugin.addService(serviceTarget);
+            FrameworkActivator.addService(serviceTarget);
+            FrameworkActive.addService(serviceTarget, initialMode);
+            FrameworkCoreServices.addService(serviceTarget);
             FrameworkEventsPlugin.addService(serviceTarget);
             FrameworkInit.addService(serviceTarget);
             LifecycleInterceptorPlugin.addService(serviceTarget);
@@ -130,11 +134,11 @@ public final class FrameworkBuilder {
             SystemContextService.addService(serviceTarget);
             WebXMLVerifierInterceptor.addService(serviceTarget);
 
-            DefaultAutoInstallProvider.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultBundleInstallProvider.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultAutoInstallHandler.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultBundleInstallHandler.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultFrameworkModuleProvider.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultModuleLoaderProvider.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultPersistentBundleProvider.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultPersistentBundlesHandler.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultSystemPathsProvider.addIntegrationService(serviceRegistry, serviceTarget, this);
             DefaultSystemServicesProvider.addIntegrationService(serviceRegistry, serviceTarget);
 

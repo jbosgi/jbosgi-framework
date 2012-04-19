@@ -29,6 +29,6 @@ import org.jboss.msc.service.Service;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-public interface PersistentBundlesProvider extends Service<PersistentBundlesProvider> {
+public interface PersistentBundlesHandler extends Service<PersistentBundlesHandler> {
 
 }

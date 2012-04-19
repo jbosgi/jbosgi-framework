@@ -37,7 +37,7 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleInstallProvider;
+import org.jboss.osgi.framework.BundleInstallHandler;
 import org.jboss.osgi.framework.FutureServiceValue;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -196,7 +196,7 @@ abstract class AbstractBundleContext implements BundleContext {
         ServiceTarget serviceTarget = bundleManager.getServiceTarget();
 
         String location = deployment.getLocation();
-        BundleInstallProvider installHandler = frameworkState.getCoreServices().getInstallHandler();
+        BundleInstallHandler installHandler = frameworkState.getCoreServices().getInstallHandler();
         installHandler.installBundle(serviceTarget, deployment);
 
         ServiceName serviceName = deployment.getAttachment(ServiceName.class);

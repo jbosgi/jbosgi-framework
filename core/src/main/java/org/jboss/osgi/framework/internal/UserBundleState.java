@@ -39,7 +39,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleInstallProvider;
+import org.jboss.osgi.framework.BundleInstallHandler;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -373,15 +373,11 @@ abstract class UserBundleState extends AbstractBundleState {
 
     @Override
     void uninstallInternal() throws BundleException {
-        // #1 If this bundle's state is UNINSTALLED then an IllegalStateException is thrown
-        assertNotUninstalled();
         headersOnUninstall = getHeaders(null);
 
-        Deployment deployment = getDeployment();
-
-        // Uninstall through the {@link BundleInstallProvider}
-        BundleInstallProvider installHandler = getCoreServices().getInstallHandler();
-        installHandler.uninstallBundle(deployment);
+        // Uninstall through the {@link BundleInstallHandler}
+        BundleInstallHandler installHandler = getCoreServices().getInstallHandler();
+        installHandler.uninstallBundle(getDeployment());
 
         LOGGER.infoBundleUninstalled(this);
     }
