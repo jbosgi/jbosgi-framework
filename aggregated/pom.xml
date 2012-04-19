@@ -76,13 +76,11 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>-da ${surefire.system.args}</argLine>
-                    <systemProperties>
-                        <property>
-                            <name>test.archive.directory</name>
-                            <value>${project.build.directory}/test-libs</value>
-                        </property>
-                    </systemProperties>
+					<argLine>${surefire.system.args}</argLine>
+                    <systemPropertyVariables>
+                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        <test.archive.directory>${project.build.directory}/test-libs</test.archive.directory>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

@@ -21,7 +21,7 @@
  */
 package org.jboss.test.osgi.framework.launch;
 
-import org.jboss.osgi.framework.internal.FrameworkFactoryImpl;
+import org.jboss.osgi.framework.FrameworkMain;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -80,8 +80,8 @@ public class AggregatedFrameworkLaunchTestCase extends OSGiFrameworkTest {
 
         // Run the java command
         String alljar = files[0].getAbsolutePath();
-        String javaopts = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager";
-        String cmd = "java " + javaopts + " -cp " + alljar + " " + FrameworkFactoryImpl.class.getName();
+        String javaopts = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager -Dorg.osgi.framework.storage=target/osgi-store";
+        String cmd = "java " + javaopts + " -cp " + alljar + " " + FrameworkMain.class.getName();
         Process proc = Runtime.getRuntime().exec(cmd);
         Thread.sleep(3000);
         proc.destroy();

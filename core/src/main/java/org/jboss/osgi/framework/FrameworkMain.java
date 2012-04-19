@@ -19,25 +19,28 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework.internal;
+package org.jboss.osgi.framework;
 
 import java.util.Map;
 
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.osgi.framework.internal.FrameworkBuilder;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
 
 /**
- * An impementation of an OSGi FrameworkFactory
+ * An impementation of an OSGi {@link FrameworkFactory}
  *
  * @author thomas.diesler@jboss.com
  * @since 21-Aug-2009
  */
-public class FrameworkFactoryImpl implements FrameworkFactory {
+public class FrameworkMain implements FrameworkFactory {
 
-    // Main entry point used by AggregatedFrameworkLaunchTestCase
+    /**
+     * The main entry point to the Framework
+     */
     public static void main(String[] args) throws Exception {
-        FrameworkFactoryImpl factory = new FrameworkFactoryImpl();
+        FrameworkMain factory = new FrameworkMain();
         Framework framework = factory.newFramework(null);
         framework.start();
     }

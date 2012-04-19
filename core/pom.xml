@@ -111,16 +111,12 @@
                 <executions>
                     <execution>
                         <id>default-test</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
+                        <goals><goal>test</goal></goals>
                         <phase>none</phase>
                     </execution>
                     <execution>
-                        <id>nofork</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
+                        <id>setA</id>
+                        <goals><goal>test</goal></goals>
                         <configuration>
                             <excludes>
                                 <exclude>**/URLHandlerTestCase.java</exclude>
@@ -128,10 +124,8 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>fork</id>
-                        <goals>
-                            <goal>test</goal>
-                        </goals>
+                        <id>setB</id>
+                        <goals><goal>test</goal></goals>
                         <configuration>
                             <includes>
                                 <include>**/URLHandlerTestCase.java</include>
