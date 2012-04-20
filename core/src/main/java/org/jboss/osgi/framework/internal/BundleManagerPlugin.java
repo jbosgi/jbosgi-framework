@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
@@ -74,7 +73,7 @@ import org.osgi.resource.Resource;
  * @author David Bosschaert
  * @since 29-Jun-2010
  */
-public final class BundleManagerPlugin extends AbstractService<BundleManager> implements BundleManager {
+final class BundleManagerPlugin extends AbstractPluginService<BundleManager> implements BundleManager {
 
     // The framework execution environment
     private static String OSGi_FRAMEWORK_EXECUTIONENVIRONMENT;
@@ -107,11 +106,11 @@ public final class BundleManagerPlugin extends AbstractService<BundleManager> im
     private final AtomicLong identityGenerator = new AtomicLong();
     private final Map<String, Object> properties = new HashMap<String, Object>();
     private final AtomicBoolean shutdownInitiated = new AtomicBoolean();
-    private final ServiceTarget serviceTarget;
     private ServiceContainer serviceContainer;
+    private ServiceTarget serviceTarget;
 
     static BundleManagerPlugin addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
-        BundleManagerPlugin service = new BundleManagerPlugin(frameworkBuilder, serviceTarget);
+        BundleManagerPlugin service = new BundleManagerPlugin(frameworkBuilder);
         ServiceBuilder<BundleManager> builder = serviceTarget.addService(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, service);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -119,9 +118,8 @@ public final class BundleManagerPlugin extends AbstractService<BundleManager> im
         return service;
     }
 
-    private BundleManagerPlugin(FrameworkBuilder frameworkBuilder, ServiceTarget serviceTarget) {
+    private BundleManagerPlugin(FrameworkBuilder frameworkBuilder) {
         this.frameworkBuilder = frameworkBuilder;
-        this.serviceTarget = serviceTarget;
 
         // The properties on the BundleManager are mutable as long the framework is not created
         // Plugins may modify these properties in their respective constructor
@@ -155,6 +153,7 @@ public final class BundleManagerPlugin extends AbstractService<BundleManager> im
         super.start(context);
         LOGGER.infoFrameworkImplementation(implementationTitle, implementationVersion);
         serviceContainer = context.getController().getServiceContainer();
+        serviceTarget = context.getChildTarget();
         LOGGER.debugf("Framework properties");
         for (Entry<String, Object> entry : properties.entrySet()) {
             LOGGER.debugf(" %s = %s", entry.getKey(), entry.getValue());
@@ -175,12 +174,9 @@ public final class BundleManagerPlugin extends AbstractService<BundleManager> im
         return frameworkBuilder;
     }
 
-    ServiceContainer getServiceContainer() {
+    @Override
+    public ServiceContainer getServiceContainer() {
         return serviceContainer;
-    }
-
-    ServiceTarget getServiceTarget() {
-        return serviceTarget;
     }
 
     @Override
@@ -210,20 +206,16 @@ public final class BundleManagerPlugin extends AbstractService<BundleManager> im
         return injectedFramework.getOptionalValue();
     }
 
-    Object getProperty(String key) {
+    @Override
+    public Object getProperty(String key) {
         Object value = properties.get(key);
         if (value == null)
             value = SecurityActions.getSystemProperty(key, null);
         return value;
     }
 
-    /**
-     * Returns the framework properties merged with the System properties. The returned map is consistent with the
-     * {@link #getProperty(String)} API.
-     *
-     * @return The effective framework properties in a map. The returned map is a copy, so the client can take ownership of it.
-     */
-    Map<String, Object> getProperties() {
+    @Override
+    public Map<String, Object> getProperties() {
         Map<String, Object> m = new HashMap<String, Object>();
         for (Map.Entry<Object, Object> entry : System.getProperties().entrySet()) {
             m.put(entry.getKey().toString(), entry.getValue());
@@ -324,7 +316,7 @@ public final class BundleManagerPlugin extends AbstractService<BundleManager> im
     }
 
     @Override
-    public ServiceName installBundle(ServiceTarget serviceTarget, Deployment deployment) throws BundleException {
+    public ServiceName installBundle(Deployment deployment) throws BundleException {
         if (deployment == null)
             throw MESSAGES.illegalArgumentNull("deployment");
 

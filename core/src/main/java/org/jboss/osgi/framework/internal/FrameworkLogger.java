@@ -205,4 +205,8 @@ public interface FrameworkLogger extends BasicLogger {
     @LogMessage(level = ERROR)
     @Message(id = 11039, value = "Cannot get class path entry '%s' from: %s")
     void errorCannotGetClassPathEntry(@Cause Throwable cause, String path, BundleRevision brev);
+
+    @LogMessage(level = ERROR)
+    @Message(id = 11040, value = "Cannot install initial bundle: %s")
+    void errorStateCannotInstallInitialBundle(@Cause Throwable cause, String source);
 }

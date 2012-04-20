@@ -38,7 +38,7 @@ public interface IntegrationServices {
     ServiceName AUTOINSTALL_HANDLER = INTEGRATION_BASE_NAME.append("AutoInstallHandler");
 
     /** The {@link AutoInstallHandler} nested service that indicates completion */
-    ServiceName AUTOINSTALL_HANDLER_COMPLETE = AUTOINSTALL_HANDLER.append("COMPLETE");
+    ServiceName AUTOINSTALL_COMPLETE = AUTOINSTALL_HANDLER.append("COMPLETE");
 
     /** The service name for the {@link BundleInstallHandler} */
     ServiceName BUNDLE_INSTALL_HANDLER = INTEGRATION_BASE_NAME.append("BundleInstallHandler");
@@ -53,7 +53,7 @@ public interface IntegrationServices {
     ServiceName PERSISTENT_BUNDLES_HANDLER = INTEGRATION_BASE_NAME.append("PersistentBundlesHandler");
 
     /** The {@link PersistentBundlesHandler} nested service that indicates completion */
-    ServiceName PERSISTENT_BUNDLES_HANDLER_COMPLETE = PERSISTENT_BUNDLES_HANDLER.append("COMPLETE");
+    ServiceName PERSISTENT_BUNDLES_COMPLETE = PERSISTENT_BUNDLES_HANDLER.append("COMPLETE");
 
     /** The service name for the {@link SystemPathsProvider} */
     ServiceName SYSTEM_PATHS_PROVIDER = INTEGRATION_BASE_NAME.append("SystemPathsProvider");

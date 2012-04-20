@@ -21,11 +21,12 @@
  */
 package org.jboss.osgi.framework;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -99,10 +100,27 @@ public interface BundleManager extends Service<BundleManager> {
     /**
      * Install a bundle from the given deployment
      */
-    ServiceName installBundle(ServiceTarget serviceTarget, Deployment dep) throws BundleException;
+    ServiceName installBundle(Deployment dep) throws BundleException;
 
     /**
      * Uninstall the given deployment
      */
     void uninstallBundle(Deployment dep);
+
+    /**
+     * Get the service container
+     */
+    ServiceContainer getServiceContainer();
+
+    /**
+     * Returns the framework properties merged with the System properties. 
+     * @return The effective framework properties in a map
+     */
+    Map<String, Object> getProperties();
+
+    /**
+     * Get a framework property
+     * @return The properties value or the given default
+     */
+    Object getProperty(String key);
 }

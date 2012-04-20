@@ -22,15 +22,14 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.IntegrationServices.AUTOINSTALL_HANDLER;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -42,8 +41,8 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
+import org.jboss.osgi.framework.AutoInstallComplete;
 import org.jboss.osgi.framework.AutoInstallHandler;
-import org.jboss.osgi.framework.AutoInstallHandlerComplete;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.spi.BundleInfo;
@@ -78,58 +77,57 @@ final class DefaultAutoInstallHandler extends AbstractPluginService<AutoInstallH
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        try {
-            List<URL> autoInstall = new ArrayList<URL>();
-            List<URL> autoStart = new ArrayList<URL>();
 
-            BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-            String propValue = (String) bundleManager.getProperty(Constants.PROPERTY_AUTO_INSTALL_URLS);
-            if (propValue != null) {
-                for (String path : propValue.split(",")) {
-                    URL url = toURL(bundleManager, path.trim());
-                    if (url != null) {
-                        autoInstall.add(url);
-                    }
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        List<URL> autoInstall = new ArrayList<URL>();
+        List<URL> autoStart = new ArrayList<URL>();
+
+        String propValue = (String) bundleManager.getProperty(Constants.PROPERTY_AUTO_INSTALL_URLS);
+        if (propValue != null) {
+            for (String path : propValue.split(",")) {
+                URL url = toURL(bundleManager, path.trim());
+                if (url != null) {
+                    autoInstall.add(url);
                 }
             }
-            propValue = (String) bundleManager.getProperty(Constants.PROPERTY_AUTO_START_URLS);
-            if (propValue != null) {
-                for (String path : propValue.split(",")) {
-                    URL url = toURL(bundleManager, path.trim());
-                    if (url != null) {
-                        autoStart.add(url);
-                    }
-                }
-            }
-            ServiceTarget serviceTarget = context.getChildTarget();
-            installBundles(serviceTarget, autoInstall, autoStart);
-        } catch (BundleException ex) {
-            throw MESSAGES.illegalStateCannotStartAutoinstallBundles(ex);
         }
+        propValue = (String) bundleManager.getProperty(Constants.PROPERTY_AUTO_START_URLS);
+        if (propValue != null) {
+            for (String path : propValue.split(",")) {
+                URL url = toURL(bundleManager, path.trim());
+                if (url != null) {
+                    autoStart.add(url);
+                }
+            }
+        }
+        
+        // Add the autoStart bundles to autoInstall
+        autoInstall.addAll(autoStart);
+
+        // Create the COMPLETE service that listens on the bundle INSTALL services
+        AutoInstallComplete installComplete = new AutoInstallComplete(bundleManager);
+        ServiceBuilder<Void> builder = installComplete.install(context.getChildTarget());
+
+        // Install the auto install bundles
+        for (URL url : autoInstall) {
+            try {
+                BundleInfo info = BundleInfo.createBundleInfo(url);
+                Deployment dep = DeploymentFactory.createDeployment(info);
+                dep.setAutoStart(autoStart.contains(url));
+                ServiceName serviceName = bundleManager.installBundle(dep);
+                installComplete.registerBundleInstallService(serviceName, dep);
+            } catch (BundleException ex) {
+                LOGGER.errorStateCannotInstallInitialBundle(ex, url.toExternalForm());
+            }
+        }
+        
+        // Notify the COMPLETE service that the bundle INSTALL services are installed 
+        installComplete.installComplete(builder);
     }
 
     @Override
     public DefaultAutoInstallHandler getValue() {
         return this;
-    }
-
-    private void installBundles(ServiceTarget serviceTarget, final List<URL> autoInstall, final List<URL> autoStart) throws BundleException {
-
-        // Add the autoStart bundles to autoInstall
-        autoInstall.addAll(autoStart);
-
-        Map<ServiceName, Deployment> installedBundles = new HashMap<ServiceName, Deployment>();
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        for (URL url : autoInstall) {
-            BundleInfo info = BundleInfo.createBundleInfo(url);
-            Deployment dep = DeploymentFactory.createDeployment(info);
-            dep.setAutoStart(autoStart.contains(url));
-            ServiceName serviceName = bundleManager.installBundle(serviceTarget, dep);
-            installedBundles.put(serviceName, dep);
-        }
-
-        AutoInstallHandlerComplete installComplete = new AutoInstallHandlerComplete(installedBundles);
-        installComplete.install(serviceTarget);
     }
 
     private URL toURL(final BundleManagerPlugin bundleManager, final String path) {

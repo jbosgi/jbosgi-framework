@@ -21,9 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
-
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -44,7 +41,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 28-Mar-2011
  */
-public final class FrameworkCoreServices extends AbstractService<FrameworkCoreServices> {
+public final class FrameworkCoreServices extends AbstractPluginService<FrameworkCoreServices> {
 
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     private final InjectedValue<BundleInstallHandler> injectedInstallProvider = new InjectedValue<BundleInstallHandler>();
@@ -74,7 +71,7 @@ public final class FrameworkCoreServices extends AbstractService<FrameworkCoreSe
 
     @Override
     public void start(StartContext context) throws StartException {
-        LOGGER.debugf("Starting: %s", context.getController().getName());
+        super.start(context);
         BundleContext systemContext = injectedSystemContext.getValue();
         SystemServicesProvider servicesProvider = injectedServicesProvider.getValue();
         servicesProvider.registerSystemServices(systemContext);
@@ -83,7 +80,7 @@ public final class FrameworkCoreServices extends AbstractService<FrameworkCoreSe
 
     @Override
     public void stop(StopContext context) {
-        LOGGER.debugf("Stopping: %s", context.getController().getName());
+        super.stop(context);
         getFrameworkState().injectedCoreServices.uninject();
     }
 

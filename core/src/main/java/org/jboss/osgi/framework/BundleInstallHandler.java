@@ -22,7 +22,6 @@
 package org.jboss.osgi.framework;
 
 import org.jboss.msc.service.Service;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.osgi.framework.BundleException;
 
@@ -37,7 +36,7 @@ public interface BundleInstallHandler extends Service<BundleInstallHandler> {
     /**
      * Install the bundle service for the given deployment.
      */
-    void installBundle(ServiceTarget serviceTarget, Deployment dep) throws BundleException;
+    void installBundle(Deployment dep) throws BundleException;
 
     /**
      * Uninstall the bundle associated with the given deployment.

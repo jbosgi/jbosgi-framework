@@ -103,9 +103,8 @@ public class PersistentBundlesTestCase extends OSGiFrameworkTest {
         Assert.assertNotNull("Bundle available", bundle);
         assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-        //[JBOSGI-545] Uninstalling last user bundle may stop Framework.INIT service
-        //bundle.uninstall();
-        //Assert.assertFalse("File deleted: " + bundleStorageDir, bundleStorageDir.exists());
+        bundle.uninstall();
+        Assert.assertFalse("File deleted: " + bundleStorageDir, bundleStorageDir.exists());
         
         framework.stop();
         framework.waitForStop(2000);

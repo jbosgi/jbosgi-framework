@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallHandler;
 import org.jboss.osgi.framework.FutureServiceValue;
@@ -193,11 +192,10 @@ abstract class AbstractBundleContext implements BundleContext {
 
         FrameworkState frameworkState = getFrameworkState();
         BundleManagerPlugin bundleManager = frameworkState.getBundleManager();
-        ServiceTarget serviceTarget = bundleManager.getServiceTarget();
 
         String location = deployment.getLocation();
         BundleInstallHandler installHandler = frameworkState.getCoreServices().getInstallHandler();
-        installHandler.installBundle(serviceTarget, deployment);
+        installHandler.installBundle(deployment);
 
         ServiceName serviceName = deployment.getAttachment(ServiceName.class);
         if (serviceName == null)

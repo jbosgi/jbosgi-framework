@@ -22,10 +22,9 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_HANDLER;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -37,8 +36,8 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.IntegrationServices;
+import org.jboss.osgi.framework.PersistentBundlesComplete;
 import org.jboss.osgi.framework.PersistentBundlesHandler;
-import org.jboss.osgi.framework.PersistentBundlesHandlerComplete;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.StorageStateProvider;
@@ -65,7 +64,7 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
             builder.addDependency(Services.STORAGE_STATE_PROVIDER, StorageStateProvider.class, service.injectedStorageProvider);
             builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
             builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, service.injectedDeploymentFactory);
-            builder.addDependencies(IntegrationServices.AUTOINSTALL_HANDLER_COMPLETE);
+            builder.addDependencies(Services.FRAMEWORK_CREATE, IntegrationServices.AUTOINSTALL_COMPLETE);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();
         }
@@ -77,11 +76,12 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        ServiceTarget serviceTarget = context.getChildTarget();
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         DeploymentFactoryPlugin deploymentPlugin = injectedDeploymentFactory.getValue();
 
-        final Map<ServiceName, Deployment> installedBundles = new HashMap<ServiceName, Deployment>();
+        // Create the COMPLETE service that listens on the bundle INSTALL services
+        PersistentBundlesComplete installComplete = new PersistentBundlesComplete(bundleManager);
+        ServiceBuilder<Void> builder = installComplete.install(context.getChildTarget());
 
         // Install the persisted bundles
         StorageStateProvider storageStateProvider = injectedStorageProvider.getValue();
@@ -91,16 +91,16 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
             if (bundleManager.getBundleById(bundleId) == null) {
                 try {
                     Deployment dep = deploymentPlugin.createDeployment(storageState);
-                    ServiceName serviceName = bundleManager.installBundle(serviceTarget, dep);
-                    installedBundles.put(serviceName, dep);
+                    ServiceName serviceName = bundleManager.installBundle(dep);
+                    installComplete.registerBundleInstallService(serviceName, dep);
                 } catch (BundleException ex) {
-                    throw new StartException(ex);
+                    LOGGER.errorStateCannotInstallInitialBundle(ex, storageState.getLocation());
                 }
             }
         }
-
-        PersistentBundlesHandlerComplete installComplete = new PersistentBundlesHandlerComplete(installedBundles);
-        installComplete.install(context.getChildTarget());
+        
+        // Notify the COMPLETE service that the bundle INSTALL services are installed 
+        installComplete.installComplete(builder);
     }
 
     @Override

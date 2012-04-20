@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.IntegrationServices.SYSTEM_SERVICES_PROVIDER;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceRegistry;
@@ -37,7 +36,7 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 04-Feb-2011
  */
-final class DefaultSystemServicesProvider extends AbstractService<SystemServicesProvider> implements SystemServicesProvider {
+final class DefaultSystemServicesProvider extends AbstractPluginService<SystemServicesProvider> implements SystemServicesProvider {
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
         if (registry.getService(SYSTEM_SERVICES_PROVIDER) == null) {

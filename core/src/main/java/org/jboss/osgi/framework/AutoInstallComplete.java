@@ -21,34 +21,27 @@
  */
 package org.jboss.osgi.framework;
 
-import java.util.Map;
-
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.deployment.deployer.Deployment;
-import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
- * Default implementation for the COMPLETE step of the {@link PersistentBundlesHandler}.
+ * Default implementation for the COMPLETE step of the {@link AutoInstallHandler}.
  *
  * @author thomas.diesler@jboss.com
  * @since 16-Apr-2012
  */
-public class PersistentBundlesHandlerComplete extends AbstractInstallComplete {
+public class AutoInstallComplete extends AbstractInstallComplete {
 
-    public PersistentBundlesHandlerComplete(Map<ServiceName, Deployment> installedBundles) {
-        super(installedBundles);
+    public AutoInstallComplete(BundleManager bundleManager) {
+        super(bundleManager);
     }
 
-    public void install(ServiceTarget serviceTarget) {
-        ServiceBuilder<Void> builder = serviceTarget.addService(IntegrationServices.PERSISTENT_BUNDLES_HANDLER_COMPLETE, this);
-        builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
-        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLES_HANDLER);
-        builder.addDependencies(installedBundles.keySet());
-        addAdditionalDependencies(builder);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    protected ServiceName getServiceName() {
+        return IntegrationServices.AUTOINSTALL_COMPLETE;
+    }
+
+    @Override
+    protected void configureInstallCompleteDependencies(ServiceBuilder<Void> builder) {
+        builder.addDependency(IntegrationServices.AUTOINSTALL_HANDLER);
     }
 }

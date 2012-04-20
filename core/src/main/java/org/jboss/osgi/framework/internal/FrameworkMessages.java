@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -34,6 +35,7 @@ import org.jboss.logging.Message;
 import org.jboss.logging.MessageBundle;
 import org.jboss.logging.Messages;
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.metadata.ParameterizedAttribute;
@@ -100,8 +102,8 @@ public interface FrameworkMessages {
     @Message(id = 11214, value = "Cannot create storage area")
     IllegalStateException illegalStateCannotCreateStorageArea(@Cause Throwable cause);
 
-    @Message(id = 11215, value = "Cannot start auto install bundles")
-    IllegalStateException illegalStateCannotStartAutoinstallBundles(@Cause Throwable cause);
+    //@Message(id = 11215, value = "Cannot install initial bundle: %s")
+    //IllegalStateException illegalStateCannotInstallInitialBundle(@Cause Throwable cause, Object source);
 
     @Message(id = 11216, value = "Cannot create framework module")
     IllegalStateException illegalStateCannotCreateFrameworkModule(@Cause Throwable cause);
@@ -285,4 +287,7 @@ public interface FrameworkMessages {
 
     @Message(id = 11277, value = "Framework extension not supported")
     UnsupportedOperationException unsupportedFrameworkExtension();
+
+    @Message(id = 11278, value = "Timeout waiting for bundle install service: %s")
+    TimeoutException timeoutWaitingForBundleInstallService(Set<ServiceName> services);
 }
