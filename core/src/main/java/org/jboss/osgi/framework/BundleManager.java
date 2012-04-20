@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.osgi.framework.Bundle;
@@ -99,8 +100,11 @@ public interface BundleManager extends Service<BundleManager> {
 
     /**
      * Install a bundle from the given deployment
+     * @param dep The bundle deployment
+     * @param listener An optional listener on the INSTALL service
+     * @return The name of the INSTALL service
      */
-    ServiceName installBundle(Deployment dep) throws BundleException;
+    ServiceName installBundle(Deployment dep, ServiceListener<Object> listener) throws BundleException;
 
     /**
      * Uninstall the given deployment

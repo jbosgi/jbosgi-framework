@@ -43,6 +43,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -316,7 +317,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     }
 
     @Override
-    public ServiceName installBundle(Deployment deployment) throws BundleException {
+    public ServiceName installBundle(Deployment deployment, ServiceListener<Object> listener) throws BundleException {
         if (deployment == null)
             throw MESSAGES.illegalArgumentNull("deployment");
 
@@ -351,7 +352,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
 
                 // Create the bundle services
                 if (metadata.getFragmentHost() == null) {
-                    serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), deployment);
+                    serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), deployment, listener);
                     HostBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                     HostBundleActiveService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 } else {

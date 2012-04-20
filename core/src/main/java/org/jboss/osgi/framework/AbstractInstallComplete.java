@@ -27,20 +27,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceController.State;
 import org.jboss.msc.service.ServiceController.Transition;
 import org.jboss.msc.service.ServiceListener;
-import org.jboss.msc.service.ServiceListener.Inheritance;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -59,40 +55,17 @@ import org.osgi.framework.BundleException;
 abstract class AbstractInstallComplete extends AbstractService<Void> {
 
     private final Map<ServiceName, Deployment> installedBundles = new HashMap<ServiceName, Deployment>();
-    private final AtomicBoolean installComplete = new AtomicBoolean();
-    private final ServiceContainer serviceContainer;
-    private final ServiceController<?> listenerTarget;
+    private final AtomicInteger remainingServices = new AtomicInteger();
     private ServiceListener<Object> listener;
 
-    AbstractInstallComplete(BundleManager bundleManager) {
-        this.serviceContainer = bundleManager.getServiceContainer();
-        this.listenerTarget = serviceContainer.getRequiredService(Services.BUNDLE_MANAGER);
+    protected abstract ServiceName getServiceName();
+
+    protected abstract void configureInstallCompleteDependencies(ServiceBuilder<Void> builder);
+
+    public ServiceListener<Object> getListener() {
+        return listener;
     }
 
-    public void registerBundleInstallService(ServiceName serviceName, Deployment dep) {
-        synchronized (installedBundles) {
-            LOGGER.debugf("Initial bundle register: %s", serviceName.getCanonicalName());
-            installedBundles.put(serviceName, dep);
-        }
-    }
-    
-    public void installComplete(ServiceBuilder<Void> builder) {
-        synchronized (installedBundles) {
-            int remainingServiceCount = installedBundles.size();
-            LOGGER.debugf("Initial bundle install complete (remaining=%d)", remainingServiceCount);
-            if (remainingServiceCount == 0) {
-                installService(builder);
-            }
-            installComplete.set(true);
-        }
-    }
-
-    private void installService(ServiceBuilder<Void> builder) {
-        LOGGER.debugf("Install initial bundle service: %s", getServiceName());
-        listenerTarget.removeListener(listener);
-        builder.install();
-    }
-    
     public ServiceBuilder<Void> install(ServiceTarget serviceTarget) {
         final ServiceBuilder<Void> builder = serviceTarget.addService(getServiceName(), this);
         configureInstallCompleteDependencies(builder);
@@ -100,51 +73,53 @@ abstract class AbstractInstallComplete extends AbstractService<Void> {
 
             @Override
             public void listenerAdded(ServiceController<? extends Object> controller) {
-                LOGGER.debugf("Initial bundle listener added to: %s", controller.getName());
-                synchronized (installedBundles) {
-                    Iterator<ServiceName> iterator = installedBundles.keySet().iterator();
-                    while (iterator.hasNext()) {
-                        ServiceName serviceName = iterator.next();
-                        ServiceController<?> service = serviceContainer.getService(serviceName);
-                        LOGGER.debugf("Initial bundle checking state: %s == %s", serviceName, service.getState());
-                        if (service.getState() == State.UP) {
-                            bundleInstallServiceComplete(service);
-                            iterator.remove();
-                        }
-                    }
-                }
+                int remainingCount = remainingServices.incrementAndGet();
+                LOGGER.debugf("Initial bundle listener '%s' added to: %s (remaining=%d)", getServiceName(), controller.getName(), remainingCount);
             }
 
             @Override
             public void transition(ServiceController<? extends Object> controller, Transition transition) {
-                synchronized (installedBundles) {
-                    if (installedBundles.get(controller.getName()) != null) {
-                        LOGGER.debugf("Initial bundle transition: %s => %s", transition, controller.getName());
-                        switch (transition) {
-                            case STARTING_to_UP:
-                            case STARTING_to_START_FAILED:
-                                installedBundles.remove(controller.getName());
-                                bundleInstallServiceComplete(controller);
-                        }
-                    }
+                LOGGER.tracef("Initial bundle transition: %s => %s", transition, controller.getName());
+                switch (transition) {
+                    case STARTING_to_UP:
+                    case STARTING_to_START_FAILED:
+                        bundleInstallServiceComplete(controller);
                 }
             }
 
             private void bundleInstallServiceComplete(ServiceController<?> controller) {
-                int remainingServiceCount = installedBundles.size();
-                LOGGER.debugf("Initial bundle install complete: %s (remaining=%d)", controller.getValue(), remainingServiceCount);
-                if (installComplete.get() && remainingServiceCount == 0) {
-                    installService(builder);
+                synchronized (remainingServices) {
+                    int remainingCount = remainingServices.decrementAndGet();
+                    LOGGER.debugf("Initial bundle install complete: %s (remaining=%d)", controller.getValue(), remainingCount);
+                    TypeAdaptor adaptor = (TypeAdaptor) controller.getValue();
+                    Deployment dep = adaptor.adapt(Deployment.class);
+                    installedBundles.put(controller.getName(), dep);
+                    if (remainingCount == 0) {
+                        controller.removeListener(this);
+                        installService(builder);
+                    }
                 }
             }
         };
-        listenerTarget.addListener(Inheritance.ALL, listener);
         return builder;
     }
+    
+    public void installComplete(ServiceBuilder<Void> builder) {
+        synchronized (remainingServices) {
+            int remainingCount = remainingServices.get();
+            LOGGER.debugf("Mark install complete: %s (remaining=%d)", getServiceName(), remainingCount);
+            if (remainingCount == 0) {
+                installService(builder);
+            }
+        }
+    }
 
-    protected abstract ServiceName getServiceName();
-
-    protected abstract void configureInstallCompleteDependencies(ServiceBuilder<Void> builder);
+    private void installService(ServiceBuilder<Void> builder) {
+        LOGGER.debugf("Install service: %s", getServiceName());
+        remainingServices.decrementAndGet();
+        builder.install();
+        listener = null;
+    }
 
     public void start(final StartContext context) throws StartException {
         ServiceController<?> controller = context.getController();
@@ -166,6 +141,7 @@ abstract class AbstractInstallComplete extends AbstractService<Void> {
             }
         }
         LOGGER.debugf("Started: %s", controller.getName());
+        installedBundles.clear();
     }
 
     static class DeploymentComparator implements Comparator<Deployment> {

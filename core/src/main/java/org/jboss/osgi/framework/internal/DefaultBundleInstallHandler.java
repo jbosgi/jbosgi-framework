@@ -65,7 +65,7 @@ final class DefaultBundleInstallHandler extends AbstractPluginService<BundleInst
     @Override
     public void installBundle(Deployment dep) throws BundleException {
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        bundleManager.installBundle(dep);
+        bundleManager.installBundle(dep, null);
     }
 
     @Override

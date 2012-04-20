@@ -32,10 +32,6 @@ import org.jboss.msc.service.ServiceName;
  */
 public class AutoInstallComplete extends AbstractInstallComplete {
 
-    public AutoInstallComplete(BundleManager bundleManager) {
-        super(bundleManager);
-    }
-
     protected ServiceName getServiceName() {
         return IntegrationServices.AUTOINSTALL_COMPLETE;
     }

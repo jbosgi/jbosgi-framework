@@ -33,7 +33,7 @@ import java.util.List;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -105,8 +105,9 @@ final class DefaultAutoInstallHandler extends AbstractPluginService<AutoInstallH
         autoInstall.addAll(autoStart);
 
         // Create the COMPLETE service that listens on the bundle INSTALL services
-        AutoInstallComplete installComplete = new AutoInstallComplete(bundleManager);
+        AutoInstallComplete installComplete = new AutoInstallComplete();
         ServiceBuilder<Void> builder = installComplete.install(context.getChildTarget());
+        ServiceListener<Object> listener = installComplete.getListener();
 
         // Install the auto install bundles
         for (URL url : autoInstall) {
@@ -114,8 +115,7 @@ final class DefaultAutoInstallHandler extends AbstractPluginService<AutoInstallH
                 BundleInfo info = BundleInfo.createBundleInfo(url);
                 Deployment dep = DeploymentFactory.createDeployment(info);
                 dep.setAutoStart(autoStart.contains(url));
-                ServiceName serviceName = bundleManager.installBundle(dep);
-                installComplete.registerBundleInstallService(serviceName, dep);
+                bundleManager.installBundle(dep, listener);
             } catch (BundleException ex) {
                 LOGGER.errorStateCannotInstallInitialBundle(ex, url.toExternalForm());
             }

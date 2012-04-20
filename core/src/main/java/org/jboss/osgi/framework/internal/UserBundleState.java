@@ -41,6 +41,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallHandler;
 import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -61,7 +62,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
-abstract class UserBundleState extends AbstractBundleState {
+abstract class UserBundleState extends AbstractBundleState implements TypeAdaptor {
 
     private final Semaphore uninstallSemaphore = new Semaphore(1);
 
@@ -120,6 +121,18 @@ abstract class UserBundleState extends AbstractBundleState {
 
     abstract UserBundleRevision createRevisionInternal(Deployment dep) throws BundleException;
 
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T adapt(Class<T> type) {
+        T result = null;
+        if (type.isAssignableFrom(Deployment.class)) {
+            result = (T) getDeployment();
+        } else if (type.isAssignableFrom(StorageState.class)) {
+            result = (T) getStorageState();
+        }
+        return result;
+    }
+    
     @Override
     public Dictionary<String, String> getHeaders(String locale) {
         // This method must continue to return Manifest header information while this bundle is in the UNINSTALLED state,

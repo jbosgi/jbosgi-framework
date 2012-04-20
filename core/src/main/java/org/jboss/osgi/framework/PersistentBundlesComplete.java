@@ -32,10 +32,6 @@ import org.jboss.msc.service.ServiceName;
  */
 public class PersistentBundlesComplete extends AbstractInstallComplete {
 
-    public PersistentBundlesComplete(BundleManager bundleManager) {
-        super(bundleManager);
-    }
-
     protected ServiceName getServiceName() {
         return IntegrationServices.PERSISTENT_BUNDLES_COMPLETE;
     }

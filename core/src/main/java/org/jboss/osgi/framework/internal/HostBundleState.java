@@ -204,6 +204,8 @@ final class HostBundleState extends UserBundleState {
             if ((options & START_TRANSIENT) != 0)
                 throw MESSAGES.bundleCannotStartBundleDueToStartLevel();
 
+            LOGGER.debugf("Start level [%d] not valid for: %s", getStartLevel(), this);
+
             // Set this bundle's autostart setting
             persistAutoStartSettings(options);
             return;

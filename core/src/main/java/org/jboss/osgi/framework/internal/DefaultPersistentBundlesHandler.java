@@ -28,7 +28,7 @@ import java.util.List;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -80,8 +80,9 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
         DeploymentFactoryPlugin deploymentPlugin = injectedDeploymentFactory.getValue();
 
         // Create the COMPLETE service that listens on the bundle INSTALL services
-        PersistentBundlesComplete installComplete = new PersistentBundlesComplete(bundleManager);
+        PersistentBundlesComplete installComplete = new PersistentBundlesComplete();
         ServiceBuilder<Void> builder = installComplete.install(context.getChildTarget());
+        ServiceListener<Object> listener = installComplete.getListener();
 
         // Install the persisted bundles
         StorageStateProvider storageStateProvider = injectedStorageProvider.getValue();
@@ -91,14 +92,12 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
             if (bundleManager.getBundleById(bundleId) == null) {
                 try {
                     Deployment dep = deploymentPlugin.createDeployment(storageState);
-                    ServiceName serviceName = bundleManager.installBundle(dep);
-                    installComplete.registerBundleInstallService(serviceName, dep);
+                    bundleManager.installBundle(dep, listener);
                 } catch (BundleException ex) {
                     LOGGER.errorStateCannotInstallInitialBundle(ex, storageState.getLocation());
                 }
             }
         }
-        
         // Notify the COMPLETE service that the bundle INSTALL services are installed 
         installComplete.installComplete(builder);
     }
