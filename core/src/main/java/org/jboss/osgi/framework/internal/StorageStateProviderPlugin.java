@@ -21,9 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -65,10 +65,10 @@ final class StorageStateProviderPlugin extends AbstractPluginService<StorageStat
     }
 
     @Override
-    public List<StorageState> getStorageStates() {
+    public Set<StorageState> getStorageStates() {
         BundleStoragePlugin bundleStorage = injectedBundleStorage.getValue();
-        List<InternalStorageState> storageStates = bundleStorage.getBundleStorageStates();
-        return Collections.unmodifiableList(new ArrayList<StorageState>(storageStates));
+        Set<InternalStorageState> storageStates = bundleStorage.getBundleStorageStates();
+        return Collections.unmodifiableSet(new HashSet<StorageState>(storageStates));
     }
 
     @Override

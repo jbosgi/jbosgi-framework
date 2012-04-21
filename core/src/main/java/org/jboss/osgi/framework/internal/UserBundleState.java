@@ -129,6 +129,8 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
             result = (T) getDeployment();
         } else if (type.isAssignableFrom(StorageState.class)) {
             result = (T) getStorageState();
+        } else if (type.isAssignableFrom(OSGiMetaData.class)) {
+            result = (T) getOSGiMetaData();
         }
         return result;
     }

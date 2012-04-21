@@ -317,7 +317,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     }
 
     @Override
-    public ServiceName installBundle(Deployment deployment, ServiceListener<Object> listener) throws BundleException {
+    public ServiceName installBundle(Deployment deployment, ServiceListener<Bundle> listener) throws BundleException {
         if (deployment == null)
             throw MESSAGES.illegalArgumentNull("deployment");
 

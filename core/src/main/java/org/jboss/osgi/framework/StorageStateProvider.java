@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework;
 
-import java.util.List;
+import java.util.Set;
 
 import org.jboss.msc.service.Service;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -35,7 +35,7 @@ import org.osgi.framework.BundleException;
  */
 public interface StorageStateProvider extends Service<StorageStateProvider> {
 
-    List<StorageState> getStorageStates();
+    Set<StorageState> getStorageStates();
 
     StorageState getByLocation(String location);
 

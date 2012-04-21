@@ -30,10 +30,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceListener;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -48,6 +50,7 @@ import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.spi.BundleInfo;
 import org.jboss.osgi.spi.util.StringPropertyReplacer;
 import org.jboss.osgi.spi.util.StringPropertyReplacer.PropertyProvider;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -78,9 +81,9 @@ final class DefaultAutoInstallHandler extends AbstractPluginService<AutoInstallH
     public void start(StartContext context) throws StartException {
         super.start(context);
 
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        List<URL> autoInstall = new ArrayList<URL>();
-        List<URL> autoStart = new ArrayList<URL>();
+        final BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        final List<URL> autoInstall = new ArrayList<URL>();
+        final List<URL> autoStart = new ArrayList<URL>();
 
         String propValue = (String) bundleManager.getProperty(Constants.PROPERTY_AUTO_INSTALL_URLS);
         if (propValue != null) {
@@ -100,29 +103,35 @@ final class DefaultAutoInstallHandler extends AbstractPluginService<AutoInstallH
                 }
             }
         }
-        
+
         // Add the autoStart bundles to autoInstall
         autoInstall.addAll(autoStart);
 
         // Create the COMPLETE service that listens on the bundle INSTALL services
-        AutoInstallComplete installComplete = new AutoInstallComplete();
-        ServiceBuilder<Void> builder = installComplete.install(context.getChildTarget());
-        ServiceListener<Object> listener = installComplete.getListener();
+        AutoInstallComplete installComplete = new AutoInstallComplete() {
+            @Override
+            protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
+                return autoInstall.size() == trackedServices.size();
+            }
+        };
 
-        // Install the auto install bundles
-        for (URL url : autoInstall) {
-            try {
-                BundleInfo info = BundleInfo.createBundleInfo(url);
-                Deployment dep = DeploymentFactory.createDeployment(info);
-                dep.setAutoStart(autoStart.contains(url));
-                bundleManager.installBundle(dep, listener);
-            } catch (BundleException ex) {
-                LOGGER.errorStateCannotInstallInitialBundle(ex, url.toExternalForm());
+        ServiceBuilder<Void> builder = installComplete.install(context.getChildTarget());
+        if (autoInstall.isEmpty()) {
+            builder.install();
+        } else {
+            // Install the auto install bundles
+            ServiceListener<Bundle> listener = installComplete.getListener();
+            for (URL url : autoInstall) {
+                try {
+                    BundleInfo info = BundleInfo.createBundleInfo(url);
+                    Deployment dep = DeploymentFactory.createDeployment(info);
+                    dep.setAutoStart(autoStart.contains(url));
+                    bundleManager.installBundle(dep, listener);
+                } catch (BundleException ex) {
+                    LOGGER.errorStateCannotInstallInitialBundle(ex, url.toExternalForm());
+                }
             }
         }
-        
-        // Notify the COMPLETE service that the bundle INSTALL services are installed 
-        installComplete.installComplete(builder);
     }
 
     @Override

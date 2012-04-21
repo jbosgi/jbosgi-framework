@@ -26,6 +26,7 @@ import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -36,7 +37,7 @@ import org.osgi.framework.BundleException;
  */
 final class HostBundleInstalledService extends UserBundleInstalledService<HostBundleState> {
 
-    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, ServiceListener<Object> listener) throws BundleException {
+    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, ServiceListener<Bundle> listener) throws BundleException {
         ServiceName serviceName = BundleManagerPlugin.getServiceName(dep).append("INSTALLED");
         HostBundleInstalledService service = new HostBundleInstalledService(frameworkState, dep);
         ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, service);

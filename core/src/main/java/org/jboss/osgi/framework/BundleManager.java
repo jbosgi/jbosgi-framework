@@ -104,7 +104,7 @@ public interface BundleManager extends Service<BundleManager> {
      * @param listener An optional listener on the INSTALL service
      * @return The name of the INSTALL service
      */
-    ServiceName installBundle(Deployment dep, ServiceListener<Object> listener) throws BundleException;
+    ServiceName installBundle(Deployment dep, ServiceListener<Bundle> listener) throws BundleException;
 
     /**
      * Uninstall the given deployment

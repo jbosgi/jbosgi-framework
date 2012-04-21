@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework;
 
+import java.util.Set;
+
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 
@@ -30,14 +32,17 @@ import org.jboss.msc.service.ServiceName;
  * @author thomas.diesler@jboss.com
  * @since 16-Apr-2012
  */
-public class PersistentBundlesComplete extends AbstractInstallComplete {
+public abstract class PersistentBundlesComplete extends AbstractInstallComplete {
 
     protected ServiceName getServiceName() {
         return IntegrationServices.PERSISTENT_BUNDLES_COMPLETE;
     }
 
     @Override
-    protected void configureInstallCompleteDependencies(ServiceBuilder<Void> builder) {
+    protected void configureDependencies(ServiceBuilder<Void> builder) {
         builder.addDependency(IntegrationServices.PERSISTENT_BUNDLES_HANDLER);
     }
+
+    @Override
+    protected abstract boolean allServicesAdded(Set<ServiceName> trackedServices);
 }

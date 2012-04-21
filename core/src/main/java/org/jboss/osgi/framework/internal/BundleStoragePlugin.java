@@ -30,12 +30,12 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -59,7 +59,7 @@ import org.osgi.framework.Constants;
 final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
-    private final Map<String, InternalStorageState> storageStates = new LinkedHashMap<String, InternalStorageState>();
+    private final Map<String, InternalStorageState> storageStates = new HashMap<String, InternalStorageState>();
     private File storageArea;
     private boolean firstInit;
 
@@ -95,7 +95,9 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
                 for (File storageDir : storageDirs) {
                     LOGGER.debugf("Creating storage state from: %s", storageDir);
                     InternalStorageState storageState = InternalStorageState.createStorageState(storageDir);
-                    storageStates.put(storageState.getLocation(), storageState);
+                    if (storageState.getBundleId() != 0) {
+                        storageStates.put(storageState.getLocation(), storageState);
+                    }
                 }
             }
         } catch (IOException ex) {
@@ -126,7 +128,9 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
 
         InternalStorageState storageState = InternalStorageState.createStorageState(bundleDir, rootFile, props);
         synchronized (storageStates) {
-            storageStates.put(storageState.getLocation(), storageState);
+            if (storageState.getBundleId() != 0) {
+                storageStates.put(storageState.getLocation(), storageState);
+            }
         }
         return storageState;
     }
@@ -139,8 +143,8 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
         }
     }
 
-    List<InternalStorageState> getBundleStorageStates() {
-        return Collections.unmodifiableList(new ArrayList<InternalStorageState>(storageStates.values()));
+    Set<InternalStorageState> getBundleStorageStates() {
+        return Collections.unmodifiableSet(new HashSet<InternalStorageState>(storageStates.values()));
     }
 
     InternalStorageState getStorageState(String location) {
@@ -271,7 +275,7 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
             getProperties().setProperty(PROPERTY_START_LEVEL, new Integer(level).toString());
             writeProperties();
         }
-        
+
         private void writeProperties() {
             try {
                 File propsFile = new File(getStorageDir() + "/" + BUNDLE_PERSISTENT_PROPERTIES);
