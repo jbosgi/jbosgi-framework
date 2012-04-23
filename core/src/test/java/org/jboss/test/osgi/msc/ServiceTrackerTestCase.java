@@ -70,7 +70,7 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
         ServiceListener<Object> listener = new ServiceTracker<Object>() {
 
             @Override
-            public void allComplete() {
+            public void complete() {
                 latch.countDown();
             }
         };
@@ -105,7 +105,7 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
             }
 
             @Override
-            public void allComplete() {
+            public void complete() {
                 latch.countDown();
             }
         };

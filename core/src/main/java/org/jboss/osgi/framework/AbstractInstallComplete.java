@@ -53,7 +53,7 @@ import org.osgi.framework.BundleException;
 abstract class AbstractInstallComplete extends AbstractService<Void> {
 
     private Set<Bundle> installedBundles = new HashSet<Bundle>();
-    private ServiceListener<Bundle> listener;
+    private ServiceTracker<Bundle> tracker;
 
     protected abstract ServiceName getServiceName();
 
@@ -62,13 +62,13 @@ abstract class AbstractInstallComplete extends AbstractService<Void> {
     protected abstract void configureDependencies(ServiceBuilder<Void> builder);
 
     public ServiceListener<Bundle> getListener() {
-        return listener;
+        return tracker;
     }
 
     public ServiceBuilder<Void> install(ServiceTarget serviceTarget) {
         final AbstractInstallComplete installComplete = this;
         final ServiceBuilder<Void> builder = serviceTarget.addService(getServiceName(), this);
-        listener = new ServiceTracker<Bundle>() {
+        tracker = new ServiceTracker<Bundle>() {
 
             @Override
             protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
@@ -82,12 +82,16 @@ abstract class AbstractInstallComplete extends AbstractService<Void> {
             }
 
             @Override
-            protected void allComplete() {
+            protected void complete() {
                 builder.install();
             }
         };
         configureDependencies(builder);
         return builder;
+    }
+
+    public void checkAndComplete() {
+        tracker.checkAndComplete();
     }
 
     public void start(final StartContext context) throws StartException {
@@ -110,7 +114,7 @@ abstract class AbstractInstallComplete extends AbstractService<Void> {
         }
         LOGGER.debugf("Started: %s", controller.getName());
         installedBundles = null;
-        listener = null;
+        tracker = null;
     }
 
     static class BundleComparator implements Comparator<Bundle> {

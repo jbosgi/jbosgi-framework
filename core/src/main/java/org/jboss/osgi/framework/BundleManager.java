@@ -28,6 +28,7 @@ import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -58,12 +59,6 @@ public interface BundleManager extends Service<BundleManager> {
      * @return the bundle or null if there is no bundle with that location
      */
     Bundle getBundleByLocation(String location);
-
-    /**
-     * Get the set of installed bundles.
-     * Bundles in state UNINSTALLED are not returned.
-     */
-    Set<Bundle> getBundles();
 
     /**
      * Get the set of bundles that are in one of the given states.
@@ -97,11 +92,12 @@ public interface BundleManager extends Service<BundleManager> {
 
     /**
      * Install a bundle from the given deployment
-     * @param dep The bundle deployment
+     *
+     * @param deployment The bundle deployment
      * @param listener An optional listener on the INSTALL service
      * @return The name of the INSTALL service
      */
-    ServiceName installBundle(Deployment dep, ServiceListener<Bundle> listener) throws BundleException;
+    ServiceName installBundle(ServiceTarget serviceTarget, Deployment deployment, ServiceListener<Bundle> listener) throws BundleException;
 
     /**
      * Uninstall the given deployment
@@ -114,7 +110,7 @@ public interface BundleManager extends Service<BundleManager> {
     ServiceContainer getServiceContainer();
 
     /**
-     * Returns the framework properties merged with the System properties. 
+     * Returns the framework properties merged with the System properties.
      * @return The effective framework properties in a map
      */
     Map<String, Object> getProperties();

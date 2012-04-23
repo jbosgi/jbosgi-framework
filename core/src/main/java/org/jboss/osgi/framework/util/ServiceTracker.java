@@ -26,15 +26,16 @@ import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Transition;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.ServiceController.Transition;
 
 /**
- * 
+ *
  * @author Thomas.Diesler@jboss.com
  * @since 19-Apr-2012
  */
@@ -42,11 +43,12 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
 
     private final Set<ServiceName> addedNames = new HashSet<ServiceName>();
     private final Set<ServiceController<? extends S>> trackedController = new HashSet<ServiceController<? extends S>>();
+    private final AtomicBoolean allComplete = new AtomicBoolean();
 
     @Override
     public void listenerAdded(ServiceController<? extends S> controller) {
         synchronized (trackedController) {
-            LOGGER.infof("ServiceTracker controller added: %s", controller);
+            LOGGER.debugf("ServiceTracker controller added: %s", controller);
             addedNames.add(controller.getName());
             trackedController.add(controller);
         }
@@ -57,12 +59,12 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         synchronized (trackedController) {
             switch (transition) {
                 case STARTING_to_UP:
-                    LOGGER.infof("ServiceTracker transition to UP: " + controller.getName());
+                    LOGGER.debugf("ServiceTracker transition to UP: " + controller.getName());
                     serviceStarted(controller);
                     serviceComplete(controller);
                     break;
                 case STARTING_to_START_FAILED:
-                    LOGGER.infof("ServiceTracker transition to START_FAILED: " + controller.getName());
+                    LOGGER.debugf("ServiceTracker transition to START_FAILED: " + controller.getName());
                     StartException ex = controller.getStartException();
                     serviceStartFailed(controller, ex);
                     serviceComplete(controller);
@@ -74,9 +76,17 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     private void serviceComplete(ServiceController<? extends S> controller) {
         trackedController.remove(controller);
         controller.removeListener(this);
-        if (trackedController.size() == 0 && allServicesAdded(Collections.unmodifiableSet(addedNames))) {
-            LOGGER.infof("ServiceTracker complete: " + getClass().getName());
-            allComplete();
+        checkAndComplete();
+    }
+
+    public void checkAndComplete() {
+        synchronized (trackedController) {
+            if (trackedController.size() == 0 && allServicesAdded(Collections.unmodifiableSet(addedNames))) {
+                if (allComplete.compareAndSet(false, true)) {
+                    LOGGER.debugf("ServiceTracker complete: " + getClass().getName());
+                    complete();
+                }
+            }
         }
     }
 
@@ -90,6 +100,6 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     protected void serviceStarted(ServiceController<? extends S> controller) {
     }
 
-    protected void allComplete() {
+    protected void complete() {
     }
 }

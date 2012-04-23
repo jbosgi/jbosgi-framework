@@ -62,6 +62,7 @@ import org.osgi.framework.BundleException;
 final class DefaultAutoInstallHandler extends AbstractPluginService<AutoInstallHandler> implements AutoInstallHandler {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
+    private ServiceTarget serviceTarget;
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
         if (registry.getService(AUTOINSTALL_HANDLER) == null) {
@@ -80,6 +81,7 @@ final class DefaultAutoInstallHandler extends AbstractPluginService<AutoInstallH
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
+        serviceTarget = context.getChildTarget();
 
         final BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         final List<URL> autoInstall = new ArrayList<URL>();
@@ -126,7 +128,7 @@ final class DefaultAutoInstallHandler extends AbstractPluginService<AutoInstallH
                     BundleInfo info = BundleInfo.createBundleInfo(url);
                     Deployment dep = DeploymentFactory.createDeployment(info);
                     dep.setAutoStart(autoStart.contains(url));
-                    bundleManager.installBundle(dep, listener);
+                    bundleManager.installBundle(serviceTarget, dep, listener);
                 } catch (BundleException ex) {
                     LOGGER.errorStateCannotInstallInitialBundle(ex, url.toExternalForm());
                 }

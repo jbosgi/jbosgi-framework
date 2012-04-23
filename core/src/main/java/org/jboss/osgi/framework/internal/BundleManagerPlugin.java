@@ -100,7 +100,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         implementationTitle = BundleManagerPlugin.class.getPackage().getImplementationTitle();
         implementationVersion = BundleManagerPlugin.class.getPackage().getImplementationVersion();
     }
-    
+
     private static final Set<String> IDENTITY_TYPES = new HashSet<String>();
     static {
         IDENTITY_TYPES.add(IdentityNamespace.TYPE_BUNDLE);
@@ -117,7 +117,6 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     private final Map<String, Object> properties = new HashMap<String, Object>();
     private final AtomicBoolean shutdownInitiated = new AtomicBoolean();
     private ServiceContainer serviceContainer;
-    private ServiceTarget serviceTarget;
 
     static BundleManagerPlugin addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
         BundleManagerPlugin service = new BundleManagerPlugin(frameworkBuilder);
@@ -163,7 +162,6 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         super.start(context);
         LOGGER.infoFrameworkImplementation(implementationTitle, implementationVersion);
         serviceContainer = context.getController().getServiceContainer();
-        serviceTarget = context.getChildTarget();
         LOGGER.debugf("Framework properties");
         for (Entry<String, Object> entry : properties.entrySet()) {
             LOGGER.debugf(" %s = %s", entry.getKey(), entry.getValue());
@@ -252,8 +250,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         return ServiceName.of(Services.BUNDLE_BASE_NAME, "" + bundleId, "" + symbolicName, "" + version);
     }
 
-    @Override
-    public Set<Bundle> getBundles() {
+    Set<Bundle> getBundles() {
         Set<Bundle> result = new HashSet<Bundle>();
         XEnvironment env = injectedEnvironment.getValue();
         for (Resource aux : env.getResources(IDENTITY_TYPES)) {
@@ -327,7 +324,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     }
 
     @Override
-    public ServiceName installBundle(Deployment deployment, ServiceListener<Bundle> listener) throws BundleException {
+    public ServiceName installBundle(ServiceTarget serviceTarget, Deployment deployment, ServiceListener<Bundle> listener) throws BundleException {
         if (deployment == null)
             throw MESSAGES.illegalArgumentNull("deployment");
 
