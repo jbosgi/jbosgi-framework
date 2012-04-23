@@ -24,7 +24,8 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_HANDLER;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
@@ -83,8 +84,17 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
         DeploymentFactoryPlugin deploymentPlugin = injectedDeploymentFactory.getValue();
 
         final StorageStateProvider storageStateProvider = injectedStorageProvider.getValue();
-        final Set<StorageState> storageStates = storageStateProvider.getStorageStates();
-        
+        final Set<StorageState> storageStates = new HashSet<StorageState>(storageStateProvider.getStorageStates());
+
+        // Reduce the set by the bundles that are already installed
+        Iterator<StorageState> iterator = storageStates.iterator();
+        while (iterator.hasNext()) {
+            StorageState storageState = iterator.next();
+            if (bundleManager.getBundleById(storageState.getBundleId()) != null) {
+                iterator.remove();
+            }
+        }
+
         // Create the COMPLETE service that listens on the bundle INSTALL services
         PersistentBundlesComplete installComplete = new PersistentBundlesComplete() {
             @Override
@@ -92,7 +102,8 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
                 return storageStates.size() == trackedServices.size();
             }
         };
-        
+
+        LOGGER.debugf("Installing persistent bundle states: %s", storageStates);
         ServiceBuilder<Void> builder = installComplete.install(context.getChildTarget());
         if (storageStates.size() == 0) {
             builder.install();
@@ -100,14 +111,11 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
             // Install the persisted bundles
             ServiceListener<Bundle> listener = installComplete.getListener();
             for (StorageState storageState : storageStates) {
-                long bundleId = storageState.getBundleId();
-                if (bundleManager.getBundleById(bundleId) == null) {
-                    try {
-                        Deployment dep = deploymentPlugin.createDeployment(storageState);
-                        bundleManager.installBundle(dep, listener);
-                    } catch (BundleException ex) {
-                        LOGGER.errorStateCannotInstallInitialBundle(ex, storageState.getLocation());
-                    }
+                try {
+                    Deployment dep = deploymentPlugin.createDeployment(storageState);
+                    bundleManager.installBundle(dep, listener);
+                } catch (BundleException ex) {
+                    LOGGER.errorStateCannotInstallInitialBundle(ex, storageState.getLocation());
                 }
             }
         }

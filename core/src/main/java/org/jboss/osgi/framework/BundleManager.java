@@ -54,9 +54,6 @@ public interface BundleManager extends Service<BundleManager> {
     /**
      * Get a bundle by location
      *
-     * Note, this will get the bundle regadless of its state.
-     * i.e. The returned bundle may have been UNINSTALLED
-     *
      * @param location the location of the bundle
      * @return the bundle or null if there is no bundle with that location
      */

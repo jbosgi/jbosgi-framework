@@ -27,6 +27,7 @@ import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,6 +59,7 @@ import org.jboss.osgi.framework.util.Java;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.VersionRange;
 import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
@@ -65,6 +67,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
+import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.resource.Resource;
 
 /**
@@ -96,6 +99,12 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     static {
         implementationTitle = BundleManagerPlugin.class.getPackage().getImplementationTitle();
         implementationVersion = BundleManagerPlugin.class.getPackage().getImplementationVersion();
+    }
+    
+    private static final Set<String> IDENTITY_TYPES = new HashSet<String>();
+    static {
+        IDENTITY_TYPES.add(IdentityNamespace.TYPE_BUNDLE);
+        IDENTITY_TYPES.add(IdentityNamespace.TYPE_FRAGMENT);
     }
 
     final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
@@ -247,7 +256,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     public Set<Bundle> getBundles() {
         Set<Bundle> result = new HashSet<Bundle>();
         XEnvironment env = injectedEnvironment.getValue();
-        for (Resource aux : env.getResources(null)) {
+        for (Resource aux : env.getResources(IDENTITY_TYPES)) {
             if (aux instanceof AbstractBundleRevision) {
                 AbstractBundleRevision brev = (AbstractBundleRevision) aux;
                 AbstractBundleState bundleState = brev.getBundleState();
@@ -262,7 +271,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     public Set<Bundle> getBundles(Integer states) {
         Set<Bundle> result = new HashSet<Bundle>();
         XEnvironment env = injectedEnvironment.getValue();
-        for (Resource aux : env.getResources(null)) {
+        for (Resource aux : env.getResources(IDENTITY_TYPES)) {
             if (aux instanceof AbstractBundleRevision) {
                 AbstractBundleRevision brev = (AbstractBundleRevision) aux;
                 AbstractBundleState bundleState = brev.getBundleState();
@@ -279,7 +288,8 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
             return getFrameworkState().getSystemBundle();
         }
         XEnvironment env = injectedEnvironment.getValue();
-        for (Resource aux : env.getResources(null)) {
+        Collection<XResource> resources = env.getResources(IDENTITY_TYPES);
+        for (Resource aux : resources) {
             if (aux instanceof AbstractBundleRevision) {
                 AbstractBundleRevision brev = (AbstractBundleRevision) aux;
                 AbstractBundleState bundleState = brev.getBundleState();
