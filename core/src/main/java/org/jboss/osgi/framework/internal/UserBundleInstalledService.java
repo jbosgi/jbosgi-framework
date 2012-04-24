@@ -69,6 +69,7 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
             addToEnvironment(userRev);
             bundleState.changeState(Bundle.INSTALLED, 0);
             bundleState.fireBundleEvent(BundleEvent.INSTALLED);
+            LOGGER.infoBundleInstalled(bundleState);
         } catch (BundleException ex) {
             if (storageState != null) {
                 BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();

@@ -54,12 +54,12 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
 
     @Test
     public void testBundleStorageForInputStream() throws Exception {
-        BundleManagerPlugin bundleManager = getBundleManager();
+
         BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
         assertNotNull("BundleStoragePlugin not null", storagePlugin);
 
         JavaArchive archive = getArchive();
-        InternalStorageState storageState = storagePlugin.createStorageState(bundleManager.nextBundleId(), archive.getName(), 1, toVirtualFile(archive));
+        InternalStorageState storageState = storagePlugin.createStorageState(1, archive.getName(), 1, toVirtualFile(archive));
         assertStorageState(storageState);
 
         storagePlugin.deleteStorageState(storageState);
@@ -70,7 +70,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
         assertNull("StorageState deleted", storagePlugin.getStorageState(location));
 
         // Try this a second time
-        storageState = storagePlugin.createStorageState(bundleManager.nextBundleId(), archive.getName(), 1, toVirtualFile(archive));
+        storageState = storagePlugin.createStorageState(2, archive.getName(), 1, toVirtualFile(archive));
         assertStorageState(storageState);
 
         storagePlugin.deleteStorageState(storageState);
@@ -80,6 +80,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
 
     @Test
     public void testBundleStorageForExternalFile() throws Exception {
+
         BundleManagerPlugin bundleManager = getBundleManager();
         BundleStoragePlugin storagePlugin = bundleManager.getFrameworkState().getBundleStoragePlugin();
         assertNotNull("BundleStoragePlugin not null", storagePlugin);
@@ -90,7 +91,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
         fos.close();
 
         VirtualFile rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
-        InternalStorageState storageState = storagePlugin.createStorageState(bundleManager.nextBundleId(), file.getAbsolutePath(), 1, rootFile);
+        InternalStorageState storageState = storagePlugin.createStorageState(1, file.getAbsolutePath(), 1, rootFile);
         assertStorageState(storageState);
 
         storagePlugin.deleteStorageState(storageState);

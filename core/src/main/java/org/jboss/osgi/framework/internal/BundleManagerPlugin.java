@@ -117,6 +117,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     private final Map<String, Object> properties = new HashMap<String, Object>();
     private final AtomicBoolean shutdownInitiated = new AtomicBoolean();
     private ServiceContainer serviceContainer;
+    private ServiceTarget serviceTarget;
 
     static BundleManagerPlugin addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
         BundleManagerPlugin service = new BundleManagerPlugin(frameworkBuilder);
@@ -162,6 +163,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         super.start(context);
         LOGGER.infoFrameworkImplementation(implementationTitle, implementationVersion);
         serviceContainer = context.getController().getServiceContainer();
+        serviceTarget = context.getChildTarget();
         LOGGER.debugf("Framework properties");
         for (Entry<String, Object> entry : properties.entrySet()) {
             LOGGER.debugf(" %s = %s", entry.getKey(), entry.getValue());
@@ -324,7 +326,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     }
 
     @Override
-    public ServiceName installBundle(ServiceTarget serviceTarget, Deployment deployment, ServiceListener<Bundle> listener) throws BundleException {
+    public ServiceName installBundle(Deployment deployment, ServiceListener<Bundle> listener) throws BundleException {
         if (deployment == null)
             throw MESSAGES.illegalArgumentNull("deployment");
 
@@ -334,6 +336,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         // the Bundle object for that bundle is returned.
         Bundle bundle = getBundleByLocation(deployment.getLocation());
         if (bundle != null) {
+            LOGGER.debugf("Installing an already existing bundle: %s", deployment);
             AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
             serviceName = bundleState.getServiceName(Bundle.INSTALLED);
             VFSUtils.safeClose(deployment.getRoot());
@@ -342,13 +345,10 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
                 // The storage state exists when we re-create the bundle from persistent storage
                 StorageState storageState = deployment.getAttachment(StorageState.class);
                 if (storageState != null) {
-                    BundleId bundleId = new BundleId(storageState.getBundleId());
                     deployment.setAutoStart(storageState.isPersistentlyStarted());
-                    deployment.addAttachment(BundleId.class, bundleId);
-                } else {
-                    BundleId bundleId = new BundleId(nextBundleId());
-                    deployment.addAttachment(BundleId.class, bundleId);
                 }
+                BundleId bundleId = new BundleId(createBundleId(storageState));
+                deployment.addAttachment(BundleId.class, bundleId);
 
                 // Check that we have valid metadata
                 OSGiMetaData metadata = deployment.getAttachment(OSGiMetaData.class);
@@ -378,8 +378,20 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         return serviceName;
     }
 
-    long nextBundleId() {
-        return identityGenerator.incrementAndGet();
+    long createBundleId(StorageState storageState) {
+        synchronized (identityGenerator) {
+            long result;
+            if (storageState != null) {
+                result = storageState.getBundleId();
+                long diff = result - identityGenerator.get();
+                if (diff > 0) {
+                    identityGenerator.addAndGet(diff);
+                }
+            } else {
+                result = identityGenerator.incrementAndGet();
+            }
+            return result;
+        }
     }
 
     @Override

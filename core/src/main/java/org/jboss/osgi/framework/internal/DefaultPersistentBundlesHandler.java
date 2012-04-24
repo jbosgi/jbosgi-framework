@@ -59,7 +59,6 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
     private final InjectedValue<StorageStateProvider> injectedStorageProvider = new InjectedValue<StorageStateProvider>();
     private final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
-    private ServiceTarget serviceTarget;
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
         if (registry.getService(PERSISTENT_BUNDLES_HANDLER) == null) {
@@ -81,7 +80,6 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        serviceTarget = context.getChildTarget();
 
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         DeploymentFactoryPlugin deploymentPlugin = injectedDeploymentFactory.getValue();
@@ -116,7 +114,7 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
             for (StorageState storageState : storageStates) {
                 try {
                     Deployment dep = deploymentPlugin.createDeployment(storageState);
-                    bundleManager.installBundle(serviceTarget, dep, listener);
+                    bundleManager.installBundle(dep, listener);
                 } catch (BundleException ex) {
                     LOGGER.errorStateCannotInstallInitialBundle(ex, storageState.getLocation());
                 }

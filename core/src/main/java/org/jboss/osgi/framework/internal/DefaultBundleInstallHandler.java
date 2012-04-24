@@ -27,8 +27,6 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallHandler;
@@ -44,7 +42,6 @@ import org.osgi.framework.BundleException;
 final class DefaultBundleInstallHandler extends AbstractPluginService<BundleInstallHandler> implements BundleInstallHandler {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
-    private ServiceTarget serviceTarget;
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
         if (registry.getService(BUNDLE_INSTALL_HANDLER) == null) {
@@ -61,12 +58,6 @@ final class DefaultBundleInstallHandler extends AbstractPluginService<BundleInst
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        super.start(context);
-        serviceTarget = context.getChildTarget();
-    }
-
-    @Override
     public BundleInstallHandler getValue() {
         return this;
     }
@@ -74,7 +65,7 @@ final class DefaultBundleInstallHandler extends AbstractPluginService<BundleInst
     @Override
     public void installBundle(Deployment dep) throws BundleException {
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        bundleManager.installBundle(serviceTarget, dep, null);
+        bundleManager.installBundle(dep, null);
     }
 
     @Override
