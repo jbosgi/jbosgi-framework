@@ -106,8 +106,7 @@ public final class FrameworkBuilder {
             URLHandlerPlugin.addService(serviceTarget);
 
             // Setup the logging system for jboss-modules
-            ModuleLogger logger = (ModuleLogger) getProperty(ModuleLogger.class.getName());
-            if (logger == null) {
+            if (getProperty(ModuleLogger.class.getName()) == null) {
                 Module.setModuleLogger(new JDKModuleLogger());
             }
 

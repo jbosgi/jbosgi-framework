@@ -102,192 +102,189 @@ public interface FrameworkMessages {
     @Message(id = 11214, value = "Cannot create storage area")
     IllegalStateException illegalStateCannotCreateStorageArea(@Cause Throwable cause);
 
-    //@Message(id = 11215, value = "Cannot install initial bundle: %s")
-    //IllegalStateException illegalStateCannotInstallInitialBundle(@Cause Throwable cause, Object source);
-
-    @Message(id = 11216, value = "Cannot create framework module")
+    @Message(id = 11215, value = "Cannot create framework module")
     IllegalStateException illegalStateCannotCreateFrameworkModule(@Cause Throwable cause);
 
-    @Message(id = 11217, value = "Module already exists: %s")
+    @Message(id = 11216, value = "Module already exists: %s")
     IllegalStateException illegalStateModuleAlreadyExists(ModuleIdentifier identifier);
 
-    @Message(id = 11218, value = "Cannot load module: %s")
+    @Message(id = 11217, value = "Cannot load module: %s")
     IllegalStateException illegalStateCannotLoadModule(@Cause Throwable cause, ModuleIdentifier identifier);
 
-    @Message(id = 11219, value = "System paths provider not initialized")
+    @Message(id = 11218, value = "System paths provider not initialized")
     IllegalStateException illegalStateSystemPathsNotInitialized();
 
-    @Message(id = 11220, value = "Cannot obtain attached host for: %s")
+    @Message(id = 11219, value = "Cannot obtain attached host for: %s")
     IllegalStateException illegalStateCannotObtainAttachedHost(BundleRevision brev);
 
-    @Message(id = 11221, value = "Framework builder already closed")
+    @Message(id = 11220, value = "Framework builder already closed")
     IllegalStateException illegalStateFrameworkBuilderClosed();
 
-    @Message(id = 11222, value = "Framework already stopped")
+    @Message(id = 11221, value = "Framework already stopped")
     IllegalStateException illegalStateFrameworkAlreadyStopped();
 
-    @Message(id = 11223, value = "Framework not initialized")
+    @Message(id = 11222, value = "Framework not initialized")
     IllegalStateException illegalStateFrameworkNotInitialized();
 
-    @Message(id = 11224, value = "Cannot find native library: %s")
+    @Message(id = 11223, value = "Cannot find native library: %s")
     IllegalStateException illegalStateCannotFindNativeLibrary(String libpath);
 
-    @Message(id = 11225, value = "Service unregistered: %s")
+    @Message(id = 11224, value = "Service unregistered: %s")
     IllegalStateException illegalStateServiceUnregistered(ServiceState serviceState);
 
-    @Message(id = 11226, value = "Cannot create system bundle storage")
+    @Message(id = 11225, value = "Cannot create system bundle storage")
     IllegalStateException illegalStateCannotCreateSystemBundleStorage(@Cause Throwable cause);
 
-    @Message(id = 11227, value = "No stream handlers for protocol: %s")
+    @Message(id = 11226, value = "No stream handlers for protocol: %s")
     IllegalStateException illegalStateNoStreamHandlersForProtocol(String protocol);
 
-    @Message(id = 11228, value = "Attempt to refresh an unresolved bundle: %s")
+    @Message(id = 11227, value = "Attempt to refresh an unresolved bundle: %s")
     IllegalStateException illegalStateRefreshUnresolvedBundle(Bundle bundle);
 
-    @Message(id = 11229, value = "Cannot obtain URL for: %s")
+    @Message(id = 11228, value = "Cannot obtain URL for: %s")
     IllegalStateException illegalStateCannotObtainURL(VirtualFile child);
 
-    @Message(id = 11230, value = "Cannot obtain virtual file from input stream")
+    @Message(id = 11229, value = "Cannot obtain virtual file from input stream")
     BundleException bundleCannotObtainVirtualFile(@Cause Throwable cause);
 
-    @Message(id = 11231, value = "Cannot obtain virtual file for: %s")
+    @Message(id = 11230, value = "Cannot obtain virtual file for: %s")
     BundleException bundleCannotObtainVirtualFileForLocation(@Cause Throwable cause, String location);
 
-    @Message(id = 11232, value = "Cannot install bundle for: %s")
+    @Message(id = 11231, value = "Cannot install bundle for: %s")
     BundleException bundleCannotInstallBundleForLocation(@Cause Throwable cause, String location);
 
-    @Message(id = 11234, value = "Unsupported bundle manifest version %d in: %s")
+    @Message(id = 11232, value = "Unsupported bundle manifest version %d in: %s")
     BundleException bundleUnsupportedBundleManifestVersion(int version, Bundle bundle);
 
-    @Message(id = 11235, value = "Missing Bundle-SymbolicName in: %s")
+    @Message(id = 11233, value = "Missing Bundle-SymbolicName in: %s")
     BundleException bundleMissingBundleSymbolicName(Bundle bundle);
 
-    @Message(id = 11236, value = "Duplicate import of package '%s' in: %s")
+    @Message(id = 11234, value = "Duplicate import of package '%s' in: %s")
     BundleException bundleDuplicatePackageImport(String packageName, Bundle bundle);
 
-    @Message(id = 11237, value = "Not allowed to import java.* in: %s")
+    @Message(id = 11235, value = "Not allowed to import java.* in: %s")
     BundleException bundleNotAllowdToImportJavaPackage(Bundle bundle);
 
-    @Message(id = 11238, value = "Not allowed to export java.* in: %s")
+    @Message(id = 11236, value = "Not allowed to export java.* in: %s")
     BundleException bundleNotAllowdToExportJavaPackage(Bundle bundle);
 
-    @Message(id = 11239, value = "Version and specification version for package '%s' missmatch in: %s")
+    @Message(id = 11237, value = "Version and specification version for package '%s' missmatch in: %s")
     BundleException bundlePackageVersionAndSpecificationVersionMissmatch(String packageName, Bundle bundle);
 
-    @Message(id = 11240, value = "Package '%s' cannot specify explicit bundle-symbolicname in: %s")
+    @Message(id = 11238, value = "Package '%s' cannot specify explicit bundle-symbolicname in: %s")
     BundleException bundlePackageCannotSpecifyBundleSymbolicName(String packageName, Bundle bundle);
 
-    @Message(id = 11241, value = "Package '%s' cannot specify explicit bundle-version in: %s")
+    @Message(id = 11239, value = "Package '%s' cannot specify explicit bundle-version in: %s")
     BundleException bundlePackageCannotSpecifyBundleVersion(String packageName, Bundle bundle);
 
-    @Message(id = 11242, value = "Bundle name and version already installed: %s")
+    @Message(id = 11240, value = "Bundle name and version already installed: %s")
     BundleException bundleNameAndVersionAlreadyInstalled(Bundle bundle);
 
-    @Message(id = 11243, value = "Invalid Fragment-Host for extension fragment: %s")
+    @Message(id = 11241, value = "Invalid Fragment-Host for extension fragment: %s")
     BundleException bundleInvalidFragmentHostForExtensionFragment(Bundle bundle);
 
-    @Message(id = 11244, value = "Invalid number format: %s")
+    @Message(id = 11242, value = "Invalid number format: %s")
     BundleException bundleInvalidNumberFormat(@Cause Throwable cause, String message);
 
-    @Message(id = 11245, value = "Not a valid deployment: %s")
+    @Message(id = 11243, value = "Not a valid deployment: %s")
     BundleException bundleInvalidDeployment(Deployment deployment);
 
-    @Message(id = 11246, value = "Fragments cannot be started")
+    @Message(id = 11244, value = "Fragments cannot be started")
     BundleException bundleCannotStartFragment();
 
-    @Message(id = 11247, value = "Fragments cannot be stopped")
+    @Message(id = 11245, value = "Fragments cannot be stopped")
     BundleException bundleCannotStopFragment();
 
-    @Message(id = 11248, value = "Cannot initialize Framework")
+    @Message(id = 11246, value = "Cannot initialize Framework")
     BundleException bundleCannotInitializeFramework(@Cause Throwable cause);
 
-    @Message(id = 11249, value = "Cannot start Framework")
+    @Message(id = 11247, value = "Cannot start Framework")
     BundleException bundleCannotStartFramework(@Cause Throwable cause);
 
-    @Message(id = 11250, value = "System bundle cannot be uninstalled")
+    @Message(id = 11248, value = "System bundle cannot be uninstalled")
     BundleException bundleCannotUninstallSystemBundle();
 
-    @Message(id = 11251, value = "Bundle cannot be started due to current start level")
+    @Message(id = 11249, value = "Bundle cannot be started due to current start level")
     BundleException bundleCannotStartBundleDueToStartLevel();
 
-    @Message(id = 11252, value = "Cannot resolve bundle: %s")
+    @Message(id = 11250, value = "Cannot resolve bundle: %s")
     BundleException bundleCannotResolveBundle(@Cause Throwable cause, Bundle bundle);
 
-    @Message(id = 11253, value = "Unsupported execution environment %s we have: %s")
+    @Message(id = 11251, value = "Unsupported execution environment %s we have: %s")
     BundleException bundleUnsupportedExecutionEnvironment(List<String> required, List<String> available);
 
-    @Message(id = 11254, value = "Cannot transition to STARTING: %s")
+    @Message(id = 11252, value = "Cannot transition to STARTING: %s")
     BundleException bundleCannotTransitionToStarting(@Cause Throwable cause, Bundle bundle);
 
-    @Message(id = 11255, value = "Invalid bundle activator: %s")
+    @Message(id = 11253, value = "Invalid bundle activator: %s")
     BundleException bundleInvalidBundleActivator(String className);
 
-    @Message(id = 11256, value = "Cannot start bundle: %s")
+    @Message(id = 11254, value = "Cannot start bundle: %s")
     BundleException bundleCannotStartBundle(@Cause Throwable cause, Bundle bundle);
 
-    @Message(id = 11257, value = "Bundle was uninstalled during activator start: %s")
+    @Message(id = 11255, value = "Bundle was uninstalled during activator start: %s")
     BundleException bundleBundleUninstalledDuringActivatorStart(Bundle bundle);
 
-    @Message(id = 11258, value = "Bundle was uninstalled during activator stop: %s")
+    @Message(id = 11256, value = "Bundle was uninstalled during activator stop: %s")
     BundleException bundleBundleUninstalledDuringActivatorStop(Bundle bundle);
 
-    @Message(id = 11259, value = "Error during activator stop: %s")
+    @Message(id = 11257, value = "Error during activator stop: %s")
     BundleException bundleErrorDuringActivatorStop(@Cause Throwable cause, Bundle bundle);
 
-    @Message(id = 11260, value = "Cannot acquire start/stop lock for: %s")
+    @Message(id = 11258, value = "Cannot acquire start/stop lock for: %s")
     BundleException bundleCannotAcquireStartStopLock(Bundle bundle);
 
-    @Message(id = 11261, value = "Cannot find Bundle-NativeCode header for: %s")
+    @Message(id = 11259, value = "Cannot find Bundle-NativeCode header for: %s")
     BundleException bundleCannotFindNativeCodeHeader(BundleRevision brev);
 
-    @Message(id = 11262, value = "No native code clause selected for: %s")
+    @Message(id = 11260, value = "No native code clause selected for: %s")
     BundleException bundleNoNativeCodeClauseSelected(List<ParameterizedAttribute> params);
 
-    @Message(id = 11263, value = "Invalid filter expression: %s")
+    @Message(id = 11261, value = "Invalid filter expression: %s")
     BundleException bundleInvalidFilterExpression(@Cause Throwable cause, String filterSpec);
 
-    @Message(id = 11264, value = "Cannot install persisted bundles")
+    @Message(id = 11262, value = "Cannot install persisted bundles")
     BundleException bundleCannotInstallPersistedBundles(@Cause Throwable cause);
 
-    @Message(id = 11265, value = "Cannot setup storage for: %s")
+    @Message(id = 11263, value = "Cannot setup storage for: %s")
     BundleException bundleCannotSetupStorage(@Cause Throwable cause, VirtualFile virtualFile);
 
-    @Message(id = 11266, value = "Cannot obtain revision content for: %s")
+    @Message(id = 11264, value = "Cannot obtain revision content for: %s")
     IOException ioCannotObtainRevisionContent(URL url);
 
-    @Message(id = 11267, value = "Cannot obtain content for: %s")
+    @Message(id = 11265, value = "Cannot obtain content for: %s")
     IOException ioCannotObtainContent(URL url);
 
-    @Message(id = 11268, value = "Cannot open connection on: %s")
+    @Message(id = 11266, value = "Cannot open connection on: %s")
     IOException ioCannotOpenConnectionOnHandler(@Cause Throwable cause, URLStreamHandlerService handler);
 
-    @Message(id = 11269, value = "Cannot load class from fragment: %s")
+    @Message(id = 11267, value = "Cannot load class from fragment: %s")
     ClassNotFoundException cannotLoadClassFromFragment(BundleRevision brev);
 
-    @Message(id = 11270, value = "Class '%s' not found in bundle revision: %s")
+    @Message(id = 11268, value = "Class '%s' not found in bundle revision: %s")
     ClassNotFoundException classNotFoundInRevision(String className, BundleRevision brev);
 
-    @Message(id = 11271, value = "Cannot load class '%s' from bundle revision: %s")
+    @Message(id = 11269, value = "Cannot load class '%s' from bundle revision: %s")
     ClassNotFoundException cannotLoadClassFromBundleRevision(@Cause Throwable cause, String className, BundleRevision brev);
 
-    @Message(id = 11272, value = "Cannot obtain web.xml from: %s")
+    @Message(id = 11270, value = "Cannot obtain web.xml from: %s")
     LifecycleInterceptorException lifecycleInterceptorCannotObtainWebXML(URL rootURL);
 
-    @Message(id = 11273, value = "Cannot obtain web.xml")
+    @Message(id = 11271, value = "Cannot obtain web.xml")
     LifecycleInterceptorException lifecycleInterceptorCannotObtainWebXML(@Cause Throwable cause);
 
-    @Message(id = 11274, value = "Timeout getting: %s")
+    @Message(id = 11272, value = "Timeout getting: %s")
     TimeoutException timeoutGettingService(String serviceName);
 
-    @Message(id = 11275, value = "Cannot get service value for: %s")
+    @Message(id = 11273, value = "Cannot get service value for: %s")
     ExecutionException executionCannotGetServiceValue(@Cause Throwable cause, String serviceName);
 
-    @Message(id = 11276, value = "Boot classpath extension not supported")
+    @Message(id = 11274, value = "Boot classpath extension not supported")
     UnsupportedOperationException unsupportedBootClasspathExtension();
 
-    @Message(id = 11277, value = "Framework extension not supported")
+    @Message(id = 11275, value = "Framework extension not supported")
     UnsupportedOperationException unsupportedFrameworkExtension();
 
-    @Message(id = 11278, value = "Timeout waiting for bundle install service: %s")
+    @Message(id = 11276, value = "Timeout waiting for bundle install service: %s")
     TimeoutException timeoutWaitingForBundleInstallService(Set<ServiceName> services);
 }

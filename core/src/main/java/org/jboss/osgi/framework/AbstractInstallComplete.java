@@ -96,7 +96,7 @@ abstract class AbstractInstallComplete extends AbstractService<Void> {
 
     public void start(final StartContext context) throws StartException {
         ServiceController<?> controller = context.getController();
-        LOGGER.debugf("Starting: %s", controller.getName());
+        LOGGER.tracef("Starting: %s", controller.getName());
         List<Bundle> bundles = new ArrayList<Bundle>(installedBundles);
         Collections.sort(bundles, new BundleComparator());
         for (Bundle bundle : bundles) {
@@ -104,7 +104,6 @@ abstract class AbstractInstallComplete extends AbstractService<Void> {
             Deployment dep = adaptor.adapt(Deployment.class);
             OSGiMetaData metadata = adaptor.adapt(OSGiMetaData.class);
             if (dep.isAutoStart() && metadata.getFragmentHost() == null) {
-                LOGGER.debugf("Starting bundle: %s", bundle);
                 try {
                     bundle.start(Bundle.START_ACTIVATION_POLICY);
                 } catch (BundleException ex) {

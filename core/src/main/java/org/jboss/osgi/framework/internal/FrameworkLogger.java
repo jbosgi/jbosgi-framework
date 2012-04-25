@@ -56,7 +56,7 @@ public interface FrameworkLogger extends BasicLogger {
     FrameworkLogger LOGGER = Logger.getMessageLogger(FrameworkLogger.class, "org.jboss.osgi.framework");
 
     @LogMessage(level = INFO)
-    @Message(id = 11000, value = "Framework started")
+    @Message(id = 11000, value = "OSGi Framework started")
     void infoFrameworkStarted();
 
     @LogMessage(level = INFO)
@@ -80,8 +80,8 @@ public interface FrameworkLogger extends BasicLogger {
     void infoBundleUninstalled(Bundle bundle);
 
     @LogMessage(level = INFO)
-    @Message(id = 11006, value = "%s - %s")
-    void infoFrameworkImplementation(String implementationTitle, String implementationVersion);
+    @Message(id = 11006, value = "OSGi Framework - %s")
+    void infoFrameworkImplementation(String implVersion);
 
     @LogMessage(level = INFO)
     @Message(id = 11007, value = "Increasing start level from %d to %d")
@@ -143,75 +143,67 @@ public interface FrameworkLogger extends BasicLogger {
     @Message(id = 11021, value = "Cannot acquire uninstall lock for: %s")
     void errorCannotAquireUninstallLock(Bundle bundle);
 
-    //@LogMessage(level = ERROR)
-    //@Message(id = 11022, value = "Cannot delete storage area")
-    //void errorCannotDeleteStorageArea(@Cause Throwable cause);
-
     @LogMessage(level = ERROR)
-    @Message(id = 11023, value = "Cannot write persistent storage: %s")
+    @Message(id = 11022, value = "Cannot write persistent storage: %s")
     void errorCannotWritePersistentStorage(@Cause Throwable cause, File bundleDir);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11024, value = "Cannot start bundle: %s")
+    @Message(id = 11023, value = "Cannot start bundle: %s")
     void errorCannotStartBundle(@Cause Throwable cause, Bundle bundle);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11025, value = "Invalid beginning start level: %s")
+    @Message(id = 11024, value = "Invalid beginning start level: %s")
     void errorInvalidBeginningStartLevel(String levelSpec);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11026, value = "Error processing service listener hook: %s")
+    @Message(id = 11025, value = "Error processing service listener hook: %s")
     void errorProcessingServiceListenerHook(@Cause Throwable cause, ListenerHook hook);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11027, value = "Framework Error")
+    @Message(id = 11026, value = "Framework Error")
     void errorFrameworkEvent(@Cause Throwable cause);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11028, value = "Cannot update framework")
+    @Message(id = 11027, value = "Cannot update framework")
     void errorCannotUpdateFramework(@Cause Throwable cause);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11029, value = "Cannot get resources '%s' from: %s")
+    @Message(id = 11028, value = "Cannot get resources '%s' from: %s")
     void errorCannotGetResources(@Cause Throwable cause, String path, BundleRevision brev);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11030, value = "Cannot activate bundle lazily: %s")
+    @Message(id = 11029, value = "Cannot activate bundle lazily: %s")
     void errorCannotActivateBundleLazily(@Cause Throwable cause, Bundle bundle);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11031, value = "Cannot provide native library location for: %s")
+    @Message(id = 11030, value = "Cannot provide native library location for: %s")
     void errorCannotProvideNativeLibraryLocation(@Cause Throwable cause, String libname);
 
-    //@LogMessage(level = ERROR)
-    //@Message(id = 11032, value = "Cannot install persistet bundle from: %s")
-    //void errorCannotInstallPersistentBundle(@Cause Throwable cause, StorageState storageState);
-
     @LogMessage(level = ERROR)
-    @Message(id = 11033, value = "Cannot get entry '%s' from: %s")
+    @Message(id = 11031, value = "Cannot get entry '%s' from: %s")
     void errorCannotGetEntry(@Cause Throwable cause, String path, BundleRevision brev);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11034, value = "Cannot obtain class loader for: %s")
+    @Message(id = 11032, value = "Cannot obtain class loader for: %s")
     void errorCannotObtainClassLoader(@Cause Throwable cause, BundleRevision brev);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11035, value = "Cannot remove service: %s")
+    @Message(id = 11033, value = "Cannot remove service: %s")
     void errorCannotRemoveService(@Cause Throwable cause, ServiceName serviceName);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11036, value = "Service interface [%s] loaded from [%s] is not assignable from [%s] loaded from [%s]")
+    @Message(id = 11034, value = "Service interface [%s] loaded from [%s] is not assignable from [%s] loaded from [%s]")
     void errorServiceNotAssignable(String name, ClassLoader loader, String otherName, ClassLoader otherLoader);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11037, value = "Cannot load [%s] from: %s")
+    @Message(id = 11035, value = "Cannot load [%s] from: %s")
     void errorCannotLoadService(String className, Bundle bundle);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11038, value = "Cannot get class path entry '%s' from: %s")
+    @Message(id = 11036, value = "Cannot get class path entry '%s' from: %s")
     void errorCannotGetClassPathEntry(@Cause Throwable cause, String path, BundleRevision brev);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11039, value = "Cannot install initial bundle: %s")
+    @Message(id = 11037, value = "Cannot install initial bundle: %s")
     void errorStateCannotInstallInitialBundle(@Cause Throwable cause, String source);
 }

@@ -69,12 +69,12 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
 
     @Override
     public void start(StartContext context) throws StartException {
-        LOGGER.debugf("Starting: %s", context.getController().getName());
+        LOGGER.tracef("Starting: %s", context.getController().getName());
     }
 
     @Override
     public void stop(StopContext context) {
-        LOGGER.debugf("Stopping: %s", context.getController().getName());
+        LOGGER.tracef("Stopping: %s", context.getController().getName());
     }
 
     @Override

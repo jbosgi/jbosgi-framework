@@ -128,7 +128,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         Collection<Capability> hostcaps = getHostCapabilities(mandatory);
         Collection<Resource> result = new HashSet<Resource>();
         if (hostcaps.isEmpty() == false) {
-            result.addAll(optional != null ? optional : Collections.EMPTY_SET);
+            result.addAll(optional != null ? optional : Collections.<Resource>emptySet());
             result.addAll(findAttachableFragments(hostcaps));
         }
         return result;
@@ -167,14 +167,16 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         XEnvironment env = injectedEnvironment.getValue();
         for (Resource res : env.getResources(Collections.singleton(IdentityNamespace.TYPE_FRAGMENT))) {
             Requirement req = res.getRequirements(HostNamespace.HOST_NAMESPACE).get(0);
-            XRequirement xreq = (XRequirement)req;
+            XRequirement xreq = (XRequirement) req;
             for (Capability cap : hostcaps) {
-                if (xreq.matches((XCapability)cap)) {
+                if (xreq.matches((XCapability) cap)) {
                     result.add(res);
                 }
             }
         }
-        LOGGER.debugf("attachable fragments: %s", result);
+        if (result.isEmpty() == false) {
+            LOGGER.debugf("Adding attachable fragments: %s", result);
+        }
         return result;
     }
 

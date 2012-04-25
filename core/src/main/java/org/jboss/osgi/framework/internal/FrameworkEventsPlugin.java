@@ -418,7 +418,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
                 LOGGER.warnFrameworkEvent(th);
                 break;
             default:
-                LOGGER.debugf(th, "Framework %s", typeName);
+                LOGGER.debugf(th, "Framework event: %s", typeName);
         }
 
         // Are we active?

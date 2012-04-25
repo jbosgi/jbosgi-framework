@@ -40,13 +40,13 @@ abstract class AbstractPluginService<T> extends AbstractService<T> {
     @Override
     public void start(StartContext context) throws StartException {
         ServiceController<?> controller = context.getController();
-        LOGGER.debugf("Starting plugin: %s in mode %s", controller.getName(), controller.getMode());
+        LOGGER.tracef("Starting plugin: %s in mode %s", controller.getName(), controller.getMode());
     }
 
     @Override
     public void stop(StopContext context) {
         ServiceController<?> controller = context.getController();
-        LOGGER.debugf("Stopping plugin: %s in mode %s", controller.getName(), controller.getMode());
+        LOGGER.tracef("Stopping plugin: %s in mode %s", controller.getName(), controller.getMode());
     }
 
 }

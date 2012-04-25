@@ -48,7 +48,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     @Override
     public void listenerAdded(ServiceController<? extends S> controller) {
         synchronized (trackedController) {
-            LOGGER.debugf("ServiceTracker controller added: %s", controller);
+            LOGGER.tracef("ServiceTracker controller added: %s", controller);
             addedNames.add(controller.getName());
             trackedController.add(controller);
         }
@@ -59,12 +59,12 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         synchronized (trackedController) {
             switch (transition) {
                 case STARTING_to_UP:
-                    LOGGER.debugf("ServiceTracker transition to UP: " + controller.getName());
+                    LOGGER.tracef("ServiceTracker transition to UP: " + controller.getName());
                     serviceStarted(controller);
                     serviceComplete(controller);
                     break;
                 case STARTING_to_START_FAILED:
-                    LOGGER.debugf("ServiceTracker transition to START_FAILED: " + controller.getName());
+                    LOGGER.tracef("ServiceTracker transition to START_FAILED: " + controller.getName());
                     StartException ex = controller.getStartException();
                     serviceStartFailed(controller, ex);
                     serviceComplete(controller);
@@ -83,7 +83,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         synchronized (trackedController) {
             if (trackedController.size() == 0 && allServicesAdded(Collections.unmodifiableSet(addedNames))) {
                 if (allComplete.compareAndSet(false, true)) {
-                    LOGGER.debugf("ServiceTracker complete: " + getClass().getName());
+                    LOGGER.tracef("ServiceTracker complete: " + getClass().getName());
                     complete();
                 }
             }

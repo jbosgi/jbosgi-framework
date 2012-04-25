@@ -129,6 +129,7 @@ public class StorageState {
 
     @Override
     public String toString() {
-        return "BundleStorageState[id=" + bundleId + ",location=" + location + ",file=" + rootFile + "]";
+        int startlevel = getStartLevel();
+        return "BundleStorageState[id=" + bundleId + ",rev=" + revision + ",startlevel=" + startlevel + ",location=" + location + "]";
     }
 }

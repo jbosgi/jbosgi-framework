@@ -555,13 +555,13 @@ abstract class AbstractBundleState implements Bundle {
 
                 if (LOGGER.isDebugEnabled()) {
                     BundleWiring wiring = getCurrentBundleRevision().getWiring();
-                    LOGGER.debugf("Required resource wires for: %s", wiring.getResource());
+                    LOGGER.tracef("Required resource wires for: %s", wiring.getResource());
                     for (Wire wire : wiring.getRequiredResourceWires(null)) {
-                        LOGGER.debugf("   %s", wire);
+                        LOGGER.tracef("   %s", wire);
                     }
-                    LOGGER.debugf("Provided resource wires for: %s", wiring.getResource());
+                    LOGGER.tracef("Provided resource wires for: %s", wiring.getResource());
                     for (Wire wire : wiring.getProvidedResourceWires(null)) {
-                        LOGGER.debugf("   %s", wire);
+                        LOGGER.tracef("   %s", wire);
                     }
                 }
 

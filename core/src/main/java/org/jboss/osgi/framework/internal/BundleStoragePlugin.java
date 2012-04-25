@@ -93,7 +93,6 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
             File[] storageDirs = getStorageArea().listFiles();
             if (storageDirs != null) {
                 for (File storageDir : storageDirs) {
-                    LOGGER.debugf("Creating storage state from: %s", storageDir);
                     InternalStorageState storageState = InternalStorageState.createStorageState(storageDir);
                     if (storageState.getBundleId() != 0) {
                         storageStates.put(storageState.getLocation(), storageState);
@@ -117,7 +116,7 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
         File bundleDir = getStorageDir(bundleId);
         Properties props = InternalStorageState.loadProperties(bundleDir);
         String previousRev = props.getProperty(StorageState.PROPERTY_BUNDLE_REV);
-        int revision = (previousRev != null ? Integer.parseInt(previousRev) + 1 : 0);
+        int revision = (bundleId != 0 && previousRev != null ? Integer.parseInt(previousRev) + 1 : 0);
 
         // Write the bundle properties
         props.put(StorageState.PROPERTY_BUNDLE_LOCATION, location);
@@ -214,7 +213,9 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
                 File revFile = new File(storageDir + "/" + vfsLocation);
                 rootFile = AbstractVFS.toVirtualFile(revFile.toURI());
             }
-            return new InternalStorageState(storageDir, rootFile, props);
+            InternalStorageState storageState = new InternalStorageState(storageDir, rootFile, props);
+            LOGGER.debugf("Created storage state: %s", storageState);
+            return storageState;
         }
 
         private static InternalStorageState createStorageState(File storageDir, VirtualFile rootFile, Properties props) throws IOException {

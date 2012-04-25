@@ -368,7 +368,6 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         }
 
         boolean result = true;
-        LOGGER.debugf("Resolve bundles: %s", resolve);
         try {
             resolverPlugin.resolveAndApply(resolve, null);
             for (Resource aux : resolve) {

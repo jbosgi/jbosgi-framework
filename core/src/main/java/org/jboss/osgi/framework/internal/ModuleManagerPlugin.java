@@ -279,7 +279,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
                 return cefPath.accept(className);
             }
         };
-        LOGGER.debugf("createLocalDependencySpec: [if=%s,ef=%s,rif=%s,ref=%s,cf=%s]", importFilter, exportFilter, resImportFilter, resExportFilter, cefPath);
+        LOGGER.tracef("createLocalDependencySpec: [if=%s,ef=%s,rif=%s,ref=%s,cf=%s]", importFilter, exportFilter, resImportFilter, resExportFilter, cefPath);
         DependencySpec localDep = DependencySpec.createLocalDependencySpec(importFilter, exportFilter, resImportFilter, resExportFilter, classImportFilter,
                 classExportFilter);
         specBuilder.addDependency(localDep);
@@ -568,7 +568,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             }
             Module frameworkModule = getFrameworkModule();
             ModuleLoader depLoader = (frameworkModule.getIdentifier().equals(identifier) ? frameworkModule.getModuleLoader() : getModuleLoader());
-            LOGGER.debugf("createModuleDependencySpec: [id=%s,if=%s,ef=%s,loader=%s,optional=%s]", identifier, importFilter, exportFilter, depLoader, optional);
+            LOGGER.tracef("createModuleDependencySpec: [id=%s,if=%s,ef=%s,loader=%s,optional=%s]", identifier, importFilter, exportFilter, depLoader, optional);
             return DependencySpec.createModuleDependencySpec(importFilter, exportFilter, depLoader, identifier, optional);
         }
 

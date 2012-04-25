@@ -150,7 +150,7 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
                 }
             }
             cachedBootDelegationFilter = builder.create();
-            LOGGER.debugf("BootDelegationFilter: %s", cachedBootDelegationFilter);
+            LOGGER.tracef("BootDelegationFilter: %s", cachedBootDelegationFilter);
         }
         return cachedBootDelegationFilter;
     }
@@ -180,7 +180,7 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
                 }
             }
             cachedBootDelegationPaths = Collections.unmodifiableSet(result);
-            LOGGER.debugf("BootDelegationPaths: %s", cachedBootDelegationPaths);
+            LOGGER.tracef("BootDelegationPaths: %s", cachedBootDelegationPaths);
         }
         return cachedBootDelegationPaths;
     }

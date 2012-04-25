@@ -197,6 +197,8 @@ final class HostBundleState extends UserBundleState {
         // Assert the required start conditions
         assertStartConditions();
 
+        LOGGER.debugf("Starting bundle: %s", this);
+
         // If the Framework's current start level is less than this bundle's start level
         if (startLevelValidForStart() == false) {
             // If the START_TRANSIENT option is set, then a BundleException is thrown

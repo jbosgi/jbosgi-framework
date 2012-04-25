@@ -94,10 +94,8 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     // The framework version. This is the version of the org.osgi.framework package in r4v42
     private static String OSGi_FRAMEWORK_VERSION = "1.5";
 
-    private static String implementationTitle;
     private static String implementationVersion;
     static {
-        implementationTitle = BundleManagerPlugin.class.getPackage().getImplementationTitle();
         implementationVersion = BundleManagerPlugin.class.getPackage().getImplementationVersion();
     }
 
@@ -161,7 +159,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        LOGGER.infoFrameworkImplementation(implementationTitle, implementationVersion);
+        LOGGER.infoFrameworkImplementation(implementationVersion);
         serviceContainer = context.getController().getServiceContainer();
         serviceTarget = context.getChildTarget();
         LOGGER.debugf("Framework properties");

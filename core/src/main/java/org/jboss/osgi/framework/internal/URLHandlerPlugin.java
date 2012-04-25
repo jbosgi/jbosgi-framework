@@ -76,7 +76,7 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
 
     private static OSGiContentHandlerFactoryDelegate contentHandlerDelegate;
     private static OSGiStreamHandlerFactoryDelegate streamHandlerDelegate;
-    
+
     public static void initURLHandlerPlugin() {
     	if (streamHandlerDelegate == null) {
             streamHandlerDelegate = new OSGiStreamHandlerFactoryDelegate();
@@ -174,7 +174,7 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
                     for (String mimeType : mimeTypes) {
                         contentHandlerDelegate.addHandler(mimeType, reference);
                     }
-                } 
+                }
                 return service;
             }
 
@@ -202,11 +202,11 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
                 Object service = super.addingService(reference);
                 String[] protocols = parseServiceProperty(reference.getProperty(URLConstants.URL_HANDLER_PROTOCOL));
                 if (protocols != null && service instanceof URLStreamHandlerService) {
-                    LOGGER.debugf("Adding stream handler '%s' for: %s", service, Arrays.asList(protocols));
+                    LOGGER.tracef("Adding stream handler '%s' for: %s", service, Arrays.asList(protocols));
                     for (String protocol : protocols) {
                         streamHandlerDelegate.addHandler(protocol, reference);
                     }
-                } 
+                }
                 return service;
             }
 
