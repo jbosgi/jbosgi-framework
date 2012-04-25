@@ -134,7 +134,7 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
         }
         return result;
     }
-    
+
     @Override
     public Dictionary<String, String> getHeaders(String locale) {
         // This method must continue to return Manifest header information while this bundle is in the UNINSTALLED state,
@@ -393,8 +393,6 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
         // Uninstall through the {@link BundleInstallHandler}
         BundleInstallHandler installHandler = getCoreServices().getInstallHandler();
         installHandler.uninstallBundle(getDeployment());
-
-        LOGGER.infoBundleUninstalled(this);
     }
 
     void removeServices() {

@@ -414,8 +414,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
                         try {
                             userBundle.stopInternal(options);
                         } catch (Exception ex) {
-                            // If Bundle.stop throws an exception, a Framework event of type FrameworkEvent.ERROR is fired containing the
-                            // exception
+                            // If Bundle.stop throws an exception, a Framework event of type FrameworkEvent.ERROR is fired
                             fireFrameworkError(userBundle, "stopping bundle: " + userBundle, ex);
                         }
                     }
@@ -437,6 +436,8 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
 
                 // #4 A bundle event of type BundleEvent.UNINSTALLED is fired
                 eventsPlugin.fireBundleEvent(userBundle, BundleEvent.UNINSTALLED);
+
+                LOGGER.infoBundleUninstalled(userBundle);
 
                 // Remove other uninstalled bundles that now also have no active wires any more
                 Set<Bundle> uninstalled = getBundles(Bundle.UNINSTALLED);
