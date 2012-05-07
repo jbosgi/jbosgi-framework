@@ -86,7 +86,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
         try {
             BundleInfo info = BundleInfo.createBundleInfo(rootFile, location);
             Deployment dep = DeploymentFactory.createDeployment(info);
-            OSGiMetaData metadata = toOSGiMetaData(info);
+            OSGiMetaData metadata = info.getOSGiMetadata();
             dep.addAttachment(BundleInfo.class, info);
             dep.addAttachment(OSGiMetaData.class, metadata);
             return dep;
@@ -142,7 +142,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
         // #2 check if the Deployment contains valid BundleInfo
         BundleInfo info = deployment.getAttachment(BundleInfo.class);
         if (info != null)
-            metadata = toOSGiMetaData(info);
+            metadata = info.getOSGiMetadata();
 
         // #3 check if we have a valid OSGi manifest
         if (metadata == null) {
@@ -150,7 +150,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
             String location = deployment.getLocation();
             try {
                 info = BundleInfo.createBundleInfo(rootFile, location);
-                metadata = toOSGiMetaData(info);
+                metadata = info.getOSGiMetadata();
             } catch (BundleException ex) {
                 // ignore
             }
@@ -190,10 +190,5 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
             LOGGER.warnCannotProcessMetadataProperties(ex, rootFile);
         }
         return null;
-    }
-
-    private OSGiMetaData toOSGiMetaData(final BundleInfo info) {
-        Manifest manifest = info.getManifest();
-        return OSGiMetaDataBuilder.load(manifest);
     }
 }
