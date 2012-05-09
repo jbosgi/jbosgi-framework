@@ -26,6 +26,8 @@ import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -35,11 +37,11 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 06-Apr-2011
  */
-final class HostBundleInstalledService extends UserBundleInstalledService<HostBundleState> {
+final class HostBundleInstalledService extends UserBundleInstalledService<HostBundleState, HostBundleRevision> {
 
     static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, ServiceListener<Bundle> listener) throws BundleException {
-        ServiceName serviceName = BundleManagerPlugin.getServiceName(dep).append("INSTALLED");
         HostBundleInstalledService service = new HostBundleInstalledService(frameworkState, dep);
+        ServiceName serviceName = frameworkState.getBundleManager().getServiceName(dep).append("INSTALLED");
         ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, service);
         builder.addDependency(InternalServices.FRAMEWORK_CORE_SERVICES);
         if (listener != null) {
@@ -49,13 +51,17 @@ final class HostBundleInstalledService extends UserBundleInstalledService<HostBu
         return serviceName;
     }
 
-    private HostBundleInstalledService(FrameworkState frameworkState, Deployment dep) throws BundleException {
-        super(frameworkState, dep);
+    private HostBundleInstalledService(FrameworkState frameworkState, Deployment deployment) throws BundleException {
+        super(frameworkState, deployment);
     }
 
     @Override
-    HostBundleState createBundleState(Deployment dep) {
-        long bundleId = dep.getAttachment(BundleId.class).longValue();
-        return new HostBundleState(getFrameworkState(), bundleId, dep);
+    HostBundleRevision createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState)  throws BundleException {
+        return new HostBundleRevision(getFrameworkState(), deployment, metadata, storageState);
+    }
+
+    @Override
+    HostBundleState createBundleState(HostBundleRevision revision, StorageState storageState) {
+        return new HostBundleState(getFrameworkState(), revision, storageState);
     }
 }

@@ -38,6 +38,8 @@ import java.util.Vector;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -57,8 +59,8 @@ final class HostBundleRevision extends UserBundleRevision {
 
     private Set<FragmentBundleRevision> attachedFragments;
 
-    HostBundleRevision(HostBundleState hostBundle, Deployment dep) throws BundleException {
-        super(hostBundle, dep);
+    HostBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
+        super(frameworkState, dep, metadata, storageState);
     }
 
     /**

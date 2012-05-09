@@ -40,8 +40,8 @@ import org.osgi.framework.Constants;
  */
 final class SystemBundleRevision extends AbstractBundleRevision {
 
-    SystemBundleRevision(SystemBundleState bundleState, OSGiMetaData metadata) throws BundleException {
-        super(bundleState, metadata, 0);
+    SystemBundleRevision(FrameworkState frameworkState, OSGiMetaData metadata) throws BundleException {
+        super(frameworkState, metadata, 0);
     }
 
     @Override
@@ -58,7 +58,7 @@ final class SystemBundleRevision extends AbstractBundleRevision {
     void refreshRevisionInternal() {
         assert false : "Cannot refresh the system bundle revision";
     }
-    
+
     @Override
     Enumeration<String> getEntryPaths(String path) {
         // [Bug-1472] Clarify the semantic of resource API when called on the system bundle

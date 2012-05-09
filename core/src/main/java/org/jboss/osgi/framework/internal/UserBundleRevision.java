@@ -51,9 +51,9 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
     private List<RevisionContent> contentList;
     private final EntriesProvider entriesProvider;
 
-    UserBundleRevision(UserBundleState userBundle, Deployment dep) throws BundleException {
-        super(userBundle, getOSGiMetaData(dep), getRevisionId(dep));
-        
+    UserBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
+        super(frameworkState, metadata, storageState.getRevisionId());
+
         this.deployment = dep;
 
         if (dep.getRoot() != null) {
@@ -65,15 +65,6 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
             contentList = Collections.emptyList();
             addAttachment(Module.class, module);
         }
-    }
-
-    private static OSGiMetaData getOSGiMetaData(Deployment dep) {
-        return dep.getAttachment(OSGiMetaData.class);
-    }
-
-    private static int getRevisionId(Deployment dep) {
-        StorageState storageState = dep.getAttachment(StorageState.class);
-        return storageState.getRevisionId();
     }
 
     Deployment getDeployment() {
@@ -146,8 +137,8 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
         assert rootFile != null : "Null rootFile";
 
         // Setup single root file list, if there is no Bundle-ClassPath
-        if (metadata.getBundleClassPath().size() == 0) {
-            RevisionContent revContent = new RevisionContent(this, 0, rootFile);
+        if (metadata.getBundleClassPath() == null) {
+            RevisionContent revContent = new RevisionContent(this, metadata, 0, rootFile);
             return Collections.singletonList(revContent);
         }
 
@@ -155,14 +146,14 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
         List<RevisionContent> rootList = new ArrayList<RevisionContent>();
         for (String path : metadata.getBundleClassPath()) {
             if (path.equals(".")) {
-                RevisionContent revContent = new RevisionContent(this, rootList.size(), rootFile);
+                RevisionContent revContent = new RevisionContent(this, metadata, rootList.size(), rootFile);
                 rootList.add(revContent);
             } else {
                 try {
                     VirtualFile child = rootFile.getChild(path);
                     if (child != null) {
                         VirtualFile anotherRoot = AbstractVFS.toVirtualFile(child.toURL());
-                        RevisionContent revContent = new RevisionContent(this, rootList.size(), anotherRoot);
+                        RevisionContent revContent = new RevisionContent(this, metadata, rootList.size(), anotherRoot);
                         rootList.add(revContent);
                     }
                 } catch (IOException ex) {

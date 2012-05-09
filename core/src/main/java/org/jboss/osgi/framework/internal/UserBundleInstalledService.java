@@ -22,14 +22,19 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
+import java.io.IOException;
 
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
@@ -41,32 +46,31 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class UserBundleInstalledService<T extends UserBundleState> extends AbstractBundleService<T> {
+abstract class UserBundleInstalledService<B extends UserBundleState,R extends UserBundleRevision> extends AbstractBundleService<B> {
 
     private final Deployment initialDeployment;
+    private B bundleState;
 
-    private T bundleState;
-
-    UserBundleInstalledService(FrameworkState frameworkState, Deployment dep) {
+    UserBundleInstalledService(FrameworkState frameworkState, Deployment deployment) {
         super(frameworkState);
-        this.initialDeployment = dep;
+        this.initialDeployment = deployment;
     }
 
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        Deployment dep = initialDeployment;
         InternalStorageState storageState = null;
         try {
-            bundleState = createBundleState(dep);
-            dep.addAttachment(Bundle.class, bundleState);
+            Deployment dep = initialDeployment;
+            storageState = createStorageState(dep);
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
-            storageState = bundleState.createStorageState(dep);
-            UserBundleRevision userRev = bundleState.createRevision(dep);
+            R brev = createBundleRevision(dep, metadata, storageState);
+            bundleState = createBundleState(brev, storageState);
+            dep.addAttachment(Bundle.class, bundleState);
             bundleState.initLazyActivation();
             validateBundle(bundleState, metadata);
             processNativeCode(bundleState, dep);
-            addToEnvironment(userRev);
+            addToEnvironment(brev);
             bundleState.changeState(Bundle.INSTALLED, 0);
             bundleState.fireBundleEvent(BundleEvent.INSTALLED);
             LOGGER.infoBundleInstalled(bundleState);
@@ -79,10 +83,35 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
         }
     }
 
-    abstract T createBundleState(Deployment dep);
+    abstract R createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState) throws BundleException;
+
+    abstract B createBundleState(R revision, StorageState storageState) throws BundleException;
+
+    InternalStorageState createStorageState(Deployment dep) throws BundleException {
+        // The storage state exists when we re-create the bundle from persistent storage
+        StorageState storageState = dep.getAttachment(StorageState.class);
+        if (storageState == null) {
+            String location = dep.getLocation();
+            VirtualFile rootFile = dep.getRoot();
+            try {
+                BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+                Integer startlevel = dep.getStartLevel();
+                if (startlevel == null) {
+                    FrameworkCoreServices coreServices = getFrameworkState().getCoreServices();
+                    startlevel = coreServices.getStartLevel().getInitialBundleStartLevel();
+                }
+                Long bundleId = dep.getAttachment(BundleId.class).longValue();
+                storageState = storagePlugin.createStorageState(bundleId, location, startlevel, rootFile);
+                dep.addAttachment(StorageState.class, storageState);
+            } catch (IOException ex) {
+                throw MESSAGES.bundleCannotSetupStorage(ex, rootFile);
+            }
+        }
+        return (InternalStorageState) storageState;
+    }
 
     @Override
-    T getBundleState() {
+    B getBundleState() {
         return bundleState;
     }
 

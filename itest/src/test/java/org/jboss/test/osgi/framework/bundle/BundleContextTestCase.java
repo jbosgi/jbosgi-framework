@@ -21,8 +21,23 @@
  */
 package org.jboss.test.osgi.framework.bundle;
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.io.File;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Dictionary;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Locale;
+
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -38,21 +53,6 @@ import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.SynchronousBundleListener;
-
-import java.io.File;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Dictionary;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Locale;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * BundleContextTest.
@@ -274,7 +274,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
     @Test
     public void testNullSymbolicName() throws Exception {
 
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "null-symbolic-name.jar");
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "null-symbolic-name");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
@@ -287,6 +287,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
         try {
             assertBundleState(Bundle.INSTALLED, bundle.getState());
             assertNull("Null symbolic name", bundle.getSymbolicName());
+            assertEquals("null-symbolic-name:0.0.0", bundle.toString());
             bundle.start();
             assertBundleState(Bundle.ACTIVE, bundle.getState());
         } finally {

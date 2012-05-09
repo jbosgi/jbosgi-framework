@@ -25,6 +25,8 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.BundleException;
 
 /**
@@ -33,10 +35,10 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
-final class FragmentBundleInstalledService extends UserBundleInstalledService<FragmentBundleState> {
+final class FragmentBundleInstalledService extends UserBundleInstalledService<FragmentBundleState,FragmentBundleRevision> {
 
     static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep) throws BundleException {
-        ServiceName serviceName = BundleManagerPlugin.getServiceName(dep).append("INSTALLED");
+        ServiceName serviceName = frameworkState.getBundleManager().getServiceName(dep).append("INSTALLED");
         FragmentBundleInstalledService service = new FragmentBundleInstalledService(frameworkState, dep);
         ServiceBuilder<FragmentBundleState> builder = serviceTarget.addService(serviceName, service);
         builder.addDependency(InternalServices.FRAMEWORK_CORE_SERVICES);
@@ -44,13 +46,17 @@ final class FragmentBundleInstalledService extends UserBundleInstalledService<Fr
         return serviceName;
     }
 
-    private FragmentBundleInstalledService(FrameworkState frameworkState, Deployment dep) throws BundleException {
-        super(frameworkState, dep);
+    private FragmentBundleInstalledService(FrameworkState frameworkState, Deployment deployment) throws BundleException {
+        super(frameworkState, deployment);
     }
 
     @Override
-    FragmentBundleState createBundleState(Deployment dep) {
-        long bundleId = dep.getAttachment(BundleId.class).longValue();
-        return new FragmentBundleState(getFrameworkState(), bundleId, dep);
+    FragmentBundleRevision createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState) throws BundleException {
+        return new FragmentBundleRevision(getFrameworkState(), deployment, metadata, storageState);
+    }
+
+    @Override
+    FragmentBundleState createBundleState(FragmentBundleRevision revision, StorageState storageState) {
+        return new FragmentBundleState(getFrameworkState(), revision, storageState);
     }
 }

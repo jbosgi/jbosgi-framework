@@ -37,7 +37,6 @@ import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
-import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -52,12 +51,13 @@ import org.osgi.framework.Version;
 final class SystemBundleState extends AbstractBundleState implements TypeAdaptor {
 
     private final FrameworkModuleProvider frameworkModuleProvider;
+    private final SystemBundleRevision systemRevision;
     private InternalStorageState storageState;
-    private SystemBundleRevision revision;
 
-    SystemBundleState(FrameworkState frameworkState, FrameworkModuleProvider frameworkModuleProvider) {
-        super(frameworkState, 0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
+    SystemBundleState(FrameworkState frameworkState, SystemBundleRevision revision, FrameworkModuleProvider frameworkModuleProvider) {
+        super(frameworkState, revision, 0);
         this.frameworkModuleProvider = frameworkModuleProvider;
+        this.systemRevision = revision;
     }
 
     /**
@@ -73,14 +73,9 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
         return frameworkModuleProvider.getFrameworkModule(this);
     }
 
-    SystemBundleRevision createBundleRevision(OSGiMetaData metadata) throws BundleException {
-        revision = new SystemBundleRevision(this, metadata);
-        return revision;
-    }
-
     @Override
     List<AbstractBundleRevision> getAllBundleRevisions() {
-        return Collections.singletonList((AbstractBundleRevision) revision);
+        return Collections.singletonList((AbstractBundleRevision) systemRevision);
     }
 
     void createStorageState(BundleStoragePlugin storagePlugin) {
@@ -113,7 +108,7 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
 
     @Override
     SystemBundleRevision getCurrentBundleRevision() {
-        return revision;
+        return systemRevision;
     }
 
     @Override
@@ -146,7 +141,7 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
     @Override
     SystemBundleRevision getBundleRevisionById(int revisionId) {
         assert revisionId == 0 : "System bundle does not have a revision with id: " + revisionId;
-        return revision;
+        return systemRevision;
     }
 
     @Override

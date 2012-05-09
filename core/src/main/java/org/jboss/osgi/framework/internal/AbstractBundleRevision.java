@@ -63,18 +63,19 @@ import org.osgi.resource.Wiring;
 abstract class AbstractBundleRevision extends AbstractResource implements BundleRevision {
 
     private final int revision;
-    private final AbstractBundleState bundleState;
     private final OSGiMetaData metadata;
+    private final FrameworkState frameworkState;
     private Map<String, List<BundleCapability>> bundleCapabilities;
     private Map<String, List<BundleRequirement>> bundleRequirements;
+    private AbstractBundleState bundleState;
 
-    AbstractBundleRevision(AbstractBundleState bundleState, OSGiMetaData metadata, int revision) throws BundleException {
-        assert bundleState != null : "Null bundleState";
+    AbstractBundleRevision(FrameworkState frameworkState, OSGiMetaData metadata, int revId) throws BundleException {
+        assert frameworkState != null : "Null frameworkState";
         assert metadata != null : "Null metadata";
 
-        this.bundleState = bundleState;
+        this.frameworkState = frameworkState;
         this.metadata = metadata;
-        this.revision = revision;
+        this.revision = revId;
 
         // Initialize the bundle caps/reqs
         try {
@@ -183,6 +184,10 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
         return bundleState;
     }
 
+    void setBundleState(AbstractBundleState bundleState) {
+        this.bundleState = bundleState;
+    }
+
     OSGiMetaData getOSGiMetaData() {
         return metadata;
     }
@@ -213,13 +218,13 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
     ModuleClassLoader getModuleClassLoader() throws ModuleLoadException {
         ModuleIdentifier identifier = getModuleIdentifier();
-        ModuleManagerPlugin moduleManager = bundleState.getFrameworkState().getModuleManagerPlugin();
+        ModuleManagerPlugin moduleManager = frameworkState.getModuleManagerPlugin();
         Module module = moduleManager.loadModule(identifier);
         return module.getClassLoader();
     }
 
     void refreshRevision() throws BundleException {
-        XEnvironment env = bundleState.getFrameworkState().getEnvironment();
+        XEnvironment env = frameworkState.getEnvironment();
         env.refreshResources(this);
         refreshRevisionInternal();
     }

@@ -239,7 +239,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         properties.put(key, value);
     }
 
-    static ServiceName getServiceName(Deployment dep) {
+    ServiceName getServiceName(Deployment dep) {
         long bundleId = dep.getAttachment(BundleId.class).longValue();
         return getServiceNameInternal(bundleId, dep.getSymbolicName(), Version.parseVersion(dep.getVersion()));
     }

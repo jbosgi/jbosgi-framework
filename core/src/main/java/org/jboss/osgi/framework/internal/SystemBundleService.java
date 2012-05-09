@@ -31,6 +31,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
@@ -75,11 +76,11 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
     public void start(StartContext context) throws StartException {
         super.start(context);
         try {
-            bundleState = createBundleState();
-            bundleState.changeState(Bundle.STARTING);
             OSGiMetaData metadata = createOSGiMetaData();
-            SystemBundleRevision sysrev = bundleState.createBundleRevision(metadata);
-            addToEnvironment(sysrev);
+            SystemBundleRevision revision = new SystemBundleRevision(getFrameworkState(), metadata);
+            bundleState = createBundleState(revision);
+            bundleState.changeState(Bundle.STARTING);
+            addToEnvironment(revision);
             bundleState.createBundleContext();
             bundleState.createStorageState(injectedBundleStorage.getValue());
             BundleManagerPlugin bundleManager = getBundleManager();
@@ -89,8 +90,8 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
         }
     }
 
-    SystemBundleState createBundleState() {
-        return new SystemBundleState(getFrameworkState(), injectedModuleProvider.getValue());
+    SystemBundleState createBundleState(SystemBundleRevision revision) {
+        return new SystemBundleState(getFrameworkState(), revision, injectedModuleProvider.getValue());
     }
 
     @Override
@@ -108,8 +109,7 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
     private OSGiMetaData createOSGiMetaData() {
 
         // Initialize the OSGiMetaData
-        SystemBundleState bundleState = getBundleState();
-        OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(bundleState.getSymbolicName(), bundleState.getVersion());
+        OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(Constants.SYSTEM_BUNDLE_SYMBOLICNAME, Version.emptyVersion);
         SystemPathsProvider systemPackages = injectedSystemPaths.getValue();
 
         List<String> exportedPackages = new ArrayList<String>();

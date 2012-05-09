@@ -64,16 +64,19 @@ import org.osgi.service.packageadmin.PackageAdmin;
  */
 abstract class UserBundleState extends AbstractBundleState implements TypeAdaptor {
 
-    private final Semaphore uninstallSemaphore = new Semaphore(1);
-
-    private final ServiceName serviceName;
     private final List<UserBundleRevision> revisions = new CopyOnWriteArrayList<UserBundleRevision>();
-    private Dictionary<String, String> headersOnUninstall;
-    private InternalStorageState storageState;
+    private final Semaphore uninstallSemaphore = new Semaphore(1);
+    private final InternalStorageState storageState;
+    private final ServiceName serviceName;
 
-    UserBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
-        super(frameworkState, bundleId, dep.getSymbolicName());
-        this.serviceName = BundleManagerPlugin.getServiceName(dep);
+    private Dictionary<String, String> headersOnUninstall;
+
+    UserBundleState(FrameworkState frameworkState, UserBundleRevision revision, StorageState storageState) {
+        super(frameworkState, revision, storageState.getBundleId());
+        BundleManagerPlugin bundleManager = frameworkState.getBundleManager();
+        this.serviceName = bundleManager.getServiceName(revision.getDeployment());
+        this.storageState = (InternalStorageState) storageState;
+        addBundleRevision(revision);
     }
 
     /**
@@ -111,15 +114,9 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
         return getOSGiMetaData().isSingleton();
     }
 
-    UserBundleRevision createRevision(Deployment deployment) throws BundleException {
-        UserBundleRevision revision = createRevisionInternal(deployment);
-        addRevision(revision);
-        return revision;
-    }
-
     abstract void initLazyActivation();
 
-    abstract UserBundleRevision createRevisionInternal(Deployment dep) throws BundleException;
+    abstract UserBundleRevision createUpdateRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -150,13 +147,14 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
         return serviceName.append(ConstantsHelper.bundleState(state));
     }
 
-    void addRevision(UserBundleRevision rev) {
-        revisions.add(0, rev);
+    void addBundleRevision(AbstractBundleRevision rev) {
+        super.addBundleRevision(rev);
+        revisions.add(0, (UserBundleRevision) rev);
     }
 
     @Override
     UserBundleRevision getCurrentBundleRevision() {
-        return revisions.get(0);
+        return (UserBundleRevision) super.getCurrentBundleRevision();
     }
 
     @Override
@@ -295,9 +293,10 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
             OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
             dep.addAttachment(OSGiMetaData.class, metadata);
             dep.addAttachment(Bundle.class, this);
-            UserBundleRevision brev = createRevision(dep);
+            UserBundleRevision updateRevision = createUpdateRevision(dep, metadata, storageState);
+            addBundleRevision(updateRevision);
             XEnvironment env = getFrameworkState().getEnvironment();
-            env.installResources(brev);
+            env.installResources(updateRevision);
         } catch (BundleException ex) {
             storagePlugin.deleteStorageState(storageState);
             throw ex;
@@ -305,29 +304,6 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
             storagePlugin.deleteStorageState(storageState);
             throw ex;
         }
-    }
-
-    InternalStorageState createStorageState(Deployment dep) throws BundleException {
-        // The storage state exists when we re-create the bundle from persistent storage
-        StorageState attachedState = dep.getAttachment(StorageState.class);
-        if (attachedState == null) {
-            String location = dep.getLocation();
-            VirtualFile rootFile = dep.getRoot();
-            try {
-                BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
-                Integer startlevel = dep.getStartLevel();
-                if (startlevel == null) {
-                    startlevel = getCoreServices().getStartLevel().getInitialBundleStartLevel();
-                }
-                storageState = storagePlugin.createStorageState(getBundleId(), location, startlevel, rootFile);
-                dep.addAttachment(StorageState.class, storageState);
-            } catch (IOException ex) {
-                throw MESSAGES.bundleCannotSetupStorage(ex, rootFile);
-            }
-        } else {
-            storageState = (InternalStorageState) attachedState;
-        }
-        return storageState;
     }
 
     private InternalStorageState createStorageState(BundleStoragePlugin storagePlugin, String location, VirtualFile rootFile) throws BundleException {

@@ -30,6 +30,8 @@ import java.net.URLStreamHandler;
 import java.util.Enumeration;
 import java.util.Vector;
 
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -49,22 +51,22 @@ final class RevisionContent implements EntriesProvider {
     private final String identity;
     private final int contentId;
 
-    RevisionContent(UserBundleRevision userRev, int contentId, VirtualFile rootFile) {
+    RevisionContent(UserBundleRevision userRev, OSGiMetaData metadata, int contentId, VirtualFile rootFile) {
         assert userRev != null : "Null userRev";
         assert rootFile != null : "Null rootFile";
         this.userRev = userRev;
         this.virtualFile = rootFile;
         this.contentId = contentId;
 
-        AbstractBundleState bundleState = userRev.getBundleState();
-        String symbolicName = bundleState.getSymbolicName();
+        String symbolicName = metadata.getBundleSymbolicName();
         if (symbolicName != null) {
             symbolicName = symbolicName.replace(':', '.');
             symbolicName = symbolicName.replace('-', '.');
         } else {
             symbolicName = "anonymous";
         }
-        long bundleId = bundleState.getBundleId();
+        Deployment deployment = userRev.getDeployment();
+        BundleId bundleId = deployment.getAttachment(BundleId.class);
         int revisionId = userRev.getRevisionId();
         identity = symbolicName + "-" + bundleId + "-" + revisionId + "-" + contentId;
     }

@@ -80,18 +80,24 @@ abstract class AbstractBundleState implements Bundle {
     private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
     private final List<ServiceState> registeredServices = new CopyOnWriteArrayList<ServiceState>();
     private final ConcurrentHashMap<ServiceState, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
+    private AbstractBundleRevision currentRevision;
     private AbstractBundleContext bundleContext;
 
-    AbstractBundleState(FrameworkState frameworkState, long bundleId, String symbolicName) {
+    AbstractBundleState(FrameworkState frameworkState, AbstractBundleRevision revision, long bundleId) {
         assert frameworkState != null : "Null frameworkState";
+        assert revision != null : "Null revision";
 
         // strip-off the directives
+        String symbolicName = revision.getOSGiMetaData().getBundleSymbolicName();
         if (symbolicName != null && symbolicName.indexOf(';') > 0)
             symbolicName = symbolicName.substring(0, symbolicName.indexOf(';'));
 
         this.bundleId = bundleId;
         this.symbolicName = symbolicName;
         this.frameworkState = frameworkState;
+
+        // Link the bundle revision to this state
+        revision.setBundleState(this);
     }
 
     FrameworkState getFrameworkState() {
@@ -127,7 +133,14 @@ abstract class AbstractBundleState implements Bundle {
 
     abstract AbstractBundleContext createContextInternal();
 
-    abstract AbstractBundleRevision getCurrentBundleRevision();
+    AbstractBundleRevision getCurrentBundleRevision() {
+        return currentRevision;
+    }
+
+    void addBundleRevision(AbstractBundleRevision rev) {
+        rev.setBundleState(this);
+        currentRevision = rev;
+    }
 
     abstract AbstractBundleRevision getBundleRevisionById(int revisionId);
 
@@ -180,7 +193,7 @@ abstract class AbstractBundleState implements Bundle {
 
         // Invoke the lifecycle interceptors
         boolean frameworkActive = getBundleManager().isFrameworkCreated();
-        if (frameworkActive && bundleId > 0) {
+        if (frameworkActive && getBundleId() > 0) {
             LifecycleInterceptorPlugin plugin = getCoreServices().getLifecycleInterceptorPlugin();
             plugin.handleStateChange(state, this);
         }
@@ -591,7 +604,10 @@ abstract class AbstractBundleState implements Bundle {
     }
 
     String getCanonicalName() {
-        return getSymbolicName() + ":" + getVersion();
+        OSGiMetaData metadata = getOSGiMetaData();
+        String name = metadata.getBundleSymbolicName();
+        name = name != null ? name : metadata.getBundleName();
+        return name + ":" + metadata.getBundleVersion();
     }
 
     @Override

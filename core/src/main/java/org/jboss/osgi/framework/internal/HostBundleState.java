@@ -38,6 +38,7 @@ import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
+import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.modules.ModuleActivator;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -64,8 +65,8 @@ final class HostBundleState extends UserBundleState {
     private final AtomicBoolean awaitLazyActivation = new AtomicBoolean();
     private BundleActivator bundleActivator;
 
-    HostBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
-        super(frameworkState, bundleId, dep);
+    HostBundleState(FrameworkState frameworkState, HostBundleRevision revision, StorageState storageState) {
+        super(frameworkState, revision, storageState);
     }
 
     static HostBundleState assertBundleState(Bundle bundle) {
@@ -84,8 +85,8 @@ final class HostBundleState extends UserBundleState {
     }
 
     @Override
-    HostBundleRevision createRevisionInternal(Deployment dep) throws BundleException {
-        return new HostBundleRevision(this, dep);
+    HostBundleRevision createUpdateRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
+        return new HostBundleRevision(getFrameworkState(), dep, metadata, storageState);
     }
 
     // Invalid discovery of Bundle.getBundleContext() method

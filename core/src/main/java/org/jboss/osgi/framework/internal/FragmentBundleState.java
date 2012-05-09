@@ -24,6 +24,8 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -37,8 +39,8 @@ import org.osgi.framework.BundleException;
  */
 final class FragmentBundleState extends UserBundleState {
 
-    FragmentBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
-        super(frameworkState, bundleId, dep);
+    FragmentBundleState(FrameworkState frameworkState, FragmentBundleRevision revision, StorageState storageState) {
+        super(frameworkState, revision, storageState);
     }
 
     static FragmentBundleState assertBundleState(Bundle bundle) {
@@ -58,8 +60,8 @@ final class FragmentBundleState extends UserBundleState {
     }
 
     @Override
-    FragmentBundleRevision createRevisionInternal(Deployment deployment) throws BundleException {
-        return new FragmentBundleRevision(this, deployment);
+    FragmentBundleRevision createUpdateRevision(Deployment deployment, OSGiMetaData metaData, StorageState storageState) throws BundleException {
+        return new FragmentBundleRevision(getFrameworkState(), deployment, metaData, storageState);
     }
 
     @Override
