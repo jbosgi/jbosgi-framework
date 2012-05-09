@@ -104,7 +104,8 @@ final class SystemBundleRevision extends AbstractBundleRevision {
     }
 
     private ClassLoader getFrameworkClassLoader() {
-        Module module = getBundleState().getFrameworkModule();
+        ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
+        Module module = moduleManager.getFrameworkModule();
         return module.getClassLoader();
     }
 }

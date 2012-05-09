@@ -21,8 +21,10 @@
  */
 package org.jboss.test.osgi.framework.classloader;
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
+import java.io.InputStream;
+
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -33,8 +35,6 @@ import org.jboss.test.osgi.framework.classloader.support.c.C;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
-
-import java.io.InputStream;
 
 /**
  * Test the DynamicImport-Package manifest header.
@@ -111,7 +111,6 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
         final JavaArchive archiveA = ShrinkWrap.create(JavaArchive.class, "dynamic-wildcard-a");
         archiveA.addClass(A.class);
         archiveA.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -127,7 +126,6 @@ public class DynamicImportPackageTestCase extends OSGiFrameworkTest {
         final JavaArchive archiveC = ShrinkWrap.create(JavaArchive.class, "dynamic-wildcard-c");
         archiveC.addClasses(C.class);
         archiveC.setManifest(new Asset() {
-
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

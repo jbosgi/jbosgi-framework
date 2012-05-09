@@ -32,7 +32,6 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemPathsProvider;
@@ -52,7 +51,6 @@ import org.osgi.framework.Version;
 public final class SystemBundleService extends AbstractBundleService<SystemBundleState> {
 
     private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
-    private final InjectedValue<FrameworkModuleProvider> injectedModuleProvider = new InjectedValue<FrameworkModuleProvider>();
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironmentPlugin = new InjectedValue<XEnvironment>();
     private SystemBundleState bundleState;
@@ -61,7 +59,6 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
         SystemBundleService service = new SystemBundleService(frameworkState);
         ServiceBuilder<SystemBundleState> builder = serviceTarget.addService(Services.SYSTEM_BUNDLE, service);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironmentPlugin);
-        builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, service.injectedModuleProvider);
         builder.addDependency(IntegrationServices.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -91,7 +88,7 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
     }
 
     SystemBundleState createBundleState(SystemBundleRevision revision) {
-        return new SystemBundleState(getFrameworkState(), revision, injectedModuleProvider.getValue());
+        return new SystemBundleState(getFrameworkState(), revision);
     }
 
     @Override

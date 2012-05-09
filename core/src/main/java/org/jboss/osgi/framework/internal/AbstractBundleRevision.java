@@ -99,6 +99,10 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
         return (AbstractBundleRevision) resource;
     }
 
+    FrameworkState getFrameworkState() {
+        return frameworkState;
+    }
+
     @Override
     public String getSymbolicName() {
         return metadata.getBundleSymbolicName();

@@ -21,13 +21,23 @@
  */
 package org.jboss.test.osgi.framework.classloader;
 
+import static org.junit.Assert.fail;
+
+import java.io.File;
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.management.MBeanServer;
+
 import org.jboss.logging.Logger;
-import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.test.osgi.framework.classloader.support.JavaXMLParserActivator;
 import org.jboss.test.osgi.framework.classloader.support.LoggingActivator;
 import org.jboss.test.osgi.framework.classloader.support.SimpleManagementActivator;
 import org.jboss.test.osgi.framework.classloader.support.XMLParserActivatorExt;
@@ -42,15 +52,6 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
 import org.osgi.util.xml.XMLParserActivator;
-
-import javax.management.MBeanServer;
-
-import java.io.File;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.fail;
 
 /**
  * Test requirements on the system bundle
@@ -239,6 +240,22 @@ public class SystemPackageDependencyTestCase extends OSGiTest {
         }
     }
 
+    @Test
+    public void testJavaxXMLParserWithDynamicImport() throws Exception {
+        Map<String, String> configuration = new HashMap<String, String>();
+        Framework framework = createFramework(configuration);
+        JavaArchive archive = getBundleH();
+        try {
+            BundleContext context = framework.getBundleContext();
+            Bundle bundle = context.installBundle(archive.getName(), toInputStream(archive));
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+            bundle.start();
+            assertBundleState(Bundle.ACTIVE, bundle.getState());
+        } finally {
+            shutdownFramework(framework);
+        }
+    }
+
     private JavaArchive getBundleA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA");
         archive.addClasses(SimpleActivator.class, SimpleService.class);
@@ -344,6 +361,23 @@ public class SystemPackageDependencyTestCase extends OSGiTest {
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleActivator(XMLParserActivatorExt.class);
                 builder.addImportPackages(BundleActivator.class, XMLParserActivator.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getBundleH() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleH");
+        archive.addClasses(JavaXMLParserActivator.class);
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleActivator(JavaXMLParserActivator.class);
+                builder.addImportPackages(BundleActivator.class);
+                builder.addDynamicImportPackages("*");
                 return builder.openStream();
             }
         });

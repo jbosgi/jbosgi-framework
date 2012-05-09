@@ -59,6 +59,7 @@ final class FallbackLoader implements LocalLoader {
     private final HostBundleRevision hostRev;
     private final ModuleIdentifier identifier;
     private final Set<String> importedPaths;
+    private final FrameworkState frameworkState;
     private final BundleManagerPlugin bundleManager;
     private final ModuleManagerPlugin moduleManager;
 
@@ -71,7 +72,8 @@ final class FallbackLoader implements LocalLoader {
         this.hostRev = hostRev;
         this.hostBundle = hostRev.getBundleState();
         this.bundleManager = hostBundle.getBundleManager();
-        this.moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
+        this.frameworkState = hostBundle.getFrameworkState();
+        this.moduleManager = frameworkState.getModuleManagerPlugin();
     }
 
     @Override
@@ -156,6 +158,10 @@ final class FallbackLoader implements LocalLoader {
                 module = findInUnresolvedModules(resName, matchingPatterns);
                 if (module != null && module.getIdentifier().equals(identifier) == false)
                     return module;
+
+                module = findInFrameworkModule(resName, matchingPatterns);
+                if (module != null && module.getIdentifier().equals(identifier) == false)
+                    return module;
             }
         } finally {
             if (removeThreadLocalMapping == true) {
@@ -211,7 +217,7 @@ final class FallbackLoader implements LocalLoader {
         for (XPackageRequirement pkgreq : matchingPatterns) {
             for (Bundle bundle : bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE)) {
                 AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-                if (bundleState.isResolved() && !bundleState.isFragment()) {
+                if (bundleState.getBundleId() > 0 && !bundleState.isFragment() && bundleState.isResolved()) {
                     ModuleIdentifier identifier = bundleState.getModuleIdentifier();
                     Module candidate = moduleManager.getModule(identifier);
                     if (isValidCandidate(resName, pkgreq, candidate))
@@ -233,6 +239,18 @@ final class FallbackLoader implements LocalLoader {
         return findInResolvedModules(resName, matchingPatterns);
     }
 
+    private Module findInFrameworkModule(String resName, List<XPackageRequirement> matchingPatterns) {
+        LOGGER.tracef("Attempt to find path dynamically in framework module ...");
+        for (XPackageRequirement pkgreq : matchingPatterns) {
+            SystemBundleState bundleState = frameworkState.getSystemBundle();
+            ModuleIdentifier identifier = bundleState.getModuleIdentifier();
+            Module candidate = moduleManager.getModule(identifier);
+            if (isValidCandidate(resName, pkgreq, candidate))
+                return candidate;
+        }
+        return null;
+    }
+
     private boolean isValidCandidate(String resName, XPackageRequirement pkgreq, Module candidate) {
 
         if (candidate == null)
@@ -244,11 +262,6 @@ final class FallbackLoader implements LocalLoader {
             return false;
 
         LOGGER.tracef("Attempt to find path dynamically [%s] in %s ...", resName, candidateId);
-        URL resURL = candidate.getExportedResource(resName);
-        if (resURL == null)
-            return false;
-
-        LOGGER.tracef("Found path [%s] in %s", resName, candidate);
         BundleRevision brev = moduleManager.getBundleRevision(candidateId);
         XPackageCapability candidateCap = getCandidateCapability(brev, pkgreq);
         return (candidateCap != null);

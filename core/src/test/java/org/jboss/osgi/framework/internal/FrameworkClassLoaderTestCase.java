@@ -21,19 +21,20 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.util.HashMap;
+
+import javax.management.MBeanServer;
+
 import org.jboss.modules.Module;
 import org.junit.Before;
 import org.junit.Test;
 import org.kohsuke.args4j.CmdLineParser;
 import org.omg.CORBA.ORB;
 import org.osgi.framework.BundleActivator;
-
-import javax.management.MBeanServer;
-import java.util.HashMap;
-
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Test the bundle content loader.
@@ -47,8 +48,8 @@ public class FrameworkClassLoaderTestCase extends AbstractFrameworkTest {
 
     @Before
     public void before() throws Exception {
-        BundleManagerPlugin bundleManager = getBundleManager();
-        Module frameworkModule = bundleManager.getSystemBundle().getFrameworkModule();
+        ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
+        Module frameworkModule = moduleManager.getFrameworkModule();
         classLoader = frameworkModule.getClassLoader();
     }
 

@@ -29,11 +29,9 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 
-import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.FrameworkModuleProvider;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
@@ -50,13 +48,11 @@ import org.osgi.framework.Version;
  */
 final class SystemBundleState extends AbstractBundleState implements TypeAdaptor {
 
-    private final FrameworkModuleProvider frameworkModuleProvider;
     private final SystemBundleRevision systemRevision;
     private InternalStorageState storageState;
 
-    SystemBundleState(FrameworkState frameworkState, SystemBundleRevision revision, FrameworkModuleProvider frameworkModuleProvider) {
+    SystemBundleState(FrameworkState frameworkState, SystemBundleRevision revision) {
         super(frameworkState, revision, 0);
-        this.frameworkModuleProvider = frameworkModuleProvider;
         this.systemRevision = revision;
     }
 
@@ -67,10 +63,6 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
         bundle = AbstractBundleState.assertBundleState(bundle);
         assert bundle instanceof SystemBundleState : "Not an SystemBundleState: " + bundle;
         return (SystemBundleState) bundle;
-    }
-
-    Module getFrameworkModule() {
-        return frameworkModuleProvider.getFrameworkModule(this);
     }
 
     @Override
