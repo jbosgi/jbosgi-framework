@@ -36,6 +36,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 
+import org.jboss.osgi.spi.ManifestBuilder;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -199,7 +200,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "empty-manifest.jar");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
-                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                ManifestBuilder builder = ManifestBuilder.newInstance();
                 return builder.openStream();
             }
         });

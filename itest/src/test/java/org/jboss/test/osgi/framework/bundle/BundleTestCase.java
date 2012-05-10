@@ -35,6 +35,7 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.jar.Attributes;
 
+import org.jboss.osgi.spi.ManifestBuilder;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
@@ -202,7 +203,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
             Archive<?> assemblyB = assembleArchive("bundle20", "/bundles/singleton/singleton2");
             Bundle bundleB = installBundle(assemblyB);
             try {
-                boolean resolved = getPackageAdmin().resolveBundles(new Bundle[]{bundleA, bundleB});
+                boolean resolved = getPackageAdmin().resolveBundles(new Bundle[] { bundleA, bundleB });
                 assertFalse("Not all Bundles resolved", resolved);
                 int stateA = bundleA.getState();
                 int stateB = bundleB.getState();
@@ -239,12 +240,12 @@ public class BundleTestCase extends OSGiFrameworkTest {
     public void testGetHeaders() throws Exception {
         Bundle bundle = installBundle(getBundleArchiveA());
         try {
-            Dictionary expected = new Hashtable();
+            Dictionary<String, String> expected = new Hashtable<String, String>();
             expected.put(Constants.BUNDLE_SYMBOLICNAME, "simple1");
             expected.put(Constants.BUNDLE_MANIFESTVERSION, "2");
             expected.put(Constants.IMPORT_PACKAGE, "org.osgi.framework");
             expected.put(Attributes.Name.MANIFEST_VERSION.toString(), "1.0");
-            Dictionary dictionary = bundle.getHeaders();
+            Dictionary<?, ?> dictionary = bundle.getHeaders();
             assertEquals(expected, dictionary);
         } finally {
             bundle.uninstall();
@@ -279,8 +280,8 @@ public class BundleTestCase extends OSGiFrameworkTest {
         final JavaArchive archive1 = ShrinkWrap.create(JavaArchive.class, "simple1");
         archive1.setManifest(new Asset() {
             public InputStream openStream() {
-                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-                builder.addBundleSymbolicName(archive1.getName());
+                ManifestBuilder builder = ManifestBuilder.newInstance();
+                builder.addManifestHeader(Constants.BUNDLE_SYMBOLICNAME, archive1.getName());
                 return builder.openStream();
             }
         });
@@ -289,15 +290,15 @@ public class BundleTestCase extends OSGiFrameworkTest {
             fail("BundleException expected");
         } catch (BundleException ex) {
             String message = ex.getMessage();
-            Assert.assertEquals("JBOSGI010321: Invalid Bundle-ManifestVersion for: simple1", message);
+            Assert.assertEquals("JBOSGI010710: Invalid Bundle-ManifestVersion for: simple1", message);
         }
 
         final JavaArchive archive2 = ShrinkWrap.create(JavaArchive.class, "simple1");
         archive2.setManifest(new Asset() {
             public InputStream openStream() {
-                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
-                builder.addBundleManifestVersion(3);
-                builder.addBundleSymbolicName(archive2.getName());
+                ManifestBuilder builder = ManifestBuilder.newInstance();
+                builder.addManifestHeader(Constants.BUNDLE_MANIFESTVERSION, "3");
+                builder.addManifestHeader(Constants.BUNDLE_SYMBOLICNAME, archive2.getName());
                 return builder.openStream();
             }
         });
@@ -306,7 +307,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
             fail("BundleException expected");
         } catch (BundleException ex) {
             String message = ex.getMessage();
-            Assert.assertEquals("JBOSGI010320: Unsupported Bundle-ManifestVersion: 3", message);
+            Assert.assertEquals("JBOSGI010709: Unsupported Bundle-ManifestVersion: 3", message);
         }
     }
 
@@ -323,11 +324,11 @@ public class BundleTestCase extends OSGiFrameworkTest {
         });
         Bundle bundle = installBundle(archive);
         try {
-            Dictionary expected = new Hashtable();
+            Dictionary<String, String> expected = new Hashtable<String, String>();
             expected.put(Constants.BUNDLE_NAME, "simple1");
             expected.put(Constants.IMPORT_PACKAGE, "org.osgi.framework");
             expected.put(Attributes.Name.MANIFEST_VERSION.toString(), "1.0");
-            Dictionary dictionary = bundle.getHeaders();
+            Dictionary<?, ?> dictionary = bundle.getHeaders();
             assertEquals(expected, dictionary);
         } finally {
             bundle.uninstall();
