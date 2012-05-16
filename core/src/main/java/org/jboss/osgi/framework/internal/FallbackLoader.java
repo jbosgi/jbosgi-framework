@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -58,6 +58,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.Resource;
+import org.jboss.osgi.framework.SystemPathsProvider;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -262,14 +263,11 @@ final class FallbackLoader implements LocalLoader {
 
     private Module findInFrameworkModule(String resName, List<XPackageRequirement> matchingPatterns) {
         LOGGER.tracef("Attempt to find path dynamically in framework module ...");
-        for (XPackageRequirement pkgreq : matchingPatterns) {
-            SystemBundleState bundleState = frameworkState.getSystemBundle();
-            ModuleIdentifier identifier = bundleState.getModuleIdentifier();
-            Module candidate = moduleManager.getModule(identifier);
-            if (isValidCandidate(resName, pkgreq, candidate))
-                return candidate;
-        }
-        return null;
+        int lastIndex = resName.lastIndexOf('/');
+        String pathName = lastIndex > 0 ? resName.substring(0, lastIndex) : resName;
+        Module candidate = moduleManager.getFrameworkModule();
+        SystemPathsProvider systemPaths = frameworkState.getSystemPathsProvider();
+        return systemPaths.getSystemPaths().contains(pathName) ? candidate : null;
     }
 
     private boolean isValidCandidate(String resName, XPackageRequirement pkgreq, Module candidate) {
@@ -283,6 +281,10 @@ final class FallbackLoader implements LocalLoader {
             return false;
 
         LOGGER.tracef("Attempt to find path dynamically [%s] in %s ...", resName, candidateId);
+        URL resURL = candidate.getExportedResource(resName);
+        if (resURL == null)
+            return false;
+
         BundleRevision brev = moduleManager.getBundleRevision(candidateId);
         XPackageCapability candidateCap = getCandidateCapability(brev, pkgreq);
         return (candidateCap != null);
