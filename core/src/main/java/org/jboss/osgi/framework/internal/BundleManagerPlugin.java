@@ -382,7 +382,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
                     HostBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                     HostBundleActiveService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 } else {
-                    serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), deployment);
+                    serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), deployment, listener);
                     FragmentBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 }
             } catch (RuntimeException rte) {
