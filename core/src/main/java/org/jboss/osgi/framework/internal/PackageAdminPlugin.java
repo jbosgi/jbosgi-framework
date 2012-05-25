@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -553,13 +553,22 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
             Set<Bundle> bundles = new HashSet<Bundle>();
             BundleWiring wiring = ((BundleRevision) capability.getResource()).getWiring();
-            for (Wire wire : wiring.getProvidedResourceWires(capability.getNamespace())) {
-                AbstractBundleRevision req = (AbstractBundleRevision) wire.getRequirer();
-                bundles.add(req.getBundle());
+            String namespace = capability.getNamespace();
+            for (Wire wire : wiring.getProvidedResourceWires(namespace)) {
+                Resource requirer = wire.getRequirer();
+                if (requirer instanceof AbstractBundleRevision) {
+                    AbstractBundleRevision req = (AbstractBundleRevision) requirer;
+                    bundles.add(req.getBundle());
+                }
             }
-            for (Wire wire : wiring.getProvidedResourceWires(BundleNamespace.BUNDLE_NAMESPACE)) {
-                AbstractBundleRevision req = (AbstractBundleRevision) wire.getRequirer();
-                bundles.add(req.getBundle());
+            if (!BundleNamespace.BUNDLE_NAMESPACE.equals(namespace)) { // no need to repeat the loop in case values equal
+                for (Wire wire : wiring.getProvidedResourceWires(BundleNamespace.BUNDLE_NAMESPACE)) {
+                    Resource requirer = wire.getRequirer();
+                    if (requirer instanceof AbstractBundleRevision) {
+                        AbstractBundleRevision req = (AbstractBundleRevision) requirer;
+                        bundles.add(req.getBundle());
+                    }
+                }
             }
 
             return bundles.toArray(new Bundle[bundles.size()]);
