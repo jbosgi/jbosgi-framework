@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -60,9 +60,9 @@ import org.osgi.framework.BundleException;
  */
 final class FragmentBundleInstalledService extends UserBundleInstalledService<FragmentBundleState, FragmentBundleRevision> {
 
-    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, ServiceListener<Bundle> listener) throws BundleException {
-        ServiceName serviceName = frameworkState.getBundleManager().getServiceName(dep).append("INSTALLED");
-        FragmentBundleInstalledService service = new FragmentBundleInstalledService(frameworkState, dep);
+    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment deployment, Long bundleId, ServiceListener<Bundle> listener) throws BundleException {
+        ServiceName serviceName = BundleManagerPlugin.getServiceName(bundleId, deployment).append("INSTALLED");
+        FragmentBundleInstalledService service = new FragmentBundleInstalledService(frameworkState, deployment, bundleId);
         ServiceBuilder<FragmentBundleState> builder = serviceTarget.addService(serviceName, service);
         builder.addDependency(InternalServices.FRAMEWORK_CORE_SERVICES);
         if (listener != null) {
@@ -72,8 +72,8 @@ final class FragmentBundleInstalledService extends UserBundleInstalledService<Fr
         return serviceName;
     }
 
-    private FragmentBundleInstalledService(FrameworkState frameworkState, Deployment deployment) throws BundleException {
-        super(frameworkState, deployment);
+    private FragmentBundleInstalledService(FrameworkState frameworkState, Deployment deployment, Long bundleId) throws BundleException {
+        super(frameworkState, deployment, bundleId);
     }
 
     @Override
@@ -82,7 +82,7 @@ final class FragmentBundleInstalledService extends UserBundleInstalledService<Fr
     }
 
     @Override
-    FragmentBundleState createBundleState(FragmentBundleRevision revision, StorageState storageState) {
-        return new FragmentBundleState(getFrameworkState(), revision, storageState);
+    FragmentBundleState createBundleState(FragmentBundleRevision revision, StorageState storageState, ServiceName serviceName) {
+        return new FragmentBundleState(getFrameworkState(), revision, storageState, serviceName);
     }
 }

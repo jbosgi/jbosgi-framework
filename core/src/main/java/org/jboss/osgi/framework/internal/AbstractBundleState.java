@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -68,6 +68,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -80,6 +82,7 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
+import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.resource.Wire;
 import org.osgi.service.resolver.ResolutionException;
@@ -93,7 +96,7 @@ import org.osgi.service.resolver.ResolutionException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class AbstractBundleState implements Bundle {
+abstract class AbstractBundleState implements Bundle, TypeAdaptor {
 
     private final long bundleId;
     private final String symbolicName;
@@ -101,10 +104,10 @@ abstract class AbstractBundleState implements Bundle {
     private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
     private final List<ServiceState> registeredServices = new CopyOnWriteArrayList<ServiceState>();
     private final ConcurrentHashMap<ServiceState, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
-    private AbstractBundleRevision currentRevision;
+    private BundleStateRevision currentRevision;
     private AbstractBundleContext bundleContext;
 
-    AbstractBundleState(FrameworkState frameworkState, AbstractBundleRevision revision, long bundleId) {
+    AbstractBundleState(FrameworkState frameworkState, BundleStateRevision revision, long bundleId) {
         assert frameworkState != null : "Null frameworkState";
         assert revision != null : "Null revision";
 
@@ -118,7 +121,7 @@ abstract class AbstractBundleState implements Bundle {
         this.frameworkState = frameworkState;
 
         // Link the bundle revision to this state
-        revision.setBundleState(this);
+        revision.addAttachment(Bundle.class, this);
     }
 
     FrameworkState getFrameworkState() {
@@ -154,18 +157,32 @@ abstract class AbstractBundleState implements Bundle {
 
     abstract AbstractBundleContext createContextInternal();
 
-    AbstractBundleRevision getCurrentBundleRevision() {
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T adapt(Class<T> type) {
+        T result = null;
+        if (type.isAssignableFrom(BundleRevision.class)) {
+            result = (T) getCurrentBundleRevision();
+        } else if (type.isAssignableFrom(StorageState.class)) {
+            result = (T) getStorageState();
+        } else if (type.isAssignableFrom(OSGiMetaData.class)) {
+            result = (T) getOSGiMetaData();
+        }
+        return result;
+    }
+
+    BundleStateRevision getCurrentBundleRevision() {
         return currentRevision;
     }
 
-    void addBundleRevision(AbstractBundleRevision rev) {
-        rev.setBundleState(this);
+    void addBundleRevision(BundleStateRevision rev) {
+        rev.addAttachment(Bundle.class, this);
         currentRevision = rev;
     }
 
-    abstract AbstractBundleRevision getBundleRevisionById(int revisionId);
+    abstract BundleStateRevision getBundleRevisionById(int revisionId);
 
-    abstract List<AbstractBundleRevision> getAllBundleRevisions();
+    abstract List<BundleStateRevision> getAllBundleRevisions();
 
     abstract ServiceName getServiceName(int state);
 

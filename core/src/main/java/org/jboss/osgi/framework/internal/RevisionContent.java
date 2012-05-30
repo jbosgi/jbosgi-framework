@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -51,7 +51,6 @@ import java.net.URLStreamHandler;
 import java.util.Enumeration;
 import java.util.Vector;
 
-import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -72,10 +71,10 @@ final class RevisionContent implements EntriesProvider {
     private final String identity;
     private final int contentId;
 
-    RevisionContent(UserBundleRevision userRev, OSGiMetaData metadata, int contentId, VirtualFile rootFile) {
-        assert userRev != null : "Null userRev";
+    RevisionContent(UserBundleRevision brev, OSGiMetaData metadata, long bundleId, int contentId, VirtualFile rootFile) {
+        assert brev != null : "Null userRev";
         assert rootFile != null : "Null rootFile";
-        this.userRev = userRev;
+        this.userRev = brev;
         this.virtualFile = rootFile;
         this.contentId = contentId;
 
@@ -86,9 +85,7 @@ final class RevisionContent implements EntriesProvider {
         } else {
             symbolicName = "anonymous";
         }
-        Deployment deployment = userRev.getDeployment();
-        BundleId bundleId = deployment.getAttachment(BundleId.class);
-        int revisionId = userRev.getRevisionId();
+        int revisionId = brev.getRevisionId();
         identity = symbolicName + "-" + bundleId + "-" + revisionId + "-" + contentId;
     }
 
@@ -103,7 +100,7 @@ final class RevisionContent implements EntriesProvider {
         if (bundle == null)
             return null;
         AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-        AbstractBundleRevision bundleRev = bundleState.getBundleRevisionById(revisionId);
+        BundleStateRevision bundleRev = bundleState.getBundleRevisionById(revisionId);
         if (bundleRev == null)
             return null;
         UserBundleRevision userRev = (UserBundleRevision) bundleRev;

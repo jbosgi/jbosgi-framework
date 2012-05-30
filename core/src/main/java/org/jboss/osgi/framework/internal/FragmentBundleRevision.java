@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -76,7 +76,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
     /**
      * Assert that the given bundleRev is an instance of FragmentRevision
      */
-    static FragmentBundleRevision assertFragmentRevision(AbstractBundleRevision bundleRev) {
+    static FragmentBundleRevision assertFragmentRevision(BundleStateRevision bundleRev) {
         assert bundleRev != null : "Null bundleRev";
         assert bundleRev instanceof FragmentBundleRevision : "Not an FragmentRevision: " + bundleRev;
         return (FragmentBundleRevision) bundleRev;
@@ -84,7 +84,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
 
     @Override
     FragmentBundleState getBundleState() {
-        return (FragmentBundleState) super.getBundleState();
+        return FragmentBundleState.assertBundleState(super.getBundleState());
     }
 
     void refreshRevisionInternal() {

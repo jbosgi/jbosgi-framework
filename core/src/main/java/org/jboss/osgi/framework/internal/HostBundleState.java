@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -54,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.framework.StorageState;
@@ -67,8 +68,8 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
+import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
-import org.osgi.resource.Resource;
 import org.osgi.resource.Wire;
 import org.osgi.service.resolver.ResolutionException;
 import org.osgi.service.startlevel.StartLevel;
@@ -86,8 +87,8 @@ final class HostBundleState extends UserBundleState {
     private final AtomicBoolean awaitLazyActivation = new AtomicBoolean();
     private BundleActivator bundleActivator;
 
-    HostBundleState(FrameworkState frameworkState, HostBundleRevision revision, StorageState storageState) {
-        super(frameworkState, revision, storageState);
+    HostBundleState(FrameworkState frameworkState, HostBundleRevision revision, StorageState storageState, ServiceName serviceName) {
+        super(frameworkState, revision, storageState, serviceName);
     }
 
     static HostBundleState assertBundleState(Bundle bundle) {
@@ -205,10 +206,10 @@ final class HostBundleState extends UserBundleState {
             BundleWiring wiring = getCurrentBundleRevision().getWiring();
             List<Wire> wires = wiring.getRequiredResourceWires(null);
             for (Wire wire : wires) {
-                Resource provider = wire.getProvider();
-				AbstractBundleState bundleState = ((AbstractBundleRevision) provider).getBundleState();
-				if (bundleState instanceof UserBundleState)
-					result.add((UserBundleState)bundleState);
+                BundleRevision brev = (BundleRevision) wire.getProvider();
+                Bundle bundle = brev.getBundle();
+                if (bundle instanceof UserBundleState)
+                    result.add((UserBundleState) bundle);
             }
         }
         return result;
@@ -369,7 +370,7 @@ final class HostBundleState extends UserBundleState {
                     throw (BundleException) th;
 
                 throw MESSAGES.bundleCannotStartBundle(th, this);
-           } finally {
+            } finally {
                 Thread.currentThread().setContextClassLoader(tccl);
             }
         }

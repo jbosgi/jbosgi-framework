@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -67,6 +67,7 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XIdentityCapability;
@@ -79,6 +80,10 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.namespace.HostNamespace;
 import org.osgi.framework.namespace.IdentityNamespace;
+import org.osgi.framework.wiring.BundleCapability;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWire;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
 import org.osgi.resource.Resource;
@@ -140,8 +145,8 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
     synchronized void resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
         Map<Resource, List<Wire>> wiremap = resolve(mandatory, optional);
         for (Entry<Resource, Wiring> entry : applyResolverResults(wiremap).entrySet()) {
-            XResource res = (XResource) entry.getKey();
-            res.addAttachment(Wiring.class, entry.getValue());
+            XBundleRevision res = (XBundleRevision) entry.getKey();
+            res.addAttachment(BundleWiring.class, (BundleWiring)entry.getValue());
         }
     }
 
@@ -149,7 +154,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         Collection<Capability> hostcaps = getHostCapabilities(mandatory);
         Collection<Resource> result = new HashSet<Resource>();
         if (hostcaps.isEmpty() == false) {
-            result.addAll(optional != null ? optional : Collections.<Resource>emptySet());
+            result.addAll(optional != null ? optional : Collections.<Resource> emptySet());
             result.addAll(findAttachableFragments(hostcaps));
         }
         return result;
@@ -201,10 +206,25 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         return result;
     }
 
-    private Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) throws ResolutionException {
+    private Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> orgmap) throws ResolutionException {
 
         // [TODO] Revisit how we apply the resolution results
         // An exception in one of the steps may leave the framework partially modified
+
+        // Transform the wiremap to {@link BundleRevision} and {@link BundleWire}
+        Map<BundleRevision, List<BundleWire>> wiremap = new HashMap<BundleRevision, List<BundleWire>>();
+        for (Entry<Resource, List<Wire>> entry : orgmap.entrySet()) {
+            List<BundleWire> bwires = new ArrayList<BundleWire>();
+            List<Wire> wires = new ArrayList<Wire>();
+            for (Wire wire : entry.getValue()) {
+                AbstractBundleWire bwire = new AbstractBundleWire(wire);
+                bwires.add(bwire);
+                wires.add(bwire);
+            }
+            Resource res = entry.getKey();
+            wiremap.put((BundleRevision) res, bwires);
+            orgmap.put(res, wires);
+        }
 
         // Attach the fragments to host
         attachFragmentsToHost(wiremap);
@@ -229,16 +249,16 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
 
         // Construct and apply the resource wiring map
         XEnvironment env = injectedEnvironment.getValue();
-        return env.updateWiring(wiremap);
+        return env.updateWiring(orgmap);
     }
 
-    private void attachFragmentsToHost(Map<Resource, List<Wire>> wiremap) {
-        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-            XResource res = (XResource) entry.getKey();
-            if (res.isFragment()) {
-                FragmentBundleRevision fragRev = (FragmentBundleRevision) res;
-                for (Wire wire : entry.getValue()) {
-                    Capability cap = wire.getCapability();
+    private void attachFragmentsToHost(Map<BundleRevision, List<BundleWire>> wiremap) {
+        for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
+            XBundleRevision brev = (XBundleRevision) entry.getKey();
+            if (brev.isFragment()) {
+                FragmentBundleRevision fragRev = (FragmentBundleRevision) brev;
+                for (BundleWire wire : entry.getValue()) {
+                    BundleCapability cap = wire.getCapability();
                     if (HostNamespace.HOST_NAMESPACE.equals(cap.getNamespace())) {
                         HostBundleRevision hostRev = (HostBundleRevision) cap.getResource();
                         fragRev.attachToHost(hostRev);
@@ -248,11 +268,11 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         }
     }
 
-    private void resolveNativeCodeLibraries(Map<Resource, List<Wire>> wiremap) throws BundleException {
-        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-            XResource res = (XResource) entry.getKey();
-            if (res instanceof UserBundleRevision) {
-                UserBundleRevision userRev = (UserBundleRevision) res;
+    private void resolveNativeCodeLibraries(Map<BundleRevision, List<BundleWire>> wiremap) throws BundleException {
+        for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
+            XBundleRevision brev = (XBundleRevision) entry.getKey();
+            if (brev instanceof UserBundleRevision) {
+                UserBundleRevision userRev = (UserBundleRevision) brev;
                 Deployment deployment = userRev.getDeployment();
 
                 // Resolve the native code libraries, if there are any
@@ -265,21 +285,21 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         }
     }
 
-    private void addModules(Map<Resource, List<Wire>> wiremap) {
+    private void addModules(Map<BundleRevision, List<BundleWire>> wiremap) {
         ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
-        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-            XResource res = (XResource) entry.getKey();
-            if (res.isFragment() == false) {
-                List<Wire> wires = wiremap.get(res);
-                moduleManager.addModule(res, wires);
+        for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
+            XBundleRevision brev = (XBundleRevision) entry.getKey();
+            if (brev.isFragment() == false) {
+                List<BundleWire> wires = wiremap.get(brev);
+                moduleManager.addModule(brev, wires);
             }
         }
     }
 
-    private void loadModules(Map<Resource, List<Wire>> wiremap) {
+    private void loadModules(Map<BundleRevision, List<BundleWire>> wiremap) {
         ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
-        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-            XResource res = (XResource) entry.getKey();
+        for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
+            XBundleRevision res = (XBundleRevision) entry.getKey();
             if (res.isFragment() == false) {
                 ModuleIdentifier identifier = moduleManager.getModuleIdentifier(res);
                 try {
@@ -291,11 +311,11 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         }
     }
 
-    private void setBundleToResolved(Map<Resource, List<Wire>> wiremap) {
-        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
-            if (entry.getKey() instanceof AbstractBundleRevision) {
-                AbstractBundleRevision brev = (AbstractBundleRevision) entry.getKey();
-                brev.getBundleState().changeState(Bundle.RESOLVED);
+    private void setBundleToResolved(Map<BundleRevision, List<BundleWire>> wiremap) {
+        for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
+            Bundle bundle = entry.getKey().getBundle();
+            if (bundle instanceof AbstractBundleState) {
+                ((AbstractBundleState)bundle).changeState(Bundle.RESOLVED);
             }
         }
     }

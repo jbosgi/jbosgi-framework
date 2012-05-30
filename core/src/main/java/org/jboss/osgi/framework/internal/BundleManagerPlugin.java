@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -58,7 +58,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
@@ -87,8 +86,7 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.Version;
-import org.osgi.framework.namespace.IdentityNamespace;
+import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.resource.Resource;
 
 /**
@@ -120,19 +118,12 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         implementationVersion = BundleManagerPlugin.class.getPackage().getImplementationVersion();
     }
 
-    private static final Set<String> IDENTITY_TYPES = new HashSet<String>();
-    static {
-        IDENTITY_TYPES.add(IdentityNamespace.TYPE_BUNDLE);
-        IDENTITY_TYPES.add(IdentityNamespace.TYPE_FRAGMENT);
-    }
-
     final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     final InjectedValue<Boolean> injectedFrameworkActive = new InjectedValue<Boolean>();
 
     private final FrameworkBuilder frameworkBuilder;
-    private final AtomicLong identityGenerator = new AtomicLong();
     private final Map<String, Object> properties = new HashMap<String, Object>();
     private final AtomicBoolean shutdownInitiated = new AtomicBoolean();
     private ServiceContainer serviceContainer;
@@ -260,27 +251,19 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         properties.put(key, value);
     }
 
-    ServiceName getServiceName(Deployment dep) {
-        long bundleId = dep.getAttachment(BundleId.class).longValue();
-        return getServiceNameInternal(bundleId, dep.getSymbolicName(), Version.parseVersion(dep.getVersion()));
-    }
-
-    private static ServiceName getServiceNameInternal(long bundleId, String symbolicName, Version version) {
+    static ServiceName getServiceName(Long bundleId, Deployment dep) {
         // Currently the bundleId is needed for uniqueness because of
         // [MSC-97] Cannot re-install service with same name
-        return ServiceName.of(Services.BUNDLE_BASE_NAME, "" + bundleId, "" + symbolicName, "" + version);
+        return ServiceName.of(Services.BUNDLE_BASE_NAME, bundleId.toString(), "" + dep.getSymbolicName(), "" + dep.getVersion());
     }
 
     Set<Bundle> getBundles() {
         Set<Bundle> result = new HashSet<Bundle>();
         XEnvironment env = injectedEnvironment.getValue();
-        for (Resource aux : env.getResources(IDENTITY_TYPES)) {
-            if (aux instanceof AbstractBundleRevision) {
-                AbstractBundleRevision brev = (AbstractBundleRevision) aux;
-                AbstractBundleState bundleState = brev.getBundleState();
-                if (bundleState.getState() != Bundle.UNINSTALLED)
-                    result.add(bundleState);
-            }
+        for (Resource aux : env.getResources(null)) {
+            Bundle bundle = ((BundleRevision) aux).getBundle();
+            if (bundle.getState() != Bundle.UNINSTALLED)
+                result.add(bundle);
         }
         return Collections.unmodifiableSet(result);
     }
@@ -289,13 +272,10 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     public Set<Bundle> getBundles(Integer states) {
         Set<Bundle> result = new HashSet<Bundle>();
         XEnvironment env = injectedEnvironment.getValue();
-        for (Resource aux : env.getResources(IDENTITY_TYPES)) {
-            if (aux instanceof AbstractBundleRevision) {
-                AbstractBundleRevision brev = (AbstractBundleRevision) aux;
-                AbstractBundleState bundleState = brev.getBundleState();
-                if (states == null || (bundleState.getState() & states.intValue()) != 0)
-                    result.add(bundleState);
-            }
+        for (Resource aux : env.getResources(null)) {
+            Bundle bundle = ((BundleRevision) aux).getBundle();
+            if (states == null || (bundle.getState() & states.intValue()) != 0)
+                result.add(bundle);
         }
         return Collections.unmodifiableSet(result);
     }
@@ -306,14 +286,11 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
             return getFrameworkState().getSystemBundle();
         }
         XEnvironment env = injectedEnvironment.getValue();
-        Collection<XResource> resources = env.getResources(IDENTITY_TYPES);
+        Collection<XResource> resources = env.getResources(null);
         for (Resource aux : resources) {
-            if (aux instanceof AbstractBundleRevision) {
-                AbstractBundleRevision brev = (AbstractBundleRevision) aux;
-                AbstractBundleState bundleState = brev.getBundleState();
-                if (bundleState.getBundleId() == bundleId) {
-                    return bundleState;
-                }
+            Bundle bundle = ((BundleRevision) aux).getBundle();
+            if (bundle.getBundleId() == bundleId) {
+                return bundle;
             }
         }
         return null;
@@ -345,72 +322,60 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     }
 
     @Override
-    public ServiceName installBundle(Deployment deployment, ServiceListener<Bundle> listener) throws BundleException {
-        if (deployment == null)
+    public ServiceName installBundle(Deployment dep, ServiceListener<Bundle> listener) throws BundleException {
+        if (dep == null)
             throw MESSAGES.illegalArgumentNull("deployment");
 
         ServiceName serviceName;
 
         // If a bundle containing the same location identifier is already installed,
         // the Bundle object for that bundle is returned.
-        Bundle bundle = getBundleByLocation(deployment.getLocation());
+        Bundle bundle = getBundleByLocation(dep.getLocation());
         if (bundle != null) {
-            LOGGER.debugf("Installing an already existing bundle: %s", deployment);
+            LOGGER.debugf("Installing an already existing bundle: %s", dep);
             AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
             serviceName = bundleState.getServiceName(Bundle.INSTALLED);
-            VFSUtils.safeClose(deployment.getRoot());
+            VFSUtils.safeClose(dep.getRoot());
         } else {
             try {
+                Long bundleId;
+                XEnvironment env = injectedEnvironment.getValue();
+
                 // The storage state exists when we re-create the bundle from persistent storage
-                StorageState storageState = deployment.getAttachment(StorageState.class);
+                StorageState storageState = dep.getAttachment(StorageState.class);
                 if (storageState != null) {
-                    deployment.setAutoStart(storageState.isPersistentlyStarted());
+                    dep.setAutoStart(storageState.isPersistentlyStarted());
+                    bundleId = env.nextResourceIndex(storageState.getBundleId());
+                } else {
+                    bundleId = env.nextResourceIndex(null);
                 }
-                BundleId bundleId = new BundleId(createBundleId(storageState));
-                deployment.addAttachment(BundleId.class, bundleId);
 
                 // Check that we have valid metadata
-                OSGiMetaData metadata = deployment.getAttachment(OSGiMetaData.class);
+                OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
                 if (metadata == null) {
                     DeploymentFactoryPlugin plugin = getFrameworkState().getDeploymentFactoryPlugin();
-                    metadata = plugin.createOSGiMetaData(deployment);
+                    metadata = plugin.createOSGiMetaData(dep);
                 }
 
                 // Create the bundle services
                 if (metadata.getFragmentHost() == null) {
-                    serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), deployment, listener);
+                    serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep, bundleId, listener);
                     HostBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                     HostBundleActiveService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 } else {
-                    serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), deployment, listener);
+                    serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep, bundleId, listener);
                     FragmentBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 }
             } catch (RuntimeException rte) {
-                VFSUtils.safeClose(deployment.getRoot());
+                VFSUtils.safeClose(dep.getRoot());
                 throw rte;
             } catch (BundleException ex) {
-                VFSUtils.safeClose(deployment.getRoot());
+                VFSUtils.safeClose(dep.getRoot());
                 throw ex;
             }
         }
-        deployment.addAttachment(ServiceName.class, serviceName);
+        dep.addAttachment(ServiceName.class, serviceName);
         return serviceName;
-    }
-
-    long createBundleId(StorageState storageState) {
-        synchronized (identityGenerator) {
-            long result;
-            if (storageState != null) {
-                result = storageState.getBundleId();
-                long diff = result - identityGenerator.get();
-                if (diff > 0) {
-                    identityGenerator.addAndGet(diff);
-                }
-            } else {
-                result = identityGenerator.incrementAndGet();
-            }
-            return result;
-        }
     }
 
     @Override
@@ -481,7 +446,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         }
 
         XEnvironment env = getFrameworkState().getEnvironment();
-        for (AbstractBundleRevision abr : userBundle.getAllBundleRevisions()) {
+        for (BundleStateRevision abr : userBundle.getAllBundleRevisions()) {
             env.uninstallResources(abr);
         }
 
@@ -489,7 +454,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         eventsPlugin.fireBundleEvent(userBundle, BundleEvent.UNRESOLVED);
 
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        for (AbstractBundleRevision rev : userBundle.getAllBundleRevisions()) {
+        for (BundleStateRevision rev : userBundle.getAllBundleRevisions()) {
             UserBundleRevision userRev = (UserBundleRevision) rev;
             if (userBundle.isFragment() == false) {
                 ModuleIdentifier identifier = moduleManager.getModuleIdentifier(rev);

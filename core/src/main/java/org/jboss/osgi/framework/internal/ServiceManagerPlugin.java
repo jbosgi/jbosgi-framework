@@ -55,7 +55,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
@@ -170,6 +169,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
             public boolean isFactoryValue() {
                 return serviceValue instanceof ServiceFactory;
             }
+
             public Object getValue() {
                 return serviceValue;
             }
@@ -304,17 +304,15 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                 } else if (Services.XSERVICE_BASE_NAME.isParentOf(serviceName)) {
                     final ServiceState.ValueProvider valueProvider = new ServiceState.ValueProvider() {
                         ModuleClassLoader classLoader = null;
+
                         public boolean isFactoryValue() {
                             return false;
                         }
+
                         public Object getValue() {
                             if (classLoader == null) {
-                                AbstractBundleRevision currentRevision = bundleState.getCurrentBundleRevision();
-                                try {
-                                    classLoader = currentRevision.getModuleClassLoader();
-                                } catch (ModuleLoadException ex) {
-                                    LOGGER.errorCannotObtainClassLoader(ex, currentRevision);
-                                }
+                                BundleStateRevision brev = bundleState.getCurrentBundleRevision();
+                                classLoader = brev.getModuleClassLoader();
                             }
                             ClassLoader ctxLoader = SecurityActions.getContextClassLoader();
                             try {

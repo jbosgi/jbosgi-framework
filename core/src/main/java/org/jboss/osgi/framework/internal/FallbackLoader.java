@@ -59,8 +59,10 @@ import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.Resource;
 import org.jboss.osgi.framework.SystemPathsProvider;
+import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
+import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.namespace.PackageNamespace;
@@ -313,8 +315,7 @@ final class FallbackLoader implements LocalLoader {
     private List<XPackageCapability> getPackageCapabilities(BundleRevision brev) {
         List<XPackageCapability> result = new ArrayList<XPackageCapability>();
         for (Capability aux : brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
-            XPackageCapability cap = (XPackageCapability) aux;
-            result.add(cap);
+            result.add(((XCapability) aux).adapt(XPackageCapability.class));
         }
         return result;
     }
@@ -322,9 +323,10 @@ final class FallbackLoader implements LocalLoader {
     private List<XPackageRequirement> getDynamicPackageRequirements(BundleRevision brev) {
         List<XPackageRequirement> result = new ArrayList<XPackageRequirement>();
         for (Requirement aux : brev.getRequirements(PackageNamespace.PACKAGE_NAMESPACE)) {
-            XPackageRequirement req = (XPackageRequirement) aux;
-            if (req.isDynamic()) {
-                result.add(req);
+            XRequirement xreq = (XRequirement) aux;
+            XPackageRequirement preq = xreq.adapt(XPackageRequirement.class);
+            if (preq.isDynamic()) {
+                result.add(preq);
             }
         }
         return result;

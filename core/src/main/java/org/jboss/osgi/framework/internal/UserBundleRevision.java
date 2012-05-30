@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -66,7 +66,7 @@ import org.osgi.framework.BundleException;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-abstract class UserBundleRevision extends AbstractBundleRevision {
+abstract class UserBundleRevision extends BundleStateRevision {
 
     private final Deployment deployment;
     private List<RevisionContent> contentList;
@@ -78,7 +78,7 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
         this.deployment = dep;
 
         if (dep.getRoot() != null) {
-            contentList = getBundleClassPath(dep.getRoot(), getOSGiMetaData());
+            contentList = getBundleClassPath(dep.getRoot(), metadata, storageState);
             entriesProvider = getRootContent();
         } else {
             Module module = dep.getAttachment(Module.class);
@@ -98,7 +98,7 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
     }
 
     UserBundleState getBundleState() {
-        return (UserBundleState) super.getBundleState();
+        return UserBundleState.assertBundleState(super.getBundleState());
     }
 
     /**
@@ -149,17 +149,18 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
     }
 
     @Override
-    Enumeration<URL> findEntries(String path, String pattern, boolean recurse) {
+    public Enumeration<URL> findEntries(String path, String pattern, boolean recurse) {
         getBundleState().assertNotUninstalled();
         return entriesProvider.findEntries(path, pattern, recurse);
     }
 
-    private List<RevisionContent> getBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata) {
+    private List<RevisionContent> getBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata, StorageState storageState) {
         assert rootFile != null : "Null rootFile";
 
         // Setup single root file list, if there is no Bundle-ClassPath
+        long bundleId = storageState.getBundleId();
         if (metadata.getBundleClassPath() == null) {
-            RevisionContent revContent = new RevisionContent(this, metadata, 0, rootFile);
+            RevisionContent revContent = new RevisionContent(this, metadata, bundleId, 0, rootFile);
             return Collections.singletonList(revContent);
         }
 
@@ -167,14 +168,14 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
         List<RevisionContent> rootList = new ArrayList<RevisionContent>();
         for (String path : metadata.getBundleClassPath()) {
             if (path.equals(".")) {
-                RevisionContent revContent = new RevisionContent(this, metadata, rootList.size(), rootFile);
+                RevisionContent revContent = new RevisionContent(this, metadata, bundleId, rootList.size(), rootFile);
                 rootList.add(revContent);
             } else {
                 try {
                     VirtualFile child = rootFile.getChild(path);
                     if (child != null) {
                         VirtualFile anotherRoot = AbstractVFS.toVirtualFile(child.toURL());
-                        RevisionContent revContent = new RevisionContent(this, metadata, rootList.size(), anotherRoot);
+                        RevisionContent revContent = new RevisionContent(this, metadata, bundleId, rootList.size(), anotherRoot);
                         rootList.add(revContent);
                     }
                 } catch (IOException ex) {

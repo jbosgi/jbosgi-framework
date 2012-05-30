@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -60,9 +60,9 @@ import org.osgi.framework.BundleException;
  */
 final class HostBundleInstalledService extends UserBundleInstalledService<HostBundleState, HostBundleRevision> {
 
-    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, ServiceListener<Bundle> listener) throws BundleException {
-        HostBundleInstalledService service = new HostBundleInstalledService(frameworkState, dep);
-        ServiceName serviceName = frameworkState.getBundleManager().getServiceName(dep).append("INSTALLED");
+    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, Long bundleId, ServiceListener<Bundle> listener) throws BundleException {
+        ServiceName serviceName = BundleManagerPlugin.getServiceName(bundleId, dep).append("INSTALLED");
+        HostBundleInstalledService service = new HostBundleInstalledService(frameworkState, dep, bundleId);
         ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, service);
         builder.addDependency(InternalServices.FRAMEWORK_CORE_SERVICES);
         if (listener != null) {
@@ -72,8 +72,8 @@ final class HostBundleInstalledService extends UserBundleInstalledService<HostBu
         return serviceName;
     }
 
-    private HostBundleInstalledService(FrameworkState frameworkState, Deployment deployment) throws BundleException {
-        super(frameworkState, deployment);
+    private HostBundleInstalledService(FrameworkState frameworkState, Deployment dep, Long bundleId) throws BundleException {
+        super(frameworkState, dep, bundleId);
     }
 
     @Override
@@ -82,7 +82,7 @@ final class HostBundleInstalledService extends UserBundleInstalledService<HostBu
     }
 
     @Override
-    HostBundleState createBundleState(HostBundleRevision revision, StorageState storageState) {
-        return new HostBundleState(getFrameworkState(), revision, storageState);
+    HostBundleState createBundleState(HostBundleRevision revision, StorageState storageState, ServiceName serviceName) {
+        return new HostBundleState(getFrameworkState(), revision, storageState, serviceName);
     }
 }

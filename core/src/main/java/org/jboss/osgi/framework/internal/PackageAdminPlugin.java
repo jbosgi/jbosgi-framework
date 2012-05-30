@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -68,7 +68,11 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.resolver.XCapability;
+import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XPackageCapability;
+import org.jboss.osgi.resolver.XResource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkEvent;
@@ -77,9 +81,9 @@ import org.osgi.framework.Version;
 import org.osgi.framework.namespace.BundleNamespace;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.resource.Capability;
-import org.osgi.resource.Resource;
 import org.osgi.resource.Wire;
 import org.osgi.service.packageadmin.ExportedPackage;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -96,6 +100,7 @@ import org.osgi.service.resolver.ResolutionException;
 public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdmin> implements PackageAdmin {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
+    private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
@@ -106,6 +111,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         PackageAdminPlugin service = new PackageAdminPlugin();
         ServiceBuilder<PackageAdmin> builder = serviceTarget.addService(Services.PACKAGE_ADMIN, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
@@ -158,16 +164,19 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         // An uninstalled bundle can potentially live on if there are
         // other bundles depending on it. Only after a call to
         // {@link PackageAdmin#refreshPackages(Bundle[])} the bundle gets destroyed.
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         if (bundleManager.getBundleById(bundle.getBundleId()) == null)
             return null;
 
         List<ExportedPackage> result = new ArrayList<ExportedPackage>();
-        for (AbstractBundleRevision brev : bundleState.getAllBundleRevisions()) {
-            if (brev.isResolved()) {
-                for (Capability cap : brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE))
-                    result.add(new ExportedPackageImpl((XPackageCapability) cap));
+        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        for (XBundleRevision brev : bundleState.getAllBundleRevisions()) {
+            if (brev.getWiring() != null) {
+                for (Capability cap : brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
+                    XCapability xcap = (XCapability) cap;
+                    XPackageCapability packcap = xcap.adapt(XPackageCapability.class);
+                    result.add(new ExportedPackageImpl(packcap));
+                }
             }
         }
 
@@ -200,16 +209,15 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         assert name != null : "Null name";
 
         Set<ExportedPackage> result = new HashSet<ExportedPackage>();
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        for (Bundle bundle : bundleManager.getBundles(null)) {
-            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-            for (AbstractBundleRevision brev : bundleState.getAllBundleRevisions()) {
-                if (brev.isResolved() && !brev.isFragment()) {
-                    for (Capability cap : brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
-                        XPackageCapability xcap = (XPackageCapability) cap;
-                        if (xcap.getPackageName().equals(name)) {
-                            result.add(new ExportedPackageImpl(xcap));
-                        }
+        XEnvironment env = injectedEnvironment.getValue();
+        for (XResource res : env.getResources(null)) {
+            XBundleRevision brev = (XBundleRevision) res;
+            if (brev.getWiring() != null && !brev.isFragment()) {
+                for (Capability cap : brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
+                    XCapability xcap = (XCapability) cap;
+                    XPackageCapability packcap = xcap.adapt(XPackageCapability.class);
+                    if (packcap.getPackageName().equals(name)) {
+                        result.add(new ExportedPackageImpl(packcap));
                     }
                 }
             }
@@ -382,7 +390,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             bundles = new Bundle[bundleset.size()];
             bundleset.toArray(bundles);
         }
-        Set<Resource> resolve = new LinkedHashSet<Resource>();
+        Set<BundleRevision> resolve = new LinkedHashSet<BundleRevision>();
         for (Bundle aux : bundles) {
             AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
             resolve.add(bundleState.getCurrentBundleRevision());
@@ -391,8 +399,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         boolean result = true;
         try {
             resolverPlugin.resolveAndApply(resolve, null);
-            for (Resource aux : resolve) {
-                if (((AbstractBundleRevision) aux).isResolved() == false) {
+            for (BundleRevision aux : resolve) {
+                if (aux.getWiring() == null) {
                     result = false;
                     break;
                 }
@@ -436,7 +444,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                     requiringBundles.add(AbstractBundleState.assertBundleState(bundle));
                 }
             }
-            result.add(new RequiredBundleImpl(bundleState, requiringBundles));
+            result.add(new RequiredBundleImpl(bundleState, brev, requiringBundles));
         }
         return result.toArray(new RequiredBundle[matchingHosts.size()]);
     }
@@ -553,12 +561,12 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
             Set<Bundle> bundles = new HashSet<Bundle>();
             BundleWiring wiring = ((BundleRevision) capability.getResource()).getWiring();
-            for (Wire wire : wiring.getProvidedResourceWires(capability.getNamespace())) {
-                AbstractBundleRevision req = (AbstractBundleRevision) wire.getRequirer();
+            for (BundleWire wire : wiring.getProvidedWires(capability.getNamespace())) {
+                BundleRevision req = wire.getRequirer();
                 bundles.add(req.getBundle());
             }
-            for (Wire wire : wiring.getProvidedResourceWires(BundleNamespace.BUNDLE_NAMESPACE)) {
-                AbstractBundleRevision req = (AbstractBundleRevision) wire.getRequirer();
+            for (BundleWire wire : wiring.getProvidedWires(BundleNamespace.BUNDLE_NAMESPACE)) {
+                BundleRevision req = wire.getRequirer();
                 bundles.add(req.getBundle());
             }
 
@@ -577,9 +585,15 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         @Override
         public boolean isRemovalPending() {
-            AbstractBundleRevision brev = (AbstractBundleRevision) capability.getResource();
-            AbstractBundleState bundleState = brev.getBundleState();
-            return brev != bundleState.getCurrentBundleRevision() || bundleState.getState() == Bundle.UNINSTALLED;
+            BundleRevision brev = (BundleRevision) capability.getResource();
+            Bundle bundle = brev.getBundle();
+            if (bundle.getState() == Bundle.UNINSTALLED) {
+                return true;
+            }
+            if (!(bundle instanceof AbstractBundleState)) {
+                return false;
+            }
+            return brev != ((AbstractBundleState) bundle).getCurrentBundleRevision();
         }
 
         private XPackageCapability getCapability() {
@@ -596,11 +610,11 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         private final Bundle requiredBundle;
         private final Bundle[] requiringBundles;
-        private final AbstractBundleRevision bundleRevision;
+        private final BundleRevision bundleRevision;
 
-        RequiredBundleImpl(AbstractBundleState requiredBundle, Collection<AbstractBundleState> requiringBundles) {
-            this.requiredBundle = AbstractBundleState.assertBundleState(requiredBundle);
-            this.bundleRevision = requiredBundle.getCurrentBundleRevision();
+        RequiredBundleImpl(Bundle requiredBundle, BundleRevision bundleRevision, Collection<AbstractBundleState> requiringBundles) {
+            this.requiredBundle = requiredBundle;
+            this.bundleRevision = bundleRevision;
 
             List<Bundle> bundles = new ArrayList<Bundle>(requiringBundles.size());
             for (AbstractBundleState ab : requiringBundles) {
@@ -640,7 +654,9 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             if (requiredBundle.getState() == Bundle.UNINSTALLED)
                 return true;
 
-            return !bundleRevision.equals(bundleRevision.getBundleState().getCurrentBundleRevision());
+            Bundle bundle = bundleRevision.getBundle();
+            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+            return !bundleRevision.equals(bundleState.getCurrentBundleRevision());
         }
 
         @Override

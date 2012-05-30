@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -83,19 +83,21 @@ import org.jboss.osgi.framework.internal.NativeCodePlugin.BundleNativeLibraryPro
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
-import org.jboss.osgi.resolver.XBundleRequirement;
+import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XIdentityCapability;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
+import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XResource;
+import org.jboss.osgi.resolver.XResourceRequirement;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.BundleReference;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWire;
 import org.osgi.resource.Capability;
-import org.osgi.resource.Requirement;
 import org.osgi.resource.Resource;
-import org.osgi.resource.Wire;
 
 /**
  * The module manager plugin.
@@ -155,26 +157,26 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         return frameworkModule;
     }
 
-    ModuleIdentifier getModuleIdentifier(final XResource res) {
-        assert res != null : "Null resource";
-        assert !res.isFragment() : "A fragment is not a module";
+    ModuleIdentifier getModuleIdentifier(final XBundleRevision brev) {
+        assert brev != null : "Null resource";
+        assert !brev.isFragment() : "A fragment is not a module";
 
-        ModuleIdentifier identifier = res.getAttachment(ModuleIdentifier.class);
+        ModuleIdentifier identifier = brev.getAttachment(ModuleIdentifier.class);
         if (identifier != null)
             return identifier;
 
-        XIdentityCapability icap = res.getIdentityCapability();
-        Module module = res.getAttachment(Module.class);
+        XIdentityCapability icap = brev.getIdentityCapability();
+        Module module = brev.getAttachment(Module.class);
         if (module != null) {
             identifier = module.getIdentifier();
         } else if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getSymbolicName())) {
             identifier = getFrameworkModule().getIdentifier();
         } else {
-            int revision = (res instanceof AbstractBundleRevision ? ((AbstractBundleRevision) res).getRevisionId() : 0);
-            identifier = getModuleLoaderProvider().getModuleIdentifier(res, revision);
+            int revision = brev.getRevisionId();
+            identifier = getModuleLoaderProvider().getModuleIdentifier(brev, revision);
         }
 
-        res.addAttachment(ModuleIdentifier.class, identifier);
+        brev.addAttachment(ModuleIdentifier.class, identifier);
         return identifier;
     }
 
@@ -209,7 +211,6 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      */
     AbstractBundleState getBundleState(Class<?> clazz) {
         assert clazz != null : "Null clazz";
-
         AbstractBundleState result = null;
         ClassLoader loader = clazz.getClassLoader();
         if (loader instanceof BundleReference) {
@@ -221,23 +222,23 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         return result;
     }
 
-    ModuleIdentifier addModule(final XResource res, final List<Wire> wires) {
-        assert res != null : "Null res";
+    ModuleIdentifier addModule(final XBundleRevision brev, final List<BundleWire> wires) {
+        assert brev != null : "Null res";
         assert wires != null : "Null wires";
-        assert !res.isFragment() : "Fragments cannot be added: " + res;
+        assert !brev.isFragment() : "Fragments cannot be added: " + brev;
 
-        Module module = res.getAttachment(Module.class);
+        Module module = brev.getAttachment(Module.class);
         if (module != null) {
             getModuleLoaderProvider().addModule(module);
             return module.getIdentifier();
         }
 
         ModuleIdentifier identifier;
-        XIdentityCapability icap = res.getIdentityCapability();
+        XIdentityCapability icap = brev.getIdentityCapability();
         if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getSymbolicName())) {
             identifier = getFrameworkModule().getIdentifier();
         } else {
-            HostBundleRevision hostRev = HostBundleRevision.assertHostRevision(res);
+            HostBundleRevision hostRev = HostBundleRevision.assertHostRevision(brev);
             identifier = createHostModule(hostRev, wires);
         }
         return identifier;
@@ -246,7 +247,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     /**
      * Create a {@link ModuleSpec} from the given resolver module definition
      */
-    private ModuleIdentifier createHostModule(final HostBundleRevision hostRev, final List<Wire> wires) {
+    private ModuleIdentifier createHostModule(final HostBundleRevision hostRev, final List<BundleWire> wires) {
 
         HostBundleState hostBundle = hostRev.getBundleState();
         List<RevisionContent> contentRoots = hostBundle.getContentRoots();
@@ -263,7 +264,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         moduleDependencies.add(DependencySpec.createSystemDependencySpec(bootFilter, acceptAll, bootPaths));
 
         // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
-        Map<XResource, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XResource, ModuleDependencyHolder>();
+        Map<BundleRevision, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<BundleRevision, ModuleDependencyHolder>();
 
         // For every {@link XWire} add a dependency on the exporter
         processModuleWireList(wires, specHolderMap);
@@ -344,7 +345,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         return identifier;
     }
 
-    private void processModuleWireList(List<Wire> wires, Map<XResource, ModuleDependencyHolder> depBuilderMap) {
+    private void processModuleWireList(List<BundleWire> wires, Map<BundleRevision, ModuleDependencyHolder> depBuilderMap) {
 
         // A bundle may both import packages (via Import-Package) and require one
         // or more bundles (via Require-Bundle), but if a package is imported via
@@ -354,25 +355,25 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         // split packages.
 
         // Collect bundle and package wires
-        List<Wire> bundleWires = new ArrayList<Wire>();
-        List<Wire> packageWires = new ArrayList<Wire>();
-        for (Wire wire : wires) {
-            Requirement req = wire.getRequirement();
-            XResource importer = (XResource) wire.getRequirer();
-            XResource exporter = (XResource) wire.getProvider();
+        List<BundleWire> bundleWires = new ArrayList<BundleWire>();
+        List<BundleWire> packageWires = new ArrayList<BundleWire>();
+        for (BundleWire wire : wires) {
+            XRequirement req = (XRequirement) wire.getRequirement();
+            XBundleRevision importer = (XBundleRevision) wire.getRequirer();
+            XBundleRevision exporter = (XBundleRevision) wire.getProvider();
 
             // Skip dependencies on the module itself
             if (exporter == importer)
                 continue;
 
             // Dependency for Import-Package
-            if (req instanceof XPackageRequirement) {
+            if (req.adapt(XPackageRequirement.class) != null) {
                 packageWires.add(wire);
                 continue;
             }
 
             // Dependency for Require-Bundle
-            if (req instanceof XBundleRequirement) {
+            if (req.adapt(XResourceRequirement.class) != null) {
                 bundleWires.add(wire);
                 continue;
             }
@@ -380,33 +381,36 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
         Set<String> importedPaths = new HashSet<String>();
         Set<Resource> packageExporters = new HashSet<Resource>();
-        for (Wire wire : packageWires) {
-            XResource exporter = (XResource) wire.getProvider();
+        for (BundleWire wire : packageWires) {
+            XBundleRevision exporter = (XBundleRevision) wire.getProvider();
             packageExporters.add(exporter);
-            XPackageRequirement req = (XPackageRequirement) wire.getRequirement();
+            XRequirement xreq = (XRequirement) wire.getRequirement();
+            XPackageRequirement packreq = xreq.adapt(XPackageRequirement.class);
             ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
-            String path = VFSUtils.getPathFromPackageName(req.getPackageName());
-            holder.setOptional(req.isOptional());
+            String path = VFSUtils.getPathFromPackageName(packreq.getPackageName());
+            holder.setOptional(packreq.isOptional());
             holder.addImportPath(path);
             importedPaths.add(path);
         }
         PathFilter importedPathsFilter = PathFilters.in(importedPaths);
 
-        for (Wire wire : bundleWires) {
-            XResource exporter = (XResource) wire.getProvider();
+        for (BundleWire wire : bundleWires) {
+            XBundleRevision exporter = (XBundleRevision) wire.getProvider();
             if (packageExporters.contains(exporter))
                 continue;
 
-            XBundleRequirement req = (XBundleRequirement) wire.getRequirement();
+            XRequirement xreq = (XRequirement) wire.getRequirement();
+            XResourceRequirement resreq = xreq.adapt(XResourceRequirement.class);
             ModuleDependencyHolder holder = getDependencyHolder(depBuilderMap, exporter);
             holder.setImportFilter(PathFilters.not(importedPathsFilter));
-            holder.setOptional(req.isOptional());
+            holder.setOptional(resreq.isOptional());
 
-            boolean reexport = VISIBILITY_REEXPORT.equals(req.getVisibility());
+            boolean reexport = VISIBILITY_REEXPORT.equals(resreq.getVisibility());
             if (reexport == true) {
                 Set<String> exportedPaths = new HashSet<String>();
                 for (Capability auxcap : exporter.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
-                    XPackageCapability packcap = (XPackageCapability) auxcap;
+                    XCapability xcap = (XCapability) auxcap;
+                    XPackageCapability packcap = xcap.adapt(XPackageCapability.class);
                     String path = packcap.getPackageName().replace('.', '/');
                     if (importedPaths.contains(path) == false)
                         exportedPaths.add(path);
@@ -422,10 +426,11 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         PathFilter includeFilter = null;
         PathFilter excludeFilter = null;
         for (Capability auxcap : resModule.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
-            XPackageCapability packageCap = (XPackageCapability) auxcap;
-            String includeDirective = packageCap.getDirective(Constants.INCLUDE_DIRECTIVE);
+            XCapability xcap = (XCapability) auxcap;
+            XPackageCapability packcap = xcap.adapt(XPackageCapability.class);
+            String includeDirective = packcap.getDirective(Constants.INCLUDE_DIRECTIVE);
             if (includeDirective != null) {
-                String packageName = packageCap.getPackageName();
+                String packageName = packcap.getPackageName();
                 String[] patterns = includeDirective.split(",");
                 List<PathFilter> includes = new ArrayList<PathFilter>();
                 for (String pattern : patterns) {
@@ -433,9 +438,9 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
                 }
                 includeFilter = PathFilters.any(includes);
             }
-            String excludeDirective = packageCap.getDirective(Constants.EXCLUDE_DIRECTIVE);
+            String excludeDirective = packcap.getDirective(Constants.EXCLUDE_DIRECTIVE);
             if (excludeDirective != null) {
-                String packageName = packageCap.getPackageName();
+                String packageName = packcap.getPackageName();
                 String[] patterns = excludeDirective.split(",");
                 List<PathFilter> excludes = new ArrayList<PathFilter>();
                 for (String pattern : patterns) {
@@ -529,7 +534,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     }
 
     // Get or create the dependency builder for the exporter
-    private ModuleDependencyHolder getDependencyHolder(Map<XResource, ModuleDependencyHolder> depBuilderMap, XResource exporter) {
+    private ModuleDependencyHolder getDependencyHolder(Map<BundleRevision, ModuleDependencyHolder> depBuilderMap, XBundleRevision exporter) {
         ModuleIdentifier exporterId = getModuleIdentifier(exporter);
         ModuleDependencyHolder holder = depBuilderMap.get(exporter);
         if (holder == null) {

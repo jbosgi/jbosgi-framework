@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -62,7 +62,6 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallHandler;
 import org.jboss.osgi.framework.StorageState;
-import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -83,7 +82,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
-abstract class UserBundleState extends AbstractBundleState implements TypeAdaptor {
+abstract class UserBundleState extends AbstractBundleState {
 
     private final List<UserBundleRevision> revisions = new CopyOnWriteArrayList<UserBundleRevision>();
     private final Semaphore uninstallSemaphore = new Semaphore(1);
@@ -92,11 +91,10 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
 
     private Dictionary<String, String> headersOnUninstall;
 
-    UserBundleState(FrameworkState frameworkState, UserBundleRevision revision, StorageState storageState) {
+    UserBundleState(FrameworkState frameworkState, UserBundleRevision revision, StorageState storageState, ServiceName serviceName) {
         super(frameworkState, revision, storageState.getBundleId());
-        BundleManagerPlugin bundleManager = frameworkState.getBundleManager();
-        this.serviceName = bundleManager.getServiceName(revision.getDeployment());
         this.storageState = (InternalStorageState) storageState;
+        this.serviceName = serviceName;
         addBundleRevision(revision);
     }
 
@@ -142,13 +140,9 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
     @Override
     @SuppressWarnings("unchecked")
     public <T> T adapt(Class<T> type) {
-        T result = null;
-        if (type.isAssignableFrom(Deployment.class)) {
+        T result = super.adapt(type);
+        if (result == null && type.isAssignableFrom(Deployment.class)) {
             result = (T) getDeployment();
-        } else if (type.isAssignableFrom(StorageState.class)) {
-            result = (T) getStorageState();
-        } else if (type.isAssignableFrom(OSGiMetaData.class)) {
-            result = (T) getOSGiMetaData();
         }
         return result;
     }
@@ -168,7 +162,7 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
         return serviceName.append(ConstantsHelper.bundleState(state));
     }
 
-    void addBundleRevision(AbstractBundleRevision rev) {
+    void addBundleRevision(BundleStateRevision rev) {
         super.addBundleRevision(rev);
         revisions.add(0, (UserBundleRevision) rev);
     }
@@ -179,8 +173,8 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
     }
 
     @Override
-    List<AbstractBundleRevision> getAllBundleRevisions() {
-        List<AbstractBundleRevision> result = new ArrayList<AbstractBundleRevision>(revisions);
+    List<BundleStateRevision> getAllBundleRevisions() {
+        List<BundleStateRevision> result = new ArrayList<BundleStateRevision>(revisions);
         return Collections.unmodifiableList(result);
     }
 
@@ -191,8 +185,8 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
     }
 
     @Override
-    AbstractBundleRevision getBundleRevisionById(int revisionId) {
-        for (AbstractBundleRevision rev : revisions) {
+    BundleStateRevision getBundleRevisionById(int revisionId) {
+        for (BundleStateRevision rev : revisions) {
             if (rev.getRevisionId() == revisionId) {
                 return rev;
             }
@@ -350,7 +344,7 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
         // Remove the revisions from the environment
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
         UserBundleRevision currentRev = getCurrentBundleRevision();
-        for (AbstractBundleRevision brev : getAllBundleRevisions()) {
+        for (BundleStateRevision brev : getAllBundleRevisions()) {
 
             XEnvironment env = getFrameworkState().getEnvironment();
             if (currentRev != brev)

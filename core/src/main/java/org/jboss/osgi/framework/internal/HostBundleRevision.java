@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -57,7 +57,6 @@ import java.util.TreeSet;
 import java.util.Vector;
 
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -94,7 +93,7 @@ final class HostBundleRevision extends UserBundleRevision {
 
     @Override
     HostBundleState getBundleState() {
-        return (HostBundleState) super.getBundleState();
+        return HostBundleState.assertBundleState(super.getBundleState());
     }
 
     void refreshRevisionInternal() {
@@ -134,17 +133,12 @@ final class HostBundleRevision extends UserBundleRevision {
             throw MESSAGES.classNotFoundInRevision(className, this);
 
         // Load the class through the module
-        ModuleClassLoader loader;
-        try {
-            loader = getModuleClassLoader();
-        } catch (ModuleLoadException ex) {
-            throw MESSAGES.cannotLoadClassFromBundleRevision(ex, className, this);
-        }
+        ModuleClassLoader loader = getModuleClassLoader();
         return loader.loadClass(className, true);
     }
 
     @Override
-    Enumeration<URL> findEntries(String path, String pattern, boolean recurse) {
+    public Enumeration<URL> findEntries(String path, String pattern, boolean recurse) {
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         getBundleState().ensureResolved(true);
         return findResolvedEntries(path, pattern, recurse);
@@ -177,13 +171,7 @@ final class HostBundleRevision extends UserBundleRevision {
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         if (getBundleState().ensureResolved(false) == null) {
-            ModuleClassLoader moduleClassLoader;
-            try {
-                moduleClassLoader = getModuleClassLoader();
-            } catch (ModuleLoadException ex) {
-                LOGGER.debugf("Cannot get resource, because of: %s", ex);
-                return null;
-            }
+            ModuleClassLoader moduleClassLoader = getModuleClassLoader();
             return moduleClassLoader.getResource(path);
         }
 
@@ -197,13 +185,7 @@ final class HostBundleRevision extends UserBundleRevision {
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         if (getBundleState().ensureResolved(true) == null) {
-            ModuleClassLoader moduleClassLoader;
-            try {
-                moduleClassLoader = getModuleClassLoader();
-            } catch (ModuleLoadException ex) {
-                LOGGER.debugf("Cannot get resources, because of: %s", ex);
-                return null;
-            }
+            ModuleClassLoader moduleClassLoader = getModuleClassLoader();
             Enumeration<URL> resources = moduleClassLoader.getResources(path);
             return resources.hasMoreElements() ? resources : null;
         }

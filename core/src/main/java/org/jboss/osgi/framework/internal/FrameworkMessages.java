@@ -60,6 +60,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.metadata.ParameterizedAttribute;
+import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -285,8 +286,8 @@ public interface FrameworkMessages {
     @Message(id = 11268, value = "Class '%s' not found in bundle revision: %s")
     ClassNotFoundException classNotFoundInRevision(String className, BundleRevision brev);
 
-    @Message(id = 11269, value = "Cannot load class '%s' from bundle revision: %s")
-    ClassNotFoundException cannotLoadClassFromBundleRevision(@Cause Throwable cause, String className, BundleRevision brev);
+    //@Message(id = 11269, value = "Cannot load class '%s' from bundle revision: %s")
+    //ClassNotFoundException cannotLoadClassFromBundleRevision(@Cause Throwable cause, String className, BundleRevision brev);
 
     @Message(id = 11270, value = "Cannot obtain web.xml from: %s")
     LifecycleInterceptorException lifecycleInterceptorCannotObtainWebXML(URL rootURL);
@@ -308,4 +309,10 @@ public interface FrameworkMessages {
 
     @Message(id = 11276, value = "Timeout waiting for bundle install service: %s")
     TimeoutException timeoutWaitingForBundleInstallService(Set<ServiceName> services);
+
+    @Message(id = 11277, value = "Unsupported resource type: %s")
+    IllegalArgumentException illegalArgumentUnsupportedResourceType(XResource res);
+
+    @Message(id = 11278, value = "Cannot obtain bundle from resource: %s")
+    IllegalArgumentException illegalArgumentCannotObtainBundleFromResource(XResource res);
 }

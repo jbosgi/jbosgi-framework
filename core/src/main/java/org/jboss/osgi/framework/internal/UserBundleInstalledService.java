@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -47,6 +47,7 @@ import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
@@ -70,11 +71,13 @@ import org.osgi.framework.BundleException;
 abstract class UserBundleInstalledService<B extends UserBundleState,R extends UserBundleRevision> extends AbstractBundleService<B> {
 
     private final Deployment initialDeployment;
+    private final Long bundleId;
     private B bundleState;
 
-    UserBundleInstalledService(FrameworkState frameworkState, Deployment deployment) {
+    UserBundleInstalledService(FrameworkState frameworkState, Deployment deployment, Long bundleId) {
         super(frameworkState);
         this.initialDeployment = deployment;
+        this.bundleId = bundleId;
     }
 
     @Override
@@ -83,10 +86,12 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
         InternalStorageState storageState = null;
         try {
             Deployment dep = initialDeployment;
-            storageState = createStorageState(dep);
+            storageState = createStorageState(dep, bundleId);
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
             R brev = createBundleRevision(dep, metadata, storageState);
-            bundleState = createBundleState(brev, storageState);
+            brev.addAttachment(Long.class, bundleId);
+            ServiceName serviceName = context.getController().getName().getParent();
+            bundleState = createBundleState(brev, storageState, serviceName);
             dep.addAttachment(Bundle.class, bundleState);
             bundleState.initLazyActivation();
             validateBundle(bundleState, metadata);
@@ -106,9 +111,9 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
 
     abstract R createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState) throws BundleException;
 
-    abstract B createBundleState(R revision, StorageState storageState) throws BundleException;
+    abstract B createBundleState(R revision, StorageState storageState, ServiceName serviceName) throws BundleException;
 
-    InternalStorageState createStorageState(Deployment dep) throws BundleException {
+    InternalStorageState createStorageState(Deployment dep, Long bundleId) throws BundleException {
         // The storage state exists when we re-create the bundle from persistent storage
         StorageState storageState = dep.getAttachment(StorageState.class);
         if (storageState == null) {
@@ -121,7 +126,6 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
                     FrameworkCoreServices coreServices = getFrameworkState().getCoreServices();
                     startlevel = coreServices.getStartLevel().getInitialBundleStartLevel();
                 }
-                Long bundleId = dep.getAttachment(BundleId.class).longValue();
                 storageState = storagePlugin.createStorageState(bundleId, location, startlevel, rootFile);
                 dep.addAttachment(StorageState.class, storageState);
             } catch (IOException ex) {
