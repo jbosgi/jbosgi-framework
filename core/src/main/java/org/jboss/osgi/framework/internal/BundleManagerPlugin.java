@@ -485,12 +485,12 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         }
     }
 
-    void fireFrameworkError(AbstractBundleState bundleState, String context, Throwable t) {
+    void fireFrameworkError(Bundle bundle, String context, Throwable t) {
         FrameworkEventsPlugin plugin = getFrameworkState().getFrameworkEventsPlugin();
         if (t instanceof BundleException) {
-            plugin.fireFrameworkEvent(bundleState, FrameworkEvent.ERROR, t);
-        } else if (bundleState != null) {
-            plugin.fireFrameworkEvent(bundleState, FrameworkEvent.ERROR, new BundleException("Error " + context + " bundle: " + bundleState, t));
+            plugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, t);
+        } else if (bundle != null) {
+            plugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, new BundleException("Error " + context + " bundle: " + bundle, t));
         } else {
             SystemBundleState systemBundle = injectedSystemBundle.getValue();
             plugin.fireFrameworkEvent(systemBundle, FrameworkEvent.ERROR, new BundleException("Error " + context, t));

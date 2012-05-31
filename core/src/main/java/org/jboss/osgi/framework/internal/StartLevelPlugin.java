@@ -167,11 +167,10 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         if (bundle instanceof Framework)
             return 0;
 
-        AbstractBundleState b = AbstractBundleState.assertBundleState(bundle);
-        if (b instanceof SystemBundleState)
+        if (bundle.getBundleId() == 0)
             return 0;
-        else if (b instanceof HostBundleState)
-            return ((HostBundleState) b).getStartLevel();
+        else if (bundle instanceof HostBundleState)
+            return ((HostBundleState) bundle).getStartLevel();
 
         return StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
     }
@@ -234,16 +233,24 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
 
     @Override
     public boolean isBundlePersistentlyStarted(Bundle bundle) {
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-        StorageState storageState = bundleState.getStorageState();
-        return storageState.isPersistentlyStarted();
+        boolean result = false;
+        if (bundle instanceof AbstractBundleState) {
+            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+            StorageState storageState = bundleState.getStorageState();
+            result = storageState.isPersistentlyStarted();
+        }
+        return result;
     }
 
     @Override
     public boolean isBundleActivationPolicyUsed(Bundle bundle) {
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-        StorageState storageState = bundleState.getStorageState();
-        return storageState.isBundleActivationPolicyUsed();
+        boolean result = false;
+        if (bundle instanceof AbstractBundleState) {
+            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+            StorageState storageState = bundleState.getStorageState();
+            result = storageState.isBundleActivationPolicyUsed();
+        }
+        return result;
     }
 
     /**
