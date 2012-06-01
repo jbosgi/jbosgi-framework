@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -58,15 +58,15 @@ public interface SystemPathsProvider extends Service<SystemPathsProvider> {
     String[] DEFAULT_FRAMEWORK_PACKAGES = new String[]{
             "org.jboss.modules;version=1.1",
             "org.jboss.msc.service;version=1.0",
-            "org.jboss.osgi.deployment.deployer;version=1.0",
-            "org.jboss.osgi.deployment.interceptor;version=1.0",
-            "org.jboss.osgi.framework;version=1.0",
-            "org.jboss.osgi.framework.url;version=1.0",
-            "org.jboss.osgi.metadata;version=2.0",
-            "org.jboss.osgi.modules;version=1.0",
-        	"org.jboss.osgi.resolver;version=2.0",
-        	"org.jboss.osgi.resolver.spi;version=2.0",
-            "org.jboss.osgi.spi;version=2.0",
+            "org.jboss.osgi.deployment.deployer;version=4.0",
+            "org.jboss.osgi.deployment.interceptor;version=4.0",
+            "org.jboss.osgi.framework;version=2.0",
+            "org.jboss.osgi.framework.url;version=2.0",
+            "org.jboss.osgi.metadata;version=4.0",
+            "org.jboss.osgi.modules;version=2.0",
+        	"org.jboss.osgi.resolver;version=3.0",
+        	"org.jboss.osgi.resolver.spi;version=3.0",
+            "org.jboss.osgi.spi;version=4.0",
             "org.jboss.osgi.vfs;version=1.0",
             "org.osgi.framework;version=1.5",
             "org.osgi.framework.hooks;version=1.0",
