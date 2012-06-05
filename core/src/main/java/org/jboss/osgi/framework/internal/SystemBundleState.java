@@ -132,11 +132,13 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
     @Override
     @SuppressWarnings("unchecked")
     public <T> T adapt(Class<T> type) {
-        T result = null;
-        if (type.isAssignableFrom(ServiceContainer.class)) {
-            result = (T) getBundleManager().getServiceContainer();
-        } else if (type.isAssignableFrom(XEnvironment.class)) {
-            result = (T) getFrameworkState().getEnvironment();
+        T result = super.adapt(type);
+        if (result == null) {
+            if (type.isAssignableFrom(ServiceContainer.class)) {
+                result = (T) getBundleManager().getServiceContainer();
+            } else if (type.isAssignableFrom(XEnvironment.class)) {
+                result = (T) getFrameworkState().getEnvironment();
+            }
         }
         return result;
     }

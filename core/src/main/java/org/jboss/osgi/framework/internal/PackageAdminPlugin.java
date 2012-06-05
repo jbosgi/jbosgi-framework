@@ -68,6 +68,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -157,8 +158,12 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     @Override
     public ExportedPackage[] getExportedPackages(Bundle bundle) {
+
         if (bundle == null)
             return getAllExportedPackages();
+        
+        if (!(bundle instanceof AbstractBundleState))
+            return null;
 
         // A bundle is destroyed if it is no longer known to the system.
         // An uninstalled bundle can potentially live on if there are
@@ -268,6 +273,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     @Override
     public void refreshPackages(final Bundle[] bundlesToRefresh) {
+
         final BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         final FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
         Runnable runner = new Runnable() {
@@ -282,19 +288,23 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                     List<UserBundleState> bundlesToRefresh = new ArrayList<UserBundleState>();
                     for (Bundle bundle : bundleManager.getBundles(null)) {
                         if (bundle.getBundleId() != 0) {
-                            UserBundleState userBundle = (UserBundleState) bundle;
-                            // a bundle with more than 1 revision has been updated since the last refresh packages call
-                            if (userBundle.getAllBundleRevisions().size() > 1 || bundle.getState() == Bundle.UNINSTALLED)
-                                bundlesToRefresh.add(userBundle);
+                            if (bundle instanceof UserBundleState) {
+                                UserBundleState userBundle = (UserBundleState) bundle;
+                                // a bundle with more than 1 revision has been updated since the last refresh packages call
+                                if (userBundle.getAllBundleRevisions().size() > 1 || bundle.getState() == Bundle.UNINSTALLED)
+                                    bundlesToRefresh.add(userBundle);
+                            }
                         }
                     }
                     bundles = bundlesToRefresh.toArray(new Bundle[bundlesToRefresh.size()]);
                 }
 
                 Set<UserBundleState> providedBundles = new LinkedHashSet<UserBundleState>();
-                for (Bundle aux : bundles) {
-                    UserBundleState bundleState = UserBundleState.assertBundleState(aux);
-                    providedBundles.add(bundleState);
+                for (Bundle bundle : bundles) {
+                    if (bundle instanceof UserBundleState) {
+                        UserBundleState bundleState = UserBundleState.assertBundleState(bundle);
+                        providedBundles.add(bundleState);
+                    }
                 }
 
                 Set<HostBundleState> stopBundles = new HashSet<HostBundleState>();
@@ -414,6 +424,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     @Override
     public RequiredBundle[] getRequiredBundles(String symbolicName) {
+        
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         List<HostBundleState> matchingHosts = new ArrayList<HostBundleState>();
         if (symbolicName != null) {
@@ -430,21 +441,22 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         if (matchingHosts.isEmpty()) {
             return null;
         }
+        
         List<RequiredBundle> result = new ArrayList<RequiredBundle>();
         Iterator<HostBundleState> hostit = matchingHosts.iterator();
         while (hostit.hasNext()) {
-            AbstractBundleState bundleState = hostit.next();
-            BundleRevision brev = bundleState.getCurrentBundleRevision();
-            Set<AbstractBundleState> requiringBundles = new HashSet<AbstractBundleState>();
+            HostBundleState hostState = hostit.next();
+            BundleRevision brev = hostState.getCurrentBundleRevision();
+            Set<Bundle> requiringBundles = new HashSet<Bundle>();
             BundleWiring wiring = brev.getWiring();
             if (wiring != null) {
                 List<Wire> providedWires = wiring.getProvidedResourceWires(BundleNamespace.BUNDLE_NAMESPACE);
                 for (Wire wire : providedWires) {
                     Bundle bundle = ((BundleRevision) wire.getRequirer()).getBundle();
-                    requiringBundles.add(AbstractBundleState.assertBundleState(bundle));
+                    requiringBundles.add(bundle);
                 }
             }
-            result.add(new RequiredBundleImpl(bundleState, brev, requiringBundles));
+            result.add(new RequiredBundleImpl(hostState, brev, requiringBundles));
         }
         return result.toArray(new RequiredBundle[matchingHosts.size()]);
     }
@@ -484,6 +496,10 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     @Override
     public Bundle[] getFragments(Bundle bundle) {
+
+        if (!(bundle instanceof AbstractBundleState))
+            return null;
+        
         // If the specified bundle is a fragment then null is returned.
         // If the specified bundle is not resolved then null is returned
         AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
@@ -505,6 +521,10 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     @Override
     public Bundle[] getHosts(Bundle bundle) {
+
+        if (!(bundle instanceof AbstractBundleState))
+            return null;
+        
         AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
         if (bundleState.isFragment() == false)
             return null;
@@ -532,8 +552,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     @Override
     public int getBundleType(Bundle bundle) {
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-        return bundleState.isFragment() ? BUNDLE_TYPE_FRAGMENT : 0;
+        XBundleRevision brev = ((TypeAdaptor) bundle).adapt(XBundleRevision.class);
+        return brev.isFragment() ? BUNDLE_TYPE_FRAGMENT : 0;
     }
 
     static class ExportedPackageImpl implements ExportedPackage {
@@ -612,13 +632,13 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         private final Bundle[] requiringBundles;
         private final BundleRevision bundleRevision;
 
-        RequiredBundleImpl(Bundle requiredBundle, BundleRevision bundleRevision, Collection<AbstractBundleState> requiringBundles) {
+        RequiredBundleImpl(Bundle requiredBundle, BundleRevision bundleRevision, Collection<Bundle> requiringBundles) {
             this.requiredBundle = requiredBundle;
             this.bundleRevision = bundleRevision;
 
             List<Bundle> bundles = new ArrayList<Bundle>(requiringBundles.size());
-            for (AbstractBundleState ab : requiringBundles) {
-                bundles.add(AbstractBundleState.assertBundleState(ab));
+            for (Bundle bundle : requiringBundles) {
+                bundles.add(bundle);
             }
             this.requiringBundles = bundles.toArray(new Bundle[bundles.size()]);
         }
@@ -655,8 +675,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 return true;
 
             Bundle bundle = bundleRevision.getBundle();
-            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-            return !bundleRevision.equals(bundleState.getCurrentBundleRevision());
+            return !bundleRevision.equals(((TypeAdaptor)bundle).adapt(BundleRevision.class));
         }
 
         @Override

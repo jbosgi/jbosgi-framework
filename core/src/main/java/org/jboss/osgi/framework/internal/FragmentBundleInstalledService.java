@@ -60,9 +60,9 @@ import org.osgi.framework.BundleException;
  */
 final class FragmentBundleInstalledService extends UserBundleInstalledService<FragmentBundleState, FragmentBundleRevision> {
 
-    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment deployment, Long bundleId, ServiceListener<Bundle> listener) throws BundleException {
-        ServiceName serviceName = BundleManagerPlugin.getServiceName(bundleId, deployment).append("INSTALLED");
-        FragmentBundleInstalledService service = new FragmentBundleInstalledService(frameworkState, deployment, bundleId);
+    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, ServiceListener<Bundle> listener) throws BundleException {
+        ServiceName serviceName = BundleManagerPlugin.getServiceName(dep).append("INSTALLED");
+        FragmentBundleInstalledService service = new FragmentBundleInstalledService(frameworkState, dep);
         ServiceBuilder<FragmentBundleState> builder = serviceTarget.addService(serviceName, service);
         builder.addDependency(InternalServices.FRAMEWORK_CORE_SERVICES);
         if (listener != null) {
@@ -72,13 +72,13 @@ final class FragmentBundleInstalledService extends UserBundleInstalledService<Fr
         return serviceName;
     }
 
-    private FragmentBundleInstalledService(FrameworkState frameworkState, Deployment deployment, Long bundleId) throws BundleException {
-        super(frameworkState, deployment, bundleId);
+    private FragmentBundleInstalledService(FrameworkState frameworkState, Deployment dep) throws BundleException {
+        super(frameworkState, dep);
     }
 
     @Override
-    FragmentBundleRevision createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState) throws BundleException {
-        return new FragmentBundleRevision(getFrameworkState(), deployment, metadata, storageState);
+    FragmentBundleRevision createBundleRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
+        return new FragmentBundleRevision(getFrameworkState(), dep, metadata, storageState);
     }
 
     @Override

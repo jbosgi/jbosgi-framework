@@ -71,13 +71,11 @@ import org.osgi.framework.BundleException;
 abstract class UserBundleInstalledService<B extends UserBundleState,R extends UserBundleRevision> extends AbstractBundleService<B> {
 
     private final Deployment initialDeployment;
-    private final Long bundleId;
     private B bundleState;
 
-    UserBundleInstalledService(FrameworkState frameworkState, Deployment deployment, Long bundleId) {
+    UserBundleInstalledService(FrameworkState frameworkState, Deployment deployment) {
         super(frameworkState);
         this.initialDeployment = deployment;
-        this.bundleId = bundleId;
     }
 
     @Override
@@ -86,6 +84,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
         InternalStorageState storageState = null;
         try {
             Deployment dep = initialDeployment;
+            Long bundleId = dep.getAttachment(Long.class);
             storageState = createStorageState(dep, bundleId);
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
             R brev = createBundleRevision(dep, metadata, storageState);

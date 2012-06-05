@@ -141,8 +141,10 @@ abstract class UserBundleState extends AbstractBundleState {
     @SuppressWarnings("unchecked")
     public <T> T adapt(Class<T> type) {
         T result = super.adapt(type);
-        if (result == null && type.isAssignableFrom(Deployment.class)) {
-            result = (T) getDeployment();
+        if (result == null) {
+            if (type.isAssignableFrom(Deployment.class)) {
+                result = (T) getDeployment();
+            }
         }
         return result;
     }

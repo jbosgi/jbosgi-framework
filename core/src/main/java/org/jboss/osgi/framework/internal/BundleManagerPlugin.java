@@ -251,10 +251,11 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         properties.put(key, value);
     }
 
-    static ServiceName getServiceName(Long bundleId, Deployment dep) {
+    static ServiceName getServiceName(Deployment dep) {
         // Currently the bundleId is needed for uniqueness because of
         // [MSC-97] Cannot re-install service with same name
-        return ServiceName.of(Services.BUNDLE_BASE_NAME, bundleId.toString(), "" + dep.getSymbolicName(), "" + dep.getVersion());
+        Long bundleId = dep.getAttachment(Long.class);
+        return ServiceName.of(Services.BUNDLE_BASE_NAME, "" + bundleId, "" + dep.getSymbolicName(), "" + dep.getVersion());
     }
 
     Set<Bundle> getBundles() {
@@ -331,7 +332,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         // If a bundle containing the same location identifier is already installed,
         // the Bundle object for that bundle is returned.
         Bundle bundle = getBundleByLocation(dep.getLocation());
-        if (bundle != null) {
+        if (bundle instanceof AbstractBundleState) {
             LOGGER.debugf("Installing an already existing bundle: %s", dep);
             AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
             serviceName = bundleState.getServiceName(Bundle.INSTALLED);
@@ -339,16 +340,18 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         } else {
             try {
                 Long bundleId;
+                String symbolicName = dep.getSymbolicName();
                 XEnvironment env = injectedEnvironment.getValue();
 
                 // The storage state exists when we re-create the bundle from persistent storage
                 StorageState storageState = dep.getAttachment(StorageState.class);
                 if (storageState != null) {
                     dep.setAutoStart(storageState.isPersistentlyStarted());
-                    bundleId = env.nextResourceIndex(storageState.getBundleId());
+                    bundleId = env.nextResourceIdentifier(storageState.getBundleId(), symbolicName);
                 } else {
-                    bundleId = env.nextResourceIndex(null);
+                    bundleId = env.nextResourceIdentifier(null, symbolicName);
                 }
+                dep.addAttachment(Long.class, bundleId);
 
                 // Check that we have valid metadata
                 OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
@@ -359,11 +362,11 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
 
                 // Create the bundle services
                 if (metadata.getFragmentHost() == null) {
-                    serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep, bundleId, listener);
+                    serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep, listener);
                     HostBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                     HostBundleActiveService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 } else {
-                    serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep, bundleId, listener);
+                    serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep, listener);
                     FragmentBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 }
             } catch (RuntimeException rte) {

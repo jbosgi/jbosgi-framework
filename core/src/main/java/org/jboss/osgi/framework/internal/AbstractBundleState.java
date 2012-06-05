@@ -73,6 +73,8 @@ import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -162,6 +164,10 @@ abstract class AbstractBundleState implements Bundle, TypeAdaptor {
     public <T> T adapt(Class<T> type) {
         T result = null;
         if (type.isAssignableFrom(BundleRevision.class)) {
+            result = (T) getCurrentBundleRevision();
+        } else if (type.isAssignableFrom(XBundleRevision.class)) {
+            result = (T) getCurrentBundleRevision();
+        } else if (type.isAssignableFrom(XResource.class)) {
             result = (T) getCurrentBundleRevision();
         } else if (type.isAssignableFrom(StorageState.class)) {
             result = (T) getStorageState();

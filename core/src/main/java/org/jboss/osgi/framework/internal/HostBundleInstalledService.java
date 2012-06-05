@@ -60,9 +60,9 @@ import org.osgi.framework.BundleException;
  */
 final class HostBundleInstalledService extends UserBundleInstalledService<HostBundleState, HostBundleRevision> {
 
-    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, Long bundleId, ServiceListener<Bundle> listener) throws BundleException {
-        ServiceName serviceName = BundleManagerPlugin.getServiceName(bundleId, dep).append("INSTALLED");
-        HostBundleInstalledService service = new HostBundleInstalledService(frameworkState, dep, bundleId);
+    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, ServiceListener<Bundle> listener) throws BundleException {
+        ServiceName serviceName = BundleManagerPlugin.getServiceName(dep).append("INSTALLED");
+        HostBundleInstalledService service = new HostBundleInstalledService(frameworkState, dep);
         ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, service);
         builder.addDependency(InternalServices.FRAMEWORK_CORE_SERVICES);
         if (listener != null) {
@@ -72,8 +72,8 @@ final class HostBundleInstalledService extends UserBundleInstalledService<HostBu
         return serviceName;
     }
 
-    private HostBundleInstalledService(FrameworkState frameworkState, Deployment dep, Long bundleId) throws BundleException {
-        super(frameworkState, dep, bundleId);
+    private HostBundleInstalledService(FrameworkState frameworkState, Deployment dep) throws BundleException {
+        super(frameworkState, dep);
     }
 
     @Override
