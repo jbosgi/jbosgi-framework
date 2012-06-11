@@ -16,8 +16,7 @@
             <includes>
                 <include>*:args4j:jar</include>
                 <include>*:jbosgi-framework-core:jar</include>
-                <include>*:jbosgi-resolver-api:jar</include>
-                <include>*:jbosgi-resolver-felix:jar</include>
+                <include>*:jbosgi-resolver:jar</include>
                 <include>*:jboss-logging:jar</include>
                 <include>*:jboss-logmanager:jar</include>
                 <include>*:jboss-modules:jar</include>
