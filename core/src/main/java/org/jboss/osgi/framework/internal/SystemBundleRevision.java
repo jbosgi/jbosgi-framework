@@ -66,11 +66,6 @@ final class SystemBundleRevision extends BundleStateRevision {
     }
 
     @Override
-    SystemBundleState getBundleState() {
-        return SystemBundleState.assertBundleState(getBundleState());
-    }
-
-    @Override
     String getLocation() {
         return Constants.SYSTEM_BUNDLE_LOCATION;
     }
@@ -81,14 +76,14 @@ final class SystemBundleRevision extends BundleStateRevision {
     }
 
     @Override
-    Enumeration<String> getEntryPaths(String path) {
+    public Enumeration<String> getEntryPaths(String path) {
         // [Bug-1472] Clarify the semantic of resource API when called on the system bundle
         // https://www.osgi.org/members/bugzilla/show_bug.cgi?id=1472
         return null;
     }
 
     @Override
-    URL getEntry(String path) {
+    public URL getEntry(String path) {
         // [Bug-1472] Clarify the semantic of resource API when called on the system bundle
         // https://www.osgi.org/members/bugzilla/show_bug.cgi?id=1472
         return null;
@@ -102,19 +97,19 @@ final class SystemBundleRevision extends BundleStateRevision {
     }
 
     @Override
-    Class<?> loadClass(String className) throws ClassNotFoundException {
+    public Class<?> loadClass(String className) throws ClassNotFoundException {
         ClassLoader classLoader = getFrameworkClassLoader();
         return classLoader.loadClass(className);
     }
 
     @Override
-    URL getResource(String name) {
+    public URL getResource(String name) {
         ClassLoader classLoader = getFrameworkClassLoader();
         return classLoader.getResource(name);
     }
 
     @Override
-    Enumeration<URL> getResources(String name) throws IOException {
+    public Enumeration<URL> getResources(String name) throws IOException {
         ClassLoader classLoader = getFrameworkClassLoader();
         return classLoader.getResources(name);
     }

@@ -70,6 +70,8 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.util.NoFilter;
 import org.jboss.osgi.framework.util.RemoveOnlyCollection;
+import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Filter;
@@ -311,7 +313,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
 
                         public Object getValue() {
                             if (classLoader == null) {
-                                BundleStateRevision brev = bundleState.getCurrentBundleRevision();
+                                XBundleRevision brev = bundleState.getBundleRevision();
                                 classLoader = brev.getModuleClassLoader();
                             }
                             ClassLoader ctxLoader = SecurityActions.getContextClassLoader();
@@ -324,8 +326,8 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                         }
                     };
                     final long serviceId = getNextServiceId();
-                    final AbstractBundleState auxBundle = injectedModuleManager.getValue().getBundleState(valueProvider.getValue().getClass());
-                    final AbstractBundleState owner = (auxBundle != null ? auxBundle : injectedBundleManager.getValue().getSystemBundle());
+                    final XBundle auxBundle = injectedModuleManager.getValue().getBundleState(valueProvider.getValue().getClass());
+                    final XBundle owner = (auxBundle != null ? auxBundle : injectedBundleManager.getValue().getSystemBundle());
                     final String auxName = (className != null ? className : serviceName.getSimpleName());
                     ServiceState serviceState = new ServiceState(this, owner, serviceId, new String[] { auxName }, valueProvider, null);
                     if (isMatchingService(bundleState, serviceState, auxName, filter, checkAssignable)) {
@@ -405,7 +407,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                 }
             }
 
-            AbstractBundleState serviceOwner = serviceState.getServiceOwner();
+            XBundle serviceOwner = serviceState.getServiceOwner();
 
             // This event is synchronously delivered before the service has completed unregistering.
             FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
@@ -418,7 +420,10 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
             }
 
             // Remove from owner bundle
-            serviceOwner.removeRegisteredService(serviceState);
+            if (serviceOwner instanceof AbstractBundleState) {
+                AbstractBundleState ownerState = AbstractBundleState.assertBundleState(serviceOwner);
+                ownerState.removeRegisteredService(serviceState);
+            }
         }
     }
 

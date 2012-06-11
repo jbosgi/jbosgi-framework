@@ -51,9 +51,11 @@ import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 
 import org.jboss.modules.Module;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -68,7 +70,7 @@ import org.osgi.framework.wiring.BundleRevision;
  * @author thomas.diesler@jboss.com
  * @since 30-May-2012
  */
-public class AbstractModuleAdaptor implements Bundle, TypeAdaptor {
+public class AbstractModuleAdaptor implements XBundle {
 
     private final Module module;
     private final XBundleRevision bundlerev;
@@ -227,6 +229,21 @@ public class AbstractModuleAdaptor implements Bundle, TypeAdaptor {
     @SuppressWarnings("rawtypes")
     public Map getSignerCertificates(int signersType) {
         return Collections.emptyMap();
+    }
+
+    @Override
+    public boolean isResolved() {
+        return true;
+    }
+
+    @Override
+    public XBundleRevision getBundleRevision() {
+        return bundlerev;
+    }
+
+    @Override
+    public List<XBundleRevision> getAllBundleRevisions() {
+        return Collections.singletonList(bundlerev);
     }
 
 }

@@ -82,11 +82,13 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
 
             BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
             assertEquals("resource-one", br.readLine());
+            br.close();
             
             // Test URL reconstruction
             url = new URL(url.toExternalForm());
             br = new BufferedReader(new InputStreamReader(url.openStream()));
             assertEquals("resource-one", br.readLine());
+            br.close();
             
             // Entry access should not resolve the bundle
             assertBundleState(Bundle.INSTALLED, bundle.getState());
@@ -162,6 +164,7 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
 
             BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
             assertEquals("resource-one", br.readLine());
+            br.close();
 
             assertBundleState(Bundle.RESOLVED, bundle.getState());
         } finally {
@@ -179,6 +182,7 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
 
             BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
             assertEquals("resource-one", br.readLine());
+            br.close();
 
             url = (URL) urls.nextElement();
             assertEquals("/META-INF/resource-one.txt", url.getPath());
@@ -186,6 +190,7 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
 
             br = new BufferedReader(new InputStreamReader(url.openStream()));
             assertEquals("resource-one", br.readLine());
+            br.close();
 
             assertBundleState(Bundle.RESOLVED, bundle.getState());
         } finally {

@@ -42,9 +42,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.io.IOException;
 import java.net.URL;
-import java.util.Enumeration;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
@@ -101,10 +99,6 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
         return frameworkState;
     }
 
-    AbstractBundleState getBundleState() {
-        return AbstractBundleState.assertBundleState(getBundle());
-    }
-
     String getCanonicalName() {
         return getSymbolicName() + ":" + getVersion();
     }
@@ -118,25 +112,14 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
         return metadata;
     }
 
-    abstract Class<?> loadClass(String className) throws ClassNotFoundException;
-
-    abstract URL getResource(String resourceName);
-
-    abstract Enumeration<URL> getResources(String resourceName) throws IOException;
-
-    abstract Enumeration<String> getEntryPaths(String path);
-
-    abstract URL getEntry(String path);
-
     abstract String getLocation();
 
+    abstract Class<?> loadClass(String className) throws ClassNotFoundException;
+    
     abstract URL getLocalizationEntry(String path);
-
-    boolean isResolved() {
-        return getWiring() != null;
-    }
-
-    ModuleIdentifier getModuleIdentifier() {
+        
+    @Override
+    public ModuleIdentifier getModuleIdentifier() {
         return getAttachment(ModuleIdentifier.class);
     }
 

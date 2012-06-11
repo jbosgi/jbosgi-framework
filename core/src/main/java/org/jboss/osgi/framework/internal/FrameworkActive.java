@@ -141,7 +141,7 @@ public final class FrameworkActive extends AbstractFrameworkService {
         try {
             // Resolve the system bundle
             ResolverPlugin resolverPlugin = getValue().getResolverPlugin();
-            BundleRevision sysrev = getSystemBundle().getCurrentBundleRevision();
+            BundleRevision sysrev = getSystemBundle().getBundleRevision();
             resolverPlugin.resolveAndApply(Collections.singleton(sysrev), null);
 
             // This Framework's state is set to ACTIVE

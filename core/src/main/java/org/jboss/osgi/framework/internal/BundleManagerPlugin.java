@@ -78,6 +78,8 @@ import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.util.Java;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.VersionRange;
+import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -86,7 +88,6 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.resource.Resource;
 
 /**
@@ -258,11 +259,11 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         return ServiceName.of(Services.BUNDLE_BASE_NAME, "" + bundleId, "" + dep.getSymbolicName(), "" + dep.getVersion());
     }
 
-    Set<Bundle> getBundles() {
-        Set<Bundle> result = new HashSet<Bundle>();
+    Set<XBundle> getBundles() {
+        Set<XBundle> result = new HashSet<XBundle>();
         XEnvironment env = injectedEnvironment.getValue();
         for (Resource aux : env.getResources(null)) {
-            Bundle bundle = ((BundleRevision) aux).getBundle();
+            XBundle bundle = ((XBundleRevision) aux).getBundle();
             if (bundle.getState() != Bundle.UNINSTALLED)
                 result.add(bundle);
         }
@@ -270,11 +271,11 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     }
 
     @Override
-    public Set<Bundle> getBundles(Integer states) {
-        Set<Bundle> result = new HashSet<Bundle>();
+    public Set<XBundle> getBundles(Integer states) {
+        Set<XBundle> result = new HashSet<XBundle>();
         XEnvironment env = injectedEnvironment.getValue();
         for (Resource aux : env.getResources(null)) {
-            Bundle bundle = ((BundleRevision) aux).getBundle();
+            XBundle bundle = ((XBundleRevision) aux).getBundle();
             if (states == null || (bundle.getState() & states.intValue()) != 0)
                 result.add(bundle);
         }
@@ -282,14 +283,14 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     }
 
     @Override
-    public Bundle getBundleById(long bundleId) {
+    public XBundle getBundleById(long bundleId) {
         if (bundleId == 0) {
             return getFrameworkState().getSystemBundle();
         }
         XEnvironment env = injectedEnvironment.getValue();
         Collection<XResource> resources = env.getResources(null);
         for (Resource aux : resources) {
-            Bundle bundle = ((BundleRevision) aux).getBundle();
+            XBundle bundle = ((XBundleRevision) aux).getBundle();
             if (bundle.getBundleId() == bundleId) {
                 return bundle;
             }
@@ -298,9 +299,9 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     }
 
     @Override
-    public Bundle getBundleByLocation(String location) {
+    public XBundle getBundleByLocation(String location) {
         assert location != null : "Null location";
-        for (Bundle aux : getBundles()) {
+        for (XBundle aux : getBundles()) {
             String auxLocation = aux.getLocation();
             if (location.equals(auxLocation)) {
                 return aux;
@@ -310,9 +311,9 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     }
 
     @Override
-    public Set<Bundle> getBundles(String symbolicName, String versionRange) {
-        Set<Bundle> resultSet = new HashSet<Bundle>();
-        for (Bundle aux : getBundles(null)) {
+    public Set<XBundle> getBundles(String symbolicName, String versionRange) {
+        Set<XBundle> resultSet = new HashSet<XBundle>();
+        for (XBundle aux : getBundles(null)) {
             if (symbolicName == null || symbolicName.equals(aux.getSymbolicName())) {
                 if (versionRange == null || VersionRange.parse(versionRange).isInRange(aux.getVersion())) {
                     resultSet.add(aux);
@@ -331,7 +332,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
 
         // If a bundle containing the same location identifier is already installed,
         // the Bundle object for that bundle is returned.
-        Bundle bundle = getBundleByLocation(dep.getLocation());
+        XBundle bundle = getBundleByLocation(dep.getLocation());
         if (bundle instanceof AbstractBundleState) {
             LOGGER.debugf("Installing an already existing bundle: %s", dep);
             AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
@@ -427,7 +428,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
                 LOGGER.infoBundleUninstalled(userBundle);
 
                 // Remove other uninstalled bundles that now also have no active wires any more
-                Set<Bundle> uninstalled = getBundles(Bundle.UNINSTALLED);
+                Set<XBundle> uninstalled = getBundles(Bundle.UNINSTALLED);
                 for (Bundle auxState : uninstalled) {
                     UserBundleState auxUser = UserBundleState.assertBundleState(auxState);
                     if (auxUser.hasActiveWires() == false) {
@@ -449,7 +450,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         }
 
         XEnvironment env = getFrameworkState().getEnvironment();
-        for (BundleStateRevision abr : userBundle.getAllBundleRevisions()) {
+        for (XBundleRevision abr : userBundle.getAllBundleRevisions()) {
             env.uninstallResources(abr);
         }
 
@@ -457,9 +458,9 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         eventsPlugin.fireBundleEvent(userBundle, BundleEvent.UNRESOLVED);
 
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        for (BundleStateRevision rev : userBundle.getAllBundleRevisions()) {
+        for (XBundleRevision rev : userBundle.getAllBundleRevisions()) {
             UserBundleRevision userRev = (UserBundleRevision) rev;
-            if (userBundle.isFragment() == false) {
+            if (userRev.isFragment() == false) {
                 ModuleIdentifier identifier = moduleManager.getModuleIdentifier(rev);
                 moduleManager.removeModule(identifier);
             }

@@ -71,6 +71,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.util.NoFilter;
 import org.jboss.osgi.framework.util.RemoveOnlyCollection;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.AllServiceListener;
 import org.osgi.framework.Bundle;
@@ -477,7 +478,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         frameworkEventExecutor.execute(runnable);
     }
 
-    void fireServiceEvent(final AbstractBundleState bundleState, int type, final ServiceState serviceState) {
+    void fireServiceEvent(final XBundle bundleState, int type, final ServiceState serviceState) {
 
         // Get a snapshot of the current listeners
         List<ServiceListenerRegistration> listenerRegs = new ArrayList<ServiceListenerRegistration>();

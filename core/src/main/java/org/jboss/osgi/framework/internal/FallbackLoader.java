@@ -59,7 +59,7 @@ import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.Resource;
 import org.jboss.osgi.framework.SystemPathsProvider;
-import org.jboss.osgi.framework.TypeAdaptor;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XPackageCapability;
@@ -240,7 +240,7 @@ final class FallbackLoader implements LocalLoader {
 
     private Module findInResolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
         LOGGER.tracef("Attempt to find path dynamically in resolved modules ...");
-        Set<Bundle> resolved = bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE);
+        Set<XBundle> resolved = bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE);
         LOGGER.tracef("Resolved modules: %d", resolved.size());
         if (LOGGER.isTraceEnabled()) {
             for (Bundle bundle : resolved)
@@ -248,8 +248,8 @@ final class FallbackLoader implements LocalLoader {
         }
         if (!resolved.isEmpty()) {
             for (XPackageRequirement pkgreq : matchingPatterns) {
-                for (Bundle bundle : resolved) {
-                    XBundleRevision brev = ((TypeAdaptor) bundle).adapt(XBundleRevision.class);
+                for (XBundle bundle : resolved) {
+                    XBundleRevision brev = bundle.getBundleRevision();
                     if (bundle.getBundleId() > 0 && !brev.isFragment()) {
                         ModuleIdentifier identifier = moduleManager.getModuleIdentifier(brev);
                         Module candidate = moduleManager.getModule(identifier);
@@ -264,7 +264,7 @@ final class FallbackLoader implements LocalLoader {
 
     private Module findInUnresolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
         LOGGER.tracef("Attempt to find path dynamically in unresolved modules ...");
-        Set<Bundle> unresolved = bundleManager.getBundles(Bundle.INSTALLED);
+        Set<XBundle> unresolved = bundleManager.getBundles(Bundle.INSTALLED);
         LOGGER.tracef("Unresolved modules: %d", unresolved.size());
         if (LOGGER.isTraceEnabled()) {
             for (Bundle bundle : unresolved)

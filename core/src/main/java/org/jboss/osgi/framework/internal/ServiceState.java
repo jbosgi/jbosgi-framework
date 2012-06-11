@@ -62,6 +62,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
+import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
@@ -82,7 +83,7 @@ import org.osgi.framework.ServiceRegistration;
 final class ServiceState implements ServiceRegistration, ServiceReference {
 
     private final ServiceManagerPlugin serviceManager;
-    private final AbstractBundleState ownerBundle;
+    private final XBundle ownerBundle;
     private final Set<ServiceName> serviceNames;
     private final long serviceId;
     private final ValueProvider valueProvider;
@@ -96,7 +97,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     private CaseInsensitiveDictionary currProperties;
 
     @SuppressWarnings("unchecked")
-    ServiceState(ServiceManagerPlugin serviceManager, AbstractBundleState owner, long serviceId, String[] classNames, ValueProvider valueProvider, Dictionary properties) {
+    ServiceState(ServiceManagerPlugin serviceManager, XBundle owner, long serviceId, String[] classNames, ValueProvider valueProvider, Dictionary properties) {
         assert serviceManager != null : "Null serviceManager";
         assert owner != null : "Null owner";
         assert classNames != null && classNames.length > 0 : "Null clazzes";
@@ -282,7 +283,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         return prevProperties;
     }
 
-    AbstractBundleState getServiceOwner() {
+    XBundle getServiceOwner() {
         return ownerBundle;
     }
 
@@ -401,7 +402,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
             throw MESSAGES.illegalStateServiceUnregistered(this);
     }
 
-    private boolean checkValidClassNames(AbstractBundleState bundleState, String[] classNames, Object value) {
+    private boolean checkValidClassNames(XBundle bundleState, String[] classNames, Object value) {
         assert bundleState != null : "Null bundleState";
         assert classNames != null && classNames.length > 0 : "Null service classes";
         assert value != null : "Null value";

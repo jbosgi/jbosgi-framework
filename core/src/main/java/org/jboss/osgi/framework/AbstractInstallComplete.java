@@ -62,6 +62,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.util.ServiceTracker;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -73,7 +74,7 @@ import org.osgi.framework.BundleException;
  */
 abstract class AbstractInstallComplete extends AbstractService<Void> {
 
-    private Set<Bundle> installedBundles = new HashSet<Bundle>();
+    private Set<XBundle> installedBundles = new HashSet<XBundle>();
     private ServiceTracker<Bundle> tracker;
 
     protected abstract ServiceName getServiceName();
@@ -99,7 +100,7 @@ abstract class AbstractInstallComplete extends AbstractService<Void> {
             @Override
             protected void serviceStarted(ServiceController<? extends Bundle> controller) {
                 Bundle bundle = controller.getValue();
-                installedBundles.add(bundle);
+                installedBundles.add((XBundle) bundle);
             }
 
             @Override
@@ -118,12 +119,11 @@ abstract class AbstractInstallComplete extends AbstractService<Void> {
     public void start(final StartContext context) throws StartException {
         ServiceController<?> controller = context.getController();
         LOGGER.tracef("Starting: %s", controller.getName());
-        List<Bundle> bundles = new ArrayList<Bundle>(installedBundles);
+        List<XBundle> bundles = new ArrayList<XBundle>(installedBundles);
         Collections.sort(bundles, new BundleComparator());
-        for (Bundle bundle : bundles) {
-            TypeAdaptor adaptor = (TypeAdaptor) bundle;
-            Deployment dep = adaptor.adapt(Deployment.class);
-            OSGiMetaData metadata = adaptor.adapt(OSGiMetaData.class);
+        for (XBundle bundle : bundles) {
+            Deployment dep = bundle.adapt(Deployment.class);
+            OSGiMetaData metadata = bundle.adapt(OSGiMetaData.class);
             if (dep.isAutoStart() && metadata.getFragmentHost() == null) {
                 try {
                     bundle.start(Bundle.START_ACTIVATION_POLICY);

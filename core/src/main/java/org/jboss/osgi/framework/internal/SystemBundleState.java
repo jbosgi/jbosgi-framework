@@ -56,6 +56,7 @@ import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -87,8 +88,8 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
     }
 
     @Override
-    List<BundleStateRevision> getAllBundleRevisions() {
-        return Collections.singletonList((BundleStateRevision)systemRevision);
+    public List<XBundleRevision> getAllBundleRevisions() {
+        return Collections.singletonList((XBundleRevision)systemRevision);
     }
 
     void createStorageState(BundleStoragePlugin storagePlugin) {
@@ -120,7 +121,7 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
     }
 
     @Override
-    SystemBundleRevision getCurrentBundleRevision() {
+    public SystemBundleRevision getBundleRevision() {
         return systemRevision;
     }
 
@@ -144,7 +145,7 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
     }
 
     @Override
-    boolean isFragment() {
+    public boolean isFragment() {
         return false;
     }
 

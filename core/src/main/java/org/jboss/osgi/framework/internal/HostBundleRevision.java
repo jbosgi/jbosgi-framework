@@ -91,11 +91,10 @@ final class HostBundleRevision extends UserBundleRevision {
         return (HostBundleRevision) res;
     }
 
-    @Override
     HostBundleState getBundleState() {
-        return HostBundleState.assertBundleState(super.getBundleState());
+        return (HostBundleState) getBundle();
     }
-
+    
     void refreshRevisionInternal() {
         super.refreshRevisionInternal();
         attachedFragments = null;
@@ -124,7 +123,6 @@ final class HostBundleRevision extends UserBundleRevision {
         return Collections.unmodifiableSet(attachedFragments);
     }
 
-    @Override
     Class<?> loadClass(String className) throws ClassNotFoundException {
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
@@ -166,7 +164,7 @@ final class HostBundleRevision extends UserBundleRevision {
     }
 
     @Override
-    URL getResource(String path) {
+    public URL getResource(String path) {
         getBundleState().assertNotUninstalled();
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
@@ -180,7 +178,7 @@ final class HostBundleRevision extends UserBundleRevision {
     }
 
     @Override
-    Enumeration<URL> getResources(String path) throws IOException {
+    public Enumeration<URL> getResources(String path) throws IOException {
         getBundleState().assertNotUninstalled();
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle

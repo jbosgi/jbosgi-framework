@@ -82,11 +82,6 @@ final class FragmentBundleRevision extends UserBundleRevision {
         return (FragmentBundleRevision) bundleRev;
     }
 
-    @Override
-    FragmentBundleState getBundleState() {
-        return FragmentBundleState.assertBundleState(super.getBundleState());
-    }
-
     void refreshRevisionInternal() {
         attachedHosts = null;
     }
@@ -98,19 +93,18 @@ final class FragmentBundleRevision extends UserBundleRevision {
         return Collections.unmodifiableSet(attachedHosts);
     }
 
-    @Override
     Class<?> loadClass(String className) throws ClassNotFoundException {
         throw MESSAGES.cannotLoadClassFromFragment(this);
     }
 
     @Override
-    URL getResource(String resourceName) {
+    public URL getResource(String resourceName) {
         // Null if the resource could not be found or if this bundle is a fragment bundle
         return null;
     }
 
     @Override
-    Enumeration<URL> getResources(String resourceName) throws IOException {
+    public Enumeration<URL> getResources(String resourceName) {
         // Null if the resource could not be found or if this bundle is a fragment bundle
         return null;
     }
@@ -134,7 +128,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
 
         // If the bundle is a resolved fragment, then the search for localization data must
         // delegate to the attached host bundle with the highest version.
-        if (isResolved()) {
+        if (getWiring() != null) {
             HostBundleRevision highest = null;
             for (HostBundleRevision hostrev : getAttachedHosts()) {
                 if (highest == null)

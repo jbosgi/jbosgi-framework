@@ -88,6 +88,10 @@ abstract class UserBundleRevision extends BundleStateRevision {
         }
     }
 
+    UserBundleState getBundleState() {
+        return (UserBundleState) getBundle();
+    }
+    
     Deployment getDeployment() {
         return deployment;
     }
@@ -95,10 +99,6 @@ abstract class UserBundleRevision extends BundleStateRevision {
     @Override
     String getLocation() {
         return deployment.getLocation();
-    }
-
-    UserBundleState getBundleState() {
-        return UserBundleState.assertBundleState(super.getBundleState());
     }
 
     /**
@@ -137,13 +137,13 @@ abstract class UserBundleRevision extends BundleStateRevision {
     }
 
     @Override
-    Enumeration<String> getEntryPaths(String path) {
+    public Enumeration<String> getEntryPaths(String path) {
         getBundleState().assertNotUninstalled();
         return entriesProvider.getEntryPaths(path);
     }
 
     @Override
-    URL getEntry(String path) {
+    public URL getEntry(String path) {
         getBundleState().assertNotUninstalled();
         return entriesProvider.getEntry(path);
     }

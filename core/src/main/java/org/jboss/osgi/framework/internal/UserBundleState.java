@@ -64,6 +64,7 @@ import org.jboss.osgi.framework.BundleInstallHandler;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.vfs.AbstractVFS;
@@ -114,19 +115,19 @@ abstract class UserBundleState extends AbstractBundleState {
 
     @Override
     public String getLocation() {
-        return getCurrentBundleRevision().getLocation();
+        return getBundleRevision().getLocation();
     }
 
     Deployment getDeployment() {
-        return getCurrentBundleRevision().getDeployment();
+        return getBundleRevision().getDeployment();
     }
 
     RevisionContent getFirstContentRoot() {
-        return getCurrentBundleRevision().getRootContent();
+        return getBundleRevision().getRootContent();
     }
 
     List<RevisionContent> getContentRoots() {
-        return getCurrentBundleRevision().getContentList();
+        return getBundleRevision().getContentList();
     }
 
     boolean isSingleton() {
@@ -170,18 +171,18 @@ abstract class UserBundleState extends AbstractBundleState {
     }
 
     @Override
-    UserBundleRevision getCurrentBundleRevision() {
-        return (UserBundleRevision) super.getCurrentBundleRevision();
+    public UserBundleRevision getBundleRevision() {
+        return (UserBundleRevision) super.getBundleRevision();
     }
 
     @Override
-    List<BundleStateRevision> getAllBundleRevisions() {
-        List<BundleStateRevision> result = new ArrayList<BundleStateRevision>(revisions);
+    public List<XBundleRevision> getAllBundleRevisions() {
+        List<XBundleRevision> result = new ArrayList<XBundleRevision>(revisions);
         return Collections.unmodifiableList(result);
     }
 
     void clearOldRevisions() {
-        UserBundleRevision rev = getCurrentBundleRevision();
+        UserBundleRevision rev = getBundleRevision();
         revisions.clear();
         revisions.add(rev);
     }
@@ -215,7 +216,7 @@ abstract class UserBundleState extends AbstractBundleState {
     }
 
     boolean hasActiveWires() {
-        BundleWiring wiring = getCurrentBundleRevision().getWiring();
+        BundleWiring wiring = getBundleRevision().getWiring();
         return wiring != null ? wiring.isInUse() : false;
     }
 
@@ -345,8 +346,8 @@ abstract class UserBundleState extends AbstractBundleState {
 
         // Remove the revisions from the environment
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        UserBundleRevision currentRev = getCurrentBundleRevision();
-        for (BundleStateRevision brev : getAllBundleRevisions()) {
+        UserBundleRevision currentRev = getBundleRevision();
+        for (XBundleRevision brev : getAllBundleRevisions()) {
 
             XEnvironment env = getFrameworkState().getEnvironment();
             if (currentRev != brev)
@@ -355,7 +356,7 @@ abstract class UserBundleState extends AbstractBundleState {
             if (brev instanceof HostBundleRevision) {
                 HostBundleRevision hostRev = (HostBundleRevision) brev;
                 for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
-                    if (fragRev != fragRev.getBundleState().getCurrentBundleRevision()) {
+                    if (fragRev != fragRev.getBundle().getBundleRevision()) {
                         env.uninstallResources(fragRev);
                     }
                 }

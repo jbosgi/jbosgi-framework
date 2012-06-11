@@ -50,6 +50,7 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -70,7 +71,7 @@ public interface BundleManager extends Service<BundleManager> {
      * @param bundleId The identifier of the bundle
      * @return The bundle or null if there is no bundle with that id
      */
-    Bundle getBundleById(long bundleId);
+    XBundle getBundleById(long bundleId);
 
     /**
      * Get a bundle by location
@@ -78,7 +79,7 @@ public interface BundleManager extends Service<BundleManager> {
      * @param location the location of the bundle
      * @return the bundle or null if there is no bundle with that location
      */
-    Bundle getBundleByLocation(String location);
+    XBundle getBundleByLocation(String location);
 
     /**
      * Get the set of bundles that are in one of the given states.
@@ -86,7 +87,7 @@ public interface BundleManager extends Service<BundleManager> {
      *
      * @param states The binary or combination of states or null
      */
-    Set<Bundle> getBundles(Integer states);
+    Set<XBundle> getBundles(Integer states);
 
     /**
      * Get the set of bundles with the given symbolic name and version
@@ -97,13 +98,13 @@ public interface BundleManager extends Service<BundleManager> {
      * @param versionRange The optional bundle version
      * @return The bundles or an empty list if there is no bundle with that name and version
      */
-    Set<Bundle> getBundles(String symbolicName, String versionRange);
+    Set<XBundle> getBundles(String symbolicName, String versionRange);
 
     /**
      * Get the system bundle
      * @return the system bundle or null if the framework has not reached the {@link Services#SYSTEM_BUNDLE} state
      */
-    Bundle getSystemBundle();
+    XBundle getSystemBundle();
 
     /**
      * True the framework has reached the {@link Services#FRAMEWORK_ACTIVE} state

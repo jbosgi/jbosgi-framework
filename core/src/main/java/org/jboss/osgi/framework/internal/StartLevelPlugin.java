@@ -59,6 +59,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -260,7 +261,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
      */
     synchronized void increaseStartLevel(int level) {
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        Collection<Bundle> bundles = bundleManager.getBundles();
+        Collection<XBundle> bundles = bundleManager.getBundles();
         while (startLevel < level) {
             startLevel++;
             LOGGER.infoStartingBundlesForStartLevel(startLevel);
@@ -294,8 +295,8 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         while (startLevel > level) {
             LOGGER.infoStoppingBundlesForStartLevel(level);
-            Collection<Bundle> bundles = bundleManager.getBundles();
-            for (Bundle bundle : bundles) {
+            Collection<XBundle> bundles = bundleManager.getBundles();
+            for (XBundle bundle : bundles) {
                 if (bundle instanceof HostBundleState) {
                     HostBundleState hostBundle = (HostBundleState) bundle;
                     if (hostBundle.getStartLevel() == startLevel) {

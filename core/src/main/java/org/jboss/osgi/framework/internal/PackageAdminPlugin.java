@@ -69,6 +69,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.TypeAdaptor;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -162,7 +163,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         if (bundle == null)
             return getAllExportedPackages();
         
-        if (!(bundle instanceof AbstractBundleState))
+        if (!(bundle instanceof XBundle))
             return null;
 
         // A bundle is destroyed if it is no longer known to the system.
@@ -174,7 +175,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             return null;
 
         List<ExportedPackage> result = new ArrayList<ExportedPackage>();
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        XBundle bundleState = (XBundle)bundle;
         for (XBundleRevision brev : bundleState.getAllBundleRevisions()) {
             if (brev.getWiring() != null) {
                 for (Capability cap : brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
@@ -319,13 +320,11 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 }
 
                 // Compute all depending bundles that need to be stopped and unresolved.
-                for (Bundle bundle : bundleManager.getBundles()) {
-                    AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-                    if (bundleState instanceof HostBundleState && bundleState.isResolved()) {
+                for (XBundle bundle : bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE)) {
+                    if (bundle instanceof HostBundleState) {
                         HostBundleState hostBundle = HostBundleState.assertBundleState(bundle);
                         for (UserBundleState depBundle : hostBundle.getDependentBundles()) {
                             if (providedBundles.contains(depBundle)) {
-                                // Bundles can be either ACTIVE or RESOLVED
                                 int state = hostBundle.getState();
                                 if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
                                     stopBundles.add(hostBundle);
@@ -396,14 +395,14 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         ResolverPlugin resolverPlugin = injectedResolver.getValue();
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         if (bundles == null) {
-            Set<Bundle> bundleset = bundleManager.getBundles(Bundle.INSTALLED);
+            Set<XBundle> bundleset = bundleManager.getBundles(Bundle.INSTALLED);
             bundles = new Bundle[bundleset.size()];
             bundleset.toArray(bundles);
         }
         Set<BundleRevision> resolve = new LinkedHashSet<BundleRevision>();
         for (Bundle aux : bundles) {
             AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
-            resolve.add(bundleState.getCurrentBundleRevision());
+            resolve.add(bundleState.getBundleRevision());
         }
 
         boolean result = true;
@@ -446,13 +445,13 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         Iterator<HostBundleState> hostit = matchingHosts.iterator();
         while (hostit.hasNext()) {
             HostBundleState hostState = hostit.next();
-            BundleRevision brev = hostState.getCurrentBundleRevision();
-            Set<Bundle> requiringBundles = new HashSet<Bundle>();
+            XBundleRevision brev = hostState.getBundleRevision();
+            Set<XBundle> requiringBundles = new HashSet<XBundle>();
             BundleWiring wiring = brev.getWiring();
             if (wiring != null) {
                 List<Wire> providedWires = wiring.getProvidedResourceWires(BundleNamespace.BUNDLE_NAMESPACE);
                 for (Wire wire : providedWires) {
-                    Bundle bundle = ((BundleRevision) wire.getRequirer()).getBundle();
+                    XBundle bundle = ((XBundleRevision) wire.getRequirer()).getBundle();
                     requiringBundles.add(bundle);
                 }
             }
@@ -497,21 +496,19 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     @Override
     public Bundle[] getFragments(Bundle bundle) {
 
-        if (!(bundle instanceof AbstractBundleState))
+        if (!(bundle instanceof HostBundleState))
             return null;
         
         // If the specified bundle is a fragment then null is returned.
         // If the specified bundle is not resolved then null is returned
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-        if (bundle.getBundleId() == 0 || bundleState.isFragment() || !bundleState.isResolved())
+        HostBundleState hostBundle = HostBundleState.assertBundleState(bundle);
+        if (bundle.getBundleId() == 0 || !hostBundle.isResolved())
             return null;
 
-        HostBundleState hostBundle = HostBundleState.assertBundleState(bundleState);
-        HostBundleRevision curRevision = hostBundle.getCurrentBundleRevision();
-
         List<Bundle> result = new ArrayList<Bundle>();
+        HostBundleRevision curRevision = hostBundle.getBundleRevision();
         for (FragmentBundleRevision aux : curRevision.getAttachedFragments())
-            result.add(aux.getBundleState());
+            result.add(aux.getBundle());
 
         if (result.isEmpty())
             return null;
@@ -522,19 +519,15 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     @Override
     public Bundle[] getHosts(Bundle bundle) {
 
-        if (!(bundle instanceof AbstractBundleState))
+        if (!(bundle instanceof FragmentBundleState))
             return null;
         
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-        if (bundleState.isFragment() == false)
-            return null;
-
-        FragmentBundleState fragBundle = FragmentBundleState.assertBundleState(bundleState);
-        FragmentBundleRevision curRevision = fragBundle.getCurrentBundleRevision();
+        FragmentBundleState fragBundle = FragmentBundleState.assertBundleState(bundle);
+        FragmentBundleRevision curRevision = fragBundle.getBundleRevision();
 
         List<Bundle> result = new ArrayList<Bundle>();
         for (HostBundleRevision aux : curRevision.getAttachedHosts())
-            result.add(aux.getBundleState());
+            result.add(aux.getBundle());
 
         if (result.isEmpty())
             return null;
@@ -546,13 +539,13 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     @SuppressWarnings("rawtypes")
     public Bundle getBundle(Class clazz) {
         ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
-        AbstractBundleState bundleState = moduleManager.getBundleState(clazz);
+        XBundle bundleState = moduleManager.getBundleState(clazz);
         return bundleState != null ? bundleState : null;
     }
 
     @Override
     public int getBundleType(Bundle bundle) {
-        XBundleRevision brev = ((TypeAdaptor) bundle).adapt(XBundleRevision.class);
+        XBundleRevision brev = ((XBundle) bundle).getBundleRevision();
         return brev.isFragment() ? BUNDLE_TYPE_FRAGMENT : 0;
     }
 
@@ -605,15 +598,12 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         @Override
         public boolean isRemovalPending() {
-            BundleRevision brev = (BundleRevision) capability.getResource();
-            Bundle bundle = brev.getBundle();
-            if (bundle.getState() == Bundle.UNINSTALLED) {
+            XBundleRevision brev = (XBundleRevision) capability.getResource();
+            XBundle bundle = brev.getBundle();
+            if (bundle instanceof AbstractBundleState && ((AbstractBundleState)bundle).isUninstalled()) {
                 return true;
             }
-            if (!(bundle instanceof AbstractBundleState)) {
-                return false;
-            }
-            return brev != ((AbstractBundleState) bundle).getCurrentBundleRevision();
+            return brev != bundle.getBundleRevision();
         }
 
         private XPackageCapability getCapability() {
@@ -628,11 +618,11 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     static class RequiredBundleImpl implements RequiredBundle {
 
-        private final Bundle requiredBundle;
-        private final Bundle[] requiringBundles;
-        private final BundleRevision bundleRevision;
+        private final XBundle requiredBundle;
+        private final XBundle[] requiringBundles;
+        private final XBundleRevision bundleRevision;
 
-        RequiredBundleImpl(Bundle requiredBundle, BundleRevision bundleRevision, Collection<Bundle> requiringBundles) {
+        RequiredBundleImpl(XBundle requiredBundle, XBundleRevision bundleRevision, Collection<XBundle> requiringBundles) {
             this.requiredBundle = requiredBundle;
             this.bundleRevision = bundleRevision;
 
@@ -640,7 +630,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             for (Bundle bundle : requiringBundles) {
                 bundles.add(bundle);
             }
-            this.requiringBundles = bundles.toArray(new Bundle[bundles.size()]);
+            this.requiringBundles = bundles.toArray(new XBundle[bundles.size()]);
         }
 
         @Override
@@ -674,8 +664,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
             if (requiredBundle.getState() == Bundle.UNINSTALLED)
                 return true;
 
-            Bundle bundle = bundleRevision.getBundle();
-            return !bundleRevision.equals(((TypeAdaptor)bundle).adapt(BundleRevision.class));
+            XBundle bundle = bundleRevision.getBundle();
+            return !bundleRevision.equals(bundle.getBundleRevision());
         }
 
         @Override

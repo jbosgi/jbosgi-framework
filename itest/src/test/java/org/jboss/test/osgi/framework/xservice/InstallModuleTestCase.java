@@ -52,6 +52,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.framework.AbstractModuleAdaptor;
 import org.jboss.osgi.framework.TypeAdaptor;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XBundleRevisionBuilderFactory;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -108,8 +109,8 @@ public class InstallModuleTestCase extends OSGiFrameworkTest {
         XBundleRevisionBuilderFactory factory = new XBundleRevisionBuilderFactory() {
             public XBundleRevision createResource() {
                 return new AbstractBundleRevision() {
-                    Bundle bundle = new AbstractModuleAdaptor(module, this);
-                    public Bundle getBundle() {
+                    XBundle bundle = new AbstractModuleAdaptor(module, this);
+                    public XBundle getBundle() {
                         return bundle;
                     }
                 };
@@ -132,7 +133,7 @@ public class InstallModuleTestCase extends OSGiFrameworkTest {
         bundleA.start();
         assertLoadClass(bundleA, Inject.class.getName());
 
-        BundleRevision brevA = ((TypeAdaptor)bundleA).adapt(BundleRevision.class);
+        XBundleRevision brevA = ((XBundle)bundleA).getBundleRevision();
         BundleWiring wiring = brevA.getWiring();
         List<BundleWire> required = wiring.getRequiredWires(PackageNamespace.PACKAGE_NAMESPACE);
         Assert.assertEquals(1, required.size());

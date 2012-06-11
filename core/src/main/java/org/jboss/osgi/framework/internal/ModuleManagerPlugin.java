@@ -83,6 +83,7 @@ import org.jboss.osgi.framework.internal.NativeCodePlugin.BundleNativeLibraryPro
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XIdentityCapability;
@@ -135,7 +136,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         super.start(context);
         FrameworkModuleProvider moduleProvider = injectedModuleProvider.getValue();
         SystemBundleState systemBundle = injectedSystemBundle.getValue();
-        SystemBundleRevision systemRevision = systemBundle.getCurrentBundleRevision();
+        SystemBundleRevision systemRevision = systemBundle.getBundleRevision();
         frameworkModule = moduleProvider.getFrameworkModule(systemBundle);
         bundleRevisionMap.put(frameworkModule.getIdentifier(), systemRevision);
     }
@@ -209,13 +210,13 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      *
      * @return The bundle or null
      */
-    AbstractBundleState getBundleState(Class<?> clazz) {
+    XBundle getBundleState(Class<?> clazz) {
         assert clazz != null : "Null clazz";
-        AbstractBundleState result = null;
+        XBundle result = null;
         ClassLoader loader = clazz.getClassLoader();
         if (loader instanceof BundleReference) {
             BundleReference bundleRef = (BundleReference) loader;
-            result = AbstractBundleState.assertBundleState(bundleRef.getBundle());
+            result = (XBundle) bundleRef.getBundle();
         }
         if (result == null)
             LOGGER.debugf("Cannot obtain bundle for: %s", clazz.getName());
