@@ -50,15 +50,13 @@ import javax.inject.Inject;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.osgi.framework.AbstractModuleAdaptor;
-import org.jboss.osgi.framework.TypeAdaptor;
+import org.jboss.osgi.framework.AbstractBundleRevisionAdaptor;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XBundleRevisionBuilderFactory;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.XResourceBuilder;
-import org.jboss.osgi.resolver.spi.AbstractBundleRevision;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -67,6 +65,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Assert;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 import org.osgi.framework.namespace.IdentityNamespace;
@@ -83,7 +82,7 @@ import org.osgi.service.resolver.ResolutionException;
  * @author Thomas.Diesler@jboss.com
  * @since 14-Mar-2012
  */
-public class InstallModuleTestCase extends OSGiFrameworkTest {
+public class ModuleInstallTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testInstallModule() throws Exception {
@@ -104,16 +103,12 @@ public class InstallModuleTestCase extends OSGiFrameworkTest {
         }
 
         // Build the Module resource
+        final BundleContext context = getSystemContext();
         final ModuleIdentifier identifier = ModuleIdentifier.create("javax.inject.api");
         final Module module = Module.getBootModuleLoader().loadModule(identifier);
         XBundleRevisionBuilderFactory factory = new XBundleRevisionBuilderFactory() {
             public XBundleRevision createResource() {
-                return new AbstractBundleRevision() {
-                    XBundle bundle = new AbstractModuleAdaptor(module, this);
-                    public XBundle getBundle() {
-                        return bundle;
-                    }
-                };
+                return new AbstractBundleRevisionAdaptor(context, module);
             }
         };
         XResourceBuilder builder = XBundleRevisionBuilderFactory.create(factory);
@@ -127,7 +122,8 @@ public class InstallModuleTestCase extends OSGiFrameworkTest {
         Assert.assertEquals(IdentityNamespace.TYPE_UNKNOWN, res.getIdentityCapability().getType());
 
         // Install the resource into the environment
-        XEnvironment env = ((TypeAdaptor) getSystemContext()).adapt(XEnvironment.class);
+        XBundle sysbundle = (XBundle) getSystemContext().getBundle();
+        XEnvironment env = sysbundle.adapt(XEnvironment.class);
         env.installResources(res);
 
         bundleA.start();

@@ -52,9 +52,9 @@ import java.util.List;
 
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -64,11 +64,11 @@ import org.osgi.framework.Version;
 
 /**
  * Represents the state of the system {@link Bundle}.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class SystemBundleState extends AbstractBundleState implements TypeAdaptor {
+final class SystemBundleState extends AbstractBundleState {
 
     private final SystemBundleRevision systemRevision;
     private InternalStorageState storageState;
@@ -89,7 +89,7 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
 
     @Override
     public List<XBundleRevision> getAllBundleRevisions() {
-        return Collections.singletonList((XBundleRevision)systemRevision);
+        return Collections.singletonList((XBundleRevision) systemRevision);
     }
 
     void createStorageState(BundleStoragePlugin storagePlugin) {
@@ -135,8 +135,8 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
     public <T> T adapt(Class<T> type) {
         T result = super.adapt(type);
         if (result == null) {
-            if (type.isAssignableFrom(ServiceContainer.class)) {
-                result = (T) getBundleManager().getServiceContainer();
+            if (type.isAssignableFrom(BundleManager.class)) {
+                result = (T) getBundleManager();
             } else if (type.isAssignableFrom(XEnvironment.class)) {
                 result = (T) getFrameworkState().getEnvironment();
             }

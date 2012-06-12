@@ -50,12 +50,14 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.ResourceBuilderException;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XBundleRevisionBuilderFactory;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResourceBuilder;
 import org.jboss.osgi.resolver.XResourceBuilderFactory;
 import org.jboss.osgi.resolver.spi.AbstractBundleRevision;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.wiring.BundleWiring;
 
@@ -118,6 +120,16 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
     
     abstract URL getLocalizationEntry(String path);
         
+    @Override
+    public XBundle getBundle() {
+        return (XBundle) getAttachment(Bundle.class);
+    }
+    
+    @Override
+    public BundleWiring getWiring() {
+        return getAttachment(BundleWiring.class);
+    }
+    
     @Override
     public ModuleIdentifier getModuleIdentifier() {
         return getAttachment(ModuleIdentifier.class);

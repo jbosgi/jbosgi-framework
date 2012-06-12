@@ -61,7 +61,6 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.util.ServiceTracker;
-import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -123,8 +122,7 @@ abstract class AbstractInstallComplete extends AbstractService<Void> {
         Collections.sort(bundles, new BundleComparator());
         for (XBundle bundle : bundles) {
             Deployment dep = bundle.adapt(Deployment.class);
-            OSGiMetaData metadata = bundle.adapt(OSGiMetaData.class);
-            if (dep.isAutoStart() && metadata.getFragmentHost() == null) {
+            if (dep.isAutoStart() && !bundle.isFragment()) {
                 try {
                     bundle.start(Bundle.START_ACTIVATION_POLICY);
                 } catch (BundleException ex) {

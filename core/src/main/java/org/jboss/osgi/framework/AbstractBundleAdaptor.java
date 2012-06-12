@@ -70,18 +70,24 @@ import org.osgi.framework.wiring.BundleRevision;
  * @author thomas.diesler@jboss.com
  * @since 30-May-2012
  */
-public class AbstractModuleAdaptor implements XBundle {
+public class AbstractBundleAdaptor implements XBundle {
 
-    private final Module module;
+    private final BundleContext context;
     private final XBundleRevision bundlerev;
+    private final Module module;
+    private long lastModified;
 
-    public AbstractModuleAdaptor(Module module, XBundleRevision bundlerev) {
+    public AbstractBundleAdaptor(BundleContext context, Module module, XBundleRevision bundlerev) {
+        if (context == null)
+            throw MESSAGES.illegalArgumentNull("context");
         if (module == null)
             throw MESSAGES.illegalArgumentNull("module");
         if (bundlerev == null)
             throw MESSAGES.illegalArgumentNull("bundlerev");
+        this.context = context;
         this.module = module;
         this.bundlerev = bundlerev;
+        this.lastModified = System.currentTimeMillis();
     }
 
     @Override
@@ -134,30 +140,37 @@ public class AbstractModuleAdaptor implements XBundle {
 
     @Override
     public void start(int options) throws BundleException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void start() throws BundleException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void stop(int options) throws BundleException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void stop() throws BundleException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void update(InputStream input) throws BundleException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void update() throws BundleException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void uninstall() throws BundleException {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -169,6 +182,8 @@ public class AbstractModuleAdaptor implements XBundle {
     @Override
     @SuppressWarnings("rawtypes")
     public Dictionary getHeaders(String locale) {
+        // [TODO] Add support for manifest header related APIs on Module adaptors
+        // https://issues.jboss.org/browse/JBOSGI-567
         return new Hashtable();
     }
 
@@ -189,40 +204,40 @@ public class AbstractModuleAdaptor implements XBundle {
 
     @Override
     public URL getResource(String name) {
-        return null;
+        return getBundleRevision().getResource(name);
     }
 
     @Override
     @SuppressWarnings("rawtypes")
     public Enumeration getResources(String name) throws IOException {
-        return null;
+        return getBundleRevision().getResources(name);
     }
 
     @Override
     @SuppressWarnings("rawtypes")
     public Enumeration getEntryPaths(String path) {
-        return null;
+        return getBundleRevision().getEntryPaths(path);
     }
 
     @Override
     public URL getEntry(String path) {
-        return null;
-    }
-
-    @Override
-    public long getLastModified() {
-        return 0;
+        return getBundleRevision().getEntry(path);
     }
 
     @Override
     @SuppressWarnings("rawtypes")
     public Enumeration findEntries(String path, String filePattern, boolean recurse) {
-        return null;
+        return getBundleRevision().findEntries(path, filePattern, recurse);
+    }
+
+    @Override
+    public long getLastModified() {
+        return lastModified;
     }
 
     @Override
     public BundleContext getBundleContext() {
-        return null;
+        return context;
     }
 
     @Override
@@ -234,6 +249,11 @@ public class AbstractModuleAdaptor implements XBundle {
     @Override
     public boolean isResolved() {
         return true;
+    }
+
+    @Override
+    public boolean isFragment() {
+        return getBundleRevision().isFragment();
     }
 
     @Override

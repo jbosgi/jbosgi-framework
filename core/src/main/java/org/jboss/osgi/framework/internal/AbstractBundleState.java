@@ -92,9 +92,8 @@ import org.osgi.service.resolver.ResolutionException;
 /**
  * An abstract representation of a {@link Bundle} state.
  * <p/>
- * It is used by the various {@link AbstractBundleService}s.
- * The state is never given to the client.
- *
+ * It is used by the various {@link AbstractBundleService}s. The state is never given to the client.
+ * 
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
@@ -159,22 +158,14 @@ abstract class AbstractBundleState implements XBundle {
 
     abstract AbstractBundleContext createContextInternal();
 
-    abstract boolean isFragment();
-    
     @Override
     @SuppressWarnings("unchecked")
     public <T> T adapt(Class<T> type) {
         T result = null;
-        if (type.isAssignableFrom(BundleRevision.class)) {
-            result = (T) getBundleRevision();
-        } else if (type.isAssignableFrom(XBundleRevision.class)) {
-            result = (T) getBundleRevision();
-        } else if (type.isAssignableFrom(XResource.class)) {
-            result = (T) getBundleRevision();
+        if (type.isAssignableFrom(OSGiMetaData.class)) {
+            result = (T) getOSGiMetaData();
         } else if (type.isAssignableFrom(StorageState.class)) {
             result = (T) getStorageState();
-        } else if (type.isAssignableFrom(OSGiMetaData.class)) {
-            result = (T) getOSGiMetaData();
         }
         return result;
     }
@@ -453,12 +444,11 @@ abstract class AbstractBundleState implements XBundle {
     /**
      * The framework must search for localization entries using the following search rules based on the bundle type:
      * <p/>
-     * fragment bundle - If the bundle is a resolved fragment, then the search for localization data must delegate to the
-     * attached host bundle with the highest version. If the fragment is not resolved, then the framework must search the
-     * fragment's JAR for the localization entry.
+     * fragment bundle - If the bundle is a resolved fragment, then the search for localization data must delegate to the attached host bundle with the highest version.
+     * If the fragment is not resolved, then the framework must search the fragment's JAR for the localization entry.
      * <p/>
-     * other bundle - The framework must first search in the bundle’s JAR for the localization entry. If the entry is not found
-     * and the bundle has fragments, then the attached fragment JARs must be searched for the localization entry.
+     * other bundle - The framework must first search in the bundle’s JAR for the localization entry. If the entry is not found and the bundle has fragments, then the
+     * attached fragment JARs must be searched for the localization entry.
      */
     private URL getLocalizationEntry(String entryPath) {
         return getBundleRevision().getLocalizationEntry(entryPath);

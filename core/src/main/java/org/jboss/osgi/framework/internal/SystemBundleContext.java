@@ -42,7 +42,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.osgi.framework.TypeAdaptor;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -51,15 +50,10 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-final class SystemBundleContext extends AbstractBundleContext implements TypeAdaptor {
+final class SystemBundleContext extends AbstractBundleContext {
 
     SystemBundleContext(SystemBundleState bundle) {
         super(bundle);
-    }
-
-    @Override
-    public <T> T adapt(Class<T> type) {
-        return getBundleState().adapt(type);
     }
 
     @Override

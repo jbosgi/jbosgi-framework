@@ -1,20 +1,20 @@
 /*
  * #%L
- * JBossOSGi Framework Core
+ * JBossOSGi Framework iTest
  * %%
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -40,21 +40,52 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework;
+package org.jboss.test.osgi.framework.xservice;
 
+import org.jboss.modules.Module;
+import org.jboss.osgi.resolver.XBundle;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
- * Adapt a type to another.
+ * Test Module integration.
  *
- * @author thomas.diesler@jboss.com
- * @since 14-Mar-2012
+ * @author Thomas.Diesler@jboss.com
+ * @since 12-Jun-2012
  */
-public interface TypeAdaptor {
+public class ModulePackageAdminTestCase extends ModuleIntegrationTestCase {
 
-    /**
-     * Adapt this type to another that corresponds to the given type.
-     * 
-     * @return An instance instance of the target type or null 
-     */
-    <T> T adapt(Class<T> type);
+    Module module;
+    XBundle bundle;
+    
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
+        module = loadModule(getModuleA());
+        bundle = installResource(module).getBundle();
+    }
+    
+    @After
+    public void tearDown() throws Exception {
+        uninstallResource(bundle.getBundleRevision());
+        removeModule(module);
+    }
+    
+    @Test
+    public void testInstallModule() throws Exception {
+        
+        PackageAdmin pa = getPackageAdmin();
+    }
+
+
+    private JavaArchive getModuleA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
+        archive.addClasses(ModuleServiceA.class);
+        return archive;
+    }
 }
