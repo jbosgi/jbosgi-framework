@@ -63,7 +63,7 @@ import org.osgi.framework.Version;
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jun-2012
  */
-public class ModuleBundleTestCase extends ModuleIntegrationTestCase {
+public class ModuleBundleTestCase extends AbstractModuleIntegrationTest {
 
     Module module;
     XBundle bundle;

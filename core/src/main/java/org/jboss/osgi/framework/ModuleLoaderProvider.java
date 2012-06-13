@@ -63,7 +63,10 @@ public interface ModuleLoaderProvider extends Service<ModuleLoaderProvider> {
 
     void addModule(Module module);
 
+    Module getModule(ModuleIdentifier identifier);
+    
     void removeModule(ModuleIdentifier identifier);
 
+    // [TODO] remove or explain why
     ModuleIdentifier getModuleIdentifier(XResource resource, int revision);
 }

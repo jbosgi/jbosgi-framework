@@ -46,29 +46,17 @@ import java.io.InputStream;
 import java.util.Collection;
 import java.util.List;
 
-import javax.inject.Inject;
-
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.osgi.framework.AbstractBundleRevisionAdaptor;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
-import org.jboss.osgi.resolver.XBundleRevisionBuilderFactory;
-import org.jboss.osgi.resolver.XEnvironment;
-import org.jboss.osgi.resolver.XResource;
-import org.jboss.osgi.resolver.XResourceBuilder;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
-import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
 import org.junit.Assert;
 import org.junit.Test;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Version;
-import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWire;
@@ -82,13 +70,13 @@ import org.osgi.service.resolver.ResolutionException;
  * @author Thomas.Diesler@jboss.com
  * @since 14-Mar-2012
  */
-public class ModuleInstallTestCase extends OSGiFrameworkTest {
+public class ModuleInstallTestCase extends AbstractModuleIntegrationTest {
 
     @Test
     public void testInstallModule() throws Exception {
 
         // Try to start the bundle and verify the expected ResolutionException
-        Bundle bundleA = installBundle(getBundleA());
+        XBundle bundleA = (XBundle) installBundle(getBundleA());
         try {
             bundleA.start();
             Assert.fail("BundleException expected");
@@ -99,50 +87,39 @@ public class ModuleInstallTestCase extends OSGiFrameworkTest {
             Requirement req = reqs.iterator().next();
             String namespace = req.getNamespace();
             Assert.assertEquals(PackageNamespace.PACKAGE_NAMESPACE, namespace);
-            Assert.assertEquals("javax.inject", req.getAttributes().get(namespace));
+            Assert.assertEquals(ModuleServiceA.class.getPackage().getName(), req.getAttributes().get(namespace));
         }
 
-        // Build the Module resource
-        final BundleContext context = getSystemContext();
-        final ModuleIdentifier identifier = ModuleIdentifier.create("javax.inject.api");
-        final Module module = Module.getBootModuleLoader().loadModule(identifier);
-        XBundleRevisionBuilderFactory factory = new XBundleRevisionBuilderFactory() {
-            public XBundleRevision createResource() {
-                return new AbstractBundleRevisionAdaptor(context, module);
-            }
-        };
-        XResourceBuilder builder = XBundleRevisionBuilderFactory.create(factory);
-        XResource res = builder.loadFrom(module).getResource();
-
-        Assert.assertEquals(3, res.getCapabilities(null).size());
-        Assert.assertEquals(1, res.getCapabilities(IdentityNamespace.IDENTITY_NAMESPACE).size());
-        Assert.assertEquals(2, res.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE).size());
-        Assert.assertEquals("javax.inject.api", res.getIdentityCapability().getSymbolicName());
-        Assert.assertEquals(Version.emptyVersion, res.getIdentityCapability().getVersion());
-        Assert.assertEquals(IdentityNamespace.TYPE_UNKNOWN, res.getIdentityCapability().getType());
-
-        // Install the resource into the environment
-        XBundle sysbundle = (XBundle) getSystemContext().getBundle();
-        XEnvironment env = sysbundle.adapt(XEnvironment.class);
-        env.installResources(res);
+        Module moduleB = loadModule(getModuleB());
+        XBundle bundleB = installResource(moduleB).getBundle();
+        Assert.assertEquals(bundleA.getBundleId() + 1, bundleB.getBundleId());
 
         bundleA.start();
-        assertLoadClass(bundleA, Inject.class.getName());
+        assertLoadClass(bundleA, ModuleServiceA.class.getName(), bundleB);
 
-        XBundleRevision brevA = ((XBundle)bundleA).getBundleRevision();
-        BundleWiring wiring = brevA.getWiring();
-        List<BundleWire> required = wiring.getRequiredWires(PackageNamespace.PACKAGE_NAMESPACE);
-        Assert.assertEquals(1, required.size());
-        BundleWire wire = required.get(0);
-        Assert.assertSame(brevA, wire.getRequirer());
+        // verify wiring for A
+        XBundleRevision brevA = bundleA.getBundleRevision();
         Assert.assertSame(bundleA, brevA.getBundle());
-        BundleRevision brevB = wire.getProvider();
-        Assert.assertSame(res, brevB);
-        Bundle bundleB = brevB.getBundle();
-        Assert.assertEquals("javax.inject.api", bundleB.getSymbolicName());
-        Assert.assertEquals("javax.inject.api:main", bundleB.getLocation());
-        Assert.assertEquals(Version.emptyVersion, bundleB.getVersion());
-        Assert.assertEquals(bundleA.getBundleId() + 1, bundleB.getBundleId());
+        BundleWiring wiringA = brevA.getWiring();
+        List<BundleWire> requiredA = wiringA.getRequiredWires(null);
+        Assert.assertEquals(1, requiredA.size());
+        BundleWire wireA = requiredA.get(0);
+        Assert.assertSame(brevA, wireA.getRequirer());
+        Assert.assertSame(bundleB, wireA.getProvider().getBundle());
+        List<BundleWire> providedA = wiringA.getProvidedWires(null);
+        Assert.assertEquals(0, providedA.size());
+
+        // verify wiring for B
+        XBundleRevision brevB = bundleB.getBundleRevision();
+        Assert.assertSame(bundleB, brevB.getBundle());
+        BundleWiring wiringB = brevB.getWiring();
+        List<BundleWire> requiredB = wiringB.getRequiredWires(null);
+        Assert.assertEquals(0, requiredB.size());
+        List<BundleWire> providedB = wiringB.getProvidedWires(null);
+        Assert.assertEquals(1, providedB.size());
+        BundleWire wireB = providedB.get(0);
+        Assert.assertSame(brevA, wireB.getRequirer());
+        Assert.assertSame(bundleB, wireB.getProvider().getBundle());
     }
 
     private JavaArchive getBundleA() {
@@ -152,10 +129,16 @@ public class ModuleInstallTestCase extends OSGiFrameworkTest {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
-                builder.addImportPackages("javax.inject");
+                builder.addImportPackages(ModuleServiceA.class);
                 return builder.openStream();
             }
         });
+        return archive;
+    }
+
+    private JavaArchive getModuleB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
+        archive.addClasses(ModuleServiceA.class);
         return archive;
     }
 }

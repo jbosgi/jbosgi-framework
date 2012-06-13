@@ -58,8 +58,6 @@ import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.spi.AbstractEnvironment;
-import org.osgi.framework.wiring.BundleRevision;
-import org.osgi.resource.Resource;
 import org.osgi.resource.Wire;
 import org.osgi.resource.Wiring;
 
@@ -108,8 +106,8 @@ final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Serv
     }
 
     @Override
-    public Wiring createWiring(Resource res, List<Wire> wires) {
-        BundleRevision brev = (BundleRevision) res;
+    public Wiring createWiring(XResource res, List<Wire> wires) {
+        XBundleRevision brev = (XBundleRevision) res;
         return new AbstractBundleWiring(brev, wires);
     }
 }

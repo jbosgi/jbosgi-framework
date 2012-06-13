@@ -230,8 +230,12 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
         Module module = brev.getAttachment(Module.class);
         if (module != null) {
-            getModuleLoaderProvider().addModule(module);
-            return module.getIdentifier();
+            ModuleIdentifier identifier = module.getIdentifier();
+            ModuleLoaderProvider provider = getModuleLoaderProvider();
+            if (provider.getModule(identifier) == null) {
+                provider.addModule(module);
+            }
+            return identifier;
         }
 
         ModuleIdentifier identifier;

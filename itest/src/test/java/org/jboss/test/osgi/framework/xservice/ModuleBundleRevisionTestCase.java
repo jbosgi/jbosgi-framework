@@ -62,6 +62,7 @@ import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
 
@@ -71,7 +72,7 @@ import org.osgi.resource.Requirement;
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jun-2012
  */
-public class ModuleBundleRevisionTestCase extends ModuleIntegrationTestCase {
+public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest {
 
     Module module;
     XBundleRevision brev;
@@ -115,8 +116,9 @@ public class ModuleBundleRevisionTestCase extends ModuleIntegrationTestCase {
         // getTypes
         Assert.assertEquals("Type is 0", 0, brev.getTypes());
         
-        // [TODO] getWiring
-        //Assert.assertNotNull("BundleWiring not null", brev.getWiring());
+        // getWiring
+        BundleWiring wiring = brev.getWiring();
+        Assert.assertNotNull("BundleWiring not null", wiring);
 
         // getCapabilities
         List<Capability> caps = brev.getCapabilities(null);

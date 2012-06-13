@@ -137,6 +137,14 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
     }
 
     @Override
+    public Module getModule(ModuleIdentifier identifier) {
+        final ModuleHolder moduleHolder = moduleSpecs.get(identifier);
+        final Module result = moduleHolder != null ? moduleHolder.getModule() : null;
+        LOGGER.tracef("getModule: %s => %s", identifier, result);
+        return result;
+    }
+    
+    @Override
     public void addModule(ModuleSpec moduleSpec) {
         LOGGER.tracef("addModule: %s", moduleSpec.getModuleIdentifier());
         ModuleIdentifier identifier = moduleSpec.getModuleIdentifier();

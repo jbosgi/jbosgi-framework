@@ -56,6 +56,7 @@ import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.spi.AbstractBundleRevision;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.resource.Wiring;
 
 /**
  * An abstract implementation that adapts a {@link Module} to a {@link BundleRevision}
@@ -75,6 +76,13 @@ public class AbstractBundleRevisionAdaptor extends AbstractBundleRevision implem
             throw MESSAGES.illegalArgumentNull("module");
         this.module = module;
         this.bundle = createBundle(context, module, this);
+        createWiring();
+    }
+
+    protected Wiring createWiring() {
+        Wiring wiring = new AbstractBundleWiring(this, null);
+        addAttachment(Wiring.class, wiring);
+        return wiring;
     }
 
     protected XBundle createBundle(BundleContext context, Module module, XBundleRevision bundleRev) {

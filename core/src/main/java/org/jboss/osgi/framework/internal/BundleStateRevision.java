@@ -126,11 +126,6 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
     }
     
     @Override
-    public BundleWiring getWiring() {
-        return getAttachment(BundleWiring.class);
-    }
-    
-    @Override
     public ModuleIdentifier getModuleIdentifier() {
         return getAttachment(ModuleIdentifier.class);
     }

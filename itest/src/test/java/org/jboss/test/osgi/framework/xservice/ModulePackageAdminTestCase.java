@@ -58,7 +58,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jun-2012
  */
-public class ModulePackageAdminTestCase extends ModuleIntegrationTestCase {
+public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
 
     Module module;
     XBundle bundle;

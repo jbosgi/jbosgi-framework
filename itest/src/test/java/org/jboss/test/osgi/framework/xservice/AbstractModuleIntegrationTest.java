@@ -76,7 +76,7 @@ import org.osgi.framework.BundleException;
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jun-2012
  */
-public abstract class ModuleIntegrationTestCase extends OSGiFrameworkTest {
+public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
 
     private Map<Module, VirtualFile> vfsmap = new HashMap<Module, VirtualFile>();
     
