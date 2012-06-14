@@ -262,7 +262,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     Set<XBundle> getBundles() {
         Set<XBundle> result = new HashSet<XBundle>();
         XEnvironment env = injectedEnvironment.getValue();
-        for (Resource aux : env.getResources(null)) {
+        for (Resource aux : env.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
             XBundle bundle = ((XBundleRevision) aux).getBundle();
             if (bundle.getState() != Bundle.UNINSTALLED)
                 result.add(bundle);
@@ -274,7 +274,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     public Set<XBundle> getBundles(Integer states) {
         Set<XBundle> result = new HashSet<XBundle>();
         XEnvironment env = injectedEnvironment.getValue();
-        for (Resource aux : env.getResources(null)) {
+        for (Resource aux : env.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
             XBundle bundle = ((XBundleRevision) aux).getBundle();
             if (states == null || (bundle.getState() & states.intValue()) != 0)
                 result.add(bundle);
@@ -288,7 +288,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
             return getFrameworkState().getSystemBundle();
         }
         XEnvironment env = injectedEnvironment.getValue();
-        Collection<XResource> resources = env.getResources(null);
+        Collection<XResource> resources = env.getResources(XEnvironment.ALL_IDENTITY_TYPES);
         for (Resource aux : resources) {
             XBundle bundle = ((XBundleRevision) aux).getBundle();
             if (bundle.getBundleId() == bundleId) {

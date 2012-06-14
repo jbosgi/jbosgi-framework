@@ -315,4 +315,7 @@ public interface FrameworkMessages {
 
     @Message(id = 11278, value = "Cannot obtain bundle from resource: %s")
     IllegalArgumentException illegalArgumentCannotObtainBundleFromResource(XResource res);
+
+    @Message(id = 11279, value = "Unsupported operation on bundle: %s")
+    BundleException bundleUnsupportedOpertaion(Bundle bundle);
 }

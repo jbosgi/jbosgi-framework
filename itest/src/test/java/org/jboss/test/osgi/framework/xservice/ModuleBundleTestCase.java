@@ -55,6 +55,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 
 /**
@@ -122,28 +123,26 @@ public class ModuleBundleTestCase extends AbstractModuleIntegrationTest {
         // start, stop, uninstall, update
         try {
             bundle.start();
-            Assert.fail("UnsupportedOperationException expected");
-        } catch (UnsupportedOperationException ex) {
+            Assert.fail("BundleException expected");
+        } catch (BundleException ex) {
             // expected
         }
         try {
             bundle.stop();
-            Assert.fail("UnsupportedOperationException expected");
-        } catch (UnsupportedOperationException ex) {
-            // expected
-        }
-        try {
-            bundle.uninstall();
-            Assert.fail("UnsupportedOperationException expected");
-        } catch (UnsupportedOperationException ex) {
+            Assert.fail("BundleException expected");
+        } catch (BundleException ex) {
             // expected
         }
         try {
             bundle.update();
-            Assert.fail("UnsupportedOperationException expected");
-        } catch (UnsupportedOperationException ex) {
+            Assert.fail("BundleException expected");
+        } catch (BundleException ex) {
             // expected
         }
+        
+        // uninstall
+        bundle.uninstall();
+        Assert.assertEquals(Bundle.UNINSTALLED, bundle.getState());
     }
 
     @Test

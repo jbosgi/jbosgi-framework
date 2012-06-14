@@ -215,7 +215,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         Set<ExportedPackage> result = new HashSet<ExportedPackage>();
         XEnvironment env = injectedEnvironment.getValue();
-        for (XResource res : env.getResources(null)) {
+        for (XResource res : env.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
             XBundleRevision brev = (XBundleRevision) res;
             if (brev.getWiring() != null && !brev.isFragment()) {
                 for (Capability cap : brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
@@ -400,7 +400,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         }
         Set<BundleRevision> resolve = new LinkedHashSet<BundleRevision>();
         for (Bundle aux : bundles) {
-            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(aux);
+            XBundle bundleState = (XBundle) aux;
             resolve.add(bundleState.getBundleRevision());
         }
 
@@ -472,12 +472,16 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
      *         version order, or <code>null</code> if no bundles are found.
      */
     @Override
-    public Bundle[] getBundles(String symbolicName, String versionRange) {
+    public Bundle[] getBundles(final String symbolicName, final String versionRange) {
         Set<Bundle> sortedSet = new TreeSet<Bundle>(new Comparator<Bundle>() {
             // Makes sure that the bundles are sorted correctly in the returned array
             // Matching bundles with the highest version should come first.
             public int compare(Bundle b1, Bundle b2) {
-                return b2.getVersion().compareTo(b1.getVersion());
+                if (symbolicName == null) {
+                    return (int)(b1.getBundleId() - b2.getBundleId());
+                } else {
+                    return b2.getVersion().compareTo(b1.getVersion());
+                }
             }
         });
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
@@ -572,8 +576,9 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 return null;
 
             Set<Bundle> bundles = new HashSet<Bundle>();
-            BundleWiring wiring = ((BundleRevision) capability.getResource()).getWiring();
-            for (BundleWire wire : wiring.getProvidedWires(capability.getNamespace())) {
+            XBundleRevision resource = (XBundleRevision) capability.getResource();
+            BundleWiring wiring = resource.getWiring();
+            for (BundleWire wire : wiring.getProvidedWires(PackageNamespace.PACKAGE_NAMESPACE)) {
                 BundleRevision req = wire.getRequirer();
                 bundles.add(req.getBundle());
             }

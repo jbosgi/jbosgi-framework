@@ -53,10 +53,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
+import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
@@ -86,6 +86,7 @@ import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
+import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XIdentityCapability;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
@@ -109,17 +110,18 @@ import org.osgi.resource.Resource;
 final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
+    private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
     private final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     private final InjectedValue<FrameworkModuleProvider> injectedModuleProvider = new InjectedValue<FrameworkModuleProvider>();
     private final InjectedValue<ModuleLoaderProvider> injectedModuleLoader = new InjectedValue<ModuleLoaderProvider>();
-    private final Map<ModuleIdentifier, BundleRevision> bundleRevisionMap = new ConcurrentHashMap<ModuleIdentifier, BundleRevision>();
     private Module frameworkModule;
 
     static void addService(ServiceTarget serviceTarget) {
         ModuleManagerPlugin service = new ModuleManagerPlugin();
         ServiceBuilder<ModuleManagerPlugin> builder = serviceTarget.addService(InternalServices.MODULE_MANGER_PLUGIN, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
         builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, service.injectedModuleProvider);
         builder.addDependency(IntegrationServices.MODULE_LOADER_PROVIDER, ModuleLoaderProvider.class, service.injectedModuleLoader);
@@ -136,9 +138,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         super.start(context);
         FrameworkModuleProvider moduleProvider = injectedModuleProvider.getValue();
         SystemBundleState systemBundle = injectedSystemBundle.getValue();
-        SystemBundleRevision systemRevision = systemBundle.getBundleRevision();
         frameworkModule = moduleProvider.getFrameworkModule(systemBundle);
-        bundleRevisionMap.put(frameworkModule.getIdentifier(), systemRevision);
     }
 
     @Override
@@ -177,7 +177,6 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             identifier = getModuleLoaderProvider().getModuleIdentifier(brev, revision);
         }
 
-        brev.addAttachment(ModuleIdentifier.class, identifier);
         return identifier;
     }
 
@@ -201,8 +200,16 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      * Get the associated bundle revision for the given identifier
      * @return The revision or null
      */
-    BundleRevision getBundleRevision(ModuleIdentifier identifier) {
-        return bundleRevisionMap.get(identifier);
+    XBundleRevision getBundleRevision(ModuleIdentifier identifier) {
+        XBundleRevision result = null;
+        XEnvironment env = injectedEnvironment.getValue();
+        for (XResource res : env.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
+            Module module = res.getAttachment(Module.class);
+            if (module != null && module.getIdentifier().equals(identifier)) {
+                result = (XBundleRevision) res;
+            }
+        }
+        return result;
     }
 
     /**
@@ -217,6 +224,10 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         if (loader instanceof BundleReference) {
             BundleReference bundleRef = (BundleReference) loader;
             result = (XBundle) bundleRef.getBundle();
+        } else if (loader instanceof ModuleClassLoader) {
+            Module module = ((ModuleClassLoader) loader).getModule();
+            XBundleRevision brev = getBundleRevision(module.getIdentifier());
+            result = brev != null ? brev.getBundle() : null; 
         }
         if (result == null)
             LOGGER.debugf("Cannot obtain bundle for: %s", clazz.getName());
@@ -345,7 +356,6 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         // Build the ModuleSpec
         ModuleSpec moduleSpec = specBuilder.create();
 
-        bundleRevisionMap.put(identifier, hostRev);
         getModuleLoaderProvider().addModule(moduleSpec);
         return identifier;
     }
@@ -565,7 +575,6 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      * Remove the module with the given identifier
      */
     void removeModule(ModuleIdentifier identifier) {
-        bundleRevisionMap.remove(identifier);
         getModuleLoaderProvider().removeModule(identifier);
     }
 

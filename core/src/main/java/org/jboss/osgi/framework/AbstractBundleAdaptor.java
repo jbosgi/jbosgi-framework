@@ -42,6 +42,7 @@
  */
 package org.jboss.osgi.framework;
 
+import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PROVIDER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
@@ -55,8 +56,11 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.modules.Module;
+import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -76,6 +80,7 @@ public class AbstractBundleAdaptor implements XBundle {
     private final XBundleRevision bundlerev;
     private final Module module;
     private long lastModified;
+    private int bundleState;
 
     public AbstractBundleAdaptor(BundleContext context, Module module, XBundleRevision bundlerev) {
         if (context == null)
@@ -88,6 +93,7 @@ public class AbstractBundleAdaptor implements XBundle {
         this.module = module;
         this.bundlerev = bundlerev;
         this.lastModified = System.currentTimeMillis();
+        this.bundleState = Bundle.RESOLVED;
     }
 
     @Override
@@ -108,7 +114,7 @@ public class AbstractBundleAdaptor implements XBundle {
 
     @Override
     public int getState() {
-        return Bundle.RESOLVED;
+        return bundleState;
     }
 
     @Override
@@ -119,8 +125,13 @@ public class AbstractBundleAdaptor implements XBundle {
         } catch (IllegalArgumentException ex) {
             return Version.emptyVersion;
         }
-    };
+    }
 
+    @Override
+    public String getCanonicalName() {
+        return getSymbolicName() + ":" + getVersion();
+    }
+    
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         return module.getClassLoader().loadClass(name);
@@ -140,37 +151,47 @@ public class AbstractBundleAdaptor implements XBundle {
 
     @Override
     public void start(int options) throws BundleException {
-        throw new UnsupportedOperationException();
+        throw MESSAGES.bundleUnsupportedOpertaion(this);
     }
 
     @Override
     public void start() throws BundleException {
-        throw new UnsupportedOperationException();
+        throw MESSAGES.bundleUnsupportedOpertaion(this);
     }
 
     @Override
     public void stop(int options) throws BundleException {
-        throw new UnsupportedOperationException();
+        throw MESSAGES.bundleUnsupportedOpertaion(this);
     }
 
     @Override
     public void stop() throws BundleException {
-        throw new UnsupportedOperationException();
+        throw MESSAGES.bundleUnsupportedOpertaion(this);
     }
 
     @Override
     public void update(InputStream input) throws BundleException {
-        throw new UnsupportedOperationException();
+        throw MESSAGES.bundleUnsupportedOpertaion(this);
     }
 
     @Override
     public void update() throws BundleException {
-        throw new UnsupportedOperationException();
+        throw MESSAGES.bundleUnsupportedOpertaion(this);
     }
 
     @Override
     public void uninstall() throws BundleException {
-        throw new UnsupportedOperationException();
+        XBundle sysbundle = (XBundle) context.getBundle();
+        // Uninstall from the environment
+        XEnvironment env = sysbundle.adapt(XEnvironment.class);
+        env.uninstallResources(getBundleRevision());
+        // Remove from the module loader
+        BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
+        ServiceContainer serviceContainer = bundleManager.getServiceContainer();
+        ServiceController<?> service = serviceContainer.getRequiredService(MODULE_LOADER_PROVIDER);
+        ModuleLoaderProvider provider = (ModuleLoaderProvider) service.getValue();
+        provider.removeModule(module.getIdentifier());
+        bundleState = Bundle.UNINSTALLED;
     }
 
     @Override
@@ -266,4 +287,24 @@ public class AbstractBundleAdaptor implements XBundle {
         return Collections.singletonList(bundlerev);
     }
 
+    @Override
+    public int hashCode() {
+        return (int) getBundleId() * 51;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof XBundle == false)
+            return false;
+        if (obj == this)
+            return true;
+
+        XBundle other = (XBundle) obj;
+        return getBundleId() == other.getBundleId();
+    }
+
+    @Override
+    public String toString() {
+        return getCanonicalName();
+    }
 }

@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.ServiceBuilder;
@@ -191,7 +192,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
     private Collection<? extends Resource> findAttachableFragments(Collection<? extends Capability> hostcaps) {
         Set<Resource> result = new HashSet<Resource>();
         XEnvironment env = injectedEnvironment.getValue();
-        for (Resource res : env.getResources(Collections.singleton(IdentityNamespace.TYPE_FRAGMENT))) {
+        for (Resource res : env.getResources(IdentityNamespace.TYPE_FRAGMENT)) {
             Requirement req = res.getRequirements(HostNamespace.HOST_NAMESPACE).get(0);
             XRequirement xreq = (XRequirement) req;
             for (Capability cap : hostcaps) {
@@ -291,7 +292,8 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
             XBundleRevision brev = (XBundleRevision) entry.getKey();
             if (brev.isFragment() == false) {
                 List<BundleWire> wires = wiremap.get(brev);
-                moduleManager.addModule(brev, wires);
+                ModuleIdentifier identifier = moduleManager.addModule(brev, wires);
+                brev.addAttachment(ModuleIdentifier.class, identifier);
             }
         }
     }
@@ -299,11 +301,12 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
     private void loadModules(Map<BundleRevision, List<BundleWire>> wiremap) {
         ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
         for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
-            XBundleRevision res = (XBundleRevision) entry.getKey();
-            if (res.isFragment() == false) {
-                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(res);
+            XBundleRevision brev = (XBundleRevision) entry.getKey();
+            if (brev.isFragment() == false) {
+                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(brev);
                 try {
-                    moduleManager.loadModule(identifier);
+                    Module module = moduleManager.loadModule(identifier);
+                    brev.addAttachment(Module.class, module);
                 } catch (ModuleLoadException ex) {
                     throw FrameworkMessages.MESSAGES.illegalStateCannotLoadModule(ex, identifier);
                 }

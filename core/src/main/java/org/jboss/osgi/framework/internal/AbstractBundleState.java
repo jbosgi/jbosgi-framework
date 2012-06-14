@@ -73,8 +73,6 @@ import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageStat
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
-import org.jboss.osgi.resolver.XBundleRevision;
-import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -84,7 +82,6 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
-import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.resource.Wire;
 import org.osgi.service.resolver.ResolutionException;
@@ -637,7 +634,8 @@ abstract class AbstractBundleState implements XBundle {
         return (AbstractBundleState) bundle;
     }
 
-    String getCanonicalName() {
+    @Override
+    public String getCanonicalName() {
         OSGiMetaData metadata = getOSGiMetaData();
         String name = metadata.getBundleSymbolicName();
         name = name != null ? name : metadata.getBundleName();
@@ -651,12 +649,12 @@ abstract class AbstractBundleState implements XBundle {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof AbstractBundleState == false)
+        if (obj instanceof XBundle == false)
             return false;
         if (obj == this)
             return true;
 
-        AbstractBundleState other = (AbstractBundleState) obj;
+        XBundle other = (XBundle) obj;
         return getBundleId() == other.getBundleId();
     }
 

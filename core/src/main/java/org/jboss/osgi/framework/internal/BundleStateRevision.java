@@ -150,6 +150,8 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
 
     void refreshRevisionInternal() {
         removeAttachment(BundleWiring.class);
+        removeAttachment(ModuleIdentifier.class);
+        removeAttachment(Module.class);
     }
 
     @Override
