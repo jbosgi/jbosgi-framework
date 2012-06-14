@@ -53,6 +53,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.osgi.framework.AbstractBundleWiring;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -106,8 +107,8 @@ final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Serv
     }
 
     @Override
-    public Wiring createWiring(XResource res, List<Wire> wires) {
+    public Wiring createWiring(XResource res, List<Wire> required, List<Wire> provided) {
         XBundleRevision brev = (XBundleRevision) res;
-        return new AbstractBundleWiring(brev, wires);
+        return new AbstractBundleWiring(brev, required, provided);
     }
 }

@@ -46,7 +46,9 @@ import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
@@ -56,6 +58,7 @@ import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.spi.AbstractBundleRevision;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.resource.Wire;
 import org.osgi.resource.Wiring;
 
 /**
@@ -80,7 +83,7 @@ public class AbstractBundleRevisionAdaptor extends AbstractBundleRevision implem
     }
 
     protected Wiring createWiring() {
-        Wiring wiring = new AbstractBundleWiring(this, null);
+        Wiring wiring = new AbstractBundleWiring(this, null, null);
         addAttachment(Wiring.class, wiring);
         return wiring;
     }

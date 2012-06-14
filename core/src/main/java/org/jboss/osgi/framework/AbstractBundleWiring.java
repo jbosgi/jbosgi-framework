@@ -65,10 +65,10 @@ import org.osgi.resource.Wire;
  * @author thomas.diesler@jboss.com
  * @since 23-Feb-2012
  */
-class AbstractBundleWiring extends AbstractWiring implements BundleWiring {
+public class AbstractBundleWiring extends AbstractWiring implements BundleWiring {
 
-    AbstractBundleWiring(XBundleRevision brev, List<Wire> wires) {
-        super(brev, wires);
+    public AbstractBundleWiring(XBundleRevision brev, List<Wire> required, List<Wire> provided) {
+        super(brev, required, provided);
     }
 
     @Override
