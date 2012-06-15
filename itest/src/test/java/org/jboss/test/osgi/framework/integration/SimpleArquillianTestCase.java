@@ -40,7 +40,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.framework.jaxp;
+package org.jboss.test.osgi.framework.integration;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
@@ -48,71 +48,91 @@ import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.test.osgi.framework.simple.bundleA.SimpleActivator;
+import org.jboss.test.osgi.framework.simple.bundleA.SimpleService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
+import org.osgi.framework.ServiceReference;
 
 import javax.inject.Inject;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.InputStream;
-import java.net.URL;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * A test that uses a DOM parser to read an XML document.
+ * A test that deployes a bundle and verifies its state
  *
  * @author thomas.diesler@jboss.com
- * @since 21-Jul-2009
+ * @since 18-Aug-2009
  */
 @RunWith(Arquillian.class)
-public class DocumentBuilderTestCase {
-
-    @Inject
-    public static BundleContext context;
-
-    @Inject
-    public Bundle bundle;
+public class SimpleArquillianTestCase {
 
     @Deployment
-    public static JavaArchive createdeployment() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "dom-parser.jar");
-        archive.addAsResource("jaxp/simple.xml");
+    public static JavaArchive createDeployment() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-arquillian");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleManifestVersion(2);
-                builder.addImportPackages(DocumentBuilder.class, Document.class);
+                builder.addBundleActivator(SimpleActivator.class.getName());
+                builder.addExportPackages(SimpleService.class);
+                builder.addImportPackages(BundleActivator.class);
                 return builder.openStream();
             }
         });
+        archive.addClasses(SimpleActivator.class, SimpleService.class);
         return archive;
     }
 
+    @Inject
+    public BundleContext context;
+
     @Test
-    public void testDOMParser() throws Exception {
+    public void testBundleContextInjection() throws Exception {
+        assertNotNull("BundleContext injected", context);
+        assertEquals("System Bundle ID", 0, context.getBundle().getBundleId());
+    }
 
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        factory.setValidating(false);
+    @Inject
+    public Bundle bundle;
 
-        DocumentBuilder domBuilder = factory.newDocumentBuilder();
-        URL resURL = bundle.getResource("jaxp/simple.xml");
-        Document dom = domBuilder.parse(resURL.openStream());
-        assertNotNull("Document not null", dom);
+    @Test
+    public void testBundleInjection() throws Exception {
+        // Assert that the bundle is injected
+        assertNotNull("Bundle injected", bundle);
 
-        Element root = dom.getDocumentElement();
-        assertEquals("root", root.getLocalName());
+        // Assert that the bundle is in state RESOLVED
+        // Note when the test bundle contains the test case it
+        // must be resolved already when this test method is called
+        assertEquals("Bundle RESOLVED", Bundle.RESOLVED, bundle.getState());
 
-        Node child = root.getFirstChild();
-        assertEquals("child", child.getLocalName());
-        assertEquals("content", child.getTextContent());
+        // Start the bundle
+        bundle.start();
+        assertEquals("Bundle ACTIVE", Bundle.ACTIVE, bundle.getState());
+
+        // Assert the bundle context
+        BundleContext context = bundle.getBundleContext();
+        assertNotNull("BundleContext available", context);
+
+        // Get the service reference
+        ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
+        assertNotNull("ServiceReference not null", sref);
+
+        // Get the service for the reference
+        SimpleService service = (SimpleService) context.getService(sref);
+        assertNotNull("Service not null", service);
+
+        // Invoke the service
+        assertEquals("hello", service.echo("hello"));
+
+        // Stop the bundle
+        bundle.stop();
+        assertEquals("Bundle RESOLVED", Bundle.RESOLVED, bundle.getState());
     }
 }

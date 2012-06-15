@@ -47,7 +47,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.Service;
-import org.jboss.osgi.resolver.XResource;
+import org.jboss.osgi.resolver.XBundleRevision;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -67,6 +67,5 @@ public interface ModuleLoaderProvider extends Service<ModuleLoaderProvider> {
     
     void removeModule(ModuleIdentifier identifier);
 
-    // [TODO] remove or explain why
-    ModuleIdentifier getModuleIdentifier(XResource resource, int revision);
+    ModuleIdentifier getModuleIdentifier(XBundleRevision brev);
 }

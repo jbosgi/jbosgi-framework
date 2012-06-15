@@ -40,31 +40,63 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.framework.xservice.moduleB;
+package org.jboss.test.osgi.framework.xservice.moduleX;
 
-import org.jboss.test.osgi.framework.xservice.bundleB.BundleServiceB;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
+import org.jboss.modules.ModuleLoadException;
+import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.StopContext;
+import org.jboss.osgi.modules.ModuleActivator;
+import org.jboss.osgi.modules.ModuleContext;
 
 /**
- * A SimpleService
+ * A Service Activator
  * 
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
-public class ModuleServiceB {
+public class ModuleActivatorX implements ModuleActivator {
 
-    Bundle owner;
+    private ServiceName serviceName;
 
-    ModuleServiceB(Bundle owner) {
-        this.owner = owner;
+    @Override
+    public void start(final ModuleContext context) throws ModuleLoadException {
+        ServiceTarget serviceTarget = context.getServiceContainer().subTarget();
+        serviceName = context.getServiceName(ModuleServiceX.class);
+
+        Service<ModuleServiceX> service = new Service<ModuleServiceX>() {
+
+            ModuleServiceX value = new ModuleServiceX(context.getBundle());
+
+            @Override
+            public ModuleServiceX getValue() throws IllegalStateException {
+                return value;
+            }
+
+            @Override
+            public void start(StartContext context) throws StartException {
+            }
+
+            @Override
+            public void stop(StopContext context) {
+            }
+        };
+
+        ServiceBuilder<ModuleServiceX> serviceBuilder = serviceTarget.addService(serviceName, service);
+        serviceBuilder.setInitialMode(Mode.PASSIVE).install();
     }
 
-    public String echo(String msg) {
-        BundleContext context = owner.getBundleContext();
-        ServiceReference sref = context.getServiceReference(BundleServiceB.class.getName());
-        BundleServiceB service = (BundleServiceB) context.getService(sref);
-        return service.echo(msg + ":" + owner.getSymbolicName());
+    @Override
+    public void stop(ModuleContext context) {
+        if (serviceName != null) {
+            ServiceController<?> service = context.getServiceContainer().getService(serviceName);
+            service.setMode(Mode.REMOVE);
+        }
     }
 }

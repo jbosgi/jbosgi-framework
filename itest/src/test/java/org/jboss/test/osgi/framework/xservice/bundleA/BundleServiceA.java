@@ -42,7 +42,7 @@
  */
 package org.jboss.test.osgi.framework.xservice.bundleA;
 
-import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
+import org.jboss.test.osgi.framework.xservice.moduleX.ModuleServiceX;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -63,8 +63,8 @@ public class BundleServiceA {
 
     public String echo(String msg) {
         BundleContext context = owner.getBundleContext();
-        ServiceReference sref = context.getServiceReference(ModuleServiceA.class.getName());
-        ModuleServiceA service = (ModuleServiceA) context.getService(sref);
+        ServiceReference sref = context.getServiceReference(ModuleServiceX.class.getName());
+        ModuleServiceX service = (ModuleServiceX) context.getService(sref);
         return service.echo(msg + ":" + owner);
     }
 }

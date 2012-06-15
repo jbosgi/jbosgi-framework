@@ -173,8 +173,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         } else if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getSymbolicName())) {
             identifier = getFrameworkModule().getIdentifier();
         } else {
-            int revision = brev.getRevisionId();
-            identifier = getModuleLoaderProvider().getModuleIdentifier(brev, revision);
+            identifier = getModuleLoaderProvider().getModuleIdentifier(brev);
         }
 
         return identifier;

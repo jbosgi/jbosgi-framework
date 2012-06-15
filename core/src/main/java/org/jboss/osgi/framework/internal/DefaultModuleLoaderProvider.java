@@ -47,6 +47,7 @@ import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PROVIDE
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -63,8 +64,8 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.framework.ModuleLoaderProvider;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XIdentityCapability;
-import org.jboss.osgi.resolver.XResource;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -129,11 +130,14 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
     }
 
     @Override
-    public ModuleIdentifier getModuleIdentifier(XResource resource, int rev) {
-        XIdentityCapability icap = resource.getIdentityCapability();
+    public ModuleIdentifier getModuleIdentifier(XBundleRevision brev) {
+        XIdentityCapability icap = brev.getIdentityCapability();
+        List<XBundleRevision> allrevs = brev.getBundle().getAllBundleRevisions();
         String name = icap.getSymbolicName();
-        String slot = icap.getVersion() + (rev > 0 ? "-rev" + rev : "");
-        return ModuleIdentifier.create(JBOSGI_PREFIX + "." + name, slot);
+        if (allrevs.size() > 1) {
+            name += "-rev" + (allrevs.size() - 1);
+        }
+        return ModuleIdentifier.create(JBOSGI_PREFIX + "." + name, "" + icap.getVersion());
     }
 
     @Override

@@ -53,7 +53,7 @@ import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
+import org.jboss.test.osgi.framework.xservice.moduleX.ModuleServiceX;
 import org.junit.Assert;
 import org.junit.Test;
 import org.osgi.framework.BundleException;
@@ -87,7 +87,7 @@ public class ModuleInstallTestCase extends AbstractModuleIntegrationTest {
             Requirement req = reqs.iterator().next();
             String namespace = req.getNamespace();
             Assert.assertEquals(PackageNamespace.PACKAGE_NAMESPACE, namespace);
-            Assert.assertEquals(ModuleServiceA.class.getPackage().getName(), req.getAttributes().get(namespace));
+            Assert.assertEquals(ModuleServiceX.class.getPackage().getName(), req.getAttributes().get(namespace));
         }
 
         Module moduleB = loadModule(getModuleB());
@@ -95,7 +95,7 @@ public class ModuleInstallTestCase extends AbstractModuleIntegrationTest {
         Assert.assertEquals(bundleA.getBundleId() + 1, bundleB.getBundleId());
 
         bundleA.start();
-        assertLoadClass(bundleA, ModuleServiceA.class.getName(), bundleB);
+        assertLoadClass(bundleA, ModuleServiceX.class.getName(), bundleB);
 
         // verify wiring for A
         XBundleRevision brevA = bundleA.getBundleRevision();
@@ -129,7 +129,7 @@ public class ModuleInstallTestCase extends AbstractModuleIntegrationTest {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
-                builder.addImportPackages(ModuleServiceA.class);
+                builder.addImportPackages(ModuleServiceX.class);
                 return builder.openStream();
             }
         });
@@ -138,7 +138,7 @@ public class ModuleInstallTestCase extends AbstractModuleIntegrationTest {
 
     private JavaArchive getModuleB() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
-        archive.addClasses(ModuleServiceA.class);
+        archive.addClasses(ModuleServiceX.class);
         return archive;
     }
 }

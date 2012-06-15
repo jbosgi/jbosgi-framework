@@ -84,7 +84,6 @@ import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWire;
-import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
 import org.osgi.resource.Resource;
@@ -147,7 +146,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         Map<Resource, List<Wire>> wiremap = resolve(mandatory, optional);
         for (Entry<Resource, Wiring> entry : applyResolverResults(wiremap).entrySet()) {
             XBundleRevision res = (XBundleRevision) entry.getKey();
-            res.addAttachment(BundleWiring.class, (BundleWiring)entry.getValue());
+            res.addAttachment(Wiring.class, entry.getValue());
         }
     }
 

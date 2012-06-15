@@ -49,7 +49,7 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.testing.OSGiTestHelper;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
+import org.jboss.test.osgi.framework.xservice.moduleX.ModuleServiceX;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -106,7 +106,7 @@ public class ModuleBundleTestCase extends AbstractModuleIntegrationTest {
         
         // [TODO] Add support for entry/resource related APIs on Module adaptors
         // https://issues.jboss.org/browse/JBOSGI-566
-        String resname = ModuleServiceA.class.getName().replace('.', '/').concat(".class");
+        String resname = ModuleServiceX.class.getName().replace('.', '/').concat(".class");
         Assert.assertNull(bundle.getResource(resname));
         Assert.assertNull(bundle.getResources(resname));
         Assert.assertNull(bundle.findEntries(resname, null, true));
@@ -118,7 +118,7 @@ public class ModuleBundleTestCase extends AbstractModuleIntegrationTest {
         Assert.assertNull(bundle.getServicesInUse());
 
         // loadClass
-        OSGiTestHelper.assertLoadClass(bundle, ModuleServiceA.class.getName());
+        OSGiTestHelper.assertLoadClass(bundle, ModuleServiceX.class.getName());
         
         // start, stop, uninstall, update
         try {
@@ -152,7 +152,7 @@ public class ModuleBundleTestCase extends AbstractModuleIntegrationTest {
     
     private JavaArchive getModuleA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-        archive.addClasses(ModuleServiceA.class);
+        archive.addClasses(ModuleServiceX.class);
         return archive;
     }
 }

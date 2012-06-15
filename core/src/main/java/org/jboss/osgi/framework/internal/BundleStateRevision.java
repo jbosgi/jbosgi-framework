@@ -59,7 +59,7 @@ import org.jboss.osgi.resolver.XResourceBuilderFactory;
 import org.jboss.osgi.resolver.spi.AbstractBundleRevision;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.wiring.BundleWiring;
+import org.osgi.resource.Wiring;
 
 /**
  * An abstract bundle revision.
@@ -105,8 +105,7 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
         return getSymbolicName() + ":" + getVersion();
     }
 
-    @Override
-    public int getRevisionId() {
+    int getRevisionId() {
         return revision;
     }
 
@@ -149,7 +148,7 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
     }
 
     void refreshRevisionInternal() {
-        removeAttachment(BundleWiring.class);
+        removeAttachment(Wiring.class);
         removeAttachment(ModuleIdentifier.class);
         removeAttachment(Module.class);
     }

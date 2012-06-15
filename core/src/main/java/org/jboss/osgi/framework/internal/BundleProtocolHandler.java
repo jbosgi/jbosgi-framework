@@ -42,6 +42,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
@@ -68,6 +69,7 @@ public class BundleProtocolHandler extends AbstractURLStreamHandlerService {
 
     @Override
     public URLConnection openConnection(URL url) throws IOException {
+        LOGGER.tracef("openConnection: %s", url);
         RevisionContent revContent = RevisionContent.findRevisionContent(bundleManager, url.getHost());
         if (revContent == null)
             throw MESSAGES.ioCannotObtainRevisionContent(url);

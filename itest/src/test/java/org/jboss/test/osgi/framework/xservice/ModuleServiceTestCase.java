@@ -58,10 +58,10 @@ import org.jboss.test.osgi.framework.xservice.bundleA.BundleActivatorA;
 import org.jboss.test.osgi.framework.xservice.bundleA.BundleServiceA;
 import org.jboss.test.osgi.framework.xservice.bundleB.BundleActivatorB;
 import org.jboss.test.osgi.framework.xservice.bundleB.BundleServiceB;
-import org.jboss.test.osgi.framework.xservice.moduleA.ModuleActivatorA;
-import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
-import org.jboss.test.osgi.framework.xservice.moduleB.ModuleActivatorB;
-import org.jboss.test.osgi.framework.xservice.moduleB.ModuleServiceB;
+import org.jboss.test.osgi.framework.xservice.moduleX.ModuleActivatorX;
+import org.jboss.test.osgi.framework.xservice.moduleX.ModuleServiceX;
+import org.jboss.test.osgi.framework.xservice.moduleY.ModuleActivatorY;
+import org.jboss.test.osgi.framework.xservice.moduleY.ModuleServiceY;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -78,37 +78,37 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testModuleService() throws Exception {
-        Bundle moduleAS = installBundle(getModuleAS());
+        Bundle bundleXS = installBundle(getModuleXS());
         try {
-            assertNotNull("Bundle not null", moduleAS);
-            assertEquals("moduleAS", moduleAS.getSymbolicName());
-            assertEquals(Version.parseVersion("1.0"), moduleAS.getVersion());
+            assertNotNull("Bundle not null", bundleXS);
+            assertEquals("moduleXS", bundleXS.getSymbolicName());
+            assertEquals(Version.parseVersion("1.0"), bundleXS.getVersion());
 
-            moduleAS.start();
-            assertBundleState(Bundle.ACTIVE, moduleAS.getState());
+            bundleXS.start();
+            assertBundleState(Bundle.ACTIVE, bundleXS.getState());
 
-            BundleContext context = moduleAS.getBundleContext();
+            BundleContext context = bundleXS.getBundleContext();
             assertNotNull("Context not null", context);
 
-            ServiceReference sref = context.getServiceReference(ModuleServiceA.class.getName());
+            ServiceReference sref = context.getServiceReference(ModuleServiceX.class.getName());
             assertNotNull("Service ref not null", sref);
 
             Object service = context.getService(sref);
             assertNotNull("Service not null", service);
 
             String was = invokeService(service, "hello");
-            assertEquals("hello:moduleAS", was);
+            assertEquals("hello:moduleXS", was);
 
-            moduleAS.stop();
-            assertBundleState(Bundle.RESOLVED, moduleAS.getState());
+            bundleXS.stop();
+            assertBundleState(Bundle.RESOLVED, bundleXS.getState());
         } finally {
-            moduleAS.uninstall();
+            bundleXS.uninstall();
         }
     }
 
     @Test
     public void testModuleDependsOnBundle() throws Exception {
-        Bundle moduleBS = installBundle(getModuleBS());
+        Bundle bundleYS = installBundle(getModuleYS());
         try {
             // Install the dependent bundle
             Bundle bundleB = installBundle(getBundleB());
@@ -116,21 +116,21 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest {
                 bundleB.start();
                 assertBundleState(Bundle.ACTIVE, bundleB.getState());
 
-                moduleBS.start();
-                assertBundleState(Bundle.ACTIVE, moduleBS.getState());
+                bundleYS.start();
+                assertBundleState(Bundle.ACTIVE, bundleYS.getState());
 
-                BundleContext context = moduleBS.getBundleContext();
-                ServiceReference sref = context.getServiceReference(ModuleServiceB.class.getName());
+                BundleContext context = bundleYS.getBundleContext();
+                ServiceReference sref = context.getServiceReference(ModuleServiceY.class.getName());
                 String was = invokeService(context.getService(sref), "hello");
-                assertEquals("hello:moduleBS:xservice.bundleB:1.0.0", was);
+                assertEquals("hello:moduleYS:bundleB:1.0.0", was);
             } finally {
                 bundleB.uninstall();
             }
 
-            moduleBS.stop();
-            assertBundleState(Bundle.RESOLVED, moduleBS.getState());
+            bundleYS.stop();
+            assertBundleState(Bundle.RESOLVED, bundleYS.getState());
         } finally {
-            moduleBS.uninstall();
+            bundleYS.uninstall();
         }
     }
 
@@ -139,10 +139,10 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest {
         Bundle bundleA = installBundle(getBundleA());
         try {
             // Install the dependent module
-            Bundle moduleAS = installBundle(getModuleAS());
+            Bundle bundleXS = installBundle(getModuleXS());
             try {
-                moduleAS.start();
-                assertBundleState(Bundle.ACTIVE, moduleAS.getState());
+                bundleXS.start();
+                assertBundleState(Bundle.ACTIVE, bundleXS.getState());
 
                 bundleA.start();
                 assertBundleState(Bundle.ACTIVE, bundleA.getState());
@@ -150,9 +150,9 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest {
                 BundleContext context = bundleA.getBundleContext();
                 ServiceReference sref = context.getServiceReference(BundleServiceA.class.getName());
                 String was = invokeService(context.getService(sref), "hello");
-                assertEquals("hello:bundleA:1.0.0:moduleAS", was);
+                assertEquals("hello:bundleA:1.0.0:moduleXS", was);
             } finally {
-                moduleAS.uninstall();
+                bundleXS.uninstall();
             }
 
             bundleA.stop();
@@ -178,7 +178,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest {
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleVersion("1.0.0");
                 builder.addBundleActivator(BundleActivatorA.class);
-                builder.addRequireBundle("moduleAS;bundle-version:=1.0.0");
+                builder.addRequireBundle("moduleXS;bundle-version:=1.0.0");
                 builder.addImportPackages("org.osgi.framework");
                 return builder.openStream();
             }
@@ -187,7 +187,7 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest {
     }
 
     private JavaArchive getBundleB() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "xservice.bundleB");
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleB");
         archive.addClasses(BundleActivatorB.class, BundleServiceB.class);
         archive.setManifest(new Asset() {
             public InputStream openStream() {
@@ -204,17 +204,17 @@ public class ModuleServiceTestCase extends OSGiFrameworkTest {
         return archive;
     }
 
-    private JavaArchive getModuleAS() {
-        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleAS");
-        archive.addClasses(ModuleActivatorA.class, ModuleServiceA.class);
-        archive.addAsManifestResource(getResourceFile("xservice/moduleAS/META-INF/jbosgi-xservice.properties"));
+    private JavaArchive getModuleXS() {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleXS");
+        archive.addClasses(ModuleActivatorX.class, ModuleServiceX.class);
+        archive.addAsManifestResource(getResourceFile("xservice/moduleXS/META-INF/jbosgi-xservice.properties"));
         return archive;
     }
 
-    private JavaArchive getModuleBS() {
-        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleBS");
-        archive.addClasses(ModuleActivatorB.class, ModuleServiceB.class);
-        archive.addAsManifestResource(getResourceFile("xservice/moduleBS/META-INF/jbosgi-xservice.properties"));
+    private JavaArchive getModuleYS() {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleYS");
+        archive.addClasses(ModuleActivatorY.class, ModuleServiceY.class);
+        archive.addAsManifestResource(getResourceFile("xservice/moduleYS/META-INF/jbosgi-xservice.properties"));
         return archive;
     }
 }

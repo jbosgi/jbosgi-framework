@@ -42,10 +42,15 @@
  */
 package org.jboss.test.osgi.framework.xservice;
 
+import static org.osgi.framework.namespace.BundleNamespace.BUNDLE_NAMESPACE;
+import static org.osgi.framework.namespace.PackageNamespace.PACKAGE_NAMESPACE;
 
 import java.io.InputStream;
+import java.util.Collections;
+import java.util.List;
 
 import org.jboss.modules.Module;
+import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -55,162 +60,57 @@ import org.jboss.test.osgi.framework.xservice.bundleA.BundleActivatorA;
 import org.jboss.test.osgi.framework.xservice.bundleA.BundleServiceA;
 import org.jboss.test.osgi.framework.xservice.bundleB.BundleActivatorB;
 import org.jboss.test.osgi.framework.xservice.bundleB.BundleServiceB;
-import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
-import org.jboss.test.osgi.framework.xservice.moduleB.ModuleServiceB;
+import org.jboss.test.osgi.framework.xservice.moduleX.ModuleServiceX;
+import org.jboss.test.osgi.framework.xservice.moduleY.ModuleServiceY;
 import org.junit.Assert;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
+import org.osgi.framework.wiring.BundleWire;
+import org.osgi.framework.wiring.BundleWiring;
 
 /**
  * Test that an MSC module can have a dependency on an OSGi bundle and vice versa.
- *
+ * 
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jul-2010
  */
 public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
 
     @Test
-    public void testSimpleModuleOne() throws Exception {
+    public void testSimpleModule() throws Exception {
         // Install module to {@link XEnvironment} directly
-        Module moduleA = loadModule(getModuleA());
-        XBundle bundleA = installResource(moduleA).getBundle();
+        Module moduleX = loadModule(getModuleX());
+        XBundle bundleX = installResource(moduleX).getBundle();
         try {
-            Assert.assertNotNull("Bundle not null", bundleA);
-            Assert.assertEquals("moduleA", bundleA.getSymbolicName());
-            Assert.assertEquals(Version.emptyVersion, bundleA.getVersion());
+            Assert.assertNotNull("Bundle not null", bundleX);
+            Assert.assertEquals("moduleX", bundleX.getSymbolicName());
+            Assert.assertEquals(Version.parseVersion("1.0"), bundleX.getVersion());
 
-            assertLoadClass(bundleA, ModuleServiceA.class.getName());
-            assertLoadClassFail(bundleA, ModuleServiceB.class.getName());
-            assertBundleState(Bundle.RESOLVED, bundleA.getState());
+            assertLoadClass(bundleX, ModuleServiceX.class.getName());
+            assertLoadClassFail(bundleX, ModuleServiceY.class.getName());
+            assertBundleState(Bundle.RESOLVED, bundleX.getState());
 
             try {
-                bundleA.start();
+                bundleX.start();
                 Assert.fail("BundleException expected");
             } catch (BundleException ex) {
                 // expected
             }
         } finally {
-            uninstallResource(bundleA.getBundleRevision());
-            removeModule(moduleA);
+            uninstallResource(bundleX.getBundleRevision());
+            removeModule(moduleX);
         }
     }
 
     @Test
-    public void testSimpleModuleTwo() throws Exception {
-        // Install module through {@link BundleContext}
-        Bundle bundleA = installBundle(getModuleA());
+    public void testBundleDependsOnModuleOne() throws Exception {
+        XBundle bundleA = (XBundle) installBundle(getBundleA());
         try {
             Assert.assertNotNull("Bundle not null", bundleA);
-            Assert.assertEquals("moduleA", bundleA.getSymbolicName());
-            Assert.assertEquals(Version.parseVersion("1.0"), bundleA.getVersion());
-
-            assertLoadClass(bundleA, ModuleServiceA.class.getName());
-            assertLoadClassFail(bundleA, ModuleServiceB.class.getName());
-            assertBundleState(Bundle.RESOLVED, bundleA.getState());
-
-            bundleA.start();
-            assertBundleState(Bundle.ACTIVE, bundleA.getState());
-
-            bundleA.stop();
-            assertBundleState(Bundle.RESOLVED, bundleA.getState());
-        } finally {
-            bundleA.uninstall();
-        }
-    }
-
-    @Test
-    public void testModuleDependsOnBundleOne() throws Exception {
-        // Install module through {@link BundleContext}
-        Bundle moduleB = installBundle(getModuleB());
-        try {
-            Assert.assertNotNull("Bundle not null", moduleB);
-            Assert.assertEquals("moduleB", moduleB.getSymbolicName());
-            Assert.assertEquals(Version.parseVersion("1.0"), moduleB.getVersion());
-
-            try {
-                moduleB.start();
-                Assert.fail("BundleException expected");
-            } catch (BundleException ex) {
-                // ignore
-            }
-
-            // Install the dependent bundle
-            Bundle bundleD = installBundle(getBundleD());
-            try {
-                assertBundleState(Bundle.INSTALLED, bundleD.getState());
-
-                assertLoadClass(bundleD, BundleServiceB.class.getName());
-                assertLoadClassFail(bundleD, ModuleServiceB.class.getName());
-                assertBundleState(Bundle.RESOLVED, bundleD.getState());
-
-                assertLoadClass(moduleB, ModuleServiceB.class.getName());
-                assertLoadClass(moduleB, BundleServiceB.class.getName(), bundleD);
-                assertBundleState(Bundle.RESOLVED, moduleB.getState());
-
-                moduleB.start();
-                assertBundleState(Bundle.ACTIVE, moduleB.getState());
-            } finally {
-                bundleD.uninstall();
-            }
-
-            moduleB.stop();
-            assertBundleState(Bundle.RESOLVED, moduleB.getState());
-        } finally {
-            moduleB.uninstall();
-        }
-    }
-
-    @Test
-    public void testModuleDependsOnBundleTwo() throws Exception {
-        // Install module through {@link BundleContext}
-        Bundle moduleB = installBundle(getModuleB());
-        try {
-            Assert.assertNotNull("Bundle not null", moduleB);
-            Assert.assertEquals("moduleB", moduleB.getSymbolicName());
-            Assert.assertEquals(Version.parseVersion("1.0"), moduleB.getVersion());
-
-            try {
-                moduleB.start();
-                Assert.fail("BundleException expected");
-            } catch (BundleException ex) {
-                // ignore
-            }
-
-            // Install the dependent bundle
-            Bundle bundleD = installBundle(getBundleD());
-            try {
-                assertBundleState(Bundle.INSTALLED, bundleD.getState());
-
-                assertLoadClass(bundleD, BundleServiceB.class.getName());
-                assertLoadClassFail(bundleD, ModuleServiceB.class.getName());
-                assertBundleState(Bundle.RESOLVED, bundleD.getState());
-
-                assertLoadClass(moduleB, ModuleServiceB.class.getName());
-                assertLoadClass(moduleB, BundleServiceB.class.getName(), bundleD);
-                assertBundleState(Bundle.RESOLVED, moduleB.getState());
-
-                moduleB.start();
-                assertBundleState(Bundle.ACTIVE, moduleB.getState());
-            } finally {
-                bundleD.uninstall();
-            }
-
-            moduleB.stop();
-            assertBundleState(Bundle.RESOLVED, moduleB.getState());
-        } finally {
-            moduleB.uninstall();
-        }
-    }
-
-    @Test
-    public void testBundleDependsOnModule() throws Exception {
-        Bundle bundleA = installBundle(getBundleA1());
-        try {
-            Assert.assertNotNull("Bundle not null", bundleA);
-            Assert.assertEquals("bundleA1", bundleA.getSymbolicName());
+            Assert.assertEquals("bundleA", bundleA.getSymbolicName());
             Assert.assertEquals(Version.parseVersion("1.0"), bundleA.getVersion());
 
             try {
@@ -220,54 +120,185 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 // ignore
             }
 
-            // Install the dependent module
-            Bundle moduleC = installBundle(getModuleA());
+            // Install module to {@link XEnvironment} directly
+            Module moduleX = loadModule(getModuleX());
+            XBundle bundleX = installResource(moduleX).getBundle();
             try {
-                assertBundleState(Bundle.INSTALLED, moduleC.getState());
-
-                assertLoadClass(moduleC, ModuleServiceA.class.getName());
-                assertLoadClassFail(moduleC, BundleServiceA.class.getName());
-                assertBundleState(Bundle.RESOLVED, moduleC.getState());
+                assertLoadClass(bundleX, ModuleServiceX.class.getName());
+                assertLoadClassFail(bundleX, BundleServiceA.class.getName());
+                assertBundleState(Bundle.RESOLVED, bundleX.getState());
 
                 assertLoadClass(bundleA, BundleServiceA.class.getName());
-                assertLoadClass(bundleA, ModuleServiceA.class.getName(), moduleC);
+                assertLoadClass(bundleA, ModuleServiceX.class.getName(), bundleX);
                 assertBundleState(Bundle.RESOLVED, bundleA.getState());
-
-                bundleA.start();
-                assertBundleState(Bundle.ACTIVE, bundleA.getState());
+                
+                // Verify wiring A
+                BundleWiring wiringA = bundleA.getBundleRevision().getWiring();
+                Assert.assertEquals(0, wiringA.getProvidedWires(null).size());
+                List<BundleWire> wires = wiringA.getRequiredWires(null);
+                Assert.assertEquals(2, wires.size());
+                BundleWire wire = wires.get(0);
+                Assert.assertEquals(PACKAGE_NAMESPACE, wire.getRequirement().getNamespace());
+                Assert.assertEquals("org.osgi.framework", wire.getCapability().getAttributes().get(PACKAGE_NAMESPACE));
+                Assert.assertSame(bundleA.getBundleRevision(), wire.getRequirer());
+                Assert.assertSame(getSystemBundle().getBundleRevision(), wire.getProvider());
+                Assert.assertSame(getSystemBundle().getBundleRevision().getWiring(), wire.getProviderWiring());
+                wire = wires.get(1);
+                Assert.assertEquals(BUNDLE_NAMESPACE, wire.getRequirement().getNamespace());
+                Assert.assertEquals("moduleX", wire.getCapability().getAttributes().get(BUNDLE_NAMESPACE));
+                Assert.assertSame(bundleA.getBundleRevision(), wire.getRequirer());
+                Assert.assertSame(bundleX.getBundleRevision(), wire.getProvider());
+                Assert.assertSame(bundleX.getBundleRevision().getWiring(), wire.getProviderWiring());
+                
+                // Verify wiring X
+                BundleWiring wiringX = bundleX.getBundleRevision().getWiring();
+                Assert.assertEquals(0, wiringX.getRequiredWires(null).size());
+                wires = wiringX.getProvidedWires(null);
+                Assert.assertEquals(1, wires.size());
+                wire = wires.get(0);
+                Assert.assertEquals(BUNDLE_NAMESPACE, wire.getRequirement().getNamespace());
+                Assert.assertEquals("moduleX", wire.getCapability().getAttributes().get(BUNDLE_NAMESPACE));
+                Assert.assertSame(bundleA.getBundleRevision(), wire.getRequirer());
+                Assert.assertSame(bundleX.getBundleRevision(), wire.getProvider());
+                Assert.assertSame(bundleX.getBundleRevision().getWiring(), wire.getProviderWiring());
             } finally {
-                moduleC.uninstall();
+                uninstallResource(bundleX.getBundleRevision());
+                removeModule(moduleX);
             }
-
-            bundleA.stop();
-            assertBundleState(Bundle.RESOLVED, bundleA.getState());
         } finally {
             bundleA.uninstall();
         }
     }
 
-    // Bundle-SymbolicName: moduleA
-    // Bundle-Version: 1.0.0
-    // Export-Package: org.jboss.test.osgi.framework.xservice.moduleA
-    private JavaArchive getModuleA() {
-        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-        archive.addAsManifestResource(getResourceFile("xservice/moduleA/META-INF/jbosgi-xservice.properties"));
-        archive.addClasses(ModuleServiceA.class);
+    @Test
+    public void testBundleDependsOnModuleTwo() throws Exception {
+        XBundle bundleA = (XBundle) installBundle(getBundleAA());
+        try {
+            Assert.assertNotNull("Bundle not null", bundleA);
+            Assert.assertEquals("bundleAA", bundleA.getSymbolicName());
+            Assert.assertEquals(Version.parseVersion("1.0"), bundleA.getVersion());
+
+            try {
+                bundleA.start();
+                Assert.fail("BundleException expected");
+            } catch (BundleException ex) {
+                // ignore
+            }
+
+            // Install module to {@link XEnvironment} directly
+            Module moduleX = loadModule(getModuleX());
+            XBundle bundleX = installResource(moduleX).getBundle();
+            try {
+                assertLoadClass(bundleX, ModuleServiceX.class.getName());
+                assertLoadClassFail(bundleX, BundleServiceA.class.getName());
+                assertBundleState(Bundle.RESOLVED, bundleX.getState());
+
+                assertLoadClass(bundleA, BundleServiceA.class.getName());
+                assertLoadClass(bundleA, ModuleServiceX.class.getName(), bundleX);
+                assertBundleState(Bundle.RESOLVED, bundleA.getState());
+                
+                // Verify wiring A
+                BundleWiring wiringA = bundleA.getBundleRevision().getWiring();
+                Assert.assertEquals(0, wiringA.getProvidedWires(null).size());
+                List<BundleWire> wires = wiringA.getRequiredWires(null);
+                Assert.assertEquals(2, wires.size());
+                BundleWire wire = wires.get(0);
+                Assert.assertEquals(PACKAGE_NAMESPACE, wire.getRequirement().getNamespace());
+                Assert.assertEquals("org.osgi.framework", wire.getCapability().getAttributes().get(PACKAGE_NAMESPACE));
+                Assert.assertSame(bundleA.getBundleRevision(), wire.getRequirer());
+                Assert.assertSame(getSystemBundle().getBundleRevision(), wire.getProvider());
+                Assert.assertSame(getSystemBundle().getBundleRevision().getWiring(), wire.getProviderWiring());
+                wire = wires.get(1);
+                Assert.assertEquals(PACKAGE_NAMESPACE, wire.getRequirement().getNamespace());
+                Assert.assertEquals(ModuleServiceX.class.getPackage().getName(), wire.getCapability().getAttributes().get(PACKAGE_NAMESPACE));
+                Assert.assertSame(bundleA.getBundleRevision(), wire.getRequirer());
+                Assert.assertSame(bundleX.getBundleRevision(), wire.getProvider());
+                Assert.assertSame(bundleX.getBundleRevision().getWiring(), wire.getProviderWiring());
+                
+                // Verify wiring X
+                BundleWiring wiringX = bundleX.getBundleRevision().getWiring();
+                Assert.assertEquals(0, wiringX.getRequiredWires(null).size());
+                wires = wiringX.getProvidedWires(null);
+                Assert.assertEquals(1, wires.size());
+                wire = wires.get(0);
+                Assert.assertEquals(PACKAGE_NAMESPACE, wire.getRequirement().getNamespace());
+                Assert.assertEquals(ModuleServiceX.class.getPackage().getName(), wire.getCapability().getAttributes().get(PACKAGE_NAMESPACE));
+                Assert.assertSame(bundleA.getBundleRevision(), wire.getRequirer());
+                Assert.assertSame(bundleX.getBundleRevision(), wire.getProvider());
+                Assert.assertSame(bundleX.getBundleRevision().getWiring(), wire.getProviderWiring());
+            } finally {
+                uninstallResource(bundleX.getBundleRevision());
+                removeModule(moduleX);
+            }
+        } finally {
+            bundleA.uninstall();
+        }
+    }
+
+    @Test
+    public void testModuleDependsOnBundle() throws Exception {
+
+        // Install the dependent bundle
+        XBundle bundleB = (XBundle) installBundle(getBundleB());
+        try {
+            assertBundleState(Bundle.INSTALLED, bundleB.getState());
+
+            assertLoadClass(bundleB, BundleActivatorB.class.getName());
+            assertLoadClassFail(bundleB, ModuleServiceY.class.getName());
+            assertBundleState(Bundle.RESOLVED, bundleB.getState());
+
+            // Install module to {@link XEnvironment} directly
+            ModuleIdentifier depid = ModuleIdentifier.fromString("jbosgi.bundleB:1.0.0");
+            Module moduleY = loadModule(getModuleY(), Collections.singletonList(depid));
+            XBundle bundleY = installResource(moduleY).getBundle();
+            try {
+                Assert.assertNotNull("Bundle not null", bundleY);
+                Assert.assertEquals("moduleY", bundleY.getSymbolicName());
+                Assert.assertEquals(Version.parseVersion("1.0"), bundleY.getVersion());
+
+                assertLoadClass(bundleY, ModuleServiceY.class.getName());
+                assertLoadClass(bundleY, BundleServiceB.class.getName(), bundleB);
+                assertBundleState(Bundle.RESOLVED, bundleY.getState());
+                
+                // Verify wiring B
+                BundleWiring wiringB = bundleB.getBundleRevision().getWiring();
+                Assert.assertEquals(0, wiringB.getProvidedWires(null).size()); // [TODO] required wires for adapted modules
+                List<BundleWire> wires = wiringB.getRequiredWires(null);
+                Assert.assertEquals(1, wires.size());
+                BundleWire wire = wires.get(0);
+                Assert.assertEquals(PACKAGE_NAMESPACE, wire.getRequirement().getNamespace());
+                Assert.assertEquals("org.osgi.framework", wire.getCapability().getAttributes().get(PACKAGE_NAMESPACE));
+                Assert.assertSame(bundleB.getBundleRevision(), wire.getRequirer());
+                Assert.assertSame(getSystemBundle().getBundleRevision(), wire.getProvider());
+                Assert.assertSame(getSystemBundle().getBundleRevision().getWiring(), wire.getProviderWiring());
+                
+                // Verify wiring X
+                BundleWiring wiringY = bundleY.getBundleRevision().getWiring();
+                Assert.assertEquals(0, wiringY.getRequiredWires(null).size()); // [TODO] required wires for adapted modules
+                Assert.assertEquals(0, wiringY.getProvidedWires(null).size());
+            } finally {
+                uninstallResource(bundleY.getBundleRevision());
+                removeModule(moduleY);
+            }
+        } finally {
+            bundleB.uninstall();
+        }
+    }
+
+    private JavaArchive getModuleX() {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleX:1.0.0");
+        archive.addClasses(ModuleServiceX.class);
         return archive;
     }
 
-    // Bundle-SymbolicName: moduleB
-    // Bundle-Version: 1.0.0
-    // Require-Bundle: bundleD
-    private JavaArchive getModuleB() {
-        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
-        archive.addAsManifestResource(getResourceFile("xservice/moduleB/META-INF/jbosgi-xservice.properties"));
-        archive.addClasses(ModuleServiceB.class);
+    private JavaArchive getModuleY() {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleY:1.0.0");
+        archive.addClasses(ModuleServiceY.class);
         return archive;
     }
 
-    private JavaArchive getBundleA1() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA1");
+    private JavaArchive getBundleA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA");
         archive.addClasses(BundleActivatorA.class, BundleServiceA.class);
         archive.setManifest(new Asset() {
             public InputStream openStream() {
@@ -276,16 +307,16 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleVersion("1.0.0");
                 builder.addBundleActivator(BundleActivatorA.class);
-                builder.addRequireBundle("moduleA");
-                builder.addImportPackages("org.osgi.framework");
+                builder.addRequireBundle("moduleX;bundle-version:=1.0.0");
+                builder.addImportPackages(BundleActivator.class);
                 return builder.openStream();
             }
         });
         return archive;
     }
 
-    private JavaArchive getBundleA2() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA2");
+    private JavaArchive getBundleAA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleAA");
         archive.addClasses(BundleActivatorA.class, BundleServiceA.class);
         archive.setManifest(new Asset() {
             public InputStream openStream() {
@@ -294,15 +325,15 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleVersion("1.0.0");
                 builder.addBundleActivator(BundleActivatorA.class);
-                builder.addImportPackages(ModuleServiceA.class, BundleActivator.class);
+                builder.addImportPackages(BundleActivator.class, ModuleServiceX.class);
                 return builder.openStream();
             }
         });
         return archive;
     }
 
-    private JavaArchive getBundleD() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleD");
+    private JavaArchive getBundleB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleB");
         archive.addClasses(BundleActivatorB.class, BundleServiceB.class);
         archive.setManifest(new Asset() {
             public InputStream openStream() {
@@ -311,7 +342,7 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleVersion("1.0.0");
                 builder.addBundleActivator(BundleActivatorB.class);
-                builder.addExportPackages(BundleServiceB.class);
+                builder.addImportPackages(BundleActivator.class);
                 return builder.openStream();
             }
         });

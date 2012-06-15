@@ -40,63 +40,25 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.framework.xservice.moduleA;
+package org.jboss.test.osgi.framework.xservice.moduleX;
 
-import org.jboss.modules.ModuleLoadException;
-import org.jboss.msc.service.Service;
-import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.StopContext;
-import org.jboss.osgi.modules.ModuleActivator;
-import org.jboss.osgi.modules.ModuleContext;
+import org.osgi.framework.Bundle;
 
 /**
- * A Service Activator
+ * A SimpleService
  * 
  * @author thomas.diesler@jboss.com
  * @since 24-Apr-2009
  */
-public class ModuleActivatorA implements ModuleActivator {
+public class ModuleServiceX {
 
-    private ServiceName serviceName;
+    Bundle owner;
 
-    @Override
-    public void start(final ModuleContext context) throws ModuleLoadException {
-        ServiceTarget serviceTarget = context.getServiceContainer().subTarget();
-        serviceName = context.getServiceName(ModuleServiceA.class);
-
-        Service<ModuleServiceA> service = new Service<ModuleServiceA>() {
-
-            ModuleServiceA value = new ModuleServiceA(context.getBundle());
-
-            @Override
-            public ModuleServiceA getValue() throws IllegalStateException {
-                return value;
-            }
-
-            @Override
-            public void start(StartContext context) throws StartException {
-            }
-
-            @Override
-            public void stop(StopContext context) {
-            }
-        };
-
-        ServiceBuilder<ModuleServiceA> serviceBuilder = serviceTarget.addService(serviceName, service);
-        serviceBuilder.setInitialMode(Mode.PASSIVE).install();
+    ModuleServiceX(Bundle owner) {
+        this.owner = owner;
     }
 
-    @Override
-    public void stop(ModuleContext context) {
-        if (serviceName != null) {
-            ServiceController<?> service = context.getServiceContainer().getService(serviceName);
-            service.setMode(Mode.REMOVE);
-        }
+    public String echo(String msg) {
+        return msg + ":" + owner.getSymbolicName();
     }
 }

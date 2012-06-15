@@ -40,16 +40,7 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.framework.jaxp;
-
-import static org.junit.Assert.assertEquals;
-
-import java.io.InputStream;
-import java.net.URL;
-
-import javax.inject.Inject;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
+package org.jboss.test.osgi.framework.integration;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
@@ -61,34 +52,44 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+
+import javax.inject.Inject;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.InputStream;
+import java.net.URL;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
- * A test that uses a SAX parser to read an XML document.
+ * A test that uses a DOM parser to read an XML document.
  *
  * @author thomas.diesler@jboss.com
  * @since 21-Jul-2009
  */
 @RunWith(Arquillian.class)
-public class SAXParserTestCase {
+public class DocumentBuilderTestCase {
 
     @Inject
-    public BundleContext context;
+    public static BundleContext context;
 
     @Inject
     public Bundle bundle;
 
     @Deployment
     public static JavaArchive createdeployment() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "sax-parser.jar");
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "dom-parser");
         archive.addAsResource("jaxp/simple.xml");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleManifestVersion(2);
-                builder.addImportPackages(SAXParser.class, SAXException.class, DefaultHandler.class);
+                builder.addImportPackages(DocumentBuilder.class, Document.class);
                 return builder.openStream();
             }
         });
@@ -96,30 +97,22 @@ public class SAXParserTestCase {
     }
 
     @Test
-    public void testSAXParser() throws Exception {
+    public void testDOMParser() throws Exception {
 
-        SAXParserFactory factory = SAXParserFactory.newInstance();
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
         factory.setValidating(false);
 
-        SAXParser saxParser = factory.newSAXParser();
+        DocumentBuilder domBuilder = factory.newDocumentBuilder();
         URL resURL = bundle.getResource("jaxp/simple.xml");
+        Document dom = domBuilder.parse(resURL.openStream());
+        assertNotNull("Document not null", dom);
 
-        SAXHandler saxHandler = new SAXHandler();
-        saxParser.parse(resURL.openStream(), saxHandler);
-        assertEquals("content", saxHandler.getContent());
-    }
+        Element root = dom.getDocumentElement();
+        assertEquals("root", root.getLocalName());
 
-    static class SAXHandler extends DefaultHandler {
-        private String content;
-
-        @Override
-        public void characters(char[] ch, int start, int length) throws SAXException {
-            content = new String(ch, start, length);
-        }
-
-        public String getContent() {
-            return content;
-        }
+        Node child = root.getFirstChild();
+        assertEquals("child", child.getLocalName());
+        assertEquals("content", child.getTextContent());
     }
 }

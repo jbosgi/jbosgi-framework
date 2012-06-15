@@ -56,6 +56,7 @@ import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.spi.AbstractBundleRevision;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.resource.Wiring;
 
 /**
@@ -81,8 +82,8 @@ public class AbstractBundleRevisionAdaptor extends AbstractBundleRevision implem
         createWiring();
     }
 
-    protected Wiring createWiring() {
-        Wiring wiring = new AbstractBundleWiring(this, null, null);
+    protected BundleWiring createWiring() {
+        BundleWiring wiring = new AbstractBundleWiring(this, null, null);
         addAttachment(Wiring.class, wiring);
         return wiring;
     }

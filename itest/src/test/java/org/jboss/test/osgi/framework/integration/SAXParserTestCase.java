@@ -40,7 +40,16 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.test.osgi.framework.simple;
+package org.jboss.test.osgi.framework.integration;
+
+import static org.junit.Assert.assertEquals;
+
+import java.io.InputStream;
+import java.net.URL;
+
+import javax.inject.Inject;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
@@ -48,91 +57,69 @@ import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.test.osgi.framework.simple.bundleA.SimpleActivator;
-import org.jboss.test.osgi.framework.simple.bundleA.SimpleService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
-
-import javax.inject.Inject;
-import java.io.InputStream;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
 
 /**
- * A test that deployes a bundle and verifies its state
+ * A test that uses a SAX parser to read an XML document.
  *
  * @author thomas.diesler@jboss.com
- * @since 18-Aug-2009
+ * @since 21-Jul-2009
  */
 @RunWith(Arquillian.class)
-public class SimpleArquillianTestCase {
+public class SAXParserTestCase {
+
+    @Inject
+    public BundleContext context;
+
+    @Inject
+    public Bundle bundle;
 
     @Deployment
-    public static JavaArchive createDeployment() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-arquillian.jar");
+    public static JavaArchive createdeployment() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "sax-parser");
+        archive.addAsResource("jaxp/simple.xml");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleManifestVersion(2);
-                builder.addBundleActivator(SimpleActivator.class.getName());
-                builder.addExportPackages(SimpleService.class);
-                builder.addImportPackages(BundleActivator.class);
+                builder.addImportPackages(SAXParser.class, SAXException.class, DefaultHandler.class);
                 return builder.openStream();
             }
         });
-        archive.addClasses(SimpleActivator.class, SimpleService.class);
         return archive;
     }
 
-    @Inject
-    public BundleContext context;
-
     @Test
-    public void testBundleContextInjection() throws Exception {
-        assertNotNull("BundleContext injected", context);
-        assertEquals("System Bundle ID", 0, context.getBundle().getBundleId());
+    public void testSAXParser() throws Exception {
+
+        SAXParserFactory factory = SAXParserFactory.newInstance();
+        factory.setNamespaceAware(true);
+        factory.setValidating(false);
+
+        SAXParser saxParser = factory.newSAXParser();
+        URL resURL = bundle.getResource("jaxp/simple.xml");
+
+        SAXHandler saxHandler = new SAXHandler();
+        saxParser.parse(resURL.openStream(), saxHandler);
+        assertEquals("content", saxHandler.getContent());
     }
 
-    @Inject
-    public Bundle bundle;
+    static class SAXHandler extends DefaultHandler {
+        private String content;
 
-    @Test
-    public void testBundleInjection() throws Exception {
-        // Assert that the bundle is injected
-        assertNotNull("Bundle injected", bundle);
+        @Override
+        public void characters(char[] ch, int start, int length) throws SAXException {
+            content = new String(ch, start, length);
+        }
 
-        // Assert that the bundle is in state RESOLVED
-        // Note when the test bundle contains the test case it
-        // must be resolved already when this test method is called
-        assertEquals("Bundle RESOLVED", Bundle.RESOLVED, bundle.getState());
-
-        // Start the bundle
-        bundle.start();
-        assertEquals("Bundle ACTIVE", Bundle.ACTIVE, bundle.getState());
-
-        // Assert the bundle context
-        BundleContext context = bundle.getBundleContext();
-        assertNotNull("BundleContext available", context);
-
-        // Get the service reference
-        ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
-        assertNotNull("ServiceReference not null", sref);
-
-        // Get the service for the reference
-        SimpleService service = (SimpleService) context.getService(sref);
-        assertNotNull("Service not null", service);
-
-        // Invoke the service
-        assertEquals("hello", service.echo("hello"));
-
-        // Stop the bundle
-        bundle.stop();
-        assertEquals("Bundle RESOLVED", Bundle.RESOLVED, bundle.getState());
+        public String getContent() {
+            return content;
+        }
     }
 }

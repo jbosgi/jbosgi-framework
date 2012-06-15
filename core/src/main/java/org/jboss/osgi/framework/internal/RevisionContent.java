@@ -87,6 +87,7 @@ final class RevisionContent implements EntriesProvider {
         }
         int revisionId = brev.getRevisionId();
         identity = symbolicName + "-" + bundleId + "-" + revisionId + "-" + contentId;
+        LOGGER.tracef("new RevisionContent: %s", identity);
     }
 
     static RevisionContent findRevisionContent(BundleManagerPlugin bundleManager, String identity) {
@@ -105,6 +106,7 @@ final class RevisionContent implements EntriesProvider {
             return null;
         UserBundleRevision userRev = (UserBundleRevision) bundleRev;
         RevisionContent revContent = userRev.getContentById(contentId);
+        LOGGER.tracef("findRevisionContent: %s => %s", identity, revContent);
         return revContent;
     }
 

@@ -199,7 +199,7 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
     }
 
     private JavaArchive getBundleA() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA.jar");
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "urlBundleA");
         archive.addClasses(SimpleService.class);
         archive.addAsManifestResource("bundles/simple/simple-bundle1/resource-one.txt", "resource-one.txt");
         archive.setManifest(new Asset() {
@@ -214,7 +214,7 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
     }
 
     private JavaArchive getBundleB() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleB.jar");
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "urlBundleB");
         archive.add(getBundleA(), "x", ZipExporter.class);
         archive.add(getBundleA(), "y", ZipExporter.class);
         archive.setManifest(new Asset() {
@@ -222,7 +222,7 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
-                builder.addManifestHeader(Constants.BUNDLE_CLASSPATH, "x/bundleA.jar,y/bundleA.jar");
+                builder.addManifestHeader(Constants.BUNDLE_CLASSPATH, "x/urlBundleA,y/urlBundleA");
                 return builder.openStream();
             }
         });

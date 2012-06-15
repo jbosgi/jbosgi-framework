@@ -218,7 +218,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
     @SuppressWarnings("rawtypes")
     public void testInstallEmptyManifest() throws Exception {
 
-        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "empty-manifest.jar");
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "empty-manifest");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 ManifestBuilder builder = ManifestBuilder.newInstance();
@@ -241,7 +241,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
     @Test
     public void testExecutionEnvironment() throws Exception {
 
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "valid-execution-env.jar");
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "valid-execution-env");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
@@ -266,7 +266,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
     @Test
     public void testInvalidExecutionEnvironment() throws Exception {
 
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "invalid-execution-env.jar");
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "invalid-execution-env");
         archive.setManifest(new Asset() {
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();

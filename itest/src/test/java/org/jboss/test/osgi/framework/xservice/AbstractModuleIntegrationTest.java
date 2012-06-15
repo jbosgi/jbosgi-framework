@@ -44,7 +44,9 @@ package org.jboss.test.osgi.framework.xservice;
 
 import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PROVIDER;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.jboss.modules.DependencySpec;
@@ -72,36 +74,50 @@ import org.osgi.framework.BundleException;
 
 /**
  * Test Module integration.
- *
+ * 
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jun-2012
  */
 public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
 
     private Map<Module, VirtualFile> vfsmap = new HashMap<Module, VirtualFile>();
-    
+
     protected Module loadModule(JavaArchive archive) throws Exception {
-        ModuleIdentifier identifier = ModuleIdentifier.create(archive.getName());
-        ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
+        List<ModuleIdentifier> moddeps = Collections.emptyList();
+        return loadModule(archive, moddeps);
+    }
+
+    protected Module loadModule(JavaArchive archive, List<ModuleIdentifier> moddeps) throws Exception {
+
         VirtualFile virtualFile = toVirtualFile(archive);
+
+        // Create the {@link ModuleSpec}
+        ModuleIdentifier identifier = ModuleIdentifier.fromString(archive.getName());
+        ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
+        for (ModuleIdentifier depid : moddeps) {
+            specBuilder.addDependency(DependencySpec.createModuleDependencySpec(depid));
+        }
         VirtualFileResourceLoader resourceLoader = new VirtualFileResourceLoader(virtualFile);
         specBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoader));
         specBuilder.addDependency(DependencySpec.createLocalDependencySpec());
         ModuleSpec moduleSpec = specBuilder.create();
 
+        // Add the {@link ModuleSpec} to the {@link ModuleLoaderProvider}
         XBundle sysbundle = (XBundle) getSystemContext().getBundle();
         BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
         ServiceController<?> service = serviceContainer.getRequiredService(MODULE_LOADER_PROVIDER);
         ModuleLoaderProvider provider = (ModuleLoaderProvider) service.getValue();
         provider.addModule(moduleSpec);
-        
+
+        // Load the {@link Module}
         Module module = provider.getModuleLoader().loadModule(identifier);
         vfsmap.put(module, virtualFile);
         return module;
     }
 
     protected void removeModule(Module module) throws Exception {
+        // Remove the {@link Module} from the {@link ModuleLoaderProvider}
         XBundle sysbundle = (XBundle) getSystemContext().getBundle();
         BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
@@ -112,6 +128,7 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
     }
 
     protected XBundleRevision installResource(final Module module) throws BundleException {
+        // Build the {@link XBundleRevision}
         final BundleContext context = getSystemContext();
         XBundleRevisionBuilderFactory factory = new XBundleRevisionBuilderFactory() {
             public XBundleRevision createResource() {
@@ -120,6 +137,8 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         };
         XResourceBuilder builder = XBundleRevisionBuilderFactory.create(factory);
         XBundleRevision moduleRevision = (XBundleRevision) builder.loadFrom(module).getResource();
+
+        // Add the {@link XBundleRevision} to the {@link XEnvironment}
         XBundle sysbundle = (XBundle) context.getBundle();
         XEnvironment env = sysbundle.adapt(XEnvironment.class);
         env.installResources(moduleRevision);
@@ -127,8 +146,13 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
     }
 
     protected void uninstallResource(final XBundleRevision moduleRev) throws BundleException {
+        // Remove the {@link XBundleRevision} from the {@link XEnvironment}
         XBundle sysbundle = (XBundle) getSystemContext().getBundle();
         XEnvironment env = sysbundle.adapt(XEnvironment.class);
         env.uninstallResources(moduleRev);
+    }
+
+    protected XBundle getSystemBundle() throws BundleException {
+        return (XBundle) getSystemContext().getBundle();
     }
 }

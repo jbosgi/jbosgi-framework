@@ -52,12 +52,13 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
+import org.jboss.test.osgi.framework.xservice.moduleX.ModuleServiceX;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;
+import org.osgi.framework.namespace.BundleNamespace;
 import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleCapability;
@@ -103,11 +104,13 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
         
         // getDeclaredCapabilities
         List<BundleCapability> dcaps = brev.getDeclaredCapabilities(null);
-        Assert.assertEquals("Two capabilities", 2, dcaps.size());
+        Assert.assertEquals("Three capabilities", 3, dcaps.size());
         BundleCapability bcap1 = brev.getDeclaredCapabilities(IdentityNamespace.IDENTITY_NAMESPACE).get(0);
         Assert.assertEquals("moduleA", bcap1.getAttributes().get(IdentityNamespace.IDENTITY_NAMESPACE));
-        BundleCapability bcap2 = brev.getDeclaredCapabilities(PackageNamespace.PACKAGE_NAMESPACE).get(0);
-        Assert.assertEquals(ModuleServiceA.class.getPackage().getName(), bcap2.getAttributes().get(PackageNamespace.PACKAGE_NAMESPACE));
+        BundleCapability bcap2 = brev.getDeclaredCapabilities(BundleNamespace.BUNDLE_NAMESPACE).get(0);
+        Assert.assertEquals("moduleA", bcap2.getAttributes().get(BundleNamespace.BUNDLE_NAMESPACE));
+        BundleCapability bcap3 = brev.getDeclaredCapabilities(PackageNamespace.PACKAGE_NAMESPACE).get(0);
+        Assert.assertEquals(ModuleServiceX.class.getPackage().getName(), bcap3.getAttributes().get(PackageNamespace.PACKAGE_NAMESPACE));
         
         // getDeclaredRequirements
         List<BundleRequirement> dreqs = brev.getDeclaredRequirements(null);
@@ -122,11 +125,13 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
 
         // getCapabilities
         List<Capability> caps = brev.getCapabilities(null);
-        Assert.assertEquals("Two capabilities", 2, caps.size());
-        Capability cap1 = brev.getDeclaredCapabilities(IdentityNamespace.IDENTITY_NAMESPACE).get(0);
+        Assert.assertEquals("Three capabilities", 3, caps.size());
+        Capability cap1 = brev.getCapabilities(IdentityNamespace.IDENTITY_NAMESPACE).get(0);
         Assert.assertEquals("moduleA", cap1.getAttributes().get(IdentityNamespace.IDENTITY_NAMESPACE));
-        Capability cap2 = brev.getDeclaredCapabilities(PackageNamespace.PACKAGE_NAMESPACE).get(0);
-        Assert.assertEquals(ModuleServiceA.class.getPackage().getName(), cap2.getAttributes().get(PackageNamespace.PACKAGE_NAMESPACE));
+        Capability cap2 = brev.getCapabilities(BundleNamespace.BUNDLE_NAMESPACE).get(0);
+        Assert.assertEquals("moduleA", cap2.getAttributes().get(BundleNamespace.BUNDLE_NAMESPACE));
+        Capability cap3 = brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE).get(0);
+        Assert.assertEquals(ModuleServiceX.class.getPackage().getName(), cap3.getAttributes().get(PackageNamespace.PACKAGE_NAMESPACE));
         
         // getRequirements
         List<Requirement> reqs = brev.getRequirements(null);
@@ -146,7 +151,7 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
         
         // [TODO] Add support for entry/resource related APIs on Module adaptors
         // https://issues.jboss.org/browse/JBOSGI-566
-        String resname = ModuleServiceA.class.getName().replace('.', '/').concat(".class");
+        String resname = ModuleServiceX.class.getName().replace('.', '/').concat(".class");
         Assert.assertNull(brev.getResource(resname));
         Assert.assertNull(brev.getResources(resname));
         Assert.assertNull(brev.findEntries(resname, null, true));
@@ -156,7 +161,7 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
     
     private JavaArchive getModuleA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-        archive.addClasses(ModuleServiceA.class);
+        archive.addClasses(ModuleServiceX.class);
         return archive;
     }
 }

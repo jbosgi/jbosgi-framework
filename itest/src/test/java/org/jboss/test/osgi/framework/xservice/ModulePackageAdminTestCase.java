@@ -51,7 +51,7 @@ import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XIdentityCapability;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.test.osgi.framework.xservice.moduleA.ModuleServiceA;
+import org.jboss.test.osgi.framework.xservice.moduleX.ModuleServiceX;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -90,7 +90,7 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
     @Test
     public void testGetBundle() throws Exception {
         XBundle bundle = brev.getBundle();
-        Class<?> clazz = bundle.loadClass(ModuleServiceA.class.getName());
+        Class<?> clazz = bundle.loadClass(ModuleServiceX.class.getName());
         Assert.assertEquals(bundle, packageAdmin.getBundle(clazz));
     }
 
@@ -126,7 +126,7 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
         ExportedPackage[] exported = packageAdmin.getExportedPackages(brev.getBundle());
         Assert.assertEquals(1, exported.length);
         ExportedPackage exp = exported[0];
-        Assert.assertEquals(ModuleServiceA.class.getPackage().getName(), exp.getName());
+        Assert.assertEquals(ModuleServiceX.class.getPackage().getName(), exp.getName());
         Assert.assertEquals(brev.getBundle(), exp.getExportingBundle());
         Assert.assertEquals(0, exp.getImportingBundles().length);
         Assert.assertEquals(Version.emptyVersion, exp.getVersion());
@@ -142,7 +142,7 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
     
     private JavaArchive getModuleA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-        archive.addClasses(ModuleServiceA.class);
+        archive.addClasses(ModuleServiceX.class);
         return archive;
     }
 }
