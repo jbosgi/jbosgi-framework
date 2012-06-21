@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -44,7 +44,6 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Services;
-import org.osgi.service.resolver.Resolver;
 
 /**
  * The collection of internal service names.
@@ -71,12 +70,8 @@ public interface InternalServices {
     ServiceName MODULE_MANGER_PLUGIN = INTERNAL_SERVICE_BASE.append("ModuleManager");
     /** The {@link NativeCodePlugin} service name */
     ServiceName NATIVE_CODE_PLUGIN = INTERNAL_SERVICE_BASE.append("NativeCode");
-    /** The {@link Resolver} service name */
-    ServiceName RESOLVER_PLUGIN = INTERNAL_SERVICE_BASE.append("Resolver");
     /** The {@link ServiceManagerPlugin} service name */
     ServiceName SERVICE_MANAGER_PLUGIN = INTERNAL_SERVICE_BASE.append("ServiceManager");
-    /** The {@link WebXMLVerifierInterceptor} service name */
-    ServiceName WEBXML_VERIFIER_PLUGIN = INTERNAL_SERVICE_BASE.append("WebXMLVerifier");
     /** The {@link URLHandler} service name */
     ServiceName URL_HANDLER_PLUGIN = INTERNAL_SERVICE_BASE.append("URLHandler");
 }

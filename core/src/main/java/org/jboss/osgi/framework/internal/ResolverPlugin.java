@@ -69,7 +69,6 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XBundleRevision;
-import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XIdentityCapability;
 import org.jboss.osgi.resolver.XRequirement;
@@ -90,6 +89,7 @@ import org.osgi.resource.Resource;
 import org.osgi.resource.Wire;
 import org.osgi.resource.Wiring;
 import org.osgi.service.resolver.ResolutionException;
+import org.osgi.service.resolver.ResolveContext;
 
 /**
  * The resolver plugin.
@@ -97,7 +97,7 @@ import org.osgi.service.resolver.ResolutionException;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
+final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> implements XResolver {
 
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
@@ -106,7 +106,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
 
     static void addService(ServiceTarget serviceTarget) {
         ResolverPlugin service = new ResolverPlugin();
-        ServiceBuilder<ResolverPlugin> builder = serviceTarget.addService(InternalServices.RESOLVER_PLUGIN, service);
+        ServiceBuilder<ResolverPlugin> builder = serviceTarget.addService(Services.RESOLVER, service);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
@@ -134,20 +134,34 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         return this;
     }
 
-    Map<Resource, List<Wire>> resolve(final Collection<? extends Resource> mandatory, final Collection<? extends Resource> optional) throws ResolutionException {
+    @Override
+    public XResolveContext createResolverContext(XEnvironment environment, Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) {
         XEnvironment env = injectedEnvironment.getValue();
         Collection<Resource> manres = filterSingletons(mandatory);
         Collection<Resource> optres = appendOptionalFragments(mandatory, optional);
-        XResolveContext context = resolver.createResolverContext(env, manres, optres);
+        return resolver.createResolverContext(env, manres, optres);
+    }
+
+    @Override
+    public synchronized Map<Resource, List<Wire>> resolve(ResolveContext context) throws ResolutionException {
         return resolver.resolve(context);
     }
 
-    synchronized void resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
-        Map<Resource, List<Wire>> wiremap = resolve(mandatory, optional);
-        for (Entry<Resource, Wiring> entry : applyResolverResults(wiremap).entrySet()) {
+    @Override
+    public synchronized Map<Resource, Wiring> resolveAndApply(XResolveContext context) throws ResolutionException {
+        Map<Resource, List<Wire>> wiremap = resolver.resolve(context);
+        Map<Resource, Wiring> result = applyResolverResults(wiremap);
+        for (Entry<Resource, Wiring> entry : result.entrySet()) {
             XBundleRevision res = (XBundleRevision) entry.getKey();
             res.addAttachment(Wiring.class, entry.getValue());
         }
+        return result;
+    }
+
+    synchronized Map<Resource, Wiring> resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
+        XEnvironment env = injectedEnvironment.getValue();
+        XResolveContext context = createResolverContext(env, mandatory, optional);
+        return resolveAndApply(context);
     }
 
     private Collection<Resource> appendOptionalFragments(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) {
@@ -195,7 +209,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
             Requirement req = res.getRequirements(HostNamespace.HOST_NAMESPACE).get(0);
             XRequirement xreq = (XRequirement) req;
             for (Capability cap : hostcaps) {
-                if (xreq.matches((XCapability) cap)) {
+                if (xreq.matches(cap)) {
                     result.add(res);
                 }
             }

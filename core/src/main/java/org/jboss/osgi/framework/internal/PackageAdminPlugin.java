@@ -116,7 +116,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolver);
+        builder.addDependency(Services.RESOLVER, ResolverPlugin.class, service.injectedResolver);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
@@ -161,7 +161,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         if (bundle == null)
             return getAllExportedPackages();
-        
+
         if (!(bundle instanceof XBundle))
             return null;
 
@@ -422,7 +422,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     @Override
     public RequiredBundle[] getRequiredBundles(String symbolicName) {
-        
+
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         List<HostBundleState> matchingHosts = new ArrayList<HostBundleState>();
         if (symbolicName != null) {
@@ -439,7 +439,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         if (matchingHosts.isEmpty()) {
             return null;
         }
-        
+
         List<RequiredBundle> result = new ArrayList<RequiredBundle>();
         Iterator<HostBundleState> hostit = matchingHosts.iterator();
         while (hostit.hasNext()) {
@@ -476,6 +476,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         Set<Bundle> sortedSet = new TreeSet<Bundle>(new Comparator<Bundle>() {
             // Makes sure that the bundles are sorted correctly in the returned array
             // Matching bundles with the highest version should come first.
+            @Override
             public int compare(Bundle b1, Bundle b2) {
                 if (symbolicName == null) {
                     return (int)(b1.getBundleId() - b2.getBundleId());
@@ -501,7 +502,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         if (!(bundle instanceof HostBundleState))
             return null;
-        
+
         // If the specified bundle is a fragment then null is returned.
         // If the specified bundle is not resolved then null is returned
         HostBundleState hostBundle = HostBundleState.assertBundleState(bundle);
@@ -524,7 +525,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
         if (!(bundle instanceof FragmentBundleState))
             return null;
-        
+
         FragmentBundleState fragBundle = FragmentBundleState.assertBundleState(bundle);
         FragmentBundleRevision curRevision = fragBundle.getBundleRevision();
 
