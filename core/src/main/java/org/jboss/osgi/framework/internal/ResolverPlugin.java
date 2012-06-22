@@ -135,11 +135,11 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
     }
 
     @Override
-    public XResolveContext createResolverContext(XEnvironment environment, Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) {
+    public XResolveContext createResolveContext(XEnvironment environment, Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) {
         XEnvironment env = injectedEnvironment.getValue();
         Collection<Resource> manres = filterSingletons(mandatory);
         Collection<Resource> optres = appendOptionalFragments(mandatory, optional);
-        return resolver.createResolverContext(env, manres, optres);
+        return resolver.createResolveContext(env, manres, optres);
     }
 
     @Override
@@ -160,7 +160,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
 
     synchronized Map<Resource, Wiring> resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
         XEnvironment env = injectedEnvironment.getValue();
-        XResolveContext context = createResolverContext(env, mandatory, optional);
+        XResolveContext context = createResolveContext(env, mandatory, optional);
         return resolveAndApply(context);
     }
 
