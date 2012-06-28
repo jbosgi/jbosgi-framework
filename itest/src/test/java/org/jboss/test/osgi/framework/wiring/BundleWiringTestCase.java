@@ -1,0 +1,115 @@
+/*
+ * #%L
+ * JBossOSGi Framework iTest
+ * %%
+ * Copyright (C) 2010 - 2012 JBoss by Red Hat
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as 
+ * published by the Free Software Foundation, either version 2.1 of the 
+ * License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Lesser Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Lesser Public 
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/lgpl-2.1.html>.
+ * #L%
+ */
+/*
+ * JBoss, Home of Professional Open Source.
+ * Copyright 2008, Red Hat Middleware LLC, and individual contributors
+ * as indicated by the @author tags. See the copyright.txt file in the
+ * distribution for a full listing of individual contributors.
+ *
+ * This is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 2.1 of
+ * the License, or (at your option) any later version.
+ *
+ * This software is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software; if not, write to the Free
+ * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
+ * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
+ */
+package org.jboss.test.osgi.framework.wiring;
+
+import static org.junit.Assert.assertEquals;
+import static org.osgi.framework.namespace.PackageNamespace.PACKAGE_NAMESPACE;
+
+import java.io.InputStream;
+import java.util.List;
+
+import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.wiring.BundleCapability;
+import org.osgi.framework.wiring.BundleWiring;
+
+/**
+ * Test {@link BundleWiring} API
+ * 
+ * @author thomas.diesler@jboss.com
+ * @since 28-Jun-2012
+ */
+public class BundleWiringTestCase extends OSGiFrameworkTest {
+
+    @Test
+    @Ignore("[JBOSGI-571] Package exported by fragment not visible through PackageAdmin.getExportedPackage()")
+    public void testExportedPackageFromFragment() throws Exception {
+        XBundle hostA = (XBundle) installBundle(getHostA());
+        XBundle fragmentA = (XBundle) installBundle(getFragmentA());
+        
+        hostA.start();
+        assertBundleState(Bundle.ACTIVE, hostA.getState());
+        assertBundleState(Bundle.RESOLVED, fragmentA.getState());
+        
+        BundleWiring wiring = hostA.getBundleRevision().getWiring();
+        List<BundleCapability> caps = wiring.getCapabilities(PACKAGE_NAMESPACE);
+        assertEquals("One package capability", 1, caps.size());
+        assertEquals("org.jboss.osgi.fragment", caps.get(0).getAttributes().get(PACKAGE_NAMESPACE));
+       
+    }
+
+    private JavaArchive getHostA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "hostA");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                final OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getFragmentA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "fragmentA");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                final OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addFragmentHost("hostA");
+                builder.addExportPackages("org.jboss.osgi.fragment");
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+}

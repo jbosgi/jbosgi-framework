@@ -51,6 +51,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,8 +60,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.bundle.support.a.ObjectA;
 import org.jboss.test.osgi.framework.bundle.support.a.ObjectA2;
@@ -73,8 +77,8 @@ import org.jboss.test.osgi.framework.packageadmin.importA.ImportingA;
 import org.jboss.test.osgi.framework.packageadmin.importexport.ImportExport;
 import org.jboss.test.osgi.framework.packageadmin.optimporter.OptionalImport;
 import org.jboss.test.osgi.framework.service.support.a.PA;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
@@ -91,6 +95,7 @@ import org.osgi.service.packageadmin.RequiredBundle;
  * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
+ * @author Eric Bélanger
  */
 public class PackageAdminTestCase extends OSGiFrameworkTest {
 
@@ -799,5 +804,48 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
             bundleU.uninstall();
             bundleE.uninstall();
         }
+    }
+
+    @Test
+    @Ignore("[JBOSGI-571] Package exported by fragment not visible through PackageAdmin.getExportedPackage()")
+    public void testGetExportedPackageFromFragment() throws Exception {
+        Bundle hostA = installBundle(getHostA());
+        Bundle fragmentA = installBundle(getFragmentA());
+        
+        hostA.start();
+        assertBundleState(Bundle.ACTIVE, hostA.getState());
+        assertBundleState(Bundle.RESOLVED, fragmentA.getState());
+        
+        ExportedPackage fragmentPackage = getPackageAdmin().getExportedPackage("org.jboss.osgi.fragment");
+        assertNotNull("Fragment package not null", fragmentPackage);
+        assertEquals("Fragment package exported", hostA, fragmentPackage.getExportingBundle());
+    }
+
+    private JavaArchive getHostA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "hostA");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                final OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getFragmentA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "fragmentA");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                final OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addFragmentHost("hostA");
+                builder.addExportPackages("org.jboss.osgi.fragment");
+                return builder.openStream();
+            }
+        });
+        return archive;
     }
 }

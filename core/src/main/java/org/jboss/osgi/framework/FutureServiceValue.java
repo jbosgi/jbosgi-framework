@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -136,6 +136,7 @@ public final class FutureServiceValue<T> implements Future<T> {
                     listenerDone(controller);
             }
 
+            @Override
             public void transition(final ServiceController<? extends T> controller, final ServiceController.Transition transition) {
                 LOGGER.tracef("transition %s %s => %s", futureServiceValue, serviceName, transition);
                 if (expectedState == State.UP) {
@@ -163,12 +164,11 @@ public final class FutureServiceValue<T> implements Future<T> {
             }
 
             private void listenerDone(ServiceController<? extends T> controller) {
-                controller.removeListener(this);
                 latch.countDown();
             }
         };
-        controller.addListener(listener);
 
+        controller.addListener(listener);
         try {
             if (latch.await(timeout, unit) == false) {
                 TimeoutException ex = MESSAGES.timeoutGettingService(serviceName);
@@ -176,7 +176,9 @@ public final class FutureServiceValue<T> implements Future<T> {
                 throw ex;
             }
         } catch (InterruptedException e) {
-            // ignore;
+            // ignore
+        } finally {
+            controller.removeListener(listener);
         }
 
         if (controller.getState() == expectedState)
