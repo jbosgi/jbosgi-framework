@@ -15,17 +15,19 @@
             </outputFileNameMapping>
             <includes>
                 <include>*:args4j:jar</include>
+                <include>*:jbosgi-deployment:jar</include>
                 <include>*:jbosgi-framework-core:jar</include>
+                <include>*:jbosgi-metadata:jar</include>
                 <include>*:jbosgi-resolver-api:jar</include>
                 <include>*:jbosgi-resolver-felix:jar</include>
+                <include>*:jbosgi-spi:jar</include>
+                <include>*:jbosgi-vfs:jar</include>
+                <include>*:jbosgi-vfs30:jar</include>
                 <include>*:jboss-logging:jar</include>
                 <include>*:jboss-logmanager:jar</include>
                 <include>*:jboss-modules:jar</include>
                 <include>*:jboss-msc:jar</include>
                 <include>*:jboss-vfs:jar</include>
-                <include>*:jbosgi-spi:jar</include>
-                <include>*:jbosgi-vfs:jar</include>
-                <include>*:jbosgi-vfs30:jar</include>
                 <include>*:org.osgi.core:jar</include>
                 <include>*:org.osgi.compendium:jar</include>
             </includes>
