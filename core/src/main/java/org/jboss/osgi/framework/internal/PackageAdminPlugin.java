@@ -260,11 +260,12 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     private boolean isWired(XPackageCapability cap) {
         BundleWiring wiring = ((BundleRevision) cap.getResource()).getWiring();
         if (wiring != null) {
-            for (Wire wire : wiring.getProvidedResourceWires(cap.getNamespace())) {
-                if (wire.getCapability() == cap)
+            for (BundleWire wire : wiring.getProvidedWires(cap.getNamespace())) {
+            	XPackageCapability aux = ((XCapability)wire.getCapability()).adapt(XPackageCapability.class);
+				if (aux == cap)
                     return true;
             }
-            List<Wire> requireBundleWires = wiring.getProvidedResourceWires(BundleNamespace.BUNDLE_NAMESPACE);
+            List<BundleWire> requireBundleWires = wiring.getProvidedWires(BundleNamespace.BUNDLE_NAMESPACE);
             if (requireBundleWires.size() > 0)
                 return true;
         }
