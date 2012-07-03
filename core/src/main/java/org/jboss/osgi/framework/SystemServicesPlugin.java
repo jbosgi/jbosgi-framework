@@ -43,13 +43,15 @@
 package org.jboss.osgi.framework;
 
 import org.jboss.msc.service.Service;
+import org.osgi.framework.BundleContext;
 
 /**
- * Integration point to auto install bundles at framework startup.
+ * A service that registers additional system services.
  *
  * @author thomas.diesler@jboss.com
- * @since 30-Mar-2011
+ * @since 25-Mar-2011
  */
-public interface AutoInstallHandler extends Service<AutoInstallHandler> {
+public interface SystemServicesPlugin extends Service<SystemServicesPlugin> {
 
+    void registerSystemServices(BundleContext context);
 }

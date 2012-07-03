@@ -48,7 +48,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 
 /**
- * Default implementation for the COMPLETE step of the {@link AutoInstallHandler}.
+ * Default implementation for the COMPLETE step of the {@link AutoInstallPlugin}.
  *
  * @author thomas.diesler@jboss.com
  * @since 16-Apr-2012
@@ -61,7 +61,7 @@ public abstract class AutoInstallComplete extends AbstractInstallComplete {
 
     @Override
     protected void configureDependencies(ServiceBuilder<Void> builder) {
-        builder.addDependency(IntegrationServices.AUTOINSTALL_HANDLER);
+        builder.addDependency(IntegrationServices.AUTOINSTALL_PLUGIN);
     }
 
     @Override

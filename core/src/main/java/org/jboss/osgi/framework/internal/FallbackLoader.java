@@ -58,7 +58,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.Resource;
-import org.jboss.osgi.framework.SystemPathsProvider;
+import org.jboss.osgi.framework.SystemPathsPlugin;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
@@ -286,7 +286,7 @@ final class FallbackLoader implements LocalLoader {
         int lastIndex = resName.lastIndexOf('/');
         String pathName = lastIndex > 0 ? resName.substring(0, lastIndex) : resName;
         Module candidate = moduleManager.getFrameworkModule();
-        SystemPathsProvider systemPaths = frameworkState.getSystemPathsProvider();
+        SystemPathsPlugin systemPaths = frameworkState.getSystemPathsPlugin();
         return systemPaths.getSystemPaths().contains(pathName) ? candidate : null;
     }
 

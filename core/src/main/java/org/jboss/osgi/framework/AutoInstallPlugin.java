@@ -42,23 +42,14 @@
  */
 package org.jboss.osgi.framework;
 
-import java.util.Set;
-
 import org.jboss.msc.service.Service;
-import org.jboss.osgi.deployment.deployer.Deployment;
-import org.osgi.framework.BundleException;
 
 /**
- * A provider of {@link StorageState}
+ * Integration point to auto install bundles at framework startup.
  *
  * @author thomas.diesler@jboss.com
- * @since 12-Apr-2012
+ * @since 30-Mar-2011
  */
-public interface StorageStateProvider extends Service<StorageStateProvider> {
+public interface AutoInstallPlugin extends Service<AutoInstallPlugin> {
 
-    Set<StorageState> getStorageStates();
-
-    StorageState getByLocation(String location);
-
-    Deployment createDeployment(StorageState storageState) throws BundleException;
 }

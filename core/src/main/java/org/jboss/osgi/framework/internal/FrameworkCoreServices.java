@@ -49,10 +49,10 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.BundleInstallHandler;
+import org.jboss.osgi.framework.BundleInstallPlugin;
 import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.SystemServicesProvider;
+import org.jboss.osgi.framework.SystemServicesPlugin;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.packageadmin.PackageAdmin;
 
@@ -62,26 +62,26 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 28-Mar-2011
  */
-public final class FrameworkCoreServices extends AbstractPluginService<FrameworkCoreServices> {
+final class FrameworkCoreServices extends AbstractPluginService<FrameworkCoreServices> {
 
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
-    private final InjectedValue<BundleInstallHandler> injectedInstallProvider = new InjectedValue<BundleInstallHandler>();
+    private final InjectedValue<BundleInstallPlugin> injectedBundleInstall = new InjectedValue<BundleInstallPlugin>();
     private final InjectedValue<LifecycleInterceptorPlugin> injectedLifecycleInterceptor = new InjectedValue<LifecycleInterceptorPlugin>();
     private final InjectedValue<PackageAdmin> injectedPackageAdmin = new InjectedValue<PackageAdmin>();
     private final InjectedValue<StartLevelPlugin> injectedStartLevel = new InjectedValue<StartLevelPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
-    private final InjectedValue<SystemServicesProvider> injectedServicesProvider = new InjectedValue<SystemServicesProvider>();
+    private final InjectedValue<SystemServicesPlugin> injectedSystemServices = new InjectedValue<SystemServicesPlugin>();
 
     static void addService(ServiceTarget serviceTarget) {
         FrameworkCoreServices service = new FrameworkCoreServices();
         ServiceBuilder<FrameworkCoreServices> builder = serviceTarget.addService(InternalServices.FRAMEWORK_CORE_SERVICES, service);
-        builder.addDependency(IntegrationServices.BUNDLE_INSTALL_HANDLER, BundleInstallHandler.class, service.injectedInstallProvider);
+        builder.addDependency(IntegrationServices.BUNDLE_INSTALL_PLUGIN, BundleInstallPlugin.class, service.injectedBundleInstall);
         builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
         builder.addDependency(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, service.injectedLifecycleInterceptor);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, service.injectedPackageAdmin);
         builder.addDependency(Services.START_LEVEL, StartLevelPlugin.class, service.injectedStartLevel);
         builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(IntegrationServices.SYSTEM_SERVICES_PROVIDER, SystemServicesProvider.class, service.injectedServicesProvider);
+        builder.addDependency(IntegrationServices.SYSTEM_SERVICES_PLUGIN, SystemServicesPlugin.class, service.injectedSystemServices);
         builder.addDependencies(InternalServices.URL_HANDLER_PLUGIN);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
@@ -94,8 +94,8 @@ public final class FrameworkCoreServices extends AbstractPluginService<Framework
     public void start(StartContext context) throws StartException {
         super.start(context);
         BundleContext systemContext = injectedSystemContext.getValue();
-        SystemServicesProvider servicesProvider = injectedServicesProvider.getValue();
-        servicesProvider.registerSystemServices(systemContext);
+        SystemServicesPlugin systemServices = injectedSystemServices.getValue();
+        systemServices.registerSystemServices(systemContext);
         getFrameworkState().injectedCoreServices.inject(this);
     }
 
@@ -110,8 +110,8 @@ public final class FrameworkCoreServices extends AbstractPluginService<Framework
         return this;
     }
 
-    BundleInstallHandler getInstallHandler() {
-        return injectedInstallProvider.getValue();
+    BundleInstallPlugin getInstallHandler() {
+        return injectedBundleInstall.getValue();
     }
 
     FrameworkState getFrameworkState() {

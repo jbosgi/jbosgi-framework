@@ -103,8 +103,8 @@ public interface Services {
     /** The service name for the {@link StartLevel} service */
     ServiceName START_LEVEL = JBOSGI_BASE_NAME.append("StartLevel");
 
-    /** The service name for the {@link StorageStateProvider} */
-    ServiceName STORAGE_STATE_PROVIDER = JBOSGI_BASE_NAME.append("StorageStateProvider");
+    /** The service name for the {@link StorageStatePlugin} */
+    ServiceName STORAGE_STATE_PLUGIN = JBOSGI_BASE_NAME.append("StorageStatePlugin");
 
     /** The service name for the system {@link Bundle} */
     ServiceName SYSTEM_BUNDLE = JBOSGI_BASE_NAME.append("SystemBundle");

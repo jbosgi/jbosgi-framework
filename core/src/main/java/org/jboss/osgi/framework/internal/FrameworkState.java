@@ -43,7 +43,7 @@
 package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.SystemPathsProvider;
+import org.jboss.osgi.framework.SystemPathsPlugin;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.launch.Framework;
 
@@ -70,7 +70,7 @@ final class FrameworkState {
     final InjectedValue<ResolverPlugin> injectedResolverPlugin = new InjectedValue<ResolverPlugin>();
     final InjectedValue<ServiceManagerPlugin> injectedServiceManager = new InjectedValue<ServiceManagerPlugin>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
-    final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
+    final InjectedValue<SystemPathsPlugin> injectedSystemPaths = new InjectedValue<SystemPathsPlugin>();
     private int startStopOptions;
 
     FrameworkState(BundleManagerPlugin bundleManager) {
@@ -121,7 +121,7 @@ final class FrameworkState {
         return injectedSystemBundle.getValue();
     }
 
-    SystemPathsProvider getSystemPathsProvider() {
+    SystemPathsPlugin getSystemPathsPlugin() {
         return injectedSystemPaths.getValue();
     }
 }

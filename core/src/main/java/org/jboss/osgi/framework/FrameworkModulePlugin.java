@@ -43,29 +43,17 @@
 package org.jboss.osgi.framework;
 
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoader;
-import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.Service;
-import org.jboss.osgi.resolver.XBundleRevision;
+import org.osgi.framework.Bundle;
 
 /**
- * Integration point for the {@link ModuleLoader}.
+ * The framework module provider.
  *
  * @author thomas.diesler@jboss.com
- * @since 20-Apr-2011
+ * @since 25-Mar-2011
  */
-public interface ModuleLoaderProvider extends Service<ModuleLoaderProvider> {
+public interface FrameworkModulePlugin extends Service<FrameworkModulePlugin> {
 
-    ModuleLoader getModuleLoader();
+    Module getFrameworkModule(Bundle systemBundle);
 
-    void addModule(ModuleSpec moduleSpec);
-
-    void addModule(Module module);
-
-    Module getModule(ModuleIdentifier identifier);
-    
-    void removeModule(ModuleIdentifier identifier);
-
-    ModuleIdentifier getModuleIdentifier(XBundleRevision brev);
 }

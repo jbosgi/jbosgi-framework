@@ -40,18 +40,45 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework;
+package org.jboss.osgi.framework.internal;
 
-import org.jboss.msc.service.Service;
+import static org.jboss.osgi.framework.IntegrationServices.SYSTEM_SERVICES_PLUGIN;
+
+import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceRegistry;
+import org.jboss.msc.service.ServiceTarget;
+import org.jboss.osgi.framework.SystemServicesPlugin;
 import org.osgi.framework.BundleContext;
 
 /**
- * A service that registers additional system services.
+ * A noop placeholder for additional system services
  *
  * @author thomas.diesler@jboss.com
- * @since 25-Mar-2011
+ * @since 04-Feb-2011
  */
-public interface SystemServicesProvider extends Service<SystemServicesProvider> {
+final class DefaultSystemServicesPlugin extends AbstractPluginService<SystemServicesPlugin> implements SystemServicesPlugin {
 
-    void registerSystemServices(BundleContext context);
+    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
+        if (registry.getService(SYSTEM_SERVICES_PLUGIN) == null) {
+            DefaultSystemServicesPlugin service = new DefaultSystemServicesPlugin();
+            ServiceBuilder<SystemServicesPlugin> builder = serviceTarget.addService(SYSTEM_SERVICES_PLUGIN, service);
+            builder.setInitialMode(Mode.ON_DEMAND);
+            builder.install();
+        }
+    }
+
+    private DefaultSystemServicesPlugin() {
+    }
+
+
+    @Override
+    public void registerSystemServices(BundleContext context) {
+        // do nothing
+    }
+
+    @Override
+    public DefaultSystemServicesPlugin getValue() {
+        return this;
+    }
 }

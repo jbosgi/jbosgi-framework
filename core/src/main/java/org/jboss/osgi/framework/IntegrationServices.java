@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -55,30 +55,30 @@ import org.jboss.msc.service.ServiceName;
  */
 public interface IntegrationServices {
 
-    /** The service name for the {@link AutoInstallHandler} */
-    ServiceName AUTOINSTALL_HANDLER = INTEGRATION_BASE_NAME.append("AutoInstallHandler");
+    /** The service name for the {@link AutoInstallPlugin} */
+    ServiceName AUTOINSTALL_PLUGIN = INTEGRATION_BASE_NAME.append("AutoInstallPlugin");
 
-    /** The {@link AutoInstallHandler} nested service that indicates completion */
-    ServiceName AUTOINSTALL_COMPLETE = AUTOINSTALL_HANDLER.append("COMPLETE");
+    /** The {@link AutoInstallPlugin} nested service that indicates completion */
+    ServiceName AUTOINSTALL_COMPLETE = AUTOINSTALL_PLUGIN.append("COMPLETE");
 
-    /** The service name for the {@link BundleInstallHandler} */
-    ServiceName BUNDLE_INSTALL_HANDLER = INTEGRATION_BASE_NAME.append("BundleInstallHandler");
+    /** The service name for the {@link BundleInstallPlugin} */
+    ServiceName BUNDLE_INSTALL_PLUGIN = INTEGRATION_BASE_NAME.append("BundleInstallPlugin");
 
-    /** The service name for the {@link FrameworkModuleProvider} */
-    ServiceName FRAMEWORK_MODULE_PROVIDER = INTEGRATION_BASE_NAME.append("FrameworkModuleProvider");
+    /** The service name for the {@link FrameworkModulePlugin} */
+    ServiceName FRAMEWORK_MODULE_PLUGIN = INTEGRATION_BASE_NAME.append("FrameworkModulePlugin");
 
-    /** The service name for the {@link ModuleLoaderProvider} */
-    ServiceName MODULE_LOADER_PROVIDER = INTEGRATION_BASE_NAME.append("ModuleLoaderProvider");
+    /** The service name for the {@link ModuleLoaderPlugin} */
+    ServiceName MODULE_LOADER_PLUGIN = INTEGRATION_BASE_NAME.append("ModuleLoaderPlugin");
 
-    /** The {@link PersistentBundlesHandler} service name */
-    ServiceName PERSISTENT_BUNDLES_HANDLER = INTEGRATION_BASE_NAME.append("PersistentBundlesHandler");
+    /** The {@link PersistentBundlesPlugin} service name */
+    ServiceName PERSISTENT_BUNDLES_PLUGIN = INTEGRATION_BASE_NAME.append("PersistentBundlesPlugin");
 
-    /** The {@link PersistentBundlesHandler} nested service that indicates completion */
-    ServiceName PERSISTENT_BUNDLES_COMPLETE = PERSISTENT_BUNDLES_HANDLER.append("COMPLETE");
+    /** The {@link PersistentBundlesPlugin} nested service that indicates completion */
+    ServiceName PERSISTENT_BUNDLES_COMPLETE = PERSISTENT_BUNDLES_PLUGIN.append("COMPLETE");
 
-    /** The service name for the {@link SystemPathsProvider} */
-    ServiceName SYSTEM_PATHS_PROVIDER = INTEGRATION_BASE_NAME.append("SystemPathsProvider");
+    /** The service name for the {@link SystemPathsPlugin} */
+    ServiceName SYSTEM_PATHS_PLUGIN = INTEGRATION_BASE_NAME.append("SystemPathsPlugin");
 
-    /** The service name for the {@link SystemServicesProvider} */
-    ServiceName SYSTEM_SERVICES_PROVIDER = INTEGRATION_BASE_NAME.append("SystemServicesProvider");
+    /** The service name for the {@link SystemServicesPlugin} */
+    ServiceName SYSTEM_SERVICES_PLUGIN = INTEGRATION_BASE_NAME.append("SystemServicesPlugin");
 }

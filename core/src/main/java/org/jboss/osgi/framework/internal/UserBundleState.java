@@ -60,7 +60,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleInstallHandler;
+import org.jboss.osgi.framework.BundleInstallPlugin;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -385,7 +385,7 @@ abstract class UserBundleState extends AbstractBundleState {
         headersOnUninstall = getHeaders(null);
 
         // Uninstall through the {@link BundleInstallHandler}
-        BundleInstallHandler installHandler = getCoreServices().getInstallHandler();
+        BundleInstallPlugin installHandler = getCoreServices().getInstallHandler();
         installHandler.uninstallBundle(getDeployment());
     }
 

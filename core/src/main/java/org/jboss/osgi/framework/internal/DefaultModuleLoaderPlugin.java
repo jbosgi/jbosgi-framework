@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -43,7 +43,7 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.Constants.JBOSGI_PREFIX;
-import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PROVIDER;
+import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PLUGIN;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
@@ -63,7 +63,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.osgi.framework.ModuleLoaderProvider;
+import org.jboss.osgi.framework.ModuleLoaderPlugin;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XIdentityCapability;
 
@@ -73,20 +73,20 @@ import org.jboss.osgi.resolver.XIdentityCapability;
  * @author thomas.diesler@jboss.com
  * @since 20-Apr-2011
  */
-final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLoaderProvider {
+final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoaderPlugin {
 
     private Map<ModuleIdentifier, ModuleHolder> moduleSpecs = new ConcurrentHashMap<ModuleIdentifier, ModuleHolder>();
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(MODULE_LOADER_PROVIDER) == null) {
-            ModuleLoaderProvider service = new DefaultModuleLoaderProvider();
-            ServiceBuilder<ModuleLoaderProvider> builder = serviceTarget.addService(MODULE_LOADER_PROVIDER, service);
+        if (registry.getService(MODULE_LOADER_PLUGIN) == null) {
+            ModuleLoaderPlugin service = new DefaultModuleLoaderPlugin();
+            ServiceBuilder<ModuleLoaderPlugin> builder = serviceTarget.addService(MODULE_LOADER_PLUGIN, service);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();
         }
     }
 
-    private DefaultModuleLoaderProvider() {
+    private DefaultModuleLoaderPlugin() {
     }
 
     @Override
@@ -100,13 +100,18 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
     }
 
     @Override
-    public ModuleLoaderProvider getValue() {
+    public ModuleLoaderPlugin getValue() {
         return this;
     }
 
     @Override
     public ModuleLoader getModuleLoader() {
         return this;
+    }
+
+    @Override
+    public void addIntegrationDependencies(ModuleSpecBuilderContext context) {
+        // do nothing
     }
 
     @Override
@@ -147,7 +152,7 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
         LOGGER.tracef("getModule: %s => %s", identifier, result);
         return result;
     }
-    
+
     @Override
     public void addModule(ModuleSpec moduleSpec) {
         LOGGER.tracef("addModule: %s", moduleSpec.getModuleIdentifier());
@@ -184,7 +189,7 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
 
     @Override
     public String toString() {
-        return DefaultModuleLoaderProvider.class.getSimpleName();
+        return DefaultModuleLoaderPlugin.class.getSimpleName();
     }
 
     static class ModuleHolder {

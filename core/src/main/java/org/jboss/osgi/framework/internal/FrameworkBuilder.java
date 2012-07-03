@@ -149,17 +149,17 @@ public final class FrameworkBuilder {
             ResolverPlugin.addService(serviceTarget);
             ServiceManagerPlugin.addService(serviceTarget);
             StartLevelPlugin.addService(serviceTarget);
-            StorageStateProviderPlugin.addService(serviceTarget);
+            DefaultStorageStatePlugin.addService(serviceTarget);
             SystemBundleService.addService(serviceTarget, frameworkState);
             SystemContextService.addService(serviceTarget);
 
-            DefaultAutoInstallHandler.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultBundleInstallHandler.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultFrameworkModuleProvider.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultModuleLoaderProvider.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultPersistentBundlesHandler.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultSystemPathsProvider.addIntegrationService(serviceRegistry, serviceTarget, this);
-            DefaultSystemServicesProvider.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultAutoInstallPlugin.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultBundleInstallPlugin.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultFrameworkModulePlugin.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultModuleLoaderPlugin.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultPersistentBundlesPlugin.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultSystemPathsPlugin.addIntegrationService(serviceRegistry, serviceTarget, this);
+            DefaultSystemServicesPlugin.addIntegrationService(serviceRegistry, serviceTarget);
 
         } finally {
             closed = true;

@@ -55,7 +55,7 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.SystemPathsProvider;
+import org.jboss.osgi.framework.SystemPathsPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -71,7 +71,7 @@ import org.osgi.framework.Version;
  */
 public final class SystemBundleService extends AbstractBundleService<SystemBundleState> {
 
-    private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
+    private final InjectedValue<SystemPathsPlugin> injectedSystemPaths = new InjectedValue<SystemPathsPlugin>();
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironmentPlugin = new InjectedValue<XEnvironment>();
     private SystemBundleState bundleState;
@@ -80,7 +80,7 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
         SystemBundleService service = new SystemBundleService(frameworkState);
         ServiceBuilder<SystemBundleState> builder = serviceTarget.addService(Services.SYSTEM_BUNDLE, service);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironmentPlugin);
-        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
+        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, service.injectedSystemPaths);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
@@ -129,7 +129,7 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
 
         // Initialize the OSGiMetaData
         OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(Constants.SYSTEM_BUNDLE_SYMBOLICNAME, Version.emptyVersion);
-        SystemPathsProvider systemPackages = injectedSystemPaths.getValue();
+        SystemPathsPlugin systemPackages = injectedSystemPaths.getValue();
 
         List<String> exportedPackages = new ArrayList<String>();
         exportedPackages.addAll(systemPackages.getSystemPackages());

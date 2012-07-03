@@ -42,25 +42,23 @@
  */
 package org.jboss.osgi.framework;
 
+import java.util.Set;
+
 import org.jboss.msc.service.Service;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.osgi.framework.BundleException;
 
 /**
- * A handler for bundle deployments.
+ * A provider of {@link StorageState}
  *
  * @author thomas.diesler@jboss.com
- * @since 29-Mar-2011
+ * @since 12-Apr-2012
  */
-public interface BundleInstallHandler extends Service<BundleInstallHandler> {
+public interface StorageStatePlugin extends Service<StorageStatePlugin> {
 
-    /**
-     * Install the bundle service for the given deployment.
-     */
-    void installBundle(Deployment dep) throws BundleException;
+    Set<StorageState> getStorageStates();
 
-    /**
-     * Uninstall the bundle associated with the given deployment.
-     */
-    void uninstallBundle(Deployment dep);
+    StorageState getByLocation(String location);
+
+    Deployment createDeployment(StorageState storageState) throws BundleException;
 }

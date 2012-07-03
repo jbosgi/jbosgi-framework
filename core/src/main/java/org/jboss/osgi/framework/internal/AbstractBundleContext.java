@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -57,7 +57,7 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleInstallHandler;
+import org.jboss.osgi.framework.BundleInstallPlugin;
 import org.jboss.osgi.framework.FutureServiceValue;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -146,12 +146,12 @@ abstract class AbstractBundleContext implements BundleContext {
      *
      * #2 Create a Bundle {@link Deployment}
      *
-     * #3 Deploy the Bundle through the {@link BundleInstallProvider}
+     * #3 Deploy the Bundle through the {@link BundleInstallPlugin}
      *
-     * The {@link BundleInstallProvider} is the integration point for JBossAS.
+     * The {@link BundleInstallPlugin} is the integration point for JBossAS.
      *
-     * The {@link DefaultBundleInstallProvider} simply delegates to {@link BundleManager#installBundle(ServiceTarget,Deployment)} In
-     * JBossAS however, the {@link BundleInstallProvider} delegates to the management API that feeds the Bundle deployment
+     * The {@link DefaultBundleInstallPlugin} simply delegates to {@link BundleManager#installBundle(ServiceTarget,Deployment)} In
+     * JBossAS however, the {@link BundleInstallPlugin} delegates to the management API that feeds the Bundle deployment
      * through the DeploymentUnitProcessor chain.
      */
     private Bundle installBundleInternal(String location, InputStream input) throws BundleException {
@@ -215,7 +215,7 @@ abstract class AbstractBundleContext implements BundleContext {
         BundleManagerPlugin bundleManager = frameworkState.getBundleManager();
 
         String location = deployment.getLocation();
-        BundleInstallHandler installHandler = frameworkState.getCoreServices().getInstallHandler();
+        BundleInstallPlugin installHandler = frameworkState.getCoreServices().getInstallHandler();
         installHandler.installBundle(deployment);
 
         ServiceName serviceName = deployment.getAttachment(ServiceName.class);

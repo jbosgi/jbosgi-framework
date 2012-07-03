@@ -48,7 +48,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 
 /**
- * Default implementation for the COMPLETE step of the {@link PersistentBundlesHandler}.
+ * Default implementation for the COMPLETE step of the {@link PersistentBundlesPlugin}.
  *
  * @author thomas.diesler@jboss.com
  * @since 16-Apr-2012
@@ -61,7 +61,7 @@ public abstract class PersistentBundlesComplete extends AbstractInstallComplete 
 
     @Override
     protected void configureDependencies(ServiceBuilder<Void> builder) {
-        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLES_HANDLER);
+        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLES_PLUGIN);
     }
 
     @Override

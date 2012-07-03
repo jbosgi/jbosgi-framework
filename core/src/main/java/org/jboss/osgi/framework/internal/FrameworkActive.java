@@ -72,28 +72,28 @@ import org.osgi.service.resolver.ResolutionException;
  * <code>
  * {@link FrameworkActive}
  *         +---{@link FrameworkInit}
- *             +---{@link DefaultPersistentBundlesHandler}
- *                 +---{@link DefaultAutoInstallHandler}
+ *             +---{@link DefaultPersistentBundlesPlugin}
+ *                 +---{@link DefaultAutoInstallPlugin}
  *             +---{@link FrameworkCoreServices}
  *                 +---{@link LifecycleInterceptorPlugin}
  *                 +---{@link PackageAdminPlugin}
  *                 +---{@link StartLevelPlugin}
- *                 +---{@link DefaultSystemServicesProvider}
+ *                 +---{@link DefaultSystemServicesPlugin}
  *                 +---{@link URLHandlerPlugin}
- *                 +---{@link DefaultBundleInstallHandler}
+ *                 +---{@link DefaultBundleInstallPlugin}
  *                     +---{@link FrameworkCreate}
- *                         +---{@link StorageStateProviderPlugin}
+ *                         +---{@link DefaultStorageStatePlugin}
  *                         +---{@link DeploymentFactoryPlugin}
  *                         +---{@link ResolverPlugin}
  *                         |   +---{@link NativeCodePlugin}
  *                         +---{@link ServiceManagerPlugin}
  *                             +---{@link ModuleManagerPlugin}
- *                             |   +---{@link DefaultModuleLoaderProvider}
+ *                             |   +---{@link DefaultModuleLoaderPlugin}
  *                             +---{@link FrameworkEventsPlugin}
  *                                 +---{@link SystemContextService}
  *                                     +---{@link SystemBundleService}
- *                                         +---{@link DefaultFrameworkModuleProvider}
- *                                         |   +---{@link DefaultSystemPathsProvider}
+ *                                         +---{@link DefaultFrameworkModulePlugin}
+ *                                         |   +---{@link DefaultSystemPathsPlugin}
  *                                         +---{@link BundleStoragePlugin}
  *                                             +---{@link BundleManagerPlugin}
  *                                                 +---{@link DefaultEnvironmentPlugin}

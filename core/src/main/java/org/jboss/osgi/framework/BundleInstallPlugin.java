@@ -42,18 +42,25 @@
  */
 package org.jboss.osgi.framework;
 
-import org.jboss.modules.Module;
 import org.jboss.msc.service.Service;
-import org.osgi.framework.Bundle;
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.osgi.framework.BundleException;
 
 /**
- * The framework module provider.
+ * A handler for bundle deployments.
  *
  * @author thomas.diesler@jboss.com
- * @since 25-Mar-2011
+ * @since 29-Mar-2011
  */
-public interface FrameworkModuleProvider extends Service<FrameworkModuleProvider> {
+public interface BundleInstallPlugin extends Service<BundleInstallPlugin> {
 
-    Module getFrameworkModule(Bundle systemBundle);
+    /**
+     * Install the bundle service for the given deployment.
+     */
+    void installBundle(Deployment dep) throws BundleException;
 
+    /**
+     * Uninstall the bundle associated with the given deployment.
+     */
+    void uninstallBundle(Deployment dep);
 }

@@ -42,7 +42,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_HANDLER;
+import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_PLUGIN;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.util.HashSet;
@@ -61,10 +61,10 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.PersistentBundlesComplete;
-import org.jboss.osgi.framework.PersistentBundlesHandler;
+import org.jboss.osgi.framework.PersistentBundlesPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
-import org.jboss.osgi.framework.StorageStateProvider;
+import org.jboss.osgi.framework.StorageStatePlugin;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -74,19 +74,19 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class DefaultPersistentBundlesHandler extends AbstractPluginService<PersistentBundlesHandler> implements PersistentBundlesHandler {
+final class DefaultPersistentBundlesPlugin extends AbstractPluginService<PersistentBundlesPlugin> implements PersistentBundlesPlugin {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
-    private final InjectedValue<StorageStateProvider> injectedStorageProvider = new InjectedValue<StorageStateProvider>();
+    private final InjectedValue<StorageStatePlugin> injectedStorageState = new InjectedValue<StorageStatePlugin>();
     private final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(PERSISTENT_BUNDLES_HANDLER) == null) {
-            DefaultPersistentBundlesHandler service = new DefaultPersistentBundlesHandler();
-            ServiceBuilder<PersistentBundlesHandler> builder = serviceTarget.addService(PERSISTENT_BUNDLES_HANDLER, service);
+        if (registry.getService(PERSISTENT_BUNDLES_PLUGIN) == null) {
+            DefaultPersistentBundlesPlugin service = new DefaultPersistentBundlesPlugin();
+            ServiceBuilder<PersistentBundlesPlugin> builder = serviceTarget.addService(PERSISTENT_BUNDLES_PLUGIN, service);
             builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-            builder.addDependency(Services.STORAGE_STATE_PROVIDER, StorageStateProvider.class, service.injectedStorageProvider);
+            builder.addDependency(Services.STORAGE_STATE_PLUGIN, StorageStatePlugin.class, service.injectedStorageState);
             builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
             builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, service.injectedDeploymentFactory);
             builder.addDependencies(Services.FRAMEWORK_CREATE, IntegrationServices.AUTOINSTALL_COMPLETE);
@@ -95,7 +95,7 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
         }
     }
 
-    private DefaultPersistentBundlesHandler() {
+    private DefaultPersistentBundlesPlugin() {
     }
 
     @Override
@@ -105,8 +105,8 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         DeploymentFactoryPlugin deploymentPlugin = injectedDeploymentFactory.getValue();
 
-        final StorageStateProvider storageStateProvider = injectedStorageProvider.getValue();
-        final Set<StorageState> storageStates = new HashSet<StorageState>(storageStateProvider.getStorageStates());
+        final StorageStatePlugin storageStatePlugin = injectedStorageState.getValue();
+        final Set<StorageState> storageStates = new HashSet<StorageState>(storageStatePlugin.getStorageStates());
 
         // Reduce the set by the bundles that are already installed
         Iterator<StorageState> iterator = storageStates.iterator();
@@ -144,7 +144,7 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
     }
 
     @Override
-    public PersistentBundlesHandler getValue() throws IllegalStateException {
+    public PersistentBundlesPlugin getValue() throws IllegalStateException {
         return this;
     }
 }

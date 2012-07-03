@@ -42,7 +42,7 @@
  */
 package org.jboss.test.osgi.framework.xservice;
 
-import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PROVIDER;
+import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PLUGIN;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -58,7 +58,7 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.framework.AbstractBundleRevisionAdaptor;
 import org.jboss.osgi.framework.BundleManager;
-import org.jboss.osgi.framework.ModuleLoaderProvider;
+import org.jboss.osgi.framework.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
@@ -106,8 +106,8 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         XBundle sysbundle = (XBundle) getSystemContext().getBundle();
         BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        ServiceController<?> service = serviceContainer.getRequiredService(MODULE_LOADER_PROVIDER);
-        ModuleLoaderProvider provider = (ModuleLoaderProvider) service.getValue();
+        ServiceController<?> service = serviceContainer.getRequiredService(MODULE_LOADER_PLUGIN);
+        ModuleLoaderPlugin provider = (ModuleLoaderPlugin) service.getValue();
         provider.addModule(moduleSpec);
 
         // Load the {@link Module}
@@ -121,8 +121,8 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         XBundle sysbundle = (XBundle) getSystemContext().getBundle();
         BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        ServiceController<?> service = serviceContainer.getRequiredService(MODULE_LOADER_PROVIDER);
-        ModuleLoaderProvider provider = (ModuleLoaderProvider) service.getValue();
+        ServiceController<?> service = serviceContainer.getRequiredService(MODULE_LOADER_PLUGIN);
+        ModuleLoaderPlugin provider = (ModuleLoaderPlugin) service.getValue();
         provider.removeModule(module.getIdentifier());
         VFSUtils.safeClose(vfsmap.remove(module));
     }
