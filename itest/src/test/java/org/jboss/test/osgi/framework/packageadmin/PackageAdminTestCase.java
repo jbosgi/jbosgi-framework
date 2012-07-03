@@ -77,7 +77,6 @@ import org.jboss.test.osgi.framework.packageadmin.importA.ImportingA;
 import org.jboss.test.osgi.framework.packageadmin.importexport.ImportExport;
 import org.jboss.test.osgi.framework.packageadmin.optimporter.OptionalImport;
 import org.jboss.test.osgi.framework.service.support.a.PA;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -807,7 +806,6 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    @Ignore("[JBOSGI-571] Package exported by fragment not visible through PackageAdmin.getExportedPackage()")
     public void testGetExportedPackageFromFragment() throws Exception {
         Bundle hostA = installBundle(getHostA());
         Bundle fragmentA = installBundle(getFragmentA());

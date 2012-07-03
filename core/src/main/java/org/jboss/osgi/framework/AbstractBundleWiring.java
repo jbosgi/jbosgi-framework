@@ -50,6 +50,9 @@ import java.util.Enumeration;
 import java.util.List;
 
 import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.resolver.XCapability;
+import org.jboss.osgi.resolver.XResource;
+import org.jboss.osgi.resolver.spi.AbstractHostedCapability;
 import org.jboss.osgi.resolver.spi.AbstractWiring;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleCapability;
@@ -57,7 +60,10 @@ import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
+import org.osgi.resource.Capability;
+import org.osgi.resource.Requirement;
 import org.osgi.resource.Wire;
+import org.osgi.service.resolver.HostedCapability;
 
 /**
  * The {@link BundleWiring} implementation.
@@ -69,6 +75,11 @@ public class AbstractBundleWiring extends AbstractWiring implements BundleWiring
 
     public AbstractBundleWiring(XBundleRevision brev, List<Wire> required, List<Wire> provided) {
         super(brev, required, provided);
+    }
+
+    @Override
+    protected HostedCapability getHostedCapability(XCapability cap) {
+        return new AbstractHostedBundleCapability((XResource) getResource(), cap);
     }
 
     @Override
@@ -88,12 +99,20 @@ public class AbstractBundleWiring extends AbstractWiring implements BundleWiring
 
     @Override
     public List<BundleCapability> getCapabilities(String namespace) {
-        return getRevision().getDeclaredCapabilities(namespace);
+        List<BundleCapability> result = new ArrayList<BundleCapability>();
+        for (Capability cap : getResourceCapabilities(namespace)) {
+            result.add((BundleCapability) cap);
+        }
+        return Collections.unmodifiableList(result);
     }
 
     @Override
     public List<BundleRequirement> getRequirements(String namespace) {
-        return getRevision().getDeclaredRequirements(namespace);
+        List<BundleRequirement> result = new ArrayList<BundleRequirement>();
+        for (Requirement req : getResourceRequirements(namespace)) {
+            result.add((BundleRequirement) req);
+        }
+        return Collections.unmodifiableList(result);
     }
 
     @Override
@@ -149,5 +168,22 @@ public class AbstractBundleWiring extends AbstractWiring implements BundleWiring
     @Override
     public Bundle getBundle() {
         return getRevision().getBundle();
+    }
+    
+    static class AbstractHostedBundleCapability extends AbstractHostedCapability implements BundleCapability {
+
+        AbstractHostedBundleCapability(XResource resource, XCapability capability) {
+            super(resource, capability);
+        }
+
+        @Override
+        public BundleRevision getRevision() {
+            return (BundleRevision) super.getResource();
+        }
+
+        @Override
+        public BundleRevision getResource() {
+            return (BundleRevision) super.getResource();
+        }
     }
 }

@@ -54,7 +54,6 @@ import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleCapability;
@@ -69,7 +68,6 @@ import org.osgi.framework.wiring.BundleWiring;
 public class BundleWiringTestCase extends OSGiFrameworkTest {
 
     @Test
-    @Ignore("[JBOSGI-571] Package exported by fragment not visible through PackageAdmin.getExportedPackage()")
     public void testExportedPackageFromFragment() throws Exception {
         XBundle hostA = (XBundle) installBundle(getHostA());
         XBundle fragmentA = (XBundle) installBundle(getFragmentA());

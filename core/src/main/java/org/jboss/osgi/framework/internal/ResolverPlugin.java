@@ -220,14 +220,14 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
         return result;
     }
 
-    private Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> orgmap) throws ResolutionException {
+    private Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) throws ResolutionException {
 
         // [TODO] Revisit how we apply the resolution results
         // An exception in one of the steps may leave the framework partially modified
 
         // Transform the wiremap to {@link BundleRevision} and {@link BundleWire}
-        Map<BundleRevision, List<BundleWire>> wiremap = new HashMap<BundleRevision, List<BundleWire>>();
-        for (Entry<Resource, List<Wire>> entry : orgmap.entrySet()) {
+        Map<BundleRevision, List<BundleWire>> brevmap = new HashMap<BundleRevision, List<BundleWire>>();
+        for (Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
             List<BundleWire> bwires = new ArrayList<BundleWire>();
             List<Wire> wires = new ArrayList<Wire>();
             for (Wire wire : entry.getValue()) {
@@ -236,34 +236,34 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
                 wires.add(bwire);
             }
             Resource res = entry.getKey();
-            wiremap.put((BundleRevision) res, bwires);
-            orgmap.put(res, wires);
+            brevmap.put((BundleRevision) res, bwires);
+            wiremap.put(res, wires);
         }
 
         // Attach the fragments to host
-        attachFragmentsToHost(wiremap);
+        attachFragmentsToHost(brevmap);
 
         try {
 
             // Resolve native code libraries if there are any
-            resolveNativeCodeLibraries(wiremap);
+            resolveNativeCodeLibraries(brevmap);
 
         } catch (BundleException ex) {
             throw new ResolutionException(ex);
         }
 
         // For every resolved host bundle create the {@link ModuleSpec}
-        addModules(wiremap);
+        addModules(brevmap);
 
         // For every resolved host bundle load the module. This creates the {@link ModuleClassLoader}
-        loadModules(wiremap);
+        loadModules(brevmap);
 
         // Change the bundle state to RESOLVED
-        setBundleToResolved(wiremap);
+        setBundleToResolved(brevmap);
 
         // Construct and apply the resource wiring map
         XEnvironment env = injectedEnvironment.getValue();
-        return env.updateWiring(orgmap);
+        return env.updateWiring(wiremap);
     }
 
     private void attachFragmentsToHost(Map<BundleRevision, List<BundleWire>> wiremap) {

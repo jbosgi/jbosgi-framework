@@ -210,6 +210,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         return pkgs.length == 0 ? null : pkgs;
     }
 
+    // This implementation is flawed but the design of this API in PackageAdmin
+    // is also flawed and from R5 deprecated so we're doing a best effort
     private ExportedPackage[] getExportedPackagesInternal(String name) {
         assert name != null : "Null name";
 
@@ -217,8 +219,9 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         XEnvironment env = injectedEnvironment.getValue();
         for (XResource res : env.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
             XBundleRevision brev = (XBundleRevision) res;
-            if (brev.getWiring() != null && !brev.isFragment()) {
-                for (Capability cap : brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
+            BundleWiring wiring = brev.getWiring();
+            if (wiring != null && !brev.isFragment()) {
+                for (Capability cap : wiring.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
                     XCapability xcap = (XCapability) cap;
                     XPackageCapability packcap = xcap.adapt(XPackageCapability.class);
                     if (packcap.getPackageName().equals(name)) {
@@ -232,8 +235,6 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     @Override
     public ExportedPackage getExportedPackage(String name) {
-        // This implementation is flawed but the design of this API in PackageAdmin
-        // is also flawed and from 4.3 deprecated so we're doing a best effort
         ExportedPackage[] exported = getExportedPackagesInternal(name);
         List<ExportedPackage> wired = new ArrayList<ExportedPackage>();
         List<ExportedPackage> notWired = new ArrayList<ExportedPackage>();
@@ -261,8 +262,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         BundleWiring wiring = ((BundleRevision) cap.getResource()).getWiring();
         if (wiring != null) {
             for (BundleWire wire : wiring.getProvidedWires(cap.getNamespace())) {
-            	XPackageCapability aux = ((XCapability)wire.getCapability()).adapt(XPackageCapability.class);
-				if (aux == cap)
+				if (cap.equals(wire.getCapability()))
                     return true;
             }
             List<BundleWire> requireBundleWires = wiring.getProvidedWires(BundleNamespace.BUNDLE_NAMESPACE);
