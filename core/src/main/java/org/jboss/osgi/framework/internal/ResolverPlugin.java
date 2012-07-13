@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -34,9 +34,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -234,9 +232,6 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
         // For every resolved host bundle create the {@link ModuleSpec}
         addModules(brevmap);
 
-        // For every resolved host bundle load the module. This creates the {@link ModuleClassLoader}
-        loadModules(brevmap);
-
         // Change the bundle state to RESOLVED
         setBundleToResolved(brevmap);
 
@@ -286,22 +281,6 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
                 List<BundleWire> wires = wiremap.get(brev);
                 ModuleIdentifier identifier = moduleManager.addModule(brev, wires);
                 brev.addAttachment(ModuleIdentifier.class, identifier);
-            }
-        }
-    }
-
-    private void loadModules(Map<BundleRevision, List<BundleWire>> wiremap) {
-        ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
-        for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
-            XBundleRevision brev = (XBundleRevision) entry.getKey();
-            if (brev.isFragment() == false) {
-                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(brev);
-                try {
-                    Module module = moduleManager.loadModule(identifier);
-                    brev.addAttachment(Module.class, module);
-                } catch (ModuleLoadException ex) {
-                    throw FrameworkMessages.MESSAGES.illegalStateCannotLoadModule(ex, identifier);
-                }
             }
         }
     }

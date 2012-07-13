@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -178,22 +178,6 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     }
 
     /**
-     * Get the associated bundle revision for the given identifier
-     * @return The revision or null
-     */
-    XBundleRevision getBundleRevision(ModuleIdentifier identifier) {
-        XBundleRevision result = null;
-        XEnvironment env = injectedEnvironment.getValue();
-        for (XResource res : env.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
-            Module module = res.getAttachment(Module.class);
-            if (module != null && module.getIdentifier().equals(identifier)) {
-                result = (XBundleRevision) res;
-            }
-        }
-        return result;
-    }
-
-    /**
      * Get the bundle for the given class
      *
      * @return The bundle or null
@@ -207,11 +191,24 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             result = (XBundle) bundleRef.getBundle();
         } else if (loader instanceof ModuleClassLoader) {
             Module module = ((ModuleClassLoader) loader).getModule();
-            XBundleRevision brev = getBundleRevision(module.getIdentifier());
+            XBundleRevision brev = getBundleRevision(module);
             result = brev != null ? brev.getBundle() : null;
         }
         if (result == null)
             LOGGER.debugf("Cannot obtain bundle for: %s", clazz.getName());
+        return result;
+    }
+
+    private XBundleRevision getBundleRevision(Module module) {
+        XBundleRevision result = null;
+        XEnvironment env = injectedEnvironment.getValue();
+        for (XResource res : env.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
+            Module resmod = res.getAttachment(Module.class);
+            if (module == resmod) {
+                result = (XBundleRevision) res;
+                break;
+            }
+        }
         return result;
     }
 
