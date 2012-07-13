@@ -15,7 +15,7 @@
     <parent>
         <groupId>org.jboss.osgi</groupId>
         <artifactId>jbosgi-parent</artifactId>
-        <version>1.0.22</version>
+        <version>1.0.23</version>
     </parent>
 
     <name>JBossOSGi Framework</name>
@@ -187,25 +187,23 @@
         <module>itest</module>
     </modules>
 
-    <!-- Repositories -->
-    <repositories>
-        <repository>
-            <id>jboss-public-repository-group</id>
-            <name>JBoss Public Repository Group</name>
-            <url>http://repository.jboss.org/nexus/content/groups/public/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </snapshots>
-        </repository>
-    </repositories>
-
     <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <licenseName>lgpl_v2_1</licenseName>
+                    <inceptionYear>2010</inceptionYear>
+                    <roots>
+                        <root>${basedir}</root>
+                    </roots>
+                    <excludes>
+                        <exclude>target/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
         <pluginManagement>
             <plugins>
                 <!-- This plugin's configuration is used to store Eclipse 
