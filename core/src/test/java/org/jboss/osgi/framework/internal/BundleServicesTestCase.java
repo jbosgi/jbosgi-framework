@@ -38,6 +38,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarFile;
 
+import junit.framework.Assert;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 

@@ -55,11 +55,17 @@ import org.jboss.msc.service.ServiceName;
  */
 public interface IntegrationServices {
 
-    /** The service name for the {@link AutoInstallPlugin} */
-    ServiceName AUTOINSTALL_PLUGIN = INTEGRATION_BASE_NAME.append("AutoInstallPlugin");
+    /** The service name for the {@link BootstrapBundlesPlugin} */
+    ServiceName BOOTSTRAP_BUNDLES = INTEGRATION_BASE_NAME.append("BootstrapBundles");
 
-    /** The {@link AutoInstallPlugin} nested service that indicates completion */
-    ServiceName AUTOINSTALL_COMPLETE = AUTOINSTALL_PLUGIN.append("COMPLETE");
+    /** The {@link BootstrapBundlesPlugin} service that indicates INSTALLED completion */
+    ServiceName BOOTSTRAP_BUNDLES_INSTALLED = BOOTSTRAP_BUNDLES.append("INSTALLED");
+
+    /** The {@link BootstrapBundlesPlugin} service that indicates RESOLVED completion */
+    ServiceName BOOTSTRAP_BUNDLES_RESOLVED = BOOTSTRAP_BUNDLES.append("RESOLVED");
+
+    /** The {@link BootstrapBundlesPlugin} service that indicates ACTIVE completion */
+    ServiceName BOOTSTRAP_BUNDLES_ACTIVE = BOOTSTRAP_BUNDLES.append("ACTIVE");
 
     /** The service name for the {@link BundleInstallPlugin} */
     ServiceName BUNDLE_INSTALL_PLUGIN = INTEGRATION_BASE_NAME.append("BundleInstallPlugin");
@@ -71,10 +77,16 @@ public interface IntegrationServices {
     ServiceName MODULE_LOADER_PLUGIN = INTEGRATION_BASE_NAME.append("ModuleLoaderPlugin");
 
     /** The {@link PersistentBundlesPlugin} service name */
-    ServiceName PERSISTENT_BUNDLES_PLUGIN = INTEGRATION_BASE_NAME.append("PersistentBundlesPlugin");
+    ServiceName PERSISTENT_BUNDLES = INTEGRATION_BASE_NAME.append("PersistentBundles");
 
-    /** The {@link PersistentBundlesPlugin} nested service that indicates completion */
-    ServiceName PERSISTENT_BUNDLES_COMPLETE = PERSISTENT_BUNDLES_PLUGIN.append("COMPLETE");
+    /** The {@link PersistentBundlesPlugin} service that indicates INSTALLED completion */
+    ServiceName PERSISTENT_BUNDLES_INSTALLED = PERSISTENT_BUNDLES.append("INSTALLED");
+
+    /** The {@link PersistentBundlesPlugin} service that indicates RESOLVED completion */
+    ServiceName PERSISTENT_BUNDLES_RESOLVED = PERSISTENT_BUNDLES.append("RESOLVED");
+
+    /** The {@link PersistentBundlesPlugin} service that indicates ACTIVE completion */
+    ServiceName PERSISTENT_BUNDLES_ACTIVE = PERSISTENT_BUNDLES.append("ACTIVE");
 
     /** The service name for the {@link SystemPathsPlugin} */
     ServiceName SYSTEM_PATHS_PLUGIN = INTEGRATION_BASE_NAME.append("SystemPathsPlugin");

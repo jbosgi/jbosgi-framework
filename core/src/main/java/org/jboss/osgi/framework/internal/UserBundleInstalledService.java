@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -27,6 +27,7 @@ import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 import java.io.IOException;
 
 import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
@@ -74,6 +75,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
             bundleState.initLazyActivation();
             validateBundle(bundleState, metadata);
             processNativeCode(bundleState, dep);
+            createResolvedService(context.getChildTarget(), brev);
             addToEnvironment(brev);
             bundleState.changeState(Bundle.INSTALLED, 0);
             bundleState.fireBundleEvent(BundleEvent.INSTALLED);
@@ -90,6 +92,8 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
     abstract R createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState) throws BundleException;
 
     abstract B createBundleState(R revision, StorageState storageState, ServiceName serviceName) throws BundleException;
+
+    abstract void createResolvedService(ServiceTarget serviceTarget, R brev);
 
     InternalStorageState createStorageState(Deployment dep, Long bundleId) throws BundleException {
         // The storage state exists when we re-create the bundle from persistent storage

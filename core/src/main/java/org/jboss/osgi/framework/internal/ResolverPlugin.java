@@ -43,8 +43,11 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.IntegrationServices;
+import org.jboss.osgi.framework.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XIdentityCapability;
@@ -78,6 +81,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
 
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
+    private final InjectedValue<ModuleLoaderPlugin> injectedModuleLoader = new InjectedValue<ModuleLoaderPlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private XResolver resolver;
 
@@ -87,6 +91,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
+        builder.addDependency(IntegrationServices.MODULE_LOADER_PLUGIN, ModuleLoaderPlugin.class, service.injectedModuleLoader);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -232,6 +237,9 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
         // For every resolved host bundle create the {@link ModuleSpec}
         addModules(brevmap);
 
+        // For every resolved host bundle create a {@link Module} service
+        createModuleServices(wiremap);
+
         // Change the bundle state to RESOLVED
         setBundleToResolved(brevmap);
 
@@ -281,6 +289,19 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
                 List<BundleWire> wires = wiremap.get(brev);
                 ModuleIdentifier identifier = moduleManager.addModule(brev, wires);
                 brev.addAttachment(ModuleIdentifier.class, identifier);
+            }
+        }
+    }
+
+    private void createModuleServices(Map<Resource, List<Wire>> wiremap) {
+        ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
+        ModuleLoaderPlugin moduleLoader = injectedModuleLoader.getValue();
+        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+            XBundleRevision brev = (XBundleRevision) entry.getKey();
+            XBundle bundle = brev.getBundle();
+            if (bundle != null && bundle.getBundleId() != 0 && !brev.isFragment()) {
+                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(brev);
+                moduleLoader.createModuleService(brev, identifier);
             }
         }
     }

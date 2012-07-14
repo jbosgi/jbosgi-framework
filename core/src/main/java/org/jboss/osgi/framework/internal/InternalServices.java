@@ -72,6 +72,8 @@ public interface InternalServices {
     ServiceName NATIVE_CODE_PLUGIN = INTERNAL_SERVICE_BASE.append("NativeCode");
     /** The {@link ServiceManagerPlugin} service name */
     ServiceName SERVICE_MANAGER_PLUGIN = INTERNAL_SERVICE_BASE.append("ServiceManager");
+    /** The {@link Module} service name */
+    ServiceName MODULE_SERVICE = INTERNAL_SERVICE_BASE.append("module");
     /** The {@link URLHandler} service name */
     ServiceName URL_HANDLER_PLUGIN = INTERNAL_SERVICE_BASE.append("URLHandler");
 }

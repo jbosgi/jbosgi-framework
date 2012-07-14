@@ -70,9 +70,11 @@ public class PersistentBundlesTestCase extends OSGiFrameworkTest {
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
 
+        // Verify system bundle storage dir
         File systemStorageDir = new File(storageDir + "/bundle-0");
         Assert.assertTrue("File exists: " + systemStorageDir, systemStorageDir.exists());
 
+        // Install a bundle and verify its state and storage dir
         JavaArchive archive = getBundleArchive();
         BundleContext syscontext = framework.getBundleContext();
         Bundle bundle = syscontext.installBundle(archive.getName(), toInputStream(archive));
@@ -82,6 +84,7 @@ public class PersistentBundlesTestCase extends OSGiFrameworkTest {
         File bundleStorageDir = new File(storageDir + "/bundle-1");
         Assert.assertTrue("File exists: " + bundleStorageDir, bundleStorageDir.exists());
 
+        // Stop the framework
         framework.stop();
         framework.waitForStop(2000);
         assertBundleState(Bundle.RESOLVED, framework.getState());
