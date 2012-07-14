@@ -45,6 +45,10 @@ public class ServiceDependenciesTestCase extends AbstractServiceTestCase {
     @Test
     public void testSimpleOnDemandDependency() throws Exception {
 
+        // serviceB depends on serviceA
+        // serviceA is ON_DEMAND
+        // verify that serviceA comes UP  
+        
         ServiceName snameA = ServiceName.of("serviceA");
         ServiceBuilder<String> builderA = serviceTarget.addService(snameA, new ServiceA());
         builderA.setInitialMode(Mode.ON_DEMAND);
@@ -68,6 +72,11 @@ public class ServiceDependenciesTestCase extends AbstractServiceTestCase {
     @Test
     public void testDependeeRemoved() throws Exception {
 
+        // serviceB depends on serviceA
+        // serviceA is ON_DEMAND
+        // remove serviceB
+        // verify that serviceA goes DOWN        
+        
         ServiceName snameA = ServiceName.of("serviceA");
         ServiceBuilder<String> builderA = serviceTarget.addService(snameA, new ServiceA());
         builderA.setInitialMode(Mode.ON_DEMAND);
@@ -92,6 +101,49 @@ public class ServiceDependenciesTestCase extends AbstractServiceTestCase {
         Assert.assertNull("value is null", controllerA.getValue());
         Assert.assertEquals(Mode.ON_DEMAND, controllerA.getMode());
         Assert.assertEquals(State.DOWN, controllerA.getState());
+    }
+
+    @Test
+    public void testDependencyRemoved() throws Exception {
+
+        // serviceB depends on serviceA
+        // serviceA is ON_DEMAND
+        // remove serviceA
+        // verify that serviceB goes DOWN
+        // re-install serviceA
+        // verify that serviceB comes UP
+        
+        ServiceName snameA = ServiceName.of("serviceA");
+        ServiceBuilder<String> builderA = serviceTarget.addService(snameA, new ServiceA());
+        builderA.setInitialMode(Mode.ON_DEMAND);
+        ServiceController<String> controllerA = builderA.install();
+
+        ServiceName snameB = ServiceName.of("serviceB");
+        ServiceBuilder<String> builderB = serviceTarget.addService(snameB, new ServiceB());
+        builderB.addDependency(snameA);
+        ServiceController<String> controllerB = builderB.install();
+
+        new FutureServiceValue<String>(controllerB).get();
+        Assert.assertEquals(State.UP, controllerA.getState());
+
+        controllerA.setMode(Mode.REMOVE);
+
+        new FutureServiceValue<String>(controllerA, State.REMOVED).get();
+        Assert.assertNull("value is null", controllerA.getValue());
+        Assert.assertEquals(Mode.REMOVE, controllerA.getMode());
+        Assert.assertEquals(State.REMOVED, controllerA.getState());
+
+        new FutureServiceValue<String>(controllerB, State.DOWN).get();
+        Assert.assertNull("value is null", controllerB.getValue());
+        Assert.assertEquals(Mode.ACTIVE, controllerB.getMode());
+        Assert.assertEquals(State.DOWN, controllerB.getState());
+
+        builderA = serviceTarget.addService(snameA, new ServiceA());
+        builderA.setInitialMode(Mode.ON_DEMAND);
+        controllerA = builderA.install();
+
+        new FutureServiceValue<String>(controllerB).get();
+        Assert.assertEquals(State.UP, controllerA.getState());
     }
 
     @Test

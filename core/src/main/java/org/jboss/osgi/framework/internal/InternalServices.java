@@ -56,6 +56,8 @@ public interface InternalServices {
     ServiceName SERVICE_MANAGER_PLUGIN = INTERNAL_SERVICE_BASE.append("ServiceManager");
     /** The {@link WebXMLVerifierInterceptor} service name */
     ServiceName WEBXML_VERIFIER_PLUGIN = INTERNAL_SERVICE_BASE.append("WebXMLVerifier");
+    /** The {@link Module} service name */
+    ServiceName MODULE_SERVICE = INTERNAL_SERVICE_BASE.append("module");
     /** The {@link URLHandler} service name */
     ServiceName URL_HANDLER_PLUGIN = INTERNAL_SERVICE_BASE.append("URLHandler");
 }

@@ -33,6 +33,9 @@ public interface Constants extends org.osgi.framework.Constants {
     /** The prefix for modules/services managed by the OSGi layer */
     String JBOSGI_PREFIX = "jbosgi";
 
+    /** The number of threads available for MSC services */
+    String PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS = "org.jboss.osgi.framework.bootstrap.maxThreads";
+
     /** The timeout in milliseconds for the framework to initialize */
     String PROPERTY_FRAMEWORK_INIT_TIMEOUT = "org.jboss.osgi.framework.init.timeout";
 

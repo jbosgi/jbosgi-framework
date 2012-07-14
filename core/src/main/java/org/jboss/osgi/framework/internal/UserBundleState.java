@@ -131,6 +131,8 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
             result = (T) getStorageState();
         } else if (type.isAssignableFrom(OSGiMetaData.class)) {
             result = (T) getOSGiMetaData();
+        } else if (type.isAssignableFrom(ServiceName.class)) {
+            result = (T) getServiceName(INSTALLED);
         }
         return result;
     }
@@ -369,7 +371,7 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
             }
 
             ModuleIdentifier identifier = brev.getModuleIdentifier();
-            moduleManager.removeModule(identifier);
+            moduleManager.removeModule((UserBundleRevision) brev, identifier);
         }
 
         clearOldRevisions();
@@ -381,9 +383,6 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
         currentRev.refreshRevision();
 
         changeState(Bundle.INSTALLED);
-
-        // Deactivate the service that represents bundle state RESOLVED
-        getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.NEVER);
     }
 
     @Override

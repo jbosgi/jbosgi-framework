@@ -76,6 +76,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
         VirtualFile rootFile = storageState.getRootFile();
         Deployment dep = createDeployment(location, rootFile);
         dep.setAutoStart(storageState.isPersistentlyStarted());
+        dep.setStartLevel(storageState.getStartLevel());
         dep.addAttachment(StorageState.class, storageState);
         return dep;
     }

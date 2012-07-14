@@ -114,7 +114,7 @@ public final class FrameworkBuilder {
             FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
 
             BundleStoragePlugin.addService(serviceTarget, firstInit);
-            DefaultEnvironmentPlugin.addService(serviceTarget);
+            EnvironmentPlugin.addService(serviceTarget);
             DeploymentFactoryPlugin.addService(serviceTarget);
             FrameworkActivator.addService(serviceTarget);
             FrameworkActive.addService(serviceTarget, initialMode);
@@ -133,11 +133,11 @@ public final class FrameworkBuilder {
             SystemContextService.addService(serviceTarget);
             WebXMLVerifierInterceptor.addService(serviceTarget);
 
-            DefaultAutoInstallHandler.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultBootstrapBundlesInstalled.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultBundleInstallHandler.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultFrameworkModuleProvider.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultModuleLoaderProvider.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultPersistentBundlesHandler.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultPersistentBundlesInstalled.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultSystemPathsProvider.addIntegrationService(serviceRegistry, serviceTarget, this);
             DefaultSystemServicesProvider.addIntegrationService(serviceRegistry, serviceTarget);
 

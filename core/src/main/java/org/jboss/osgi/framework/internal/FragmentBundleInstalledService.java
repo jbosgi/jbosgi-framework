@@ -58,4 +58,9 @@ final class FragmentBundleInstalledService extends UserBundleInstalledService<Fr
         long bundleId = dep.getAttachment(BundleId.class).longValue();
         return new FragmentBundleState(getFrameworkState(), bundleId, dep);
     }
+
+    @Override
+    void createResolvedService(ServiceTarget serviceTarget, UserBundleRevision userRev) {
+        // Fragments don't have a RESOLVED service
+    }
 }

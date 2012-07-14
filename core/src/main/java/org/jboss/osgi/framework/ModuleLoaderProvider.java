@@ -26,6 +26,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.resolver.XResource;
 
 /**
@@ -38,11 +39,15 @@ public interface ModuleLoaderProvider extends Service<ModuleLoaderProvider> {
 
     ModuleLoader getModuleLoader();
 
-    void addModule(ModuleSpec moduleSpec);
+    void addModuleSpec(XResource resource, ModuleSpec moduleSpec);
 
-    void addModule(Module module);
+    void addModule(XResource resource, Module module);
 
-    void removeModule(ModuleIdentifier identifier);
+    ServiceName createModuleService(XResource resource, ModuleIdentifier identifier);
+    
+    void removeModule(XResource resource, ModuleIdentifier identifier);
 
     ModuleIdentifier getModuleIdentifier(XResource resource, int revision);
+    
+    ServiceName getModuleServiceName(ModuleIdentifier identifier);
 }

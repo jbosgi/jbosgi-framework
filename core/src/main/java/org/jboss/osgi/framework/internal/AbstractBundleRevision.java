@@ -88,6 +88,9 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
         } catch (ResourceBuilderException ex) {
             throw new BundleException(ex.getMessage(), ex);
         }
+        
+        // Attach the Bundle to the {@link XResource}
+        addAttachment(Bundle.class, bundleState);
     }
 
     /**

@@ -38,6 +38,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarFile;
 
+import junit.framework.Assert;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -66,7 +68,7 @@ public class BundleServicesTestCase extends AbstractFrameworkTest {
         assertServiceState(controller, State.DOWN);
         
         URL url = bundle.getResource(JarFile.MANIFEST_NAME);
-        assertNotNull("URL not null", url);
+        Assert.assertNotNull("URL not null", url);
 
         controller = serviceContainer.getService(bundleState.getServiceName(Bundle.RESOLVED));
         assertServiceState(controller, State.UP);

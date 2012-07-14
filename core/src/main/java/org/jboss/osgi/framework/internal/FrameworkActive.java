@@ -35,7 +35,6 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.wiring.BundleRevision;
@@ -51,8 +50,8 @@ import org.osgi.service.resolver.ResolutionException;
  * <code>
  * {@link FrameworkActive}
  *         +---{@link FrameworkInit}
- *             +---{@link DefaultPersistentBundlesHandler}
- *                 +---{@link DefaultAutoInstallHandler}
+ *             +---{@link DefaultPersistentBundlesInstalled}
+ *                 +---{@link DefaultBootstrapBundlesInstalled}
  *             +---{@link FrameworkCoreServices}
  *                 +---{@link LifecycleInterceptorPlugin}
  *                 +---{@link PackageAdminPlugin}
@@ -75,7 +74,7 @@ import org.osgi.service.resolver.ResolutionException;
  *                                         |   +---{@link DefaultSystemPathsProvider}
  *                                         +---{@link BundleStoragePlugin}
  *                                             +---{@link BundleManagerPlugin}
- *                                                 +---{@link DefaultEnvironmentPlugin}
+ *                                                 +---{@link EnvironmentPlugin}
  * </code>
  *
  *
@@ -85,12 +84,18 @@ import org.osgi.service.resolver.ResolutionException;
 public final class FrameworkActive extends AbstractFrameworkService {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
+    private final InjectedValue<StartLevelPlugin> injectedStartLevel = new InjectedValue<StartLevelPlugin>();
+    private final InjectedValue<ResolverPlugin> injectedResolverPlugin = new InjectedValue<ResolverPlugin>();
+    private final InjectedValue<FrameworkEventsPlugin> injectedEventsPlugin = new InjectedValue<FrameworkEventsPlugin>();
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
 
     static void addService(ServiceTarget serviceTarget, Mode initialMode) {
         FrameworkActive service = new FrameworkActive();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
+        builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolverPlugin);
+        builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedEventsPlugin);
+        builder.addDependency(Services.START_LEVEL, StartLevelPlugin.class, service.injectedStartLevel);
         builder.addDependency(Services.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
         builder.setInitialMode(initialMode);
         builder.install();
@@ -119,7 +124,7 @@ public final class FrameworkActive extends AbstractFrameworkService {
         super.start(context);
         try {
             // Resolve the system bundle
-            ResolverPlugin resolverPlugin = getValue().getResolverPlugin();
+            ResolverPlugin resolverPlugin = injectedResolverPlugin.getValue();
             BundleRevision sysrev = getSystemBundle().getCurrentBundleRevision();
             resolverPlugin.resolveAndApply(Collections.singleton(sysrev), null);
 
@@ -127,15 +132,15 @@ public final class FrameworkActive extends AbstractFrameworkService {
             getSystemBundle().changeState(Bundle.ACTIVE);
 
             // Increase to initial start level
-            StartLevelPlugin startLevelPlugin = getValue().getCoreServices().getStartLevel();
-            startLevelPlugin.increaseStartLevel(getBeginningStartLevel());
+            StartLevelPlugin startLevel = injectedStartLevel.getValue();
+            startLevel.increaseStartLevel(startLevel.getBeginningStartLevel());
 
             // Mark Framework as active in the bundle manager
             BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
             bundleManager.injectedFrameworkActive.inject(Boolean.TRUE);
 
             // A framework event of type STARTED is fired
-            FrameworkEventsPlugin eventsPlugin = getValue().getFrameworkEventsPlugin();
+            FrameworkEventsPlugin eventsPlugin = injectedEventsPlugin.getValue();
             eventsPlugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
 
             LOGGER.infoFrameworkStarted();
@@ -154,17 +159,5 @@ public final class FrameworkActive extends AbstractFrameworkService {
     @Override
     public FrameworkState getValue() {
         return injectedFramework.getValue();
-    }
-
-    private int getBeginningStartLevel() {
-        String levelSpec = (String) getBundleManager().getProperty(Constants.FRAMEWORK_BEGINNING_STARTLEVEL);
-        if (levelSpec != null) {
-            try {
-                return Integer.parseInt(levelSpec);
-            } catch (NumberFormatException nfe) {
-                LOGGER.errorInvalidBeginningStartLevel(levelSpec);
-            }
-        }
-        return 1;
     }
 }

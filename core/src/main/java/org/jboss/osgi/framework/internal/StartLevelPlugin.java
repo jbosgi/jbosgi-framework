@@ -41,6 +41,7 @@ import org.jboss.osgi.framework.Services;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.launch.Framework;
@@ -51,7 +52,7 @@ import org.osgi.service.startlevel.StartLevel;
  *
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> implements StartLevel {
+final class StartLevelPlugin extends AbstractExecutorService<StartLevel> implements StartLevel {
 
     static final int BUNDLE_STARTLEVEL_UNSPECIFIED = -1;
 
@@ -114,6 +115,19 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         return startLevel;
     }
 
+    int getBeginningStartLevel() {
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        String levelSpec = (String) bundleManager.getProperty(Constants.FRAMEWORK_BEGINNING_STARTLEVEL);
+        if (levelSpec != null) {
+            try {
+                return Integer.parseInt(levelSpec);
+            } catch (NumberFormatException nfe) {
+                LOGGER.errorInvalidBeginningStartLevel(levelSpec);
+            }
+        }
+        return 1;
+    }
+    
     @Override
     public synchronized void setStartLevel(final int level) {
         final FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();

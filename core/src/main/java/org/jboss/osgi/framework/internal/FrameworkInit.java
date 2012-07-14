@@ -49,8 +49,8 @@ public final class FrameworkInit extends AbstractFrameworkService {
         FrameworkInit service = new FrameworkInit();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_INIT, service);
         builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
-        builder.addDependencies(IntegrationServices.AUTOINSTALL_HANDLER, IntegrationServices.AUTOINSTALL_COMPLETE);
-        builder.addDependencies(IntegrationServices.PERSISTENT_BUNDLES_HANDLER, IntegrationServices.PERSISTENT_BUNDLES_COMPLETE);
+        builder.addDependencies(IntegrationServices.BOOTSTRAP_BUNDLES_INSTALLED, IntegrationServices.BOOTSTRAP_BUNDLES_ACTIVE);
+        builder.addDependencies(IntegrationServices.PERSISTENT_BUNDLES_INSTALLED, IntegrationServices.PERSISTENT_BUNDLES_ACTIVE);
         builder.addDependencies(InternalServices.FRAMEWORK_CORE_SERVICES);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();

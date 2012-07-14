@@ -19,30 +19,30 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework;
+package org.jboss.osgi.framework.internal;
 
 import java.util.Set;
 
-import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.PersistentBundlesResolved;
+import org.jboss.osgi.framework.StorageState;
 
 /**
- * Default implementation for the COMPLETE step of the {@link PersistentBundlesHandler}.
+ * Default implementation for the RESOLVED step of the {@link PersistentBundlesPlugin}.
  *
  * @author thomas.diesler@jboss.com
  * @since 16-Apr-2012
  */
-public abstract class PersistentBundlesComplete extends AbstractInstallComplete {
+class DefaultPersistentBundlesResolved extends PersistentBundlesResolved {
 
-    protected ServiceName getServiceName() {
-        return IntegrationServices.PERSISTENT_BUNDLES_COMPLETE;
+    private final Set<StorageState> storageStates;
+    
+    public DefaultPersistentBundlesResolved(Set<StorageState> storageStates) {
+        this.storageStates = storageStates;
     }
 
     @Override
-    protected void configureDependencies(ServiceBuilder<Void> builder) {
-        builder.addDependency(IntegrationServices.PERSISTENT_BUNDLES_HANDLER);
+    protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
+        return storageStates.size() == trackedServices.size();
     }
-
-    @Override
-    protected abstract boolean allServicesAdded(Set<ServiceName> trackedServices);
 }

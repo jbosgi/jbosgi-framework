@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_HANDLER;
+import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_INSTALLED;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.util.HashSet;
@@ -31,7 +31,6 @@ import java.util.Set;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceListener;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -39,8 +38,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.IntegrationServices;
-import org.jboss.osgi.framework.PersistentBundlesComplete;
-import org.jboss.osgi.framework.PersistentBundlesHandler;
+import org.jboss.osgi.framework.PersistentBundlesResolved;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.StorageStateProvider;
@@ -53,7 +51,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class DefaultPersistentBundlesHandler extends AbstractPluginService<PersistentBundlesHandler> implements PersistentBundlesHandler {
+class DefaultPersistentBundlesInstalled extends AbstractPluginService<Void> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
@@ -61,20 +59,20 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
     private final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(PERSISTENT_BUNDLES_HANDLER) == null) {
-            DefaultPersistentBundlesHandler service = new DefaultPersistentBundlesHandler();
-            ServiceBuilder<PersistentBundlesHandler> builder = serviceTarget.addService(PERSISTENT_BUNDLES_HANDLER, service);
+        if (registry.getService(PERSISTENT_BUNDLES_INSTALLED) == null) {
+            DefaultPersistentBundlesInstalled service = new DefaultPersistentBundlesInstalled();
+            ServiceBuilder<Void> builder = serviceTarget.addService(PERSISTENT_BUNDLES_INSTALLED, service);
             builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
             builder.addDependency(Services.STORAGE_STATE_PROVIDER, StorageStateProvider.class, service.injectedStorageProvider);
             builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
             builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, service.injectedDeploymentFactory);
-            builder.addDependencies(Services.FRAMEWORK_CREATE, IntegrationServices.AUTOINSTALL_COMPLETE);
+            builder.addDependencies(Services.FRAMEWORK_CREATE, IntegrationServices.BOOTSTRAP_BUNDLES_ACTIVE);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();
         }
     }
 
-    private DefaultPersistentBundlesHandler() {
+    private DefaultPersistentBundlesInstalled() {
     }
 
     @Override
@@ -96,21 +94,16 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
             }
         }
 
-        // Create the COMPLETE service that listens on the bundle INSTALL services
-        PersistentBundlesComplete installComplete = new PersistentBundlesComplete() {
-            @Override
-            protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
-                return storageStates.size() == trackedServices.size();
-            }
-        };
+        // Create the RESOLVED service that listens on the bundle INSTALL services
+        PersistentBundlesResolved persistentResolved = new DefaultPersistentBundlesResolved(storageStates);
 
         LOGGER.debugf("Installing persistent bundle states: %s", storageStates);
-        ServiceBuilder<Void> builder = installComplete.install(context.getChildTarget());
+        ServiceBuilder<Void> builder = persistentResolved.install(context.getChildTarget());
         if (storageStates.size() == 0) {
             builder.install();
         } else {
             // Install the persisted bundles
-            ServiceListener<Bundle> listener = installComplete.getListener();
+            ServiceListener<Bundle> listener = persistentResolved.getListener();
             for (StorageState storageState : storageStates) {
                 try {
                     Deployment dep = deploymentPlugin.createDeployment(storageState);
@@ -120,10 +113,5 @@ final class DefaultPersistentBundlesHandler extends AbstractPluginService<Persis
                 }
             }
         }
-    }
-
-    @Override
-    public PersistentBundlesHandler getValue() throws IllegalStateException {
-        return this;
     }
 }

@@ -35,7 +35,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -44,6 +43,8 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.IntegrationServices;
+import org.jboss.osgi.framework.ModuleLoaderProvider;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XCapability;
@@ -75,6 +76,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
 
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
+    private final InjectedValue<ModuleLoaderProvider> injectedModuleLoader = new InjectedValue<ModuleLoaderProvider>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private XResolver resolver;
 
@@ -84,6 +86,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
+        builder.addDependency(IntegrationServices.MODULE_LOADER_PROVIDER, ModuleLoaderProvider.class, service.injectedModuleLoader);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -120,7 +123,8 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         Map<Resource, List<Wire>> wiremap = resolve(mandatory, optional);
         for (Entry<Resource, Wiring> entry : applyResolverResults(wiremap).entrySet()) {
             XResource res = (XResource) entry.getKey();
-            res.addAttachment(Wiring.class, entry.getValue());
+            Wiring wiring = entry.getValue();
+            res.addAttachment(Wiring.class, wiring);
         }
     }
 
@@ -200,8 +204,8 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         // For every resolved host bundle create the {@link ModuleSpec}
         addModules(wiremap);
 
-        // For every resolved host bundle load the module. This creates the {@link ModuleClassLoader}
-        loadModules(wiremap);
+        // For every resolved host bundle create a {@link Module} service
+        createModuleServices(wiremap);
 
         // Change the bundle state to RESOLVED
         setBundleToResolved(wiremap);
@@ -255,17 +259,15 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         }
     }
 
-    private void loadModules(Map<Resource, List<Wire>> wiremap) {
+    private void createModuleServices(Map<Resource, List<Wire>> wiremap) {
         ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
+        ModuleLoaderProvider moduleLoader = injectedModuleLoader.getValue();
         for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
             XResource res = (XResource) entry.getKey();
-            if (res.isFragment() == false) {
+            Bundle bundle = res.getAttachment(Bundle.class);
+            if (bundle != null && bundle.getBundleId() != 0 && !res.isFragment()) {
                 ModuleIdentifier identifier = moduleManager.getModuleIdentifier(res);
-                try {
-                    moduleManager.loadModule(identifier);
-                } catch (ModuleLoadException ex) {
-                    throw FrameworkMessages.MESSAGES.illegalStateCannotLoadModule(ex, identifier);
-                }
+                moduleLoader.createModuleService(res, identifier);
             }
         }
     }
@@ -274,7 +276,8 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
         for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
             if (entry.getKey() instanceof AbstractBundleRevision) {
                 AbstractBundleRevision brev = (AbstractBundleRevision) entry.getKey();
-                brev.getBundleState().changeState(Bundle.RESOLVED);
+                AbstractBundleState bundleState = brev.getBundleState();
+                bundleState.changeState(Bundle.RESOLVED);
             }
         }
     }

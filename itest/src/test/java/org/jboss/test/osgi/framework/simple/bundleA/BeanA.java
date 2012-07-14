@@ -19,16 +19,9 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework;
+package org.jboss.test.osgi.framework.simple.bundleA;
 
-import org.jboss.msc.service.Service;
+import org.jboss.test.osgi.framework.simple.bundleB.BeanB;
 
-/**
- * Integration point to auto install bundles at framework startup.
- *
- * @author thomas.diesler@jboss.com
- * @since 30-Mar-2011
- */
-public interface AutoInstallHandler extends Service<AutoInstallHandler> {
-
+public class BeanA extends BeanB {
 }

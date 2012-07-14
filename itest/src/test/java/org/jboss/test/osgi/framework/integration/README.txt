@@ -1,0 +1,1 @@
+Arquillian tests only

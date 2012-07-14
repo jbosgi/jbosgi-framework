@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.AUTOINSTALL_HANDLER;
+import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_INSTALLED;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
@@ -30,12 +30,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceListener;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -43,8 +41,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
-import org.jboss.osgi.framework.AutoInstallComplete;
-import org.jboss.osgi.framework.AutoInstallHandler;
+import org.jboss.osgi.framework.BootstrapBundlesResolved;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.spi.BundleInfo;
@@ -54,19 +51,19 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
- * A plugin that installs/starts bundles on framework startup.
+ * A plugin that installs the auto install bundles on framework startup.
  *
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class DefaultAutoInstallHandler extends AbstractPluginService<AutoInstallHandler> implements AutoInstallHandler {
+class DefaultBootstrapBundlesInstalled extends AbstractPluginService<Void>  {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(AUTOINSTALL_HANDLER) == null) {
-            DefaultAutoInstallHandler service = new DefaultAutoInstallHandler();
-            ServiceBuilder<AutoInstallHandler> builder = serviceTarget.addService(AUTOINSTALL_HANDLER, service);
+        if (registry.getService(BOOTSTRAP_BUNDLES_INSTALLED) == null) {
+            DefaultBootstrapBundlesInstalled service = new DefaultBootstrapBundlesInstalled();
+            ServiceBuilder<Void> builder = serviceTarget.addService(BOOTSTRAP_BUNDLES_INSTALLED, service);
             builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
             builder.addDependency(Services.FRAMEWORK_CREATE);
             builder.setInitialMode(Mode.ON_DEMAND);
@@ -74,7 +71,7 @@ final class DefaultAutoInstallHandler extends AbstractPluginService<AutoInstallH
         }
     }
 
-    private DefaultAutoInstallHandler() {
+    private DefaultBootstrapBundlesInstalled() {
     }
 
     @Override
@@ -107,20 +104,14 @@ final class DefaultAutoInstallHandler extends AbstractPluginService<AutoInstallH
         // Add the autoStart bundles to autoInstall
         autoInstall.addAll(autoStart);
 
-        // Create the COMPLETE service that listens on the bundle INSTALL services
-        AutoInstallComplete installComplete = new AutoInstallComplete() {
-            @Override
-            protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
-                return autoInstall.size() == trackedServices.size();
-            }
-        };
-
-        ServiceBuilder<Void> builder = installComplete.install(context.getChildTarget());
+        // Create the RESOLVED service that listens on the bundle INSTALL services
+        BootstrapBundlesResolved bootstrapResolved = new DefaultBootstrapBundlesResolved(autoInstall);
+        ServiceBuilder<Void> builder = bootstrapResolved.install(context.getChildTarget());
         if (autoInstall.isEmpty()) {
             builder.install();
         } else {
             // Install the auto install bundles
-            ServiceListener<Bundle> listener = installComplete.getListener();
+            ServiceListener<Bundle> listener = bootstrapResolved.getListener();
             for (URL url : autoInstall) {
                 try {
                     BundleInfo info = BundleInfo.createBundleInfo(url);
@@ -132,11 +123,6 @@ final class DefaultAutoInstallHandler extends AbstractPluginService<AutoInstallH
                 }
             }
         }
-    }
-
-    @Override
-    public DefaultAutoInstallHandler getValue() {
-        return this;
     }
 
     private URL toURL(final BundleManagerPlugin bundleManager, final String path) {

@@ -19,16 +19,31 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework;
+package org.jboss.osgi.framework.internal;
 
-import org.jboss.msc.service.Service;
+import java.net.URL;
+import java.util.List;
+import java.util.Set;
+
+import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.BootstrapBundlesResolved;
 
 /**
- * A service that provides persistent bundles on framework startup.
+ * A plugin that resolves the auto install bundles on framework startup.
  *
  * @author thomas.diesler@jboss.com
- * @since 04-Apr-2011
+ * @since 14-Jul-2012
  */
-public interface PersistentBundlesHandler extends Service<PersistentBundlesHandler> {
+class DefaultBootstrapBundlesResolved extends BootstrapBundlesResolved {
 
+    private final List<URL> autoInstall;
+    
+    public DefaultBootstrapBundlesResolved(List<URL> autoInstall) {
+        this.autoInstall = autoInstall;
+    }
+
+    @Override
+    protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
+        return autoInstall.size() == trackedServices.size();
+    }
 }

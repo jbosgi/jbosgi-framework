@@ -142,6 +142,31 @@
 						<test.archive.directory>${project.build.directory}/test-libs</test.archive.directory>
 					</systemPropertyVariables>
 				</configuration>
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <goals><goal>test</goal></goals>
+                        <phase>none</phase>
+                    </execution>
+                    <execution>
+                        <id>setA</id>
+                        <goals><goal>test</goal></goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/integration/*TestCase.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>setB</id>
+                        <goals><goal>test</goal></goals>
+                        <configuration>
+                            <includes>
+                                <include>**/integration/*TestCase.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
 			</plugin>
 		</plugins>
 	</build>

@@ -358,11 +358,9 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
                 // Create the bundle services
                 if (metadata.getFragmentHost() == null) {
                     serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), deployment, listener);
-                    HostBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                     HostBundleActiveService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 } else {
                     serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), deployment, listener);
-                    FragmentBundleResolvedService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
                 }
             } catch (RuntimeException rte) {
                 VFSUtils.safeClose(deployment.getRoot());
@@ -472,7 +470,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
             UserBundleRevision userRev = (UserBundleRevision) rev;
             if (userBundle.isFragment() == false) {
                 ModuleIdentifier identifier = moduleManager.getModuleIdentifier(rev);
-                moduleManager.removeModule(identifier);
+                moduleManager.removeModule(userRev, identifier);
             }
             userRev.close();
         }

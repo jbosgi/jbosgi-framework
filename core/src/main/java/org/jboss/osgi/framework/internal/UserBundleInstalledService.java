@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
@@ -67,6 +68,7 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
             validateBundle(bundleState, metadata);
             processNativeCode(bundleState, dep);
             addToEnvironment(userRev);
+            createResolvedService(context.getChildTarget(), userRev);
             bundleState.changeState(Bundle.INSTALLED, 0);
             bundleState.fireBundleEvent(BundleEvent.INSTALLED);
             LOGGER.infoBundleInstalled(bundleState);
@@ -78,6 +80,8 @@ abstract class UserBundleInstalledService<T extends UserBundleState> extends Abs
             throw new StartException(ex);
         }
     }
+
+    abstract void createResolvedService(ServiceTarget serviceTarget, UserBundleRevision userRev);
 
     abstract T createBundleState(Deployment dep);
 

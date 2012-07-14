@@ -183,7 +183,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
         Module module = res.getAttachment(Module.class);
         if (module != null) {
-            getModuleLoaderIntegration().addModule(module);
+            getModuleLoaderIntegration().addModule(res, module);
             return module.getIdentifier();
         }
 
@@ -195,6 +195,8 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             HostBundleRevision hostRev = HostBundleRevision.assertHostRevision(res);
             identifier = createHostModule(hostRev, wires);
         }
+        
+        res.addAttachment(ModuleIdentifier.class, identifier);
         return identifier;
     }
 
@@ -295,7 +297,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         ModuleSpec moduleSpec = specBuilder.create();
 
         modules.put(identifier, hostRev);
-        getModuleLoaderIntegration().addModule(moduleSpec);
+        getModuleLoaderIntegration().addModuleSpec(hostRev, moduleSpec);
         return identifier;
     }
 
@@ -509,9 +511,9 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     /**
      * Remove the module with the given identifier
      */
-    void removeModule(ModuleIdentifier identifier) {
+    void removeModule(UserBundleRevision userRev, ModuleIdentifier identifier) {
         modules.remove(identifier);
-        getModuleLoaderIntegration().removeModule(identifier);
+        getModuleLoaderIntegration().removeModule(userRev, identifier);
     }
 
     private Module getFrameworkModule() {

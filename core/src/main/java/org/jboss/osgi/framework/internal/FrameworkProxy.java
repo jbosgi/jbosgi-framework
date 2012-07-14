@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.Constants.DEFAULT_FRAMEWORK_INIT_TIMEOUT;
 import static org.jboss.osgi.framework.Constants.DEFAULT_FRAMEWORK_START_TIMEOUT;
+import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS;
 import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_INIT_TIMEOUT;
 import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_START_TIMEOUT;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
@@ -137,7 +138,14 @@ final class FrameworkProxy implements Framework {
             boolean allowContainerShutdown = false;
             ServiceContainer serviceContainer = frameworkBuilder.getServiceContainer();
             if (serviceContainer == null) {
-                serviceContainer = ServiceContainer.Factory.create();
+                Object maxThreads = frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS);
+                if (maxThreads == null)
+                    maxThreads = SecurityActions.getSystemProperty(PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS, null);
+                if (maxThreads != null) {
+                    serviceContainer = ServiceContainer.Factory.create(new Integer("" + maxThreads), 30L, TimeUnit.SECONDS);
+                } else {
+                    serviceContainer = ServiceContainer.Factory.create();
+                }
                 allowContainerShutdown = true;
             }
             lenientContainer = new LenientShutdownContainer(serviceContainer, allowContainerShutdown);

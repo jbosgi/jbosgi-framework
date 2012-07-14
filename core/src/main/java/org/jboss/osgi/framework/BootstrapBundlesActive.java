@@ -26,78 +26,50 @@ import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceListener;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.util.ServiceTracker;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
- * Default implementation for the COMPLETE step of a bundles install plugin.
+ * Default implementation for the ACTIVE step of the {@link BootstrapBundlesPlugin}.
  *
  * @author thomas.diesler@jboss.com
  * @since 16-Apr-2012
  */
-abstract class AbstractInstallComplete extends AbstractService<Void> {
+public class BootstrapBundlesActive extends AbstractService<Void> {
 
-    private Set<Bundle> installedBundles = new HashSet<Bundle>();
-    private ServiceTracker<Bundle> tracker;
-
-    protected abstract ServiceName getServiceName();
-
-    abstract boolean allServicesAdded(Set<ServiceName> trackedServices);
-
-    protected abstract void configureDependencies(ServiceBuilder<Void> builder);
-
-    public ServiceListener<Bundle> getListener() {
-        return tracker;
+    private final Set<Bundle> resolvedBundles;
+    
+    static void addService(ServiceTarget serviceTarget, Set<Bundle> resolvedBundles) {
+        BootstrapBundlesActive service = new BootstrapBundlesActive(resolvedBundles);
+        ServiceBuilder<Void> builder = serviceTarget.addService(IntegrationServices.BOOTSTRAP_BUNDLES_ACTIVE, service);
+        builder.addDependency(IntegrationServices.BOOTSTRAP_BUNDLES_RESOLVED);
+        for (Bundle bundle : resolvedBundles) {
+            TypeAdaptor typeAdaptor = (TypeAdaptor)bundle;
+            ServiceName serviceName = typeAdaptor.adapt(ServiceName.class);
+            builder.addDependency(serviceName.getParent().append("RESOLVED"));
+        }
+        builder.setInitialMode(Mode.ON_DEMAND);
+        builder.install();
+    }
+    
+    private BootstrapBundlesActive(Set<Bundle> resolvedBundles) {
+        this.resolvedBundles = resolvedBundles;
     }
 
-    public ServiceBuilder<Void> install(ServiceTarget serviceTarget) {
-        final AbstractInstallComplete installComplete = this;
-        final ServiceBuilder<Void> builder = serviceTarget.addService(getServiceName(), this);
-        tracker = new ServiceTracker<Bundle>() {
-
-            @Override
-            protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
-                return installComplete.allServicesAdded(trackedServices);
-            }
-
-            @Override
-            protected void serviceStarted(ServiceController<? extends Bundle> controller) {
-                Bundle bundle = controller.getValue();
-                installedBundles.add(bundle);
-            }
-
-            @Override
-            protected void complete() {
-                builder.install();
-            }
-        };
-        configureDependencies(builder);
-        return builder;
-    }
-
-    public void checkAndComplete() {
-        tracker.checkAndComplete();
-    }
-
-    public void start(final StartContext context) throws StartException {
-        ServiceController<?> controller = context.getController();
-        LOGGER.tracef("Starting: %s", controller.getName());
-        List<Bundle> bundles = new ArrayList<Bundle>(installedBundles);
+    @Override
+    public void start(StartContext context) {
+        List<Bundle> bundles = new ArrayList<Bundle>(resolvedBundles);
         Collections.sort(bundles, new BundleComparator());
         for (Bundle bundle : bundles) {
             TypeAdaptor adaptor = (TypeAdaptor) bundle;
@@ -111,11 +83,8 @@ abstract class AbstractInstallComplete extends AbstractService<Void> {
                 }
             }
         }
-        LOGGER.debugf("Started: %s", controller.getName());
-        installedBundles = null;
-        tracker = null;
     }
-
+    
     static class BundleComparator implements Comparator<Bundle> {
         @Override
         public int compare(Bundle b1, Bundle b2) {

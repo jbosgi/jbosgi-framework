@@ -25,7 +25,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.value.InjectedValue;
+import org.osgi.framework.Bundle;
 
 /**
  * Represents the RESOLVED state of a host bundle.
@@ -35,22 +35,24 @@ import org.jboss.msc.value.InjectedValue;
  */
 final class HostBundleResolvedService extends UserBundleResolvedService<HostBundleState> {
 
-    private final InjectedValue<HostBundleState> injectedBundleState = new InjectedValue<HostBundleState>();
-    
-    static void addService(ServiceTarget serviceTarget, FrameworkState frameworkState, ServiceName serviceName) {
-        HostBundleResolvedService service = new HostBundleResolvedService(frameworkState);
-        ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName.append("RESOLVED"), service);
-        builder.addDependency(serviceName.append("INSTALLED"), HostBundleState.class, service.injectedBundleState);
-        builder.setInitialMode(Mode.NEVER);
+    private final HostBundleState hostBundle;
+
+    static void addService(ServiceTarget serviceTarget, HostBundleState hostBundle, ServiceName moduleServiceName) {
+        ServiceName serviceName = hostBundle.getServiceName(Bundle.RESOLVED);
+        HostBundleResolvedService service = new HostBundleResolvedService(hostBundle);
+        ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, service);
+        builder.addDependency(moduleServiceName);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    private HostBundleResolvedService(FrameworkState frameworkState) {
-        super(frameworkState);
+    private HostBundleResolvedService(HostBundleState hostBundle) {
+        super(hostBundle.getFrameworkState());
+        this.hostBundle = hostBundle;
     }
 
     @Override
     HostBundleState getBundleState() {
-        return injectedBundleState.getValue();
+        return hostBundle;
     }
 }

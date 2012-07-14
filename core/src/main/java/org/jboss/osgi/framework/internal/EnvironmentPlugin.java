@@ -44,16 +44,16 @@ import org.osgi.resource.Wiring;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-final class DefaultEnvironmentPlugin extends AbstractEnvironment implements Service<XEnvironment> {
+final class EnvironmentPlugin extends AbstractEnvironment implements Service<XEnvironment> {
 
     static void addService(ServiceTarget serviceTarget) {
-        DefaultEnvironmentPlugin service = new DefaultEnvironmentPlugin();
+        EnvironmentPlugin service = new EnvironmentPlugin();
         ServiceBuilder<XEnvironment> builder = serviceTarget.addService(Services.ENVIRONMENT, service);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    private DefaultEnvironmentPlugin() {
+    private EnvironmentPlugin() {
     }
 
     @Override
