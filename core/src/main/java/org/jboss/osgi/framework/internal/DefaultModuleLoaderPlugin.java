@@ -141,7 +141,7 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
     }
 
     @Override
-    public void addModule(ModuleSpec moduleSpec) {
+    public void addModuleSpec(XBundleRevision brev, ModuleSpec moduleSpec) {
         LOGGER.tracef("addModule: %s", moduleSpec.getModuleIdentifier());
         ModuleIdentifier identifier = moduleSpec.getModuleIdentifier();
         if (moduleSpecs.get(identifier) != null)
@@ -151,7 +151,7 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
     }
 
     @Override
-    public void addModule(Module module) {
+    public void addModule(XBundleRevision brev, Module module) {
         LOGGER.tracef("addModule: %s", module.getIdentifier());
         ModuleIdentifier identifier = module.getIdentifier();
         if (moduleSpecs.get(identifier) != null)

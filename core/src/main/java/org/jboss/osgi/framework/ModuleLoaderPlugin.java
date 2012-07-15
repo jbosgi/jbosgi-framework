@@ -46,9 +46,9 @@ public interface ModuleLoaderPlugin extends Service<ModuleLoaderPlugin> {
 
     void addIntegrationDependencies(ModuleSpecBuilderContext context);
 
-    void addModule(ModuleSpec moduleSpec);
+    void addModuleSpec(XBundleRevision brev, ModuleSpec moduleSpec);
 
-    void addModule(Module module);
+    void addModule(XBundleRevision brev, Module module);
 
     ServiceName createModuleService(XBundleRevision brev, ModuleIdentifier identifier);
 

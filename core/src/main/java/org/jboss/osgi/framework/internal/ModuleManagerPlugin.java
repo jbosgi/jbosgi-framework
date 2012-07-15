@@ -222,7 +222,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             ModuleIdentifier identifier = module.getIdentifier();
             ModuleLoaderPlugin moduleLoaderPlugin = getModuleLoaderPlugin();
             if (moduleLoaderPlugin.getModule(identifier) == null) {
-                moduleLoaderPlugin.addModule(module);
+                moduleLoaderPlugin.addModule(brev, module);
             }
             return identifier;
         }
@@ -355,7 +355,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         // Add integration dependencies, build the spec and add it to the module loader
         ModuleLoaderPlugin moduleLoaderPlugin = getModuleLoaderPlugin();
         moduleLoaderPlugin.addIntegrationDependencies(context);
-        moduleLoaderPlugin.addModule(specBuilder.create());
+        moduleLoaderPlugin.addModuleSpec(hostRev, specBuilder.create());
 
         return identifier;
     }
