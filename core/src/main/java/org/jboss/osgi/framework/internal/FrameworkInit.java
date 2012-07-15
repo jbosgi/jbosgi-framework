@@ -21,6 +21,12 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_ACTIVE;
+import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_INSTALLED;
+import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_RESOLVED;
+import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_ACTIVE;
+import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_INSTALLED;
+import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_RESOLVED;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import org.jboss.msc.service.ServiceBuilder;
@@ -29,7 +35,6 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.launch.Framework;
 
@@ -49,8 +54,8 @@ public final class FrameworkInit extends AbstractFrameworkService {
         FrameworkInit service = new FrameworkInit();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_INIT, service);
         builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
-        builder.addDependencies(IntegrationServices.BOOTSTRAP_BUNDLES_INSTALLED, IntegrationServices.BOOTSTRAP_BUNDLES_ACTIVE);
-        builder.addDependencies(IntegrationServices.PERSISTENT_BUNDLES_INSTALLED, IntegrationServices.PERSISTENT_BUNDLES_ACTIVE);
+        builder.addDependencies(BOOTSTRAP_BUNDLES_INSTALLED, BOOTSTRAP_BUNDLES_RESOLVED, BOOTSTRAP_BUNDLES_ACTIVE);
+        builder.addDependencies(PERSISTENT_BUNDLES_INSTALLED, PERSISTENT_BUNDLES_RESOLVED, PERSISTENT_BUNDLES_ACTIVE);
         builder.addDependencies(InternalServices.FRAMEWORK_CORE_SERVICES);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
