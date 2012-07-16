@@ -21,9 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_ACTIVATE;
+import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES;
 import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL;
-import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_RESOLVE;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
@@ -35,6 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
@@ -44,6 +44,7 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.BootstrapBundlesActivate;
+import org.jboss.osgi.framework.BootstrapBundlesComplete;
 import org.jboss.osgi.framework.BootstrapBundlesInstall;
 import org.jboss.osgi.framework.BootstrapBundlesResolve;
 import org.jboss.osgi.framework.BundleManager;
@@ -66,12 +67,12 @@ class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> {
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
         if (registry.getService(BOOTSTRAP_BUNDLES_INSTALL) == null) {
-            new DefaultBootstrapBundlesInstall().install(serviceTarget);
+            new DefaultBootstrapBundlesInstall(BOOTSTRAP_BUNDLES).install(serviceTarget);
         }
     }
 
-    private DefaultBootstrapBundlesInstall() {
-        super(BOOTSTRAP_BUNDLES_INSTALL);
+    private DefaultBootstrapBundlesInstall(ServiceName baseName) {
+        super(baseName);
     }
 
     protected void addServiceDependencies(ServiceBuilder<Void> builder) {
@@ -109,6 +110,7 @@ class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> {
         // Add the autoStart bundles to autoInstall
         autoInstall.addAll(autoStart);
 
+        // Collect the bundle deployments
         List<Deployment> deployments = new ArrayList<Deployment>();
         for (URL url : autoInstall) {
             try {
@@ -158,14 +160,17 @@ class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> {
     }
 
     @Override
-    protected void installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices) {
-        BootstrapBundlesResolve<Void> resolveService = new BootstrapBundlesResolve<Void>(BOOTSTRAP_BUNDLES_RESOLVE, installedServices) {
-            @Override
-            protected void installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices) {
-                BootstrapBundlesActivate<Void> activateService = new BootstrapBundlesActivate<Void>(BOOTSTRAP_BUNDLES_ACTIVATE, resolvedServices);
-                activateService.install(serviceTarget);
-            }
-        };
-        resolveService.install(serviceTarget);
+    protected ServiceController<Void> installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices, Set<ServiceName> resolvedServices) {
+        return new BootstrapBundlesResolve<Void>(BOOTSTRAP_BUNDLES, installedServices, resolvedServices).install(serviceTarget);
+    }
+
+    @Override
+    protected ServiceController<Void>  installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices) {
+        return new BootstrapBundlesActivate<Void>(BOOTSTRAP_BUNDLES, resolvedServices).install(serviceTarget);
+    }
+
+    @Override
+    protected ServiceController<Void> installCompleteService(ServiceTarget serviceTarget, boolean withDependency) {
+        return new BootstrapBundlesComplete<Void>(BOOTSTRAP_BUNDLES).install(serviceTarget, withDependency);
     }
 }

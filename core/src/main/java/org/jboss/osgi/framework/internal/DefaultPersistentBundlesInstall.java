@@ -21,9 +21,10 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_ACTIVATE;
+import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE;
+import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL;
+import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES;
 import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_INSTALL;
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_RESOLVE;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.util.ArrayList;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
@@ -41,9 +43,9 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BootstrapBundlesActivate;
+import org.jboss.osgi.framework.BootstrapBundlesComplete;
 import org.jboss.osgi.framework.BootstrapBundlesInstall;
 import org.jboss.osgi.framework.BootstrapBundlesResolve;
-import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.StorageStatePlugin;
@@ -63,12 +65,12 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> {
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
         if (registry.getService(PERSISTENT_BUNDLES_INSTALL) == null) {
-            new DefaultPersistentBundlesInstall().install(serviceTarget);
+            new DefaultPersistentBundlesInstall(PERSISTENT_BUNDLES).install(serviceTarget);
         }
     }
 
-    private DefaultPersistentBundlesInstall() {
-        super(PERSISTENT_BUNDLES_INSTALL);
+    private DefaultPersistentBundlesInstall(ServiceName baseName) {
+        super(baseName);
     }
 
     @Override
@@ -76,7 +78,7 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
         builder.addDependency(Services.STORAGE_STATE_PLUGIN, StorageStatePlugin.class, injectedStoragePlugin);
         builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, injectedDeploymentFactory);
-        builder.addDependencies(IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL, IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
+        builder.addDependencies(BOOTSTRAP_BUNDLES_INSTALL, BOOTSTRAP_BUNDLES_COMPLETE);
     }
 
     @Override
@@ -99,12 +101,6 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> {
             }
         }
 
-        // No persistent bundles - we are done
-        if (storageStates.isEmpty()) {
-            installCompleteService(serviceTarget);
-            return;
-        }
-
         List<Deployment> deployments = new ArrayList<Deployment>();
         for (StorageState storageState : storageStates) {
             try {
@@ -120,14 +116,17 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> {
     }
 
     @Override
-    protected void installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices) {
-        BootstrapBundlesResolve<Void> resolveService = new BootstrapBundlesResolve<Void>(PERSISTENT_BUNDLES_RESOLVE, installedServices) {
-            @Override
-            protected void installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices) {
-                BootstrapBundlesActivate<Void> activateService = new BootstrapBundlesActivate<Void>(PERSISTENT_BUNDLES_ACTIVATE, resolvedServices);
-                activateService.install(serviceTarget);
-            }
-        };
-        resolveService.install(serviceTarget);
+    protected ServiceController<Void> installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices, Set<ServiceName> resolvedServices) {
+        return new BootstrapBundlesResolve<Void>(PERSISTENT_BUNDLES, installedServices, resolvedServices).install(serviceTarget);
+    }
+
+    @Override
+    protected ServiceController<Void>  installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices) {
+        return new BootstrapBundlesActivate<Void>(PERSISTENT_BUNDLES, resolvedServices).install(serviceTarget);
+    }
+
+    @Override
+    protected ServiceController<Void> installCompleteService(ServiceTarget serviceTarget, boolean withDependency) {
+        return new BootstrapBundlesComplete<Void>(PERSISTENT_BUNDLES).install(serviceTarget, withDependency);
     }
 }

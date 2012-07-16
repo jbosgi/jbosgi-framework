@@ -3,7 +3,6 @@ package org.jboss.osgi.framework;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -11,34 +10,40 @@ import java.util.Set;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
 import org.jboss.osgi.framework.util.ServiceTracker;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
 
-public abstract class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
+public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<PackageAdmin> injectedPackageAdmin = new InjectedValue<PackageAdmin>();
     private final Set<ServiceName> installedServices;
+    private final Set<ServiceName> resolvedServices;
 
-    public BootstrapBundlesResolve(ServiceName serviceName, Set<ServiceName> installedServices) {
-        super(serviceName);
+    public BootstrapBundlesResolve(ServiceName baseName, Set<ServiceName> installedServices, Set<ServiceName> resolvedServices) {
+        super(baseName, BootstrapPhase.RESOLVE);
         this.installedServices = installedServices;
+        this.resolvedServices = resolvedServices;
     }
 
-    public void install(ServiceTarget serviceTarget) {
+    public ServiceController<T> install(ServiceTarget serviceTarget) {
         ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
+        builder.addDependencies(getPreviousService());
         addServiceDependencies(builder);
-        builder.install();
+        builder.setInitialMode(Mode.NEVER);
+        return builder.install();
     }
 
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
@@ -46,9 +51,9 @@ public abstract class BootstrapBundlesResolve<T> extends BootstrapBundlesService
 
     @Override
     public void start(StartContext context) throws StartException {
-        final ServiceContainer serviceRegistry = context.getController().getServiceContainer();
-        final ServiceTarget serviceTarget = context.getChildTarget();
+        super.start(context);
 
+        final ServiceContainer serviceRegistry = context.getController().getServiceContainer();
         int targetLevel = getBeginningStartLevel();
 
         // Collect the set of resolvable bundles
@@ -65,7 +70,7 @@ public abstract class BootstrapBundlesResolve<T> extends BootstrapBundlesService
 
         // No resolvable bundles - we are done
         if (resolvableServices.isEmpty()) {
-            installCompleteService(serviceTarget);
+            activateNextService();
             return;
         }
 
@@ -75,17 +80,10 @@ public abstract class BootstrapBundlesResolve<T> extends BootstrapBundlesService
         packageAdmin.resolveBundles(resolvableServices.values().toArray(bundles));
 
         // Collect the resolved service
-        final Set<ServiceName> resolvedServices = new HashSet<ServiceName>();
         for (Entry<ServiceName, XBundle> entry : resolvableServices.entrySet()) {
             if (entry.getValue().isResolved()) {
                 resolvedServices.add(entry.getKey());
             }
-        }
-
-        // No resolved bundles - we are done
-        if (resolvedServices.isEmpty()) {
-            installCompleteService(serviceTarget);
-            return;
         }
 
         // Track the resolved services
@@ -98,7 +96,7 @@ public abstract class BootstrapBundlesResolve<T> extends BootstrapBundlesService
 
             @Override
             protected void complete() {
-                installActivateService(serviceTarget, resolvedServices);
+                activateNextService();
             }
         };
 
@@ -126,6 +124,4 @@ public abstract class BootstrapBundlesResolve<T> extends BootstrapBundlesService
         }
         return 1;
     }
-
-    protected abstract void installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices);
 }

@@ -11,6 +11,8 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -19,15 +21,17 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
 
     private final Set<ServiceName> resolvedServices;
 
-    public BootstrapBundlesActivate(ServiceName serviceName, Set<ServiceName> resolvedServices) {
-        super(serviceName);
+    public BootstrapBundlesActivate(ServiceName baseName, Set<ServiceName> resolvedServices) {
+        super(baseName, BootstrapPhase.ACTIVATE);
         this.resolvedServices = resolvedServices;
     }
 
-    public void install(ServiceTarget serviceTarget) {
+    public ServiceController<T> install(ServiceTarget serviceTarget) {
         ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
+        builder.addDependencies(getPreviousService());
         addServiceDependencies(builder);
-        builder.install();
+        builder.setInitialMode(Mode.NEVER);
+        return builder.install();
     }
 
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
@@ -35,10 +39,10 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
 
     @Override
     public void start(StartContext context) throws StartException {
-        final ServiceContainer serviceRegistry = context.getController().getServiceContainer();
-        final ServiceTarget serviceTarget = context.getChildTarget();
+        super.start(context);
 
         // Start the resolved bundles
+        ServiceContainer serviceRegistry = context.getController().getServiceContainer();
         for (ServiceName serviceName : resolvedServices) {
             ServiceController<?> controller = serviceRegistry.getRequiredService(serviceName);
             XBundle bundle = (XBundle) controller.getValue();
@@ -50,6 +54,6 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
         }
 
         // We are done
-        installCompleteService(serviceTarget);
+        activateNextService();
     }
 }

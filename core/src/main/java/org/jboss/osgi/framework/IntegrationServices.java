@@ -56,16 +56,19 @@ import org.jboss.msc.service.ServiceName;
 public interface IntegrationServices {
 
     /** The {@link BootstrapBundlesInstall} service for auto install bundles */
-    ServiceName BOOTSTRAP_BUNDLES_INSTALL = INTEGRATION_BASE_NAME.append("BootstrapBundles", "INSTALL");
+    ServiceName BOOTSTRAP_BUNDLES = INTEGRATION_BASE_NAME.append("BootstrapBundles");
+
+    /** The {@link BootstrapBundlesInstall} service for auto install bundles */
+    ServiceName BOOTSTRAP_BUNDLES_INSTALL = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.INSTALL);
 
     /** The {@link BootstrapBundlesResolve} service for auto install bundles */
-    ServiceName BOOTSTRAP_BUNDLES_RESOLVE = INTEGRATION_BASE_NAME.append("BootstrapBundles", "RESOLVE");
+    ServiceName BOOTSTRAP_BUNDLES_RESOLVE = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.RESOLVE);
 
     /** The {@link BootstrapBundlesActivate} service for auto install bundles */
-    ServiceName BOOTSTRAP_BUNDLES_ACTIVATE = INTEGRATION_BASE_NAME.append("BootstrapBundles", "ACTIVATE");
+    ServiceName BOOTSTRAP_BUNDLES_ACTIVATE = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.ACTIVATE);
 
     /** The {@link BootstrapBundlesComplete} service for auto install bundles */
-    ServiceName BOOTSTRAP_BUNDLES_COMPLETE = INTEGRATION_BASE_NAME.append("BootstrapBundles", "COMPLETE");
+    ServiceName BOOTSTRAP_BUNDLES_COMPLETE = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.COMPLETE);
 
     /** The service name for the {@link BundleInstallPlugin} */
     ServiceName BUNDLE_INSTALL_PLUGIN = INTEGRATION_BASE_NAME.append("BundleInstallPlugin");
@@ -77,20 +80,44 @@ public interface IntegrationServices {
     ServiceName MODULE_LOADER_PLUGIN = INTEGRATION_BASE_NAME.append("ModuleLoaderPlugin");
 
     /** The {@link BootstrapBundlesInstall} service for persistent bundles */
-    ServiceName PERSISTENT_BUNDLES_INSTALL = INTEGRATION_BASE_NAME.append("PersistentBundles", "INSTALL");
+    ServiceName PERSISTENT_BUNDLES = INTEGRATION_BASE_NAME.append("PersistentBundles");
+
+    /** The {@link BootstrapBundlesInstall} service for persistent bundles */
+    ServiceName PERSISTENT_BUNDLES_INSTALL = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.INSTALL);
 
     /** The {@link BootstrapBundlesResolve} service forpersistent bundles */
-    ServiceName PERSISTENT_BUNDLES_RESOLVE = INTEGRATION_BASE_NAME.append("PersistentBundles", "RESOLVE");
+    ServiceName PERSISTENT_BUNDLES_RESOLVE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.RESOLVE);
 
     /** The {@link BootstrapBundlesActivate} service for persistent bundles */
-    ServiceName PERSISTENT_BUNDLES_ACTIVATE = INTEGRATION_BASE_NAME.append("PersistentBundles", "ACTIVATE");
+    ServiceName PERSISTENT_BUNDLES_ACTIVATE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.ACTIVATE);
 
     /** The {@link BootstrapBundlesComplete} service for persistent bundles */
-    ServiceName PERSISTENT_BUNDLES_COMPLETE = INTEGRATION_BASE_NAME.append("PersistentBundles", "COMPLETE");
+    ServiceName PERSISTENT_BUNDLES_COMPLETE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.COMPLETE);
 
     /** The service name for the {@link SystemPathsPlugin} */
     ServiceName SYSTEM_PATHS_PLUGIN = INTEGRATION_BASE_NAME.append("SystemPathsPlugin");
 
     /** The service name for the {@link SystemServicesPlugin} */
     ServiceName SYSTEM_SERVICES_PLUGIN = INTEGRATION_BASE_NAME.append("SystemServicesPlugin");
+
+    public enum BootstrapPhase {
+
+        INSTALL, RESOLVE, ACTIVATE, COMPLETE;
+
+        public BootstrapPhase previous() {
+            final int ord = ordinal() - 1;
+            final BootstrapPhase[] phases = BootstrapPhase.values();
+            return ord < 0 ? null : phases[ord];
+        }
+
+        public BootstrapPhase next() {
+            final int ord = ordinal() + 1;
+            final BootstrapPhase[] phases = BootstrapPhase.values();
+            return ord == phases.length ? null : phases[ord];
+        }
+
+        public static ServiceName serviceName(ServiceName baseName, BootstrapPhase phase) {
+            return baseName.append(phase.toString());
+        }
+    }
 }

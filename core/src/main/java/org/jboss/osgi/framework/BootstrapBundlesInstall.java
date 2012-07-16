@@ -34,6 +34,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
 import org.jboss.osgi.framework.util.ServiceTracker;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
@@ -48,15 +49,15 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
-    public BootstrapBundlesInstall(ServiceName serviceName) {
-        super(serviceName);
+    public BootstrapBundlesInstall(ServiceName baseName) {
+        super(baseName, BootstrapPhase.INSTALL);
     }
 
     public ServiceController<T> install(ServiceTarget serviceTarget) {
         ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
-        addServiceDependencies(builder);
         builder.addDependency(Services.FRAMEWORK_CREATE);
+        addServiceDependencies(builder);
         builder.setInitialMode(Mode.ON_DEMAND);
         return builder.install();
     }
@@ -68,14 +69,20 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
 
         // No bootstrap bundles - we are done
         if (deployments.isEmpty()) {
-            installCompleteService(serviceTarget);
+            installCompleteService(serviceTarget, false);
             return;
         }
 
+        final Set<ServiceName> installedServices = new HashSet<ServiceName>();
+        final Set<ServiceName> resolvedServices = new HashSet<ServiceName>();
+
+        // Install the bootstrap phase services
+        installResolveService(serviceTarget, installedServices, resolvedServices);
+        installActivateService(serviceTarget, resolvedServices);
+        installCompleteService(serviceTarget, true);
+
         // Track the Bundle INSTALLED services
         ServiceTracker<XBundle> installTracker = new ServiceTracker<XBundle>() {
-
-            private final Set<ServiceName> installedServices = new HashSet<ServiceName>();
 
             @Override
             protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
@@ -89,7 +96,7 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
 
             @Override
             protected void complete() {
-                installResolveService(serviceTarget, installedServices);
+                activateNextService();
             }
         };
 
@@ -104,5 +111,9 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
         }
     }
 
-    protected abstract void installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices);
+    protected abstract ServiceController<T> installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices, Set<ServiceName> resolvedServices);
+
+    protected abstract ServiceController<T> installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices);
+
+    protected abstract ServiceController<T> installCompleteService(ServiceTarget serviceTarget, boolean withDependency);
 }

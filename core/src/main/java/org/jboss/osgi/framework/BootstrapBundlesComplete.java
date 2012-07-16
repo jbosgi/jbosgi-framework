@@ -1,24 +1,28 @@
 package org.jboss.osgi.framework;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
 
-public class BootstrapBundlesComplete extends AbstractService<Void> {
+public class BootstrapBundlesComplete<T> extends BootstrapBundlesService<T> {
 
-    private final ServiceName serviceName;
-
-    public BootstrapBundlesComplete(ServiceName serviceName) {
-        this.serviceName = serviceName;
+    public BootstrapBundlesComplete(ServiceName baseName) {
+        super(baseName, BootstrapPhase.COMPLETE);
     }
 
-    public void install(ServiceTarget serviceTarget) {
-        ServiceBuilder<Void> builder = serviceTarget.addService(serviceName, this);
+    public ServiceController<T> install(ServiceTarget serviceTarget, boolean withDependency) {
+        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
+        if (withDependency) {
+            builder.addDependency(getPreviousService());
+            builder.setInitialMode(Mode.NEVER);
+        }
         addServiceDependencies(builder);
-        builder.install();
+        return builder.install();
     }
 
-    protected void addServiceDependencies(ServiceBuilder<Void> builder) {
+    protected void addServiceDependencies(ServiceBuilder<T> builder) {
     }
 }
