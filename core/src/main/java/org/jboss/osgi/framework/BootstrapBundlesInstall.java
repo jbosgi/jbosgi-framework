@@ -44,7 +44,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public abstract class BootstrapBundlesInstall extends BootstrapBundlesService {
+public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService<T> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
@@ -52,16 +52,16 @@ public abstract class BootstrapBundlesInstall extends BootstrapBundlesService {
         super(serviceName);
     }
 
-    public void install(ServiceTarget serviceTarget) {
-        ServiceBuilder<Void> builder = serviceTarget.addService(getServiceName(), this);
+    public ServiceController<T> install(ServiceTarget serviceTarget) {
+        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         addServiceDependencies(builder);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+        return builder.install();
     }
 
-    protected void addServiceDependencies(ServiceBuilder<Void> builder) {
+    protected void addServiceDependencies(ServiceBuilder<T> builder) {
     }
 
     protected void installBootstrapBundles(final ServiceTarget serviceTarget, final List<Deployment> deployments) {

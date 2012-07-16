@@ -60,19 +60,18 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall {
+class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
         if (registry.getService(BOOTSTRAP_BUNDLES_INSTALL) == null) {
-            DefaultBootstrapBundlesInstall installService = new DefaultBootstrapBundlesInstall(BOOTSTRAP_BUNDLES_INSTALL);
-            installService.install(serviceTarget);
+            new DefaultBootstrapBundlesInstall().install(serviceTarget);
         }
     }
 
-    private DefaultBootstrapBundlesInstall(ServiceName serviceName) {
-        super(serviceName);
+    private DefaultBootstrapBundlesInstall() {
+        super(BOOTSTRAP_BUNDLES_INSTALL);
     }
 
     protected void addServiceDependencies(ServiceBuilder<Void> builder) {
@@ -160,10 +159,10 @@ class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall {
 
     @Override
     protected void installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices) {
-        BootstrapBundlesResolve resolveService = new BootstrapBundlesResolve(BOOTSTRAP_BUNDLES_RESOLVE, installedServices) {
+        BootstrapBundlesResolve<Void> resolveService = new BootstrapBundlesResolve<Void>(BOOTSTRAP_BUNDLES_RESOLVE, installedServices) {
             @Override
             protected void installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices) {
-                BootstrapBundlesActivate activateService = new BootstrapBundlesActivate(BOOTSTRAP_BUNDLES_ACTIVATE, resolvedServices);
+                BootstrapBundlesActivate<Void> activateService = new BootstrapBundlesActivate<Void>(BOOTSTRAP_BUNDLES_ACTIVATE, resolvedServices);
                 activateService.install(serviceTarget);
             }
         };

@@ -43,6 +43,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BootstrapBundlesActivate;
 import org.jboss.osgi.framework.BootstrapBundlesInstall;
 import org.jboss.osgi.framework.BootstrapBundlesResolve;
+import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.StorageStatePlugin;
@@ -54,7 +55,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall {
+class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<StorageStatePlugin> injectedStoragePlugin = new InjectedValue<StorageStatePlugin>();
@@ -62,13 +63,12 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall {
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
         if (registry.getService(PERSISTENT_BUNDLES_INSTALL) == null) {
-            DefaultPersistentBundlesInstall installService = new DefaultPersistentBundlesInstall(PERSISTENT_BUNDLES_INSTALL);
-            installService.install(serviceTarget);
+            new DefaultPersistentBundlesInstall().install(serviceTarget);
         }
     }
 
-    private DefaultPersistentBundlesInstall(ServiceName serviceName) {
-        super(serviceName);
+    private DefaultPersistentBundlesInstall() {
+        super(PERSISTENT_BUNDLES_INSTALL);
     }
 
     @Override
@@ -76,6 +76,7 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
         builder.addDependency(Services.STORAGE_STATE_PLUGIN, StorageStatePlugin.class, injectedStoragePlugin);
         builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, injectedDeploymentFactory);
+        builder.addDependencies(IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL, IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
     }
 
     @Override
@@ -120,10 +121,10 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall {
 
     @Override
     protected void installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices) {
-        BootstrapBundlesResolve resolveService = new BootstrapBundlesResolve(PERSISTENT_BUNDLES_RESOLVE, installedServices) {
+        BootstrapBundlesResolve<Void> resolveService = new BootstrapBundlesResolve<Void>(PERSISTENT_BUNDLES_RESOLVE, installedServices) {
             @Override
             protected void installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices) {
-                BootstrapBundlesActivate activateService = new BootstrapBundlesActivate(PERSISTENT_BUNDLES_ACTIVATE, resolvedServices);
+                BootstrapBundlesActivate<Void> activateService = new BootstrapBundlesActivate<Void>(PERSISTENT_BUNDLES_ACTIVATE, resolvedServices);
                 activateService.install(serviceTarget);
             }
         };

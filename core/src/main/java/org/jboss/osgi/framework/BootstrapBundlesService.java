@@ -4,7 +4,7 @@ import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 
-abstract class BootstrapBundlesService extends AbstractService<Void> {
+public abstract class BootstrapBundlesService<T> extends AbstractService<T> {
 
     private final ServiceName serviceName;
 
@@ -17,6 +17,7 @@ abstract class BootstrapBundlesService extends AbstractService<Void> {
     }
 
     protected void installCompleteService(ServiceTarget serviceTarget) {
-        new BootstrapBundlesComplete().install(serviceTarget, serviceName.getParent().append("COMPLETE"));
+        ServiceName targetName = serviceName.getParent().append("COMPLETE");
+        new BootstrapBundlesComplete(targetName).install(serviceTarget);
     }
 }

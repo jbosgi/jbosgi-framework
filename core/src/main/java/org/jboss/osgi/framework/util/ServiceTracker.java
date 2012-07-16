@@ -49,18 +49,22 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     @Override
     public void listenerAdded(ServiceController<? extends S> controller) {
         synchronized (trackedController) {
-            LOGGER.tracef("ServiceTracker controller added: %s", controller);
-            addedNames.add(controller.getName());
-            State state = controller.getState();
-            switch (state) {
-                case UP:
-                    serviceStarted(controller);
-                    break;
-                case START_FAILED:
-                    serviceStartFailed(controller, controller.getStartException());
-                    break;
-                default:
-                    trackedController.add(controller);
+            if (trackService(controller)) {
+                LOGGER.tracef("ServiceTracker controller added: %s", controller);
+                addedNames.add(controller.getName());
+                State state = controller.getState();
+                switch (state) {
+                    case UP:
+                        serviceStarted(controller);
+                        break;
+                    case START_FAILED:
+                        serviceStartFailed(controller, controller.getStartException());
+                        break;
+                    default:
+                        trackedController.add(controller);
+                }
+            } else {
+                controller.removeListener(this);
             }
         }
     }
@@ -99,6 +103,10 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
                 }
             }
         }
+    }
+
+    protected boolean trackService(ServiceController<? extends S> controller) {
+        return true;
     }
 
     protected boolean allServicesAdded(Set<ServiceName> trackedServices) {

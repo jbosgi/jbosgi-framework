@@ -15,7 +15,7 @@ import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
-public class BootstrapBundlesActivate extends BootstrapBundlesService {
+public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
 
     private final Set<ServiceName> resolvedServices;
 
@@ -25,12 +25,12 @@ public class BootstrapBundlesActivate extends BootstrapBundlesService {
     }
 
     public void install(ServiceTarget serviceTarget) {
-        ServiceBuilder<Void> builder = serviceTarget.addService(getServiceName(), this);
+        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         addServiceDependencies(builder);
         builder.install();
     }
 
-    protected void addServiceDependencies(ServiceBuilder<Void> builder) {
+    protected void addServiceDependencies(ServiceBuilder<T> builder) {
     }
 
     @Override

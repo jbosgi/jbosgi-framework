@@ -7,9 +7,14 @@ import org.jboss.msc.service.ServiceTarget;
 
 public class BootstrapBundlesComplete extends AbstractService<Void> {
 
-    public void install(ServiceTarget serviceTarget, ServiceName serviceName) {
-        BootstrapBundlesComplete service = new BootstrapBundlesComplete();
-        ServiceBuilder<Void> builder = serviceTarget.addService(serviceName, service);
+    private final ServiceName serviceName;
+
+    public BootstrapBundlesComplete(ServiceName serviceName) {
+        this.serviceName = serviceName;
+    }
+
+    public void install(ServiceTarget serviceTarget) {
+        ServiceBuilder<Void> builder = serviceTarget.addService(serviceName, this);
         addServiceDependencies(builder);
         builder.install();
     }

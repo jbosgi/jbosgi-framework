@@ -22,7 +22,7 @@ import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
 
-public abstract class BootstrapBundlesResolve extends BootstrapBundlesService {
+public abstract class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<PackageAdmin> injectedPackageAdmin = new InjectedValue<PackageAdmin>();
@@ -34,14 +34,14 @@ public abstract class BootstrapBundlesResolve extends BootstrapBundlesService {
     }
 
     public void install(ServiceTarget serviceTarget) {
-        ServiceBuilder<Void> builder = serviceTarget.addService(getServiceName(), this);
+        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
         addServiceDependencies(builder);
         builder.install();
     }
 
-    protected void addServiceDependencies(ServiceBuilder<Void> builder) {
+    protected void addServiceDependencies(ServiceBuilder<T> builder) {
     }
 
     @Override
