@@ -21,28 +21,31 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_INSTALLED;
+import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_ACTIVATE;
+import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_INSTALL;
+import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_RESOLVE;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceListener;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.IntegrationServices;
-import org.jboss.osgi.framework.PersistentBundlesResolved;
+import org.jboss.osgi.framework.BootstrapBundlesActivate;
+import org.jboss.osgi.framework.BootstrapBundlesInstall;
+import org.jboss.osgi.framework.BootstrapBundlesResolve;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.StorageStatePlugin;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -51,36 +54,37 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-class DefaultPersistentBundlesInstalled extends AbstractPluginService<Void> {
+class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
-    private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
     private final InjectedValue<StorageStatePlugin> injectedStoragePlugin = new InjectedValue<StorageStatePlugin>();
     private final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(PERSISTENT_BUNDLES_INSTALLED) == null) {
-            DefaultPersistentBundlesInstalled service = new DefaultPersistentBundlesInstalled();
-            ServiceBuilder<Void> builder = serviceTarget.addService(PERSISTENT_BUNDLES_INSTALLED, service);
-            builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-            builder.addDependency(Services.STORAGE_STATE_PLUGIN, StorageStatePlugin.class, service.injectedStoragePlugin);
-            builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
-            builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, service.injectedDeploymentFactory);
-            builder.addDependencies(Services.FRAMEWORK_CREATE, IntegrationServices.BOOTSTRAP_BUNDLES_ACTIVE);
-            builder.setInitialMode(Mode.ON_DEMAND);
-            builder.install();
+        if (registry.getService(PERSISTENT_BUNDLES_INSTALL) == null) {
+            DefaultPersistentBundlesInstall installService = new DefaultPersistentBundlesInstall(PERSISTENT_BUNDLES_INSTALL);
+            installService.install(serviceTarget);
         }
     }
 
-    private DefaultPersistentBundlesInstalled() {
+    private DefaultPersistentBundlesInstall(ServiceName serviceName) {
+        super(serviceName);
+    }
+
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<Void> builder) {
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
+        builder.addDependency(Services.STORAGE_STATE_PLUGIN, StorageStatePlugin.class, injectedStoragePlugin);
+        builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, injectedDeploymentFactory);
     }
 
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
 
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        DeploymentFactoryPlugin deploymentPlugin = injectedDeploymentFactory.getValue();
+        final BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        final DeploymentFactoryPlugin deploymentPlugin = injectedDeploymentFactory.getValue();
+        final ServiceTarget serviceTarget = context.getChildTarget();
 
         final StorageStatePlugin storageStatePlugin = injectedStoragePlugin.getValue();
         final Set<StorageState> storageStates = new HashSet<StorageState>(storageStatePlugin.getStorageStates());
@@ -94,24 +98,35 @@ class DefaultPersistentBundlesInstalled extends AbstractPluginService<Void> {
             }
         }
 
-        // Create the RESOLVED service that listens on the bundle INSTALL services
-        PersistentBundlesResolved persistentResolved = new DefaultPersistentBundlesResolved(storageStates);
+        // No persistent bundles - we are done
+        if (storageStates.isEmpty()) {
+            installCompleteService(serviceTarget);
+            return;
+        }
 
-        LOGGER.debugf("Installing persistent bundle states: %s", storageStates);
-        ServiceBuilder<Void> builder = persistentResolved.install(context.getChildTarget());
-        if (storageStates.size() == 0) {
-            builder.install();
-        } else {
-            // Install the persisted bundles
-            ServiceListener<Bundle> listener = persistentResolved.getListener();
-            for (StorageState storageState : storageStates) {
-                try {
-                    Deployment dep = deploymentPlugin.createDeployment(storageState);
-                    bundleManager.installBundle(dep, listener);
-                } catch (BundleException ex) {
-                    LOGGER.errorStateCannotInstallInitialBundle(ex, storageState.getLocation());
-                }
+        List<Deployment> deployments = new ArrayList<Deployment>();
+        for (StorageState storageState : storageStates) {
+            try {
+                Deployment dep = deploymentPlugin.createDeployment(storageState);
+                deployments.add(dep);
+            } catch (BundleException ex) {
+                LOGGER.errorStateCannotInstallInitialBundle(ex, storageState.getLocation());
             }
         }
+
+        // Install the bundles from the given locations
+        installBootstrapBundles(serviceTarget, deployments);
+    }
+
+    @Override
+    protected void installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices) {
+        BootstrapBundlesResolve resolveService = new BootstrapBundlesResolve(PERSISTENT_BUNDLES_RESOLVE, installedServices) {
+            @Override
+            protected void installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices) {
+                BootstrapBundlesActivate activateService = new BootstrapBundlesActivate(PERSISTENT_BUNDLES_ACTIVATE, resolvedServices);
+                activateService.install(serviceTarget);
+            }
+        };
+        resolveService.install(serviceTarget);
     }
 }

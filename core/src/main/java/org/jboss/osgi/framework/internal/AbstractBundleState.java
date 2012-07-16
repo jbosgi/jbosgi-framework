@@ -45,7 +45,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
@@ -574,9 +573,6 @@ abstract class AbstractBundleState implements XBundle {
             try {
                 ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
                 resolverPlugin.resolveAndApply(Collections.singleton(getBundleRevision()), null);
-
-                // Activate the service that represents bundle state RESOLVED
-                getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.ACTIVE);
 
                 if (LOGGER.isDebugEnabled()) {
                     BundleWiring wiring = getBundleRevision().getWiring();

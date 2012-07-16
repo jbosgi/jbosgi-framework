@@ -37,6 +37,7 @@ import java.util.Set;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -79,6 +80,7 @@ import org.osgi.service.resolver.ResolveContext;
  */
 final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> implements XResolver {
 
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
     private final InjectedValue<ModuleLoaderPlugin> injectedModuleLoader = new InjectedValue<ModuleLoaderPlugin>();
@@ -88,6 +90,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
     static void addService(ServiceTarget serviceTarget) {
         ResolverPlugin service = new ResolverPlugin();
         ServiceBuilder<ResolverPlugin> builder = serviceTarget.addService(Services.RESOLVER, service);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
@@ -307,10 +310,16 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
     }
 
     private void setBundleToResolved(Map<BundleRevision, List<BundleWire>> wiremap) {
+    	BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
             Bundle bundle = entry.getKey().getBundle();
             if (bundle instanceof AbstractBundleState) {
-                ((AbstractBundleState)bundle).changeState(Bundle.RESOLVED);
+                AbstractBundleState bundleState = (AbstractBundleState)bundle;
+				bundleState.changeState(Bundle.RESOLVED);
+                // Activate the service that represents bundle state RESOLVED
+                ServiceName serviceName = bundleState.getServiceName(Bundle.RESOLVED);
+                bundleManager.setServiceMode(serviceName, Mode.ACTIVE);
+
             }
         }
     }

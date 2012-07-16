@@ -132,11 +132,11 @@ public final class FrameworkBuilder {
             SystemBundleService.addService(serviceTarget, frameworkState);
             SystemContextService.addService(serviceTarget);
 
-            DefaultBootstrapBundlesInstalled.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultBootstrapBundlesInstall.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultBundleInstallPlugin.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultFrameworkModulePlugin.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultModuleLoaderPlugin.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultPersistentBundlesInstalled.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultPersistentBundlesInstall.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultSystemPathsPlugin.addIntegrationService(serviceRegistry, serviceTarget, this);
             DefaultSystemServicesPlugin.addIntegrationService(serviceRegistry, serviceTarget);
 

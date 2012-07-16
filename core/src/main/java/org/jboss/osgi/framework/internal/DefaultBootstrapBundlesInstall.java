@@ -21,7 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_INSTALLED;
+import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_ACTIVATE;
+import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL;
+import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_RESOLVE;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
@@ -30,10 +32,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceListener;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -41,13 +43,15 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
-import org.jboss.osgi.framework.BootstrapBundlesResolved;
+import org.jboss.osgi.framework.BootstrapBundlesActivate;
+import org.jboss.osgi.framework.BootstrapBundlesInstall;
+import org.jboss.osgi.framework.BootstrapBundlesResolve;
+import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.spi.BundleInfo;
 import org.jboss.osgi.spi.util.StringPropertyReplacer;
 import org.jboss.osgi.spi.util.StringPropertyReplacer.PropertyProvider;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -56,29 +60,31 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-class DefaultBootstrapBundlesInstalled extends AbstractPluginService<Void>  {
+class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall {
 
-    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
+    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(BOOTSTRAP_BUNDLES_INSTALLED) == null) {
-            DefaultBootstrapBundlesInstalled service = new DefaultBootstrapBundlesInstalled();
-            ServiceBuilder<Void> builder = serviceTarget.addService(BOOTSTRAP_BUNDLES_INSTALLED, service);
-            builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-            builder.addDependency(Services.FRAMEWORK_CREATE);
-            builder.setInitialMode(Mode.ON_DEMAND);
-            builder.install();
+        if (registry.getService(BOOTSTRAP_BUNDLES_INSTALL) == null) {
+            DefaultBootstrapBundlesInstall installService = new DefaultBootstrapBundlesInstall(BOOTSTRAP_BUNDLES_INSTALL);
+            installService.install(serviceTarget);
         }
     }
 
-    private DefaultBootstrapBundlesInstalled() {
+    private DefaultBootstrapBundlesInstall(ServiceName serviceName) {
+        super(serviceName);
+    }
+
+    protected void addServiceDependencies(ServiceBuilder<Void> builder) {
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
+    public void start(final StartContext context) throws StartException {
         super.start(context);
 
-        final BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        final BundleManager bundleManager = injectedBundleManager.getValue();
+        final ServiceTarget serviceTarget = context.getChildTarget();
         final List<URL> autoInstall = new ArrayList<URL>();
         final List<URL> autoStart = new ArrayList<URL>();
 
@@ -104,28 +110,23 @@ class DefaultBootstrapBundlesInstalled extends AbstractPluginService<Void>  {
         // Add the autoStart bundles to autoInstall
         autoInstall.addAll(autoStart);
 
-        // Create the RESOLVED service that listens on the bundle INSTALL services
-        BootstrapBundlesResolved bootstrapResolved = new DefaultBootstrapBundlesResolved(autoInstall);
-        ServiceBuilder<Void> builder = bootstrapResolved.install(context.getChildTarget());
-        if (autoInstall.isEmpty()) {
-            builder.install();
-        } else {
-            // Install the auto install bundles
-            ServiceListener<Bundle> listener = bootstrapResolved.getListener();
-            for (URL url : autoInstall) {
-                try {
-                    BundleInfo info = BundleInfo.createBundleInfo(url);
-                    Deployment dep = DeploymentFactory.createDeployment(info);
-                    dep.setAutoStart(autoStart.contains(url));
-                    bundleManager.installBundle(dep, listener);
-                } catch (BundleException ex) {
-                    LOGGER.errorStateCannotInstallInitialBundle(ex, url.toExternalForm());
-                }
+        List<Deployment> deployments = new ArrayList<Deployment>();
+        for (URL url : autoInstall) {
+            try {
+                BundleInfo info = BundleInfo.createBundleInfo(url);
+                Deployment dep = DeploymentFactory.createDeployment(info);
+                dep.setAutoStart(autoStart.contains(url));
+                deployments.add(dep);
+            } catch (BundleException ex) {
+                LOGGER.errorStateCannotInstallInitialBundle(ex, url.toExternalForm());
             }
         }
+
+        // Install the bundles from the given locations
+        installBootstrapBundles(serviceTarget, deployments);
     }
 
-    private URL toURL(final BundleManagerPlugin bundleManager, final String path) {
+    private URL toURL(final BundleManager bundleManager, final String path) {
 
         URL pathURL = null;
         PropertyProvider provider = new PropertyProvider() {
@@ -155,5 +156,17 @@ class DefaultBootstrapBundlesInstalled extends AbstractPluginService<Void>  {
             throw MESSAGES.illegalArgumentInvalidPath(null, realPath);
 
         return pathURL;
+    }
+
+    @Override
+    protected void installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices) {
+        BootstrapBundlesResolve resolveService = new BootstrapBundlesResolve(BOOTSTRAP_BUNDLES_RESOLVE, installedServices) {
+            @Override
+            protected void installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices) {
+                BootstrapBundlesActivate activateService = new BootstrapBundlesActivate(BOOTSTRAP_BUNDLES_ACTIVATE, resolvedServices);
+                activateService.install(serviceTarget);
+            }
+        };
+        resolveService.install(serviceTarget);
     }
 }

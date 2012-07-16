@@ -28,7 +28,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.osgi.framework.Bundle;
+import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -39,7 +39,7 @@ import org.osgi.framework.BundleException;
  */
 final class FragmentBundleInstalledService extends UserBundleInstalledService<FragmentBundleState, FragmentBundleRevision> {
 
-    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, ServiceListener<Bundle> listener) throws BundleException {
+    static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, ServiceListener<XBundle> listener) throws BundleException {
         ServiceName serviceName = BundleManagerPlugin.getServiceName(dep).append("INSTALLED");
         FragmentBundleInstalledService service = new FragmentBundleInstalledService(frameworkState, dep);
         ServiceBuilder<FragmentBundleState> builder = serviceTarget.addService(serviceName, service);

@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -55,17 +55,17 @@ import org.jboss.msc.service.ServiceName;
  */
 public interface IntegrationServices {
 
-    /** The service name for the {@link BootstrapBundlesPlugin} */
-    ServiceName BOOTSTRAP_BUNDLES = INTEGRATION_BASE_NAME.append("BootstrapBundles");
+    /** The {@link BootstrapBundlesInstall} service for auto install bundles */
+    ServiceName BOOTSTRAP_BUNDLES_INSTALL = INTEGRATION_BASE_NAME.append("BootstrapBundles", "INSTALL");
 
-    /** The {@link BootstrapBundlesPlugin} service that indicates INSTALLED completion */
-    ServiceName BOOTSTRAP_BUNDLES_INSTALLED = BOOTSTRAP_BUNDLES.append("INSTALLED");
+    /** The {@link BootstrapBundlesResolve} service for auto install bundles */
+    ServiceName BOOTSTRAP_BUNDLES_RESOLVE = INTEGRATION_BASE_NAME.append("BootstrapBundles", "RESOLVE");
 
-    /** The {@link BootstrapBundlesPlugin} service that indicates RESOLVED completion */
-    ServiceName BOOTSTRAP_BUNDLES_RESOLVED = BOOTSTRAP_BUNDLES.append("RESOLVED");
+    /** The {@link BootstrapBundlesActivate} service for auto install bundles */
+    ServiceName BOOTSTRAP_BUNDLES_ACTIVATE = INTEGRATION_BASE_NAME.append("BootstrapBundles", "ACTIVATE");
 
-    /** The {@link BootstrapBundlesPlugin} service that indicates ACTIVE completion */
-    ServiceName BOOTSTRAP_BUNDLES_ACTIVE = BOOTSTRAP_BUNDLES.append("ACTIVE");
+    /** The {@link BootstrapBundlesComplete} service for auto install bundles */
+    ServiceName BOOTSTRAP_BUNDLES_COMPLETE = INTEGRATION_BASE_NAME.append("BootstrapBundles", "COMPLETE");
 
     /** The service name for the {@link BundleInstallPlugin} */
     ServiceName BUNDLE_INSTALL_PLUGIN = INTEGRATION_BASE_NAME.append("BundleInstallPlugin");
@@ -76,17 +76,17 @@ public interface IntegrationServices {
     /** The service name for the {@link ModuleLoaderPlugin} */
     ServiceName MODULE_LOADER_PLUGIN = INTEGRATION_BASE_NAME.append("ModuleLoaderPlugin");
 
-    /** The {@link PersistentBundlesPlugin} service name */
-    ServiceName PERSISTENT_BUNDLES = INTEGRATION_BASE_NAME.append("PersistentBundles");
+    /** The {@link BootstrapBundlesInstall} service for persistent bundles */
+    ServiceName PERSISTENT_BUNDLES_INSTALL = INTEGRATION_BASE_NAME.append("PersistentBundles", "INSTALL");
 
-    /** The {@link PersistentBundlesPlugin} service that indicates INSTALLED completion */
-    ServiceName PERSISTENT_BUNDLES_INSTALLED = PERSISTENT_BUNDLES.append("INSTALLED");
+    /** The {@link BootstrapBundlesResolve} service forpersistent bundles */
+    ServiceName PERSISTENT_BUNDLES_RESOLVE = INTEGRATION_BASE_NAME.append("PersistentBundles", "RESOLVE");
 
-    /** The {@link PersistentBundlesPlugin} service that indicates RESOLVED completion */
-    ServiceName PERSISTENT_BUNDLES_RESOLVED = PERSISTENT_BUNDLES.append("RESOLVED");
+    /** The {@link BootstrapBundlesActivate} service for persistent bundles */
+    ServiceName PERSISTENT_BUNDLES_ACTIVATE = INTEGRATION_BASE_NAME.append("PersistentBundles", "ACTIVATE");
 
-    /** The {@link PersistentBundlesPlugin} service that indicates ACTIVE completion */
-    ServiceName PERSISTENT_BUNDLES_ACTIVE = PERSISTENT_BUNDLES.append("ACTIVE");
+    /** The {@link BootstrapBundlesComplete} service for persistent bundles */
+    ServiceName PERSISTENT_BUNDLES_COMPLETE = INTEGRATION_BASE_NAME.append("PersistentBundles", "COMPLETE");
 
     /** The service name for the {@link SystemPathsPlugin} */
     ServiceName SYSTEM_PATHS_PLUGIN = INTEGRATION_BASE_NAME.append("SystemPathsPlugin");
