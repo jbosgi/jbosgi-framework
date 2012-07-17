@@ -2,17 +2,21 @@ package org.jboss.osgi.framework;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceBuilder.DependencyType;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.ServiceBuilder.DependencyType;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
@@ -43,12 +47,24 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
 
     @Override
     public void start(StartContext context) throws StartException {
-
-        // Start the resolved bundles
         ServiceContainer serviceRegistry = context.getController().getServiceContainer();
+
+        // Collect the resolved bundles
+        List<XBundle> bundles = new ArrayList<XBundle>();
         for (ServiceName serviceName : resolvedServices) {
             ServiceController<?> controller = serviceRegistry.getRequiredService(serviceName);
-            XBundle bundle = (XBundle) controller.getValue();
+            bundles.add((XBundle) controller.getValue());
+        }
+
+        // Sort the bundles by Id
+        Collections.sort(bundles, new Comparator<Bundle>(){
+            public int compare(Bundle o1, Bundle o2) {
+                return (int) (o1.getBundleId() - o2.getBundleId());
+            }
+        });
+
+        // Start the resolved bundles
+        for (XBundle bundle : bundles) {
             try {
                 bundle.start(Bundle.START_ACTIVATION_POLICY);
             } catch (BundleException ex) {
