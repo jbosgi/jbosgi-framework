@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
@@ -42,10 +41,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BootstrapBundlesActivate;
-import org.jboss.osgi.framework.BootstrapBundlesComplete;
 import org.jboss.osgi.framework.BootstrapBundlesInstall;
-import org.jboss.osgi.framework.BootstrapBundlesResolve;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.StorageStatePlugin;
@@ -113,20 +109,5 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> {
 
         // Install the bundles from the given locations
         installBootstrapBundles(serviceTarget, deployments);
-    }
-
-    @Override
-    protected ServiceController<Void> installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices, Set<ServiceName> resolvedServices) {
-        return new BootstrapBundlesResolve<Void>(PERSISTENT_BUNDLES, installedServices, resolvedServices).install(serviceTarget);
-    }
-
-    @Override
-    protected ServiceController<Void>  installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices) {
-        return new BootstrapBundlesActivate<Void>(PERSISTENT_BUNDLES, resolvedServices).install(serviceTarget);
-    }
-
-    @Override
-    protected ServiceController<Void> installCompleteService(ServiceTarget serviceTarget, boolean withDependency) {
-        return new BootstrapBundlesComplete<Void>(PERSISTENT_BUNDLES).install(serviceTarget, withDependency);
     }
 }

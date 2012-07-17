@@ -57,8 +57,8 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
         ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_CREATE);
-        addServiceDependencies(builder);
         builder.setInitialMode(Mode.ON_DEMAND);
+        addServiceDependencies(builder);
         return builder.install();
     }
 
@@ -67,19 +67,13 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
 
     protected void installBootstrapBundles(final ServiceTarget serviceTarget, final List<Deployment> deployments) {
 
+        final Set<ServiceName> installedServices = new HashSet<ServiceName>();
+
         // No bootstrap bundles - we are done
         if (deployments.isEmpty()) {
-            installCompleteService(serviceTarget, false);
+            installResolveService(serviceTarget, installedServices);
             return;
         }
-
-        final Set<ServiceName> installedServices = new HashSet<ServiceName>();
-        final Set<ServiceName> resolvedServices = new HashSet<ServiceName>();
-
-        // Install the bootstrap phase services
-        installResolveService(serviceTarget, installedServices, resolvedServices);
-        installActivateService(serviceTarget, resolvedServices);
-        installCompleteService(serviceTarget, true);
 
         // Track the Bundle INSTALLED services
         ServiceTracker<XBundle> installTracker = new ServiceTracker<XBundle>() {
@@ -96,7 +90,7 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
 
             @Override
             protected void complete() {
-                activateNextService();
+                installResolveService(serviceTarget, installedServices);
             }
         };
 
@@ -111,9 +105,7 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
         }
     }
 
-    protected abstract ServiceController<T> installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices, Set<ServiceName> resolvedServices);
-
-    protected abstract ServiceController<T> installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices);
-
-    protected abstract ServiceController<T> installCompleteService(ServiceTarget serviceTarget, boolean withDependency);
+    protected ServiceController<T> installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices) {
+        return new BootstrapBundlesResolve<T>(getServiceName().getParent(), installedServices).install(serviceTarget);
+    }
 }

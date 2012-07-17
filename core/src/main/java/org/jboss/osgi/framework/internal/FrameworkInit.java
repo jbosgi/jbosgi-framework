@@ -21,10 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE;
-import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL;
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_COMPLETE;
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_INSTALL;
+import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES;
+import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import org.jboss.msc.service.ServiceBuilder;
@@ -33,6 +31,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.launch.Framework;
 
@@ -52,9 +51,11 @@ public final class FrameworkInit extends AbstractFrameworkService {
         FrameworkInit service = new FrameworkInit();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_INIT, service);
         builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
-        builder.addDependencies(BOOTSTRAP_BUNDLES_INSTALL, BOOTSTRAP_BUNDLES_COMPLETE);
-        builder.addDependencies(PERSISTENT_BUNDLES_INSTALL, PERSISTENT_BUNDLES_COMPLETE);
         builder.addDependencies(InternalServices.FRAMEWORK_CORE_SERVICES);
+        for (BootstrapPhase phase : BootstrapPhase.values()) {
+            builder.addDependency(BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, phase));
+            builder.addDependency(BootstrapPhase.serviceName(PERSISTENT_BUNDLES, phase));
+        }
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

@@ -3,6 +3,7 @@ package org.jboss.osgi.framework;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -28,12 +29,10 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<PackageAdmin> injectedPackageAdmin = new InjectedValue<PackageAdmin>();
     private final Set<ServiceName> installedServices;
-    private final Set<ServiceName> resolvedServices;
 
-    public BootstrapBundlesResolve(ServiceName baseName, Set<ServiceName> installedServices, Set<ServiceName> resolvedServices) {
+    public BootstrapBundlesResolve(ServiceName baseName, Set<ServiceName> installedServices) {
         super(baseName, BootstrapPhase.RESOLVE);
         this.installedServices = installedServices;
-        this.resolvedServices = resolvedServices;
     }
 
     public ServiceController<T> install(ServiceTarget serviceTarget) {
@@ -41,8 +40,8 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
         builder.addDependencies(getPreviousService());
+        builder.setInitialMode(Mode.PASSIVE);
         addServiceDependencies(builder);
-        builder.setInitialMode(Mode.NEVER);
         return builder.install();
     }
 
@@ -51,9 +50,8 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
 
-        final ServiceContainer serviceRegistry = context.getController().getServiceContainer();
+        ServiceContainer serviceRegistry = context.getController().getServiceContainer();
         int targetLevel = getBeginningStartLevel();
 
         // Collect the set of resolvable bundles
@@ -68,18 +66,13 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
             }
         }
 
-        // No resolvable bundles - we are done
-        if (resolvableServices.isEmpty()) {
-            activateNextService();
-            return;
-        }
-
         // Leniently resolve the bundles
         Bundle[] bundles = new Bundle[resolvableServices.size()];
         PackageAdmin packageAdmin = injectedPackageAdmin.getValue();
         packageAdmin.resolveBundles(resolvableServices.values().toArray(bundles));
 
         // Collect the resolved service
+        final Set<ServiceName> resolvedServices = new HashSet<ServiceName>();
         for (Entry<ServiceName, XBundle> entry : resolvableServices.entrySet()) {
             if (entry.getValue().isResolved()) {
                 resolvedServices.add(entry.getKey());
@@ -87,6 +80,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         }
 
         // Track the resolved services
+        final ServiceTarget serviceTarget = context.getChildTarget();
         ServiceTracker<XBundle> resolvedTracker = new ServiceTracker<XBundle>() {
 
             @Override
@@ -96,7 +90,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
 
             @Override
             protected void complete() {
-                activateNextService();
+                installActivateService(serviceTarget, resolvedServices);
             }
         };
 
@@ -124,4 +118,9 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         }
         return 1;
     }
+
+    protected ServiceController<T> installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices) {
+        return new BootstrapBundlesActivate<T>(getServiceName().getParent(), resolvedServices).install(serviceTarget);
+    }
+
 }

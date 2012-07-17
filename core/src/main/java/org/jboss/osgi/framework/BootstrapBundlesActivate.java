@@ -29,8 +29,8 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
     public ServiceController<T> install(ServiceTarget serviceTarget) {
         ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependencies(getPreviousService());
+        builder.setInitialMode(Mode.PASSIVE);
         addServiceDependencies(builder);
-        builder.setInitialMode(Mode.NEVER);
         return builder.install();
     }
 
@@ -39,7 +39,6 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
 
         // Start the resolved bundles
         ServiceContainer serviceRegistry = context.getController().getServiceContainer();
@@ -54,6 +53,10 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
         }
 
         // We are done
-        activateNextService();
+        installCompleteService(context.getChildTarget());
+    }
+
+    protected ServiceController<T> installCompleteService(ServiceTarget serviceTarget) {
+        return new BootstrapBundlesComplete<T>(getServiceName().getParent()).install(serviceTarget);
     }
 }

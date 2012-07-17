@@ -31,10 +31,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
@@ -43,10 +41,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
-import org.jboss.osgi.framework.BootstrapBundlesActivate;
-import org.jboss.osgi.framework.BootstrapBundlesComplete;
 import org.jboss.osgi.framework.BootstrapBundlesInstall;
-import org.jboss.osgi.framework.BootstrapBundlesResolve;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
@@ -157,20 +152,5 @@ class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> {
             throw MESSAGES.illegalArgumentInvalidPath(null, realPath);
 
         return pathURL;
-    }
-
-    @Override
-    protected ServiceController<Void> installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices, Set<ServiceName> resolvedServices) {
-        return new BootstrapBundlesResolve<Void>(BOOTSTRAP_BUNDLES, installedServices, resolvedServices).install(serviceTarget);
-    }
-
-    @Override
-    protected ServiceController<Void>  installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices) {
-        return new BootstrapBundlesActivate<Void>(BOOTSTRAP_BUNDLES, resolvedServices).install(serviceTarget);
-    }
-
-    @Override
-    protected ServiceController<Void> installCompleteService(ServiceTarget serviceTarget, boolean withDependency) {
-        return new BootstrapBundlesComplete<Void>(BOOTSTRAP_BUNDLES).install(serviceTarget, withDependency);
     }
 }
