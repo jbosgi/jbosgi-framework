@@ -83,7 +83,6 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> {
 
         final BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         final DeploymentFactoryPlugin deploymentPlugin = injectedDeploymentFactory.getValue();
-        final ServiceTarget serviceTarget = context.getChildTarget();
 
         final StorageStatePlugin storageStatePlugin = injectedStoragePlugin.getValue();
         final Set<StorageState> storageStates = new HashSet<StorageState>(storageStatePlugin.getStorageStates());
@@ -108,6 +107,6 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> {
         }
 
         // Install the bundles from the given locations
-        installBootstrapBundles(serviceTarget, deployments);
+        installBootstrapBundles(context.getChildTarget(), deployments);
     }
 }

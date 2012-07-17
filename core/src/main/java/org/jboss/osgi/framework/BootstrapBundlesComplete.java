@@ -16,7 +16,7 @@ public class BootstrapBundlesComplete<T> extends BootstrapBundlesService<T> {
     public ServiceController<T> install(ServiceTarget serviceTarget) {
         ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependency(getPreviousService());
-        builder.setInitialMode(Mode.PASSIVE);
+        builder.setInitialMode(Mode.ON_DEMAND);
         addServiceDependencies(builder);
         return builder.install();
     }

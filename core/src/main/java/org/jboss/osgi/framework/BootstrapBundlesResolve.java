@@ -9,9 +9,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceBuilder.DependencyType;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -19,7 +20,6 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
-import org.jboss.osgi.framework.util.ServiceTracker;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -40,7 +40,10 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
         builder.addDependencies(getPreviousService());
-        builder.setInitialMode(Mode.PASSIVE);
+        for (ServiceName name : installedServices) {
+            builder.addDependency(DependencyType.OPTIONAL, name);
+        }
+        builder.setInitialMode(Mode.ON_DEMAND);
         addServiceDependencies(builder);
         return builder.install();
     }
@@ -71,39 +74,16 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         PackageAdmin packageAdmin = injectedPackageAdmin.getValue();
         packageAdmin.resolveBundles(resolvableServices.values().toArray(bundles));
 
-        // Collect the resolved service
+        // Collect the resolved services
         final Set<ServiceName> resolvedServices = new HashSet<ServiceName>();
         for (Entry<ServiceName, XBundle> entry : resolvableServices.entrySet()) {
             if (entry.getValue().isResolved()) {
-                resolvedServices.add(entry.getKey());
+                ServiceName serviceName = entry.getKey().getParent().append("RESOLVED");
+                resolvedServices.add(serviceName);
             }
         }
 
-        // Track the resolved services
-        final ServiceTarget serviceTarget = context.getChildTarget();
-        ServiceTracker<XBundle> resolvedTracker = new ServiceTracker<XBundle>() {
-
-            @Override
-            protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
-                return resolvedServices.size() == trackedServices.size();
-            }
-
-            @Override
-            protected void complete() {
-                installActivateService(serviceTarget, resolvedServices);
-            }
-        };
-
-        // Add the tracker to the Bundle RESOLVED services
-        for (ServiceName serviceName : resolvedServices) {
-            serviceName = serviceName.getParent().append("RESOLVED");
-            @SuppressWarnings("unchecked")
-            ServiceController<XBundle> resolved = (ServiceController<XBundle>) serviceRegistry.getRequiredService(serviceName);
-            resolved.addListener(resolvedTracker);
-        }
-
-        // Check the tracker for completeness
-        resolvedTracker.checkAndComplete();
+        installActivateService(context.getChildTarget(), resolvedServices);
     }
 
     private int getBeginningStartLevel() {

@@ -66,17 +66,17 @@ public class AutoInstallTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testSimpleAutoStart() throws Exception {
-       
+
         Assert.assertTrue("File exists: " + fileB, fileB.exists());
-        
+
         Map<String, String> initprops = getFrameworkInitProperties(true);
         initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileB.toURI().toString());
         initprops.put(Constants.PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS, new Integer(1).toString());
-        
+
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
         Framework framework = factory.newFramework(initprops);
         framework.start();
-        
+
         PackageAdmin pa = getPackageAdmin(framework.getBundleContext());
         Bundle bundleB = pa.getBundles("bundleB", null)[0];
         Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
@@ -85,22 +85,22 @@ public class AutoInstallTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testValidAutoStart() throws Exception {
-       
+
         Assert.assertTrue("File exists: " + fileA, fileA.exists());
         Assert.assertTrue("File exists: " + fileB, fileB.exists());
-        
+
         Map<String, String> initprops = getFrameworkInitProperties(true);
         initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileA.toURI() + "," + fileB.toURI());
-        
+
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
         Framework framework = factory.newFramework(initprops);
         framework.start();
-        
+
         PackageAdmin pa = getPackageAdmin(framework.getBundleContext());
         Bundle bundleA = pa.getBundles("bundleA", null)[0];
         Assert.assertEquals(fileA.toURI().toString(), bundleA.getLocation());
         assertBundleState(Bundle.ACTIVE, bundleA.getState());
-        
+
         Bundle bundleB = pa.getBundles("bundleB", null)[0];
         Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
         assertBundleState(Bundle.ACTIVE, bundleB.getState());
@@ -108,19 +108,85 @@ public class AutoInstallTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testInvalidAutoStart() throws Exception {
-        
+
         Assert.assertTrue("File exists: " + fileA, fileA.exists());
-       
+
         Map<String, String> initprops = getFrameworkInitProperties(true);
         initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileA.toURI().toString());
-        
+
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
         Framework framework = factory.newFramework(initprops);
         framework.start();
-        
+
         PackageAdmin pa = getPackageAdmin(framework.getBundleContext());
         Bundle bundleA = pa.getBundles("bundleA", null)[0];
         Assert.assertEquals(fileA.toURI().toString(), bundleA.getLocation());
+        assertBundleState(Bundle.INSTALLED, bundleA.getState());
+    }
+
+    @Test
+    public void testUninstallDependent() throws Exception {
+
+        Assert.assertTrue("File exists: " + fileA, fileA.exists());
+        Assert.assertTrue("File exists: " + fileB, fileB.exists());
+
+        Map<String, String> initprops = getFrameworkInitProperties(true);
+        initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileA.toURI() + "," + fileB.toURI());
+
+        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
+        Framework framework = factory.newFramework(initprops);
+        framework.start();
+
+        PackageAdmin pa = getPackageAdmin(framework.getBundleContext());
+        Bundle bundleA = pa.getBundles("bundleA", null)[0];
+        Assert.assertEquals(fileA.toURI().toString(), bundleA.getLocation());
+        assertBundleState(Bundle.ACTIVE, bundleA.getState());
+
+        Bundle bundleB = pa.getBundles("bundleB", null)[0];
+        Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
+        assertBundleState(Bundle.ACTIVE, bundleB.getState());
+
+        bundleA.uninstall();
+        assertBundleState(Bundle.UNINSTALLED, bundleA.getState());
+        assertBundleState(Bundle.ACTIVE, bundleB.getState());
+
+        pa.refreshPackages(null);
+
+        Assert.assertNull(pa.getBundles("bundleA", null));
+        bundleB = pa.getBundles("bundleB", null)[0];
+        assertBundleState(Bundle.ACTIVE, bundleB.getState());
+    }
+
+    @Test
+    public void testUninstallDependee() throws Exception {
+
+        Assert.assertTrue("File exists: " + fileA, fileA.exists());
+        Assert.assertTrue("File exists: " + fileB, fileB.exists());
+
+        Map<String, String> initprops = getFrameworkInitProperties(true);
+        initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileA.toURI() + "," + fileB.toURI());
+
+        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
+        Framework framework = factory.newFramework(initprops);
+        framework.start();
+
+        PackageAdmin pa = getPackageAdmin(framework.getBundleContext());
+        Bundle bundleA = pa.getBundles("bundleA", null)[0];
+        Assert.assertEquals(fileA.toURI().toString(), bundleA.getLocation());
+        assertBundleState(Bundle.ACTIVE, bundleA.getState());
+
+        Bundle bundleB = pa.getBundles("bundleB", null)[0];
+        Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
+        assertBundleState(Bundle.ACTIVE, bundleB.getState());
+
+        bundleB.uninstall();
+        assertBundleState(Bundle.UNINSTALLED, bundleB.getState());
+        assertBundleState(Bundle.ACTIVE, bundleA.getState());
+
+        pa.refreshPackages(null);
+
+        Assert.assertNull(pa.getBundles("bundleB", null));
+        bundleA = pa.getBundles("bundleA", null)[0];
         assertBundleState(Bundle.INSTALLED, bundleA.getState());
     }
 
@@ -137,14 +203,14 @@ public class AutoInstallTestCase extends OSGiFrameworkTest {
         ServiceReference sref = systemContext.getServiceReference(PackageAdmin.class.getName());
         return (PackageAdmin) systemContext.getService(sref);
     }
-    
+
     private static File exportBundleArchive(JavaArchive archive) {
         String basedir = System.getProperty("test.archive.directory");
         File targetFile = new File(basedir + File.separator + archive.getName() + ".jar");
         archive.as(ZipExporter.class).exportTo(targetFile, true);
         return targetFile;
     }
-    
+
     private static JavaArchive getBundleA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA");
         archive.addClasses(BeanA.class);

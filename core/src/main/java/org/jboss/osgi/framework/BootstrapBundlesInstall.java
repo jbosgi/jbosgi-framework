@@ -35,8 +35,6 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
-import org.jboss.osgi.framework.util.ServiceTracker;
-import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -65,44 +63,22 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
     }
 
-    protected void installBootstrapBundles(final ServiceTarget serviceTarget, final List<Deployment> deployments) {
+    protected void installBootstrapBundles(ServiceTarget serviceTarget, List<Deployment> deployments) {
 
-        final Set<ServiceName> installedServices = new HashSet<ServiceName>();
-
-        // No bootstrap bundles - we are done
-        if (deployments.isEmpty()) {
-            installResolveService(serviceTarget, installedServices);
-            return;
-        }
-
-        // Track the Bundle INSTALLED services
-        ServiceTracker<XBundle> installTracker = new ServiceTracker<XBundle>() {
-
-            @Override
-            protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
-                return deployments.size() == trackedServices.size();
-            }
-
-            @Override
-            protected void serviceStarted(ServiceController<? extends XBundle> controller) {
-                installedServices.add(controller.getName());
-            }
-
-            @Override
-            protected void complete() {
-                installResolveService(serviceTarget, installedServices);
-            }
-        };
+        Set<ServiceName> installedServices = new HashSet<ServiceName>();
 
         // Install the auto install bundles
         BundleManager bundleManager = injectedBundleManager.getValue();
         for (Deployment dep : deployments) {
             try {
-                bundleManager.installBundle(dep, installTracker);
+                ServiceName serviceName = bundleManager.installBundle(dep, null);
+                installedServices.add(serviceName);
             } catch (BundleException ex) {
                 LOGGER.errorStateCannotInstallInitialBundle(ex, dep.getLocation());
             }
         }
+
+        installResolveService(serviceTarget, installedServices);
     }
 
     protected ServiceController<T> installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices) {

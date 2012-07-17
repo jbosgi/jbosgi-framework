@@ -75,11 +75,9 @@ class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> {
     }
 
     @Override
-    public void start(final StartContext context) throws StartException {
-        super.start(context);
+    public void start(StartContext context) throws StartException {
 
         final BundleManager bundleManager = injectedBundleManager.getValue();
-        final ServiceTarget serviceTarget = context.getChildTarget();
         final List<URL> autoInstall = new ArrayList<URL>();
         final List<URL> autoStart = new ArrayList<URL>();
 
@@ -119,7 +117,7 @@ class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> {
         }
 
         // Install the bundles from the given locations
-        installBootstrapBundles(serviceTarget, deployments);
+        installBootstrapBundles(context.getChildTarget(), deployments);
     }
 
     private URL toURL(final BundleManager bundleManager, final String path) {

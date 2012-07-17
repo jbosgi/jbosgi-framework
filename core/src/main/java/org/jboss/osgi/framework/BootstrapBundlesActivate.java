@@ -11,6 +11,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.ServiceBuilder.DependencyType;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
 import org.jboss.osgi.resolver.XBundle;
@@ -29,7 +30,10 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
     public ServiceController<T> install(ServiceTarget serviceTarget) {
         ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependencies(getPreviousService());
-        builder.setInitialMode(Mode.PASSIVE);
+        for (ServiceName name : resolvedServices) {
+            builder.addDependency(DependencyType.OPTIONAL, name);
+        }
+        builder.setInitialMode(Mode.ON_DEMAND);
         addServiceDependencies(builder);
         return builder.install();
     }
