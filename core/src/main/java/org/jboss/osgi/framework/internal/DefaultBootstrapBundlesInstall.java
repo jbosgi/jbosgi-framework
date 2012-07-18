@@ -22,7 +22,6 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES;
-import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
@@ -34,7 +33,6 @@ import java.util.List;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -60,10 +58,9 @@ class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
-    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(BOOTSTRAP_BUNDLES_INSTALL) == null) {
-            new DefaultBootstrapBundlesInstall(BOOTSTRAP_BUNDLES).install(serviceTarget);
-        }
+    static void addService(ServiceTarget serviceTarget) {
+        DefaultBootstrapBundlesInstall service = new DefaultBootstrapBundlesInstall(BOOTSTRAP_BUNDLES);
+        service.install(serviceTarget);
     }
 
     private DefaultBootstrapBundlesInstall(ServiceName baseName) {
@@ -75,9 +72,11 @@ class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> {
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
+    public void start(final StartContext context) throws StartException {
+        super.start(context);
 
         final BundleManager bundleManager = injectedBundleManager.getValue();
+        final ServiceTarget serviceTarget = context.getChildTarget();
         final List<URL> autoInstall = new ArrayList<URL>();
         final List<URL> autoStart = new ArrayList<URL>();
 
@@ -117,7 +116,7 @@ class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> {
         }
 
         // Install the bundles from the given locations
-        installBootstrapBundles(context.getChildTarget(), deployments);
+        installBootstrapBundles(serviceTarget, deployments);
     }
 
     private URL toURL(final BundleManager bundleManager, final String path) {

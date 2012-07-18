@@ -27,7 +27,6 @@ import junit.framework.Assert;
 
 import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceBuilder.DependencyType;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceController.State;
@@ -150,12 +149,6 @@ public class ServiceDependenciesTestCase extends AbstractServiceTestCase {
     @Test
     public void testDependencySetActive() throws Exception {
 
-        // serviceB depends on serviceA
-        // serviceA is ON_DEMAND
-        // set serviceA to ACTIVE
-        // remove serviceB
-        // verify that serviceA stays UP
-
         ServiceName snameA = ServiceName.of("serviceA");
         ServiceBuilder<String> builderA = serviceTarget.addService(snameA, new ServiceA());
         builderA.setInitialMode(Mode.ON_DEMAND);
@@ -177,6 +170,7 @@ public class ServiceDependenciesTestCase extends AbstractServiceTestCase {
         Assert.assertEquals(Mode.REMOVE, controllerB.getMode());
         Assert.assertEquals(State.REMOVED, controllerB.getState());
 
+        Thread.sleep(200); // not expecting transitions
         Assert.assertEquals("serviceA", controllerA.getValue());
         Assert.assertEquals(Mode.ACTIVE, controllerA.getMode());
         Assert.assertEquals(State.UP, controllerA.getState());
@@ -184,13 +178,6 @@ public class ServiceDependenciesTestCase extends AbstractServiceTestCase {
 
     @Test
     public void testDependencyTransitions() throws Exception {
-
-        // serviceB depends on serviceA
-        // serviceA is ON_DEMAND
-        // add a listaner to serviceA
-        // set serviceA to ACTIVE
-        // remove serviceB
-        // verify that the listener is not called
 
         ServiceName snameA = ServiceName.of("serviceA");
         ServiceBuilder<String> builderA = serviceTarget.addService(snameA, new ServiceA());
@@ -226,51 +213,11 @@ public class ServiceDependenciesTestCase extends AbstractServiceTestCase {
         Assert.assertEquals(Mode.REMOVE, controllerB.getMode());
         Assert.assertEquals(State.REMOVED, controllerB.getState());
 
+        Thread.sleep(200); // not expecting transitions
         Assert.assertEquals("serviceA", controllerA.getValue());
         Assert.assertEquals(Mode.ACTIVE, controllerA.getMode());
         Assert.assertEquals(State.UP, controllerA.getState());
 
         Assert.assertFalse("Listener not called", listenerCalled.get());
     }
-
-    @Test
-    public void testOptionalDependency() throws Exception {
-
-        // serviceB depends on serviceA (optionally)
-        // serviceA is ON_DEMAND
-        // verify that serviceA comes UP
-        // remove serviceA
-
-        ServiceName snameA = ServiceName.of("serviceA");
-        ServiceBuilder<String> builderA = serviceTarget.addService(snameA, new ServiceA());
-        builderA.setInitialMode(Mode.ON_DEMAND);
-        ServiceController<String> controllerA = builderA.install();
-
-        ServiceName snameB = ServiceName.of("serviceB");
-        ServiceBuilder<String> builderB = serviceTarget.addService(snameB, new ServiceB());
-        builderB.addDependency(DependencyType.OPTIONAL, snameA);
-        ServiceController<String> controllerB = builderB.install();
-
-        new FutureServiceValue<String>(controllerB).get();
-        Assert.assertEquals("serviceB", controllerB.getValue());
-        Assert.assertEquals(Mode.ACTIVE, controllerB.getMode());
-        Assert.assertEquals(State.UP, controllerB.getState());
-
-        Assert.assertEquals("serviceA", controllerA.getValue());
-        Assert.assertEquals(Mode.ON_DEMAND, controllerA.getMode());
-        Assert.assertEquals(State.UP, controllerA.getState());
-
-        controllerA.setMode(Mode.REMOVE);
-
-        new FutureServiceValue<String>(controllerA, State.REMOVED).get();
-        Assert.assertNull("value is null", controllerA.getValue());
-        Assert.assertEquals(Mode.REMOVE, controllerA.getMode());
-        Assert.assertEquals(State.REMOVED, controllerA.getState());
-
-        new FutureServiceValue<String>(controllerB).get();
-        Assert.assertEquals("serviceB", controllerB.getValue());
-        Assert.assertEquals(Mode.ACTIVE, controllerB.getMode());
-        Assert.assertEquals(State.UP, controllerB.getState());
-    }
-
 }

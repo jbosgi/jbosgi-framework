@@ -9,10 +9,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceBuilder.DependencyType;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
@@ -34,10 +32,6 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
     public ServiceController<T> install(ServiceTarget serviceTarget) {
         ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependencies(getPreviousService());
-        for (ServiceName name : resolvedServices) {
-            builder.addDependency(DependencyType.OPTIONAL, name);
-        }
-        builder.setInitialMode(Mode.ON_DEMAND);
         addServiceDependencies(builder);
         return builder.install();
     }

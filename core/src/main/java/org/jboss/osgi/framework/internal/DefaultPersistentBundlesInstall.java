@@ -22,9 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE;
-import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL;
 import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES;
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_INSTALL;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.util.ArrayList;
@@ -35,7 +33,6 @@ import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -59,10 +56,9 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> {
     private final InjectedValue<StorageStatePlugin> injectedStoragePlugin = new InjectedValue<StorageStatePlugin>();
     private final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
 
-    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(PERSISTENT_BUNDLES_INSTALL) == null) {
-            new DefaultPersistentBundlesInstall(PERSISTENT_BUNDLES).install(serviceTarget);
-        }
+    static void addService(ServiceTarget serviceTarget) {
+        DefaultPersistentBundlesInstall service = new DefaultPersistentBundlesInstall(PERSISTENT_BUNDLES);
+        service.install(serviceTarget);
     }
 
     private DefaultPersistentBundlesInstall(ServiceName baseName) {
@@ -74,7 +70,7 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
         builder.addDependency(Services.STORAGE_STATE_PLUGIN, StorageStatePlugin.class, injectedStoragePlugin);
         builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, injectedDeploymentFactory);
-        builder.addDependencies(BOOTSTRAP_BUNDLES_INSTALL, BOOTSTRAP_BUNDLES_COMPLETE);
+        builder.addDependencies(BOOTSTRAP_BUNDLES_COMPLETE);
     }
 
     @Override
@@ -83,6 +79,7 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> {
 
         final BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         final DeploymentFactoryPlugin deploymentPlugin = injectedDeploymentFactory.getValue();
+        final ServiceTarget serviceTarget = context.getChildTarget();
 
         final StorageStatePlugin storageStatePlugin = injectedStoragePlugin.getValue();
         final Set<StorageState> storageStates = new HashSet<StorageState>(storageStatePlugin.getStorageStates());
@@ -107,6 +104,6 @@ class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> {
         }
 
         // Install the bundles from the given locations
-        installBootstrapBundles(context.getChildTarget(), deployments);
+        installBootstrapBundles(serviceTarget, deployments);
     }
 }

@@ -55,7 +55,7 @@
         <version.jboss.logmanager>1.2.2.GA</version.jboss.logmanager>
         <version.jboss.logging.processor>1.0.3.Final</version.jboss.logging.processor>
         <version.jboss.modules>1.1.2.GA</version.jboss.modules>
-        <version.jboss.msc>1.0.1.GA</version.jboss.msc>
+        <version.jboss.msc>1.0.2.GA</version.jboss.msc>
         <version.jboss.osgi.deployment>1.1.1.Final</version.jboss.osgi.deployment>
         <version.jboss.osgi.equinox>3.5.2</version.jboss.osgi.equinox>
         <version.jboss.osgi.felix>3.0.4</version.jboss.osgi.felix>

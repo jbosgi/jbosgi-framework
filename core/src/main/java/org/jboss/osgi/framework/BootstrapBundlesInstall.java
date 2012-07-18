@@ -29,12 +29,13 @@ import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
+import org.jboss.osgi.framework.util.ServiceTracker;
+import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -55,7 +56,6 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
         ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_CREATE);
-        builder.setInitialMode(Mode.ON_DEMAND);
         addServiceDependencies(builder);
         return builder.install();
     }
@@ -63,22 +63,41 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
     }
 
-    protected void installBootstrapBundles(ServiceTarget serviceTarget, List<Deployment> deployments) {
+    protected void installBootstrapBundles(final ServiceTarget serviceTarget, final List<Deployment> deployments) {
 
-        Set<ServiceName> installedServices = new HashSet<ServiceName>();
+        // Track the Bundle INSTALLED services
+        ServiceTracker<XBundle> installTracker = new ServiceTracker<XBundle>() {
+
+            Set<ServiceName> installedServices = new HashSet<ServiceName>();
+
+            @Override
+            protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
+                return deployments.size() == trackedServices.size();
+            }
+
+            @Override
+            protected void serviceStarted(ServiceController<? extends XBundle> controller) {
+                installedServices.add(controller.getName());
+            }
+
+            @Override
+            protected void complete() {
+                installResolveService(serviceTarget, installedServices);
+            }
+        };
 
         // Install the auto install bundles
         BundleManager bundleManager = injectedBundleManager.getValue();
         for (Deployment dep : deployments) {
             try {
-                ServiceName serviceName = bundleManager.installBundle(dep, null);
-                installedServices.add(serviceName);
+                bundleManager.installBundle(dep, installTracker);
             } catch (BundleException ex) {
                 LOGGER.errorStateCannotInstallInitialBundle(ex, dep.getLocation());
             }
         }
 
-        installResolveService(serviceTarget, installedServices);
+        // Check the tracker for completeness
+        installTracker.checkAndComplete();
     }
 
     protected ServiceController<T> installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices) {

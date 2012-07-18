@@ -31,7 +31,6 @@ import org.jboss.modules.Module;
 import org.jboss.modules.log.JDKModuleLogger;
 import org.jboss.modules.log.ModuleLogger;
 import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.osgi.framework.launch.Framework;
@@ -45,15 +44,11 @@ import org.osgi.framework.launch.Framework;
 public final class FrameworkBuilder {
 
     private final Map<String, Object> initialProperties = new HashMap<String, Object>();
-    private final Mode initialMode;
     private ServiceContainer serviceContainer;
     private ServiceTarget serviceTarget;
     private boolean closed;
 
-    public FrameworkBuilder(Map<String, Object> props, Mode initialMode) {
-        if (initialMode == null)
-            throw MESSAGES.illegalArgumentNull("initialMode");
-        this.initialMode = initialMode;
+    public FrameworkBuilder(Map<String, Object> props) {
         if (props != null) {
             initialProperties.putAll(props);
         }
@@ -114,10 +109,9 @@ public final class FrameworkBuilder {
             FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
 
             BundleStoragePlugin.addService(serviceTarget, firstInit);
-            DefaultEnvironmentPlugin.addService(serviceTarget);
             DeploymentFactoryPlugin.addService(serviceTarget);
-            FrameworkActivator.addService(serviceTarget);
-            FrameworkActive.addService(serviceTarget, initialMode);
+            EnvironmentPlugin.addService(serviceTarget);
+            FrameworkActive.addService(serviceTarget);
             FrameworkCoreServices.addService(serviceTarget);
             FrameworkEventsPlugin.addService(serviceTarget);
             FrameworkInit.addService(serviceTarget);
@@ -132,11 +126,9 @@ public final class FrameworkBuilder {
             SystemBundleService.addService(serviceTarget, frameworkState);
             SystemContextService.addService(serviceTarget);
 
-            DefaultBootstrapBundlesInstall.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultBundleInstallPlugin.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultFrameworkModulePlugin.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultModuleLoaderPlugin.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultPersistentBundlesInstall.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultSystemPathsPlugin.addIntegrationService(serviceRegistry, serviceTarget, this);
             DefaultSystemServicesPlugin.addIntegrationService(serviceRegistry, serviceTarget);
 

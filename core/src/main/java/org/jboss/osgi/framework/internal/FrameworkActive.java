@@ -5,16 +5,16 @@
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
@@ -75,9 +75,8 @@ import org.osgi.service.resolver.ResolutionException;
  *                                         |   +---{@link DefaultSystemPathsPlugin}
  *                                         +---{@link BundleStoragePlugin}
  *                                             +---{@link BundleManagerPlugin}
- *                                                 +---{@link DefaultEnvironmentPlugin}
+ *                                                 +---{@link EnvironmentPlugin}
  * </code>
- *
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
@@ -87,12 +86,12 @@ public final class FrameworkActive extends AbstractFrameworkService {
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
 
-    static void addService(ServiceTarget serviceTarget, Mode initialMode) {
+    static void addService(ServiceTarget serviceTarget) {
         FrameworkActive service = new FrameworkActive();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
-        builder.setInitialMode(initialMode);
+        builder.setInitialMode(Mode.LAZY);
         builder.install();
     }
 

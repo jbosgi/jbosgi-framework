@@ -23,16 +23,14 @@ package org.jboss.test.osgi.framework.launch;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
 
+import org.jboss.msc.service.ServiceController.State;
 import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
-import org.jboss.osgi.spi.util.ServiceLoader;
-import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
-import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.simple.bundleA.BeanA;
 import org.jboss.test.osgi.framework.simple.bundleB.BeanB;
@@ -40,11 +38,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
-import org.osgi.framework.launch.FrameworkFactory;
 import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
@@ -53,10 +47,9 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 14-Jul-2012
  */
-public class AutoInstallTestCase extends OSGiFrameworkTest {
+public class AutoInstallTestCase extends FrameworkLaunchTest {
 
     static File fileA, fileB;
-    static File storageDir = new File("target/test-osgi-store").getAbsoluteFile();
 
     @BeforeClass
     public static void beforeClass() {
@@ -73,15 +66,15 @@ public class AutoInstallTestCase extends OSGiFrameworkTest {
         initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileB.toURI().toString());
         initprops.put(Constants.PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS, new Integer(1).toString());
 
-        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-        Framework framework = factory.newFramework(initprops);
+        Framework framework = newFramework(initprops);
         framework.start();
 
-        PackageAdmin pa = getPackageAdmin(framework.getBundleContext());
+        PackageAdmin pa = getPackageAdmin();
         Bundle bundleB = pa.getBundles("bundleB", null)[0];
         Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
         assertBundleState(Bundle.ACTIVE, bundleB.getState());
     }
+
 
     @Test
     public void testValidAutoStart() throws Exception {
@@ -92,11 +85,10 @@ public class AutoInstallTestCase extends OSGiFrameworkTest {
         Map<String, String> initprops = getFrameworkInitProperties(true);
         initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileA.toURI() + "," + fileB.toURI());
 
-        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-        Framework framework = factory.newFramework(initprops);
+        Framework framework = newFramework(initprops);
         framework.start();
 
-        PackageAdmin pa = getPackageAdmin(framework.getBundleContext());
+        PackageAdmin pa = getPackageAdmin();
         Bundle bundleA = pa.getBundles("bundleA", null)[0];
         Assert.assertEquals(fileA.toURI().toString(), bundleA.getLocation());
         assertBundleState(Bundle.ACTIVE, bundleA.getState());
@@ -114,101 +106,87 @@ public class AutoInstallTestCase extends OSGiFrameworkTest {
         Map<String, String> initprops = getFrameworkInitProperties(true);
         initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileA.toURI().toString());
 
-        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-        Framework framework = factory.newFramework(initprops);
+        Framework framework = newFramework(initprops);
         framework.start();
 
-        PackageAdmin pa = getPackageAdmin(framework.getBundleContext());
+        PackageAdmin pa = getPackageAdmin();
         Bundle bundleA = pa.getBundles("bundleA", null)[0];
         Assert.assertEquals(fileA.toURI().toString(), bundleA.getLocation());
         assertBundleState(Bundle.INSTALLED, bundleA.getState());
     }
 
     @Test
-    public void testUninstallDependent() throws Exception {
+    public void testSimpleUninstall() throws Exception {
 
-        Assert.assertTrue("File exists: " + fileA, fileA.exists());
         Assert.assertTrue("File exists: " + fileB, fileB.exists());
 
         Map<String, String> initprops = getFrameworkInitProperties(true);
-        initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileA.toURI() + "," + fileB.toURI());
+        initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileB.toURI().toString());
+        initprops.put(Constants.PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS, new Integer(1).toString());
 
-        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-        Framework framework = factory.newFramework(initprops);
+        Framework framework = newFramework(initprops);
         framework.start();
 
-        PackageAdmin pa = getPackageAdmin(framework.getBundleContext());
-        Bundle bundleA = pa.getBundles("bundleA", null)[0];
-        Assert.assertEquals(fileA.toURI().toString(), bundleA.getLocation());
-        assertBundleState(Bundle.ACTIVE, bundleA.getState());
-
-        Bundle bundleB = pa.getBundles("bundleB", null)[0];
-        Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
-        assertBundleState(Bundle.ACTIVE, bundleB.getState());
-
-        bundleA.uninstall();
-        assertBundleState(Bundle.UNINSTALLED, bundleA.getState());
-        assertBundleState(Bundle.ACTIVE, bundleB.getState());
-
-        pa.refreshPackages(null);
-
-        Assert.assertNull(pa.getBundles("bundleA", null));
-        bundleB = pa.getBundles("bundleB", null)[0];
-        assertBundleState(Bundle.ACTIVE, bundleB.getState());
-    }
-
-    @Test
-    public void testUninstallDependee() throws Exception {
-
-        Assert.assertTrue("File exists: " + fileA, fileA.exists());
-        Assert.assertTrue("File exists: " + fileB, fileB.exists());
-
-        Map<String, String> initprops = getFrameworkInitProperties(true);
-        initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileA.toURI() + "," + fileB.toURI());
-
-        FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
-        Framework framework = factory.newFramework(initprops);
-        framework.start();
-
-        PackageAdmin pa = getPackageAdmin(framework.getBundleContext());
-        Bundle bundleA = pa.getBundles("bundleA", null)[0];
-        Assert.assertEquals(fileA.toURI().toString(), bundleA.getLocation());
-        assertBundleState(Bundle.ACTIVE, bundleA.getState());
-
+        PackageAdmin pa = getPackageAdmin();
         Bundle bundleB = pa.getBundles("bundleB", null)[0];
         Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
         assertBundleState(Bundle.ACTIVE, bundleB.getState());
 
         bundleB.uninstall();
+
+        // Verify that the framework is still active
+        assertServiceState(State.UP, Services.FRAMEWORK_ACTIVE);
+    }
+
+    @Test
+    public void testFrameworkRestart() throws Exception {
+
+        Assert.assertTrue("File exists: " + fileB, fileB.exists());
+
+        Map<String, String> initprops = getFrameworkInitProperties(true);
+        initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileB.toURI().toString());
+        initprops.put(Constants.PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS, new Integer(1).toString());
+
+        Framework framework = newFramework(initprops);
+        framework.start();
+
+        PackageAdmin pa = getPackageAdmin();
+        Bundle bundleB = pa.getBundles("bundleB", null)[0];
+        Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
+        assertBundleState(Bundle.ACTIVE, bundleB.getState());
+
+        Bundle bundleC = installBundle(getBundleC());
+        assertBundleState(Bundle.INSTALLED, bundleC.getState());
+
+        Bundle bundleD = installBundle(getBundleD());
+        assertBundleState(Bundle.INSTALLED, bundleD.getState());
+
+        bundleD.start();
+        assertBundleState(Bundle.INSTALLED, bundleC.getState());
+        assertBundleState(Bundle.ACTIVE, bundleD.getState());
+
+        bundleB.uninstall();
+
+        // Verify that the framework is still active
+        assertServiceState(State.UP, Services.FRAMEWORK_ACTIVE);
+
+        framework.stop();
+        framework.waitForStop(2000);
+
         assertBundleState(Bundle.UNINSTALLED, bundleB.getState());
-        assertBundleState(Bundle.ACTIVE, bundleA.getState());
+        assertBundleState(Bundle.UNINSTALLED, bundleC.getState());
+        assertBundleState(Bundle.UNINSTALLED, bundleD.getState());
 
-        pa.refreshPackages(null);
+        framework.start();
 
-        Assert.assertNull(pa.getBundles("bundleB", null));
-        bundleA = pa.getBundles("bundleA", null)[0];
-        assertBundleState(Bundle.INSTALLED, bundleA.getState());
-    }
+        pa = getPackageAdmin();
+        bundleB = pa.getBundles("bundleB", null)[0];
+        bundleC = pa.getBundles("bundleC", null)[0];
+        bundleD = pa.getBundles("bundleD", null)[0];
 
-    private Map<String, String> getFrameworkInitProperties(boolean cleanOnFirstInit) {
-        Map<String, String> props = new HashMap<String, String>();
-        props.put(Constants.FRAMEWORK_STORAGE, storageDir.getAbsolutePath());
-        if (cleanOnFirstInit == true) {
-            props.put(Constants.FRAMEWORK_STORAGE_CLEAN, Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT);
-        }
-        return props;
-    }
-
-    private PackageAdmin getPackageAdmin(BundleContext systemContext) throws BundleException {
-        ServiceReference sref = systemContext.getServiceReference(PackageAdmin.class.getName());
-        return (PackageAdmin) systemContext.getService(sref);
-    }
-
-    private static File exportBundleArchive(JavaArchive archive) {
-        String basedir = System.getProperty("test.archive.directory");
-        File targetFile = new File(basedir + File.separator + archive.getName() + ".jar");
-        archive.as(ZipExporter.class).exportTo(targetFile, true);
-        return targetFile;
+        assertBundleState(Bundle.ACTIVE, bundleB.getState());
+        assertBundleState(Bundle.INSTALLED, bundleC.getState());
+        assertBundleState(Bundle.ACTIVE, bundleD.getState());
     }
 
     private static JavaArchive getBundleA() {
@@ -227,7 +205,6 @@ public class AutoInstallTestCase extends OSGiFrameworkTest {
         return archive;
     }
 
-
     private static JavaArchive getBundleB() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleB");
         archive.addClasses(BeanB.class);
@@ -237,6 +214,34 @@ public class AutoInstallTestCase extends OSGiFrameworkTest {
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addExportPackages(BeanB.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private static JavaArchive getBundleC() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleC");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BeanB.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private static JavaArchive getBundleD() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleD");
+        archive.setManifest(new Asset() {
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(BeanB.class);
                 return builder.openStream();
             }
         });
