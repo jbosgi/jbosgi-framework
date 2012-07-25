@@ -50,12 +50,13 @@ public interface ModuleLoaderPlugin extends Service<ModuleLoaderPlugin> {
 
     void addModule(XResource resource, Module module);
 
-    ServiceName createModuleService(XResource resource, ModuleIdentifier identifier);
+    Module getModule(ModuleIdentifier identifier);
 
     void removeModule(XResource resource, ModuleIdentifier identifier);
 
-
     ServiceName getModuleServiceName(ModuleIdentifier identifier);
+
+    ServiceName createModuleService(XResource resource, ModuleIdentifier identifier);
 
     interface ModuleSpecBuilderContext {
 

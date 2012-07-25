@@ -96,6 +96,11 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
     }
 
     @Override
+    public void addIntegrationDependencies(ModuleSpecBuilderContext context) {
+        // do nothing
+    }
+
+    @Override
     public ModuleSpec findModule(ModuleIdentifier identifier) throws ModuleLoadException {
         ModuleHolder moduleHolder = moduleSpecs.get(identifier);
         return moduleHolder != null ? moduleHolder.getModuleSpec() : null;
@@ -128,8 +133,11 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
     }
 
     @Override
-    public void addIntegrationDependencies(ModuleSpecBuilderContext context) {
-        // do nothing
+    public Module getModule(ModuleIdentifier identifier) {
+        final ModuleHolder moduleHolder = moduleSpecs.get(identifier);
+        final Module result = moduleHolder != null ? moduleHolder.getModule() : null;
+        LOGGER.tracef("getModule: %s => %s", identifier, result);
+        return result;
     }
 
     @Override
@@ -170,7 +178,6 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
             Module module = loadModuleLocal(identifier);
             if (module != null) {
                 unloadModuleLocal(module);
-
             }
         } catch (ModuleLoadException ex) {
             // ignore
@@ -194,6 +201,7 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
     }
 
 
+    @Override
     public ServiceName getModuleServiceName(ModuleIdentifier identifier) {
         return InternalServices.MODULE_SERVICE.append(identifier.getName()).append(identifier.getSlot());
     }
