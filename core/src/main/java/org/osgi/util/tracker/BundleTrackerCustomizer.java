@@ -1,6 +1,6 @@
 /*
  * Copyright (c) OSGi Alliance (2007, 2008). All Rights Reserved.
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.osgi.util.tracker;
+/*
+ * #%L
+ * JBossOSGi Framework
+ * %%
+ * Copyright (C) 2010 - 2012 JBoss by Red Hat
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Lesser Public License for more details.
+ *
+ * You should have received a copy of the GNU General Lesser Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/lgpl-2.1.html>.
+ * #L%
+ */
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
@@ -28,7 +48,7 @@ import org.osgi.framework.BundleEvent;
  * tracked bundle. A <code>BundleTrackerCustomizer</code> is also called when a
  * tracked bundle is modified or has been removed from a
  * <code>BundleTracker</code>.
- * 
+ *
  * <p>
  * The methods in this interface may be called as the result of a
  * <code>BundleEvent</code> being received by a <code>BundleTracker</code>.
@@ -36,13 +56,13 @@ import org.osgi.framework.BundleEvent;
  * <code>BundleTracker</code>, it is highly recommended that implementations of
  * these methods do not alter bundle states while being synchronized on any
  * object.
- * 
+ *
  * <p>
  * The <code>BundleTracker</code> class is thread-safe. It does not call a
  * <code>BundleTrackerCustomizer</code> while holding any locks.
  * <code>BundleTrackerCustomizer</code> implementations must also be
  * thread-safe.
- * 
+ *
  * @ThreadSafe
  * @version $Revision: 5874 $
  * @since 1.4
@@ -50,7 +70,7 @@ import org.osgi.framework.BundleEvent;
 public interface BundleTrackerCustomizer {
 	/**
 	 * A bundle is being added to the <code>BundleTracker</code>.
-	 * 
+	 *
 	 * <p>
 	 * This method is called before a bundle which matched the search parameters
 	 * of the <code>BundleTracker</code> is added to the
@@ -58,7 +78,7 @@ public interface BundleTrackerCustomizer {
 	 * tracked for the specified <code>Bundle</code>. The returned object is
 	 * stored in the <code>BundleTracker</code> and is available from the
 	 * {@link BundleTracker#getObject(Bundle) getObject} method.
-	 * 
+	 *
 	 * @param bundle The <code>Bundle</code> being added to the
 	 *        <code>BundleTracker</code>.
 	 * @param event The bundle event which caused this customizer method to be
@@ -72,11 +92,11 @@ public interface BundleTrackerCustomizer {
 
 	/**
 	 * A bundle tracked by the <code>BundleTracker</code> has been modified.
-	 * 
+	 *
 	 * <p>
 	 * This method is called when a bundle being tracked by the
 	 * <code>BundleTracker</code> has had its state modified.
-	 * 
+	 *
 	 * @param bundle The <code>Bundle</code> whose state has been modified.
 	 * @param event The bundle event which caused this customizer method to be
 	 *        called or <code>null</code> if there is no bundle event associated
@@ -88,11 +108,11 @@ public interface BundleTrackerCustomizer {
 
 	/**
 	 * A bundle tracked by the <code>BundleTracker</code> has been removed.
-	 * 
+	 *
 	 * <p>
 	 * This method is called after a bundle is no longer being tracked by the
 	 * <code>BundleTracker</code>.
-	 * 
+	 *
 	 * @param bundle The <code>Bundle</code> that has been removed.
 	 * @param event The bundle event which caused this customizer method to be
 	 *        called or <code>null</code> if there is no bundle event associated

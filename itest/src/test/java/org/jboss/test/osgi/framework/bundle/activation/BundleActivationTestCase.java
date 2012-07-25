@@ -1,25 +1,25 @@
-/*
- * JBoss, Home of Professional Open Source
- * Copyright 2009, Red Hat Middleware LLC, and individual contributors
- * as indicated by the @author tags. See the copyright.txt file in the
- * distribution for a full listing of individual contributors.
- *
- * This is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this software; if not, write to the Free
- * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
- */
 package org.jboss.test.osgi.framework.bundle.activation;
+/*
+ * #%L
+ * JBossOSGi Framework
+ * %%
+ * Copyright (C) 2010 - 2012 JBoss by Red Hat
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Lesser Public License for more details.
+ *
+ * You should have received a copy of the GNU General Lesser Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/lgpl-2.1.html>.
+ * #L%
+ */
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
@@ -53,7 +53,7 @@ import static org.junit.Assert.fail;
 
 /**
  * BundleActivationTestCase
- * 
+ *
  * @author thomas.diesler@jboss.com
  */
 public class BundleActivationTestCase extends OSGiFrameworkTest {
@@ -203,58 +203,58 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
         StartLevel startLevel = getStartLevel();
         int initialFrameworkSL = startLevel.getStartLevel();
         int initialBundleStartLevel = startLevel.getInitialBundleStartLevel();
-        
+
         startLevel.setInitialBundleStartLevel(initialFrameworkSL + 10);
         try {
             Bundle providerBundle = installBundle(getLazyServiceProvider());
             try {
                 assertBundleState(Bundle.INSTALLED, providerBundle.getState());
-                
+
                 providerBundle.start(Bundle.START_ACTIVATION_POLICY);
                 assertBundleState(Bundle.INSTALLED, providerBundle.getState());
 
                 context.addBundleListener(this);
                 context.addFrameworkListener(this);
-                
+
                 // Crank up the framework start-level.  This should result in no STARTED event
                 startLevel.setStartLevel(initialFrameworkSL + 15);
                 assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, context.getBundle(), null);
 
                 startLevel.setStartLevel(initialFrameworkSL);
                 assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, context.getBundle(), null);
-                
+
                 assertBundleEvent(BundleEvent.RESOLVED, providerBundle);
                 assertBundleEvent(BundleEvent.LAZY_ACTIVATION, providerBundle);
                 assertBundleEvent(BundleEvent.STOPPING, providerBundle);
                 assertBundleEvent(BundleEvent.STOPPED, providerBundle);
                 assertNoBundleEvent();
-                
+
                 try {
                     providerBundle.start(Bundle.START_TRANSIENT);
                     fail("BundleException expected");
                 } catch (BundleException ex) {
                     // expected
                 }
-                
+
                 // Now call start(START_TRANSIENT) while start-level is met.
                 startLevel.setStartLevel(initialFrameworkSL + 15);
                 assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, context.getBundle(), null);
-                
+
                 providerBundle.start(Bundle.START_TRANSIENT);
                 assertBundleState(Bundle.ACTIVE, providerBundle.getState());
-                
+
                 assertBundleEvent(BundleEvent.LAZY_ACTIVATION, providerBundle);
                 assertBundleEvent(BundleEvent.STARTING, providerBundle);
                 assertBundleEvent(BundleEvent.STARTED, providerBundle);
                 assertNoBundleEvent();
-                
+
                 startLevel.setStartLevel(initialFrameworkSL);
                 assertFrameworkEvent(FrameworkEvent.STARTLEVEL_CHANGED, context.getBundle(), null);
-                
+
                 assertBundleEvent(BundleEvent.STOPPING, providerBundle);
                 assertBundleEvent(BundleEvent.STOPPED, providerBundle);
                 assertNoBundleEvent();
-                
+
                 assertBundleState(Bundle.RESOLVED, providerBundle.getState());
             } finally {
                 providerBundle.uninstall();

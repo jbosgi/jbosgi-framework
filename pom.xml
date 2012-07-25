@@ -1,21 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<!-- ====================================================================== -->
-<!--                                                                        -->
-<!-- JBoss, the OpenSource J2EE webOS                                       -->
-<!--                                                                        -->
-<!-- Distributable under LGPL license.                                      -->
-<!-- See terms of license at http://www.gnu.org.                            -->
-<!--                                                                        -->
-<!-- ====================================================================== -->
+<!--
+  #%L
+  JBossOSGi Framework
+  %%
+  Copyright (C) 2010 - 2012 JBoss by Red Hat
+  %%
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Lesser General Public License as 
+  published by the Free Software Foundation, either version 2.1 of the 
+  License, or (at your option) any later version.
+  
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Lesser Public License for more details.
+  
+  You should have received a copy of the GNU General Lesser Public 
+  License along with this program.  If not, see
+  <http://www.gnu.org/licenses/lgpl-2.1.html>.
+  #L%
+  -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.jboss.osgi</groupId>
-        <artifactId>jboss-osgi-parent</artifactId>
-        <version>1.0.18</version>
+        <artifactId>jbosgi-parent</artifactId>
+        <version>1.0.23</version>
     </parent>
 
     <name>JBossOSGi Framework</name>
@@ -200,6 +212,22 @@
     </repositories>
 
     <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <configuration>
+                    <licenseName>lgpl_v2_1</licenseName>
+                    <inceptionYear>2010</inceptionYear>
+                    <roots>
+                        <root>${basedir}</root>
+                    </roots>
+                    <excludes>
+                        <exclude>target/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
         <pluginManagement>
             <plugins>
                 <!-- This plugin's configuration is used to store Eclipse 

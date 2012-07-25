@@ -1,25 +1,25 @@
-/*
- * JBoss, Home of Professional Open Source
- * Copyright 2005, JBoss Inc., and individual contributors as indicated
- * by the @authors tag. See the copyright.txt in the distribution for a
- * full listing of individual contributors.
- *
- * This is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
- * the License, or (at your option) any later version.
- *
- * This software is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this software; if not, write to the Free
- * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
- * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
- */
 package org.jboss.test.osgi.framework.fragments;
+/*
+ * #%L
+ * JBossOSGi Framework
+ * %%
+ * Copyright (C) 2010 - 2012 JBoss by Red Hat
+ * %%
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Lesser Public License for more details.
+ *
+ * You should have received a copy of the GNU General Lesser Public
+ * License along with this program.  If not, see
+ * <http://www.gnu.org/licenses/lgpl-2.1.html>.
+ * #L%
+ */
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
@@ -396,17 +396,17 @@ public class FragmentTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testExtensionFragment() throws Exception {
-        
+
         Bundle fragG1 = installBundle(getFragmentG1());
         assertBundleState(Bundle.INSTALLED, fragG1.getState());
-        
+
         fragG1.uninstall();
         assertBundleState(Bundle.UNINSTALLED, fragG1.getState());
     }
 
     @Test
     public void testExtensionFragmentInvalidHost() throws Exception {
-        
+
         try {
             installBundle(getFragmentG2());
             fail("BundleException expected");
@@ -417,7 +417,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testExtensionFragmentBootclasspath() throws Exception {
-        
+
         try {
             installBundle(getFragmentG3());
             fail("BundleException expected");
@@ -430,7 +430,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testExtensionFragmentFramework() throws Exception {
-        
+
         try {
             installBundle(getFragmentG4());
             fail("BundleException expected");
@@ -443,7 +443,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
 
     @Test
 	public void testFragmentUpdate() throws Exception {
-		
+
         Bundle hostA = installBundle(getHostA());
         assertBundleState(Bundle.INSTALLED, hostA.getState());
 
@@ -451,7 +451,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         assertBundleState(Bundle.INSTALLED, fragA.getState());
 
         hostA.start();
-        
+
         // Load class provided by the fragment
         assertLoadClass(hostA, FragBeanA.class.getName());
 
@@ -463,27 +463,27 @@ public class FragmentTestCase extends OSGiFrameworkTest {
 
         // Load class provided by the fragment
         assertLoadClass(hostA, FragBeanA.class.getName());
-        
+
         refreshPackages(new Bundle[] { hostA });
 
         assertLoadClassFail(hostA, FragBeanA.class.getName());
-        
+
         hostA.uninstall();
         fragA.uninstall();
 	}
-    
+
     @Test
 	public void testFragmentAttachOrder() throws Exception {
-		
+
         Bundle fragE1 = installBundle(getFragmentE1());
         Bundle fragE2 = installBundle(getFragmentE2());
         Bundle hostE = installBundle(getHostE());
         Bundle hostF = installBundle(getHostF());
 
         hostE.start();
-        
+
         assertTrue(fragE1.getBundleId() < fragE2.getBundleId());
-        
+
         // Load class provided by the fragment
         assertLoadClass(hostE, FragE1Class.class.getName());
         assertLoadClass(hostE, FragE2Class.class.getName());
@@ -495,13 +495,13 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         URL resourceURL = hostE.getResource("resource.txt");
         BufferedReader br = new BufferedReader(new InputStreamReader(resourceURL.openStream()));
         assertEquals("fragE1", br.readLine());
-        
+
         hostF.uninstall();
         hostE.uninstall();
         fragE2.uninstall();
         fragE1.uninstall();
 	}
-    
+
     @Test
     public void testFragmentBundleContext() throws Exception {
 
@@ -519,7 +519,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         fragA.uninstall();
         hostA.uninstall();
     }
-    
+
     private JavaArchive getHostA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostA");
         archive.addClasses(HostAActivator.class, SubBeanA.class);
