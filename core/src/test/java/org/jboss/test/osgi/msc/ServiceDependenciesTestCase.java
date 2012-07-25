@@ -1,6 +1,7 @@
+package org.jboss.test.osgi.msc;
 /*
  * #%L
- * JBossOSGi Framework Core
+ * JBossOSGi Framework
  * %%
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
@@ -19,7 +20,6 @@
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.msc;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

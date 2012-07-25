@@ -1,25 +1,25 @@
+package org.jboss.test.osgi.framework.xservice;
 /*
  * #%L
- * JBossOSGi Framework iTest
+ * JBossOSGi Framework
  * %%
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework.xservice;
 
 import junit.framework.Assert;
 
@@ -51,7 +51,7 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
     Module module;
     XBundleRevision brev;
     PackageAdmin packageAdmin;
-    
+
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -59,13 +59,13 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
         brev = installResource(module);
         packageAdmin = getPackageAdmin();
     }
-    
+
     @After
     public void tearDown() throws Exception {
         uninstallResource(brev);
         removeModule(module);
     }
-    
+
     @Test
     public void testGetBundle() throws Exception {
         XBundle bundle = brev.getBundle();
@@ -92,14 +92,14 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
     public void testGetBundleType() throws Exception {
         int types = packageAdmin.getBundleType(brev.getBundle());
         Assert.assertEquals(0, types);
-        
+
         types = brev.getTypes();
         Assert.assertEquals(0, types);
-        
+
         XCapability cap = (XCapability) brev.getCapabilities(IdentityNamespace.IDENTITY_NAMESPACE).get(0);
         Assert.assertEquals(IdentityNamespace.TYPE_UNKNOWN, cap.adapt(XIdentityCapability.class).getType());
     }
-    
+
     @Test
     public void testGetExportedPackages() throws Exception {
         ExportedPackage[] exported = packageAdmin.getExportedPackages(brev.getBundle());
@@ -111,14 +111,14 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
         Assert.assertEquals(Version.emptyVersion, exp.getVersion());
         Assert.assertFalse(exp.isRemovalPending());
     }
-    
+
     @Test
     public void testRefreshResolve() throws Exception {
         // These should be noops
         packageAdmin.refreshPackages(new Bundle[] {brev.getBundle()});
         packageAdmin.resolveBundles(new Bundle[] {brev.getBundle()});
     }
-    
+
     private JavaArchive getModuleA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
         archive.addClasses(ModuleServiceX.class);

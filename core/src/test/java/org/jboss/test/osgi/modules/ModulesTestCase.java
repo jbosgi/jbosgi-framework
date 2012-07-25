@@ -1,25 +1,25 @@
+package org.jboss.test.osgi.modules;
 /*
  * #%L
- * JBossOSGi Framework Core
+ * JBossOSGi Framework
  * %%
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.modules;
 
 import java.util.Collections;
 import java.util.List;
@@ -49,7 +49,7 @@ import org.junit.Test;
 
 /**
  * Test low level modules use cases.
- * 
+ *
  * @author Thomas.Diesler@jboss.com
  * @since 15-Sep-2010
  */
@@ -58,7 +58,7 @@ public class ModulesTestCase extends ModulesTestBase {
     private VirtualFile virtualFileA;
     private VirtualFile virtualFileB;
     private VirtualFile virtualFileC;
-    
+
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -209,7 +209,7 @@ public class ModulesTestCase extends ModulesTestBase {
 
     @Test
     public void testDependencyHidesLocal() throws Exception {
-        
+
         ModuleIdentifier identifierA = ModuleIdentifier.create("archiveA");
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
         VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);

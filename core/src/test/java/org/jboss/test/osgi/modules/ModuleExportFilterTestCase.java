@@ -1,25 +1,25 @@
+package org.jboss.test.osgi.modules;
 /*
  * #%L
- * JBossOSGi Framework Core
+ * JBossOSGi Framework
  * %%
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.modules;
 
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.ModuleIdentifier;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertNull;
 
 /**
  * Test Re-Export for classes and resources
- * 
+ *
  * @author Thomas.Diesler@jboss.com
  * @since 26-Jan-2011
  */
@@ -51,7 +51,7 @@ public class ModuleExportFilterTestCase extends ModulesTestBase {
 
     private VirtualFile virtualFileA;
     private VirtualFile virtualFileB;
-    
+
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -67,7 +67,7 @@ public class ModuleExportFilterTestCase extends ModulesTestBase {
 
     @Test
     public void testReexport() throws Exception {
-        
+
         // ModuleD
         // +--> ModuleC
         //      +--> ModuleA
@@ -89,8 +89,8 @@ public class ModuleExportFilterTestCase extends ModulesTestBase {
 
         ModuleIdentifier identifierC = ModuleIdentifier.create("moduleC");
         ModuleSpec.Builder specBuilderC = ModuleSpec.build(identifierC);
-        specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(identifierA)); 
-        specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(getPathFilter(D.class), getPathFilter(D.class), getModuleLoader(), identifierB, false)); 
+        specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(identifierA));
+        specBuilderC.addDependency(DependencySpec.createModuleDependencySpec(getPathFilter(D.class), getPathFilter(D.class), getModuleLoader(), identifierB, false));
         addModuleSpec(specBuilderC.create());
 
         ModuleIdentifier identifierD = ModuleIdentifier.create("moduleD");
@@ -109,23 +109,23 @@ public class ModuleExportFilterTestCase extends ModulesTestBase {
         assertNotNull(getResource(identifierA, getResourcePath(A.class)));
         assertNotNull(getResource(identifierC, getResourcePath(A.class)));
         assertNull(getResource(identifierD, getResourcePath(A.class)));
-        
+
         assertNotNull(getResource(identifierA, getResourcePath(B.class)));
         assertNotNull(getResource(identifierC, getResourcePath(B.class)));
         assertNull(getResource(identifierD, getResourcePath(B.class)));
-        
+
         assertLoadClass(identifierB, D.class.getName());
         assertLoadClass(identifierC, D.class.getName());
         assertLoadClass(identifierD, D.class.getName());
-        
+
         assertLoadClass(identifierB, E.class.getName());
         assertLoadClassFail(identifierC, E.class.getName());
         assertLoadClassFail(identifierD, E.class.getName());
-        
+
         assertNotNull(getResource(identifierB, getResourcePath(D.class)));
         assertNotNull(getResource(identifierC, getResourcePath(D.class)));
         assertNotNull(getResource(identifierD, getResourcePath(D.class)));
-        
+
         assertNotNull(getResource(identifierB, getResourcePath(E.class)));
         assertNull(getResource(identifierC, getResourcePath(E.class)));
         assertNull(getResource(identifierD, getResourcePath(E.class)));
@@ -134,7 +134,7 @@ public class ModuleExportFilterTestCase extends ModulesTestBase {
     private String getResourcePath(Class<?> clazz) {
         return clazz.getName().replace('.', '/') + ".class";
     }
-    
+
     private static JavaArchive getModuleA() {
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
         archive.addClasses(A.class, B.class);

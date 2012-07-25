@@ -1,25 +1,25 @@
+package org.jboss.test.osgi.framework.xservice;
 /*
  * #%L
- * JBossOSGi Framework iTest
+ * JBossOSGi Framework
  * %%
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework.xservice;
 
 import java.util.List;
 
@@ -56,31 +56,31 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
 
     Module module;
     XBundleRevision brev;
-    
+
     @Before
     public void setUp() throws Exception {
         super.setUp();
         module = loadModule(getModuleA());
         brev = installResource(module);
     }
-    
+
     @After
     public void tearDown() throws Exception {
         uninstallResource(brev);
         removeModule(module);
     }
-    
+
     @Test
     public void testBundleRevision() throws Exception {
-        
+
         // getBundle
         Bundle bundle = brev.getBundle();
         Assert.assertNotNull("Bundle not null", bundle);
-        
+
         // getSymbolicName, getVersion
         Assert.assertEquals("moduleA", brev.getSymbolicName());
         Assert.assertEquals(Version.emptyVersion, brev.getVersion());
-        
+
         // getDeclaredCapabilities
         List<BundleCapability> dcaps = brev.getDeclaredCapabilities(null);
         Assert.assertEquals("Three capabilities", 3, dcaps.size());
@@ -90,14 +90,14 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
         Assert.assertEquals("moduleA", bcap2.getAttributes().get(BundleNamespace.BUNDLE_NAMESPACE));
         BundleCapability bcap3 = brev.getDeclaredCapabilities(PackageNamespace.PACKAGE_NAMESPACE).get(0);
         Assert.assertEquals(ModuleServiceX.class.getPackage().getName(), bcap3.getAttributes().get(PackageNamespace.PACKAGE_NAMESPACE));
-        
+
         // getDeclaredRequirements
         List<BundleRequirement> dreqs = brev.getDeclaredRequirements(null);
         Assert.assertEquals("No requirements", 0, dreqs.size());
-        
+
         // getTypes
         Assert.assertEquals("Type is 0", 0, brev.getTypes());
-        
+
         // getWiring
         BundleWiring wiring = brev.getWiring();
         Assert.assertNotNull("BundleWiring not null", wiring);
@@ -111,7 +111,7 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
         Assert.assertEquals("moduleA", cap2.getAttributes().get(BundleNamespace.BUNDLE_NAMESPACE));
         Capability cap3 = brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE).get(0);
         Assert.assertEquals(ModuleServiceX.class.getPackage().getName(), cap3.getAttributes().get(PackageNamespace.PACKAGE_NAMESPACE));
-        
+
         // getRequirements
         List<Requirement> reqs = brev.getRequirements(null);
         Assert.assertEquals("No requirements", 0, reqs.size());
@@ -119,7 +119,7 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
 
     @Test
     public void testExtendedBundleRevision() throws Exception {
-        
+
         // getBundle
         XBundle bundle = brev.getBundle();
         Assert.assertNotNull("Bundle not null", bundle);
@@ -127,7 +127,7 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
         // getModuleIdentifier, getModuleClassLoader
         Assert.assertEquals(ModuleIdentifier.create("moduleA"), brev.getModuleIdentifier());
         Assert.assertNotNull("ModuleClassLoader not null", brev.getModuleClassLoader());
-        
+
         // [TODO] Add support for entry/resource related APIs on Module adaptors
         // https://issues.jboss.org/browse/JBOSGI-566
         String resname = ModuleServiceX.class.getName().replace('.', '/').concat(".class");
@@ -137,7 +137,7 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
         Assert.assertNull(brev.getEntry(resname));
         Assert.assertNull(brev.getEntryPaths(resname));
     }
-    
+
     private JavaArchive getModuleA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
         archive.addClasses(ModuleServiceX.class);

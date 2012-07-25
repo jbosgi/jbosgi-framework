@@ -1,25 +1,25 @@
+package org.jboss.test.osgi.framework.jbosgi450;
 /*
  * #%L
- * JBossOSGi Framework iTest
+ * JBossOSGi Framework
  * %%
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework.jbosgi450;
 
 import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
@@ -49,9 +49,9 @@ import static org.junit.Assert.fail;
 
 /**
  * [JBOSGI-450] Bundle containing a BundleTracker causes subsequent bundle install/starts to fail
- * 
+ *
  * https://jira.jboss.org/jira/browse/JBOSGI-450
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 19-May-2011
  */
@@ -96,7 +96,7 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
             URL url = bundleA.getResource(MANIFEST_NAME);
             assertBundleEvent(BundleEvent.RESOLVED);
             assertNotNull("URL not null", url);
-            
+
             bundleA.start();
             assertBundleEvent(BundleEvent.STARTED);
 
@@ -134,7 +134,7 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
             URL url = bundleA.getResource(MANIFEST_NAME);
             assertBundleEvent(BundleEvent.RESOLVED);
             assertNotNull("URL not null", url);
-            
+
             bundleA.start();
             assertBundleEvent(BundleEvent.STARTED);
 
@@ -178,7 +178,7 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
             URL url = bundleA.getResource(MANIFEST_NAME);
             assertBundleEvent(BundleEvent.RESOLVED);
             assertNotNull("URL not null", url);
-            
+
             bundleA.start();
             assertBundleEvent(BundleEvent.STARTED);
 
@@ -212,7 +212,7 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
             URL url = bundleA.getResource(MANIFEST_NAME);
             assertBundleEvent(BundleEvent.RESOLVED);
             assertNotNull("URL not null", url);
-            
+
             bundleA.start();
             assertBundleEvent(BundleEvent.STARTED);
 
@@ -250,7 +250,7 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
             URL url = bundleA.getResource(MANIFEST_NAME);
             assertBundleEvent(BundleEvent.RESOLVED);
             assertNotNull("URL not null", url);
-            
+
             bundleA.start();
             assertBundleEvent(BundleEvent.STARTED);
 
@@ -300,7 +300,7 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
             URL url = bundleA.getResource(MANIFEST_NAME);
             assertBundleEvent(BundleEvent.RESOLVED);
             assertNotNull("URL not null", url);
-            
+
             bundleA.start();
             assertBundleEvent(BundleEvent.STARTED);
 

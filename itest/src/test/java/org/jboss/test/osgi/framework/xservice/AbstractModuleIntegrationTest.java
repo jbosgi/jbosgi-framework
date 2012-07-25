@@ -1,6 +1,7 @@
+package org.jboss.test.osgi.framework.xservice;
 /*
  * #%L
- * JBossOSGi Framework iTest
+ * JBossOSGi Framework
  * %%
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
@@ -19,7 +20,6 @@
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework.xservice;
 
 import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PLUGIN;
 

@@ -1,25 +1,25 @@
+package org.jboss.test.osgi.framework.xservice;
 /*
  * #%L
- * JBossOSGi Framework iTest
+ * JBossOSGi Framework
  * %%
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework.xservice;
 
 import static org.osgi.framework.namespace.BundleNamespace.BUNDLE_NAMESPACE;
 import static org.osgi.framework.namespace.PackageNamespace.PACKAGE_NAMESPACE;
@@ -52,7 +52,7 @@ import org.osgi.framework.wiring.BundleWiring;
 
 /**
  * Test that an MSC module can have a dependency on an OSGi bundle and vice versa.
- * 
+ *
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jul-2010
  */
@@ -110,7 +110,7 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 assertLoadClass(bundleA, BundleServiceA.class.getName());
                 assertLoadClass(bundleA, ModuleServiceX.class.getName(), bundleX);
                 assertBundleState(Bundle.RESOLVED, bundleA.getState());
-                
+
                 // Verify wiring A
                 BundleWiring wiringA = bundleA.getBundleRevision().getWiring();
                 Assert.assertEquals(0, wiringA.getProvidedWires(null).size());
@@ -128,7 +128,7 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 Assert.assertSame(bundleA.getBundleRevision(), wire.getRequirer());
                 Assert.assertSame(bundleX.getBundleRevision(), wire.getProvider());
                 Assert.assertSame(bundleX.getBundleRevision().getWiring(), wire.getProviderWiring());
-                
+
                 // Verify wiring X
                 BundleWiring wiringX = bundleX.getBundleRevision().getWiring();
                 Assert.assertEquals(0, wiringX.getRequiredWires(null).size());
@@ -175,7 +175,7 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 assertLoadClass(bundleA, BundleServiceA.class.getName());
                 assertLoadClass(bundleA, ModuleServiceX.class.getName(), bundleX);
                 assertBundleState(Bundle.RESOLVED, bundleA.getState());
-                
+
                 // Verify wiring A
                 BundleWiring wiringA = bundleA.getBundleRevision().getWiring();
                 Assert.assertEquals(0, wiringA.getProvidedWires(null).size());
@@ -193,7 +193,7 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 Assert.assertSame(bundleA.getBundleRevision(), wire.getRequirer());
                 Assert.assertSame(bundleX.getBundleRevision(), wire.getProvider());
                 Assert.assertSame(bundleX.getBundleRevision().getWiring(), wire.getProviderWiring());
-                
+
                 // Verify wiring X
                 BundleWiring wiringX = bundleX.getBundleRevision().getWiring();
                 Assert.assertEquals(0, wiringX.getRequiredWires(null).size());
@@ -238,7 +238,7 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 assertLoadClass(bundleY, ModuleServiceY.class.getName());
                 assertLoadClass(bundleY, BundleServiceB.class.getName(), bundleB);
                 assertBundleState(Bundle.RESOLVED, bundleY.getState());
-                
+
                 // Verify wiring B
                 BundleWiring wiringB = bundleB.getBundleRevision().getWiring();
                 Assert.assertEquals(0, wiringB.getProvidedWires(null).size()); // [TODO] required wires for adapted modules
@@ -250,7 +250,7 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 Assert.assertSame(bundleB.getBundleRevision(), wire.getRequirer());
                 Assert.assertSame(getSystemBundle().getBundleRevision(), wire.getProvider());
                 Assert.assertSame(getSystemBundle().getBundleRevision().getWiring(), wire.getProviderWiring());
-                
+
                 // Verify wiring X
                 BundleWiring wiringY = bundleY.getBundleRevision().getWiring();
                 Assert.assertEquals(0, wiringY.getRequiredWires(null).size()); // [TODO] required wires for adapted modules

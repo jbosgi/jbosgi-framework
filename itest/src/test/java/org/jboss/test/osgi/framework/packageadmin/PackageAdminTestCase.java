@@ -1,25 +1,25 @@
+package org.jboss.test.osgi.framework.packageadmin;
 /*
  * #%L
- * JBossOSGi Framework iTest
+ * JBossOSGi Framework
  * %%
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework.packageadmin;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -70,7 +70,7 @@ import org.osgi.service.packageadmin.RequiredBundle;
 
 /**
  * Test PackageAdmin service.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @author Eric Bélanger
@@ -788,11 +788,11 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     public void testGetExportedPackageFromFragment() throws Exception {
         Bundle hostA = installBundle(getHostA());
         Bundle fragmentA = installBundle(getFragmentA());
-        
+
         hostA.start();
         assertBundleState(Bundle.ACTIVE, hostA.getState());
         assertBundleState(Bundle.RESOLVED, fragmentA.getState());
-        
+
         ExportedPackage fragmentPackage = getPackageAdmin().getExportedPackage("org.jboss.osgi.fragment");
         assertNotNull("Fragment package not null", fragmentPackage);
         assertEquals("Fragment package exported", hostA, fragmentPackage.getExportingBundle());

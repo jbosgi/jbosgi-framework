@@ -1,25 +1,25 @@
+package org.jboss.test.osgi.framework.classloader;
 /*
  * #%L
- * JBossOSGi Framework iTest
+ * JBossOSGi Framework
  * %%
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework.classloader;
 
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
@@ -48,7 +48,7 @@ import static org.junit.Assert.fail;
 
 /**
  * Test boot delegation
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 28-Jan-2011
  */
@@ -60,9 +60,9 @@ public class BootDelegationTestCase extends OSGiTest {
             super(null);
         }
     }
-    
+
     private Class<?> vmClass;
-    
+
     @Override
     public void setUp() throws Exception {
         super.setUp();
@@ -73,22 +73,22 @@ public class BootDelegationTestCase extends OSGiTest {
     public void testNoWildcard() throws Exception {
         doTestBootDelegation("javax.security.auth.x500", true);
     }
-    
+
     @Test
     public void testWildcardOne() throws Exception {
         doTestBootDelegation("javax.security.auth.*", true);
     }
-    
+
     @Test
     public void testWildcardTwo() throws Exception {
         doTestBootDelegation("javax.security.*", true);
     }
-    
+
     @Test
     public void testWildcardAll() throws Exception {
         doTestBootDelegation("*", true);
     }
-    
+
     @Test
     public void testNullBootDelegation() throws Exception {
         doTestBootDelegation(null, false);
@@ -105,7 +105,7 @@ public class BootDelegationTestCase extends OSGiTest {
         configuration.put("org.osgi.framework.storage.clean", "onFirstInit");
         if (bootDelegation != null)
             configuration.put(Constants.FRAMEWORK_BOOTDELEGATION, bootDelegation);
-        
+
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
         Framework framework = factory.newFramework(configuration);
         framework.start();
@@ -131,7 +131,7 @@ public class BootDelegationTestCase extends OSGiTest {
                 Bundle provider = ((BundleReference) classLoader).getBundle();
                 assertEquals(testBundle, provider);
             }
-            
+
         }
         finally
         {

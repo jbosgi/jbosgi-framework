@@ -21,16 +21,6 @@
   #L%
   -->
 
-
-<!-- ====================================================================== -->
-<!--                                                                        -->
-<!--  JBoss, the OpenSource J2EE webOS                                      -->
-<!--                                                                        -->
-<!--  Distributable under LGPL license.                                     -->
-<!--  See terms of license at http://www.gnu.org.                           -->
-<!--                                                                        -->
-<!-- ====================================================================== -->
-
 <project default="setup.vi">
 
   <property name="target.dir" value="${basedir}/target" />

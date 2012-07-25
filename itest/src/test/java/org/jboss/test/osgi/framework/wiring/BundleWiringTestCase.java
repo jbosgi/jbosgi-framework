@@ -1,25 +1,25 @@
+package org.jboss.test.osgi.framework.wiring;
 /*
  * #%L
- * JBossOSGi Framework iTest
+ * JBossOSGi Framework
  * %%
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework.wiring;
 
 import static org.junit.Assert.assertEquals;
 import static org.osgi.framework.namespace.PackageNamespace.PACKAGE_NAMESPACE;
@@ -40,7 +40,7 @@ import org.osgi.framework.wiring.BundleWiring;
 
 /**
  * Test {@link BundleWiring} API
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 28-Jun-2012
  */
@@ -50,16 +50,16 @@ public class BundleWiringTestCase extends OSGiFrameworkTest {
     public void testExportedPackageFromFragment() throws Exception {
         XBundle hostA = (XBundle) installBundle(getHostA());
         XBundle fragmentA = (XBundle) installBundle(getFragmentA());
-        
+
         hostA.start();
         assertBundleState(Bundle.ACTIVE, hostA.getState());
         assertBundleState(Bundle.RESOLVED, fragmentA.getState());
-        
+
         BundleWiring wiring = hostA.getBundleRevision().getWiring();
         List<BundleCapability> caps = wiring.getCapabilities(PACKAGE_NAMESPACE);
         assertEquals("One package capability", 1, caps.size());
         assertEquals("org.jboss.osgi.fragment", caps.get(0).getAttributes().get(PACKAGE_NAMESPACE));
-       
+
     }
 
     private JavaArchive getHostA() {

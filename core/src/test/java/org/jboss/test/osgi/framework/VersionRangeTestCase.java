@@ -1,25 +1,25 @@
+package org.jboss.test.osgi.framework;
 /*
  * #%L
- * JBossOSGi Framework Core
+ * JBossOSGi Framework
  * %%
  * Copyright (C) 2010 - 2012 JBoss by Red Hat
  * %%
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as 
- * published by the Free Software Foundation, either version 2.1 of the 
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation, either version 2.1 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Lesser Public License for more details.
- * 
- * You should have received a copy of the GNU General Lesser Public 
+ *
+ * You should have received a copy of the GNU General Lesser Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
@@ -31,7 +31,7 @@ import org.osgi.framework.Version;
 
 /**
  * Test versions with suffix
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 02-Mar-2012
  */
@@ -48,10 +48,10 @@ public class VersionRangeTestCase {
     Version v200Final = Version.parseVersion("2.0.0.Final");
     Version v200SP1 = Version.parseVersion("2.0.0.SP1");
     Version v200SP2 = Version.parseVersion("2.0.0.SP2");
-    
+
     @Test
     public void testVersionOrdering() throws Exception {
-        
+
         assertTrue(v200SP2.compareTo(v200SP1) > 0);
         assertTrue(v200SP1.compareTo(v200GA) > 0);
         assertTrue(v200GA.compareTo(v200Final) > 0);
@@ -61,14 +61,14 @@ public class VersionRangeTestCase {
         assertTrue(v200Beta2.compareTo(v200Beta1) > 0);
         assertTrue(v200Beta1.compareTo(v200Alpha2) > 0);
         assertTrue(v200Alpha2.compareTo(v200Alpha1) > 0);
-        
+
         // 2.0.0.Alpha1 > 2.0.0
         Assert.assertTrue(v200Alpha1.compareTo(v200) > 0);
     }
 
     @Test
     public void testVersionRange() throws Exception {
-        
+
         VersionRange rA = VersionRange.parse("[1.0,3.0)");
         assertTrue(rA.isInRange(v200Final));
         assertTrue(rA.isInRange(v200GA));
@@ -76,7 +76,7 @@ public class VersionRangeTestCase {
         assertTrue(rA.isInRange(v200Beta1));
         assertTrue(rA.isInRange(v200Alpha1));
         assertTrue(rA.isInRange(v200));
-        
+
         VersionRange rB = VersionRange.parse("[2.0,3.0)");
         assertTrue(rB.isInRange(v200Final));
         assertTrue(rB.isInRange(v200GA));
@@ -95,7 +95,7 @@ public class VersionRangeTestCase {
 
         VersionRange rD = VersionRange.parse("[2.0,2.0]");
         assertTrue(rD.isInRange(v200));
-        
+
         // Versions with qualifier not in range
         assertFalse(rD.isInRange(v200Final));
         assertFalse(rD.isInRange(v200GA));
