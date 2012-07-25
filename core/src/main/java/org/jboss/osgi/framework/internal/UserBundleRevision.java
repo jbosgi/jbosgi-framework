@@ -33,10 +33,12 @@ import java.util.List;
 import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.wiring.BundleRevision;
 
 /**
  * An abstract bundle revision that is based on a user {@link Deployment}.
@@ -48,11 +50,12 @@ import org.osgi.framework.BundleException;
 abstract class UserBundleRevision extends BundleStateRevision {
 
     private final Deployment deployment;
-    private List<RevisionContent> contentList;
+    private final List<RevisionContent> contentList;
     private final EntriesProvider entriesProvider;
 
-    UserBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
-        super(frameworkState, metadata, storageState.getRevisionId());
+    UserBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
+        super(frameworkState, metadata, storageState);
+
         this.deployment = dep;
 
         if (dep.getRoot() != null) {
@@ -64,6 +67,14 @@ abstract class UserBundleRevision extends BundleStateRevision {
             contentList = Collections.emptyList();
             addAttachment(Module.class, module);
         }
+    }
+
+    /**
+     * Assert that the given resource is an instance of {@link UserBundleRevision}
+     */
+    static UserBundleRevision assertBundleRevision(BundleRevision brev) {
+        assert brev instanceof UserBundleRevision : "Not an UserBundleRevision: " + brev;
+        return (UserBundleRevision) brev;
     }
 
     UserBundleState getBundleState() {
@@ -108,7 +119,9 @@ abstract class UserBundleRevision extends BundleStateRevision {
         return null;
     }
 
+    @Override
     void close() {
+        super.close();
         for (RevisionContent aux : contentList) {
             aux.close();
         }

@@ -22,9 +22,6 @@ package org.jboss.osgi.framework.internal;
  */
 
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
-import static org.osgi.framework.Constants.SYSTEM_BUNDLE_LOCATION;
-
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +30,6 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
@@ -49,7 +45,6 @@ import org.osgi.framework.Version;
 final class SystemBundleState extends AbstractBundleState {
 
     private final SystemBundleRevision systemRevision;
-    private InternalStorageState storageState;
 
     SystemBundleState(FrameworkState frameworkState, SystemBundleRevision revision) {
         super(frameworkState, revision, 0);
@@ -68,14 +63,6 @@ final class SystemBundleState extends AbstractBundleState {
     @Override
     public List<XBundleRevision> getAllBundleRevisions() {
         return Collections.singletonList((XBundleRevision) systemRevision);
-    }
-
-    void createStorageState(BundleStoragePlugin storagePlugin) {
-        try {
-            storageState = storagePlugin.createStorageState(0, SYSTEM_BUNDLE_LOCATION, 0, null);
-        } catch (IOException ex) {
-            throw MESSAGES.illegalStateCannotCreateSystemBundleStorage(ex);
-        }
     }
 
     @Override
@@ -101,11 +88,6 @@ final class SystemBundleState extends AbstractBundleState {
     @Override
     public SystemBundleRevision getBundleRevision() {
         return systemRevision;
-    }
-
-    @Override
-    InternalStorageState getStorageState() {
-        return storageState;
     }
 
     @Override

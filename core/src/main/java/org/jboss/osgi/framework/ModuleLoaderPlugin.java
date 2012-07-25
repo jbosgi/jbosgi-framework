@@ -52,9 +52,7 @@ public interface ModuleLoaderPlugin extends Service<ModuleLoaderPlugin> {
 
     ServiceName createModuleService(XBundleRevision brev, ModuleIdentifier identifier);
 
-    Module getModule(ModuleIdentifier identifier);
-
-    void removeModule(ModuleIdentifier identifier);
+    void removeModule(XBundleRevision brev, ModuleIdentifier identifier);
 
     ServiceName getModuleServiceName(ModuleIdentifier identifier);
 

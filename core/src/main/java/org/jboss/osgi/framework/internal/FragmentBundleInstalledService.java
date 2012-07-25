@@ -26,7 +26,7 @@ import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
@@ -56,13 +56,13 @@ final class FragmentBundleInstalledService extends UserBundleInstalledService<Fr
     }
 
     @Override
-    FragmentBundleRevision createBundleRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
+    FragmentBundleRevision createBundleRevision(Deployment dep, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
         return new FragmentBundleRevision(getFrameworkState(), dep, metadata, storageState);
     }
 
     @Override
-    FragmentBundleState createBundleState(FragmentBundleRevision revision, StorageState storageState, ServiceName serviceName) {
-        return new FragmentBundleState(getFrameworkState(), revision, storageState, serviceName);
+    FragmentBundleState createBundleState(FragmentBundleRevision revision, ServiceName serviceName) {
+        return new FragmentBundleState(getFrameworkState(), revision, serviceName);
     }
 
     @Override

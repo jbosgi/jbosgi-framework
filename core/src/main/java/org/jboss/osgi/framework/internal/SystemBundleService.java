@@ -21,6 +21,10 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
+import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.osgi.framework.Constants.SYSTEM_BUNDLE_LOCATION;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +39,7 @@ import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemPathsPlugin;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -72,19 +77,33 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
+        InternalStorageState storageState = null;
         try {
             OSGiMetaData metadata = createOSGiMetaData();
-            SystemBundleRevision brev = new SystemBundleRevision(getFrameworkState(), metadata);
+            storageState = createStorageState();
+            SystemBundleRevision brev = new SystemBundleRevision(getFrameworkState(), metadata, storageState);
             brev.addAttachment(Long.class, new Long(0));
             bundleState = createBundleState(brev);
             bundleState.changeState(Bundle.STARTING);
             addToEnvironment(brev);
             bundleState.createBundleContext();
-            bundleState.createStorageState(injectedBundleStorage.getValue());
             BundleManagerPlugin bundleManager = getBundleManager();
             bundleManager.injectedSystemBundle.inject(bundleState);
         } catch (BundleException ex) {
+            if (storageState != null) {
+                BundleStoragePlugin storagePlugin = injectedBundleStorage.getValue();
+                storagePlugin.deleteStorageState(storageState);
+            }
             throw new StartException(ex);
+        }
+    }
+
+    InternalStorageState createStorageState() {
+        try {
+            BundleStoragePlugin storagePlugin = injectedBundleStorage.getValue();
+            return storagePlugin.createStorageState(0, SYSTEM_BUNDLE_LOCATION, 0, null);
+        } catch (IOException ex) {
+            throw MESSAGES.illegalStateCannotCreateSystemBundleStorage(ex);
         }
     }
 

@@ -66,8 +66,8 @@ final class HostBundleState extends UserBundleState {
     private final AtomicBoolean awaitLazyActivation = new AtomicBoolean();
     private BundleActivator bundleActivator;
 
-    HostBundleState(FrameworkState frameworkState, HostBundleRevision revision, StorageState storageState, ServiceName serviceName) {
-        super(frameworkState, revision, storageState, serviceName);
+    HostBundleState(FrameworkState frameworkState, HostBundleRevision revision, ServiceName serviceName) {
+        super(frameworkState, revision, serviceName);
     }
 
     static HostBundleState assertBundleState(Bundle bundle) {
@@ -86,7 +86,7 @@ final class HostBundleState extends UserBundleState {
     }
 
     @Override
-    HostBundleRevision createUpdateRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
+    HostBundleRevision createUpdateRevision(Deployment dep, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
         return new HostBundleRevision(getFrameworkState(), dep, metadata, storageState);
     }
 

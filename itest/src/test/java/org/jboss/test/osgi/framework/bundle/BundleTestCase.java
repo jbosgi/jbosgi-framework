@@ -53,6 +53,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.BundleReference;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.Version;
 
 /**
  * BundleTest.
@@ -326,6 +327,8 @@ public class BundleTestCase extends OSGiFrameworkTest {
             }
         });
         Bundle bundle = installBundle(archive);
+        Assert.assertNull("Null symbolic name", bundle.getSymbolicName());
+        Assert.assertEquals(Version.emptyVersion, bundle.getVersion());
         try {
             Dictionary<String, String> expected = new Hashtable<String, String>();
             expected.put(Constants.BUNDLE_NAME, "simple1");

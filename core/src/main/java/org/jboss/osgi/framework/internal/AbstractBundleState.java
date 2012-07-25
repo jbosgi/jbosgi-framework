@@ -83,12 +83,12 @@ abstract class AbstractBundleState implements XBundle {
     private BundleStateRevision currentRevision;
     private AbstractBundleContext bundleContext;
 
-    AbstractBundleState(FrameworkState frameworkState, BundleStateRevision revision, long bundleId) {
+    AbstractBundleState(FrameworkState frameworkState, BundleStateRevision brev, long bundleId) {
         assert frameworkState != null : "Null frameworkState";
-        assert revision != null : "Null revision";
+        assert brev != null : "Null revision";
 
         // strip-off the directives
-        String symbolicName = revision.getOSGiMetaData().getBundleSymbolicName();
+        String symbolicName = brev.getOSGiMetaData().getBundleSymbolicName();
         if (symbolicName != null && symbolicName.indexOf(';') > 0)
             symbolicName = symbolicName.substring(0, symbolicName.indexOf(';'));
 
@@ -97,7 +97,7 @@ abstract class AbstractBundleState implements XBundle {
         this.frameworkState = frameworkState;
 
         // Link the bundle revision to this state
-        revision.addAttachment(Bundle.class, this);
+        brev.addAttachment(Bundle.class, this);
     }
 
     FrameworkState getFrameworkState() {
@@ -141,8 +141,6 @@ abstract class AbstractBundleState implements XBundle {
             result = (T) getOSGiMetaData();
         } else if (type.isAssignableFrom(StorageState.class)) {
             result = (T) getStorageState();
-        } else if (type.isAssignableFrom(ServiceName.class)) {
-            result = (T) getServiceName(INSTALLED);
         }
         return result;
     }
@@ -163,7 +161,9 @@ abstract class AbstractBundleState implements XBundle {
 
     abstract boolean isSingleton();
 
-    abstract InternalStorageState getStorageState();
+    InternalStorageState getStorageState() {
+        return getBundleRevision().getStorageState();
+    }
 
     ModuleIdentifier getModuleIdentifier() {
         return getBundleRevision().getModuleIdentifier();

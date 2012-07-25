@@ -40,7 +40,6 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallPlugin;
-import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundleRevision;
@@ -66,16 +65,14 @@ abstract class UserBundleState extends AbstractBundleState {
 
     private final List<UserBundleRevision> revisions = new CopyOnWriteArrayList<UserBundleRevision>();
     private final Semaphore uninstallSemaphore = new Semaphore(1);
-    private final InternalStorageState storageState;
     private final ServiceName serviceName;
 
     private Dictionary<String, String> headersOnUninstall;
 
-    UserBundleState(FrameworkState frameworkState, UserBundleRevision revision, StorageState storageState, ServiceName serviceName) {
-        super(frameworkState, revision, storageState.getBundleId());
-        this.storageState = (InternalStorageState) storageState;
+    UserBundleState(FrameworkState frameworkState, UserBundleRevision brev, ServiceName serviceName) {
+        super(frameworkState, brev, brev.getStorageState().getBundleId());
         this.serviceName = serviceName;
-        addBundleRevision(revision);
+        addBundleRevision(brev);
     }
 
     /**
@@ -85,11 +82,6 @@ abstract class UserBundleState extends AbstractBundleState {
         bundle = AbstractBundleState.assertBundleState(bundle);
         assert bundle instanceof UserBundleState : "Not an UserBundleState: " + bundle;
         return (UserBundleState) bundle;
-    }
-
-    @Override
-    InternalStorageState getStorageState() {
-        return storageState;
     }
 
     @Override
@@ -115,7 +107,7 @@ abstract class UserBundleState extends AbstractBundleState {
 
     abstract void initLazyActivation();
 
-    abstract UserBundleRevision createUpdateRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException;
+    abstract UserBundleRevision createUpdateRevision(Deployment dep, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -124,6 +116,8 @@ abstract class UserBundleState extends AbstractBundleState {
         if (result == null) {
             if (type.isAssignableFrom(Deployment.class)) {
                 result = (T) getDeployment();
+            } else if (type.isAssignableFrom(ServiceName.class)) {
+                result = (T) getServiceName(INSTALLED);
             }
         }
         return result;
@@ -216,12 +210,9 @@ abstract class UserBundleState extends AbstractBundleState {
             }
         }
 
-        // Sent when the Framework detects that a bundle becomes unresolved; T
+        // Sent when the Framework detects that a bundle becomes unresolved
         // This could happen when the bundle is refreshed or updated.
         changeState(Bundle.INSTALLED, BundleEvent.UNRESOLVED);
-
-        // Deactivate the service that represents bundle state RESOLVED
-        getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.NEVER);
 
         try {
             // If the Framework is unable to install the updated version of this bundle, the original
@@ -328,21 +319,25 @@ abstract class UserBundleState extends AbstractBundleState {
         UserBundleRevision currentRev = getBundleRevision();
         for (XBundleRevision brev : getAllBundleRevisions()) {
 
+            UserBundleRevision userRev = UserBundleRevision.assertBundleRevision(brev);
             XEnvironment env = getFrameworkState().getEnvironment();
-            if (currentRev != brev)
+            if (currentRev != brev) {
                 env.uninstallResources(brev);
+                userRev.close();
+            }
 
             if (brev instanceof HostBundleRevision) {
                 HostBundleRevision hostRev = (HostBundleRevision) brev;
                 for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
                     if (fragRev != fragRev.getBundle().getBundleRevision()) {
                         env.uninstallResources(fragRev);
+                        fragRev.close();
                     }
                 }
             }
 
             ModuleIdentifier identifier = brev.getModuleIdentifier();
-            moduleManager.removeModule(identifier);
+            moduleManager.removeModule(brev, identifier);
         }
 
         clearOldRevisions();

@@ -96,14 +96,14 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         return module;
     }
 
-    protected void removeModule(Module module) throws Exception {
+    protected void removeModule(XBundleRevision brev, Module module) throws Exception {
         // Remove the {@link Module} from the {@link ModuleLoaderProvider}
         XBundle sysbundle = (XBundle) getSystemContext().getBundle();
         BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
         ServiceController<?> service = serviceContainer.getRequiredService(MODULE_LOADER_PLUGIN);
         ModuleLoaderPlugin provider = (ModuleLoaderPlugin) service.getValue();
-        provider.removeModule(module.getIdentifier());
+        provider.removeModule(brev, module.getIdentifier());
         VFSUtils.safeClose(vfsmap.remove(module));
     }
 

@@ -30,7 +30,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.BundleException;
 
@@ -47,7 +47,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
 
     private Set<HostBundleRevision> attachedHosts;
 
-    FragmentBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
+    FragmentBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
         super(frameworkState, dep, metadata, storageState);
     }
 

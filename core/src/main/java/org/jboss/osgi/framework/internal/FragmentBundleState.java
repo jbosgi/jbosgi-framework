@@ -25,7 +25,7 @@ import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -40,8 +40,8 @@ import org.osgi.framework.BundleException;
  */
 final class FragmentBundleState extends UserBundleState {
 
-    FragmentBundleState(FrameworkState frameworkState, FragmentBundleRevision revision, StorageState storageState, ServiceName serviceName) {
-        super(frameworkState, revision, storageState, serviceName);
+    FragmentBundleState(FrameworkState frameworkState, FragmentBundleRevision brev, ServiceName serviceName) {
+        super(frameworkState, brev, serviceName);
     }
 
     static FragmentBundleState assertBundleState(Bundle bundle) {
@@ -61,7 +61,7 @@ final class FragmentBundleState extends UserBundleState {
     }
 
     @Override
-    FragmentBundleRevision createUpdateRevision(Deployment deployment, OSGiMetaData metaData, StorageState storageState) throws BundleException {
+    FragmentBundleRevision createUpdateRevision(Deployment deployment, OSGiMetaData metaData, InternalStorageState storageState) throws BundleException {
         return new FragmentBundleRevision(getFrameworkState(), deployment, metaData, storageState);
     }
 

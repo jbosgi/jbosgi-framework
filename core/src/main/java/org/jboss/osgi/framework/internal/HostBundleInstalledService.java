@@ -28,7 +28,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.ModuleLoaderPlugin;
-import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
@@ -58,13 +58,13 @@ final class HostBundleInstalledService extends UserBundleInstalledService<HostBu
     }
 
     @Override
-    HostBundleRevision createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState)  throws BundleException {
+    HostBundleRevision createBundleRevision(Deployment deployment, OSGiMetaData metadata, InternalStorageState storageState)  throws BundleException {
         return new HostBundleRevision(getFrameworkState(), deployment, metadata, storageState);
     }
 
     @Override
-    HostBundleState createBundleState(HostBundleRevision revision, StorageState storageState, ServiceName serviceName) {
-        return new HostBundleState(getFrameworkState(), revision, storageState, serviceName);
+    HostBundleState createBundleState(HostBundleRevision revision, ServiceName serviceName) {
+        return new HostBundleState(getFrameworkState(), revision, serviceName);
     }
 
     @Override

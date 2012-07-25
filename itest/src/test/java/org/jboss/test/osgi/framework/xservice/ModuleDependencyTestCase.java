@@ -31,6 +31,7 @@ import java.util.List;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
@@ -79,8 +80,9 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 // expected
             }
         } finally {
-            uninstallResource(bundleX.getBundleRevision());
-            removeModule(moduleX);
+            XBundleRevision brev = bundleX.getBundleRevision();
+            uninstallResource(brev);
+            removeModule(brev, moduleX);
         }
     }
 
@@ -141,8 +143,9 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 Assert.assertSame(bundleX.getBundleRevision(), wire.getProvider());
                 Assert.assertSame(bundleX.getBundleRevision().getWiring(), wire.getProviderWiring());
             } finally {
-                uninstallResource(bundleX.getBundleRevision());
-                removeModule(moduleX);
+                XBundleRevision brev = bundleX.getBundleRevision();
+                uninstallResource(brev);
+                removeModule(brev, moduleX);
             }
         } finally {
             bundleA.uninstall();
@@ -206,8 +209,9 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 Assert.assertSame(bundleX.getBundleRevision(), wire.getProvider());
                 Assert.assertSame(bundleX.getBundleRevision().getWiring(), wire.getProviderWiring());
             } finally {
-                uninstallResource(bundleX.getBundleRevision());
-                removeModule(moduleX);
+                XBundleRevision brev = bundleX.getBundleRevision();
+                uninstallResource(brev);
+                removeModule(brev, moduleX);
             }
         } finally {
             bundleA.uninstall();
@@ -256,8 +260,9 @@ public class ModuleDependencyTestCase extends AbstractModuleIntegrationTest {
                 Assert.assertEquals(0, wiringY.getRequiredWires(null).size()); // [TODO] required wires for adapted modules
                 Assert.assertEquals(0, wiringY.getProvidedWires(null).size());
             } finally {
-                uninstallResource(bundleY.getBundleRevision());
-                removeModule(moduleY);
+                XBundleRevision brev = bundleY.getBundleRevision();
+                uninstallResource(brev);
+                removeModule(brev, moduleY);
             }
         } finally {
             bundleB.uninstall();

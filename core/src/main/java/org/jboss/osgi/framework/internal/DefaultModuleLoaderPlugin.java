@@ -47,8 +47,8 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.service.ValueService;
 import org.jboss.msc.value.ImmediateValue;
 import org.jboss.osgi.framework.ModuleLoaderPlugin;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
-import org.jboss.osgi.resolver.XIdentityCapability;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -123,21 +123,14 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
 
     @Override
     public ModuleIdentifier getModuleIdentifier(XBundleRevision brev) {
-        XIdentityCapability icap = brev.getIdentityCapability();
-        List<XBundleRevision> allrevs = brev.getBundle().getAllBundleRevisions();
-        String name = icap.getSymbolicName();
+        XBundle bundle = brev.getBundle();
+        String name = bundle.getSymbolicName();
+        String slot = bundle.getVersion().toString();
+        List<XBundleRevision> allrevs = bundle.getAllBundleRevisions();
         if (allrevs.size() > 1) {
             name += "-rev" + (allrevs.size() - 1);
         }
-        return ModuleIdentifier.create(JBOSGI_PREFIX + "." + name, "" + icap.getVersion());
-    }
-
-    @Override
-    public Module getModule(ModuleIdentifier identifier) {
-        final ModuleHolder moduleHolder = moduleSpecs.get(identifier);
-        final Module result = moduleHolder != null ? moduleHolder.getModule() : null;
-        LOGGER.tracef("getModule: %s => %s", identifier, result);
-        return result;
+        return ModuleIdentifier.create(JBOSGI_PREFIX + "." + name, slot);
     }
 
     @Override
@@ -161,7 +154,7 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
     }
 
     @Override
-    public void removeModule(ModuleIdentifier identifier) {
+    public void removeModule(XBundleRevision brev, ModuleIdentifier identifier) {
         LOGGER.tracef("removeModule: %s", identifier);
 
         // Remove the ModuleSpec, which makes the Module unavailable for load

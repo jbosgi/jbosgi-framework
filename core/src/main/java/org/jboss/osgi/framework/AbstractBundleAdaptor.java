@@ -56,28 +56,28 @@ import org.osgi.framework.wiring.BundleRevision;
 public class AbstractBundleAdaptor implements XBundle {
 
     private final BundleContext context;
-    private final XBundleRevision bundlerev;
+    private final XBundleRevision brev;
     private final Module module;
     private long lastModified;
     private int bundleState;
 
-    public AbstractBundleAdaptor(BundleContext context, Module module, XBundleRevision bundlerev) {
+    public AbstractBundleAdaptor(BundleContext context, Module module, XBundleRevision brev) {
         if (context == null)
             throw MESSAGES.illegalArgumentNull("context");
         if (module == null)
             throw MESSAGES.illegalArgumentNull("module");
-        if (bundlerev == null)
-            throw MESSAGES.illegalArgumentNull("bundlerev");
+        if (brev == null)
+            throw MESSAGES.illegalArgumentNull("brev");
         this.context = context;
         this.module = module;
-        this.bundlerev = bundlerev;
+        this.brev = brev;
         this.lastModified = System.currentTimeMillis();
         this.bundleState = Bundle.RESOLVED;
     }
 
     @Override
     public long getBundleId() {
-        Long bundleId = bundlerev.getAttachment(Long.class);
+        Long bundleId = brev.getAttachment(Long.class);
         return bundleId != null ? bundleId.longValue() : -1;
     }
 
@@ -123,7 +123,7 @@ public class AbstractBundleAdaptor implements XBundle {
         if (type == Module.class) {
             result = (T) module;
         } else if (type == BundleRevision.class) {
-            result = (T) bundlerev;
+            result = (T) brev;
         }
         return result;
     }
@@ -169,7 +169,7 @@ public class AbstractBundleAdaptor implements XBundle {
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
         ServiceController<?> service = serviceContainer.getRequiredService(MODULE_LOADER_PLUGIN);
         ModuleLoaderPlugin provider = (ModuleLoaderPlugin) service.getValue();
-        provider.removeModule(module.getIdentifier());
+        provider.removeModule(brev, module.getIdentifier());
         bundleState = Bundle.UNINSTALLED;
     }
 
@@ -258,12 +258,12 @@ public class AbstractBundleAdaptor implements XBundle {
 
     @Override
     public XBundleRevision getBundleRevision() {
-        return bundlerev;
+        return brev;
     }
 
     @Override
     public List<XBundleRevision> getAllBundleRevisions() {
-        return Collections.singletonList(bundlerev);
+        return Collections.singletonList(brev);
     }
 
     @Override

@@ -25,6 +25,7 @@ import junit.framework.Assert;
 
 import org.jboss.modules.Module;
 import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.testing.OSGiTestHelper;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -57,8 +58,9 @@ public class ModuleBundleTestCase extends AbstractModuleIntegrationTest {
 
     @After
     public void tearDown() throws Exception {
-        uninstallResource(bundle.getBundleRevision());
-        removeModule(module);
+        XBundleRevision brev = bundle.getBundleRevision();
+        uninstallResource(brev);
+        removeModule(brev, module);
     }
 
     @Test

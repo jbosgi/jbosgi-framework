@@ -67,7 +67,7 @@ public class ModuleBundleRevisionTestCase extends AbstractModuleIntegrationTest 
     @After
     public void tearDown() throws Exception {
         uninstallResource(brev);
-        removeModule(module);
+        removeModule(brev, module);
     }
 
     @Test

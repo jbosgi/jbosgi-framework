@@ -70,7 +70,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
             R brev = createBundleRevision(dep, metadata, storageState);
             brev.addAttachment(Long.class, bundleId);
             ServiceName serviceName = context.getController().getName().getParent();
-            bundleState = createBundleState(brev, storageState, serviceName);
+            bundleState = createBundleState(brev, serviceName);
             dep.addAttachment(Bundle.class, bundleState);
             bundleState.initLazyActivation();
             validateBundle(bundleState, metadata);
@@ -89,15 +89,15 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
         }
     }
 
-    abstract R createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState) throws BundleException;
+    abstract R createBundleRevision(Deployment deployment, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException;
 
-    abstract B createBundleState(R revision, StorageState storageState, ServiceName serviceName) throws BundleException;
+    abstract B createBundleState(R revision, ServiceName serviceName) throws BundleException;
 
     abstract void createResolvedService(ServiceTarget serviceTarget, R brev);
 
     InternalStorageState createStorageState(Deployment dep, Long bundleId) throws BundleException {
         // The storage state exists when we re-create the bundle from persistent storage
-        StorageState storageState = dep.getAttachment(StorageState.class);
+        InternalStorageState storageState = (InternalStorageState) dep.getAttachment(StorageState.class);
         if (storageState == null) {
             String location = dep.getLocation();
             VirtualFile rootFile = dep.getRoot();
@@ -114,7 +114,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
                 throw MESSAGES.bundleCannotSetupStorage(ex, rootFile);
             }
         }
-        return (InternalStorageState) storageState;
+        return storageState;
     }
 
     @Override

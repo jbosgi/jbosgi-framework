@@ -27,6 +27,8 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
+import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.ResourceBuilderException;
 import org.jboss.osgi.resolver.XBundle;
@@ -36,6 +38,7 @@ import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResourceBuilder;
 import org.jboss.osgi.resolver.XResourceBuilderFactory;
 import org.jboss.osgi.resolver.spi.AbstractBundleRevision;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.resource.Wiring;
@@ -49,17 +52,18 @@ import org.osgi.resource.Wiring;
  */
 abstract class BundleStateRevision extends AbstractBundleRevision {
 
-    private final int revision;
     private final OSGiMetaData metadata;
     private final FrameworkState frameworkState;
+    private final InternalStorageState storageState;
 
-    BundleStateRevision(FrameworkState frameworkState, OSGiMetaData metadata, int revId) throws BundleException {
+    BundleStateRevision(FrameworkState frameworkState, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
         assert frameworkState != null : "Null frameworkState";
         assert metadata != null : "Null metadata";
+        assert storageState != null : "Null storageState";
 
         this.frameworkState = frameworkState;
+        this.storageState = storageState;
         this.metadata = metadata;
-        this.revision = revId;
 
         // Initialize the bundle caps/reqs
         try {
@@ -74,6 +78,8 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
         } catch (ResourceBuilderException ex) {
             throw new BundleException(ex.getMessage(), ex);
         }
+
+        addAttachment(StorageState.class, storageState);
     }
 
     FrameworkState getFrameworkState() {
@@ -85,11 +91,15 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
     }
 
     int getRevisionId() {
-        return revision;
+        return storageState.getRevisionId();
     }
 
     OSGiMetaData getOSGiMetaData() {
         return metadata;
+    }
+
+    InternalStorageState getStorageState() {
+        return storageState;
     }
 
     abstract String getLocation();
@@ -130,6 +140,10 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
         removeAttachment(Wiring.class);
         removeAttachment(ModuleIdentifier.class);
         removeAttachment(Module.class);
+    }
+
+    void close() {
+        VFSUtils.safeClose(storageState.getRootFile());
     }
 
     @Override

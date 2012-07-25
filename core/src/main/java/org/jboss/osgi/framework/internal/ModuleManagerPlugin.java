@@ -221,9 +221,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         if (module != null) {
             ModuleIdentifier identifier = module.getIdentifier();
             ModuleLoaderPlugin moduleLoaderPlugin = getModuleLoaderPlugin();
-            if (moduleLoaderPlugin.getModule(identifier) == null) {
-                moduleLoaderPlugin.addModule(brev, module);
-            }
+            moduleLoaderPlugin.addModule(brev, module);
             return identifier;
         }
 
@@ -574,8 +572,8 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
     /**
      * Remove the module with the given identifier
      */
-    void removeModule(ModuleIdentifier identifier) {
-        getModuleLoaderPlugin().removeModule(identifier);
+    void removeModule(XBundleRevision brev, ModuleIdentifier identifier) {
+        getModuleLoaderPlugin().removeModule(brev, identifier);
     }
 
     private class ModuleDependencyHolder {

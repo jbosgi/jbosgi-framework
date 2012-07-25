@@ -435,11 +435,11 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         eventsPlugin.fireBundleEvent(userBundle, BundleEvent.UNRESOLVED);
 
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        for (XBundleRevision rev : userBundle.getAllBundleRevisions()) {
-            UserBundleRevision userRev = (UserBundleRevision) rev;
+        for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
+            UserBundleRevision userRev = (UserBundleRevision) brev;
             if (userRev.isFragment() == false) {
-                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(rev);
-                moduleManager.removeModule(identifier);
+                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(brev);
+                moduleManager.removeModule(brev, identifier);
             }
             userRev.close();
         }
