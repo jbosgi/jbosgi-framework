@@ -22,7 +22,8 @@
 package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.ModuleLoaderProvider;
+import org.jboss.osgi.framework.ModuleLoaderPlugin;
+import org.jboss.osgi.framework.SystemPathsPlugin;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.launch.Framework;
 
@@ -45,11 +46,12 @@ final class FrameworkState {
     final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
     final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
-    final InjectedValue<ModuleLoaderProvider> injectedModuleLoader = new InjectedValue<ModuleLoaderProvider>();
+    final InjectedValue<ModuleLoaderPlugin> injectedModuleLoader = new InjectedValue<ModuleLoaderPlugin>();
     final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     final InjectedValue<ResolverPlugin> injectedResolverPlugin = new InjectedValue<ResolverPlugin>();
     final InjectedValue<ServiceManagerPlugin> injectedServiceManager = new InjectedValue<ServiceManagerPlugin>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
+    final InjectedValue<SystemPathsPlugin> injectedSystemPaths = new InjectedValue<SystemPathsPlugin>();
 
     FrameworkState(BundleManagerPlugin bundleManager) {
         this.bundleManager = bundleManager;
@@ -79,7 +81,7 @@ final class FrameworkState {
         return injectedModuleManager.getValue();
     }
 
-    ModuleLoaderProvider getModuleLoaderProvider() {
+    ModuleLoaderPlugin getModuleLoaderPlugin() {
         return injectedModuleLoader.getValue();
     }
 
@@ -101,5 +103,9 @@ final class FrameworkState {
 
     SystemBundleState getSystemBundle() {
         return injectedSystemBundle.getValue();
+    }
+
+    SystemPathsPlugin getSystemPathsPlugin() {
+        return injectedSystemPaths.getValue();
     }
 }

@@ -45,8 +45,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -72,7 +73,7 @@ import org.osgi.service.resolver.ResolutionException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class AbstractBundleState implements Bundle {
+abstract class AbstractBundleState implements Bundle, TypeAdaptor {
 
     private final long bundleId;
     private final String symbolicName;
@@ -127,7 +128,21 @@ abstract class AbstractBundleState implements Bundle {
 
     abstract AbstractBundleContext createContextInternal();
 
-    abstract AbstractBundleRevision getCurrentBundleRevision();
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T adapt(Class<T> type) {
+        T result = null;
+        if (type.isAssignableFrom(OSGiMetaData.class)) {
+            result = (T) getOSGiMetaData();
+        } else if (type.isAssignableFrom(StorageState.class)) {
+            result = (T) getStorageState();
+        } else if (type.isAssignableFrom(ServiceName.class)) {
+            result = (T) getServiceName(INSTALLED);
+        }
+        return result;
+    }
+
+    abstract AbstractBundleRevision getBundleRevision();
 
     abstract AbstractBundleRevision getBundleRevisionById(int revisionId);
 
@@ -142,7 +157,7 @@ abstract class AbstractBundleState implements Bundle {
     abstract InternalStorageState getStorageState();
 
     ModuleIdentifier getModuleIdentifier() {
-        return getCurrentBundleRevision().getModuleIdentifier();
+        return getBundleRevision().getModuleIdentifier();
     }
 
     void changeState(int state) {
@@ -280,7 +295,7 @@ abstract class AbstractBundleState implements Bundle {
 
     @Override
     public URL getResource(String name) {
-        return getCurrentBundleRevision().getResource(name);
+        return getBundleRevision().getResource(name);
     }
 
     @Override
@@ -353,11 +368,11 @@ abstract class AbstractBundleState implements Bundle {
     }
 
     OSGiMetaData getOSGiMetaData() {
-        return getCurrentBundleRevision().getOSGiMetaData();
+        return getBundleRevision().getOSGiMetaData();
     }
 
     boolean isResolved() {
-        return getCurrentBundleRevision().isResolved();
+        return getBundleRevision().isResolved();
     }
 
     boolean isUninstalled() {
@@ -404,28 +419,28 @@ abstract class AbstractBundleState implements Bundle {
      * and the bundle has fragments, then the attached fragment JARs must be searched for the localization entry.
      */
     private URL getLocalizationEntry(String entryPath) {
-        return getCurrentBundleRevision().getLocalizationEntry(entryPath);
+        return getBundleRevision().getLocalizationEntry(entryPath);
     }
 
     @Override
     public Class<?> loadClass(String className) throws ClassNotFoundException {
         assertNotUninstalled();
-        return getCurrentBundleRevision().loadClass(className);
+        return getBundleRevision().loadClass(className);
     }
 
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
-        return getCurrentBundleRevision().getResources(name);
+        return getBundleRevision().getResources(name);
     }
 
     @Override
     public Enumeration<String> getEntryPaths(String path) {
-        return getCurrentBundleRevision().getEntryPaths(path);
+        return getBundleRevision().getEntryPaths(path);
     }
 
     @Override
     public URL getEntry(String path) {
-        return getCurrentBundleRevision().getEntry(path);
+        return getBundleRevision().getEntry(path);
     }
 
     @Override
@@ -440,7 +455,7 @@ abstract class AbstractBundleState implements Bundle {
 
     @Override
     public Enumeration<URL> findEntries(String path, String filePattern, boolean recurse) {
-        return getCurrentBundleRevision().findEntries(path, filePattern, recurse);
+        return getBundleRevision().findEntries(path, filePattern, recurse);
     }
 
     AbstractBundleContext getBundleContextInternal() {
@@ -476,7 +491,7 @@ abstract class AbstractBundleState implements Bundle {
 
     @Override
     public Version getVersion() {
-        return getCurrentBundleRevision().getVersion();
+        return getBundleRevision().getVersion();
     }
 
     @Override
@@ -548,13 +563,10 @@ abstract class AbstractBundleState implements Bundle {
 
             try {
                 ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
-                resolverPlugin.resolveAndApply(Collections.singleton(getCurrentBundleRevision()), null);
-
-                // Activate the service that represents bundle state RESOLVED
-                getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.ACTIVE);
+                resolverPlugin.resolveAndApply(Collections.singleton(getBundleRevision()), null);
 
                 if (LOGGER.isDebugEnabled()) {
-                    BundleWiring wiring = getCurrentBundleRevision().getWiring();
+                    BundleWiring wiring = getBundleRevision().getWiring();
                     LOGGER.tracef("Required resource wires for: %s", wiring.getResource());
                     for (Wire wire : wiring.getRequiredResourceWires(null)) {
                         LOGGER.tracef("   %s", wire);

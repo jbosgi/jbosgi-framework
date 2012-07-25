@@ -27,7 +27,7 @@ import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.ModuleLoaderProvider;
+import org.jboss.osgi.framework.ModuleLoaderPlugin;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -64,7 +64,7 @@ final class HostBundleInstalledService extends UserBundleInstalledService<HostBu
     @Override
     void createResolvedService(ServiceTarget serviceTarget, UserBundleRevision userRev) {
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        ModuleLoaderProvider moduleLoader = getFrameworkState().getModuleLoaderProvider();
+        ModuleLoaderPlugin moduleLoader = getFrameworkState().getModuleLoaderPlugin();
         ModuleIdentifier identifier = moduleManager.getModuleIdentifier(userRev);
         ServiceName moduleServiceName = moduleLoader.getModuleServiceName(identifier);
         HostBundleResolvedService.addService(serviceTarget, getBundleState(), moduleServiceName);

@@ -288,7 +288,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                         }
                         public Object getValue() {
                             if (classLoader == null) {
-                                AbstractBundleRevision currentRevision = bundleState.getCurrentBundleRevision();
+                                AbstractBundleRevision currentRevision = bundleState.getBundleRevision();
                                 try {
                                     classLoader = currentRevision.getModuleClassLoader();
                                 } catch (ModuleLoadException ex) {

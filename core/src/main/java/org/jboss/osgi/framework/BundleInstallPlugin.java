@@ -19,30 +19,27 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework.internal;
+package org.jboss.osgi.framework;
 
-import java.util.Set;
-
-import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.PersistentBundlesResolved;
-import org.jboss.osgi.framework.StorageState;
+import org.jboss.msc.service.Service;
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.osgi.framework.BundleException;
 
 /**
- * Default implementation for the RESOLVED step of the {@link PersistentBundlesPlugin}.
+ * A handler for bundle deployments.
  *
  * @author thomas.diesler@jboss.com
- * @since 16-Apr-2012
+ * @since 29-Mar-2011
  */
-class DefaultPersistentBundlesResolved extends PersistentBundlesResolved {
+public interface BundleInstallPlugin extends Service<BundleInstallPlugin> {
 
-    private final Set<StorageState> storageStates;
-    
-    public DefaultPersistentBundlesResolved(Set<StorageState> storageStates) {
-        this.storageStates = storageStates;
-    }
+    /**
+     * Install the bundle service for the given deployment.
+     */
+    void installBundle(Deployment dep) throws BundleException;
 
-    @Override
-    protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
-        return storageStates.size() == trackedServices.size();
-    }
+    /**
+     * Uninstall the bundle associated with the given deployment.
+     */
+    void uninstallBundle(Deployment dep);
 }

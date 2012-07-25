@@ -32,7 +32,7 @@ import org.jboss.msc.service.Service;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public interface SystemPathsProvider extends Service<SystemPathsProvider> {
+public interface SystemPathsPlugin extends Service<SystemPathsPlugin> {
 
     String[] DEFAULT_FRAMEWORK_PACKAGES = new String[]{
             "org.jboss.modules;version=1.1",

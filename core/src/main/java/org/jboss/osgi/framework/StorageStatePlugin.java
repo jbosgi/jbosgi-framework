@@ -19,31 +19,25 @@
  * Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
-package org.jboss.osgi.framework.internal;
+package org.jboss.osgi.framework;
 
-import java.net.URL;
-import java.util.List;
 import java.util.Set;
 
-import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.BootstrapBundlesResolved;
+import org.jboss.msc.service.Service;
+import org.jboss.osgi.deployment.deployer.Deployment;
+import org.osgi.framework.BundleException;
 
 /**
- * A plugin that resolves the auto install bundles on framework startup.
+ * A provider of {@link StorageState}
  *
  * @author thomas.diesler@jboss.com
- * @since 14-Jul-2012
+ * @since 12-Apr-2012
  */
-class DefaultBootstrapBundlesResolved extends BootstrapBundlesResolved {
+public interface StorageStatePlugin extends Service<StorageStatePlugin> {
 
-    private final List<URL> autoInstall;
-    
-    public DefaultBootstrapBundlesResolved(List<URL> autoInstall) {
-        this.autoInstall = autoInstall;
-    }
+    Set<StorageState> getStorageStates();
 
-    @Override
-    protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
-        return autoInstall.size() == trackedServices.size();
-    }
+    StorageState getByLocation(String location);
+
+    Deployment createDeployment(StorageState storageState) throws BundleException;
 }

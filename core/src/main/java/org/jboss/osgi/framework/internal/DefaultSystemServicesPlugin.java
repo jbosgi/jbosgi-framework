@@ -21,13 +21,13 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.SYSTEM_SERVICES_PROVIDER;
+import static org.jboss.osgi.framework.IntegrationServices.SYSTEM_SERVICES_PLUGIN;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.SystemServicesProvider;
+import org.jboss.osgi.framework.SystemServicesPlugin;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -36,18 +36,18 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 04-Feb-2011
  */
-final class DefaultSystemServicesProvider extends AbstractPluginService<SystemServicesProvider> implements SystemServicesProvider {
+final class DefaultSystemServicesPlugin extends AbstractPluginService<SystemServicesPlugin> implements SystemServicesPlugin {
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(SYSTEM_SERVICES_PROVIDER) == null) {
-            DefaultSystemServicesProvider service = new DefaultSystemServicesProvider();
-            ServiceBuilder<SystemServicesProvider> builder = serviceTarget.addService(SYSTEM_SERVICES_PROVIDER, service);
+        if (registry.getService(SYSTEM_SERVICES_PLUGIN) == null) {
+            DefaultSystemServicesPlugin service = new DefaultSystemServicesPlugin();
+            ServiceBuilder<SystemServicesPlugin> builder = serviceTarget.addService(SYSTEM_SERVICES_PLUGIN, service);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();
         }
     }
 
-    private DefaultSystemServicesProvider() {
+    private DefaultSystemServicesPlugin() {
     }
 
 
@@ -57,7 +57,7 @@ final class DefaultSystemServicesProvider extends AbstractPluginService<SystemSe
     }
 
     @Override
-    public DefaultSystemServicesProvider getValue() {
+    public DefaultSystemServicesPlugin getValue() {
         return this;
     }
 }

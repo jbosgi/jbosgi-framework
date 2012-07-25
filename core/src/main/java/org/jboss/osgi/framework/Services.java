@@ -40,15 +40,15 @@ public interface Services {
     /** The prefix for all OSGi services */
     ServiceName JBOSGI_BASE_NAME = ServiceName.of(Constants.JBOSGI_PREFIX);
     /** The prefix for all OSGi bundle services */
-    
+
     ServiceName BUNDLE_BASE_NAME = JBOSGI_BASE_NAME.append("bundle");
 
     /** The base name of all framework services */
     ServiceName FRAMEWORK_BASE_NAME = JBOSGI_BASE_NAME.append("framework");
-    
+
     /** The prefix for all integration plugin services */
     ServiceName INTEGRATION_BASE_NAME = JBOSGI_BASE_NAME.append("integration");
-    
+
     /** The prefix for all OSGi services */
     ServiceName SERVICE_BASE_NAME = JBOSGI_BASE_NAME.append("service");
 
@@ -70,17 +70,17 @@ public interface Services {
     /** The service name for the started {@link Framework} */
     ServiceName FRAMEWORK_ACTIVE = FRAMEWORK_BASE_NAME.append("ACTIVE");
 
-    /** The service name to use as a dependency to activate the {@link Framework} */
-    ServiceName FRAMEWORK_ACTIVATOR = FRAMEWORK_BASE_NAME.append("ACTIVATOR");
-
     /** The service name for the {@link PackageAdmin} service */
     ServiceName PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("PackageAdmin");
+
+    /** The {@link XResolver} service name */
+    ServiceName RESOLVER = JBOSGI_BASE_NAME.append("Resolver");
 
     /** The service name for the {@link StartLevel} service */
     ServiceName START_LEVEL = JBOSGI_BASE_NAME.append("StartLevel");
 
-    /** The service name for the {@link StorageStateProvider} */
-    ServiceName STORAGE_STATE_PROVIDER = JBOSGI_BASE_NAME.append("StorageStateProvider");
+    /** The service name for the {@link StorageStatePlugin} */
+    ServiceName STORAGE_STATE_PLUGIN = JBOSGI_BASE_NAME.append("StorageStatePlugin");
 
     /** The service name for the system {@link Bundle} */
     ServiceName SYSTEM_BUNDLE = JBOSGI_BASE_NAME.append("SystemBundle");

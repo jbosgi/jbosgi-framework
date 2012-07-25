@@ -28,8 +28,9 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.framework.IntegrationServices;
-import org.jboss.osgi.framework.ModuleLoaderProvider;
+import org.jboss.osgi.framework.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.SystemPathsPlugin;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.launch.Framework;
 
@@ -54,13 +55,14 @@ public final class FrameworkCreate extends AbstractFrameworkService {
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, frameworkState.injectedBundleStorage);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, frameworkState.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, frameworkState.injectedModuleManager);
-        builder.addDependency(IntegrationServices.MODULE_LOADER_PROVIDER, ModuleLoaderProvider.class, frameworkState.injectedModuleLoader);
+        builder.addDependency(IntegrationServices.MODULE_LOADER_PLUGIN, ModuleLoaderPlugin.class, frameworkState.injectedModuleLoader);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, frameworkState.injectedNativeCode);
         builder.addDependency(InternalServices.SERVICE_MANAGER_PLUGIN, ServiceManagerPlugin.class, frameworkState.injectedServiceManager);
+        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, frameworkState.injectedSystemPaths);
         builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, frameworkState.injectedSystemBundle);
         builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, frameworkState.injectedResolverPlugin);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, frameworkState.injectedEnvironment);
-        builder.addDependency(Services.STORAGE_STATE_PROVIDER);
+        builder.addDependency(Services.STORAGE_STATE_PLUGIN);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
         return frameworkState;

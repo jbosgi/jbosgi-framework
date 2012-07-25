@@ -67,7 +67,7 @@ import org.osgi.service.packageadmin.RequiredBundle;
 
 /**
  * Test PackageAdmin service.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
@@ -631,7 +631,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
     public void testRefreshPackagesNullUninstall() throws Exception {
         PackageAdmin pa = getPackageAdmin();
         Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
-        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", OptionalImport.class));
+        Bundle bundleI = installBundle(assembleArchive("opt-importer", "/bundles/package-admin/opt-importer", OptionalImport.class));
 
         try {
             bundleI.start();

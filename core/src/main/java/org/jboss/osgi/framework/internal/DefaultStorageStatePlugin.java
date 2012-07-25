@@ -32,35 +32,35 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
-import org.jboss.osgi.framework.StorageStateProvider;
+import org.jboss.osgi.framework.StorageStatePlugin;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.osgi.framework.BundleException;
 
 /**
- * An implementation of a {@link StorageStateProvider}
+ * An implementation of a {@link StorageStatePlugin}
  *
  * @author thomas.diesler@jboss.com
  * @since 12-Apr-2012
  */
-final class StorageStateProviderPlugin extends AbstractPluginService<StorageStateProvider> implements StorageStateProvider {
+final class DefaultStorageStatePlugin extends AbstractPluginService<StorageStatePlugin> implements StorageStatePlugin {
 
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
     private final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
 
     static void addService(ServiceTarget serviceTarget) {
-        StorageStateProviderPlugin service = new StorageStateProviderPlugin();
-        ServiceBuilder<StorageStateProvider> builder = serviceTarget.addService(Services.STORAGE_STATE_PROVIDER, service);
+        DefaultStorageStatePlugin service = new DefaultStorageStatePlugin();
+        ServiceBuilder<StorageStatePlugin> builder = serviceTarget.addService(Services.STORAGE_STATE_PLUGIN, service);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
         builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, service.injectedDeploymentFactory);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 
-    private StorageStateProviderPlugin() {
+    private DefaultStorageStatePlugin() {
     }
 
     @Override
-    public StorageStateProvider getValue() {
+    public StorageStatePlugin getValue() {
         return this;
     }
 

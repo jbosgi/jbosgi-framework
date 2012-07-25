@@ -34,42 +34,69 @@ import org.jboss.msc.service.ServiceName;
  */
 public interface IntegrationServices {
 
-    /** The service name for the {@link BootstrapBundlesPlugin} */
+    /** The {@link BootstrapBundlesInstall} service for auto install bundles */
     ServiceName BOOTSTRAP_BUNDLES = INTEGRATION_BASE_NAME.append("BootstrapBundles");
 
-    /** The {@link BootstrapBundlesPlugin} service that indicates INSTALLED completion */
-    ServiceName BOOTSTRAP_BUNDLES_INSTALLED = BOOTSTRAP_BUNDLES.append("INSTALLED");
+    /** The {@link BootstrapBundlesInstall} service for auto install bundles */
+    ServiceName BOOTSTRAP_BUNDLES_INSTALL = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.INSTALL);
 
-    /** The {@link BootstrapBundlesPlugin} service that indicates RESOLVED completion */
-    ServiceName BOOTSTRAP_BUNDLES_RESOLVED = BOOTSTRAP_BUNDLES.append("RESOLVED");
+    /** The {@link BootstrapBundlesResolve} service for auto install bundles */
+    ServiceName BOOTSTRAP_BUNDLES_RESOLVE = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.RESOLVE);
 
-    /** The {@link BootstrapBundlesPlugin} service that indicates ACTIVE completion */
-    ServiceName BOOTSTRAP_BUNDLES_ACTIVE = BOOTSTRAP_BUNDLES.append("ACTIVE");
+    /** The {@link BootstrapBundlesActivate} service for auto install bundles */
+    ServiceName BOOTSTRAP_BUNDLES_ACTIVATE = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.ACTIVATE);
 
-    /** The service name for the {@link BundleInstallHandler} */
-    ServiceName BUNDLE_INSTALL_HANDLER = INTEGRATION_BASE_NAME.append("BundleInstallHandler");
+    /** The {@link BootstrapBundlesComplete} service for auto install bundles */
+    ServiceName BOOTSTRAP_BUNDLES_COMPLETE = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.COMPLETE);
 
-    /** The service name for the {@link FrameworkModuleProvider} */
-    ServiceName FRAMEWORK_MODULE_PROVIDER = INTEGRATION_BASE_NAME.append("FrameworkModuleProvider");
+    /** The service name for the {@link BundleInstallPlugin} */
+    ServiceName BUNDLE_INSTALL_PLUGIN = INTEGRATION_BASE_NAME.append("BundleInstallPlugin");
 
-    /** The service name for the {@link ModuleLoaderProvider} */
-    ServiceName MODULE_LOADER_PROVIDER = INTEGRATION_BASE_NAME.append("ModuleLoaderProvider");
+    /** The service name for the {@link FrameworkModulePlugin} */
+    ServiceName FRAMEWORK_MODULE_PLUGIN = INTEGRATION_BASE_NAME.append("FrameworkModulePlugin");
 
-    /** The {@link PersistentBundlesPlugin} service name */
+    /** The service name for the {@link ModuleLoaderPlugin} */
+    ServiceName MODULE_LOADER_PLUGIN = INTEGRATION_BASE_NAME.append("ModuleLoaderPlugin");
+
+    /** The {@link BootstrapBundlesInstall} service for persistent bundles */
     ServiceName PERSISTENT_BUNDLES = INTEGRATION_BASE_NAME.append("PersistentBundles");
 
-    /** The {@link PersistentBundlesPlugin} service that indicates INSTALLED completion */
-    ServiceName PERSISTENT_BUNDLES_INSTALLED = PERSISTENT_BUNDLES.append("INSTALLED");
+    /** The {@link BootstrapBundlesInstall} service for persistent bundles */
+    ServiceName PERSISTENT_BUNDLES_INSTALL = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.INSTALL);
 
-    /** The {@link PersistentBundlesPlugin} service that indicates RESOLVED completion */
-    ServiceName PERSISTENT_BUNDLES_RESOLVED = PERSISTENT_BUNDLES.append("RESOLVED");
+    /** The {@link BootstrapBundlesResolve} service forpersistent bundles */
+    ServiceName PERSISTENT_BUNDLES_RESOLVE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.RESOLVE);
 
-    /** The {@link PersistentBundlesPlugin} service that indicates ACTIVE completion */
-    ServiceName PERSISTENT_BUNDLES_ACTIVE = PERSISTENT_BUNDLES.append("ACTIVE");
+    /** The {@link BootstrapBundlesActivate} service for persistent bundles */
+    ServiceName PERSISTENT_BUNDLES_ACTIVATE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.ACTIVATE);
 
-    /** The service name for the {@link SystemPathsProvider} */
-    ServiceName SYSTEM_PATHS_PROVIDER = INTEGRATION_BASE_NAME.append("SystemPathsProvider");
+    /** The {@link BootstrapBundlesComplete} service for persistent bundles */
+    ServiceName PERSISTENT_BUNDLES_COMPLETE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.COMPLETE);
 
-    /** The service name for the {@link SystemServicesProvider} */
-    ServiceName SYSTEM_SERVICES_PROVIDER = INTEGRATION_BASE_NAME.append("SystemServicesProvider");
+    /** The service name for the {@link SystemPathsPlugin} */
+    ServiceName SYSTEM_PATHS_PLUGIN = INTEGRATION_BASE_NAME.append("SystemPathsPlugin");
+
+    /** The service name for the {@link SystemServicesPlugin} */
+    ServiceName SYSTEM_SERVICES_PLUGIN = INTEGRATION_BASE_NAME.append("SystemServicesPlugin");
+
+    public enum BootstrapPhase {
+
+        INSTALL, RESOLVE, ACTIVATE, COMPLETE;
+
+        public BootstrapPhase previous() {
+            final int ord = ordinal() - 1;
+            final BootstrapPhase[] phases = BootstrapPhase.values();
+            return ord < 0 ? null : phases[ord];
+        }
+
+        public BootstrapPhase next() {
+            final int ord = ordinal() + 1;
+            final BootstrapPhase[] phases = BootstrapPhase.values();
+            return ord == phases.length ? null : phases[ord];
+        }
+
+        public static ServiceName serviceName(ServiceName baseName, BootstrapPhase phase) {
+            return baseName.append(phase.toString());
+        }
+    }
 }

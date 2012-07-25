@@ -39,7 +39,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleInstallHandler;
+import org.jboss.osgi.framework.BundleInstallPlugin;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
@@ -92,19 +92,19 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
 
     @Override
     public String getLocation() {
-        return getCurrentBundleRevision().getLocation();
+        return getBundleRevision().getLocation();
     }
 
     Deployment getDeployment() {
-        return getCurrentBundleRevision().getDeployment();
+        return getBundleRevision().getDeployment();
     }
 
     RevisionContent getFirstContentRoot() {
-        return getCurrentBundleRevision().getRootContent();
+        return getBundleRevision().getRootContent();
     }
 
     List<RevisionContent> getContentRoots() {
-        return getCurrentBundleRevision().getContentList();
+        return getBundleRevision().getContentList();
     }
 
     boolean isSingleton() {
@@ -157,7 +157,7 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
     }
 
     @Override
-    UserBundleRevision getCurrentBundleRevision() {
+    UserBundleRevision getBundleRevision() {
         return revisions.get(0);
     }
 
@@ -168,7 +168,7 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
     }
 
     void clearOldRevisions() {
-        UserBundleRevision rev = getCurrentBundleRevision();
+        UserBundleRevision rev = getBundleRevision();
         revisions.clear();
         revisions.add(rev);
     }
@@ -202,7 +202,7 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
     }
 
     boolean hasActiveWires() {
-        BundleWiring wiring = getCurrentBundleRevision().getWiring();
+        BundleWiring wiring = getBundleRevision().getWiring();
         return wiring != null ? wiring.isInUse() : false;
     }
 
@@ -354,7 +354,7 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
 
         // Remove the revisions from the environment
         ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        UserBundleRevision currentRev = getCurrentBundleRevision();
+        UserBundleRevision currentRev = getBundleRevision();
         for (AbstractBundleRevision brev : getAllBundleRevisions()) {
 
             XEnvironment env = getFrameworkState().getEnvironment();
@@ -364,7 +364,7 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
             if (brev instanceof HostBundleRevision) {
                 HostBundleRevision hostRev = (HostBundleRevision) brev;
                 for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
-                    if (fragRev != fragRev.getBundleState().getCurrentBundleRevision()) {
+                    if (fragRev != fragRev.getBundleState().getBundleRevision()) {
                         env.uninstallResources(fragRev);
                     }
                 }
@@ -390,7 +390,7 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
         headersOnUninstall = getHeaders(null);
 
         // Uninstall through the {@link BundleInstallHandler}
-        BundleInstallHandler installHandler = getCoreServices().getInstallHandler();
+        BundleInstallPlugin installHandler = getCoreServices().getInstallHandler();
         installHandler.uninstallBundle(getDeployment());
     }
 

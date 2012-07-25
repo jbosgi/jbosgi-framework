@@ -21,6 +21,9 @@
  */
 package org.jboss.osgi.framework;
 
+import java.util.Map;
+
+import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoader;
@@ -35,19 +38,32 @@ import org.jboss.osgi.resolver.XResource;
  * @author thomas.diesler@jboss.com
  * @since 20-Apr-2011
  */
-public interface ModuleLoaderProvider extends Service<ModuleLoaderProvider> {
+public interface ModuleLoaderPlugin extends Service<ModuleLoaderPlugin> {
 
     ModuleLoader getModuleLoader();
+
+    ModuleIdentifier getModuleIdentifier(XResource resource, int rev);
+
+    void addIntegrationDependencies(ModuleSpecBuilderContext context);
 
     void addModuleSpec(XResource resource, ModuleSpec moduleSpec);
 
     void addModule(XResource resource, Module module);
 
     ServiceName createModuleService(XResource resource, ModuleIdentifier identifier);
-    
+
     void removeModule(XResource resource, ModuleIdentifier identifier);
 
-    ModuleIdentifier getModuleIdentifier(XResource resource, int revision);
-    
+
     ServiceName getModuleServiceName(ModuleIdentifier identifier);
+
+    interface ModuleSpecBuilderContext {
+
+        XResource getBundleRevision();
+
+        ModuleSpec.Builder getModuleSpecBuilder();
+
+        Map<ModuleIdentifier, DependencySpec> getModuleDependencies();
+    }
+
 }

@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.SYSTEM_PATHS_PROVIDER;
+import static org.jboss.osgi.framework.IntegrationServices.SYSTEM_PATHS_PLUGIN;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 import static org.osgi.framework.Constants.FRAMEWORK_BOOTDELEGATION;
@@ -47,7 +47,7 @@ import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.osgi.framework.SystemPathsProvider;
+import org.jboss.osgi.framework.SystemPathsPlugin;
 
 /**
  * A plugin manages the Framework's system packages.
@@ -55,7 +55,7 @@ import org.jboss.osgi.framework.SystemPathsProvider;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public final class DefaultSystemPathsProvider extends AbstractPluginService<SystemPathsProvider> implements SystemPathsProvider {
+public final class DefaultSystemPathsPlugin extends AbstractPluginService<SystemPathsPlugin> implements SystemPathsPlugin {
 
     private final FrameworkBuilder frameworkBuilder;
     // The derived combination of all system packages
@@ -73,15 +73,15 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
     private PathFilter cachedSystemFilter;
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
-        if (registry.getService(SYSTEM_PATHS_PROVIDER) == null) {
-            SystemPathsProvider service = new DefaultSystemPathsProvider(frameworkBuilder);
-            ServiceBuilder<SystemPathsProvider> builder = serviceTarget.addService(SYSTEM_PATHS_PROVIDER, service);
+        if (registry.getService(SYSTEM_PATHS_PLUGIN) == null) {
+            SystemPathsPlugin service = new DefaultSystemPathsPlugin(frameworkBuilder);
+            ServiceBuilder<SystemPathsPlugin> builder = serviceTarget.addService(SYSTEM_PATHS_PLUGIN, service);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();
         }
     }
 
-    private DefaultSystemPathsProvider(FrameworkBuilder frameworkBuilder) {
+    private DefaultSystemPathsPlugin(FrameworkBuilder frameworkBuilder) {
         this.frameworkBuilder = frameworkBuilder;
     }
 
@@ -90,14 +90,14 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
         super.start(context);
 
         // Initialize the framework packages
-        frameworkPackages.addAll(Arrays.asList(SystemPathsProvider.DEFAULT_FRAMEWORK_PACKAGES));
+        frameworkPackages.addAll(Arrays.asList(SystemPathsPlugin.DEFAULT_FRAMEWORK_PACKAGES));
 
         String systemPackagesProp = (String) frameworkBuilder.getProperty(FRAMEWORK_SYSTEMPACKAGES);
         if (systemPackagesProp != null) {
             systemPackages.addAll(packagesAsList(systemPackagesProp));
         } else {
             // The default system packages
-            systemPackages.addAll(Arrays.asList(SystemPathsProvider.DEFAULT_SYSTEM_PACKAGES));
+            systemPackages.addAll(Arrays.asList(SystemPathsPlugin.DEFAULT_SYSTEM_PACKAGES));
             systemPackages.addAll(frameworkPackages);
         }
 
@@ -120,7 +120,7 @@ public final class DefaultSystemPathsProvider extends AbstractPluginService<Syst
     }
 
     @Override
-    public SystemPathsProvider getValue() {
+    public SystemPathsPlugin getValue() {
         return this;
     }
 

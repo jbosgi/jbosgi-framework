@@ -37,6 +37,7 @@ import java.util.Set;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -44,7 +45,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.IntegrationServices;
-import org.jboss.osgi.framework.ModuleLoaderProvider;
+import org.jboss.osgi.framework.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XCapability;
@@ -74,19 +75,21 @@ import org.osgi.service.resolver.ResolutionException;
  */
 final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
 
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
-    private final InjectedValue<ModuleLoaderProvider> injectedModuleLoader = new InjectedValue<ModuleLoaderProvider>();
+    private final InjectedValue<ModuleLoaderPlugin> injectedModuleLoader = new InjectedValue<ModuleLoaderPlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private XResolver resolver;
 
     static void addService(ServiceTarget serviceTarget) {
         ResolverPlugin service = new ResolverPlugin();
         ServiceBuilder<ResolverPlugin> builder = serviceTarget.addService(InternalServices.RESOLVER_PLUGIN, service);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
-        builder.addDependency(IntegrationServices.MODULE_LOADER_PROVIDER, ModuleLoaderProvider.class, service.injectedModuleLoader);
+        builder.addDependency(IntegrationServices.MODULE_LOADER_PLUGIN, ModuleLoaderPlugin.class, service.injectedModuleLoader);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -261,7 +264,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
 
     private void createModuleServices(Map<Resource, List<Wire>> wiremap) {
         ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
-        ModuleLoaderProvider moduleLoader = injectedModuleLoader.getValue();
+        ModuleLoaderPlugin moduleLoader = injectedModuleLoader.getValue();
         for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
             XResource res = (XResource) entry.getKey();
             Bundle bundle = res.getAttachment(Bundle.class);
@@ -273,11 +276,15 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
     }
 
     private void setBundleToResolved(Map<Resource, List<Wire>> wiremap) {
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
             if (entry.getKey() instanceof AbstractBundleRevision) {
                 AbstractBundleRevision brev = (AbstractBundleRevision) entry.getKey();
                 AbstractBundleState bundleState = brev.getBundleState();
                 bundleState.changeState(Bundle.RESOLVED);
+                // Activate the service that represents bundle state RESOLVED
+                ServiceName serviceName = bundleState.getServiceName(Bundle.RESOLVED);
+                bundleManager.setServiceMode(serviceName, Mode.ACTIVE);
             }
         }
     }

@@ -30,12 +30,11 @@ import java.util.Collections;
 import java.util.List;
 
 import org.jboss.modules.Module;
-import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.FrameworkModuleProvider;
+import org.jboss.osgi.framework.FrameworkModulePlugin;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.TypeAdaptor;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -49,13 +48,13 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class SystemBundleState extends AbstractBundleState implements TypeAdaptor {
+final class SystemBundleState extends AbstractBundleState {
 
-    private final FrameworkModuleProvider frameworkModuleProvider;
+    private final FrameworkModulePlugin frameworkModuleProvider;
     private InternalStorageState storageState;
     private SystemBundleRevision revision;
 
-    SystemBundleState(FrameworkState frameworkState, FrameworkModuleProvider frameworkModuleProvider) {
+    SystemBundleState(FrameworkState frameworkState, FrameworkModulePlugin frameworkModuleProvider) {
         super(frameworkState, 0, Constants.SYSTEM_BUNDLE_SYMBOLICNAME);
         this.frameworkModuleProvider = frameworkModuleProvider;
     }
@@ -112,7 +111,7 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
     }
 
     @Override
-    SystemBundleRevision getCurrentBundleRevision() {
+    SystemBundleRevision getBundleRevision() {
         return revision;
     }
 
@@ -124,11 +123,13 @@ final class SystemBundleState extends AbstractBundleState implements TypeAdaptor
     @Override
     @SuppressWarnings("unchecked")
     public <T> T adapt(Class<T> type) {
-        T result = null;
-        if (type.isAssignableFrom(ServiceContainer.class)) {
-            result = (T) getBundleManager().getServiceContainer();
-        } else if (type.isAssignableFrom(XEnvironment.class)) {
-            result = (T) getFrameworkState().getEnvironment();
+        T result = super.adapt(type);
+        if (result == null) {
+            if (type.isAssignableFrom(BundleManager.class)) {
+                result = (T) getBundleManager();
+            } else if (type.isAssignableFrom(XEnvironment.class)) {
+                result = (T) getFrameworkState().getEnvironment();
+            }
         }
         return result;
     }

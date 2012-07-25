@@ -22,7 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.Constants.JBOSGI_PREFIX;
-import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PROVIDER;
+import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PLUGIN;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
@@ -45,9 +45,9 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.service.ValueService;
 import org.jboss.msc.value.ImmediateValue;
-import org.jboss.osgi.framework.ModuleLoaderProvider;
-import org.jboss.osgi.resolver.XIdentityCapability;
+import org.jboss.osgi.framework.ModuleLoaderPlugin;
 import org.jboss.osgi.resolver.XResource;
+import org.osgi.framework.Bundle;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -55,22 +55,22 @@ import org.jboss.osgi.resolver.XResource;
  * @author thomas.diesler@jboss.com
  * @since 20-Apr-2011
  */
-final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLoaderProvider {
+final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoaderPlugin {
 
     private Map<ModuleIdentifier, ModuleHolder> moduleSpecs = new ConcurrentHashMap<ModuleIdentifier, ModuleHolder>();
     private ServiceRegistry serviceRegistry;
     private ServiceTarget serviceTarget;
 
     static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(MODULE_LOADER_PROVIDER) == null) {
-            ModuleLoaderProvider service = new DefaultModuleLoaderProvider();
-            ServiceBuilder<ModuleLoaderProvider> builder = serviceTarget.addService(MODULE_LOADER_PROVIDER, service);
+        if (registry.getService(MODULE_LOADER_PLUGIN) == null) {
+            ModuleLoaderPlugin service = new DefaultModuleLoaderPlugin();
+            ServiceBuilder<ModuleLoaderPlugin> builder = serviceTarget.addService(MODULE_LOADER_PLUGIN, service);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();
         }
     }
 
-    private DefaultModuleLoaderProvider() {
+    private DefaultModuleLoaderPlugin() {
     }
 
     @Override
@@ -86,7 +86,7 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
     }
 
     @Override
-    public ModuleLoaderProvider getValue() {
+    public ModuleLoaderPlugin getValue() {
         return this;
     }
 
@@ -117,10 +117,19 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
 
     @Override
     public ModuleIdentifier getModuleIdentifier(XResource resource, int rev) {
-        XIdentityCapability icap = resource.getIdentityCapability();
-        String name = icap.getSymbolicName();
-        String slot = icap.getVersion() + (rev > 0 ? "-rev" + rev : "");
-        return ModuleIdentifier.create(JBOSGI_PREFIX + "." + name, slot);
+        Bundle bundle = resource.getAttachment(Bundle.class);
+        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        String name = bundleState.getSymbolicName();
+        if (rev > 0) {
+            name += "-rev" + rev;
+        }
+        String version = "" + bundle.getVersion().toString();
+        return ModuleIdentifier.create(JBOSGI_PREFIX + "." + name, version);
+    }
+
+    @Override
+    public void addIntegrationDependencies(ModuleSpecBuilderContext context) {
+        // do nothing
     }
 
     @Override
@@ -184,14 +193,14 @@ final class DefaultModuleLoaderProvider extends ModuleLoader implements ModuleLo
         return moduleServiceName;
     }
 
-    
+
     public ServiceName getModuleServiceName(ModuleIdentifier identifier) {
         return InternalServices.MODULE_SERVICE.append(identifier.getName()).append(identifier.getSlot());
     }
 
     @Override
     public String toString() {
-        return DefaultModuleLoaderProvider.class.getSimpleName();
+        return DefaultModuleLoaderPlugin.class.getSimpleName();
     }
 
     static class ModuleHolder {

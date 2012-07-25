@@ -63,8 +63,8 @@ final class FragmentBundleState extends UserBundleState {
     }
 
     @Override
-    FragmentBundleRevision getCurrentBundleRevision() {
-        return (FragmentBundleRevision) super.getCurrentBundleRevision();
+    FragmentBundleRevision getBundleRevision() {
+        return (FragmentBundleRevision) super.getBundleRevision();
     }
 
     @Override

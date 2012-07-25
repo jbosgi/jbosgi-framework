@@ -37,6 +37,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.Resource;
+import org.jboss.osgi.framework.SystemPathsPlugin;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -59,6 +60,7 @@ final class FallbackLoader implements LocalLoader {
     private final HostBundleRevision hostRev;
     private final ModuleIdentifier identifier;
     private final Set<String> importedPaths;
+    private final FrameworkState frameworkState;
     private final BundleManagerPlugin bundleManager;
     private final ModuleManagerPlugin moduleManager;
 
@@ -71,7 +73,8 @@ final class FallbackLoader implements LocalLoader {
         this.hostRev = hostRev;
         this.hostBundle = hostRev.getBundleState();
         this.bundleManager = hostBundle.getBundleManager();
-        this.moduleManager = hostBundle.getFrameworkState().getModuleManagerPlugin();
+        this.frameworkState = hostBundle.getFrameworkState();
+        this.moduleManager = frameworkState.getModuleManagerPlugin();
     }
 
     @Override
@@ -156,6 +159,10 @@ final class FallbackLoader implements LocalLoader {
                 module = findInUnresolvedModules(resName, matchingPatterns);
                 if (module != null && module.getIdentifier().equals(identifier) == false)
                     return module;
+
+                module = findInFrameworkModule(resName, matchingPatterns);
+                if (module != null && module.getIdentifier().equals(identifier) == false)
+                    return module;
             }
         } finally {
             if (removeThreadLocalMapping == true) {
@@ -208,14 +215,27 @@ final class FallbackLoader implements LocalLoader {
 
     private Module findInResolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
         LOGGER.tracef("Attempt to find path dynamically in resolved modules ...");
-        for (XPackageRequirement pkgreq : matchingPatterns) {
-            for (Bundle bundle : bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE)) {
-                AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-                if (bundleState.isResolved() && !bundleState.isFragment()) {
-                    ModuleIdentifier identifier = bundleState.getModuleIdentifier();
-                    Module candidate = moduleManager.getModule(identifier);
-                    if (isValidCandidate(resName, pkgreq, candidate))
-                        return candidate;
+        Set<Bundle> resolved = bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE);
+        LOGGER.tracef("Resolved modules: %d", resolved.size());
+        if (LOGGER.isTraceEnabled()) {
+            for (Bundle bundle : resolved)
+                LOGGER.tracef("   %s", bundle);
+        }
+        if (!resolved.isEmpty()) {
+            for (XPackageRequirement pkgreq : matchingPatterns) {
+                for (Bundle bundle : resolved) {
+                    if (!(bundle instanceof AbstractBundleState)) {
+                        LOGGER.tracef("Ignore invalid bundle type: %s", bundle);
+                        continue;
+                    }
+                    AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+                    AbstractBundleRevision brev = bundleState.getBundleRevision();
+                    if (bundle.getBundleId() > 0 && !brev.isFragment()) {
+                        ModuleIdentifier identifier = moduleManager.getModuleIdentifier(brev);
+                        Module candidate = moduleManager.getModule(identifier);
+                        if (isValidCandidate(resName, pkgreq, brev, candidate))
+                            return candidate;
+                    }
                 }
             }
         }
@@ -224,16 +244,33 @@ final class FallbackLoader implements LocalLoader {
 
     private Module findInUnresolvedModules(String resName, List<XPackageRequirement> matchingPatterns) {
         LOGGER.tracef("Attempt to find path dynamically in unresolved modules ...");
-        for (Bundle bundle : bundleManager.getBundles()) {
-            if (bundle.getState() == Bundle.INSTALLED) {
-                AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-                bundleState.ensureResolved(false);
+        Set<Bundle> unresolved = bundleManager.getBundles(Bundle.INSTALLED);
+        LOGGER.tracef("Unresolved modules: %d", unresolved.size());
+        if (LOGGER.isTraceEnabled()) {
+            for (Bundle bundle : unresolved)
+                LOGGER.tracef("   %s", bundle);
+        }
+        for (Bundle bundle : unresolved) {
+            if (!(bundle instanceof AbstractBundleState)) {
+                LOGGER.tracef("Ignore invalid bundle type: %s", bundle);
+                continue;
             }
+            LOGGER.tracef("Attempt to resolve: %s", bundle);
+            AbstractBundleState.assertBundleState(bundle).ensureResolved(false);
         }
         return findInResolvedModules(resName, matchingPatterns);
     }
 
-    private boolean isValidCandidate(String resName, XPackageRequirement pkgreq, Module candidate) {
+    private Module findInFrameworkModule(String resName, List<XPackageRequirement> matchingPatterns) {
+        LOGGER.tracef("Attempt to find path dynamically in framework module ...");
+        int lastIndex = resName.lastIndexOf('/');
+        String pathName = lastIndex > 0 ? resName.substring(0, lastIndex) : resName;
+        Module candidate = moduleManager.getFrameworkModule();
+        SystemPathsPlugin systemPaths = frameworkState.getSystemPathsPlugin();
+        return systemPaths.getSystemPaths().contains(pathName) ? candidate : null;
+    }
+
+    private boolean isValidCandidate(String resName, XPackageRequirement pkgreq, BundleRevision brev, Module candidate) {
 
         if (candidate == null)
             return false;
@@ -248,8 +285,6 @@ final class FallbackLoader implements LocalLoader {
         if (resURL == null)
             return false;
 
-        LOGGER.tracef("Found path [%s] in %s", resName, candidate);
-        BundleRevision brev = moduleManager.getBundleRevision(candidateId);
         XPackageCapability candidateCap = getCandidateCapability(brev, pkgreq);
         return (candidateCap != null);
     }

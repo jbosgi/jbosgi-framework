@@ -35,6 +35,7 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.wiring.BundleRevision;
@@ -56,27 +57,26 @@ import org.osgi.service.resolver.ResolutionException;
  *                 +---{@link LifecycleInterceptorPlugin}
  *                 +---{@link PackageAdminPlugin}
  *                 +---{@link StartLevelPlugin}
- *                 +---{@link DefaultSystemServicesProvider}
+ *                 +---{@link DefaultSystemServicesPlugin}
  *                 +---{@link URLHandlerPlugin}
- *                 +---{@link DefaultBundleInstallHandler}
+ *                 +---{@link DefaultBundleInstallPlugin}
  *                     +---{@link FrameworkCreate}
- *                         +---{@link StorageStateProviderPlugin}
+ *                         +---{@link DefaultStorageStatePlugin}
  *                         +---{@link DeploymentFactoryPlugin}
  *                         +---{@link ResolverPlugin}
  *                         |   +---{@link NativeCodePlugin}
  *                         +---{@link ServiceManagerPlugin}
  *                             +---{@link ModuleManagerPlugin}
- *                             |   +---{@link DefaultModuleLoaderProvider}
+ *                             |   +---{@link DefaultModuleLoaderPlugin}
  *                             +---{@link FrameworkEventsPlugin}
  *                                 +---{@link SystemContextService}
  *                                     +---{@link SystemBundleService}
- *                                         +---{@link DefaultFrameworkModuleProvider}
- *                                         |   +---{@link DefaultSystemPathsProvider}
+ *                                         +---{@link DefaultFrameworkModulePlugin}
+ *                                         |   +---{@link DefaultSystemPathsPlugin}
  *                                         +---{@link BundleStoragePlugin}
  *                                             +---{@link BundleManagerPlugin}
  *                                                 +---{@link EnvironmentPlugin}
  * </code>
- *
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
@@ -84,20 +84,14 @@ import org.osgi.service.resolver.ResolutionException;
 public final class FrameworkActive extends AbstractFrameworkService {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
-    private final InjectedValue<StartLevelPlugin> injectedStartLevel = new InjectedValue<StartLevelPlugin>();
-    private final InjectedValue<ResolverPlugin> injectedResolverPlugin = new InjectedValue<ResolverPlugin>();
-    private final InjectedValue<FrameworkEventsPlugin> injectedEventsPlugin = new InjectedValue<FrameworkEventsPlugin>();
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
 
-    static void addService(ServiceTarget serviceTarget, Mode initialMode) {
+    static void addService(ServiceTarget serviceTarget) {
         FrameworkActive service = new FrameworkActive();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-        builder.addDependency(InternalServices.RESOLVER_PLUGIN, ResolverPlugin.class, service.injectedResolverPlugin);
-        builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedEventsPlugin);
-        builder.addDependency(Services.START_LEVEL, StartLevelPlugin.class, service.injectedStartLevel);
         builder.addDependency(Services.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
-        builder.setInitialMode(initialMode);
+        builder.setInitialMode(Mode.LAZY);
         builder.install();
     }
 
@@ -124,23 +118,23 @@ public final class FrameworkActive extends AbstractFrameworkService {
         super.start(context);
         try {
             // Resolve the system bundle
-            ResolverPlugin resolverPlugin = injectedResolverPlugin.getValue();
-            BundleRevision sysrev = getSystemBundle().getCurrentBundleRevision();
+            ResolverPlugin resolverPlugin = getValue().getResolverPlugin();
+            BundleRevision sysrev = getSystemBundle().getBundleRevision();
             resolverPlugin.resolveAndApply(Collections.singleton(sysrev), null);
 
             // This Framework's state is set to ACTIVE
             getSystemBundle().changeState(Bundle.ACTIVE);
 
             // Increase to initial start level
-            StartLevelPlugin startLevel = injectedStartLevel.getValue();
-            startLevel.increaseStartLevel(startLevel.getBeginningStartLevel());
+            StartLevelPlugin startLevelPlugin = getValue().getCoreServices().getStartLevel();
+            startLevelPlugin.increaseStartLevel(getBeginningStartLevel());
 
             // Mark Framework as active in the bundle manager
             BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
             bundleManager.injectedFrameworkActive.inject(Boolean.TRUE);
 
             // A framework event of type STARTED is fired
-            FrameworkEventsPlugin eventsPlugin = injectedEventsPlugin.getValue();
+            FrameworkEventsPlugin eventsPlugin = getValue().getFrameworkEventsPlugin();
             eventsPlugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
 
             LOGGER.infoFrameworkStarted();
@@ -159,5 +153,17 @@ public final class FrameworkActive extends AbstractFrameworkService {
     @Override
     public FrameworkState getValue() {
         return injectedFramework.getValue();
+    }
+
+    private int getBeginningStartLevel() {
+        String levelSpec = (String) getBundleManager().getProperty(Constants.FRAMEWORK_BEGINNING_STARTLEVEL);
+        if (levelSpec != null) {
+            try {
+                return Integer.parseInt(levelSpec);
+            } catch (NumberFormatException nfe) {
+                LOGGER.errorInvalidBeginningStartLevel(levelSpec);
+            }
+        }
+        return 1;
     }
 }

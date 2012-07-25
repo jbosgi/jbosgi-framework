@@ -21,16 +21,18 @@
  */
 package org.jboss.osgi.framework;
 
+import org.jboss.modules.Module;
 import org.jboss.msc.service.Service;
-import org.osgi.framework.BundleContext;
+import org.osgi.framework.Bundle;
 
 /**
- * A service that registers additional system services.
+ * The framework module provider.
  *
  * @author thomas.diesler@jboss.com
  * @since 25-Mar-2011
  */
-public interface SystemServicesProvider extends Service<SystemServicesProvider> {
+public interface FrameworkModulePlugin extends Service<FrameworkModulePlugin> {
 
-    void registerSystemServices(BundleContext context);
+    Module getFrameworkModule(Bundle systemBundle);
+
 }

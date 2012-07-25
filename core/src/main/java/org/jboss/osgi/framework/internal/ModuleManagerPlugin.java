@@ -27,6 +27,7 @@ import static org.osgi.framework.Constants.VISIBILITY_REEXPORT;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,6 +41,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
+import org.jboss.modules.ModuleSpec.Builder;
 import org.jboss.modules.ResourceLoader;
 import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.modules.filter.ClassFilter;
@@ -52,9 +54,9 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.IntegrationServices;
-import org.jboss.osgi.framework.ModuleLoaderProvider;
+import org.jboss.osgi.framework.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.SystemPathsProvider;
+import org.jboss.osgi.framework.SystemPathsPlugin;
 import org.jboss.osgi.framework.internal.NativeCodePlugin.BundleNativeLibraryProvider;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.NativeLibrary;
@@ -82,8 +84,8 @@ import org.osgi.resource.Wire;
 final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
-    private final InjectedValue<SystemPathsProvider> injectedSystemPaths = new InjectedValue<SystemPathsProvider>();
-    private final InjectedValue<ModuleLoaderProvider> injectedModuleLoader = new InjectedValue<ModuleLoaderProvider>();
+    private final InjectedValue<SystemPathsPlugin> injectedSystemPaths = new InjectedValue<SystemPathsPlugin>();
+    private final InjectedValue<ModuleLoaderPlugin> injectedModuleLoader = new InjectedValue<ModuleLoaderPlugin>();
 
     private Map<ModuleIdentifier, BundleRevision> modules = new ConcurrentHashMap<ModuleIdentifier, BundleRevision>();
 
@@ -91,8 +93,8 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         ModuleManagerPlugin service = new ModuleManagerPlugin();
         ServiceBuilder<ModuleManagerPlugin> builder = serviceTarget.addService(InternalServices.MODULE_MANGER_PLUGIN, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-        builder.addDependency(IntegrationServices.MODULE_LOADER_PROVIDER, ModuleLoaderProvider.class, service.injectedModuleLoader);
-        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PROVIDER, SystemPathsProvider.class, service.injectedSystemPaths);
+        builder.addDependency(IntegrationServices.MODULE_LOADER_PLUGIN, ModuleLoaderPlugin.class, service.injectedModuleLoader);
+        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, service.injectedSystemPaths);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -105,12 +107,12 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         return this;
     }
 
-    ModuleLoaderProvider getModuleLoaderIntegration() {
+    ModuleLoaderPlugin getModuleLoaderPlugin() {
         return injectedModuleLoader.getValue();
     }
 
     ModuleLoader getModuleLoader() {
-        return getModuleLoaderIntegration().getModuleLoader();
+        return getModuleLoaderPlugin().getModuleLoader();
     }
 
     ModuleIdentifier getModuleIdentifier(final XResource res) {
@@ -129,7 +131,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             identifier = getFrameworkModule().getIdentifier();
         } else {
             int revision = (res instanceof AbstractBundleRevision ? ((AbstractBundleRevision)res).getRevisionId() : 0);
-            identifier = getModuleLoaderIntegration().getModuleIdentifier(res, revision);
+            identifier = getModuleLoaderPlugin().getModuleIdentifier(res, revision);
         }
 
         res.addAttachment(ModuleIdentifier.class, identifier);
@@ -183,7 +185,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
         Module module = res.getAttachment(Module.class);
         if (module != null) {
-            getModuleLoaderIntegration().addModule(res, module);
+            getModuleLoaderPlugin().addModule(res, module);
             return module.getIdentifier();
         }
 
@@ -195,7 +197,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             HostBundleRevision hostRev = HostBundleRevision.assertHostRevision(res);
             identifier = createHostModule(hostRev, wires);
         }
-        
+
         res.addAttachment(ModuleIdentifier.class, identifier);
         return identifier;
     }
@@ -208,16 +210,16 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         HostBundleState hostBundle = hostRev.getBundleState();
         List<RevisionContent> contentRoots = hostBundle.getContentRoots();
 
-        ModuleIdentifier identifier = getModuleIdentifier(hostRev);
-        ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
-        List<DependencySpec> moduleDependencies = new ArrayList<DependencySpec>();
+        final ModuleIdentifier identifier = getModuleIdentifier(hostRev);
+        final ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
+        final Map<ModuleIdentifier, DependencySpec> moduleDependencies = new LinkedHashMap<ModuleIdentifier, DependencySpec>();
 
         // Add a system dependency
-        SystemPathsProvider plugin = injectedSystemPaths.getValue();
+        SystemPathsPlugin plugin = injectedSystemPaths.getValue();
         Set<String> bootPaths = plugin.getBootDelegationPaths();
         PathFilter bootFilter = plugin.getBootDelegationFilter();
         PathFilter acceptAll = PathFilters.acceptAll();
-        moduleDependencies.add(DependencySpec.createSystemDependencySpec(bootFilter, acceptAll, bootPaths));
+        specBuilder.addDependency(DependencySpec.createSystemDependencySpec(bootFilter, acceptAll, bootPaths));
 
         // Map the dependency for (the likely) case that the same exporter is choosen for multiple wires
         Map<XResource, ModuleDependencyHolder> specHolderMap = new LinkedHashMap<XResource, ModuleDependencyHolder>();
@@ -230,10 +232,10 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
         // Add the holder values to dependencies
         for (ModuleDependencyHolder holder : specHolderMap.values())
-            moduleDependencies.add(holder.create());
+            moduleDependencies.put(holder.identifier, holder.create());
 
         // Add the module dependencies to the builder
-        for (DependencySpec dep : moduleDependencies)
+        for (DependencySpec dep : moduleDependencies.values())
             specBuilder.addDependency(dep);
 
         // Add resource roots the local bundle content
@@ -293,11 +295,29 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         specBuilder.setModuleClassLoaderFactory(new HostBundleClassLoader.Factory(hostBundle, lazyActivationFilter));
         specBuilder.setFallbackLoader(new FallbackLoader(hostRev, identifier, importedPaths));
 
-        // Build the ModuleSpec
-        ModuleSpec moduleSpec = specBuilder.create();
+        ModuleLoaderPlugin.ModuleSpecBuilderContext context = new ModuleLoaderPlugin.ModuleSpecBuilderContext() {
 
-        modules.put(identifier, hostRev);
-        getModuleLoaderIntegration().addModuleSpec(hostRev, moduleSpec);
+            @Override
+            public XResource getBundleRevision() {
+                return hostRev;
+            }
+
+            @Override
+            public Builder getModuleSpecBuilder() {
+                return specBuilder;
+            }
+
+            @Override
+            public Map<ModuleIdentifier, DependencySpec> getModuleDependencies() {
+                return Collections.unmodifiableMap(moduleDependencies);
+            }
+        };
+
+        // Add integration dependencies, build the spec and add it to the module loader
+        ModuleLoaderPlugin moduleLoaderPlugin = getModuleLoaderPlugin();
+        moduleLoaderPlugin.addIntegrationDependencies(context);
+        moduleLoaderPlugin.addModuleSpec(hostRev, specBuilder.create());
+
         return identifier;
     }
 
@@ -513,10 +533,10 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
      */
     void removeModule(UserBundleRevision userRev, ModuleIdentifier identifier) {
         modules.remove(identifier);
-        getModuleLoaderIntegration().removeModule(userRev, identifier);
+        getModuleLoaderPlugin().removeModule(userRev, identifier);
     }
 
-    private Module getFrameworkModule() {
+    Module getFrameworkModule() {
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         return bundleManager.getSystemBundle().getFrameworkModule();
     }

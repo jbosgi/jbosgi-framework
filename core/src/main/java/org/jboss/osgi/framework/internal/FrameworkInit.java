@@ -21,12 +21,10 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_ACTIVE;
-import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_INSTALLED;
-import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_RESOLVED;
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_ACTIVE;
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_INSTALLED;
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_RESOLVED;
+import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE;
+import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL;
+import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_COMPLETE;
+import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_INSTALL;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import org.jboss.msc.service.ServiceBuilder;
@@ -54,10 +52,10 @@ public final class FrameworkInit extends AbstractFrameworkService {
         FrameworkInit service = new FrameworkInit();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_INIT, service);
         builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
-        builder.addDependencies(BOOTSTRAP_BUNDLES_INSTALLED, BOOTSTRAP_BUNDLES_RESOLVED, BOOTSTRAP_BUNDLES_ACTIVE);
-        builder.addDependencies(PERSISTENT_BUNDLES_INSTALLED, PERSISTENT_BUNDLES_RESOLVED, PERSISTENT_BUNDLES_ACTIVE);
         builder.addDependencies(InternalServices.FRAMEWORK_CORE_SERVICES);
-        builder.setInitialMode(Mode.ON_DEMAND);
+        builder.addDependencies(BOOTSTRAP_BUNDLES_INSTALL, BOOTSTRAP_BUNDLES_COMPLETE);
+        builder.addDependencies(PERSISTENT_BUNDLES_INSTALL, PERSISTENT_BUNDLES_COMPLETE);
+        builder.setInitialMode(Mode.PASSIVE);
         builder.install();
     }
 

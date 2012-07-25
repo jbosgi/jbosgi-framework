@@ -47,9 +47,11 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FutureServiceValue;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.TypeAdaptor;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -68,7 +70,7 @@ import org.osgi.framework.launch.Framework;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class FrameworkProxy implements Framework {
+final class FrameworkProxy implements Framework, TypeAdaptor {
 
     private final AtomicInteger proxyState;
     private final FrameworkBuilder frameworkBuilder;
@@ -104,6 +106,20 @@ final class FrameworkProxy implements Framework {
     @Override
     public Version getVersion() {
         return Version.emptyVersion;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T adapt(Class<T> type) {
+        BundleManagerPlugin bundleManager = frameworkState != null ? frameworkState.getBundleManager() : null;
+        if (bundleManager != null) {
+            if (type.isAssignableFrom(BundleManager.class)) {
+                return (T) bundleManager;
+            } else if (type.isAssignableFrom(ServiceContainer.class)) {
+                return (T) bundleManager.getServiceContainer();
+            }
+        }
+        return null;
     }
 
     /**
@@ -154,6 +170,9 @@ final class FrameworkProxy implements Framework {
                 serviceTarget = serviceContainer.subTarget();
 
             frameworkBuilder.createFrameworkServicesInternal(serviceContainer, serviceTarget, firstInit);
+            DefaultBootstrapBundlesInstall.addService(serviceTarget);
+            DefaultPersistentBundlesInstall.addService(serviceTarget);
+
             proxyState.set(Bundle.STARTING);
             frameworkState = awaitFrameworkInit();
             firstInit = false;
@@ -232,7 +251,7 @@ final class FrameworkProxy implements Framework {
             return;
 
         LOGGER.debugf("stop framework");
-        
+
         FrameworkCoreServices coreServices = frameworkState.getCoreServices();
         SystemBundleState systemBundle = frameworkState.getSystemBundle();
 
@@ -255,8 +274,7 @@ final class FrameworkProxy implements Framework {
                     } catch (Exception ex) {
                         // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then
                         // published as a framework event of type FrameworkEvent.ERROR
-                        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-                        bundleManager.fireFrameworkError(bundleState, "stopping bundle", ex);
+                        bundleManager.fireFrameworkError(bundle, "stopping bundle", ex);
                     }
                 }
             }
