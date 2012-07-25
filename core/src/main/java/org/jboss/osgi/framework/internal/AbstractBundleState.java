@@ -136,8 +136,6 @@ abstract class AbstractBundleState implements Bundle, TypeAdaptor {
             result = (T) getOSGiMetaData();
         } else if (type.isAssignableFrom(StorageState.class)) {
             result = (T) getStorageState();
-        } else if (type.isAssignableFrom(ServiceName.class)) {
-            result = (T) getServiceName(INSTALLED);
         }
         return result;
     }
@@ -154,7 +152,9 @@ abstract class AbstractBundleState implements Bundle, TypeAdaptor {
 
     abstract boolean isSingleton();
 
-    abstract InternalStorageState getStorageState();
+    InternalStorageState getStorageState() {
+        return getBundleRevision().getStorageState();
+    }
 
     ModuleIdentifier getModuleIdentifier() {
         return getBundleRevision().getModuleIdentifier();

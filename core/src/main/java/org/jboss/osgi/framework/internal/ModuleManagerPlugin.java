@@ -57,6 +57,7 @@ import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModulePlugin;
 import org.jboss.osgi.framework.IntegrationServices;
 import org.jboss.osgi.framework.ModuleLoaderPlugin;
+import org.jboss.osgi.framework.ModuleLoaderPlugin.ModuleSpecBuilderContext;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemPathsPlugin;
 import org.jboss.osgi.framework.internal.NativeCodePlugin.BundleNativeLibraryProvider;
@@ -198,9 +199,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         if (module != null) {
             ModuleIdentifier identifier = module.getIdentifier();
             ModuleLoaderPlugin moduleLoaderPlugin = getModuleLoaderPlugin();
-            if (moduleLoaderPlugin.getModule(identifier) == null) {
-                moduleLoaderPlugin.addModule(res, module);
-            }
+            moduleLoaderPlugin.addModule(res, module);
             return identifier;
         }
 
@@ -213,7 +212,6 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
             identifier = createHostModule(hostRev, wires);
         }
 
-        res.addAttachment(ModuleIdentifier.class, identifier);
         return identifier;
     }
 
@@ -313,7 +311,7 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
         specBuilder.setModuleClassLoaderFactory(new HostBundleClassLoader.Factory(hostBundle, lazyActivationFilter));
         specBuilder.setFallbackLoader(new FallbackLoader(hostRev, identifier, importedPaths));
 
-        ModuleLoaderPlugin.ModuleSpecBuilderContext context = new ModuleLoaderPlugin.ModuleSpecBuilderContext() {
+        ModuleSpecBuilderContext context = new ModuleSpecBuilderContext() {
 
             @Override
             public XResource getBundleRevision() {

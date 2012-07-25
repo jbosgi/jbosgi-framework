@@ -27,6 +27,7 @@ import java.util.Enumeration;
 
 import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -40,8 +41,8 @@ import org.osgi.framework.Constants;
  */
 final class SystemBundleRevision extends AbstractBundleRevision {
 
-    SystemBundleRevision(SystemBundleState bundleState, OSGiMetaData metadata) throws BundleException {
-        super(bundleState, metadata, 0);
+    SystemBundleRevision(SystemBundleState bundleState, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
+        super(bundleState, metadata, storageState);
     }
 
     @Override

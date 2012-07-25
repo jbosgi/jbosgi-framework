@@ -33,10 +33,12 @@ import java.util.List;
 import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.BundleException;
+import org.osgi.resource.Resource;
 
 /**
  * An abstract bundle revision that is based on a user {@link Deployment}.
@@ -48,12 +50,11 @@ import org.osgi.framework.BundleException;
 abstract class UserBundleRevision extends AbstractBundleRevision {
 
     private final Deployment deployment;
-    private List<RevisionContent> contentList;
     private final EntriesProvider entriesProvider;
+    private final List<RevisionContent> contentList;
 
     UserBundleRevision(UserBundleState userBundle, Deployment dep) throws BundleException {
-        super(userBundle, getOSGiMetaData(dep), getRevisionId(dep));
-
+        super(userBundle, getOSGiMetaData(dep), getStorageState(dep));
         this.deployment = dep;
 
         if (dep.getRoot() != null) {
@@ -67,14 +68,22 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
         }
     }
 
+    /**
+     * Assert that the given resource is an instance of {@link UserBundleRevision}
+     */
+    static UserBundleRevision assertBundleRevision(Resource resource) {
+        assert resource instanceof UserBundleRevision : "Not an UserBundleRevision: " + resource;
+        return (UserBundleRevision) resource;
+    }
+
     private static OSGiMetaData getOSGiMetaData(Deployment dep) {
         return dep.getAttachment(OSGiMetaData.class);
     }
 
-    private static int getRevisionId(Deployment dep) {
-        StorageState storageState = dep.getAttachment(StorageState.class);
-        return storageState.getRevisionId();
+    private static InternalStorageState getStorageState(Deployment dep) {
+        return (InternalStorageState) dep.getAttachment(StorageState.class);
     }
+
 
     Deployment getDeployment() {
         return deployment;
@@ -118,7 +127,9 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
         return null;
     }
 
+    @Override
     void close() {
+        super.close();
         for (RevisionContent aux : contentList) {
             aux.close();
         }
@@ -172,4 +183,5 @@ abstract class UserBundleRevision extends AbstractBundleRevision {
         }
         return Collections.unmodifiableList(rootList);
     }
+
 }

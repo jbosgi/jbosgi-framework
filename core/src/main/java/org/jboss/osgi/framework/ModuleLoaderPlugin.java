@@ -50,8 +50,6 @@ public interface ModuleLoaderPlugin extends Service<ModuleLoaderPlugin> {
 
     void addModule(XResource resource, Module module);
 
-    Module getModule(ModuleIdentifier identifier);
-
     void removeModule(XResource resource, ModuleIdentifier identifier);
 
     ServiceName getModuleServiceName(ModuleIdentifier identifier);

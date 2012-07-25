@@ -134,7 +134,7 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
         return storageState;
     }
 
-    void deleteStorageState(InternalStorageState storageState) {
+    void deleteStorageState(StorageState storageState) {
         VFSUtils.safeClose(storageState.getRootFile());
         deleteRecursive(storageState.getStorageDir());
         synchronized (storageStates) {

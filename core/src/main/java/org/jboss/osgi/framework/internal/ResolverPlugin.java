@@ -257,7 +257,8 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> {
             XResource res = (XResource) entry.getKey();
             if (res.isFragment() == false) {
                 List<Wire> wires = wiremap.get(res);
-                moduleManager.addModule(res, wires);
+                ModuleIdentifier identifier = moduleManager.addModule(res, wires);
+                res.addAttachment(ModuleIdentifier.class, identifier);
             }
         }
     }

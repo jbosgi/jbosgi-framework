@@ -128,16 +128,8 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
         if (rev > 0) {
             name += "-rev" + rev;
         }
-        String version = "" + bundle.getVersion().toString();
-        return ModuleIdentifier.create(JBOSGI_PREFIX + "." + name, version);
-    }
-
-    @Override
-    public Module getModule(ModuleIdentifier identifier) {
-        final ModuleHolder moduleHolder = moduleSpecs.get(identifier);
-        final Module result = moduleHolder != null ? moduleHolder.getModule() : null;
-        LOGGER.tracef("getModule: %s => %s", identifier, result);
-        return result;
+        String slot = bundle.getVersion().toString();
+        return ModuleIdentifier.create(JBOSGI_PREFIX + "." + name, slot);
     }
 
     @Override

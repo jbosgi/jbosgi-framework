@@ -34,12 +34,14 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.ResourceBuilderException;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XIdentityCapability;
 import org.jboss.osgi.resolver.XResourceBuilderFactory;
 import org.jboss.osgi.resolver.spi.AbstractResource;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
@@ -62,19 +64,20 @@ import org.osgi.resource.Wiring;
  */
 abstract class AbstractBundleRevision extends AbstractResource implements BundleRevision {
 
-    private final int revision;
     private final AbstractBundleState bundleState;
     private final OSGiMetaData metadata;
+    private final InternalStorageState storageState;
     private Map<String, List<BundleCapability>> bundleCapabilities;
     private Map<String, List<BundleRequirement>> bundleRequirements;
 
-    AbstractBundleRevision(AbstractBundleState bundleState, OSGiMetaData metadata, int revision) throws BundleException {
+    AbstractBundleRevision(AbstractBundleState bundleState, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
         assert bundleState != null : "Null bundleState";
         assert metadata != null : "Null metadata";
+        assert storageState != null : "Null storageState";
 
         this.bundleState = bundleState;
         this.metadata = metadata;
-        this.revision = revision;
+        this.storageState = storageState;
 
         // Initialize the bundle caps/reqs
         try {
@@ -180,7 +183,7 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
     }
 
     int getRevisionId() {
-        return revision;
+        return storageState.getRevisionId();
     }
 
     AbstractBundleState getBundleState() {
@@ -189,6 +192,10 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
     OSGiMetaData getOSGiMetaData() {
         return metadata;
+    }
+
+    InternalStorageState getStorageState() {
+        return storageState;
     }
 
     abstract Class<?> loadClass(String className) throws ClassNotFoundException;
@@ -230,6 +237,10 @@ abstract class AbstractBundleRevision extends AbstractResource implements Bundle
 
     void refreshRevisionInternal() {
         removeAttachment(Wiring.class);
+    }
+
+    void close() {
+        VFSUtils.safeClose(storageState.getRootFile());
     }
 
     @Override

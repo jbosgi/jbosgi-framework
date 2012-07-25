@@ -64,12 +64,10 @@ import org.osgi.service.packageadmin.PackageAdmin;
  */
 abstract class UserBundleState extends AbstractBundleState implements TypeAdaptor {
 
-    private final Semaphore uninstallSemaphore = new Semaphore(1);
-
-    private final ServiceName serviceName;
     private final List<UserBundleRevision> revisions = new CopyOnWriteArrayList<UserBundleRevision>();
+    private final Semaphore uninstallSemaphore = new Semaphore(1);
+    private final ServiceName serviceName;
     private Dictionary<String, String> headersOnUninstall;
-    private InternalStorageState storageState;
 
     UserBundleState(FrameworkState frameworkState, long bundleId, Deployment dep) {
         super(frameworkState, bundleId, dep.getSymbolicName());
@@ -83,11 +81,6 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
         bundle = AbstractBundleState.assertBundleState(bundle);
         assert bundle instanceof UserBundleState : "Not an UserBundleState: " + bundle;
         return (UserBundleState) bundle;
-    }
-
-    @Override
-    InternalStorageState getStorageState() {
-        return storageState;
     }
 
     @Override
@@ -124,15 +117,13 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
     @Override
     @SuppressWarnings("unchecked")
     public <T> T adapt(Class<T> type) {
-        T result = null;
-        if (type.isAssignableFrom(Deployment.class)) {
-            result = (T) getDeployment();
-        } else if (type.isAssignableFrom(StorageState.class)) {
-            result = (T) getStorageState();
-        } else if (type.isAssignableFrom(OSGiMetaData.class)) {
-            result = (T) getOSGiMetaData();
-        } else if (type.isAssignableFrom(ServiceName.class)) {
-            result = (T) getServiceName(INSTALLED);
+        T result = super.adapt(type);
+        if (result == null) {
+            if (type.isAssignableFrom(Deployment.class)) {
+                result = (T) getDeployment();
+            } else if (type.isAssignableFrom(ServiceName.class)) {
+                result = (T) getServiceName(INSTALLED);
+            }
         }
         return result;
     }
@@ -227,14 +218,12 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
         // This could happen when the bundle is refreshed or updated.
         changeState(Bundle.INSTALLED, BundleEvent.UNRESOLVED);
 
-        // Deactivate the service that represents bundle state RESOLVED
-        getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.NEVER);
-
         try {
             // If the Framework is unable to install the updated version of this bundle, the original
             // version of this bundle must be restored and a BundleException must be thrown after
             // completion of the remaining steps.
             createUpdateRevision(input);
+
         } catch (BundleException ex) {
             if (restart)
                 startInternal(Bundle.START_TRANSIENT);
@@ -290,29 +279,29 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
             rootFile = AbstractVFS.toVirtualFile(input);
 
         BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
-        InternalStorageState storageState = createStorageState(storagePlugin, getLocation(), rootFile);
+        InternalStorageState updateState = createStorageState(storagePlugin, getLocation(), rootFile);
         try {
             DeploymentFactoryPlugin deploymentPlugin = getFrameworkState().getDeploymentFactoryPlugin();
-            Deployment dep = deploymentPlugin.createDeployment(storageState);
+            Deployment dep = deploymentPlugin.createDeployment(updateState);
             OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
             dep.addAttachment(OSGiMetaData.class, metadata);
             dep.addAttachment(Bundle.class, this);
-            UserBundleRevision brev = createRevision(dep);
+            UserBundleRevision updateRevision = createRevision(dep);
             XEnvironment env = getFrameworkState().getEnvironment();
-            env.installResources(brev);
+            env.installResources(updateRevision);
         } catch (BundleException ex) {
-            storagePlugin.deleteStorageState(storageState);
+            storagePlugin.deleteStorageState(updateState);
             throw ex;
         } catch (RuntimeException ex) {
-            storagePlugin.deleteStorageState(storageState);
+            storagePlugin.deleteStorageState(updateState);
             throw ex;
         }
     }
 
-    InternalStorageState createStorageState(Deployment dep) throws BundleException {
+    StorageState createStorageState(Deployment dep) throws BundleException {
         // The storage state exists when we re-create the bundle from persistent storage
-        StorageState attachedState = dep.getAttachment(StorageState.class);
-        if (attachedState == null) {
+        StorageState storageState = dep.getAttachment(StorageState.class);
+        if (storageState == null) {
             String location = dep.getLocation();
             VirtualFile rootFile = dep.getRoot();
             try {
@@ -326,8 +315,6 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
             } catch (IOException ex) {
                 throw MESSAGES.bundleCannotSetupStorage(ex, rootFile);
             }
-        } else {
-            storageState = (InternalStorageState) attachedState;
         }
         return storageState;
     }
@@ -357,21 +344,25 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
         UserBundleRevision currentRev = getBundleRevision();
         for (AbstractBundleRevision brev : getAllBundleRevisions()) {
 
+            UserBundleRevision userRev = UserBundleRevision.assertBundleRevision(brev);
             XEnvironment env = getFrameworkState().getEnvironment();
-            if (currentRev != brev)
-                env.uninstallResources(brev);
+            if (currentRev != userRev) {
+                env.uninstallResources(userRev);
+                userRev.close();
+            }
 
             if (brev instanceof HostBundleRevision) {
                 HostBundleRevision hostRev = (HostBundleRevision) brev;
                 for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
                     if (fragRev != fragRev.getBundleState().getBundleRevision()) {
                         env.uninstallResources(fragRev);
+                        fragRev.close();
                     }
                 }
             }
 
             ModuleIdentifier identifier = brev.getModuleIdentifier();
-            moduleManager.removeModule((UserBundleRevision) brev, identifier);
+            moduleManager.removeModule(brev, identifier);
         }
 
         clearOldRevisions();
@@ -383,6 +374,9 @@ abstract class UserBundleState extends AbstractBundleState implements TypeAdapto
         currentRev.refreshRevision();
 
         changeState(Bundle.INSTALLED);
+
+        // Deactivate the service that represents bundle state RESOLVED
+        getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.NEVER);
     }
 
     @Override
