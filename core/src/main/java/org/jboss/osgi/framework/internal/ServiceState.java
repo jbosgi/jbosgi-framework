@@ -124,10 +124,6 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         return serviceId;
     }
 
-    static ServiceName createXServiceName(String clazz) {
-        return Services.XSERVICE_BASE_NAME.append(clazz);
-    }
-
     static ServiceName createServiceName(String clazz) {
         return Services.SERVICE_BASE_NAME.append(clazz);
     }

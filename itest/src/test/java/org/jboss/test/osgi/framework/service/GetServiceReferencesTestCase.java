@@ -532,7 +532,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    public void testGetServiceReferencesFilterted() throws Exception {
+    public void testGetServiceReferencesFiltered() throws Exception {
         String className = A.class.getName();
         String wrongClassName = B.class.getName();
 

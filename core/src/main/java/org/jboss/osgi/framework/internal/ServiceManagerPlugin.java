@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.jboss.modules.ModuleClassLoader;
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
@@ -50,7 +49,6 @@ import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.util.NoFilter;
 import org.jboss.osgi.framework.util.RemoveOnlyCollection;
 import org.jboss.osgi.resolver.XBundle;
-import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Filter;
@@ -254,15 +252,10 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
             ServiceName serviceName = ServiceState.createServiceName(className);
             if (serviceContainer.getService(serviceName) != null) {
                 serviceNames.add(serviceName);
-            } else {
-                ServiceName xserviceName = ServiceState.createXServiceName(className);
-                if (serviceContainer.getService(xserviceName) != null) {
-                    serviceNames.add(xserviceName);
-                }
             }
         } else {
             for (ServiceName aux : serviceContainer.getServiceNames()) {
-                if (Services.SERVICE_BASE_NAME.isParentOf(aux) || Services.XSERVICE_BASE_NAME.isParentOf(aux)) {
+                if (Services.SERVICE_BASE_NAME.isParentOf(aux)) {
                     serviceNames.add(aux);
                 }
             }
@@ -281,36 +274,6 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                         if (isMatchingService(bundleState, serviceState, className, filter, checkAssignable)) {
                             resultset.add(serviceState);
                         }
-                    }
-                } else if (Services.XSERVICE_BASE_NAME.isParentOf(serviceName)) {
-                    final ServiceState.ValueProvider valueProvider = new ServiceState.ValueProvider() {
-                        ModuleClassLoader classLoader = null;
-
-                        public boolean isFactoryValue() {
-                            return false;
-                        }
-
-                        public Object getValue() {
-                            if (classLoader == null) {
-                                XBundleRevision brev = bundleState.getBundleRevision();
-                                classLoader = brev.getModuleClassLoader();
-                            }
-                            ClassLoader ctxLoader = SecurityActions.getContextClassLoader();
-                            try {
-                                SecurityActions.setContextClassLoader(classLoader);
-                                return controller.getValue();
-                            } finally {
-                                SecurityActions.setContextClassLoader(ctxLoader);
-                            }
-                        }
-                    };
-                    final long serviceId = getNextServiceId();
-                    final XBundle auxBundle = injectedModuleManager.getValue().getBundleState(valueProvider.getValue().getClass());
-                    final XBundle owner = (auxBundle != null ? auxBundle : injectedBundleManager.getValue().getSystemBundle());
-                    final String auxName = (className != null ? className : serviceName.getSimpleName());
-                    ServiceState serviceState = new ServiceState(this, owner, serviceId, new String[] { auxName }, valueProvider, null);
-                    if (isMatchingService(bundleState, serviceState, auxName, filter, checkAssignable)) {
-                        resultset.add(serviceState);
                     }
                 }
             }

@@ -52,9 +52,6 @@ public interface Services {
     /** The prefix for all OSGi services */
     ServiceName SERVICE_BASE_NAME = JBOSGI_BASE_NAME.append("service");
 
-    /** The base name of all framework OSGi services that were registered outside the OSGi layer */
-    ServiceName XSERVICE_BASE_NAME = JBOSGI_BASE_NAME.append("xservice");
-
     /** The {@link BundleManager} service name. */
     ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("BundleManager");
 

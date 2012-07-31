@@ -40,7 +40,6 @@ import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.modules.ModuleActivator;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -315,10 +314,7 @@ final class HostBundleState extends UserBundleState {
             try {
                 Thread.currentThread().setContextClassLoader(null);
                 Object result = loadClass(className).newInstance();
-                if (result instanceof ModuleActivator) {
-                    bundleActivator = new ModuleActivatorBridge((ModuleActivator) result);
-                    bundleActivator.start(getBundleContext());
-                } else if (result instanceof BundleActivator) {
+                if (result instanceof BundleActivator) {
                     bundleActivator = (BundleActivator) result;
                     bundleActivator.start(getBundleContext());
                 } else {
@@ -410,11 +406,7 @@ final class HostBundleState extends UserBundleState {
             if (priorState == ACTIVE) {
                 if (bundleActivator != null) {
                     try {
-                        if (bundleActivator instanceof ModuleActivatorBridge) {
-                            bundleActivator.stop(getBundleContext());
-                        } else {
-                            bundleActivator.stop(getBundleContext());
-                        }
+                        bundleActivator.stop(getBundleContext());
                     } catch (Throwable t) {
                         rethrow = t;
                     }
