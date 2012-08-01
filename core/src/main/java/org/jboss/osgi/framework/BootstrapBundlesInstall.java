@@ -34,7 +34,6 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
 import org.jboss.osgi.framework.util.ServiceTracker;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
@@ -50,7 +49,7 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
     public BootstrapBundlesInstall(ServiceName baseName) {
-        super(baseName, BootstrapPhase.INSTALL);
+        super(baseName, IntegrationService.BootstrapPhase.INSTALL);
     }
 
     public ServiceController<T> install(ServiceTarget serviceTarget) {

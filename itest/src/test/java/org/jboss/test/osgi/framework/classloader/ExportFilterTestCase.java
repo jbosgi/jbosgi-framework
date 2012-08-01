@@ -21,8 +21,10 @@ package org.jboss.test.osgi.framework.classloader;
  * #L%
  */
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
+import java.io.InputStream;
+
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -32,8 +34,6 @@ import org.jboss.test.osgi.framework.classloader.support.a.QuxFoo;
 import org.jboss.test.osgi.framework.classloader.support.a.QuxImpl;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
-
-import java.io.InputStream;
 
 /**
  * [MODULES-69] Allow for OSGi style Class Filtering

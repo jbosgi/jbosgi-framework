@@ -38,7 +38,6 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
 import org.jboss.osgi.framework.util.ServiceTracker;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
@@ -51,11 +50,14 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
     private final Set<ServiceName> installedServices;
 
     public BootstrapBundlesResolve(ServiceName baseName, Set<ServiceName> installedServices) {
-        super(baseName, BootstrapPhase.RESOLVE);
+        super(baseName, IntegrationService.BootstrapPhase.RESOLVE);
         this.installedServices = installedServices;
     }
 
     public ServiceController<T> install(ServiceTarget serviceTarget) {
+        // The bootstrap resolve service cannot have a direct dependency on
+        // the bundle INSTALLED services because it must be possible to uninstall
+        // a bundle without taking this service down
         ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
@@ -69,6 +71,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
 
     @Override
     public void start(StartContext context) throws StartException {
+        super.start(context);
 
         ServiceContainer serviceRegistry = context.getController().getServiceContainer();
         int targetLevel = getBeginningStartLevel();

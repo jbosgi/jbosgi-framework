@@ -21,6 +21,16 @@ package org.jboss.test.osgi.framework.integration;
  * #L%
  */
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.io.InputStream;
+import java.net.URL;
+
+import javax.inject.Inject;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
@@ -34,15 +44,6 @@ import org.osgi.framework.BundleContext;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-
-import javax.inject.Inject;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.InputStream;
-import java.net.URL;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * A test that uses a DOM parser to read an XML document.

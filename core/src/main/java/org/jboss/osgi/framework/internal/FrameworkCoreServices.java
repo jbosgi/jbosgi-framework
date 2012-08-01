@@ -29,7 +29,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.BundleInstallPlugin;
-import org.jboss.osgi.framework.IntegrationServices;
+import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemServicesPlugin;
 import org.osgi.framework.BundleContext;
@@ -54,15 +54,15 @@ final class FrameworkCoreServices extends AbstractPluginService<FrameworkCoreSer
     static void addService(ServiceTarget serviceTarget) {
         FrameworkCoreServices service = new FrameworkCoreServices();
         ServiceBuilder<FrameworkCoreServices> builder = serviceTarget.addService(InternalServices.FRAMEWORK_CORE_SERVICES, service);
-        builder.addDependency(IntegrationServices.BUNDLE_INSTALL_PLUGIN, BundleInstallPlugin.class, service.injectedBundleInstall);
-        builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
+        builder.addDependency(IntegrationService.BUNDLE_INSTALL_PLUGIN, BundleInstallPlugin.class, service.injectedBundleInstall);
+        builder.addDependency(InternalServices.FRAMEWORK_STATE_CREATE, FrameworkState.class, service.injectedFramework);
         builder.addDependency(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, service.injectedLifecycleInterceptor);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, service.injectedPackageAdmin);
         builder.addDependency(Services.START_LEVEL, StartLevelPlugin.class, service.injectedStartLevel);
-        builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(IntegrationServices.SYSTEM_SERVICES_PLUGIN, SystemServicesPlugin.class, service.injectedSystemServices);
+        builder.addDependency(InternalServices.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
+        builder.addDependency(IntegrationService.SYSTEM_SERVICES_PLUGIN, SystemServicesPlugin.class, service.injectedSystemServices);
         builder.addDependencies(InternalServices.URL_HANDLER_PLUGIN);
-        builder.setInitialMode(Mode.PASSIVE);
+        builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
 

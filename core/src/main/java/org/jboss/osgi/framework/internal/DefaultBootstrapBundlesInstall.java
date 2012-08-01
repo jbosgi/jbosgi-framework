@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,7 +22,6 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -42,6 +41,7 @@ import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.BootstrapBundlesInstall;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.spi.BundleInfo;
 import org.jboss.osgi.spi.util.StringPropertyReplacer;
@@ -54,17 +54,12 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> {
+class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> implements IntegrationService<Void> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
-    static void addService(ServiceTarget serviceTarget) {
-        DefaultBootstrapBundlesInstall service = new DefaultBootstrapBundlesInstall(BOOTSTRAP_BUNDLES);
-        service.install(serviceTarget);
-    }
-
-    private DefaultBootstrapBundlesInstall(ServiceName baseName) {
-        super(baseName);
+    DefaultBootstrapBundlesInstall() {
+        super(IntegrationService.BOOTSTRAP_BUNDLES);
     }
 
     protected void addServiceDependencies(ServiceBuilder<Void> builder) {

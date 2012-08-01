@@ -21,8 +21,13 @@ package org.jboss.test.osgi.framework.startlevel;
  * #L%
  */
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
+import static org.junit.Assert.assertEquals;
+
+import java.io.InputStream;
+import java.util.Properties;
+
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -39,11 +44,6 @@ import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
 import org.osgi.service.startlevel.StartLevel;
-
-import java.io.InputStream;
-import java.util.Properties;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Test start level.

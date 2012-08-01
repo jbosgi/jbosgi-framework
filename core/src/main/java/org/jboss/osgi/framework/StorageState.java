@@ -109,17 +109,17 @@ public class StorageState {
 
     public long getLastModified() {
         String value = props.getProperty(PROPERTY_LAST_MODIFIED);
-        return new Long(value);
+        return Long.parseLong(value);
     }
 
     public boolean isPersistentlyStarted() {
         String value = props.getProperty(PROPERTY_PERSISTENTLY_STARTED);
-        return value != null ? new Boolean(value) : false;
+        return Boolean.parseBoolean(value);
     }
 
     public boolean isBundleActivationPolicyUsed() {
         String value = props.getProperty(PROPERTY_ACTIVATION_POLICY_USED);
-        return value != null ? new Boolean(value) : false;
+        return Boolean.parseBoolean(value);
     }
 
     public int getStartLevel() {
@@ -130,6 +130,7 @@ public class StorageState {
     @Override
     public String toString() {
         int startlevel = getStartLevel();
-        return "BundleStorageState[id=" + bundleId + ",rev=" + revision + ",startlevel=" + startlevel + ",location=" + location + "]";
+        boolean started = isPersistentlyStarted();
+        return "StorageState[id=" + bundleId + ",rev=" + revision + ",startlevel=" + startlevel + ",started=" + started + ",location=" + location + "]";
     }
 }

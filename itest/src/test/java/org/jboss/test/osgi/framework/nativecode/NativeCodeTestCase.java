@@ -21,6 +21,10 @@ package org.jboss.test.osgi.framework.nativecode;
  * #L%
  */
 
+import static org.junit.Assert.fail;
+
+import java.util.Properties;
+
 import org.jboss.osgi.spi.framework.OSGiBootstrap;
 import org.jboss.osgi.spi.framework.OSGiBootstrapProvider;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
@@ -30,10 +34,6 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.launch.Framework;
-
-import java.util.Properties;
-
-import static org.junit.Assert.fail;
 
 /**
  * Test NativeCode-Library functionality

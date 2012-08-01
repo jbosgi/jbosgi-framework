@@ -21,8 +21,17 @@ package org.jboss.test.osgi.framework.service;
  * #L%
  */
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.io.InputStream;
+
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -37,15 +46,6 @@ import org.osgi.framework.ServiceException;
 import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
-
-import java.io.InputStream;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Test {@link ServiceFactory} functionality.

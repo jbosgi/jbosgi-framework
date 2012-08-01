@@ -21,7 +21,6 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.IntegrationServices.SYSTEM_PATHS_PLUGIN;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 import static org.osgi.framework.Constants.FRAMEWORK_BOOTDELEGATION;
@@ -42,11 +41,13 @@ import org.jboss.modules.filter.MultiplePathFilterBuilder;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceRegistry;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
+import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.SystemPathsPlugin;
 
 /**
@@ -55,7 +56,7 @@ import org.jboss.osgi.framework.SystemPathsPlugin;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public final class DefaultSystemPathsPlugin extends AbstractPluginService<SystemPathsPlugin> implements SystemPathsPlugin {
+final class DefaultSystemPathsPlugin extends AbstractPluginService<SystemPathsPlugin> implements SystemPathsPlugin, IntegrationService<SystemPathsPlugin> {
 
     private final FrameworkBuilder frameworkBuilder;
     // The derived combination of all system packages
@@ -72,17 +73,20 @@ public final class DefaultSystemPathsPlugin extends AbstractPluginService<System
     private Set<String> cachedSystemPaths;
     private PathFilter cachedSystemFilter;
 
-    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
-        if (registry.getService(SYSTEM_PATHS_PLUGIN) == null) {
-            SystemPathsPlugin service = new DefaultSystemPathsPlugin(frameworkBuilder);
-            ServiceBuilder<SystemPathsPlugin> builder = serviceTarget.addService(SYSTEM_PATHS_PLUGIN, service);
-            builder.setInitialMode(Mode.ON_DEMAND);
-            builder.install();
-        }
+    DefaultSystemPathsPlugin(FrameworkBuilder frameworkBuilder) {
+        this.frameworkBuilder = frameworkBuilder;
     }
 
-    private DefaultSystemPathsPlugin(FrameworkBuilder frameworkBuilder) {
-        this.frameworkBuilder = frameworkBuilder;
+    @Override
+    public ServiceName getServiceName() {
+        return IntegrationService.SYSTEM_PATHS_PLUGIN;
+    }
+
+    @Override
+    public ServiceController<SystemPathsPlugin> install(ServiceTarget serviceTarget) {
+        ServiceBuilder<SystemPathsPlugin> builder = serviceTarget.addService(getServiceName(), this);
+        builder.setInitialMode(Mode.ON_DEMAND);
+        return builder.install();
     }
 
     @Override

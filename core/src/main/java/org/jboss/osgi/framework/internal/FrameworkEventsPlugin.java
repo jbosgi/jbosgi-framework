@@ -48,6 +48,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.util.NoFilter;
 import org.jboss.osgi.framework.util.RemoveOnlyCollection;
 import org.jboss.osgi.resolver.XBundle;
@@ -101,8 +102,8 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
     static void addService(ServiceTarget serviceTarget) {
         FrameworkEventsPlugin service = new FrameworkEventsPlugin();
         ServiceBuilder<FrameworkEventsPlugin> builder = serviceTarget.addService(InternalServices.FRAMEWORK_EVENTS_PLUGIN, service);
-        builder.addDependency(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-        builder.addDependency(org.jboss.osgi.framework.Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
+        builder.addDependency(InternalServices.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

@@ -21,15 +21,15 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.IntegrationServices.BUNDLE_INSTALL_PLUGIN;
-
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceRegistry;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleInstallPlugin;
+import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.BundleException;
 
@@ -39,22 +39,22 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-final class DefaultBundleInstallPlugin extends AbstractPluginService<BundleInstallPlugin> implements BundleInstallPlugin {
+final class DefaultBundleInstallPlugin extends AbstractPluginService<BundleInstallPlugin> implements BundleInstallPlugin, IntegrationService<BundleInstallPlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
 
-    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(BUNDLE_INSTALL_PLUGIN) == null) {
-            DefaultBundleInstallPlugin service = new DefaultBundleInstallPlugin();
-            ServiceBuilder<BundleInstallPlugin> builder = serviceTarget.addService(BUNDLE_INSTALL_PLUGIN, service);
-            builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-            builder.addDependency(Services.FRAMEWORK_CREATE);
-            builder.setInitialMode(Mode.ON_DEMAND);
-            builder.install();
-        }
+    @Override
+    public ServiceName getServiceName() {
+        return IntegrationService.BUNDLE_INSTALL_PLUGIN;
     }
 
-    private DefaultBundleInstallPlugin() {
+    @Override
+    public ServiceController<BundleInstallPlugin> install(ServiceTarget serviceTarget) {
+        ServiceBuilder<BundleInstallPlugin> builder = serviceTarget.addService(getServiceName(), this);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
+        builder.addDependency(Services.FRAMEWORK_CREATE);
+        builder.setInitialMode(Mode.ON_DEMAND);
+        return builder.install();
     }
 
     @Override

@@ -22,7 +22,6 @@ package org.jboss.osgi.framework.internal;
  */
 
 import static org.jboss.osgi.framework.Constants.JBOSGI_PREFIX;
-import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PLUGIN;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
@@ -46,6 +45,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.service.ValueService;
 import org.jboss.msc.value.ImmediateValue;
+import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.ModuleLoaderPlugin;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
@@ -56,23 +56,25 @@ import org.jboss.osgi.resolver.XBundleRevision;
  * @author thomas.diesler@jboss.com
  * @since 20-Apr-2011
  */
-final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoaderPlugin {
+final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoaderPlugin, IntegrationService<ModuleLoaderPlugin> {
 
     private Map<ModuleIdentifier, ModuleHolder> moduleSpecs = new ConcurrentHashMap<ModuleIdentifier, ModuleHolder>();
     private ServiceRegistry serviceRegistry;
     private ServiceTarget serviceTarget;
 
-    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(MODULE_LOADER_PLUGIN) == null) {
-            ModuleLoaderPlugin service = new DefaultModuleLoaderPlugin();
-            ServiceBuilder<ModuleLoaderPlugin> builder = serviceTarget.addService(MODULE_LOADER_PLUGIN, service);
-            builder.setInitialMode(Mode.ON_DEMAND);
-            builder.install();
-        }
+    @Override
+    public ServiceName getServiceName() {
+        return IntegrationService.MODULE_LOADER_PLUGIN;
     }
 
-    private DefaultModuleLoaderPlugin() {
+
+    @Override
+    public ServiceController<ModuleLoaderPlugin> install(ServiceTarget serviceTarget) {
+        ServiceBuilder<ModuleLoaderPlugin> builder = serviceTarget.addService(getServiceName(), this);
+        builder.setInitialMode(Mode.ON_DEMAND);
+        return builder.install();
     }
+
 
     @Override
     public void start(StartContext context) throws StartException {

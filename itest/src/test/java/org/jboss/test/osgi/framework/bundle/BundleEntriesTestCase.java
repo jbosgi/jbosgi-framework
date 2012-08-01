@@ -21,9 +21,10 @@ package org.jboss.test.osgi.framework.bundle;
  * #L%
  */
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.junit.Test;
-import org.osgi.framework.Bundle;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 import java.net.URI;
 import java.net.URL;
@@ -33,10 +34,9 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.junit.Test;
+import org.osgi.framework.Bundle;
 
 /**
  * BundleEntriesTest.

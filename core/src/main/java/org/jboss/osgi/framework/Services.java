@@ -23,9 +23,7 @@ package org.jboss.osgi.framework;
 
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.resolver.XEnvironment;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.launch.Framework;
+import org.jboss.osgi.resolver.XResolver;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.startlevel.StartLevel;
 
@@ -39,18 +37,6 @@ public interface Services {
 
     /** The prefix for all OSGi services */
     ServiceName JBOSGI_BASE_NAME = ServiceName.of(Constants.JBOSGI_PREFIX);
-    /** The prefix for all OSGi bundle services */
-
-    ServiceName BUNDLE_BASE_NAME = JBOSGI_BASE_NAME.append("bundle");
-
-    /** The base name of all framework services */
-    ServiceName FRAMEWORK_BASE_NAME = JBOSGI_BASE_NAME.append("framework");
-
-    /** The prefix for all integration plugin services */
-    ServiceName INTEGRATION_BASE_NAME = JBOSGI_BASE_NAME.append("integration");
-
-    /** The prefix for all OSGi services */
-    ServiceName SERVICE_BASE_NAME = JBOSGI_BASE_NAME.append("service");
 
     /** The {@link BundleManager} service name. */
     ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("BundleManager");
@@ -59,13 +45,13 @@ public interface Services {
     ServiceName ENVIRONMENT = JBOSGI_BASE_NAME.append("Environment");
 
     /** The service name for the created {@link Framework} */
-    ServiceName FRAMEWORK_CREATE = FRAMEWORK_BASE_NAME.append("CREATED");
+    ServiceName FRAMEWORK_CREATE = JBOSGI_BASE_NAME.append("framework", "CREATE");
 
     /** The service name for the initialized {@link Framework} */
-    ServiceName FRAMEWORK_INIT = FRAMEWORK_BASE_NAME.append("INIT");
+    ServiceName FRAMEWORK_INIT = JBOSGI_BASE_NAME.append("framework", "INIT");
 
     /** The service name for the started {@link Framework} */
-    ServiceName FRAMEWORK_ACTIVE = FRAMEWORK_BASE_NAME.append("ACTIVE");
+    ServiceName FRAMEWORK_ACTIVE = JBOSGI_BASE_NAME.append("framework", "ACTIVE");
 
     /** The service name for the {@link PackageAdmin} service */
     ServiceName PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("PackageAdmin");
@@ -75,13 +61,4 @@ public interface Services {
 
     /** The service name for the {@link StartLevel} service */
     ServiceName START_LEVEL = JBOSGI_BASE_NAME.append("StartLevel");
-
-    /** The service name for the {@link StorageStatePlugin} */
-    ServiceName STORAGE_STATE_PLUGIN = JBOSGI_BASE_NAME.append("StorageStatePlugin");
-
-    /** The service name for the system {@link Bundle} */
-    ServiceName SYSTEM_BUNDLE = JBOSGI_BASE_NAME.append("SystemBundle");
-
-    /** The service name for the system {@link BundleContext} */
-    ServiceName SYSTEM_CONTEXT = JBOSGI_BASE_NAME.append("SystemContext");
 }

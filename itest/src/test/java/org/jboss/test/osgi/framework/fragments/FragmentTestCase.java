@@ -21,9 +21,23 @@ package org.jboss.test.osgi.framework.fragments;
  * #L%
  */
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.security.ProtectionDomain;
+
 import org.jboss.logging.Logger;
-import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -45,20 +59,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleException;
 import org.osgi.service.packageadmin.PackageAdmin;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.security.ProtectionDomain;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
 
 /**
  * Test Fragment functionality

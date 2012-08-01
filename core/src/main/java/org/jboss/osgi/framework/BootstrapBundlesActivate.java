@@ -36,7 +36,6 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -46,11 +45,15 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
     private final Set<ServiceName> resolvedServices;
 
     public BootstrapBundlesActivate(ServiceName baseName, Set<ServiceName> resolvedServices) {
-        super(baseName, BootstrapPhase.ACTIVATE);
+        super(baseName, IntegrationService.BootstrapPhase.ACTIVATE);
         this.resolvedServices = resolvedServices;
     }
 
+    @Override
     public ServiceController<T> install(ServiceTarget serviceTarget) {
+        // The bootstrap activate service cannot have a direct dependency on
+        // the bundle RESOLVED services because it must be possible to uninstall
+        // a bundle without taking this service down
         ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependencies(getPreviousService());
         addServiceDependencies(builder);
@@ -62,9 +65,10 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
 
     @Override
     public void start(StartContext context) throws StartException {
-        ServiceContainer serviceRegistry = context.getController().getServiceContainer();
+        super.start(context);
 
         // Collect the resolved bundles
+        ServiceContainer serviceRegistry = context.getController().getServiceContainer();
         List<XBundle> bundles = new ArrayList<XBundle>();
         for (ServiceName serviceName : resolvedServices) {
             ServiceController<?> controller = serviceRegistry.getRequiredService(serviceName);

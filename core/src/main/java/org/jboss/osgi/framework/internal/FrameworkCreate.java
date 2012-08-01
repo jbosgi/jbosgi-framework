@@ -21,17 +21,20 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.osgi.framework.IntegrationServices;
+import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.SystemPathsPlugin;
 import org.jboss.osgi.resolver.XEnvironment;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
 
 /**
@@ -50,21 +53,25 @@ public final class FrameworkCreate extends AbstractFrameworkService {
     static FrameworkState addService(ServiceTarget serviceTarget, BundleManagerPlugin bundleManager) {
         FrameworkState frameworkState = new FrameworkState(bundleManager);
         FrameworkCreate service = new FrameworkCreate(frameworkState);
-        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_CREATE, service);
+        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(InternalServices.FRAMEWORK_STATE_CREATE, service);
         builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, frameworkState.injectedDeploymentFactory);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, frameworkState.injectedBundleStorage);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, frameworkState.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, frameworkState.injectedModuleManager);
-        builder.addDependency(IntegrationServices.MODULE_LOADER_PLUGIN, ModuleLoaderPlugin.class, frameworkState.injectedModuleLoader);
+        builder.addDependency(IntegrationService.MODULE_LOADER_PLUGIN, ModuleLoaderPlugin.class, frameworkState.injectedModuleLoader);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, frameworkState.injectedNativeCode);
         builder.addDependency(InternalServices.SERVICE_MANAGER_PLUGIN, ServiceManagerPlugin.class, frameworkState.injectedServiceManager);
-        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, frameworkState.injectedSystemPaths);
-        builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, frameworkState.injectedSystemBundle);
+        builder.addDependency(IntegrationService.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, frameworkState.injectedSystemPaths);
+        builder.addDependency(InternalServices.SYSTEM_BUNDLE, SystemBundleState.class, frameworkState.injectedSystemBundle);
         builder.addDependency(Services.RESOLVER, ResolverPlugin.class, frameworkState.injectedResolverPlugin);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, frameworkState.injectedEnvironment);
-        builder.addDependency(Services.STORAGE_STATE_PLUGIN);
+        builder.addDependency(IntegrationService.STORAGE_STATE_PLUGIN);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
+
+        // Add the public FRAMEWORK_CREATE service that provides the BundleContext
+        FrameworkCreated.addService(serviceTarget);
+
         return frameworkState;
     }
 
@@ -87,5 +94,25 @@ public final class FrameworkCreate extends AbstractFrameworkService {
     @Override
     public FrameworkState getValue() {
         return frameworkState;
+    }
+
+    static class FrameworkCreated extends AbstractService<BundleContext> {
+
+        final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
+
+        static void addService(ServiceTarget serviceTarget) {
+            FrameworkCreated service = new FrameworkCreated();
+            ServiceBuilder<BundleContext> builder = serviceTarget.addService(Services.FRAMEWORK_CREATE, service);
+            builder.addDependency(InternalServices.FRAMEWORK_STATE_CREATE, FrameworkState.class, service.injectedFramework);
+            builder.setInitialMode(Mode.ON_DEMAND);
+            builder.install();
+        }
+
+        @Override
+        public BundleContext getValue() throws IllegalStateException {
+            FrameworkState frameworkState = injectedFramework.getValue();
+            SystemBundleState systemBundle = frameworkState.getSystemBundle();
+            return systemBundle.getBundleContext();
+        }
     }
 }

@@ -44,7 +44,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.IntegrationServices;
+import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
@@ -94,7 +94,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
-        builder.addDependency(IntegrationServices.MODULE_LOADER_PLUGIN, ModuleLoaderPlugin.class, service.injectedModuleLoader);
+        builder.addDependency(IntegrationService.MODULE_LOADER_PLUGIN, ModuleLoaderPlugin.class, service.injectedModuleLoader);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

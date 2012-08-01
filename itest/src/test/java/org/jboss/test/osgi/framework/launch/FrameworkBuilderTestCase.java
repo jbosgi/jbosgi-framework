@@ -41,7 +41,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.ValueService;
 import org.jboss.msc.value.ImmediateValue;
 import org.jboss.osgi.framework.FutureServiceValue;
-import org.jboss.osgi.framework.IntegrationServices;
+import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.FrameworkBuilder;
 import org.jboss.osgi.spi.OSGiManifestBuilder;
@@ -80,8 +80,8 @@ public class FrameworkBuilderTestCase extends FrameworkLaunchTestBase {
         assertBundleState(Bundle.STARTING, framework.getState());
 
         assertServiceState(State.UP, Services.FRAMEWORK_INIT);
-        assertServiceState(State.UP, IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
-        assertServiceState(State.UP, IntegrationServices.PERSISTENT_BUNDLES_COMPLETE);
+        assertServiceState(State.UP, IntegrationService.BOOTSTRAP_BUNDLES_COMPLETE);
+        assertServiceState(State.UP, IntegrationService.PERSISTENT_BUNDLES_COMPLETE);
         assertServiceState(State.DOWN, Services.FRAMEWORK_ACTIVE);
 
         BundleContext bundleContext = framework.getBundleContext();
@@ -105,10 +105,10 @@ public class FrameworkBuilderTestCase extends FrameworkLaunchTestBase {
 
         Assert.assertNull("ServiceContainer is null", getServiceContainer());
     }
-    
+
     @Test
     public void testFrameworkStartStop() throws Exception {
-        
+
         Map<String, Object> props = getFrameworkInitProperties(true);
         FrameworkBuilder builder = new FrameworkBuilder(props);
         Framework framework = newFramework(builder);
@@ -122,8 +122,8 @@ public class FrameworkBuilderTestCase extends FrameworkLaunchTestBase {
         assertBundleState(Bundle.STARTING, framework.getState());
 
         assertServiceState(State.UP, Services.FRAMEWORK_INIT);
-        assertServiceState(State.UP, IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
-        assertServiceState(State.UP, IntegrationServices.PERSISTENT_BUNDLES_COMPLETE);
+        assertServiceState(State.UP, IntegrationService.BOOTSTRAP_BUNDLES_COMPLETE);
+        assertServiceState(State.UP, IntegrationService.PERSISTENT_BUNDLES_COMPLETE);
         assertServiceState(State.DOWN, Services.FRAMEWORK_ACTIVE);
 
         BundleContext systemContext = framework.getBundleContext();
@@ -169,10 +169,10 @@ public class FrameworkBuilderTestCase extends FrameworkLaunchTestBase {
         ServiceContainer serviceContainer = builder.createFrameworkServices(true);
 
         assertServiceState(serviceContainer, State.DOWN, Services.FRAMEWORK_INIT);
-        assertServiceState(serviceContainer, State.DOWN, IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL);
-        assertServiceState(serviceContainer, State.DOWN, IntegrationServices.PERSISTENT_BUNDLES_INSTALL);
+        assertServiceState(serviceContainer, State.DOWN, IntegrationService.BOOTSTRAP_BUNDLES_INSTALL);
+        assertServiceState(serviceContainer, State.DOWN, IntegrationService.PERSISTENT_BUNDLES_INSTALL);
         assertServiceState(serviceContainer, State.DOWN, Services.FRAMEWORK_ACTIVE);
-        
+
         // Register a service that has a dependency on {@link FrameworkActive}
         ServiceName serviceName = ServiceName.parse("someService");
         ServiceTarget serviceTarget = serviceContainer.subTarget();
@@ -180,14 +180,14 @@ public class FrameworkBuilderTestCase extends FrameworkLaunchTestBase {
         ServiceBuilder<Boolean> serviceBuilder = serviceTarget.addService(serviceName, service);
         serviceBuilder.addDependencies(Services.FRAMEWORK_ACTIVE);
         ServiceController<Boolean> controller = serviceBuilder.install();
-        
+
         FutureServiceValue<Boolean> future = new FutureServiceValue<Boolean>(controller);
         Assert.assertTrue(future.get(2, TimeUnit.SECONDS));
 
         // Check that all the framework service are UP
         assertServiceState(serviceContainer, State.UP, Services.FRAMEWORK_INIT);
-        assertServiceState(serviceContainer, State.UP, IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
-        assertServiceState(serviceContainer, State.UP, IntegrationServices.PERSISTENT_BUNDLES_COMPLETE);
+        assertServiceState(serviceContainer, State.UP, IntegrationService.BOOTSTRAP_BUNDLES_COMPLETE);
+        assertServiceState(serviceContainer, State.UP, IntegrationService.PERSISTENT_BUNDLES_COMPLETE);
         assertServiceState(serviceContainer, State.UP, Services.FRAMEWORK_ACTIVE);
 
         // Remove the dependent service
@@ -197,11 +197,11 @@ public class FrameworkBuilderTestCase extends FrameworkLaunchTestBase {
 
         // Check that all the framework service are still UP
         assertServiceState(serviceContainer, State.UP, Services.FRAMEWORK_INIT);
-        assertServiceState(serviceContainer, State.UP, IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
-        assertServiceState(serviceContainer, State.UP, IntegrationServices.PERSISTENT_BUNDLES_COMPLETE);
+        assertServiceState(serviceContainer, State.UP, IntegrationService.BOOTSTRAP_BUNDLES_COMPLETE);
+        assertServiceState(serviceContainer, State.UP, IntegrationService.PERSISTENT_BUNDLES_COMPLETE);
         assertServiceState(serviceContainer, State.UP, Services.FRAMEWORK_ACTIVE);
     }
-    
+
     private static JavaArchive getBundleA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA");
         archive.setManifest(new Asset() {

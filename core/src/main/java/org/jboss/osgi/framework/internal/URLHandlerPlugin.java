@@ -112,8 +112,7 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
         URLHandlerPlugin service = new URLHandlerPlugin();
         ServiceBuilder<URLHandlerPlugin> builder = serviceTarget.addService(InternalServices.URL_HANDLER_PLUGIN, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-        builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(Services.FRAMEWORK_CREATE);
+        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, service.injectedSystemContext);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

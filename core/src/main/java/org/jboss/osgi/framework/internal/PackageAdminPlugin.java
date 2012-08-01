@@ -77,7 +77,7 @@ import org.osgi.service.resolver.ResolutionException;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2010
  */
-public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdmin> implements PackageAdmin {
+public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdminPlugin> implements PackageAdmin {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
@@ -89,14 +89,13 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
 
     static void addService(ServiceTarget serviceTarget) {
         PackageAdminPlugin service = new PackageAdminPlugin();
-        ServiceBuilder<PackageAdmin> builder = serviceTarget.addService(Services.PACKAGE_ADMIN, service);
+        ServiceBuilder<PackageAdminPlugin> builder = serviceTarget.addService(Services.PACKAGE_ADMIN, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
-        builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
+        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, service.injectedSystemContext);
         builder.addDependency(Services.RESOLVER, ResolverPlugin.class, service.injectedResolver);
-        builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

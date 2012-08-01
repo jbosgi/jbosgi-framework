@@ -21,29 +21,40 @@ package org.jboss.osgi.framework;
  * #L%
  */
 
-import org.jboss.msc.service.AbstractService;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
-public class BootstrapBundlesService<T> extends AbstractService<T> {
+import org.jboss.msc.service.AbstractService;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
+
+public abstract class BootstrapBundlesService<T> extends AbstractService<T> implements IntegrationService<T> {
 
     private final ServiceName baseName;
-    private final BootstrapPhase phase;
+    private final IntegrationService.BootstrapPhase phase;
 
-    public BootstrapBundlesService(ServiceName baseName, BootstrapPhase phase) {
+    public BootstrapBundlesService(ServiceName baseName, IntegrationService.BootstrapPhase phase) {
         this.baseName = baseName;
         this.phase = phase;
     }
 
+    @Override
     public ServiceName getServiceName() {
-        return BootstrapPhase.serviceName(baseName, phase);
+        return IntegrationService.BootstrapPhase.serviceName(baseName, phase);
     }
 
     public ServiceName getPreviousService() {
-        return BootstrapPhase.serviceName(baseName, phase.previous());
+        return IntegrationService.BootstrapPhase.serviceName(baseName, phase.previous());
     }
 
     public ServiceName getNextService() {
-        return BootstrapPhase.serviceName(baseName, phase.next());
+        return IntegrationService.BootstrapPhase.serviceName(baseName, phase.next());
+    }
+
+    @Override
+    public void start(StartContext context) throws StartException {
+        ServiceController<?> serviceController = context.getController();
+        LOGGER.tracef("Starting: %s in mode %s", serviceController.getName(), serviceController.getMode());
     }
 }

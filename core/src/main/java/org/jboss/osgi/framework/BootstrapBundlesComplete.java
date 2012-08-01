@@ -25,15 +25,17 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.IntegrationServices.BootstrapPhase;
 
 public class BootstrapBundlesComplete<T> extends BootstrapBundlesService<T> {
 
     public BootstrapBundlesComplete(ServiceName baseName) {
-        super(baseName, BootstrapPhase.COMPLETE);
+        super(baseName, IntegrationService.BootstrapPhase.COMPLETE);
     }
 
     public ServiceController<T> install(ServiceTarget serviceTarget) {
+        // The bootstrap complete service cannot have a direct dependency on
+        // the bundle ACTIVE services because it must be possible to uninstall
+        // a bundle without taking this service down
         ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependency(getPreviousService());
         addServiceDependencies(builder);

@@ -21,6 +21,14 @@ package org.jboss.test.osgi.framework.service;
  * #L%
  */
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Hashtable;
+import java.util.List;
+
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.Test;
@@ -29,14 +37,6 @@ import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.hooks.service.ListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Hashtable;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Test {@link ListenerHook} functionality.

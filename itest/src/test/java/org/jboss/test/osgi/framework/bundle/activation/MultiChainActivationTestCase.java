@@ -21,8 +21,14 @@ package org.jboss.test.osgi.framework.bundle.activation;
  * #L%
  */
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
+import static org.junit.Assert.assertEquals;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -43,12 +49,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.Constants;
 import org.osgi.framework.SynchronousBundleListener;
-
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * More advanced chain test that contains multiple class hierachies

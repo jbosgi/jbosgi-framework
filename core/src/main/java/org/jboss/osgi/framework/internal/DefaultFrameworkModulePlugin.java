@@ -21,7 +21,6 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.IntegrationServices.FRAMEWORK_MODULE_PLUGIN;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.util.Collections;
@@ -39,8 +38,9 @@ import org.jboss.modules.Resource;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceRegistry;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -48,7 +48,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FrameworkModulePlugin;
-import org.jboss.osgi.framework.IntegrationServices;
+import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.SystemPathsPlugin;
 import org.osgi.framework.Bundle;
 
@@ -58,24 +58,24 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 04-Feb-2011
  */
-final class DefaultFrameworkModulePlugin extends AbstractPluginService<FrameworkModulePlugin> implements FrameworkModulePlugin {
+final class DefaultFrameworkModulePlugin extends AbstractPluginService<FrameworkModulePlugin> implements FrameworkModulePlugin, IntegrationService<FrameworkModulePlugin> {
 
     private static final ModuleIdentifier FRAMEWORK_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".framework");
     private final InjectedValue<SystemPathsPlugin> injectedSystemPaths = new InjectedValue<SystemPathsPlugin>();
 
     private Module frameworkModule;
 
-    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(FRAMEWORK_MODULE_PLUGIN) == null) {
-            DefaultFrameworkModulePlugin service = new DefaultFrameworkModulePlugin();
-            ServiceBuilder<FrameworkModulePlugin> builder = serviceTarget.addService(FRAMEWORK_MODULE_PLUGIN, service);
-            builder.addDependency(IntegrationServices.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, service.injectedSystemPaths);
-            builder.setInitialMode(Mode.ON_DEMAND);
-            builder.install();
-        }
+    @Override
+    public ServiceName getServiceName() {
+        return IntegrationService.FRAMEWORK_MODULE_PLUGIN;
     }
 
-    private DefaultFrameworkModulePlugin() {
+    @Override
+    public ServiceController<FrameworkModulePlugin> install(ServiceTarget serviceTarget) {
+        ServiceBuilder<FrameworkModulePlugin> builder = serviceTarget.addService(getServiceName(), this);
+        builder.addDependency(IntegrationService.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, injectedSystemPaths);
+        builder.setInitialMode(Mode.ON_DEMAND);
+        return builder.install();
     }
 
     @Override

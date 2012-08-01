@@ -157,7 +157,7 @@ final class FrameworkProxy implements Framework, Adaptable {
                 allowContainerShutdown = true;
             }
             lenientContainer = new LenientShutdownContainer(serviceContainer, allowContainerShutdown);
-            
+
             ServiceTarget serviceTarget = frameworkBuilder.getServiceTarget();
             if (serviceTarget == null)
                 serviceTarget = serviceContainer.subTarget();
@@ -449,10 +449,10 @@ final class FrameworkProxy implements Framework, Adaptable {
 
     @SuppressWarnings("unchecked")
     private FrameworkState awaitFrameworkInit() throws ExecutionException, TimeoutException {
-        final ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) lenientContainer.getRequiredService(Services.FRAMEWORK_INIT);
+        final ServiceController<BundleContext> controller = (ServiceController<BundleContext>) lenientContainer.getRequiredService(Services.FRAMEWORK_INIT);
         final String serviceName = controller.getName().getCanonicalName();
-        controller.addListener(new AbstractServiceListener<FrameworkState>() {
-            public void transition(final ServiceController<? extends FrameworkState> controller, final ServiceController.Transition transition) {
+        controller.addListener(new AbstractServiceListener<BundleContext>() {
+            public void transition(final ServiceController<? extends BundleContext> controller, final ServiceController.Transition transition) {
                 LOGGER.tracef("awaitFrameworkInit %s => %s", serviceName, transition);
                 switch (transition) {
                     case STARTING_to_START_FAILED:
@@ -465,16 +465,17 @@ final class FrameworkProxy implements Framework, Adaptable {
             }
         });
         controller.setMode(Mode.ACTIVE);
-        FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
+        FutureServiceValue<BundleContext> future = new FutureServiceValue<BundleContext>(controller);
         Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_INIT_TIMEOUT, DEFAULT_FRAMEWORK_INIT_TIMEOUT);
-        return future.get(timeout, TimeUnit.MILLISECONDS);
+        SystemBundleContext bundleContext = (SystemBundleContext) future.get(timeout, TimeUnit.MILLISECONDS);
+        return bundleContext.getFrameworkState();
     }
 
     @SuppressWarnings("unchecked")
     private void awaitFrameworkActive() throws ExecutionException, TimeoutException {
-        final ServiceController<FrameworkState> controller = (ServiceController<FrameworkState>) lenientContainer.getRequiredService(Services.FRAMEWORK_ACTIVE);
+        final ServiceController<BundleContext> controller = (ServiceController<BundleContext>) lenientContainer.getRequiredService(Services.FRAMEWORK_ACTIVE);
         controller.setMode(Mode.ACTIVE);
-        FutureServiceValue<FrameworkState> future = new FutureServiceValue<FrameworkState>(controller);
+        FutureServiceValue<BundleContext> future = new FutureServiceValue<BundleContext>(controller);
         Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_START_TIMEOUT, DEFAULT_FRAMEWORK_START_TIMEOUT);
         future.get(timeout, TimeUnit.MILLISECONDS);
     }

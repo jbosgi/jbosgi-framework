@@ -255,7 +255,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
             }
         } else {
             for (ServiceName aux : serviceContainer.getServiceNames()) {
-                if (Services.SERVICE_BASE_NAME.isParentOf(aux)) {
+                if (InternalServices.SERVICE_BASE_NAME.isParentOf(aux)) {
                     serviceNames.add(aux);
                 }
             }
@@ -268,7 +268,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
         for (ServiceName serviceName : serviceNames) {
             final ServiceController<?> controller = serviceContainer.getService(serviceName);
             if (controller != null) {
-                if (Services.SERVICE_BASE_NAME.isParentOf(serviceName)) {
+                if (InternalServices.SERVICE_BASE_NAME.isParentOf(serviceName)) {
                     List<ServiceState> serviceStates = (List<ServiceState>) controller.getValue();
                     for (ServiceState serviceState : serviceStates) {
                         if (isMatchingService(bundleState, serviceState, className, filter, checkAssignable)) {

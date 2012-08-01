@@ -21,8 +21,12 @@ package org.jboss.test.osgi.framework.jbosgi477;
  * #L%
  */
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
+import static org.junit.Assert.fail;
+
+import java.io.InputStream;
+
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -30,10 +34,6 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
-
-import java.io.InputStream;
-
-import static org.junit.Assert.fail;
 
 /**
  * [JBOSGI-477] Unsupported execution environment OSGi/Minimum-1.1

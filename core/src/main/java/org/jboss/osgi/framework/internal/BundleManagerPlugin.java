@@ -235,7 +235,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         // Currently the bundleId is needed for uniqueness because of
         // [MSC-97] Cannot re-install service with same name
         Long bundleId = dep.getAttachment(Long.class);
-        return ServiceName.of(Services.BUNDLE_BASE_NAME, "" + bundleId, "" + dep.getSymbolicName(), "" + dep.getVersion());
+        return ServiceName.of(InternalServices.BUNDLE_BASE_NAME, "" + bundleId, "" + dep.getSymbolicName(), "" + dep.getVersion());
     }
 
     Set<XBundle> getBundles() {

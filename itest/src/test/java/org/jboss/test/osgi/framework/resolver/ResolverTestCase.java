@@ -21,6 +21,9 @@ package org.jboss.test.osgi.framework.resolver;
  * #L%
  */
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.test.osgi.framework.resolver.support.a.A;
@@ -30,9 +33,6 @@ import org.jboss.test.osgi.framework.resolver.support.c.C;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Test the resolver integration.

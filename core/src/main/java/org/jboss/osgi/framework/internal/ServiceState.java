@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
@@ -125,7 +124,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
     }
 
     static ServiceName createServiceName(String clazz) {
-        return Services.SERVICE_BASE_NAME.append(clazz);
+        return InternalServices.SERVICE_BASE_NAME.append(clazz);
     }
 
     Object getRawValue() {

@@ -21,7 +21,6 @@ package org.jboss.osgi.framework;
  * #L%
  */
 
-import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PLUGIN;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
@@ -167,7 +166,7 @@ public class AbstractBundleAdaptor implements XBundle {
         // Remove from the module loader
         BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        ServiceController<?> service = serviceContainer.getRequiredService(MODULE_LOADER_PLUGIN);
+        ServiceController<?> service = serviceContainer.getRequiredService(IntegrationService.MODULE_LOADER_PLUGIN);
         ModuleLoaderPlugin provider = (ModuleLoaderPlugin) service.getValue();
         provider.removeModule(brev, module.getIdentifier());
         bundleState = Bundle.UNINSTALLED;

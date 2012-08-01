@@ -27,15 +27,18 @@ import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.log.JDKModuleLogger;
 import org.jboss.modules.log.ModuleLogger;
 import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceRegistry;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.osgi.framework.IntegrationService;
 import org.osgi.framework.launch.Framework;
 
 /**
@@ -47,6 +50,7 @@ import org.osgi.framework.launch.Framework;
 public final class FrameworkBuilder {
 
     private final Map<String, Object> initialProperties = new HashMap<String, Object>();
+    private final Set<ServiceName> excludedServices = new HashSet<ServiceName>();
     private ServiceContainer serviceContainer;
     private ServiceTarget serviceTarget;
     private boolean closed;
@@ -74,6 +78,11 @@ public final class FrameworkBuilder {
         return serviceContainer;
     }
 
+    public void setServiceContainer(ServiceContainer serviceContainer) {
+        assertNotClosed();
+        this.serviceContainer = serviceContainer;
+    }
+
     public ServiceContainer createServiceContainer() {
         Object maxThreads = getProperty(PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS);
         if (maxThreads == null)
@@ -85,11 +94,6 @@ public final class FrameworkBuilder {
         }
     }
 
-    public void setServiceContainer(ServiceContainer serviceContainer) {
-        assertNotClosed();
-        this.serviceContainer = serviceContainer;
-    }
-
     public ServiceTarget getServiceTarget() {
         return serviceTarget;
     }
@@ -99,6 +103,15 @@ public final class FrameworkBuilder {
         this.serviceTarget = serviceTarget;
     }
 
+    public void addExcludedService(ServiceName serviceName) {
+        assertNotClosed();
+        excludedServices.add(serviceName);
+    }
+
+    public Set<ServiceName> getExcludedServices() {
+        return Collections.unmodifiableSet(excludedServices);
+    }
+
     public Framework createFramework() {
         assertNotClosed();
         return new FrameworkProxy(this);
@@ -106,21 +119,13 @@ public final class FrameworkBuilder {
 
     public ServiceContainer createFrameworkServices(boolean firstInit) {
         assertNotClosed();
-        ServiceContainer serviceContainer = getOrCreateServiceContainer();
-        ServiceTarget serviceTarget = getOrCreateServiceTarget(serviceContainer);
+        ServiceContainer serviceContainer = getServiceContainerInternal();
+        ServiceTarget serviceTarget = getServiceTargetInternal(serviceContainer);
         createFrameworkServicesInternal(serviceContainer, serviceTarget, firstInit);
         return serviceContainer;
     }
 
-    private ServiceContainer getOrCreateServiceContainer() {
-        return serviceContainer != null ? serviceContainer : createServiceContainer();
-    }
-
-    private ServiceTarget getOrCreateServiceTarget(ServiceContainer serviceContainer) {
-        return serviceTarget != null ? serviceTarget : serviceContainer.subTarget();
-    }
-
-    void createFrameworkServicesInternal(ServiceRegistry serviceRegistry, ServiceTarget serviceTarget, boolean firstInit) {
+    void createFrameworkServicesInternal(ServiceContainer serviceContainer, ServiceTarget serviceTarget, boolean firstInit) {
         try {
             // Do this first so this URLStreamHandlerFactory gets installed
             URLHandlerPlugin.addService(serviceTarget);
@@ -151,17 +156,31 @@ public final class FrameworkBuilder {
             SystemBundleService.addService(serviceTarget, frameworkState);
             SystemContextService.addService(serviceTarget);
 
-            DefaultBootstrapBundlesInstall.addService(serviceTarget);
-            DefaultBundleInstallPlugin.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultFrameworkModulePlugin.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultModuleLoaderPlugin.addIntegrationService(serviceRegistry, serviceTarget);
-            DefaultPersistentBundlesInstall.addService(serviceTarget);
-            DefaultSystemPathsPlugin.addIntegrationService(serviceRegistry, serviceTarget, this);
-            DefaultSystemServicesPlugin.addIntegrationService(serviceRegistry, serviceTarget);
-
+            installIntegrationService(serviceContainer, serviceTarget, new DefaultBootstrapBundlesInstall());
+            installIntegrationService(serviceContainer, serviceTarget, new DefaultBundleInstallPlugin());
+            installIntegrationService(serviceContainer, serviceTarget, new DefaultFrameworkModulePlugin());
+            installIntegrationService(serviceContainer, serviceTarget, new DefaultModuleLoaderPlugin());
+            installIntegrationService(serviceContainer, serviceTarget, new DefaultPersistentBundlesInstall());
+            installIntegrationService(serviceContainer, serviceTarget, new DefaultSystemPathsPlugin(this));
+            installIntegrationService(serviceContainer, serviceTarget, new DefaultSystemServicesPlugin());
         } finally {
             closed = true;
         }
+    }
+
+    public void installIntegrationService(ServiceContainer serviceContainer, ServiceTarget serviceTarget, IntegrationService<?> service) {
+        ServiceName serviceName = service.getServiceName();
+        if (serviceContainer.getService(serviceName) == null && !excludedServices.contains(serviceName)) {
+            service.install(serviceTarget);
+        }
+    }
+
+    private ServiceContainer getServiceContainerInternal() {
+        return (serviceContainer != null ? serviceContainer : createServiceContainer());
+    }
+
+    private ServiceTarget getServiceTargetInternal(ServiceContainer serviceContainer) {
+        return (serviceTarget != null ? serviceTarget : serviceContainer.subTarget());
     }
 
     private void assertNotClosed() {

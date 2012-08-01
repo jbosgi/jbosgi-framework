@@ -69,7 +69,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         ServiceBuilder<StartLevel> builder = serviceTarget.addService(Services.START_LEVEL, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
-        builder.addDependency(Services.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
+        builder.addDependency(InternalServices.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();

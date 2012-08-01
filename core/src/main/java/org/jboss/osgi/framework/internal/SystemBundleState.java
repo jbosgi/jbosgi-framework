@@ -22,6 +22,7 @@ package org.jboss.osgi.framework.internal;
  */
 
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
@@ -29,7 +30,6 @@ import java.util.List;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
@@ -67,7 +67,7 @@ final class SystemBundleState extends AbstractBundleState {
 
     @Override
     ServiceName getServiceName(int state) {
-        return Services.SYSTEM_BUNDLE;
+        return InternalServices.SYSTEM_BUNDLE;
     }
 
     @Override

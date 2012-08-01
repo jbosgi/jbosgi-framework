@@ -25,6 +25,7 @@ import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.util.Collections;
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -34,6 +35,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
@@ -88,10 +90,14 @@ public final class FrameworkActive extends AbstractFrameworkService {
 
     static void addService(ServiceTarget serviceTarget) {
         FrameworkActive service = new FrameworkActive();
-        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
+        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(InternalServices.FRAMEWORK_STATE_ACTIVE, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-        builder.addDependency(Services.FRAMEWORK_INIT, FrameworkState.class, service.injectedFramework);
-        builder.setInitialMode(Mode.LAZY);
+        builder.addDependency(InternalServices.FRAMEWORK_STATE_INIT, FrameworkState.class, service.injectedFramework);
+        builder.setInitialMode(Mode.ON_DEMAND);
+
+        // Add the public FRAMEWORK_ACTIVE service that provides the BundleContext
+        FrameworkActivated.addService(serviceTarget);
+
         builder.install();
     }
 
@@ -165,5 +171,24 @@ public final class FrameworkActive extends AbstractFrameworkService {
             }
         }
         return 1;
+    }
+
+    static class FrameworkActivated extends AbstractService<BundleContext> {
+
+        final InjectedValue<BundleContext> injectedBundleContext = new InjectedValue<BundleContext>();
+
+        static void addService(ServiceTarget serviceTarget) {
+            FrameworkActivated service = new FrameworkActivated();
+            ServiceBuilder<BundleContext> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
+            builder.addDependency(Services.FRAMEWORK_INIT, BundleContext.class, service.injectedBundleContext);
+            builder.addDependency(InternalServices.FRAMEWORK_STATE_ACTIVE);
+            builder.setInitialMode(Mode.LAZY);
+            builder.install();
+        }
+
+        @Override
+        public BundleContext getValue() throws IllegalStateException {
+            return injectedBundleContext.getValue();
+        }
     }
 }

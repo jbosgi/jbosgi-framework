@@ -21,8 +21,17 @@ package org.jboss.test.osgi.framework.url;
  * #L%
  */
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.Dictionary;
+import java.util.Hashtable;
+
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
@@ -36,15 +45,6 @@ import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.url.AbstractURLStreamHandlerService;
 import org.osgi.service.url.URLConstants;
 import org.osgi.service.url.URLStreamHandlerService;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.Dictionary;
-import java.util.Hashtable;
 
 /**
  * @author David Bosschaert

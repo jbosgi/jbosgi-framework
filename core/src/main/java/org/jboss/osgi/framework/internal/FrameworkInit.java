@@ -21,19 +21,18 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE;
-import static org.jboss.osgi.framework.IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL;
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_COMPLETE;
-import static org.jboss.osgi.framework.IntegrationServices.PERSISTENT_BUNDLES_INSTALL;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.Services;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
 
 /**
@@ -50,12 +49,16 @@ public final class FrameworkInit extends AbstractFrameworkService {
 
     static void addService(ServiceTarget serviceTarget) {
         FrameworkInit service = new FrameworkInit();
-        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(Services.FRAMEWORK_INIT, service);
-        builder.addDependency(Services.FRAMEWORK_CREATE, FrameworkState.class, service.injectedFramework);
+        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(InternalServices.FRAMEWORK_STATE_INIT, service);
+        builder.addDependency(InternalServices.FRAMEWORK_STATE_CREATE, FrameworkState.class, service.injectedFramework);
         builder.addDependencies(InternalServices.FRAMEWORK_CORE_SERVICES);
-        builder.addDependencies(BOOTSTRAP_BUNDLES_INSTALL, BOOTSTRAP_BUNDLES_COMPLETE);
-        builder.addDependencies(PERSISTENT_BUNDLES_INSTALL, PERSISTENT_BUNDLES_COMPLETE);
-        builder.setInitialMode(Mode.PASSIVE);
+        builder.addDependencies(IntegrationService.BOOTSTRAP_BUNDLES_INSTALL, IntegrationService.BOOTSTRAP_BUNDLES_COMPLETE);
+        builder.addDependencies(IntegrationService.PERSISTENT_BUNDLES_INSTALL, IntegrationService.PERSISTENT_BUNDLES_COMPLETE);
+        builder.setInitialMode(Mode.ON_DEMAND);
+
+        // Add the public FRAMEWORK_INIT service that provides the BundleContext
+        FrameworkInitialized.addService(serviceTarget);
+
         builder.install();
     }
 
@@ -71,5 +74,24 @@ public final class FrameworkInit extends AbstractFrameworkService {
     @Override
     public FrameworkState getValue() {
         return injectedFramework.getValue();
+    }
+
+    static class FrameworkInitialized extends AbstractService<BundleContext> {
+
+        final InjectedValue<BundleContext> injectedBundleContext = new InjectedValue<BundleContext>();
+
+        static void addService(ServiceTarget serviceTarget) {
+            FrameworkInitialized service = new FrameworkInitialized();
+            ServiceBuilder<BundleContext> builder = serviceTarget.addService(Services.FRAMEWORK_INIT, service);
+            builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, service.injectedBundleContext);
+            builder.addDependency(InternalServices.FRAMEWORK_STATE_INIT);
+            builder.setInitialMode(Mode.ON_DEMAND);
+            builder.install();
+        }
+
+        @Override
+        public BundleContext getValue() throws IllegalStateException {
+            return injectedBundleContext.getValue();
+        }
     }
 }

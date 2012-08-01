@@ -21,8 +21,6 @@ package org.jboss.test.osgi.framework.xservice;
  * #L%
  */
 
-import static org.jboss.osgi.framework.IntegrationServices.MODULE_LOADER_PLUGIN;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +35,7 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.framework.AbstractBundleRevisionAdaptor;
 import org.jboss.osgi.framework.BundleManager;
+import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
 import org.jboss.osgi.resolver.XBundle;
@@ -86,7 +85,7 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         XBundle sysbundle = (XBundle) getSystemContext().getBundle();
         BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        ServiceController<?> service = serviceContainer.getRequiredService(MODULE_LOADER_PLUGIN);
+        ServiceController<?> service = serviceContainer.getRequiredService(IntegrationService.MODULE_LOADER_PLUGIN);
         ModuleLoaderPlugin provider = (ModuleLoaderPlugin) service.getValue();
         provider.addModuleSpec(Mockito.mock(XBundleRevision.class), moduleSpec);
 
@@ -101,7 +100,7 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         XBundle sysbundle = (XBundle) getSystemContext().getBundle();
         BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        ServiceController<?> service = serviceContainer.getRequiredService(MODULE_LOADER_PLUGIN);
+        ServiceController<?> service = serviceContainer.getRequiredService(IntegrationService.MODULE_LOADER_PLUGIN);
         ModuleLoaderPlugin provider = (ModuleLoaderPlugin) service.getValue();
         provider.removeModule(brev, module.getIdentifier());
         VFSUtils.safeClose(vfsmap.remove(module));

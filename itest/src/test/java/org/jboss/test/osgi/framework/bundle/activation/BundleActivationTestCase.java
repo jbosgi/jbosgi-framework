@@ -21,8 +21,17 @@ package org.jboss.test.osgi.framework.bundle.activation;
  * #L%
  */
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -41,15 +50,6 @@ import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.SynchronousBundleListener;
 import org.osgi.service.startlevel.StartLevel;
-
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 
 /**
  * BundleActivationTestCase

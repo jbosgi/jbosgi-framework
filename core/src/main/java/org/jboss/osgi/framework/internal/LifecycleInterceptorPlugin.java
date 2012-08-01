@@ -58,8 +58,7 @@ final class LifecycleInterceptorPlugin extends AbstractPluginService<LifecycleIn
     static void addService(ServiceTarget serviceTarget) {
         LifecycleInterceptorPlugin service = new LifecycleInterceptorPlugin();
         ServiceBuilder<LifecycleInterceptorPlugin> builder = serviceTarget.addService(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN, service);
-        builder.addDependency(Services.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(Services.FRAMEWORK_CREATE);
+        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, service.injectedSystemContext);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }

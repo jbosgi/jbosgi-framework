@@ -21,6 +21,10 @@ package org.jboss.test.osgi.framework.bundle;
  * #L%
  */
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
+
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.bundle.support.b.ActivatorB;
@@ -28,10 +32,6 @@ import org.jboss.test.osgi.framework.bundle.support.b.ServiceB;
 import org.jboss.test.osgi.framework.bundle.support.x.ServiceX;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
-
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
 
 /**
  * Bundle lifecycle TestCase.

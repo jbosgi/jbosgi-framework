@@ -21,18 +21,22 @@ package org.jboss.osgi.framework;
  * #L%
  */
 
-import static org.jboss.osgi.framework.Services.INTEGRATION_BASE_NAME;
-
+import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceTarget;
 
 
 /**
- * A collection of integration service names.
+ * An integration service.
  *
  * @author thomas.diesler@jboss.com
- * @since 13-Apr-2012
+ * @since 01-Aug-2012
  */
-public interface IntegrationServices {
+public interface IntegrationService<T> extends Service<T> {
+
+    /** The prefix for all integration plugin services */
+    ServiceName INTEGRATION_BASE_NAME = Services.JBOSGI_BASE_NAME.append("integration");
 
     /** The {@link BootstrapBundlesInstall} service for auto install bundles */
     ServiceName BOOTSTRAP_BUNDLES = INTEGRATION_BASE_NAME.append("BootstrapBundles");
@@ -73,11 +77,18 @@ public interface IntegrationServices {
     /** The {@link BootstrapBundlesComplete} service for persistent bundles */
     ServiceName PERSISTENT_BUNDLES_COMPLETE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.COMPLETE);
 
+    /** The service name for the {@link StorageStatePlugin} */
+    ServiceName STORAGE_STATE_PLUGIN = INTEGRATION_BASE_NAME.append("StorageStatePlugin");
+
     /** The service name for the {@link SystemPathsPlugin} */
     ServiceName SYSTEM_PATHS_PLUGIN = INTEGRATION_BASE_NAME.append("SystemPathsPlugin");
 
     /** The service name for the {@link SystemServicesPlugin} */
     ServiceName SYSTEM_SERVICES_PLUGIN = INTEGRATION_BASE_NAME.append("SystemServicesPlugin");
+
+    ServiceName getServiceName();
+
+    ServiceController<T> install(ServiceTarget serviceTarget);
 
     public enum BootstrapPhase {
 

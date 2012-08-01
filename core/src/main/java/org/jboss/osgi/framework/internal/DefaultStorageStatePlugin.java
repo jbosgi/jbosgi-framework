@@ -30,7 +30,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.StorageStatePlugin;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
@@ -49,7 +49,7 @@ final class DefaultStorageStatePlugin extends AbstractPluginService<StorageState
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultStorageStatePlugin service = new DefaultStorageStatePlugin();
-        ServiceBuilder<StorageStatePlugin> builder = serviceTarget.addService(Services.STORAGE_STATE_PLUGIN, service);
+        ServiceBuilder<StorageStatePlugin> builder = serviceTarget.addService(IntegrationService.STORAGE_STATE_PLUGIN, service);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
         builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, service.injectedDeploymentFactory);
         builder.setInitialMode(Mode.ON_DEMAND);

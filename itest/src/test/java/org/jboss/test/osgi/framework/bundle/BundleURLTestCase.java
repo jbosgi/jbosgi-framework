@@ -21,16 +21,10 @@ package org.jboss.test.osgi.framework.bundle;
  * #L%
  */
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.osgi.spi.OSGiManifestBuilder;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.Asset;
-import org.jboss.shrinkwrap.api.exporter.ZipExporter;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.test.osgi.framework.simple.bundleA.SimpleService;
-import org.junit.Test;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.Constants;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -39,10 +33,16 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Enumeration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.exporter.ZipExporter;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.test.osgi.framework.simple.bundleA.SimpleService;
+import org.junit.Test;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.Constants;
 
 /**
  * The bundle URLs

@@ -21,12 +21,12 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.IntegrationServices.SYSTEM_SERVICES_PLUGIN;
-
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceRegistry;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.SystemServicesPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -36,20 +36,20 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 04-Feb-2011
  */
-final class DefaultSystemServicesPlugin extends AbstractPluginService<SystemServicesPlugin> implements SystemServicesPlugin {
+final class DefaultSystemServicesPlugin extends AbstractPluginService<SystemServicesPlugin> implements SystemServicesPlugin, IntegrationService<SystemServicesPlugin> {
 
-    static void addIntegrationService(ServiceRegistry registry, ServiceTarget serviceTarget) {
-        if (registry.getService(SYSTEM_SERVICES_PLUGIN) == null) {
-            DefaultSystemServicesPlugin service = new DefaultSystemServicesPlugin();
-            ServiceBuilder<SystemServicesPlugin> builder = serviceTarget.addService(SYSTEM_SERVICES_PLUGIN, service);
-            builder.setInitialMode(Mode.ON_DEMAND);
-            builder.install();
-        }
+    @Override
+    public ServiceName getServiceName() {
+        return IntegrationService.SYSTEM_SERVICES_PLUGIN;
     }
 
-    private DefaultSystemServicesPlugin() {
-    }
 
+    @Override
+    public ServiceController<SystemServicesPlugin> install(ServiceTarget serviceTarget) {
+        ServiceBuilder<SystemServicesPlugin> builder = serviceTarget.addService(getServiceName(), this);
+        builder.setInitialMode(Mode.ON_DEMAND);
+        return builder.install();
+    }
 
     @Override
     public void registerSystemServices(BundleContext context) {

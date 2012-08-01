@@ -21,12 +21,8 @@ package org.jboss.test.osgi.framework.classloader;
  * #L%
  */
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.jboss.test.osgi.framework.classloader.support.a.A;
-import org.jboss.test.osgi.framework.classloader.support.b.B;
-import org.jboss.test.osgi.framework.classloader.support.c.CA;
-import org.junit.Test;
-import org.osgi.framework.Bundle;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -36,8 +32,12 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
+import org.jboss.test.osgi.framework.classloader.support.a.A;
+import org.jboss.test.osgi.framework.classloader.support.b.B;
+import org.jboss.test.osgi.framework.classloader.support.c.CA;
+import org.junit.Test;
+import org.osgi.framework.Bundle;
 
 /**
  * BundleClassPathTest.

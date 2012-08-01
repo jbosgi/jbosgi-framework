@@ -21,20 +21,20 @@ package org.jboss.test.osgi.framework.localization;
  * #L%
  */
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
+import static org.junit.Assert.assertEquals;
+
+import java.io.InputStream;
+import java.util.Dictionary;
+import java.util.Locale;
+
 import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
-
-import java.io.InputStream;
-import java.util.Dictionary;
-import java.util.Locale;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * Test the Localization
