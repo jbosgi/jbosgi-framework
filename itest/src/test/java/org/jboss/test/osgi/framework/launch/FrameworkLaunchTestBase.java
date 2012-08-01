@@ -32,6 +32,8 @@ import org.jboss.msc.service.ServiceController.State;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.internal.FrameworkBuilder;
+import org.jboss.osgi.resolver.Adaptable;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiTest;
@@ -52,12 +54,12 @@ import org.osgi.service.startlevel.StartLevel;
  * @author thomas.diesler@jboss.com
  * @since 14-Jul-2012
  */
-public abstract class FrameworkLaunchTest extends OSGiTest {
+public abstract class FrameworkLaunchTestBase extends OSGiTest {
 
     private Framework framework;
 
-    public Map<String, String> getFrameworkInitProperties(boolean cleanOnFirstInit) {
-        Map<String, String> props = new HashMap<String, String>();
+    protected Map<String, Object> getFrameworkInitProperties(boolean cleanOnFirstInit) {
+        Map<String, Object> props = new HashMap<String, Object>();
         props.put(Constants.FRAMEWORK_STORAGE, getBundleStorageDir().getAbsolutePath());
         if (cleanOnFirstInit == true) {
             props.put(Constants.FRAMEWORK_STORAGE_CLEAN, Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT);
@@ -65,45 +67,68 @@ public abstract class FrameworkLaunchTest extends OSGiTest {
         return props;
     }
 
-    public Framework newFramework(Map<String, String> initprops) {
+    protected Framework newFramework(FrameworkBuilder builder) {
+        return framework = builder.createFramework();
+    }
+
+    protected Framework newFramework(Map<String, Object> initprops) {
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
         return framework = factory.newFramework(initprops);
     }
 
-    public Framework getFramework() {
+    protected Framework getFramework() {
         Assert.assertNotNull("Framework not available", framework);
         return framework;
     }
 
-    public BundleContext getBundleContext() {
+    protected BundleContext getBundleContext() {
         return getFramework().getBundleContext();
     }
 
-    public void assertServiceState(State state, ServiceName serviceName) {
+    protected void assertServiceState(State state, ServiceName serviceName) {
         ServiceController<?> controller = getRequiredService(serviceName);
         Assert.assertEquals(state, controller.getState());
     }
 
-    public ServiceController<?> getRequiredService(ServiceName serviceName) {
-        ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
+    protected void assertServiceState(ServiceContainer serviceContainer, State state, ServiceName serviceName) {
+        ServiceController<?> controller = serviceContainer.getRequiredService(serviceName);
+        Assert.assertEquals(state, controller.getState());
+    }
+
+    protected ServiceController<?> getRequiredService(ServiceName serviceName) {
+        ServiceContainer serviceContainer = getServiceContainer();
         return serviceContainer.getRequiredService(serviceName);
     }
 
-    public BundleManager getBundleManager() {
-        XBundle sysbundle = (XBundle) getBundleContext().getBundle();
-        return sysbundle.adapt(BundleManager.class);
+    protected ServiceContainer getServiceContainer() {
+        return ((Adaptable) framework).adapt(ServiceContainer.class);
     }
 
-    public PackageAdmin getPackageAdmin() throws BundleException {
+    protected BundleManager getBundleManager() {
+        return ((Adaptable) framework).adapt(BundleManager.class);
+    }
+
+    protected PackageAdmin getPackageAdmin() throws BundleException {
         BundleContext context = getBundleContext();
         ServiceReference sref = context.getServiceReference(PackageAdmin.class.getName());
         return (PackageAdmin) context.getService(sref);
     }
 
-    public StartLevel getStartLevel() throws BundleException {
+    protected StartLevel getStartLevel() throws BundleException {
         BundleContext context = getBundleContext();
         ServiceReference sref = context.getServiceReference(StartLevel.class.getName());
         return (StartLevel) context.getService(sref);
+    }
+
+    protected File getBundleStorageDir() {
+        String archivesdir = System.getProperty("test.archive.directory", "test-libs");
+        File targetdir = new File(archivesdir).getParentFile().getAbsoluteFile();
+        return new File(targetdir + File.separator + "test-osgi-store").getAbsoluteFile();
+    }
+
+    protected XBundle installBundle(JavaArchive archive) throws BundleException {
+        InputStream input = archive.as(ZipExporter.class).exportAsInputStream();
+        return (XBundle) getBundleContext().installBundle(archive.getName(), input);
     }
 
     public static File exportBundleArchive(JavaArchive archive) {
@@ -111,16 +136,5 @@ public abstract class FrameworkLaunchTest extends OSGiTest {
         File targetFile = new File(basedir + File.separator + archive.getName() + ".jar");
         archive.as(ZipExporter.class).exportTo(targetFile, true);
         return targetFile;
-    }
-
-    public File getBundleStorageDir() {
-        String archivesdir = System.getProperty("test.archive.directory", "test-libs");
-        File targetdir = new File(archivesdir).getParentFile().getAbsoluteFile();
-        return new File(targetdir + File.separator + "test-osgi-store").getAbsoluteFile();
-    }
-
-    public XBundle installBundle(JavaArchive archive) throws BundleException {
-        InputStream input = archive.as(ZipExporter.class).exportAsInputStream();
-        return (XBundle) getBundleContext().installBundle(archive.getName(), input);
     }
 }

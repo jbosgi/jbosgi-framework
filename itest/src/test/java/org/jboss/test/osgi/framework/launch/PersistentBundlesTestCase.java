@@ -46,11 +46,11 @@ import org.osgi.framework.launch.FrameworkFactory;
  * @author thomas.diesler@jboss.com
  * @since 20-Oct-2010
  */
-public class PersistentBundlesTestCase extends FrameworkLaunchTest {
+public class PersistentBundlesTestCase extends FrameworkLaunchTestBase {
 
     @Test
     public void testInstalledBundle() throws Exception {
-        Map<String, String> initprops = getFrameworkInitProperties(true);
+        Map<String, Object> initprops = getFrameworkInitProperties(true);
         Framework framework = newFramework(initprops);
 
         framework.start();
@@ -100,7 +100,7 @@ public class PersistentBundlesTestCase extends FrameworkLaunchTest {
 
     @Test
     public void testUninstalledBundle() throws Exception {
-        Map<String, String> initprops = getFrameworkInitProperties(true);
+        Map<String, Object> initprops = getFrameworkInitProperties(true);
         Framework framework = newFramework(initprops);
 
         framework.start();
@@ -127,7 +127,7 @@ public class PersistentBundlesTestCase extends FrameworkLaunchTest {
 
     @Test
     public void testActiveBundle() throws Exception {
-        Map<String, String> initprops = getFrameworkInitProperties(true);
+        Map<String, Object> initprops = getFrameworkInitProperties(true);
         Framework framework = newFramework(initprops);
 
         framework.start();
@@ -159,7 +159,7 @@ public class PersistentBundlesTestCase extends FrameworkLaunchTest {
 
     @Test
     public void testBundleStartLevel() throws Exception {
-        Map<String, String> initprops = getFrameworkInitProperties(true);
+        Map<String, Object> initprops = getFrameworkInitProperties(true);
         Framework framework = newFramework(initprops);
 
         framework.start();

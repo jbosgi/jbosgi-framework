@@ -161,7 +161,7 @@ public final class FutureServiceValue<T> implements Future<T> {
         }
 
         if (controller.getState() == expectedState)
-            return controller.getValue();
+            return expectedState == State.UP ? controller.getValue() : null;
 
         StartException startException = controller.getStartException();
         Throwable cause = startException != null ? startException.getCause() : startException;

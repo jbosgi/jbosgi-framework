@@ -51,8 +51,8 @@ import org.osgi.service.resolver.ResolutionException;
  * <code>
  * {@link FrameworkActive}
  *         +---{@link FrameworkInit}
- *             +---{@link DefaultPersistentBundlesPlugin}
- *                 +---{@link DefaultAutoInstallPlugin}
+ *             +---{@link DefaultPersistentBundlesInstall}
+ *                 +---{@link DefaultBootstrapBundlesInstall}
  *             +---{@link FrameworkCoreServices}
  *                 +---{@link LifecycleInterceptorPlugin}
  *                 +---{@link PackageAdminPlugin}

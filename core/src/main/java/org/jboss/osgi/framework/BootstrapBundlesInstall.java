@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
@@ -57,6 +58,7 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         addServiceDependencies(builder);
+        builder.setInitialMode(Mode.ON_DEMAND);
         return builder.install();
     }
 

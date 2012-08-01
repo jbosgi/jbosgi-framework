@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.Constants.DEFAULT_FRAMEWORK_INIT_TIMEOUT;
 import static org.jboss.osgi.framework.Constants.DEFAULT_FRAMEWORK_START_TIMEOUT;
-import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS;
 import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_INIT_TIMEOUT;
 import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_START_TIMEOUT;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
@@ -44,9 +43,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.FutureServiceValue;
@@ -154,24 +153,16 @@ final class FrameworkProxy implements Framework, Adaptable {
             boolean allowContainerShutdown = false;
             ServiceContainer serviceContainer = frameworkBuilder.getServiceContainer();
             if (serviceContainer == null) {
-                Object maxThreads = frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS);
-                if (maxThreads == null)
-                    maxThreads = SecurityActions.getSystemProperty(PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS, null);
-                if (maxThreads != null) {
-                    serviceContainer = ServiceContainer.Factory.create(new Integer("" + maxThreads), 30L, TimeUnit.SECONDS);
-                } else {
-                    serviceContainer = ServiceContainer.Factory.create();
-                }
+                serviceContainer = frameworkBuilder.createServiceContainer();
                 allowContainerShutdown = true;
             }
             lenientContainer = new LenientShutdownContainer(serviceContainer, allowContainerShutdown);
+            
             ServiceTarget serviceTarget = frameworkBuilder.getServiceTarget();
             if (serviceTarget == null)
                 serviceTarget = serviceContainer.subTarget();
 
             frameworkBuilder.createFrameworkServicesInternal(serviceContainer, serviceTarget, firstInit);
-            DefaultBootstrapBundlesInstall.addService(serviceTarget);
-            DefaultPersistentBundlesInstall.addService(serviceTarget);
 
             proxyState.set(Bundle.STARTING);
             frameworkState = awaitFrameworkInit();

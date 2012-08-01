@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,11 +22,13 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
+import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.log.JDKModuleLogger;
@@ -71,6 +74,17 @@ public final class FrameworkBuilder {
         return serviceContainer;
     }
 
+    public ServiceContainer createServiceContainer() {
+        Object maxThreads = getProperty(PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS);
+        if (maxThreads == null)
+            maxThreads = SecurityActions.getSystemProperty(PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS, null);
+        if (maxThreads != null) {
+            return ServiceContainer.Factory.create(new Integer("" + maxThreads), 30L, TimeUnit.SECONDS);
+        } else {
+            return ServiceContainer.Factory.create();
+        }
+    }
+
     public void setServiceContainer(ServiceContainer serviceContainer) {
         assertNotClosed();
         this.serviceContainer = serviceContainer;
@@ -90,9 +104,20 @@ public final class FrameworkBuilder {
         return new FrameworkProxy(this);
     }
 
-    public void createFrameworkServices(boolean firstInit) {
+    public ServiceContainer createFrameworkServices(boolean firstInit) {
         assertNotClosed();
+        ServiceContainer serviceContainer = getOrCreateServiceContainer();
+        ServiceTarget serviceTarget = getOrCreateServiceTarget(serviceContainer);
         createFrameworkServicesInternal(serviceContainer, serviceTarget, firstInit);
+        return serviceContainer;
+    }
+
+    private ServiceContainer getOrCreateServiceContainer() {
+        return serviceContainer != null ? serviceContainer : createServiceContainer();
+    }
+
+    private ServiceTarget getOrCreateServiceTarget(ServiceContainer serviceContainer) {
+        return serviceTarget != null ? serviceTarget : serviceContainer.subTarget();
     }
 
     void createFrameworkServicesInternal(ServiceRegistry serviceRegistry, ServiceTarget serviceTarget, boolean firstInit) {
@@ -126,9 +151,11 @@ public final class FrameworkBuilder {
             SystemBundleService.addService(serviceTarget, frameworkState);
             SystemContextService.addService(serviceTarget);
 
+            DefaultBootstrapBundlesInstall.addService(serviceTarget);
             DefaultBundleInstallPlugin.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultFrameworkModulePlugin.addIntegrationService(serviceRegistry, serviceTarget);
             DefaultModuleLoaderPlugin.addIntegrationService(serviceRegistry, serviceTarget);
+            DefaultPersistentBundlesInstall.addService(serviceTarget);
             DefaultSystemPathsPlugin.addIntegrationService(serviceRegistry, serviceTarget, this);
             DefaultSystemServicesPlugin.addIntegrationService(serviceRegistry, serviceTarget);
 
