@@ -33,7 +33,7 @@
     <parent>
         <groupId>org.jboss.osgi.framework</groupId>
         <artifactId>jbosgi-framework-parent</artifactId>
-        <version>2.0.0.CR16</version>
+        <version>2.0.0.CR17-SNAPSHOT</version>
     </parent>
 
     <name>JBossOSGi Framework Aggregated</name>
