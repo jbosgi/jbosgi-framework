@@ -88,7 +88,7 @@ public final class FrameworkActive extends AbstractFrameworkService {
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
 
-    static void addService(ServiceTarget serviceTarget) {
+    static void addService(ServiceTarget serviceTarget, Mode initialMode) {
         FrameworkActive service = new FrameworkActive();
         ServiceBuilder<FrameworkState> builder = serviceTarget.addService(InternalServices.FRAMEWORK_STATE_ACTIVE, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
@@ -96,7 +96,7 @@ public final class FrameworkActive extends AbstractFrameworkService {
         builder.setInitialMode(Mode.ON_DEMAND);
 
         // Add the public FRAMEWORK_ACTIVE service that provides the BundleContext
-        FrameworkActivated.addService(serviceTarget);
+        FrameworkActivated.addService(serviceTarget, initialMode);
 
         builder.install();
     }
@@ -177,12 +177,12 @@ public final class FrameworkActive extends AbstractFrameworkService {
 
         final InjectedValue<BundleContext> injectedBundleContext = new InjectedValue<BundleContext>();
 
-        static void addService(ServiceTarget serviceTarget) {
+        static void addService(ServiceTarget serviceTarget, Mode initialMode) {
             FrameworkActivated service = new FrameworkActivated();
             ServiceBuilder<BundleContext> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
             builder.addDependency(Services.FRAMEWORK_INIT, BundleContext.class, service.injectedBundleContext);
             builder.addDependency(InternalServices.FRAMEWORK_STATE_ACTIVE);
-            builder.setInitialMode(Mode.LAZY);
+            builder.setInitialMode(initialMode);
             builder.install();
         }
 

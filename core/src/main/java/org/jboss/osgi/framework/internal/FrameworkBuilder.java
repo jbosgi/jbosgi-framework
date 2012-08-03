@@ -36,6 +36,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.log.JDKModuleLogger;
 import org.jboss.modules.log.ModuleLogger;
 import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.IntegrationService;
@@ -53,6 +54,7 @@ public final class FrameworkBuilder {
     private final Set<ServiceName> excludedServices = new HashSet<ServiceName>();
     private ServiceContainer serviceContainer;
     private ServiceTarget serviceTarget;
+    private Mode initialMode = Mode.LAZY;
     private boolean closed;
 
     public FrameworkBuilder(Map<String, Object> props) {
@@ -112,6 +114,15 @@ public final class FrameworkBuilder {
         return Collections.unmodifiableSet(excludedServices);
     }
 
+    public Mode getInitialMode() {
+        return initialMode;
+    }
+
+    public void setInitialMode(Mode initialMode) {
+        assertNotClosed();
+        this.initialMode = initialMode;
+    }
+
     public Framework createFramework() {
         assertNotClosed();
         return new FrameworkProxy(this);
@@ -141,7 +152,7 @@ public final class FrameworkBuilder {
             BundleStoragePlugin.addService(serviceTarget, firstInit);
             DeploymentFactoryPlugin.addService(serviceTarget);
             EnvironmentPlugin.addService(serviceTarget);
-            FrameworkActive.addService(serviceTarget);
+            FrameworkActive.addService(serviceTarget, initialMode);
             FrameworkCoreServices.addService(serviceTarget);
             FrameworkEventsPlugin.addService(serviceTarget);
             FrameworkInit.addService(serviceTarget);
