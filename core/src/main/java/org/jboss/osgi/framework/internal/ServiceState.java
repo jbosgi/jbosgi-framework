@@ -63,7 +63,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
 
     private final ServiceManagerPlugin serviceManager;
     private final XBundle ownerBundle;
-    private final Set<ServiceName> serviceNames;
+    private final String[] classNames;
     private final long serviceId;
     private final ValueProvider valueProvider;
     private final ServiceReference reference;
@@ -86,16 +86,10 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         this.ownerBundle = owner;
         this.serviceId = serviceId;
         this.valueProvider = valueProvider;
+        this.classNames = classNames;
 
         if (!valueProvider.isFactoryValue() && !checkValidClassNames(owner, classNames, valueProvider.getValue()))
             throw MESSAGES.illegalArgumentInvalidObjectClass(Arrays.toString(classNames));
-
-        // Generate the service names
-        serviceNames = new HashSet<ServiceName>(classNames.length);
-        for (int i = 0; i < classNames.length; i++) {
-            ServiceName serviceName = ServiceState.createServiceName(classNames[i]);
-            serviceNames.add(serviceName);
-        }
 
         if (properties == null)
             properties = new Hashtable();
@@ -193,8 +187,9 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         return registration;
     }
 
-    Set<ServiceName> getServiceNames() {
-        return Collections.unmodifiableSet(serviceNames);
+
+    List<String> getClassNames() {
+        return Arrays.asList(classNames);
     }
 
     @Override

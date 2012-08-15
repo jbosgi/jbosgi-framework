@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -27,23 +28,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.jboss.msc.service.AbstractService;
-import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.util.NoFilter;
@@ -73,12 +67,8 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
 
-    // The ServiceId generator
-    private AtomicLong identityGenerator = new AtomicLong();
-    // The cached service container
-    private ServiceContainer serviceContainer;
-    // The cached service target for all child services
-    private ServiceTarget serviceTarget;
+    private final Map<String, List<ServiceState>> serviceContainer = new HashMap<String, List<ServiceState>>();
+    private final AtomicLong identityGenerator = new AtomicLong();
 
     static void addService(ServiceTarget serviceTarget) {
         ServiceManagerPlugin service = new ServiceManagerPlugin();
@@ -91,18 +81,6 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
     }
 
     private ServiceManagerPlugin() {
-    }
-
-    @Override
-    public void start(StartContext context) throws StartException {
-        super.start(context);
-        serviceContainer = context.getController().getServiceContainer();
-        serviceTarget = context.getChildTarget();
-    }
-
-    @Override
-    public void stop(StopContext context) {
-        super.stop(context);
     }
 
     @Override
@@ -158,31 +136,15 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
         ServiceState serviceState = new ServiceState(this, bundleState, serviceId, classNames, valueProvider, properties);
         LOGGER.debugf("Register service: %s", serviceState);
 
-        for (ServiceName serviceName : serviceState.getServiceNames()) {
-            // Obtain an interned string representation of the service name
-            // having it interned means that two services with the same name will
-            // return the same object.
-            String sns = serviceName.getCanonicalName().intern();
-
-            // Now synchronize on the string representation so that two concurrent
-            // registrations of two services with the same name will not race to create an MSC service.
-            synchronized (sns) {
-                @SuppressWarnings("unchecked")
-                ServiceController<List<ServiceState>> controller = (ServiceController<List<ServiceState>>) serviceContainer.getService(serviceName);
-                if (controller != null) {
-                    List<ServiceState> serviceStates = controller.getValue();
+        synchronized (serviceContainer) {
+            for (String className : classNames) {
+                List<ServiceState> serviceStates = serviceContainer.get(className);
+                if (serviceStates != null) {
                     serviceStates.add(serviceState);
                 } else {
-                    final List<ServiceState> serviceStates = new CopyOnWriteArrayList<ServiceState>();
+                    serviceStates = new ArrayList<ServiceState>();
                     serviceStates.add(serviceState);
-                    Service<List<ServiceState>> service = new AbstractService<List<ServiceState>>() {
-                        public List<ServiceState> getValue() throws IllegalStateException {
-                            // [TODO] for injection to work this needs to be the Object value
-                            return serviceStates;
-                        }
-                    };
-                    ServiceBuilder<List<ServiceState>> builder = serviceTarget.addService(serviceName, service);
-                    builder.install();
+                    serviceContainer.put(className, serviceStates);
                 }
             }
         }
@@ -242,49 +204,38 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
         return result;
     }
 
-    @SuppressWarnings("unchecked")
     private List<ServiceState> getServiceReferencesInternal(final AbstractBundleState bundleState, String className, Filter filter, boolean checkAssignable) {
         assert bundleState != null : "Null bundleState";
         assert filter != null : "Null filter";
 
-        Set<ServiceName> serviceNames = new HashSet<ServiceName>();
+        Set<ServiceState> initialSet = new HashSet<ServiceState>();
         if (className != null) {
-            ServiceName serviceName = ServiceState.createServiceName(className);
-            if (serviceContainer.getService(serviceName) != null) {
-                serviceNames.add(serviceName);
+            List<ServiceState> list = serviceContainer.get(className);
+            if (list != null) {
+                initialSet.addAll(list);
             }
         } else {
-            for (ServiceName aux : serviceContainer.getServiceNames()) {
-                if (InternalServices.SERVICE_BASE_NAME.isParentOf(aux)) {
-                    serviceNames.add(aux);
-                }
+            for (List<ServiceState> list : serviceContainer.values()) {
+                initialSet.addAll(list);
             }
         }
 
-        if (serviceNames.isEmpty())
+        if (initialSet.isEmpty())
             return Collections.emptyList();
 
         Set<ServiceState> resultset = new HashSet<ServiceState>();
-        for (ServiceName serviceName : serviceNames) {
-            final ServiceController<?> controller = serviceContainer.getService(serviceName);
-            if (controller != null) {
-                if (InternalServices.SERVICE_BASE_NAME.isParentOf(serviceName)) {
-                    List<ServiceState> serviceStates = (List<ServiceState>) controller.getValue();
-                    for (ServiceState serviceState : serviceStates) {
-                        if (isMatchingService(bundleState, serviceState, className, filter, checkAssignable)) {
-                            resultset.add(serviceState);
-                        }
-                    }
-                }
+        for (ServiceState serviceState : initialSet) {
+            if (isMatchingService(bundleState, serviceState, className, filter, checkAssignable)) {
+                resultset.add(serviceState);
             }
         }
 
         // Sort the result
-        List<ServiceState> resultlist = new ArrayList<ServiceState>(resultset);
-        if (resultlist.size() > 1)
-            Collections.sort(resultlist, ServiceReferenceComparator.getInstance());
+        List<ServiceState> resultList = new ArrayList<ServiceState>(resultset);
+        if (resultList.size() > 1)
+            Collections.sort(resultList, ServiceReferenceComparator.getInstance());
 
-        return Collections.unmodifiableList(resultlist);
+        return Collections.unmodifiableList(resultList);
     }
 
     private boolean isMatchingService(AbstractBundleState bundleState, ServiceState serviceState, String clazzName, Filter filter, boolean checkAssignable) {
@@ -325,27 +276,23 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
     /**
      * Unregister the given service.
      */
-    @SuppressWarnings("unchecked")
     void unregisterService(ServiceState serviceState) {
         synchronized (serviceState) {
 
             if (serviceState.isUnregistered())
                 return;
 
-            for (ServiceName serviceName : serviceState.getServiceNames()) {
-                LOGGER.debugf("Unregister service: %s", serviceName);
-                try {
-                    ServiceController<?> controller = serviceContainer.getService(serviceName);
-                    if (controller != null) {
-                        List<ServiceState> serviceStates = (List<ServiceState>) controller.getValue();
-                        serviceStates.remove(serviceState);
-                        if (serviceStates.isEmpty()) {
-                            BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-                            bundleManager.setServiceMode(controller, Mode.REMOVE);
+            synchronized (serviceContainer) {
+                for (String className : serviceState.getClassNames()) {
+                    LOGGER.debugf("Unregister service: %s", className);
+                    try {
+                        List<ServiceState> serviceStates = serviceContainer.get(className);
+                        if (serviceStates != null) {
+                            serviceStates.remove(serviceState);
                         }
+                    } catch (RuntimeException ex) {
+                        LOGGER.errorCannotRemoveService(ex, className);
                     }
-                } catch (RuntimeException ex) {
-                    LOGGER.errorCannotRemoveService(ex, serviceName);
                 }
             }
 

@@ -33,7 +33,6 @@ import org.jboss.logging.LogMessage;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Message;
 import org.jboss.logging.MessageLogger;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
@@ -188,7 +187,7 @@ public interface FrameworkLogger extends BasicLogger {
 
     @LogMessage(level = ERROR)
     @Message(id = 11033, value = "Cannot remove service: %s")
-    void errorCannotRemoveService(@Cause Throwable cause, ServiceName serviceName);
+    void errorCannotRemoveService(@Cause Throwable cause, String className);
 
     @LogMessage(level = ERROR)
     @Message(id = 11034, value = "Service interface [%s] loaded from [%s] is not assignable from [%s] loaded from [%s]")

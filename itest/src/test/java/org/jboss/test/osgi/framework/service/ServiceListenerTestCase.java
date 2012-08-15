@@ -1,4 +1,5 @@
 package org.jboss.test.osgi.framework.service;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -30,6 +31,9 @@ import java.util.Hashtable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import junit.framework.Assert;
 
 import org.jboss.osgi.spi.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
@@ -207,6 +211,7 @@ public class ServiceListenerTestCase extends OSGiFrameworkTest {
                         throw new IllegalStateException(e);
                     }
                 }
+
                 public void ungetService(Bundle bundle, ServiceRegistration registration, Object service) {
                 }
             };
@@ -314,6 +319,60 @@ public class ServiceListenerTestCase extends OSGiFrameworkTest {
         } finally {
             bundleA.uninstall();
             bundleB.uninstall();
+        }
+    }
+
+    @Test
+    public void testServiceAccessFromListener() throws Exception {
+        Bundle bundle = installBundle(getBundleArchiveA());
+        try {
+            bundle.start();
+
+            final BundleContext context = bundle.getBundleContext();
+            final AtomicInteger counter = new AtomicInteger();
+            ServiceListener listener = new ServiceListener() {
+                @Override
+                public void serviceChanged(ServiceEvent event) {
+                    if (ServiceEvent.REGISTERED == event.getType()) {
+                        ServiceReference sref = event.getServiceReference();
+                        if (context.getService(sref) != null)
+                            counter.incrementAndGet();
+                    }
+                }
+            };
+            context.addServiceListener(listener);
+            context.registerService(BundleContext.class.getName(), context, null);
+            Assert.assertEquals(1, counter.get());
+
+        } finally {
+            bundle.uninstall();
+        }
+    }
+
+    @Test
+    public void testServiceReferenceFromListener() throws Exception {
+        Bundle bundle = installBundle(getBundleArchiveA());
+        try {
+            bundle.start();
+
+            final BundleContext context = bundle.getBundleContext();
+            final AtomicInteger counter = new AtomicInteger();
+            ServiceListener listener = new ServiceListener() {
+                @Override
+                public void serviceChanged(ServiceEvent event) {
+                    if (ServiceEvent.REGISTERED == event.getType()) {
+                        ServiceReference sref = context.getServiceReference(BundleContext.class.getName());
+                        if (context.getService(sref) != null)
+                            counter.incrementAndGet();
+                    }
+                }
+            };
+            context.addServiceListener(listener);
+            context.registerService(BundleContext.class.getName(), context, null);
+            Assert.assertEquals(1, counter.get());
+
+        } finally {
+            bundle.uninstall();
         }
     }
 
