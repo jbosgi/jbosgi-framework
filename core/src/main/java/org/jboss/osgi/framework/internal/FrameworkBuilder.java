@@ -157,6 +157,7 @@ public final class FrameworkBuilder {
             FrameworkEventsPlugin.addService(serviceTarget);
             FrameworkInit.addService(serviceTarget);
             LifecycleInterceptorPlugin.addService(serviceTarget);
+            LockManagerPlugin.addService(serviceTarget);
             ModuleManagerPlugin.addService(serviceTarget);
             NativeCodePlugin.addService(serviceTarget);
             PackageAdminPlugin.addService(serviceTarget);

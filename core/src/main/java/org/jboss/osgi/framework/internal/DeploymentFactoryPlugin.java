@@ -93,7 +93,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
             dep.addAttachment(OSGiMetaData.class, metadata);
             return dep;
         } catch (NumberFormatException nfe) {
-            throw FrameworkMessages.MESSAGES.bundleInvalidNumberFormat(nfe, nfe.getMessage());
+            throw FrameworkMessages.MESSAGES.invalidNumberFormat(nfe, nfe.getMessage());
         } catch (BundleException ex) {
             // No valid OSGi manifest. Fallback to jbosgi-xservice.properties
             cause = ex;
@@ -165,7 +165,7 @@ final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFact
         }
 
         if (metadata == null)
-            throw MESSAGES.bundleInvalidDeployment(deployment);
+            throw MESSAGES.invalidDeployment(deployment);
 
         deployment.addAttachment(OSGiMetaData.class, metadata);
         return metadata;

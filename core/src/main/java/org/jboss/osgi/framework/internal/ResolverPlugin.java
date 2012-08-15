@@ -32,6 +32,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeoutException;
 import java.util.Set;
 
 import org.jboss.modules.ModuleIdentifier;
@@ -85,6 +86,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
     private final InjectedValue<ModuleLoaderPlugin> injectedModuleLoader = new InjectedValue<ModuleLoaderPlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
+    private final InjectedValue<LockManagerPlugin> injectedLockManager = new InjectedValue<LockManagerPlugin>();
     private XResolver resolver;
 
     static void addService(ServiceTarget serviceTarget) {
@@ -95,6 +97,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, service.injectedNativeCode);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.addDependency(IntegrationService.MODULE_LOADER_PLUGIN, ModuleLoaderPlugin.class, service.injectedModuleLoader);
+        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, service.injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -128,22 +131,42 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
     }
 
     @Override
-    public synchronized Map<Resource, List<Wire>> resolve(ResolveContext context) throws ResolutionException {
-        return resolver.resolve(context);
+    public Map<Resource, List<Wire>> resolve(ResolveContext context) throws ResolutionException {
+        LockManagerPlugin lockManager = injectedLockManager.getValue();
+        try {
+            lockManager.aquireFrameworkLock();
+            try {
+                return resolver.resolve(context);
+            } finally {
+                lockManager.releaseFrameworkLock();
+            }
+        } catch (TimeoutException ex) {
+            throw new ResolutionException(ex);
+        }
     }
 
     @Override
-    public synchronized Map<Resource, Wiring> resolveAndApply(XResolveContext context) throws ResolutionException {
-        Map<Resource, List<Wire>> wiremap = resolver.resolve(context);
-        Map<Resource, Wiring> result = applyResolverResults(wiremap);
-        for (Entry<Resource, Wiring> entry : result.entrySet()) {
-            XBundleRevision res = (XBundleRevision) entry.getKey();
-            res.addAttachment(Wiring.class, entry.getValue());
+    public Map<Resource, Wiring> resolveAndApply(XResolveContext context) throws ResolutionException {
+        LockManagerPlugin lockManager = injectedLockManager.getValue();
+        try {
+            lockManager.aquireFrameworkLock();
+            try {
+                Map<Resource, List<Wire>> wiremap = resolver.resolve(context);
+                Map<Resource, Wiring> result = applyResolverResults(wiremap);
+                for (Entry<Resource, Wiring> entry : result.entrySet()) {
+                    XBundleRevision res = (XBundleRevision) entry.getKey();
+                    res.addAttachment(Wiring.class, entry.getValue());
+                }
+                return result;
+            } finally {
+                lockManager.releaseFrameworkLock();
+            }
+        } catch (TimeoutException ex) {
+            throw new ResolutionException(ex);
         }
-        return result;
     }
 
-    synchronized Map<Resource, Wiring> resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
+    Map<Resource, Wiring> resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
         XEnvironment env = injectedEnvironment.getValue();
         XResolveContext context = createResolveContext(env, mandatory, optional);
         return resolveAndApply(context);
@@ -243,12 +266,14 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
         // For every resolved host bundle create a {@link Module} service
         createModuleServices(wiremap);
 
+        // Construct and apply the resource wiring map
+        XEnvironment env = injectedEnvironment.getValue();
+        Map<Resource, Wiring> wiring = env.updateWiring(wiremap);
+
         // Change the bundle state to RESOLVED
         setBundleToResolved(brevmap);
 
-        // Construct and apply the resource wiring map
-        XEnvironment env = injectedEnvironment.getValue();
-        return env.updateWiring(wiremap);
+        return wiring;
     }
 
     private void attachFragmentsToHost(Map<BundleRevision, List<BundleWire>> wiremap) {

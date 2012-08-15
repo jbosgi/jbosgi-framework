@@ -54,13 +54,13 @@ final class BundleValidatorR4 implements BundleValidator {
         // Missing Bundle-SymbolicName
         final String symbolicName = osgiMetaData.getBundleSymbolicName();
         if (symbolicName == null)
-            throw MESSAGES.bundleMissingBundleSymbolicName(userBundle);
+            throw MESSAGES.missingBundleSymbolicName(userBundle);
 
         // Bundle-ManifestVersion value not equal to 2, unless the Framework specifically
         // recognizes the semantics of a later release.
         int manifestVersion = osgiMetaData.getBundleManifestVersion();
         if (manifestVersion > 2)
-            throw MESSAGES.bundleUnsupportedBundleManifestVersion(manifestVersion, userBundle);
+            throw MESSAGES.unsupportedBundleManifestVersion(manifestVersion, userBundle);
 
         // Multiple imports of a given package.
         // Specification-version and version specified together (for the same package(s)) but with different values
@@ -70,16 +70,16 @@ final class BundleValidatorR4 implements BundleValidator {
             for (PackageAttribute packageAttribute : importPackages) {
                 String packageName = packageAttribute.getAttribute();
                 if (packages.contains(packageName))
-                    throw MESSAGES.bundleDuplicatePackageImport(packageName, userBundle);
+                    throw MESSAGES.duplicatePackageImport(packageName, userBundle);
                 packages.add(packageName);
 
                 if (packageName.startsWith("java."))
-                    throw MESSAGES.bundleNotAllowdToImportJavaPackage(userBundle);
+                    throw MESSAGES.notAllowdToImportJavaPackage(userBundle);
 
                 String version = packageAttribute.getAttributeValue(VERSION_ATTRIBUTE, String.class);
                 String specificationVersion = packageAttribute.getAttributeValue(PACKAGE_SPECIFICATION_VERSION, String.class);
                 if (version != null && specificationVersion != null && version.equals(specificationVersion) == false)
-                    throw MESSAGES.bundlePackageVersionAndSpecificationVersionMissmatch(packageName, userBundle);
+                    throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, userBundle);
             }
         }
 
@@ -91,20 +91,20 @@ final class BundleValidatorR4 implements BundleValidator {
             for (PackageAttribute packageAttr : exportPackages) {
                 String packageName = packageAttr.getAttribute();
                 if (packageName.startsWith("java."))
-                    throw MESSAGES.bundleNotAllowdToExportJavaPackage(userBundle);
+                    throw MESSAGES.notAllowdToExportJavaPackage(userBundle);
 
                 String versionAttr = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
                 String specificationAttr = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
                 if (versionAttr != null && specificationAttr != null && versionAttr.equals(specificationAttr) == false)
-                    throw MESSAGES.bundlePackageVersionAndSpecificationVersionMissmatch(packageName, userBundle);
+                    throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, userBundle);
 
                 String symbolicNameAttr = packageAttr.getAttributeValue(Constants.BUNDLE_SYMBOLICNAME_ATTRIBUTE, String.class);
                 if (symbolicNameAttr != null)
-                    throw MESSAGES.bundlePackageCannotSpecifyBundleSymbolicName(packageName, userBundle);
+                    throw MESSAGES.packageCannotSpecifyBundleSymbolicName(packageName, userBundle);
 
                 String bundleVersionAttr = packageAttr.getAttributeValue(Constants.BUNDLE_VERSION_ATTRIBUTE, String.class);
                 if (bundleVersionAttr != null)
-                    throw MESSAGES.bundlePackageCannotSpecifyBundleVersion(packageName, userBundle);
+                    throw MESSAGES.packageCannotSpecifyBundleVersion(packageName, userBundle);
             }
         }
 
@@ -116,14 +116,14 @@ final class BundleValidatorR4 implements BundleValidator {
                 String versionAttr = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
                 String specificationAttr = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
                 if (versionAttr != null && specificationAttr != null && versionAttr.equals(specificationAttr) == false)
-                    throw MESSAGES.bundlePackageVersionAndSpecificationVersionMissmatch(packageName, userBundle);
+                    throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, userBundle);
             }
         }
 
         // Installing a bundle that has the same symbolic name and version as an already installed bundle.
         for (Bundle bundle : userBundle.getBundleManager().getBundles()) {
             if (userBundle.getSymbolicName().equals(bundle.getSymbolicName()) && userBundle.getVersion().equals(bundle.getVersion())) {
-                throw MESSAGES.bundleNameAndVersionAlreadyInstalled(userBundle);
+                throw MESSAGES.nameAndVersionAlreadyInstalled(userBundle);
             }
         }
 
@@ -134,7 +134,7 @@ final class BundleValidatorR4 implements BundleValidator {
             String extension = hostAttr.getDirectiveValue(EXTENSION_DIRECTIVE, String.class);
             if (extension != null) {
                 if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(fragmentHost) == false)
-                    throw MESSAGES.bundleInvalidFragmentHostForExtensionFragment(userBundle);
+                    throw MESSAGES.invalidFragmentHostForExtensionFragment(userBundle);
 
                 if (EXTENSION_BOOTCLASSPATH.equals(extension))
                     throw MESSAGES.unsupportedBootClasspathExtension();

@@ -168,7 +168,7 @@ public final class FutureServiceValue<T> implements Future<T> {
         if (cause instanceof RuntimeException) {
             throw (RuntimeException)cause;
         }
-        throw MESSAGES.executionCannotGetServiceValue(cause, serviceName);
+        throw MESSAGES.cannotGetServiceValue(cause, serviceName);
     }
 
     private void processTimeoutException(TimeoutException exception) {

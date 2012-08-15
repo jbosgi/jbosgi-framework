@@ -69,35 +69,39 @@ public class ModuleInstallTestCase extends AbstractModuleIntegrationTest {
         }
 
         Module moduleB = loadModule(getModuleB());
-        XBundle bundleB = installResource(moduleB).getBundle();
-        Assert.assertEquals(bundleA.getBundleId() + 1, bundleB.getBundleId());
+        XBundleRevision brevB = installResource(moduleB);
+        try {
+            XBundle bundleB = brevB.getBundle();
+            Assert.assertEquals(bundleA.getBundleId() + 1, bundleB.getBundleId());
 
-        bundleA.start();
-        assertLoadClass(bundleA, ModuleServiceX.class.getName(), bundleB);
+            bundleA.start();
+            assertLoadClass(bundleA, ModuleServiceX.class.getName(), bundleB);
 
-        // verify wiring for A
-        XBundleRevision brevA = bundleA.getBundleRevision();
-        Assert.assertSame(bundleA, brevA.getBundle());
-        BundleWiring wiringA = brevA.getWiring();
-        List<BundleWire> requiredA = wiringA.getRequiredWires(null);
-        Assert.assertEquals(1, requiredA.size());
-        BundleWire wireA = requiredA.get(0);
-        Assert.assertSame(brevA, wireA.getRequirer());
-        Assert.assertSame(bundleB, wireA.getProvider().getBundle());
-        List<BundleWire> providedA = wiringA.getProvidedWires(null);
-        Assert.assertEquals(0, providedA.size());
+            // verify wiring for A
+            XBundleRevision brevA = bundleA.getBundleRevision();
+            Assert.assertSame(bundleA, brevA.getBundle());
+            BundleWiring wiringA = brevA.getWiring();
+            List<BundleWire> requiredA = wiringA.getRequiredWires(null);
+            Assert.assertEquals(1, requiredA.size());
+            BundleWire wireA = requiredA.get(0);
+            Assert.assertSame(brevA, wireA.getRequirer());
+            Assert.assertSame(bundleB, wireA.getProvider().getBundle());
+            List<BundleWire> providedA = wiringA.getProvidedWires(null);
+            Assert.assertEquals(0, providedA.size());
 
-        // verify wiring for B
-        XBundleRevision brevB = bundleB.getBundleRevision();
-        Assert.assertSame(bundleB, brevB.getBundle());
-        BundleWiring wiringB = brevB.getWiring();
-        List<BundleWire> requiredB = wiringB.getRequiredWires(null);
-        Assert.assertEquals(0, requiredB.size());
-        List<BundleWire> providedB = wiringB.getProvidedWires(null);
-        Assert.assertEquals(1, providedB.size());
-        BundleWire wireB = providedB.get(0);
-        Assert.assertSame(brevA, wireB.getRequirer());
-        Assert.assertSame(bundleB, wireB.getProvider().getBundle());
+            // verify wiring for B
+            Assert.assertSame(bundleB, brevB.getBundle());
+            BundleWiring wiringB = brevB.getWiring();
+            List<BundleWire> requiredB = wiringB.getRequiredWires(null);
+            Assert.assertEquals(0, requiredB.size());
+            List<BundleWire> providedB = wiringB.getProvidedWires(null);
+            Assert.assertEquals(1, providedB.size());
+            BundleWire wireB = providedB.get(0);
+            Assert.assertSame(brevA, wireB.getRequirer());
+            Assert.assertSame(bundleB, wireB.getProvider().getBundle());
+        } finally {
+            removeModule(brevB, moduleB);
+        }
     }
 
     private JavaArchive getBundleA() {

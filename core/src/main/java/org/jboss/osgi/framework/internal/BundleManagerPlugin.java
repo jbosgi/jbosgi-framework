@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
@@ -54,6 +53,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.internal.AbstractBundleState.BundleLock.Method;
 import org.jboss.osgi.framework.util.Java;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.VersionRange;
@@ -101,6 +101,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
+    final InjectedValue<LockManagerPlugin> injectedLockManager = new InjectedValue<LockManagerPlugin>();
     final InjectedValue<Boolean> injectedFrameworkActive = new InjectedValue<Boolean>();
 
     private final FrameworkBuilder frameworkBuilder;
@@ -111,8 +112,9 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
 
     static BundleManagerPlugin addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
         BundleManagerPlugin service = new BundleManagerPlugin(frameworkBuilder);
-        ServiceBuilder<BundleManager> builder = serviceTarget.addService(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, service);
+        ServiceBuilder<BundleManager> builder = serviceTarget.addService(Services.BUNDLE_MANAGER, service);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
+        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, service.injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
         return service;
@@ -368,7 +370,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     }
 
     void uninstallBundle(UserBundleState userBundle, int options) {
-        if (userBundle.aquireUninstallLock()) {
+        if (userBundle.aquireBundleLock(Method.UNINSTALL)) {
             try {
                 int state = userBundle.getState();
                 if (state == Bundle.UNINSTALLED)
@@ -414,7 +416,7 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
                     }
                 }
             } finally {
-                userBundle.releaseUninstallLock();
+                userBundle.releaseBundleLock(Method.UNINSTALL);
             }
         }
     }

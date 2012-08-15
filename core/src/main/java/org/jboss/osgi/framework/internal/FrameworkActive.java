@@ -78,6 +78,7 @@ import org.osgi.service.resolver.ResolutionException;
  *                                         +---{@link BundleStoragePlugin}
  *                                             +---{@link BundleManagerPlugin}
  *                                                 +---{@link EnvironmentPlugin}
+ *                                                     +---{@link LockManagerPlugin}
  * </code>
  *
  * @author thomas.diesler@jboss.com

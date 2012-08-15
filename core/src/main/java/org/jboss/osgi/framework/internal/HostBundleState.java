@@ -28,8 +28,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.msc.service.ServiceController.Mode;
@@ -37,6 +35,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.internal.AbstractBundleState.BundleLock.Method;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -60,7 +59,6 @@ import org.osgi.service.startlevel.StartLevel;
  */
 final class HostBundleState extends UserBundleState {
 
-    private final Semaphore activationSemaphore = new Semaphore(1);
     private final AtomicBoolean alreadyStarting = new AtomicBoolean();
     private final AtomicBoolean awaitLazyActivation = new AtomicBoolean();
     private BundleActivator bundleActivator;
@@ -205,7 +203,7 @@ final class HostBundleState extends UserBundleState {
             // If the START_TRANSIENT option is set, then a BundleException is thrown
             // indicating this bundle cannot be started due to the Framework's current start level
             if ((options & START_TRANSIENT) != 0)
-                throw MESSAGES.bundleCannotStartBundleDueToStartLevel();
+                throw MESSAGES.cannotStartBundleDueToStartLevel();
 
             LOGGER.debugf("Start level [%d] not valid for: %s", getStartLevel(), this);
 
@@ -214,12 +212,13 @@ final class HostBundleState extends UserBundleState {
             return;
         }
 
+        // #1 If this bundle is in the process of being activated or deactivated
+        // then this method must wait for activation or deactivation to complete before continuing.
+        // If this does not occur in a reasonable time, a BundleException is thrown
+        aquireBundleLock(Method.START);
+
         alreadyStarting.set(true);
         try {
-            // #1 If this bundle is in the process of being activated or deactivated
-            // then this method must wait for activation or deactivation to complete before continuing.
-            // If this does not occur in a reasonable time, a BundleException is thrown
-            aquireActivationLock();
 
             // #2 If this bundle's state is ACTIVE then this method returns immediately.
             if (getState() == ACTIVE)
@@ -230,9 +229,10 @@ final class HostBundleState extends UserBundleState {
 
             // #4 If this bundle's state is not RESOLVED, an attempt is made to resolve this bundle.
             // If the Framework cannot resolve this bundle, a BundleException is thrown.
-            ResolutionException resex = ensureResolved(true);
-            if (resex != null)
-                throw MESSAGES.bundleCannotResolveBundle(resex, this);
+            if (ensureResolved(true) == false) {
+                ResolutionException resex = getLastResolutionException();
+                throw MESSAGES.cannotResolveBundle(resex, this);
+            }
 
             // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
             if (getBundleContextInternal() == null)
@@ -247,7 +247,7 @@ final class HostBundleState extends UserBundleState {
             }
         } finally {
             alreadyStarting.set(false);
-            releaseActivationLock();
+            releaseBundleLock(Method.START);
         }
     }
 
@@ -267,7 +267,7 @@ final class HostBundleState extends UserBundleState {
                 }
             }
             if (foundSupportedEnv == false)
-                throw MESSAGES.bundleUnsupportedExecutionEnvironment(requiredEnvs, availableEnvs);
+                throw MESSAGES.unsupportedExecutionEnvironment(requiredEnvs, availableEnvs);
         }
     }
 
@@ -304,7 +304,7 @@ final class HostBundleState extends UserBundleState {
         try {
             changeState(STARTING);
         } catch (LifecycleInterceptorException ex) {
-            throw MESSAGES.bundleCannotTransitionToStarting(ex, this);
+            throw MESSAGES.cannotTransitionToStarting(ex, this);
         }
 
         // #8 The BundleActivator.start(BundleContext) method of this bundle is called
@@ -318,7 +318,7 @@ final class HostBundleState extends UserBundleState {
                     bundleActivator = (BundleActivator) result;
                     bundleActivator.start(getBundleContext());
                 } else {
-                    throw MESSAGES.bundleInvalidBundleActivator(className);
+                    throw MESSAGES.invalidBundleActivator(className);
                 }
             }
 
@@ -344,7 +344,7 @@ final class HostBundleState extends UserBundleState {
                 if (th instanceof BundleException)
                     throw (BundleException) th;
 
-                throw MESSAGES.bundleCannotStartBundle(th, this);
+                throw MESSAGES.cannotStartBundle(th, this);
             } finally {
                 Thread.currentThread().setContextClassLoader(tccl);
             }
@@ -353,7 +353,7 @@ final class HostBundleState extends UserBundleState {
         // #9 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while
         // the BundleActivator.start method was running, a BundleException is thrown
         if (getState() == UNINSTALLED)
-            throw MESSAGES.bundleBundleUninstalledDuringActivatorStart(this);
+            throw MESSAGES.uninstalledDuringActivatorStart(this);
 
         // #10 This bundle's state is set to ACTIVE.
         // #11 A bundle event of type BundleEvent.STARTED is fired
@@ -368,12 +368,13 @@ final class HostBundleState extends UserBundleState {
     @Override
     void stopInternal(int options) throws BundleException {
 
+        // #2 If this bundle is in the process of being activated or deactivated
+        // then this method must wait for activation or deactivation to complete before continuing.
+        // If this does not occur in a reasonable time, a BundleException is thrown to indicate this bundle was unable to be
+        // stopped
+        aquireBundleLock(Method.STOP);
+
         try {
-            // #2 f this bundle is in the process of being activated or deactivated
-            // then this method must wait for activation or deactivation to complete before continuing.
-            // If this does not occur in a reasonable time, a BundleException is thrown to indicate this bundle was unable to be
-            // stopped
-            aquireActivationLock();
 
             // A concurrent thread may have uninstalled the bundle
             if (getState() == UNINSTALLED)
@@ -421,7 +422,7 @@ final class HostBundleState extends UserBundleState {
             // #11 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while the
             // BundleActivator.stop method was running, a BundleException must be thrown
             if (getState() == UNINSTALLED)
-                throw MESSAGES.bundleBundleUninstalledDuringActivatorStop(this);
+                throw MESSAGES.uninstalledDuringActivatorStop(this);
 
             // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
             destroyBundleContext();
@@ -436,26 +437,10 @@ final class HostBundleState extends UserBundleState {
             LOGGER.infoBundleStopped(this);
 
             if (rethrow != null)
-                throw MESSAGES.bundleErrorDuringActivatorStop(rethrow, this);
+                throw MESSAGES.errorDuringActivatorStop(rethrow, this);
         } finally {
-            releaseActivationLock();
+            releaseBundleLock(Method.STOP);
         }
-    }
-
-    private void aquireActivationLock() throws BundleException {
-        try {
-            LOGGER.tracef("Aquire activation lock: %s", this);
-            if (activationSemaphore.tryAcquire(10, TimeUnit.SECONDS) == false)
-                throw MESSAGES.bundleCannotAcquireStartStopLock(this);
-        } catch (InterruptedException ex) {
-            LOGGER.debugf("Interupted while trying to start/stop bundle: %s", this);
-            return;
-        }
-    }
-
-    private void releaseActivationLock() {
-        LOGGER.tracef("Release activation lock: %s", this);
-        activationSemaphore.release();
     }
 
     private void removeServicesAndListeners() {

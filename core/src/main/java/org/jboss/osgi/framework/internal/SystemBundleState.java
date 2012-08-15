@@ -137,6 +137,6 @@ final class SystemBundleState extends AbstractBundleState {
 
     @Override
     void uninstallInternal() throws BundleException {
-        throw MESSAGES.bundleCannotUninstallSystemBundle();
+        throw MESSAGES.cannotUninstallSystemBundle();
     }
 }

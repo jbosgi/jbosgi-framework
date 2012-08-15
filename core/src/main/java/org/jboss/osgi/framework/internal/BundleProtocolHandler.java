@@ -51,10 +51,10 @@ public class BundleProtocolHandler extends AbstractURLStreamHandlerService {
         LOGGER.tracef("openConnection: %s", url);
         RevisionContent revContent = RevisionContent.findRevisionContent(bundleManager, url.getHost());
         if (revContent == null)
-            throw MESSAGES.ioCannotObtainRevisionContent(url);
+            throw MESSAGES.cannotObtainRevisionContent(url);
         URL entry = revContent.getEntry(url.getPath());
         if (entry == null)
-            throw MESSAGES.ioCannotObtainContent(url);
+            throw MESSAGES.cannotObtainContent(url);
         return entry.openConnection();
     }
 

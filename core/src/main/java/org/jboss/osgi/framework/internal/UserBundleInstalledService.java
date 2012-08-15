@@ -111,7 +111,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
                 storageState = storagePlugin.createStorageState(bundleId, location, startlevel, rootFile);
                 dep.addAttachment(StorageState.class, storageState);
             } catch (IOException ex) {
-                throw MESSAGES.bundleCannotSetupStorage(ex, rootFile);
+                throw MESSAGES.cannotSetupStorage(ex, rootFile);
             }
         }
         return storageState;

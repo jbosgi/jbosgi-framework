@@ -38,6 +38,6 @@ final class BundleValidatorR3 implements BundleValidator {
     public void validateBundle(UserBundleState userBundle, OSGiMetaData osgiMetaData) throws BundleException {
         int manifestVersion = osgiMetaData.getBundleManifestVersion();
         if (manifestVersion != 1)
-            throw MESSAGES.bundleUnsupportedBundleManifestVersion(manifestVersion, userBundle);
+            throw MESSAGES.unsupportedBundleManifestVersion(manifestVersion, userBundle);
     }
 }

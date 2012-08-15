@@ -324,7 +324,7 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
             } catch (Throwable th) {
                 if (th instanceof InvocationTargetException)
                     th = ((InvocationTargetException)th).getTargetException();
-                throw MESSAGES.ioCannotOpenConnectionOnHandler(th, handler);
+                throw MESSAGES.cannotOpenConnectionOnHandler(th, handler);
             }
         }
 

@@ -169,7 +169,7 @@ final class FrameworkProxy implements Framework, Adaptable {
             firstInit = false;
 
         } catch (Exception ex) {
-            throw MESSAGES.bundleCannotInitializeFramework(ex);
+            throw MESSAGES.cannotInitializeFramework(ex);
         }
     }
 
@@ -205,7 +205,7 @@ final class FrameworkProxy implements Framework, Adaptable {
             awaitFrameworkActive();
             proxyState.set(Bundle.ACTIVE);
         } catch (Exception ex) {
-            throw MESSAGES.bundleCannotStartFramework(ex);
+            throw MESSAGES.cannotStartFramework(ex);
         }
     }
 
@@ -340,7 +340,7 @@ final class FrameworkProxy implements Framework, Adaptable {
 
     @Override
     public void uninstall() throws BundleException {
-        throw MESSAGES.bundleCannotUninstallSystemBundle();
+        throw MESSAGES.cannotUninstallSystemBundle();
     }
 
     @Override

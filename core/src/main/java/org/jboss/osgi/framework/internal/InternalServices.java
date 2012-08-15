@@ -60,6 +60,8 @@ public interface InternalServices {
     ServiceName FRAMEWORK_EVENTS_PLUGIN = INTERNAL_SERVICE_BASE.append("FrameworkEvents");
     /** The {@link LifecycleInterceptorPlugin} service name */
     ServiceName LIFECYCLE_INTERCEPTOR_PLUGIN = INTERNAL_SERVICE_BASE.append("LifecycleInterceptor");
+    /** The {@link LockManagerPlugin} service name */
+    ServiceName LOCK_MANAGER_PLUGIN = INTERNAL_SERVICE_BASE.append("LockManager");
     /** The {@link ModuleManagerPlugin} service name */
     ServiceName MODULE_MANGER_PLUGIN = INTERNAL_SERVICE_BASE.append("ModuleManager");
     /** The {@link Module} service name */

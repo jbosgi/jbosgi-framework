@@ -129,32 +129,32 @@ public class AbstractBundleAdaptor implements XBundle {
 
     @Override
     public void start(int options) throws BundleException {
-        throw MESSAGES.bundleUnsupportedOpertaion(this);
+        throw MESSAGES.unsupportedBundleOpertaion(this);
     }
 
     @Override
     public void start() throws BundleException {
-        throw MESSAGES.bundleUnsupportedOpertaion(this);
+        throw MESSAGES.unsupportedBundleOpertaion(this);
     }
 
     @Override
     public void stop(int options) throws BundleException {
-        throw MESSAGES.bundleUnsupportedOpertaion(this);
+        throw MESSAGES.unsupportedBundleOpertaion(this);
     }
 
     @Override
     public void stop() throws BundleException {
-        throw MESSAGES.bundleUnsupportedOpertaion(this);
+        throw MESSAGES.unsupportedBundleOpertaion(this);
     }
 
     @Override
     public void update(InputStream input) throws BundleException {
-        throw MESSAGES.bundleUnsupportedOpertaion(this);
+        throw MESSAGES.unsupportedBundleOpertaion(this);
     }
 
     @Override
     public void update() throws BundleException {
-        throw MESSAGES.bundleUnsupportedOpertaion(this);
+        throw MESSAGES.unsupportedBundleOpertaion(this);
     }
 
     @Override

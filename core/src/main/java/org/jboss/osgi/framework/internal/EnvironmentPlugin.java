@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -24,6 +25,7 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
@@ -32,6 +34,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.AbstractBundleWiring;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundleRevision;
@@ -49,9 +52,12 @@ import org.osgi.resource.Wiring;
  */
 final class EnvironmentPlugin extends AbstractEnvironment implements Service<XEnvironment> {
 
+    private final InjectedValue<LockManagerPlugin> injectedLockManager = new InjectedValue<LockManagerPlugin>();
+
     static void addService(ServiceTarget serviceTarget) {
         EnvironmentPlugin service = new EnvironmentPlugin();
         ServiceBuilder<XEnvironment> builder = serviceTarget.addService(Services.ENVIRONMENT, service);
+        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, service.injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -73,21 +79,62 @@ final class EnvironmentPlugin extends AbstractEnvironment implements Service<XEn
     }
 
     @Override
-    public synchronized void installResources(XResource... resources) {
+    public void installResources(XResource... resources) {
+
         // Check that all installed resources are instances of {@link XBundleRevision} and have an associated {@link Bundle}
         for (XResource res : resources) {
             if (!(res instanceof XBundleRevision))
-                throw MESSAGES.illegalArgumentUnsupportedResourceType(res);
+                throw MESSAGES.unsupportedResourceType(res);
             XBundleRevision brev = (XBundleRevision) res;
             if (brev.getBundle() == null)
-                throw MESSAGES.illegalArgumentCannotObtainBundleFromResource(res);
+                throw MESSAGES.cannotObtainBundleFromResource(res);
         }
-        super.installResources(resources);
+
+        aquireFrameworkLock();
+        try {
+            super.installResources(resources);
+        } finally {
+            releaseFrameworkLock();
+        }
+    }
+
+    @Override
+    public synchronized void uninstallResources(XResource... resources) {
+        aquireFrameworkLock();
+        try {
+            super.uninstallResources(resources);
+        } finally {
+            releaseFrameworkLock();
+        }
+    }
+
+    @Override
+    public void refreshResources(XResource... resources) {
+        aquireFrameworkLock();
+        try {
+            super.refreshResources(resources);
+        } finally {
+            releaseFrameworkLock();
+        }
     }
 
     @Override
     public Wiring createWiring(XResource res, List<Wire> required, List<Wire> provided) {
         XBundleRevision brev = (XBundleRevision) res;
         return new AbstractBundleWiring(brev, required, provided);
+    }
+
+    private void aquireFrameworkLock() {
+        try {
+            LockManagerPlugin lockManager = injectedLockManager.getValue();
+            lockManager.aquireFrameworkLock();
+        } catch (TimeoutException ex) {
+            throw new IllegalStateException(ex);
+        }
+    }
+
+    private void releaseFrameworkLock() {
+        LockManagerPlugin lockManager = injectedLockManager.getValue();
+        lockManager.releaseFrameworkLock();
     }
 }

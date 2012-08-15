@@ -32,8 +32,6 @@ import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -64,7 +62,6 @@ import org.osgi.service.packageadmin.PackageAdmin;
 abstract class UserBundleState extends AbstractBundleState {
 
     private final List<UserBundleRevision> revisions = new CopyOnWriteArrayList<UserBundleRevision>();
-    private final Semaphore uninstallSemaphore = new Semaphore(1);
     private final ServiceName serviceName;
 
     private Dictionary<String, String> headersOnUninstall;
@@ -168,24 +165,6 @@ abstract class UserBundleState extends AbstractBundleState {
             }
         }
         return null;
-    }
-
-    boolean aquireUninstallLock() {
-        try {
-            LOGGER.tracef("Aquire uninstall lock: %s", this);
-            boolean result = uninstallSemaphore.tryAcquire(10, TimeUnit.SECONDS);
-            if (result == false)
-                LOGGER.errorCannotAquireUninstallLock(this);
-            return result;
-        } catch (InterruptedException ex) {
-            LOGGER.debugf("Interupted while trying to uninstall bundle: %s", this);
-            return false;
-        }
-    }
-
-    void releaseUninstallLock() {
-        LOGGER.tracef("Release uninstall lock: %s", this);
-        uninstallSemaphore.release();
     }
 
     boolean hasActiveWires() {
@@ -300,7 +279,7 @@ abstract class UserBundleState extends AbstractBundleState {
             int startlevel = getCoreServices().getStartLevel().getInitialBundleStartLevel();
             storageState = storagePlugin.createStorageState(getBundleId(), location, startlevel, rootFile);
         } catch (IOException ex) {
-            throw MESSAGES.bundleCannotSetupStorage(ex, rootFile);
+            throw MESSAGES.cannotSetupStorage(ex, rootFile);
         }
         return storageState;
     }

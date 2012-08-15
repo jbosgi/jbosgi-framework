@@ -148,7 +148,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
         OSGiMetaData osgiMetaData = userRev.getOSGiMetaData();
         List<ParameterizedAttribute> params = osgiMetaData.getBundleNativeCode();
         if (params == null)
-            throw MESSAGES.bundleCannotFindNativeCodeHeader(userRev);
+            throw MESSAGES.cannotFindNativeCodeHeader(userRev);
 
         // Find the matching parameters
         List<ParameterizedAttribute> matchedParams = new ArrayList<ParameterizedAttribute>();
@@ -171,7 +171,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
                 return;
             }
 
-            throw MESSAGES.bundleNoNativeCodeClauseSelected(params);
+            throw MESSAGES.noNativeCodeClauseSelected(params);
         }
 
         // The selected clauses are now sorted in the following priority order:
@@ -294,7 +294,7 @@ final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
                     }
 
                 } catch (InvalidSyntaxException ex) {
-                    throw MESSAGES.bundleInvalidFilterExpression(ex, filterSpec);
+                    throw MESSAGES.invalidFilterExpression(ex, filterSpec);
                 }
             }
 

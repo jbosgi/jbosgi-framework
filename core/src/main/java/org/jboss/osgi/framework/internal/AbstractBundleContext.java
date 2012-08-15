@@ -144,7 +144,7 @@ abstract class AbstractBundleContext implements BundleContext {
                 try {
                     rootFile = AbstractVFS.toVirtualFile(input);
                 } catch (IOException ex) {
-                    throw MESSAGES.bundleCannotObtainVirtualFile(ex);
+                    throw MESSAGES.cannotObtainVirtualFile(ex);
                 }
             }
 
@@ -165,12 +165,12 @@ abstract class AbstractBundleContext implements BundleContext {
                     if (file.exists())
                         rootFile = AbstractVFS.toVirtualFile(file.toURI());
                 } catch (IOException ex) {
-                    throw MESSAGES.bundleCannotObtainVirtualFileForLocation(ex, location);
+                    throw MESSAGES.cannotObtainVirtualFileForLocation(ex, location);
                 }
             }
 
             if (rootFile == null)
-                throw MESSAGES.bundleCannotObtainVirtualFileForLocation(null, location);
+                throw MESSAGES.cannotObtainVirtualFileForLocation(null, location);
 
             DeploymentFactoryPlugin deploymentPlugin = frameworkState.getDeploymentFactoryPlugin();
             dep = deploymentPlugin.createDeployment(location, rootFile);
@@ -211,7 +211,7 @@ abstract class AbstractBundleContext implements BundleContext {
             Throwable cause = ex.getCause();
             if (cause instanceof BundleException)
                 throw (BundleException) cause;
-            throw MESSAGES.bundleCannotInstallBundleForLocation(ex, location);
+            throw MESSAGES.cannotInstallBundleForLocation(ex, location);
         }
     }
 

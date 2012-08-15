@@ -43,7 +43,6 @@ import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.resource.Resource;
-import org.osgi.service.resolver.ResolutionException;
 
 /**
  * A {@link HostBundleRevision} is responsible for the classloading and resource loading of a bundle.
@@ -105,8 +104,7 @@ final class HostBundleRevision extends UserBundleRevision {
     Class<?> loadClass(String className) throws ClassNotFoundException {
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-        ResolutionException resex = getBundleState().ensureResolved(true);
-        if (resex != null)
+        if (getBundleState().ensureResolved(true) == false)
             throw MESSAGES.classNotFoundInRevision(className, this);
 
         // Load the class through the module
@@ -147,7 +145,7 @@ final class HostBundleRevision extends UserBundleRevision {
         getBundleState().assertNotUninstalled();
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-        if (getBundleState().ensureResolved(false) == null) {
+        if (getBundleState().ensureResolved(false)) {
             ModuleClassLoader moduleClassLoader = getModuleClassLoader();
             return moduleClassLoader.getResource(path);
         }
@@ -161,7 +159,7 @@ final class HostBundleRevision extends UserBundleRevision {
         getBundleState().assertNotUninstalled();
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
-        if (getBundleState().ensureResolved(true) == null) {
+        if (getBundleState().ensureResolved(true)) {
             ModuleClassLoader moduleClassLoader = getModuleClassLoader();
             Enumeration<URL> resources = moduleClassLoader.getResources(path);
             return resources.hasMoreElements() ? resources : null;

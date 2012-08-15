@@ -139,8 +139,8 @@ public interface FrameworkLogger extends BasicLogger {
     void warnErrorWhileCallingFindHook(@Cause Throwable cause, FindHook hook);
 
     @LogMessage(level = ERROR)
-    @Message(id = 11021, value = "Cannot acquire uninstall lock for: %s")
-    void errorCannotAquireUninstallLock(Bundle bundle);
+    @Message(id = 11021, value = "Cannot acquire %s lock on: %s")
+    void errorCannotAquireBundleLock(String method, Bundle bundle);
 
     @LogMessage(level = ERROR)
     @Message(id = 11022, value = "Cannot write persistent storage: %s")

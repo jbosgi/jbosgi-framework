@@ -77,11 +77,11 @@ final class FragmentBundleState extends UserBundleState {
 
     @Override
     void startInternal(int options) throws BundleException {
-        throw MESSAGES.bundleCannotStartFragment();
+        throw MESSAGES.cannotStartFragment();
     }
 
     @Override
     void stopInternal(int options) throws BundleException {
-        throw MESSAGES.bundleCannotStopFragment();
+        throw MESSAGES.cannotStopFragment();
     }
 }

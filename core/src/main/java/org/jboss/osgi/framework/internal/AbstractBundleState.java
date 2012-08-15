@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -42,11 +43,14 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.internal.AbstractBundleState.BundleLock.Method;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -77,9 +81,11 @@ abstract class AbstractBundleState implements XBundle {
     private final long bundleId;
     private final String symbolicName;
     private final FrameworkState frameworkState;
+    private final BundleLock bundleLock = new BundleLock();
     private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
     private final List<ServiceState> registeredServices = new CopyOnWriteArrayList<ServiceState>();
     private final ConcurrentHashMap<ServiceState, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
+    private ResolutionException lastResolutionException;
     private BundleStateRevision currentRevision;
     private AbstractBundleContext bundleContext;
 
@@ -421,11 +427,12 @@ abstract class AbstractBundleState implements XBundle {
     /**
      * The framework must search for localization entries using the following search rules based on the bundle type:
      * <p/>
-     * fragment bundle - If the bundle is a resolved fragment, then the search for localization data must delegate to the attached host bundle with the highest version.
-     * If the fragment is not resolved, then the framework must search the fragment's JAR for the localization entry.
+     * fragment bundle - If the bundle is a resolved fragment, then the search for localization data must delegate to the
+     * attached host bundle with the highest version. If the fragment is not resolved, then the framework must search the
+     * fragment's JAR for the localization entry.
      * <p/>
-     * other bundle - The framework must first search in the bundle’s JAR for the localization entry. If the entry is not found and the bundle has fragments, then the
-     * attached fragment JARs must be searched for the localization entry.
+     * other bundle - The framework must first search in the bundle’s JAR for the localization entry. If the entry is not found
+     * and the bundle has fragments, then the attached fragment JARs must be searched for the localization entry.
      */
     private URL getLocalizationEntry(String entryPath) {
         return getBundleRevision().getLocalizationEntry(entryPath);
@@ -558,7 +565,15 @@ abstract class AbstractBundleState implements XBundle {
 
     abstract void uninstallInternal() throws BundleException;
 
-    ResolutionException ensureResolved(boolean fireEvent) {
+    boolean aquireBundleLock(Method method) {
+        return bundleLock.tryLock(this, method);
+    }
+
+    void releaseBundleLock(Method method) {
+        bundleLock.unlock(this, method);
+    }
+
+    boolean ensureResolved(boolean fireEvent) {
 
         if (isUninstalled())
             throw MESSAGES.illegalStateBundleAlreadyUninstalled(this);
@@ -566,35 +581,45 @@ abstract class AbstractBundleState implements XBundle {
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired
         // containing a BundleException with details of the reason this bundle could not be resolved.
-        synchronized (this) {
-            if (isResolved())
-                return null;
 
+        boolean result = false;
+        if (aquireBundleLock(Method.RESOLVE)) {
             try {
-                ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
-                resolverPlugin.resolveAndApply(Collections.singleton(getBundleRevision()), null);
+                result = true;
+                if (isResolved() == false) {
+                    try {
+                        ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
+                        resolverPlugin.resolveAndApply(Collections.singleton(getBundleRevision()), null);
 
-                if (LOGGER.isDebugEnabled()) {
-                    BundleWiring wiring = getBundleRevision().getWiring();
-                    LOGGER.tracef("Required resource wires for: %s", wiring.getResource());
-                    for (Wire wire : wiring.getRequiredResourceWires(null)) {
-                        LOGGER.tracef("   %s", wire);
-                    }
-                    LOGGER.tracef("Provided resource wires for: %s", wiring.getResource());
-                    for (Wire wire : wiring.getProvidedResourceWires(null)) {
-                        LOGGER.tracef("   %s", wire);
+                        if (LOGGER.isDebugEnabled()) {
+                            BundleWiring wiring = getBundleRevision().getWiring();
+                            LOGGER.tracef("Required resource wires for: %s", wiring.getResource());
+                            for (Wire wire : wiring.getRequiredResourceWires(null)) {
+                                LOGGER.tracef("   %s", wire);
+                            }
+                            LOGGER.tracef("Provided resource wires for: %s", wiring.getResource());
+                            for (Wire wire : wiring.getProvidedResourceWires(null)) {
+                                LOGGER.tracef("   %s", wire);
+                            }
+                        }
+                    } catch (ResolutionException ex) {
+                        lastResolutionException = ex;
+                        result = false;
+                        if (fireEvent == true) {
+                            FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
+                            eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, new BundleException(ex.getMessage(), ex));
+                        }
                     }
                 }
-
-                return null;
-            } catch (ResolutionException ex) {
-                if (fireEvent == true) {
-                    FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
-                    eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, new BundleException(ex.getMessage(), ex));
-                }
-                return ex;
+            } finally {
+                releaseBundleLock(Method.RESOLVE);
             }
         }
+        return result;
+    }
+
+    ResolutionException getLastResolutionException() {
+        return lastResolutionException;
     }
 
     void assertNotUninstalled() {
@@ -638,5 +663,33 @@ abstract class AbstractBundleState implements XBundle {
     @Override
     public String toString() {
         return getCanonicalName();
+    }
+
+    @SuppressWarnings("serial")
+    static class BundleLock extends ReentrantLock {
+
+        enum Method {
+            RESOLVE, START, STOP, UNINSTALL
+        }
+
+        boolean tryLock(XBundle bundle, Method method) {
+            try {
+                LOGGER.tracef("Aquire %s lock on: %s", method, bundle);
+                if (tryLock(30, TimeUnit.SECONDS)) {
+                    return true;
+                } else {
+                    LOGGER.errorCannotAquireBundleLock(method.toString(), bundle);
+                    return false;
+                }
+            } catch (InterruptedException ex) {
+                LOGGER.debugf("Interupted while trying to aquire %s lock on: %s", method, bundle);
+                return false;
+            }
+        }
+
+        void unlock(XBundle bundle, Method method) {
+            LOGGER.tracef("Release %s lock on: %s", method, bundle);
+            unlock();
+        }
     }
 }

@@ -36,7 +36,6 @@ import org.jboss.logging.Messages;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.metadata.ParameterizedAttribute;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -145,118 +144,118 @@ public interface FrameworkMessages {
     IllegalStateException illegalStateCannotObtainURL(VirtualFile child);
 
     @Message(id = 11229, value = "Cannot obtain virtual file from input stream")
-    BundleException bundleCannotObtainVirtualFile(@Cause Throwable cause);
+    BundleException cannotObtainVirtualFile(@Cause Throwable cause);
 
     @Message(id = 11230, value = "Cannot obtain virtual file for: %s")
-    BundleException bundleCannotObtainVirtualFileForLocation(@Cause Throwable cause, String location);
+    BundleException cannotObtainVirtualFileForLocation(@Cause Throwable cause, String location);
 
     @Message(id = 11231, value = "Cannot install bundle for: %s")
-    BundleException bundleCannotInstallBundleForLocation(@Cause Throwable cause, String location);
+    BundleException cannotInstallBundleForLocation(@Cause Throwable cause, String location);
 
     @Message(id = 11232, value = "Unsupported bundle manifest version %d in: %s")
-    BundleException bundleUnsupportedBundleManifestVersion(int version, Bundle bundle);
+    BundleException unsupportedBundleManifestVersion(int version, Bundle bundle);
 
     @Message(id = 11233, value = "Missing Bundle-SymbolicName in: %s")
-    BundleException bundleMissingBundleSymbolicName(Bundle bundle);
+    BundleException missingBundleSymbolicName(Bundle bundle);
 
     @Message(id = 11234, value = "Duplicate import of package '%s' in: %s")
-    BundleException bundleDuplicatePackageImport(String packageName, Bundle bundle);
+    BundleException duplicatePackageImport(String packageName, Bundle bundle);
 
     @Message(id = 11235, value = "Not allowed to import java.* in: %s")
-    BundleException bundleNotAllowdToImportJavaPackage(Bundle bundle);
+    BundleException notAllowdToImportJavaPackage(Bundle bundle);
 
     @Message(id = 11236, value = "Not allowed to export java.* in: %s")
-    BundleException bundleNotAllowdToExportJavaPackage(Bundle bundle);
+    BundleException notAllowdToExportJavaPackage(Bundle bundle);
 
     @Message(id = 11237, value = "Version and specification version for package '%s' missmatch in: %s")
-    BundleException bundlePackageVersionAndSpecificationVersionMissmatch(String packageName, Bundle bundle);
+    BundleException packageVersionAndSpecificationVersionMissmatch(String packageName, Bundle bundle);
 
     @Message(id = 11238, value = "Package '%s' cannot specify explicit bundle-symbolicname in: %s")
-    BundleException bundlePackageCannotSpecifyBundleSymbolicName(String packageName, Bundle bundle);
+    BundleException packageCannotSpecifyBundleSymbolicName(String packageName, Bundle bundle);
 
     @Message(id = 11239, value = "Package '%s' cannot specify explicit bundle-version in: %s")
-    BundleException bundlePackageCannotSpecifyBundleVersion(String packageName, Bundle bundle);
+    BundleException packageCannotSpecifyBundleVersion(String packageName, Bundle bundle);
 
     @Message(id = 11240, value = "Bundle name and version already installed: %s")
-    BundleException bundleNameAndVersionAlreadyInstalled(Bundle bundle);
+    BundleException nameAndVersionAlreadyInstalled(Bundle bundle);
 
     @Message(id = 11241, value = "Invalid Fragment-Host for extension fragment: %s")
-    BundleException bundleInvalidFragmentHostForExtensionFragment(Bundle bundle);
+    BundleException invalidFragmentHostForExtensionFragment(Bundle bundle);
 
     @Message(id = 11242, value = "Invalid number format: %s")
-    BundleException bundleInvalidNumberFormat(@Cause Throwable cause, String message);
+    BundleException invalidNumberFormat(@Cause Throwable cause, String message);
 
     @Message(id = 11243, value = "Not a valid deployment: %s")
-    BundleException bundleInvalidDeployment(Deployment deployment);
+    BundleException invalidDeployment(Deployment deployment);
 
     @Message(id = 11244, value = "Fragments cannot be started")
-    BundleException bundleCannotStartFragment();
+    BundleException cannotStartFragment();
 
     @Message(id = 11245, value = "Fragments cannot be stopped")
-    BundleException bundleCannotStopFragment();
+    BundleException cannotStopFragment();
 
     @Message(id = 11246, value = "Cannot initialize Framework")
-    BundleException bundleCannotInitializeFramework(@Cause Throwable cause);
+    BundleException cannotInitializeFramework(@Cause Throwable cause);
 
     @Message(id = 11247, value = "Cannot start Framework")
-    BundleException bundleCannotStartFramework(@Cause Throwable cause);
+    BundleException cannotStartFramework(@Cause Throwable cause);
 
     @Message(id = 11248, value = "System bundle cannot be uninstalled")
-    BundleException bundleCannotUninstallSystemBundle();
+    BundleException cannotUninstallSystemBundle();
 
     @Message(id = 11249, value = "Bundle cannot be started due to current start level")
-    BundleException bundleCannotStartBundleDueToStartLevel();
+    BundleException cannotStartBundleDueToStartLevel();
 
     @Message(id = 11250, value = "Cannot resolve bundle: %s")
-    BundleException bundleCannotResolveBundle(@Cause Throwable cause, Bundle bundle);
+    BundleException cannotResolveBundle(@Cause Throwable cause, Bundle bundle);
 
     @Message(id = 11251, value = "Unsupported execution environment %s we have: %s")
-    BundleException bundleUnsupportedExecutionEnvironment(List<String> required, List<String> available);
+    BundleException unsupportedExecutionEnvironment(List<String> required, List<String> available);
 
     @Message(id = 11252, value = "Cannot transition to STARTING: %s")
-    BundleException bundleCannotTransitionToStarting(@Cause Throwable cause, Bundle bundle);
+    BundleException cannotTransitionToStarting(@Cause Throwable cause, Bundle bundle);
 
     @Message(id = 11253, value = "Invalid bundle activator: %s")
-    BundleException bundleInvalidBundleActivator(String className);
+    BundleException invalidBundleActivator(String className);
 
     @Message(id = 11254, value = "Cannot start bundle: %s")
-    BundleException bundleCannotStartBundle(@Cause Throwable cause, Bundle bundle);
+    BundleException cannotStartBundle(@Cause Throwable cause, Bundle bundle);
 
     @Message(id = 11255, value = "Bundle was uninstalled during activator start: %s")
-    BundleException bundleBundleUninstalledDuringActivatorStart(Bundle bundle);
+    BundleException uninstalledDuringActivatorStart(Bundle bundle);
 
     @Message(id = 11256, value = "Bundle was uninstalled during activator stop: %s")
-    BundleException bundleBundleUninstalledDuringActivatorStop(Bundle bundle);
+    BundleException uninstalledDuringActivatorStop(Bundle bundle);
 
     @Message(id = 11257, value = "Error during activator stop: %s")
-    BundleException bundleErrorDuringActivatorStop(@Cause Throwable cause, Bundle bundle);
+    BundleException errorDuringActivatorStop(@Cause Throwable cause, Bundle bundle);
 
     @Message(id = 11258, value = "Cannot acquire start/stop lock for: %s")
-    BundleException bundleCannotAcquireStartStopLock(Bundle bundle);
+    BundleException cannotAcquireStartStopLock(Bundle bundle);
 
     @Message(id = 11259, value = "Cannot find Bundle-NativeCode header for: %s")
-    BundleException bundleCannotFindNativeCodeHeader(BundleRevision brev);
+    BundleException cannotFindNativeCodeHeader(BundleRevision brev);
 
     @Message(id = 11260, value = "No native code clause selected for: %s")
-    BundleException bundleNoNativeCodeClauseSelected(List<ParameterizedAttribute> params);
+    BundleException noNativeCodeClauseSelected(List<ParameterizedAttribute> params);
 
     @Message(id = 11261, value = "Invalid filter expression: %s")
-    BundleException bundleInvalidFilterExpression(@Cause Throwable cause, String filterSpec);
+    BundleException invalidFilterExpression(@Cause Throwable cause, String filterSpec);
 
     @Message(id = 11262, value = "Cannot install persisted bundles")
-    BundleException bundleCannotInstallPersistedBundles(@Cause Throwable cause);
+    BundleException cannotInstallPersistedBundles(@Cause Throwable cause);
 
     @Message(id = 11263, value = "Cannot setup storage for: %s")
-    BundleException bundleCannotSetupStorage(@Cause Throwable cause, VirtualFile virtualFile);
+    BundleException cannotSetupStorage(@Cause Throwable cause, VirtualFile virtualFile);
 
     @Message(id = 11264, value = "Cannot obtain revision content for: %s")
-    IOException ioCannotObtainRevisionContent(URL url);
+    IOException cannotObtainRevisionContent(URL url);
 
     @Message(id = 11265, value = "Cannot obtain content for: %s")
-    IOException ioCannotObtainContent(URL url);
+    IOException cannotObtainContent(URL url);
 
     @Message(id = 11266, value = "Cannot open connection on: %s")
-    IOException ioCannotOpenConnectionOnHandler(@Cause Throwable cause, URLStreamHandlerService handler);
+    IOException cannotOpenConnectionOnHandler(@Cause Throwable cause, URLStreamHandlerService handler);
 
     @Message(id = 11267, value = "Cannot load class from fragment: %s")
     ClassNotFoundException cannotLoadClassFromFragment(BundleRevision brev);
@@ -267,17 +266,17 @@ public interface FrameworkMessages {
     //@Message(id = 11269, value = "Cannot load class '%s' from bundle revision: %s")
     //ClassNotFoundException cannotLoadClassFromBundleRevision(@Cause Throwable cause, String className, BundleRevision brev);
 
-    @Message(id = 11270, value = "Cannot obtain web.xml from: %s")
-    LifecycleInterceptorException lifecycleInterceptorCannotObtainWebXML(URL rootURL);
+    //@Message(id = 11270, value = "Cannot obtain web.xml from: %s")
+    //LifecycleInterceptorException cannotObtainWebXML(URL rootURL);
 
-    @Message(id = 11271, value = "Cannot obtain web.xml")
-    LifecycleInterceptorException lifecycleInterceptorCannotObtainWebXML(@Cause Throwable cause);
+    //@Message(id = 11271, value = "Cannot obtain web.xml")
+    //LifecycleInterceptorException cannotObtainWebXML(@Cause Throwable cause);
 
     @Message(id = 11272, value = "Timeout getting: %s")
     TimeoutException timeoutGettingService(String serviceName);
 
     @Message(id = 11273, value = "Cannot get service value for: %s")
-    ExecutionException executionCannotGetServiceValue(@Cause Throwable cause, String serviceName);
+    ExecutionException cannotGetServiceValue(@Cause Throwable cause, String serviceName);
 
     @Message(id = 11274, value = "Boot classpath extension not supported")
     UnsupportedOperationException unsupportedBootClasspathExtension();
@@ -289,11 +288,14 @@ public interface FrameworkMessages {
     TimeoutException timeoutWaitingForBundleInstallService(Set<ServiceName> services);
 
     @Message(id = 11277, value = "Unsupported resource type: %s")
-    IllegalArgumentException illegalArgumentUnsupportedResourceType(XResource res);
+    IllegalArgumentException unsupportedResourceType(XResource res);
 
     @Message(id = 11278, value = "Cannot obtain bundle from resource: %s")
-    IllegalArgumentException illegalArgumentCannotObtainBundleFromResource(XResource res);
+    IllegalArgumentException cannotObtainBundleFromResource(XResource res);
 
     @Message(id = 11279, value = "Unsupported operation on bundle: %s")
-    BundleException bundleUnsupportedOpertaion(Bundle bundle);
+    BundleException unsupportedBundleOpertaion(Bundle bundle);
+
+    @Message(id = 11280, value = "Cannot acquire framework lock")
+    TimeoutException cannotAquireFrameworkLock();
 }
