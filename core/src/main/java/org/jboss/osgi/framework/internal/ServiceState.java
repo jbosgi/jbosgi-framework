@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -319,6 +320,9 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         if (bundle == ownerBundle)
             return true;
 
+        if (bundle.getState() == Bundle.UNINSTALLED)
+            return false;
+
         Class<?> targetClass;
         try {
             targetClass = bundle.loadClass(className);
@@ -420,6 +424,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
 
     interface ValueProvider {
         boolean isFactoryValue();
+
         Object getValue();
     }
 

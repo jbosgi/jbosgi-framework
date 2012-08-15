@@ -296,7 +296,6 @@ abstract class AbstractBundleState implements XBundle {
 
     @Override
     public boolean hasPermission(Object permission) {
-        assertNotUninstalled();
         if (permission == null || permission instanceof Permission == false)
             return false;
 
@@ -623,7 +622,7 @@ abstract class AbstractBundleState implements XBundle {
     }
 
     void assertNotUninstalled() {
-        if (getState() == Bundle.UNINSTALLED)
+        if (isUninstalled())
             throw MESSAGES.illegalStateBundleAlreadyUninstalled(this);
     }
 
