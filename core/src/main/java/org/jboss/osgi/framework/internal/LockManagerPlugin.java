@@ -41,6 +41,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 final class LockManagerPlugin extends AbstractPluginService<LockManagerPlugin> {
 
     private final ReentrantLock frameworkLock = new ReentrantLock();
+    private RuntimeException lastLockAquisition;
 
     static void addService(ServiceTarget serviceTarget) {
         LockManagerPlugin service = new LockManagerPlugin();
@@ -57,6 +58,10 @@ final class LockManagerPlugin extends AbstractPluginService<LockManagerPlugin> {
         return this;
     }
 
+    ReentrantLock getFrameworkLock() {
+        return frameworkLock;
+    }
+
     void aquireFrameworkLock() throws TimeoutException {
         aquireFrameworkLock(30, TimeUnit.SECONDS);
     }
@@ -67,6 +72,7 @@ final class LockManagerPlugin extends AbstractPluginService<LockManagerPlugin> {
             if (!frameworkLock.tryLock(timeout, unit)) {
                 throw MESSAGES.cannotAquireFrameworkLock();
             }
+            lastLockAquisition = new RuntimeException();
         } catch (InterruptedException ex) {
             throw MESSAGES.cannotAquireFrameworkLock();
         }
@@ -74,6 +80,13 @@ final class LockManagerPlugin extends AbstractPluginService<LockManagerPlugin> {
 
     void releaseFrameworkLock() {
         LOGGER.tracef("Release framework lock");
+        lastLockAquisition = null;
         frameworkLock.unlock();
+    }
+
+    void assertNotHeldByCurrentThread() {
+        if (frameworkLock.isHeldByCurrentThread()) {
+            throw MESSAGES.frameworkLockHeldByCurrentThread(lastLockAquisition);
+        }
     }
 }

@@ -298,4 +298,7 @@ public interface FrameworkMessages {
 
     @Message(id = 11280, value = "Cannot acquire framework lock")
     TimeoutException cannotAquireFrameworkLock();
+
+    @Message(id = 11281, value = "Framework lock held by current thread")
+    IllegalStateException frameworkLockHeldByCurrentThread(@Cause Throwable cause);
 }

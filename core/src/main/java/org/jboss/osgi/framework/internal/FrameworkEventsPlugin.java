@@ -40,7 +40,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -83,6 +82,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
+    private final InjectedValue<LockManagerPlugin> injectedLockManager = new InjectedValue<LockManagerPlugin>();
 
     /** The bundleState listeners */
     private final Map<AbstractBundleState, List<BundleListener>> bundleListeners = new ConcurrentHashMap<AbstractBundleState, List<BundleListener>>();
@@ -104,6 +104,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         ServiceBuilder<FrameworkEventsPlugin> builder = serviceTarget.addService(InternalServices.FRAMEWORK_EVENTS_PLUGIN, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(InternalServices.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
+        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, service.injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -348,6 +349,10 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         if (bundleManager.isFrameworkCreated() == false)
             return;
 
+        // Assert that the framework lock is not held by the current thread
+        LockManagerPlugin lockManager = injectedLockManager.getValue();
+        lockManager.assertNotHeldByCurrentThread();
+
         // Get a snapshot of the current listeners
         final List<BundleListener> listeners = new ArrayList<BundleListener>();
         synchronized (bundleListeners) {
@@ -403,6 +408,10 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         if (bundleManager.isFrameworkCreated() == false)
             return;
+
+        // Assert that the framework lock is not held by the current thread
+        LockManagerPlugin lockManager = injectedLockManager.getValue();
+        lockManager.assertNotHeldByCurrentThread();
 
         // Get a snapshot of the current listeners
         final ArrayList<FrameworkListener> listeners = new ArrayList<FrameworkListener>();
@@ -464,6 +473,10 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         if (bundleManager.isFrameworkCreated() == false)
             return;
+
+        // Assert that the framework lock is not held by the current thread
+        LockManagerPlugin lockManager = injectedLockManager.getValue();
+        lockManager.assertNotHeldByCurrentThread();
 
         // Get a snapshot of the current listeners
         List<ServiceListenerRegistration> listenerRegs = new ArrayList<ServiceListenerRegistration>();
