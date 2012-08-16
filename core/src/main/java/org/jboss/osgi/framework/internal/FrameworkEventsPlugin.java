@@ -342,6 +342,12 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
     }
 
     void fireBundleEvent(final AbstractBundleState bundleState, final int type) {
+
+        // Do nothing it the framework is not active
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        if (bundleManager.isFrameworkCreated() == false)
+            return;
+
         // Get a snapshot of the current listeners
         final List<BundleListener> listeners = new ArrayList<BundleListener>();
         synchronized (bundleListeners) {
@@ -355,13 +361,6 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         // Expose the bundleState wrapper not the state itself
         final BundleEvent event = new BundleEventImpl(type, bundleState);
         final String typeName = ConstantsHelper.bundleEvent(event.getType());
-
-        LOGGER.tracef("AbstractBundleState %s: %s", typeName, bundleState);
-
-        // Are we active?
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        if (bundleManager.isFrameworkCreated() == false)
-            return;
 
         // Nobody is interested
         if (listeners.isEmpty())
@@ -399,6 +398,12 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
     }
 
     void fireFrameworkEvent(final Bundle bundle, final int type, final Throwable th) {
+
+        // Do nothing it the framework is not active
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        if (bundleManager.isFrameworkCreated() == false)
+            return;
+
         // Get a snapshot of the current listeners
         final ArrayList<FrameworkListener> listeners = new ArrayList<FrameworkListener>();
         synchronized (frameworkListeners) {
@@ -422,11 +427,6 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
             default:
                 LOGGER.debugf(th, "Framework event: %s", typeName);
         }
-
-        // Are we active?
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        if (bundleManager.isFrameworkCreated() == false)
-            return;
 
         // Nobody is interested
         if (listeners.isEmpty())
@@ -460,6 +460,11 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
 
     void fireServiceEvent(final XBundle bundleState, int type, final ServiceState serviceState) {
 
+        // Do nothing it the framework is not active
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        if (bundleManager.isFrameworkCreated() == false)
+            return;
+
         // Get a snapshot of the current listeners
         List<ServiceListenerRegistration> listenerRegs = new ArrayList<ServiceListenerRegistration>();
         synchronized (serviceListeners) {
@@ -476,11 +481,6 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
         ServiceEvent event = new ServiceEventImpl(type, serviceState);
         String typeName = ConstantsHelper.serviceEvent(event.getType());
         LOGGER.tracef("Service %s: %s", typeName, serviceState);
-
-        // Do nothing if the Framework is not active
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        if (bundleManager.isFrameworkCreated() == false)
-            return;
 
         // Call the registered event hooks
         BundleContext systemContext = injectedSystemContext.getValue();

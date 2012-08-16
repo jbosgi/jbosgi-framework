@@ -29,11 +29,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeoutException;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
@@ -59,6 +60,7 @@ import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.felix.StatelessResolver;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.namespace.HostNamespace;
 import org.osgi.framework.namespace.IdentityNamespace;
@@ -132,38 +134,32 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
 
     @Override
     public Map<Resource, List<Wire>> resolve(ResolveContext context) throws ResolutionException {
-        LockManagerPlugin lockManager = injectedLockManager.getValue();
+        aquireFrameworkLock();
         try {
-            lockManager.aquireFrameworkLock();
-            try {
-                return resolver.resolve(context);
-            } finally {
-                lockManager.releaseFrameworkLock();
-            }
-        } catch (TimeoutException ex) {
-            throw new ResolutionException(ex);
+            return resolver.resolve(context);
+        } finally {
+            releaseFrameworkLock();
         }
     }
 
     @Override
     public Map<Resource, Wiring> resolveAndApply(XResolveContext context) throws ResolutionException {
-        LockManagerPlugin lockManager = injectedLockManager.getValue();
+
+        Map<Resource, List<Wire>> wiremap;
+        Map<Resource, Wiring> wirings;
+
+        aquireFrameworkLock();
         try {
-            lockManager.aquireFrameworkLock();
-            try {
-                Map<Resource, List<Wire>> wiremap = resolver.resolve(context);
-                Map<Resource, Wiring> result = applyResolverResults(wiremap);
-                for (Entry<Resource, Wiring> entry : result.entrySet()) {
-                    XBundleRevision res = (XBundleRevision) entry.getKey();
-                    res.addAttachment(Wiring.class, entry.getValue());
-                }
-                return result;
-            } finally {
-                lockManager.releaseFrameworkLock();
-            }
-        } catch (TimeoutException ex) {
-            throw new ResolutionException(ex);
+            wiremap = resolver.resolve(context);
+            wirings = applyResolverResults(wiremap);
+        } finally {
+            releaseFrameworkLock();
         }
+
+        // Send the {@link BundleEvent.RESOLVED} event outside the lock
+        sendBundleResolvedEvents(wiremap);
+
+        return wirings;
     }
 
     Map<Resource, Wiring> resolveAndApply(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) throws ResolutionException {
@@ -234,7 +230,7 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
         // An exception in one of the steps may leave the framework partially modified
 
         // Transform the wiremap to {@link BundleRevision} and {@link BundleWire}
-        Map<BundleRevision, List<BundleWire>> brevmap = new HashMap<BundleRevision, List<BundleWire>>();
+        Map<BundleRevision, List<BundleWire>> brevmap = new LinkedHashMap<BundleRevision, List<BundleWire>>();
         for (Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
             List<BundleWire> bwires = new ArrayList<BundleWire>();
             List<Wire> wires = new ArrayList<Wire>();
@@ -251,11 +247,9 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
         // Attach the fragments to host
         attachFragmentsToHost(brevmap);
 
+        // Resolve native code libraries if there are any
         try {
-
-            // Resolve native code libraries if there are any
             resolveNativeCodeLibraries(brevmap);
-
         } catch (BundleException ex) {
             throw new ResolutionException(ex);
         }
@@ -264,16 +258,20 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
         addModules(brevmap);
 
         // For every resolved host bundle create a {@link Module} service
-        createModuleServices(wiremap);
+        createModuleServices(brevmap);
 
         // Construct and apply the resource wiring map
         XEnvironment env = injectedEnvironment.getValue();
-        Map<Resource, Wiring> wiring = env.updateWiring(wiremap);
+        Map<Resource, Wiring> wirings = env.updateWiring(wiremap);
+        for (Entry<Resource, Wiring> entry : wirings.entrySet()) {
+            XBundleRevision res = (XBundleRevision) entry.getKey();
+            res.addAttachment(Wiring.class, entry.getValue());
+        }
 
         // Change the bundle state to RESOLVED
-        setBundleToResolved(brevmap);
+        setBundleStatesToResolved(brevmap);
 
-        return wiring;
+        return wirings;
     }
 
     private void attachFragmentsToHost(Map<BundleRevision, List<BundleWire>> wiremap) {
@@ -321,10 +319,10 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
         }
     }
 
-    private void createModuleServices(Map<Resource, List<Wire>> wiremap) {
+    private void createModuleServices(Map<BundleRevision, List<BundleWire>> wiremap) {
         ModuleManagerPlugin moduleManager = injectedModuleManager.getValue();
         ModuleLoaderPlugin moduleLoader = injectedModuleLoader.getValue();
-        for (Map.Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+        for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
             XBundleRevision brev = (XBundleRevision) entry.getKey();
             XBundle bundle = brev.getBundle();
             if (bundle != null && bundle.getBundleId() != 0 && !brev.isFragment()) {
@@ -334,18 +332,44 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
         }
     }
 
-    private void setBundleToResolved(Map<BundleRevision, List<BundleWire>> wiremap) {
-    	BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+    private void setBundleStatesToResolved(Map<BundleRevision, List<BundleWire>> wiremap) {
         for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
             Bundle bundle = entry.getKey().getBundle();
             if (bundle instanceof AbstractBundleState) {
                 AbstractBundleState bundleState = (AbstractBundleState)bundle;
-				bundleState.changeState(Bundle.RESOLVED);
+				bundleState.changeState(Bundle.RESOLVED, 0);
+            }
+        }
+    }
+
+    private void sendBundleResolvedEvents(Map<Resource, List<Wire>> wiremap) {
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        for (Entry<Resource, List<Wire>> entry : wiremap.entrySet()) {
+            XBundleRevision brev = (XBundleRevision) entry.getKey();
+            Bundle bundle = brev.getBundle();
+            if (bundle instanceof AbstractBundleState) {
+                AbstractBundleState bundleState = (AbstractBundleState)bundle;
+                if (bundleManager.isFrameworkCreated()) {
+                    bundleState.fireBundleEvent(BundleEvent.RESOLVED);
+                }
                 // Activate the service that represents bundle state RESOLVED
                 ServiceName serviceName = bundleState.getServiceName(Bundle.RESOLVED);
                 bundleManager.setServiceMode(serviceName, Mode.ACTIVE);
-
             }
         }
+    }
+
+    private void aquireFrameworkLock() throws ResolutionException {
+        try {
+            LockManagerPlugin lockManager = injectedLockManager.getValue();
+            lockManager.aquireFrameworkLock();
+        } catch (TimeoutException ex) {
+            throw new ResolutionException(ex);
+        }
+    }
+
+    private void releaseFrameworkLock() {
+        LockManagerPlugin lockManager = injectedLockManager.getValue();
+        lockManager.releaseFrameworkLock();
     }
 }

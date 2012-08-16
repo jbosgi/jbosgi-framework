@@ -448,13 +448,13 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
     public void testSynchronousBundleListener() throws Exception {
         final List<BundleEvent> events = new ArrayList<BundleEvent>();
         BundleListener listener = new SynchronousBundleListener() {
-
             @Override
             public void bundleChanged(BundleEvent event) {
                 events.add(event);
             }
         };
-        getSystemContext().addBundleListener(listener);
+        BundleContext context = getSystemContext();
+        context.addBundleListener(listener);
 
         Bundle bundle = installBundle(getBundleArchiveA());
         try {
