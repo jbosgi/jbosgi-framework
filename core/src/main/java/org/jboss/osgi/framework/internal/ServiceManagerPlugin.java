@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.msc.service.ServiceBuilder;
@@ -142,7 +143,7 @@ final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlu
                 if (serviceStates != null) {
                     serviceStates.add(serviceState);
                 } else {
-                    serviceStates = new ArrayList<ServiceState>();
+                    serviceStates = new CopyOnWriteArrayList<ServiceState>();
                     serviceStates.add(serviceState);
                     serviceContainer.put(className, serviceStates);
                 }

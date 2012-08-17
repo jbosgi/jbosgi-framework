@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -34,7 +35,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 
 /**
  * The plugin for framework locks.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @since 15-Aug-2012
  */
@@ -72,7 +73,9 @@ final class LockManagerPlugin extends AbstractPluginService<LockManagerPlugin> {
             if (!frameworkLock.tryLock(timeout, unit)) {
                 throw MESSAGES.cannotAquireFrameworkLock();
             }
-            lastLockAquisition = new RuntimeException();
+            if (LOGGER.isDebugEnabled()) {
+                lastLockAquisition = new RuntimeException();
+            }
         } catch (InterruptedException ex) {
             throw MESSAGES.cannotAquireFrameworkLock();
         }
