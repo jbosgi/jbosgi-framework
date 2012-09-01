@@ -113,8 +113,6 @@ abstract class UserBundleState extends AbstractBundleState {
         if (result == null) {
             if (type.isAssignableFrom(Deployment.class)) {
                 result = (T) getDeployment();
-            } else if (type.isAssignableFrom(ServiceName.class)) {
-                result = (T) getServiceName(INSTALLED);
             }
         }
         return result;
@@ -132,7 +130,13 @@ abstract class UserBundleState extends AbstractBundleState {
 
     @Override
     ServiceName getServiceName(int state) {
-        return serviceName.append(ConstantsHelper.bundleState(state));
+        if (state == 0) {
+            return serviceName;
+        } else if (state == Bundle.INSTALLED || state == Bundle.RESOLVED || state == Bundle.ACTIVE) {
+            return serviceName.append(ConstantsHelper.bundleState(state));
+        } else {
+            return null;
+        }
     }
 
     void addBundleRevision(BundleStateRevision rev) {

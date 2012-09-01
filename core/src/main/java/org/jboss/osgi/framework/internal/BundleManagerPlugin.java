@@ -450,6 +450,16 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         LOGGER.debugf("Removed bundle: %s", userBundle);
     }
 
+    @Override
+    public ServiceName getServiceName(XBundle bundle, int state) {
+        ServiceName result = null;
+        if (bundle instanceof AbstractBundleState) {
+            AbstractBundleState bundleState = (AbstractBundleState)bundle;
+            result = bundleState.getServiceName(state);
+        }
+        return result;
+    }
+
     void setServiceMode(ServiceName serviceName, Mode mode) {
         ServiceController<?> controller = serviceContainer.getService(serviceName);
         if (controller == null)

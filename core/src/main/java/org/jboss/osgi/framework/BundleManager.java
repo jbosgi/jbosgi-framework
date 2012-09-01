@@ -60,6 +60,16 @@ public interface BundleManager extends Service<BundleManager> {
     XBundle getBundleByLocation(String location);
 
     /**
+     * Get the service name for the given bundle that corresponds to the given state.
+     * Supported states are {@link Bundle#INSTALLED}, {@link Bundle#RESOLVED}, {@link Bundle#ACTIVE}
+     *
+     * @param bundle The bundle
+     * @param state One of the supported states or 0 for the base service name.
+     * @return The service name or null if the bundle is not service based.
+     */
+    ServiceName getServiceName(XBundle bundle, int state);
+
+    /**
      * Get the set of bundles that are in one of the given states.
      * If the states pattern is null, it returns all registered bundles.
      *
