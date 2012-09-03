@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -313,12 +314,17 @@ final class HostBundleState extends UserBundleState {
             ClassLoader tccl = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(null);
-                Object result = loadClass(className).newInstance();
-                if (result instanceof BundleActivator) {
-                    bundleActivator = (BundleActivator) result;
+                bundleActivator = getDeployment().getAttachment(BundleActivator.class);
+                if (bundleActivator == null) {
+                    Object result = loadClass(className).newInstance();
+                    if (result instanceof BundleActivator) {
+                        bundleActivator = (BundleActivator) result;
+                    } else {
+                        throw MESSAGES.invalidBundleActivator(className);
+                    }
+                }
+                if (bundleActivator != null) {
                     bundleActivator.start(getBundleContext());
-                } else {
-                    throw MESSAGES.invalidBundleActivator(className);
                 }
             }
 
