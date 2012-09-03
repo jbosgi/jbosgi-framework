@@ -235,6 +235,8 @@ final class FrameworkProxy implements Framework, Adaptable {
     }
 
     private void stopInternal(boolean stopForUpdate) {
+        if (frameworkState == null)
+            return;
 
         // If the Framework is not STARTING and not ACTIVE there is nothing to do
         int state = getState();
