@@ -122,7 +122,7 @@ public final class Java {
     }
 
     /**
-     * Returns true if the given version identifer is equal to the version identifier of the current virtuial machine.
+     * Returns true if the given version identifier is equal to the version identifier of the current virtual machine.
      *
      * @param version The version identifier to check for.
      * @return True if the current virtual machine is the same version.
@@ -132,7 +132,7 @@ public final class Java {
     }
 
     /**
-     * Returns true if the current virtual machine is compatible with the given version identifer.
+     * Returns true if the current virtual machine is compatible with the given version identifier.
      *
      * @param version The version identifier to check compatibility of.
      * @return True if the current virtual machine is compatible.
