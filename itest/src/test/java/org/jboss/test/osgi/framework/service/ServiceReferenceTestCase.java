@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -433,13 +434,16 @@ public class ServiceReferenceTestCase extends OSGiFrameworkTest {
             Bundle bundle1 = installBundle(assembly1);
 
             try {
-                Class<?> cls = bundle2.loadClass(A.class.getName());
-                Object service = cls.newInstance();
+                Class<?> cls2 = bundle2.loadClass(A.class.getName());
+                Object service = cls2.newInstance();
                 ServiceRegistration sreg = bundleContext2.registerService(A.class.getName(), service, null);
                 assertNotNull(sreg);
 
                 ServiceReference sref = sreg.getReference();
                 assertNotNull(sref);
+
+                Class<?> cls1 = bundle1.loadClass(A.class.getName());
+                assertSame(cls2, cls1);
 
                 assertTrue(sref.isAssignableTo(bundle2, A.class.getName()));
                 assertTrue(sref.isAssignableTo(bundle2, String.class.getName()));

@@ -36,7 +36,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
@@ -106,7 +105,6 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
 
     private final FrameworkBuilder frameworkBuilder;
     private final Map<String, Object> properties = new HashMap<String, Object>();
-    private final AtomicBoolean shutdownInitiated = new AtomicBoolean();
     private ServiceContainer serviceContainer;
     private ServiceTarget serviceTarget;
 
@@ -142,12 +140,6 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
             setProperty(Constants.FRAMEWORK_VENDOR, OSGi_FRAMEWORK_VENDOR);
         if (getProperty(Constants.FRAMEWORK_VERSION) == null)
             setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
-
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            public void run() {
-                shutdownInitiated.set(true);
-            }
-        });
     }
 
     @Override
@@ -187,11 +179,10 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
     }
 
     /**
-     * True if shutdown has not been initiated and the framework
-     * has reached the {@link Services#FRAMEWORK_CREATE} state
+     * True if the framework has reached the {@link Services#FRAMEWORK_CREATE} state
      */
     boolean isFrameworkCreated() {
-        return shutdownInitiated.get() == false && getFrameworkState() != null;
+        return getFrameworkState() != null;
     }
 
     void assertFrameworkCreated() {

@@ -42,6 +42,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
@@ -312,19 +314,34 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         if (className == null)
             throw MESSAGES.illegalArgumentNull("className");
 
-        if (bundle == ownerBundle)
+        if (bundle == ownerBundle || className.startsWith("java."))
             return true;
 
-        if (bundle.getState() == Bundle.UNINSTALLED)
+        int bundleState = bundle.getState();
+        if (bundleState == Bundle.UNINSTALLED)
             return false;
+
+        XBundleRevision bundleRev = ((XBundle)bundle).getBundleRevision();
+        ClassLoader bundleClassLoader = bundleRev.getModuleClassLoader();
+        if (bundleClassLoader == null) {
+            LOGGER.infof("NO CLASSLOADER [%s,%s] for: %s", bundle, ConstantsHelper.bundleState(bundleState), className);
+            return false;
+        }
 
         Class<?> targetClass;
         try {
-            targetClass = bundle.loadClass(className);
+            targetClass = bundleClassLoader.loadClass(className);
         } catch (ClassNotFoundException ex) {
             // If the requesting bundle does not have a wire to the
             // service package it cannot be constraint on that package.
             LOGGER.tracef("Requesting bundle [%s] cannot load class: %s", bundle, className);
+            return true;
+        }
+
+        XBundleRevision ownerRev = ownerBundle.getBundleRevision();
+        ClassLoader ownerClassLoader = ownerRev.getModuleClassLoader();
+        if (ownerClassLoader == null) {
+            LOGGER.tracef("Registrant bundle [%s] has no class loader for: %s", ownerBundle, className);
             return true;
         }
 
@@ -333,7 +350,7 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         // is equal to the specified bundle; otherwise return false
         Class<?> serviceClass;
         try {
-            serviceClass = ownerBundle.loadClass(className);
+            serviceClass = ownerClassLoader.loadClass(className);
         } catch (ClassNotFoundException e) {
             LOGGER.tracef("Registrant bundle [%s] cannot load class: %s", ownerBundle, className);
             return true;

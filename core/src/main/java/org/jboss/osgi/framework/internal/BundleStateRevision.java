@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -55,6 +56,8 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
     private final OSGiMetaData metadata;
     private final FrameworkState frameworkState;
     private final InternalStorageState storageState;
+
+    private ModuleClassLoader moduleClassLoader;
 
     BundleStateRevision(FrameworkState frameworkState, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
         assert frameworkState != null : "Null frameworkState";
@@ -119,15 +122,18 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
     }
 
     @Override
-    public ModuleClassLoader getModuleClassLoader() {
+    public synchronized ModuleClassLoader getModuleClassLoader() {
         ModuleIdentifier identifier = getModuleIdentifier();
-        try {
-            ModuleManagerPlugin moduleManager = frameworkState.getModuleManagerPlugin();
-            Module module = moduleManager.loadModule(identifier);
-            return module.getClassLoader();
-        } catch (ModuleLoadException ex) {
-            return null;
+        if (moduleClassLoader == null && identifier != null) {
+            try {
+                ModuleManagerPlugin moduleManager = frameworkState.getModuleManagerPlugin();
+                Module module = moduleManager.loadModule(identifier);
+                moduleClassLoader = module.getClassLoader();
+            } catch (ModuleLoadException ex) {
+                // ignore
+            }
         }
+        return moduleClassLoader;
     }
 
     void refreshRevision() throws BundleException {
@@ -136,10 +142,11 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
         refreshRevisionInternal();
     }
 
-    void refreshRevisionInternal() {
+    synchronized void refreshRevisionInternal() {
         removeAttachment(Wiring.class);
         removeAttachment(ModuleIdentifier.class);
         removeAttachment(Module.class);
+        moduleClassLoader = null;
     }
 
     void close() {

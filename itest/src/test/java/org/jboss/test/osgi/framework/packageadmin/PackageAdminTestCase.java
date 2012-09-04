@@ -49,10 +49,7 @@ import org.jboss.test.osgi.framework.bundle.support.a.ObjectA;
 import org.jboss.test.osgi.framework.bundle.support.a.ObjectA2;
 import org.jboss.test.osgi.framework.bundle.support.x.ObjectX;
 import org.jboss.test.osgi.framework.bundle.support.y.ObjectY;
-import org.jboss.test.osgi.framework.packageadmin.exportA.ExportA;
-import org.jboss.test.osgi.framework.packageadmin.exportB.ExportB;
 import org.jboss.test.osgi.framework.packageadmin.exported.Exported;
-import org.jboss.test.osgi.framework.packageadmin.importA.ImportingA;
 import org.jboss.test.osgi.framework.packageadmin.importexport.ImportExport;
 import org.jboss.test.osgi.framework.packageadmin.optimporter.OptionalImport;
 import org.jboss.test.osgi.framework.service.support.a.PA;
@@ -721,66 +718,6 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
         } finally {
             bundleI.uninstall();
             bundleR.uninstall();
-        }
-    }
-
-    @Test
-    public void testComplexUpdateScenario() throws Exception {
-        PackageAdmin pa = getPackageAdmin();
-
-        assertNull(pa.getExportedPackage(ExportA.class.getName()));
-        assertNull(pa.getExportedPackage(ExportB.class.getName()));
-
-        Bundle bundleE = installBundle(assembleArchive("ExportA", "/bundles/package-admin/exportA", ExportA.class));
-        Bundle bundleU = installBundle(assembleArchive("ExportU", "/bundles/package-admin/exporter", Exported.class));
-
-        Archive<?> assemblyE = assembleArchive("ExportA2", "/bundles/package-admin/exportB", ExportB.class);
-        try {
-            bundleE.start();
-            bundleU.start();
-
-            ExportedPackage[] eex = pa.getExportedPackages(bundleE);
-            assertEquals(1, eex.length);
-            assertEquals(ExportA.class.getPackage().getName(), eex[0].getName());
-            assertSame(bundleE, eex[0].getExportingBundle());
-
-            ExportedPackage[] iex = pa.getExportedPackages(bundleU);
-            assertEquals(1, iex.length);
-            assertEquals(Exported.class.getPackage().getName(), iex[0].getName());
-            assertSame(bundleU, iex[0].getExportingBundle());
-
-            bundleE.update(toInputStream(assemblyE));
-
-            // This bundle imports the old version of bundleE, should still be available!
-            Bundle bundleI = installBundle(assembleArchive("ImportA", "/bundles/package-admin/importA", ImportingA.class));
-            try {
-                bundleI.start();
-
-                // PackageAdmin should report both the old and the new package as exported
-                List<String> exported = new ArrayList<String>();
-                for (ExportedPackage ex : pa.getExportedPackages(bundleE)) {
-                    exported.add(ex.getName());
-                }
-                assertTrue(exported.contains(ExportA.class.getPackage().getName()));
-                assertTrue(exported.contains(ExportB.class.getPackage().getName()));
-                assertEquals(2, exported.size());
-
-                refreshPackages(new Bundle[] { bundleE, bundleU, bundleI });
-
-                assertEquals(Bundle.ACTIVE, bundleE.getState());
-                assertEquals(Bundle.ACTIVE, bundleU.getState());
-                assertTrue(Bundle.ACTIVE != bundleI.getState());
-
-                ExportedPackage[] eex2 = pa.getExportedPackages(bundleE);
-                assertEquals(1, eex2.length);
-                assertEquals(ExportB.class.getPackage().getName(), eex2[0].getName());
-                assertSame(bundleE, eex2[0].getExportingBundle());
-            } finally {
-                bundleI.uninstall();
-            }
-        } finally {
-            bundleU.uninstall();
-            bundleE.uninstall();
         }
     }
 
