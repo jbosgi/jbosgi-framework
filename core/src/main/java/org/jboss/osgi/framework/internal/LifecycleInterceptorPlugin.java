@@ -93,14 +93,14 @@ final class LifecycleInterceptorPlugin extends AbstractPluginService<LifecycleIn
             }
         };
         registration = systemContext.registerService(LifecycleInterceptorService.class.getName(), delegate, null);
+        delegate.open();
     }
 
     @Override
     public void stop(StopContext context) {
         super.stop(context);
+        delegate.close();
         registration.unregister();
-        registration = null;
-        delegate = null;
     }
 
     @Override
