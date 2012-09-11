@@ -56,6 +56,7 @@ import org.osgi.resource.Resource;
 final class HostBundleRevision extends UserBundleRevision {
 
     private Set<FragmentBundleRevision> attachedFragments;
+    private FallbackLoader fallbackLoader;
 
     HostBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
         super(frameworkState, dep, metadata, storageState);
@@ -99,6 +100,14 @@ final class HostBundleRevision extends UserBundleRevision {
             return Collections.emptySet();
 
         return Collections.unmodifiableSet(attachedFragments);
+    }
+
+    void setFallbackLoader(FallbackLoader fallbackLoader) {
+        this.fallbackLoader = fallbackLoader;
+    }
+
+    FallbackLoader getFallbackLoader() {
+        return fallbackLoader;
     }
 
     Class<?> loadClass(String className) throws ClassNotFoundException {

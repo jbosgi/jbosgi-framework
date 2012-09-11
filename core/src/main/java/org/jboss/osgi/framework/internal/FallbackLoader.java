@@ -30,7 +30,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.modules.LocalLoader;
 import org.jboss.modules.Module;
@@ -59,7 +61,8 @@ import org.osgi.resource.Requirement;
  */
 final class FallbackLoader implements LocalLoader {
 
-    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
+    private final ReentrantLock fallbackLoaderLock = new ReentrantLock();
+    private final AtomicBoolean enabled = new AtomicBoolean(true);
     private final HostBundleState hostBundle;
     private final HostBundleRevision hostRev;
     private final ModuleIdentifier identifier;
@@ -67,6 +70,8 @@ final class FallbackLoader implements LocalLoader {
     private final FrameworkState frameworkState;
     private final BundleManagerPlugin bundleManager;
     private final ModuleManagerPlugin moduleManager;
+
+    private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
 
     FallbackLoader(HostBundleRevision hostRev, ModuleIdentifier identifier, Set<String> importedPaths) {
         assert hostRev != null : "Null hostRev";
@@ -79,26 +84,48 @@ final class FallbackLoader implements LocalLoader {
         this.bundleManager = hostBundle.getBundleManager();
         this.frameworkState = hostBundle.getFrameworkState();
         this.moduleManager = frameworkState.getModuleManagerPlugin();
+        hostRev.setFallbackLoader(this);
+    }
+
+    boolean setEnabled(boolean flag) {
+        try {
+            fallbackLoaderLock.lock();
+            return enabled.getAndSet(flag);
+        } finally {
+            fallbackLoaderLock.unlock();
+        }
+    }
+
+    void lock() {
+        fallbackLoaderLock.lock();
+    }
+
+    void unlock() {
+        fallbackLoaderLock.unlock();
     }
 
     @Override
     public Class<?> loadClassLocal(String className, boolean resolve) {
-
-        List<XPackageRequirement> matchingPatterns = findMatchingPatterns(className);
-        if (matchingPatterns.isEmpty())
-            return null;
-
-        String pathName = className.replace('.', '/') + ".class";
-        Module module = findModuleDynamically(pathName, matchingPatterns);
-        if (module == null)
-            return null;
-
-        ModuleClassLoader moduleClassLoader = module.getClassLoader();
         try {
-            return moduleClassLoader.loadClass(className);
-        } catch (ClassNotFoundException ex) {
-            LOGGER.tracef("Cannot load class [%s] from module: %s", className, module);
-            return null;
+            fallbackLoaderLock.lock();
+            List<XPackageRequirement> matchingPatterns = findMatchingPatterns(className);
+            if (!enabled.get() || matchingPatterns.isEmpty())
+                return null;
+
+            String pathName = className.replace('.', '/') + ".class";
+            Module module = findModuleDynamically(pathName, matchingPatterns);
+            if (module == null)
+                return null;
+
+            ModuleClassLoader moduleClassLoader = module.getClassLoader();
+            try {
+                return moduleClassLoader.loadClass(className);
+            } catch (ClassNotFoundException ex) {
+                LOGGER.tracef("Cannot load class [%s] from module: %s", className, module);
+                return null;
+            }
+        } finally {
+            fallbackLoaderLock.unlock();
         }
     }
 
@@ -109,25 +136,29 @@ final class FallbackLoader implements LocalLoader {
 
     @Override
     public List<Resource> loadResourceLocal(String resName) {
+        try {
+            fallbackLoaderLock.lock();
+            if (resName.startsWith("/"))
+                resName = resName.substring(1);
 
-        if (resName.startsWith("/"))
-            resName = resName.substring(1);
+            List<XPackageRequirement> matchingPatterns = findMatchingPatterns(resName);
+            if (!enabled.get() || matchingPatterns.isEmpty())
+                return Collections.emptyList();
 
-        List<XPackageRequirement> matchingPatterns = findMatchingPatterns(resName);
-        if (matchingPatterns.isEmpty())
-            return Collections.emptyList();
+            Module module = findModuleDynamically(resName, matchingPatterns);
+            if (module == null)
+                return Collections.emptyList();
 
-        Module module = findModuleDynamically(resName, matchingPatterns);
-        if (module == null)
-            return Collections.emptyList();
+            URL resURL = module.getExportedResource(resName);
+            if (resURL == null) {
+                LOGGER.tracef("Cannot load resource [%s] from module: %s", resName, module);
+                return Collections.emptyList();
+            }
 
-        URL resURL = module.getExportedResource(resName);
-        if (resURL == null) {
-            LOGGER.tracef("Cannot load resource [%s] from module: %s", resName, module);
-            return Collections.emptyList();
+            return Collections.singletonList((Resource) new URLResource(resURL));
+        } finally {
+            fallbackLoaderLock.unlock();
         }
-
-        return Collections.singletonList((Resource) new URLResource(resURL));
     }
 
     private Module findModuleDynamically(String resName, List<XPackageRequirement> matchingPatterns) {

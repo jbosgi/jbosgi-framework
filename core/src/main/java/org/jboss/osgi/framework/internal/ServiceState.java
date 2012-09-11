@@ -189,7 +189,6 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         return registration;
     }
 
-
     List<String> getClassNames() {
         return Arrays.asList(classNames);
     }
@@ -321,16 +320,32 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         if (bundleState == Bundle.UNINSTALLED)
             return false;
 
-        XBundleRevision bundleRev = ((XBundle)bundle).getBundleRevision();
+        XBundleRevision bundleRev = ((XBundle) bundle).getBundleRevision();
         ClassLoader bundleClassLoader = bundleRev.getModuleClassLoader();
         if (bundleClassLoader == null) {
             LOGGER.infof("NO CLASSLOADER [%s,%s] for: %s", bundle, ConstantsHelper.bundleState(bundleState), className);
             return false;
         }
 
+        FallbackLoader fallbackLoader = null;
+        if (bundleRev instanceof HostBundleRevision) {
+            fallbackLoader = ((HostBundleRevision) bundleRev).getFallbackLoader();
+        }
+
         Class<?> targetClass;
         try {
-            targetClass = bundleClassLoader.loadClass(className);
+            if (fallbackLoader != null) {
+                try {
+                    fallbackLoader.lock();
+                    fallbackLoader.setEnabled(false);
+                    targetClass = bundleClassLoader.loadClass(className);
+                } finally {
+                    fallbackLoader.setEnabled(true);
+                    fallbackLoader.unlock();
+                }
+            } else {
+                targetClass = bundleClassLoader.loadClass(className);
+            }
         } catch (ClassNotFoundException ex) {
             // If the requesting bundle does not have a wire to the
             // service package it cannot be constraint on that package.
