@@ -134,16 +134,7 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
 
         // Construct framework capabilities from system packages
         for (String packageSpec : exportedPackages) {
-            String packname = packageSpec;
-            Version version = Version.emptyVersion;
-
-            int versionIndex = packname.indexOf(";version=");
-            if (versionIndex > 0) {
-                packname = packageSpec.substring(0, versionIndex);
-                version = Version.parseVersion(packageSpec.substring(versionIndex + 9));
-            }
-
-            builder.addExportPackages(packname + ";version=" + version);
+            builder.addExportPackages(packageSpec);
         }
         return builder.getOSGiMetaData();
     }
