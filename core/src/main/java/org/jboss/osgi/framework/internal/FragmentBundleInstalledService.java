@@ -27,6 +27,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.framework.util.ServiceTracker.SynchronousListenerServiceWrapper;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
@@ -42,7 +43,7 @@ final class FragmentBundleInstalledService extends UserBundleInstalledService<Fr
     static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, ServiceListener<XBundle> listener) throws BundleException {
         ServiceName serviceName = BundleManagerPlugin.getServiceName(dep).append("INSTALLED");
         FragmentBundleInstalledService service = new FragmentBundleInstalledService(frameworkState, dep);
-        ServiceBuilder<FragmentBundleState> builder = serviceTarget.addService(serviceName, service);
+        ServiceBuilder<FragmentBundleState> builder = serviceTarget.addService(serviceName, new SynchronousListenerServiceWrapper<FragmentBundleState>(service));
         builder.addDependency(InternalServices.FRAMEWORK_CORE_SERVICES);
         if (listener != null) {
             builder.addListener(listener);

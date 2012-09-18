@@ -39,6 +39,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.util.ServiceTracker;
+import org.jboss.osgi.framework.util.ServiceTracker.SynchronousListenerServiceWrapper;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -54,11 +55,12 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         this.installedServices = installedServices;
     }
 
+    @Override
     public ServiceController<T> install(ServiceTarget serviceTarget) {
         // The bootstrap resolve service cannot have a direct dependency on
         // the bundle INSTALLED services because it must be possible to uninstall
         // a bundle without taking this service down
-        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
+        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), new SynchronousListenerServiceWrapper<T>(this));
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
         builder.addDependencies(getPreviousService());

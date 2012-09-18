@@ -25,6 +25,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.osgi.framework.util.ServiceTracker.SynchronousListenerServiceWrapper;
 
 public class BootstrapBundlesComplete<T> extends BootstrapBundlesService<T> {
 
@@ -36,7 +37,7 @@ public class BootstrapBundlesComplete<T> extends BootstrapBundlesService<T> {
         // The bootstrap complete service cannot have a direct dependency on
         // the bundle ACTIVE services because it must be possible to uninstall
         // a bundle without taking this service down
-        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
+        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), new SynchronousListenerServiceWrapper<T>(this));
         builder.addDependency(getPreviousService());
         addServiceDependencies(builder);
         return builder.install();

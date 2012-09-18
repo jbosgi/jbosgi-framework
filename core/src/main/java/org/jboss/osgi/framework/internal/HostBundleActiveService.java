@@ -26,6 +26,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.util.ServiceTracker.SynchronousListenerServiceWrapper;
 
 /**
  * Represents the ACTIVE state of a host bundle.
@@ -39,7 +40,7 @@ final class HostBundleActiveService extends UserBundleActiveService<HostBundleSt
 
     static void addService(ServiceTarget serviceTarget, FrameworkState frameworkState, ServiceName serviceName) {
         HostBundleActiveService service = new HostBundleActiveService(frameworkState);
-        ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName.append("ACTIVE"), service);
+        ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName.append("ACTIVE"), new SynchronousListenerServiceWrapper<HostBundleState>(service));
         builder.addDependency(serviceName.append("INSTALLED"), HostBundleState.class, service.injectedBundleState);
         builder.setInitialMode(Mode.NEVER);
         builder.install();
