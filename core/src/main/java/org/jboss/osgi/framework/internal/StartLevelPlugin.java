@@ -24,7 +24,10 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -240,7 +243,17 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
      */
     synchronized void increaseStartLevel(int level) {
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        Collection<XBundle> bundles = bundleManager.getBundles();
+
+        // Sort the bundles after their bundle id
+        List<XBundle> bundles = new ArrayList<XBundle>(bundleManager.getBundles());
+        Comparator<XBundle> comparator = new Comparator<XBundle>() {
+            @Override
+            public int compare(XBundle b1, XBundle b2) {
+                return (int)(b1.getBundleId() - b2.getBundleId());
+            }
+        };
+        Collections.sort(bundles, comparator);
+
         while (startLevel < level) {
             startLevel++;
             LOGGER.infoStartingBundlesForStartLevel(startLevel);
@@ -274,7 +287,18 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         while (startLevel > level) {
             LOGGER.infoStoppingBundlesForStartLevel(level);
-            Collection<XBundle> bundles = bundleManager.getBundles();
+
+            // Sort the bundles after their bundle id
+            List<XBundle> bundles = new ArrayList<XBundle>(bundleManager.getBundles());
+            Comparator<XBundle> comparator = new Comparator<XBundle>() {
+                @Override
+                public int compare(XBundle b1, XBundle b2) {
+                    return (int)(b1.getBundleId() - b2.getBundleId());
+                }
+            };
+            Collections.sort(bundles, comparator);
+            Collections.reverse(bundles);
+
             for (XBundle bundle : bundles) {
                 if (bundle instanceof HostBundleState) {
                     HostBundleState hostBundle = (HostBundleState) bundle;
