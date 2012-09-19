@@ -21,6 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -39,7 +40,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-final class DefaultBundleInstallPlugin extends AbstractPluginService<BundleInstallPlugin> implements BundleInstallPlugin, IntegrationService<BundleInstallPlugin> {
+final class DefaultBundleInstallPlugin extends AbstractService<BundleInstallPlugin> implements BundleInstallPlugin, IntegrationService<BundleInstallPlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
 
@@ -58,11 +59,6 @@ final class DefaultBundleInstallPlugin extends AbstractPluginService<BundleInsta
     }
 
     @Override
-    public BundleInstallPlugin getValue() {
-        return this;
-    }
-
-    @Override
     public void installBundle(Deployment dep) throws BundleException {
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         bundleManager.installBundle(dep, null);
@@ -72,5 +68,10 @@ final class DefaultBundleInstallPlugin extends AbstractPluginService<BundleInsta
     public void uninstallBundle(Deployment dep) {
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         bundleManager.uninstallBundle(dep);
+    }
+
+    @Override
+    public BundleInstallPlugin getValue() {
+        return this;
     }
 }

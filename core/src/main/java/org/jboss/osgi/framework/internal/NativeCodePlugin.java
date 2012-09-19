@@ -37,6 +37,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -64,7 +65,7 @@ import org.osgi.framework.Version;
  * @author David Bosschaert
  * @since 11-Aug-2010
  */
-final class NativeCodePlugin extends AbstractPluginService<NativeCodePlugin> {
+final class NativeCodePlugin extends AbstractService<NativeCodePlugin> {
 
     /**
      * The string that is to be replaced with the absolute path of the native library as specified by the core spec with the

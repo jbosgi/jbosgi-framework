@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -62,7 +63,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class ServiceManagerPlugin extends AbstractPluginService<ServiceManagerPlugin> {
+final class ServiceManagerPlugin extends AbstractService<ServiceManagerPlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();

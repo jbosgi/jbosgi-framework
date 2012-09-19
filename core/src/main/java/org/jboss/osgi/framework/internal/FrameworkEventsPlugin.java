@@ -40,6 +40,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -78,7 +80,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsPlugin> {
+final class FrameworkEventsPlugin extends AbstractService<FrameworkEventsPlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
@@ -147,13 +149,7 @@ final class FrameworkEventsPlugin extends AbstractPluginService<FrameworkEventsP
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        super.start(context);
-    }
-
-    @Override
     public void stop(StopContext context) {
-        super.stop(context);
         bundleListeners.clear();
         serviceListeners.clear();
         frameworkListeners.clear();

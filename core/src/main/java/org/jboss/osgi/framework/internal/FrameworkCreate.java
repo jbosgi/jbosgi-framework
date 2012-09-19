@@ -81,13 +81,11 @@ public final class FrameworkCreate extends AbstractFrameworkService {
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
         getBundleManager().injectedFramework.inject(frameworkState);
     }
 
     @Override
     public void stop(StopContext context) {
-        super.stop(context);
         getBundleManager().injectedFramework.uninject();
     }
 

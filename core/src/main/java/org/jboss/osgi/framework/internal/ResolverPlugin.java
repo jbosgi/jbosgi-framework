@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
@@ -81,7 +82,7 @@ import org.osgi.service.resolver.ResolveContext;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> implements XResolver {
+final class ResolverPlugin extends AbstractService<ResolverPlugin> implements XResolver {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
@@ -109,13 +110,11 @@ final class ResolverPlugin extends AbstractPluginService<ResolverPlugin> impleme
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
         resolver = new StatelessResolver();
     }
 
     @Override
     public void stop(StopContext context) {
-        super.stop(context);
         resolver = null;
     }
 

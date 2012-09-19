@@ -47,6 +47,7 @@ import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.modules.filter.ClassFilter;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -89,7 +90,7 @@ import org.osgi.resource.Resource;
  * @author thomas.diesler@jboss.com
  * @since 06-Jul-2009
  */
-final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugin> {
+final class ModuleManagerPlugin extends AbstractService<ModuleManagerPlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
@@ -117,7 +118,6 @@ final class ModuleManagerPlugin extends AbstractPluginService<ModuleManagerPlugi
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
         FrameworkModulePlugin modulePlugin = injectedFrameworkModule.getValue();
         SystemBundleState systemBundle = injectedSystemBundle.getValue();
         frameworkModule = modulePlugin.getFrameworkModule(systemBundle);

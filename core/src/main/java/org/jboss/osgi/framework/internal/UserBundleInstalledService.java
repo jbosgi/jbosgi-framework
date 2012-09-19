@@ -60,7 +60,6 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
         InternalStorageState storageState = null;
         try {
             Deployment dep = initialDeployment;
@@ -87,6 +86,11 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
             }
             throw new StartException(ex);
         }
+    }
+
+    @Override
+    public void stop(StopContext context) {
+        getBundleManager().uninstallBundle(getBundleState(), Bundle.STOP_TRANSIENT);
     }
 
     abstract R createBundleRevision(Deployment deployment, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException;
@@ -120,12 +124,6 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
     @Override
     B getBundleState() {
         return bundleState;
-    }
-
-    @Override
-    public void stop(StopContext context) {
-        super.stop(context);
-        getBundleManager().uninstallBundle(getBundleState(), Bundle.STOP_TRANSIENT);
     }
 
     private void validateBundle(UserBundleState userBundle, OSGiMetaData metadata) throws BundleException {

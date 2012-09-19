@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -42,7 +43,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 12-Apr-2012
  */
-final class DefaultStorageStatePlugin extends AbstractPluginService<StorageStatePlugin> implements StorageStatePlugin {
+final class DefaultStorageStatePlugin extends AbstractService<StorageStatePlugin> implements StorageStatePlugin {
 
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
     private final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();

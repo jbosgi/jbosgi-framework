@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -56,7 +57,7 @@ import org.osgi.framework.Constants;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugin> {
+final class BundleStoragePlugin extends AbstractService<BundleStoragePlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final Map<String, InternalStorageState> storageStates = new HashMap<String, InternalStorageState>();
@@ -77,8 +78,6 @@ final class BundleStoragePlugin extends AbstractPluginService<BundleStoragePlugi
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
-
         try {
             // Cleanup the storage area
             BundleManagerPlugin bundleManager = injectedBundleManager.getValue();

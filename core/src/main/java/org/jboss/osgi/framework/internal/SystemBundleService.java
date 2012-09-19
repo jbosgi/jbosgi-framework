@@ -76,7 +76,6 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
         InternalStorageState storageState = null;
         try {
             OSGiMetaData metadata = createOSGiMetaData();
@@ -98,6 +97,12 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
         }
     }
 
+    @Override
+    public void stop(StopContext context) {
+        BundleManagerPlugin bundleManager = getBundleManager();
+        bundleManager.injectedSystemBundle.uninject();
+    }
+
     InternalStorageState createStorageState() {
         try {
             BundleStoragePlugin storagePlugin = injectedBundleStorage.getValue();
@@ -114,13 +119,6 @@ public final class SystemBundleService extends AbstractBundleService<SystemBundl
     @Override
     SystemBundleState getBundleState() {
         return bundleState;
-    }
-
-    @Override
-    public void stop(StopContext context) {
-        super.stop(context);
-        BundleManagerPlugin bundleManager = getBundleManager();
-        bundleManager.injectedSystemBundle.uninject();
     }
 
     private OSGiMetaData createOSGiMetaData() {

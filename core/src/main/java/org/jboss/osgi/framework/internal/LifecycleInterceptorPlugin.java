@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -49,7 +50,7 @@ import org.osgi.framework.ServiceRegistration;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-final class LifecycleInterceptorPlugin extends AbstractPluginService<LifecycleInterceptorPlugin> implements LifecycleInterceptorService {
+final class LifecycleInterceptorPlugin extends AbstractService<LifecycleInterceptorPlugin> implements LifecycleInterceptorService {
 
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private AbstractLifecycleInterceptorService delegate;
@@ -68,7 +69,6 @@ final class LifecycleInterceptorPlugin extends AbstractPluginService<LifecycleIn
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
         final BundleContext systemContext = injectedSystemContext.getValue();
         delegate = new AbstractLifecycleInterceptorService(systemContext) {
 
@@ -98,7 +98,6 @@ final class LifecycleInterceptorPlugin extends AbstractPluginService<LifecycleIn
 
     @Override
     public void stop(StopContext context) {
-        super.stop(context);
         delegate.close();
         registration.unregister();
     }

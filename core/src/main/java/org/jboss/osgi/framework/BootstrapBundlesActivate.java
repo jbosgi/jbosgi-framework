@@ -66,7 +66,6 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
 
         // Collect the resolved bundles
         ServiceContainer serviceRegistry = context.getController().getServiceContainer();

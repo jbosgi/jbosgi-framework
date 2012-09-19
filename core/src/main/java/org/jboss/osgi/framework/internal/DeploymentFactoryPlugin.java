@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.jar.Manifest;
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -48,7 +49,7 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 12-Jul-2010
  */
-final class DeploymentFactoryPlugin extends AbstractPluginService<DeploymentFactoryPlugin> {
+final class DeploymentFactoryPlugin extends AbstractService<DeploymentFactoryPlugin> {
 
     static void addService(ServiceTarget serviceTarget) {
         DeploymentFactoryPlugin service = new DeploymentFactoryPlugin();

@@ -36,7 +36,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
@@ -46,7 +48,6 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleManager;
@@ -75,7 +76,7 @@ import org.osgi.resource.Resource;
  * @author David Bosschaert
  * @since 29-Jun-2010
  */
-final class BundleManagerPlugin extends AbstractPluginService<BundleManager> implements BundleManager {
+final class BundleManagerPlugin extends AbstractService<BundleManager> implements BundleManager {
 
     // The framework execution environment
     private static String OSGi_FRAMEWORK_EXECUTIONENVIRONMENT;
@@ -144,7 +145,6 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
         LOGGER.infoFrameworkImplementation(implementationVersion);
         serviceContainer = context.getController().getServiceContainer();
         serviceTarget = context.getChildTarget();
@@ -152,11 +152,6 @@ final class BundleManagerPlugin extends AbstractPluginService<BundleManager> imp
         for (Entry<String, Object> entry : properties.entrySet()) {
             LOGGER.debugf(" %s = %s", entry.getKey(), entry.getValue());
         }
-    }
-
-    @Override
-    public void stop(StopContext context) {
-        super.stop(context);
     }
 
     @Override

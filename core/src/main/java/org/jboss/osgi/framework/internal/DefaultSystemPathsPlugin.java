@@ -40,6 +40,7 @@ import java.util.Set;
 import org.jboss.modules.filter.MultiplePathFilterBuilder;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -56,7 +57,7 @@ import org.jboss.osgi.framework.SystemPathsPlugin;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class DefaultSystemPathsPlugin extends AbstractPluginService<SystemPathsPlugin> implements SystemPathsPlugin, IntegrationService<SystemPathsPlugin> {
+final class DefaultSystemPathsPlugin extends AbstractService<SystemPathsPlugin> implements SystemPathsPlugin, IntegrationService<SystemPathsPlugin> {
 
     private final FrameworkBuilder frameworkBuilder;
     // The derived combination of all system packages
@@ -91,7 +92,6 @@ final class DefaultSystemPathsPlugin extends AbstractPluginService<SystemPathsPl
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
 
         // Initialize the framework packages
         frameworkPackages.addAll(Arrays.asList(SystemPathsPlugin.DEFAULT_FRAMEWORK_PACKAGES));

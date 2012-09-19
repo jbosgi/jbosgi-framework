@@ -23,6 +23,7 @@ package org.jboss.osgi.framework;
 
 import java.util.Map;
 import java.util.Set;
+
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceListener;

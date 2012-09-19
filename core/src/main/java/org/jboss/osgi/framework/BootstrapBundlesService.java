@@ -21,13 +21,8 @@ package org.jboss.osgi.framework;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
-
 import org.jboss.msc.service.AbstractService;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
 
 public abstract class BootstrapBundlesService<T> extends AbstractService<T> implements IntegrationService<T> {
 
@@ -50,11 +45,5 @@ public abstract class BootstrapBundlesService<T> extends AbstractService<T> impl
 
     public ServiceName getNextService() {
         return IntegrationService.BootstrapPhase.serviceName(baseName, phase.next());
-    }
-
-    @Override
-    public void start(StartContext context) throws StartException {
-        ServiceController<?> serviceController = context.getController();
-        LOGGER.tracef("Starting: %s in mode %s", serviceController.getName(), serviceController.getMode());
     }
 }

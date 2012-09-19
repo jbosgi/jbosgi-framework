@@ -122,7 +122,6 @@ public final class FrameworkActive extends AbstractFrameworkService {
      */
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
         try {
             // Resolve the system bundle
             ResolverPlugin resolverPlugin = getValue().getResolverPlugin();

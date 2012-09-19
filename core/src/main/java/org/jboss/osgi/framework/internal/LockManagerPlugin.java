@@ -29,9 +29,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceTarget;
 
 /**
  * The plugin for framework locks.
@@ -39,7 +40,7 @@ import org.jboss.msc.service.ServiceController.Mode;
  * @author thomas.diesler@jboss.com
  * @since 15-Aug-2012
  */
-final class LockManagerPlugin extends AbstractPluginService<LockManagerPlugin> {
+final class LockManagerPlugin extends AbstractService<LockManagerPlugin> {
 
     private final ReentrantLock frameworkLock = new ReentrantLock();
     private RuntimeException lastLockAquisition;

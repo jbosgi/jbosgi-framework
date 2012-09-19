@@ -73,7 +73,6 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
 
         ServiceContainer serviceRegistry = context.getController().getServiceContainer();
         int targetLevel = getBeginningStartLevel();

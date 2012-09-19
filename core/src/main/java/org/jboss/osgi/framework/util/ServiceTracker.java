@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.util;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -77,9 +78,9 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     @Override
     public void transition(ServiceController<? extends S> controller, Transition transition) {
         synchronized (trackedController) {
+            Service<? extends S> service = controller.getService();
             switch (transition) {
                 case STARTING_to_UP:
-                    Service<? extends S> service = controller.getService();
                     if (!(service instanceof SynchronousListenerService)) {
                         LOGGER.tracef("ServiceTracker transition to UP: " + controller.getName());
                         serviceStarted(controller);
@@ -87,10 +88,12 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
                     }
                     break;
                 case STARTING_to_START_FAILED:
-                    LOGGER.tracef("ServiceTracker transition to START_FAILED: " + controller.getName());
-                    StartException ex = controller.getStartException();
-                    serviceStartFailed(controller, ex);
-                    serviceComplete(controller);
+                    if (!(service instanceof SynchronousListenerService)) {
+                        LOGGER.tracef("ServiceTracker transition to START_FAILED: " + controller.getName());
+                        StartException ex = controller.getStartException();
+                        serviceStartFailed(controller, ex);
+                        serviceComplete(controller);
+                    }
                     break;
             }
         }
@@ -99,6 +102,12 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     public void synchronousListenerServiceStarted(ServiceController<? extends S> controller) {
         LOGGER.tracef("Synchronous listener service started: " + controller.getName());
         serviceStarted(controller);
+        serviceComplete(controller);
+    }
+
+    public void synchronousListenerServiceFailed(ServiceController<? extends S> controller, Throwable th) {
+        LOGGER.tracef("Synchronous listener service failed: " + controller.getName());
+        serviceStartFailed(controller, th);
         serviceComplete(controller);
     }
 
@@ -121,7 +130,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         return true;
     }
 
-    protected void serviceStartFailed(ServiceController<? extends S> controller, StartException ex) {
+    protected void serviceStartFailed(ServiceController<? extends S> controller, Throwable th) {
     }
 
     protected void serviceStarted(ServiceController<? extends S> controller) {
@@ -159,6 +168,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         void addListener(ServiceTracker<T> listener);
         void removeListener(ServiceTracker<T> listener);
         void startCompleted(final StartContext context);
+        void startFailed(StartContext context, Throwable th);
     }
 
     /**
@@ -180,32 +190,48 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         }
 
         @Override
-        public void addListener(ServiceTracker<T> listener) {
+        public synchronized void addListener(ServiceTracker<T> listener) {
             listeners.add(listener);
         }
 
         @Override
-        public void removeListener(ServiceTracker<T> listener) {
+        public synchronized void removeListener(ServiceTracker<T> listener) {
             listeners.remove(listener);
         }
 
         @Override
         public void start(final StartContext context) throws StartException {
-            delegate.start(context);
-            startCompleted(context);
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public void startCompleted(final StartContext context) {
-            for (ServiceTracker<T> listener : listeners) {
-                listener.synchronousListenerServiceStarted((ServiceController<? extends T>)context.getController());
+            try {
+                delegate.start(context);
+                startCompleted(context);
+            } catch (StartException ex) {
+                startFailed(context, ex);
+                throw ex;
+            } catch (RuntimeException ex) {
+                startFailed(context, ex);
+                throw ex;
             }
         }
 
         @Override
         public void stop(final StopContext context) {
             delegate.stop(context);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public void startCompleted(final StartContext context) {
+            for (ServiceTracker<T> listener : new ArrayList<ServiceTracker<T>>(listeners)) {
+                listener.synchronousListenerServiceStarted((ServiceController<? extends T>)context.getController());
+            }
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public void startFailed(StartContext context, Throwable th) {
+            for (ServiceTracker<T> listener : new ArrayList<ServiceTracker<T>>(listeners)) {
+                listener.synchronousListenerServiceFailed((ServiceController<? extends T>)context.getController(), th);
+            }
         }
 
         @Override

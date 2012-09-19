@@ -42,6 +42,7 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
@@ -66,7 +67,7 @@ import org.osgi.util.tracker.ServiceTracker;
  * @author Thomas.Diesler@jboss.com
  * @since 10-Jan-2011
  */
-final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> implements URLStreamHandlerFactory, ContentHandlerFactory {
+final class URLHandlerPlugin extends AbstractService<URLHandlerPlugin> implements URLStreamHandlerFactory, ContentHandlerFactory {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
@@ -123,7 +124,6 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
         OSGiStreamHandlerFactoryService.setDelegateFactory(this);
         streamHandlerDelegate.setDelegateFactory(new OSGiStreamHandlerFactory(this));
         contentHandlerDelegate.setDelegateFactory(new OSGiContentHandlerFactory(this));
@@ -135,7 +135,6 @@ final class URLHandlerPlugin extends AbstractPluginService<URLHandlerPlugin> imp
 
     @Override
     public void stop(StopContext context) {
-        super.stop(context);
         streamHandlerDelegate.clearHandlers();
         contentHandlerDelegate.clearHandlers();
         registration.unregister();

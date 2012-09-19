@@ -21,6 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -36,7 +37,7 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 04-Feb-2011
  */
-final class DefaultSystemServicesPlugin extends AbstractPluginService<SystemServicesPlugin> implements SystemServicesPlugin, IntegrationService<SystemServicesPlugin> {
+final class DefaultSystemServicesPlugin extends AbstractService<SystemServicesPlugin> implements SystemServicesPlugin, IntegrationService<SystemServicesPlugin> {
 
     @Override
     public ServiceName getServiceName() {

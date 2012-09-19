@@ -54,7 +54,7 @@ import org.osgi.service.startlevel.StartLevel;
 
 /**
  * Represents the INSTALLED state of a host bundle.
- *
+ * 
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
@@ -194,32 +194,31 @@ final class HostBundleState extends UserBundleState {
 
     void startInternal(int options) throws BundleException {
 
-        // Assert the required start conditions
-        assertStartConditions();
-
-        LOGGER.debugf("Starting bundle: %s", this);
-
-        // If the Framework's current start level is less than this bundle's start level
-        if (startLevelValidForStart() == false) {
-            // If the START_TRANSIENT option is set, then a BundleException is thrown
-            // indicating this bundle cannot be started due to the Framework's current start level
-            if ((options & START_TRANSIENT) != 0)
-                throw MESSAGES.cannotStartBundleDueToStartLevel();
-
-            LOGGER.debugf("Start level [%d] not valid for: %s", getStartLevel(), this);
-
-            // Set this bundle's autostart setting
-            persistAutoStartSettings(options);
-            return;
-        }
-
         // #1 If this bundle is in the process of being activated or deactivated
         // then this method must wait for activation or deactivation to complete before continuing.
         // If this does not occur in a reasonable time, a BundleException is thrown
         aquireBundleLock(Method.START);
-
         alreadyStarting.set(true);
+        
         try {
+            // Assert the required start conditions
+            assertStartConditions();
+
+            LOGGER.debugf("Starting bundle: %s", this);
+
+            // If the Framework's current start level is less than this bundle's start level
+            if (startLevelValidForStart() == false) {
+                // If the START_TRANSIENT option is set, then a BundleException is thrown
+                // indicating this bundle cannot be started due to the Framework's current start level
+                if ((options & START_TRANSIENT) != 0)
+                    throw MESSAGES.cannotStartBundleDueToStartLevel();
+
+                LOGGER.debugf("Start level [%d] not valid for: %s", getStartLevel(), this);
+
+                // Set this bundle's autostart setting
+                persistAutoStartSettings(options);
+                return;
+            }
 
             // #2 If this bundle's state is ACTIVE then this method returns immediately.
             if (getState() == ACTIVE)

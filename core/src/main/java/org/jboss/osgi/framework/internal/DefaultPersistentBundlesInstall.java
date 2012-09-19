@@ -69,7 +69,6 @@ final class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void
 
     @Override
     public void start(StartContext context) throws StartException {
-        super.start(context);
 
         final BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         final DeploymentFactoryPlugin deploymentPlugin = injectedDeploymentFactory.getValue();

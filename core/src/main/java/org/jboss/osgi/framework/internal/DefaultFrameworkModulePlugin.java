@@ -37,6 +37,7 @@ import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.Resource;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -58,7 +59,7 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 04-Feb-2011
  */
-final class DefaultFrameworkModulePlugin extends AbstractPluginService<FrameworkModulePlugin> implements FrameworkModulePlugin, IntegrationService<FrameworkModulePlugin> {
+final class DefaultFrameworkModulePlugin extends AbstractService<FrameworkModulePlugin> implements FrameworkModulePlugin, IntegrationService<FrameworkModulePlugin> {
 
     private static final ModuleIdentifier FRAMEWORK_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".framework");
     private final InjectedValue<SystemPathsPlugin> injectedSystemPaths = new InjectedValue<SystemPathsPlugin>();
@@ -79,13 +80,7 @@ final class DefaultFrameworkModulePlugin extends AbstractPluginService<Framework
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        super.start(context);
-    }
-
-    @Override
     public void stop(StopContext context) {
-        super.stop(context);
         frameworkModule = null;
     }
 

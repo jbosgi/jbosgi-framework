@@ -68,7 +68,6 @@ class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> imple
 
     @Override
     public void start(final StartContext context) throws StartException {
-        super.start(context);
 
         final BundleManager bundleManager = injectedBundleManager.getValue();
         final ServiceTarget serviceTarget = context.getChildTarget();
