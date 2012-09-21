@@ -21,6 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,12 +31,13 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.IntegrationService;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.StorageStatePlugin;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
-import org.osgi.framework.BundleException;
+import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.vfs.VirtualFile;
 
 /**
  * An implementation of a {@link StorageStatePlugin}
@@ -47,12 +49,14 @@ final class DefaultStorageStatePlugin extends AbstractService<StorageStatePlugin
 
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
     private final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
+    private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
 
     static void addService(ServiceTarget serviceTarget) {
         DefaultStorageStatePlugin service = new DefaultStorageStatePlugin();
         ServiceBuilder<StorageStatePlugin> builder = serviceTarget.addService(IntegrationService.STORAGE_STATE_PLUGIN, service);
         builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
         builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, service.injectedDeploymentFactory);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();
     }
@@ -73,13 +77,15 @@ final class DefaultStorageStatePlugin extends AbstractService<StorageStatePlugin
     }
 
     @Override
-    public StorageState getByLocation(String location) {
+    public StorageState getStorageState(String location) {
         BundleStoragePlugin bundleStorage = injectedBundleStorage.getValue();
         return bundleStorage.getStorageState(location);
     }
 
     @Override
-    public Deployment createDeployment(StorageState storageState) throws BundleException {
-        return injectedDeploymentFactory.getValue().createDeployment(storageState);
+    public StorageState createStorageState(String location, int startlevel, VirtualFile rootFile) throws IOException {
+        BundleStoragePlugin bundleStorage = injectedBundleStorage.getValue();
+        Long bundleId = injectedEnvironment.getValue().nextResourceIdentifier(null, location);
+        return bundleStorage.createStorageState(bundleId, location, startlevel, rootFile);
     }
 }

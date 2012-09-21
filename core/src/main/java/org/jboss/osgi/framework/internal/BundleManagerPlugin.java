@@ -315,7 +315,6 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
                 StorageState storageState = dep.getAttachment(StorageState.class);
                 if (storageState != null) {
                     LOGGER.debugf("Found storage state: %s", storageState);
-                    dep.setAutoStart(storageState.isPersistentlyStarted());
                     bundleId = env.nextResourceIdentifier(storageState.getBundleId(), symbolicName);
                 } else {
                     bundleId = env.nextResourceIdentifier(null, symbolicName);

@@ -21,11 +21,11 @@ package org.jboss.osgi.framework;
  * #L%
  */
 
+import java.io.IOException;
 import java.util.Set;
 
 import org.jboss.msc.service.Service;
-import org.jboss.osgi.deployment.deployer.Deployment;
-import org.osgi.framework.BundleException;
+import org.jboss.osgi.vfs.VirtualFile;
 
 /**
  * A provider of {@link StorageState}
@@ -37,7 +37,7 @@ public interface StorageStatePlugin extends Service<StorageStatePlugin> {
 
     Set<StorageState> getStorageStates();
 
-    StorageState getByLocation(String location);
+    StorageState getStorageState(String location);
 
-    Deployment createDeployment(StorageState storageState) throws BundleException;
+    StorageState createStorageState(String location, int startlevel, VirtualFile rootFile) throws IOException;
 }

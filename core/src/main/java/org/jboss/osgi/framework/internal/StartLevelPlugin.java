@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -63,9 +64,9 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
     private final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
 
-    private int initialBundleStartLevel = 1; // Synchronized on this
+    private AtomicInteger initialBundleStartLevel = new AtomicInteger(1);
     private ServiceRegistration registration;
-    private int startLevel = 0; // Synchronized on this
+    private AtomicInteger startLevel = new AtomicInteger(0);
 
     static void addService(ServiceTarget serviceTarget) {
         StartLevelPlugin service = new StartLevelPlugin();
@@ -114,8 +115,8 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
     }
 
     @Override
-    public synchronized int getStartLevel() {
-        return startLevel;
+    public int getStartLevel() {
+        return startLevel.get();
     }
 
     @Override
@@ -124,7 +125,6 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         final AbstractBundleState bundleState = injectedSystemBundle.getValue();
         if (level > getStartLevel()) {
             getExecutorService().execute(new Runnable() {
-
                 @Override
                 public void run() {
                     LOGGER.infoIncreasingStartLevel(getStartLevel(), level);
@@ -134,7 +134,6 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
             });
         } else if (level < getStartLevel()) {
             getExecutorService().execute(new Runnable() {
-
                 @Override
                 public void run() {
                     LOGGER.infoDecreasingStartLevel(getStartLevel(), level);
@@ -205,13 +204,13 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
     }
 
     @Override
-    public synchronized int getInitialBundleStartLevel() {
-        return initialBundleStartLevel;
+    public int getInitialBundleStartLevel() {
+        return initialBundleStartLevel.get();
     }
 
     @Override
-    public synchronized void setInitialBundleStartLevel(int startlevel) {
-        initialBundleStartLevel = startlevel;
+    public void setInitialBundleStartLevel(int startlevel) {
+        initialBundleStartLevel.set(startlevel);
     }
 
     @Override
@@ -254,15 +253,15 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         };
         Collections.sort(bundles, comparator);
 
-        while (startLevel < level) {
-            startLevel++;
-            LOGGER.infoStartingBundlesForStartLevel(startLevel);
+        while (startLevel.get() < level) {
+            startLevel.incrementAndGet();
+            LOGGER.infoStartingBundlesForStartLevel(startLevel.get());
             for (Bundle bundle : bundles) {
                 if (!(bundle instanceof HostBundleState))
                     continue;
 
                 HostBundleState hostBundle = (HostBundleState) bundle;
-                if (hostBundle.getStartLevel() == startLevel && hostBundle.isPersistentlyStarted()) {
+                if (hostBundle.getStartLevel() == startLevel.get() && hostBundle.isPersistentlyStarted()) {
                     try {
                         int opts = Bundle.START_TRANSIENT;
                         if (isBundleActivationPolicyUsed(bundle)) {
@@ -285,7 +284,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
      */
     synchronized void decreaseStartLevel(int level) {
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        while (startLevel > level) {
+        while (startLevel.get() > level) {
             LOGGER.infoStoppingBundlesForStartLevel(level);
 
             // Sort the bundles after their bundle id
@@ -302,7 +301,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
             for (XBundle bundle : bundles) {
                 if (bundle instanceof HostBundleState) {
                     HostBundleState hostBundle = (HostBundleState) bundle;
-                    if (hostBundle.getStartLevel() == startLevel) {
+                    if (hostBundle.getStartLevel() == startLevel.get()) {
                         try {
                             hostBundle.stopInternal(Bundle.STOP_TRANSIENT);
                         } catch (Throwable e) {
@@ -312,7 +311,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
                     }
                 }
             }
-            startLevel--;
+            startLevel.decrementAndGet();
         }
     }
 }
