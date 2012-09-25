@@ -36,7 +36,6 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.osgi.framework.util.ServiceTracker.SynchronousListenerServiceWrapper;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -55,7 +54,7 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
         // The bootstrap activate service cannot have a direct dependency on
         // the bundle RESOLVED services because it must be possible to uninstall
         // a bundle without taking this service down
-        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), new SynchronousListenerServiceWrapper<T>(this));
+        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependencies(getPreviousService());
         addServiceDependencies(builder);
         return builder.install();

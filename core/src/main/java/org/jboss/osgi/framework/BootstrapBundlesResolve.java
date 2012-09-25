@@ -90,9 +90,8 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         }
 
         // Leniently resolve the bundles
-        Bundle[] bundles = new Bundle[resolvableServices.size()];
-        PackageAdmin packageAdmin = injectedPackageAdmin.getValue();
-        packageAdmin.resolveBundles(resolvableServices.values().toArray(bundles));
+        Bundle[] bundles = resolvableServices.values().toArray(new Bundle[resolvableServices.size()]);
+        injectedPackageAdmin.getValue().resolveBundles(bundles);
 
         // Collect the resolved service
         final Set<ServiceName> resolvedServices = new HashSet<ServiceName>();
@@ -118,8 +117,10 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         };
 
         // Add the tracker to the Bundle RESOLVED services
+        BundleManager bundleManager = injectedBundleManager.getValue();
         for (ServiceName serviceName : resolvedServices) {
-            serviceName = serviceName.getParent().append("RESOLVED");
+            XBundle bundle = resolvableServices.get(serviceName);
+            serviceName = bundleManager.getServiceName(bundle, Bundle.RESOLVED);
             @SuppressWarnings("unchecked")
             ServiceController<XBundle> resolved = (ServiceController<XBundle>) serviceRegistry.getRequiredService(serviceName);
             resolved.addListener(resolvedTracker);

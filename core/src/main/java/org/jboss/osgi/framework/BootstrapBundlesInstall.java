@@ -35,7 +35,6 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.util.ServiceTracker;
-import org.jboss.osgi.framework.util.ServiceTracker.SynchronousListenerServiceWrapper;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
@@ -54,7 +53,7 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
     }
 
     public ServiceController<T> install(ServiceTarget serviceTarget) {
-        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), new SynchronousListenerServiceWrapper<T>(this));
+        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         addServiceDependencies(builder);
@@ -79,7 +78,9 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
 
             @Override
             protected void serviceStarted(ServiceController<? extends XBundle> controller) {
-                installedServices.add(controller.getName());
+                synchronized (installedServices) {
+                    installedServices.add(controller.getName());
+                }
             }
 
             @Override
