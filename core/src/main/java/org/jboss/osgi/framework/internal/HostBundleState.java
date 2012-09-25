@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -54,7 +55,7 @@ import org.osgi.service.startlevel.StartLevel;
 
 /**
  * Represents the INSTALLED state of a host bundle.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
@@ -64,8 +65,13 @@ final class HostBundleState extends UserBundleState {
     private final AtomicBoolean awaitLazyActivation = new AtomicBoolean();
     private BundleActivator bundleActivator;
 
-    HostBundleState(FrameworkState frameworkState, HostBundleRevision revision, ServiceName serviceName) {
-        super(frameworkState, revision, serviceName);
+    HostBundleState(FrameworkState frameworkState, HostBundleRevision brev, ServiceName serviceName) {
+        super(frameworkState, brev, serviceName);
+
+        // Assign the {@link ModuleIdentifier}
+        ModuleManagerPlugin moduleManager = frameworkState.getModuleManagerPlugin();
+        ModuleIdentifier moduleIdentifier = moduleManager.getModuleIdentifier(brev);
+        brev.addAttachment(ModuleIdentifier.class, moduleIdentifier);
     }
 
     static HostBundleState assertBundleState(Bundle bundle) {
@@ -199,7 +205,7 @@ final class HostBundleState extends UserBundleState {
         // If this does not occur in a reasonable time, a BundleException is thrown
         aquireBundleLock(Method.START);
         alreadyStarting.set(true);
-        
+
         try {
             // Assert the required start conditions
             assertStartConditions();
