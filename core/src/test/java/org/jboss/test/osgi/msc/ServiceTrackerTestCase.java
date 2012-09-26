@@ -35,6 +35,8 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
 import org.jboss.osgi.framework.util.ServiceTracker;
 import org.junit.Test;
 
@@ -121,5 +123,34 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
         Assert.assertTrue("All complete", outcome);
         Assert.assertEquals("All services started", 10, names.size());
 
+    }
+
+    @Test
+    public void testDependencyFailed() throws Exception {
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        ServiceListener<Object> listener = new ServiceTracker<Object>() {
+
+            @Override
+            public void complete() {
+                latch.countDown();
+            }
+        };
+        ServiceBuilder<String> builder = serviceTarget.addService(ServiceName.of("serviceA"), new ServiceA());
+        builder.addDependency(ServiceName.of("serviceB"));
+        builder.addListener(listener);
+        builder.install();
+
+        builder = serviceTarget.addService(ServiceName.of("serviceB"), new ServiceB() {
+            @Override
+            public void start(StartContext context) throws StartException {
+                throw new StartException("serviceB failed");
+            }
+        });
+        builder.addListener(listener);
+        builder.install();
+
+        boolean outcome = latch.await(500, TimeUnit.MILLISECONDS);
+        Assert.assertTrue("All complete", outcome);
     }
 }

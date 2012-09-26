@@ -29,9 +29,10 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleInstallPlugin;
+import org.jboss.osgi.framework.BundleLifecyclePlugin;
 import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -40,18 +41,18 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-final class DefaultBundleInstallPlugin extends AbstractService<BundleInstallPlugin> implements BundleInstallPlugin, IntegrationService<BundleInstallPlugin> {
+final class DefaultBundleLifecyclePlugin extends AbstractService<BundleLifecyclePlugin> implements BundleLifecyclePlugin, IntegrationService<BundleLifecyclePlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
 
     @Override
     public ServiceName getServiceName() {
-        return IntegrationService.BUNDLE_INSTALL_PLUGIN;
+        return IntegrationService.BUNDLE_LIFECYCLE_PLUGIN;
     }
 
     @Override
-    public ServiceController<BundleInstallPlugin> install(ServiceTarget serviceTarget) {
-        ServiceBuilder<BundleInstallPlugin> builder = serviceTarget.addService(getServiceName(), this);
+    public ServiceController<BundleLifecyclePlugin> install(ServiceTarget serviceTarget) {
+        ServiceBuilder<BundleLifecyclePlugin> builder = serviceTarget.addService(getServiceName(), this);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -59,19 +60,27 @@ final class DefaultBundleInstallPlugin extends AbstractService<BundleInstallPlug
     }
 
     @Override
-    public void installBundle(Deployment dep) throws BundleException {
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        bundleManager.installBundle(dep, null);
+    public void install(Deployment dep, DefaultHandler handler) throws BundleException {
+        handler.install(injectedBundleManager.getValue(), dep);
     }
 
     @Override
-    public void uninstallBundle(Deployment dep) {
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        bundleManager.uninstallBundle(dep);
+    public void start(XBundle bundle, int options, DefaultHandler handler) throws BundleException {
+        handler.start(bundle, options);
     }
 
     @Override
-    public BundleInstallPlugin getValue() {
+    public void stop(XBundle bundle, int options, DefaultHandler handler) throws BundleException {
+        handler.stop(bundle, options);
+    }
+
+    @Override
+    public void uninstall(XBundle bundle, DefaultHandler handler) {
+        handler.uninstall(bundle);
+    }
+
+    @Override
+    public BundleLifecyclePlugin getValue() {
         return this;
     }
 }

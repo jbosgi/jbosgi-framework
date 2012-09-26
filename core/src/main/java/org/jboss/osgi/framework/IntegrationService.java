@@ -53,8 +53,8 @@ public interface IntegrationService<T> extends Service<T> {
     /** The {@link BootstrapBundlesComplete} service for auto install bundles */
     ServiceName BOOTSTRAP_BUNDLES_COMPLETE = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.COMPLETE);
 
-    /** The service name for the {@link BundleInstallPlugin} */
-    ServiceName BUNDLE_INSTALL_PLUGIN = INTEGRATION_BASE_NAME.append("BundleInstallPlugin");
+    /** The service name for the {@link BundleLifecyclePlugin} */
+    ServiceName BUNDLE_LIFECYCLE_PLUGIN = INTEGRATION_BASE_NAME.append("BundleLifecyclePlugin");
 
     /** The service name for the {@link FrameworkModulePlugin} */
     ServiceName FRAMEWORK_MODULE_PLUGIN = INTEGRATION_BASE_NAME.append("FrameworkModulePlugin");

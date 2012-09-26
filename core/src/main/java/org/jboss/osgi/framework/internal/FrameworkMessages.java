@@ -80,8 +80,8 @@ public interface FrameworkMessages {
     @Message(id = 11207, value = "Cannot obtain paths from: %s")
     IllegalArgumentException illegalArgumentCannotObtainPaths(@Cause Throwable cause, VirtualFile virtualFile);
 
-    @Message(id = 11208, value = "Cannot obtain service name for installed bundle: %s")
-    IllegalStateException illegalStateCannotObtainPaths(Deployment deployment);
+    //@Message(id = 11208, value = "Cannot obtain bundle INSTALLED service: %s")
+    //IllegalStateException illegalStateCannotObtainBundleInstalledService(Deployment deployment);
 
     @Message(id = 11209, value = "Invalid bundle context for: %s")
     IllegalStateException illegalStateInvalidBundleContext(Bundle bundle);
@@ -149,8 +149,8 @@ public interface FrameworkMessages {
     @Message(id = 11230, value = "Cannot obtain virtual file for: %s")
     BundleException cannotObtainVirtualFileForLocation(@Cause Throwable cause, String location);
 
-    @Message(id = 11231, value = "Cannot install bundle for: %s")
-    BundleException cannotInstallBundleForLocation(@Cause Throwable cause, String location);
+    @Message(id = 11231, value = "Cannot install bundle from: %s")
+    BundleException cannotInstallBundleFromDeployment(@Cause Throwable cause, Deployment dep);
 
     @Message(id = 11232, value = "Unsupported bundle manifest version %d in: %s")
     BundleException unsupportedBundleManifestVersion(int version, Bundle bundle);

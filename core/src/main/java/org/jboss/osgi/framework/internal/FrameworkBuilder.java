@@ -169,7 +169,7 @@ public final class FrameworkBuilder {
             SystemContextService.addService(serviceTarget);
 
             installIntegrationService(serviceContainer, serviceTarget, new DefaultBootstrapBundlesInstall());
-            installIntegrationService(serviceContainer, serviceTarget, new DefaultBundleInstallPlugin());
+            installIntegrationService(serviceContainer, serviceTarget, new DefaultBundleLifecyclePlugin());
             installIntegrationService(serviceContainer, serviceTarget, new DefaultFrameworkModulePlugin());
             installIntegrationService(serviceContainer, serviceTarget, new DefaultModuleLoaderPlugin());
             installIntegrationService(serviceContainer, serviceTarget, new DefaultPersistentBundlesInstall());

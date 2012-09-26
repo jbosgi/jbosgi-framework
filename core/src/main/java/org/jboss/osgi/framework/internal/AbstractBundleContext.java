@@ -36,7 +36,7 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleInstallPlugin;
+import org.jboss.osgi.framework.BundleLifecyclePlugin;
 import org.jboss.osgi.framework.FutureServiceValue;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -186,32 +186,28 @@ abstract class AbstractBundleContext implements BundleContext {
         }
     }
 
-    @SuppressWarnings("unchecked")
     Bundle installBundle(Deployment deployment) throws BundleException {
         checkValidBundleContext();
 
-        FrameworkState frameworkState = getFrameworkState();
-        BundleManagerPlugin bundleManager = frameworkState.getBundleManager();
-
-        String location = deployment.getLocation();
-        BundleInstallPlugin installHandler = frameworkState.getCoreServices().getInstallHandler();
-        installHandler.installBundle(deployment);
+        BundleLifecyclePlugin lifecyclePlugin = bundleState.getCoreServices().getBundleLifecyclePlugin();
+        lifecyclePlugin.install(deployment, DefaultBundleLifecycleHandler.INSTANCE);
 
         ServiceName serviceName = deployment.getAttachment(ServiceName.class);
-        if (serviceName == null)
-            throw MESSAGES.illegalStateCannotObtainPaths(deployment);
-
+        FrameworkState frameworkState = getFrameworkState();
+        BundleManagerPlugin bundleManager = frameworkState.getBundleManager();
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
+
+        @SuppressWarnings("unchecked")
         ServiceController<UserBundleState> controller = (ServiceController<UserBundleState>) serviceContainer.getService(serviceName);
         FutureServiceValue<UserBundleState> future = new FutureServiceValue<UserBundleState>(controller);
         try {
-            UserBundleState userBundle = future.get(5, TimeUnit.SECONDS);
-            return userBundle;
+            return future.get(5, TimeUnit.SECONDS);
         } catch (Exception ex) {
             Throwable cause = ex.getCause();
-            if (cause instanceof BundleException)
+            if (cause instanceof BundleException) {
                 throw (BundleException) cause;
-            throw MESSAGES.cannotInstallBundleForLocation(ex, location);
+            }
+            throw MESSAGES.cannotInstallBundleFromDeployment(ex, deployment);
         }
     }
 

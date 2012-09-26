@@ -61,7 +61,7 @@ import org.osgi.service.resolver.ResolutionException;
  *                 +---{@link StartLevelPlugin}
  *                 +---{@link DefaultSystemServicesPlugin}
  *                 +---{@link URLHandlerPlugin}
- *                 +---{@link DefaultBundleInstallPlugin}
+ *                 +---{@link DefaultBundleLifecyclePlugin}
  *                     +---{@link FrameworkCreate}
  *                         +---{@link DefaultStorageStatePlugin}
  *                         +---{@link DeploymentFactoryPlugin}

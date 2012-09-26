@@ -23,6 +23,7 @@ package org.jboss.osgi.framework;
 
 import org.jboss.msc.service.Service;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -31,15 +32,20 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 29-Mar-2011
  */
-public interface BundleInstallPlugin extends Service<BundleInstallPlugin> {
+public interface BundleLifecyclePlugin extends Service<BundleLifecyclePlugin> {
 
-    /**
-     * Install the bundle service for the given deployment.
-     */
-    void installBundle(Deployment dep) throws BundleException;
+    void install(Deployment dep, DefaultHandler handler) throws BundleException;
 
-    /**
-     * Uninstall the bundle associated with the given deployment.
-     */
-    void uninstallBundle(Deployment dep);
+    void start(XBundle bundle, int options, DefaultHandler handler) throws BundleException;
+
+    void stop(XBundle bundle, int options, DefaultHandler handler) throws BundleException;
+
+    void uninstall(XBundle bundle, DefaultHandler handler);
+
+    interface DefaultHandler {
+        void install(BundleManager bundleManager, Deployment dep) throws BundleException;
+        void start(XBundle bundle, int options) throws BundleException;
+        void stop(XBundle bundle, int options) throws BundleException;
+        void uninstall(XBundle bundle);
+    }
 }

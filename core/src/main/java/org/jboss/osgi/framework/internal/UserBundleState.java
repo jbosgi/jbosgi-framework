@@ -37,7 +37,7 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleInstallPlugin;
+import org.jboss.osgi.framework.BundleLifecyclePlugin;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundleRevision;
@@ -340,10 +340,8 @@ abstract class UserBundleState extends AbstractBundleState {
     @Override
     void uninstallInternal() throws BundleException {
         headersOnUninstall = getHeaders(null);
-
-        // Uninstall through the {@link BundleInstallHandler}
-        BundleInstallPlugin installHandler = getCoreServices().getInstallHandler();
-        installHandler.uninstallBundle(getDeployment());
+        BundleLifecyclePlugin lifecyclePlugin = getCoreServices().getBundleLifecyclePlugin();
+        lifecyclePlugin.uninstall(this, DefaultBundleLifecycleHandler.INSTANCE);
     }
 
     void removeServices() {

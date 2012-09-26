@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.util;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -26,6 +27,7 @@ import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -50,14 +52,23 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     private final Set<ServiceName> addedNames = new HashSet<ServiceName>();
     private final Set<ServiceController<? extends S>> trackedControllers = new HashSet<ServiceController<? extends S>>();
     private final AtomicBoolean allComplete = new AtomicBoolean();
+    private final boolean completeOnFirstFailure;
+
+    public ServiceTracker() {
+        this(true);
+    }
+
+    public ServiceTracker(boolean completeOnFail) {
+        this.completeOnFirstFailure = completeOnFail;
+    }
 
     @Override
     public void listenerAdded(ServiceController<? extends S> controller) {
         synchronized (trackedControllers) {
             if (trackService(controller)) {
                 LOGGER.tracef("ServiceTracker controller added: %s", controller);
-                synchronousServiceListerAdd(controller);
                 addedNames.add(controller.getName());
+                serviceListerAddedInternal(controller);
                 State state = controller.getState();
                 switch (state) {
                     case UP:
@@ -84,15 +95,14 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
                     if (!(service instanceof SynchronousListenerService)) {
                         LOGGER.tracef("ServiceTracker transition to UP: " + controller.getName());
                         serviceStarted(controller);
-                        serviceComplete(controller);
+                        serviceCompleteInternal(controller);
                     }
                     break;
                 case STARTING_to_START_FAILED:
                     if (!(service instanceof SynchronousListenerService)) {
                         LOGGER.tracef("ServiceTracker transition to START_FAILED: " + controller.getName());
-                        StartException ex = controller.getStartException();
-                        serviceStartFailed(controller, ex);
-                        serviceComplete(controller);
+                        serviceStartFailed(controller, controller.getStartException());
+                        serviceCompleteInternal(controller);
                     }
                     break;
             }
@@ -103,7 +113,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         synchronized (trackedControllers) {
             LOGGER.tracef("Synchronous listener service started: " + controller.getName());
             serviceStarted(controller);
-            serviceComplete(controller);
+            serviceCompleteInternal(controller);
         }
     }
 
@@ -111,17 +121,14 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         synchronized (trackedControllers) {
             LOGGER.tracef("Synchronous listener service failed: " + controller.getName());
             serviceStartFailed(controller, th);
-            serviceComplete(controller);
+            serviceCompleteInternal(controller);
         }
     }
 
     public void checkAndComplete() {
         synchronized (trackedControllers) {
             if (trackedControllers.size() == 0 && allServicesAdded(Collections.unmodifiableSet(addedNames))) {
-                if (allComplete.compareAndSet(false, true)) {
-                    LOGGER.tracef("ServiceTracker complete: " + getClass().getName());
-                    complete();
-                }
+                completeInternal();
             }
         }
     }
@@ -134,6 +141,9 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         return true;
     }
 
+    protected void serviceListenerAdded(ServiceController<? extends S> controller) {
+    }
+
     protected void serviceStartFailed(ServiceController<? extends S> controller, Throwable th) {
     }
 
@@ -144,7 +154,8 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     }
 
     @SuppressWarnings("unchecked")
-    private void synchronousServiceListerAdd(ServiceController<? extends S> controller) {
+    private void serviceListerAddedInternal(ServiceController<? extends S> controller) {
+        serviceListenerAdded(controller);
         Service<? extends S> service = controller.getService();
         if (service instanceof SynchronousListenerService) {
             SynchronousListenerService<S> sync = (SynchronousListenerService<S>) service;
@@ -153,7 +164,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     }
 
     @SuppressWarnings("unchecked")
-    private void synchronousServiceListerRemove(ServiceController<? extends S> controller) {
+    private void serviceListerRemoveInternal(ServiceController<? extends S> controller) {
         Service<? extends S> service = controller.getService();
         if (service instanceof SynchronousListenerService) {
             SynchronousListenerService<S> sync = (SynchronousListenerService<S>) service;
@@ -161,29 +172,53 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         }
     }
 
-    private void serviceComplete(ServiceController<? extends S> controller) {
+    private void serviceCompleteInternal(ServiceController<? extends S> controller) {
         trackedControllers.remove(controller);
-        synchronousServiceListerRemove(controller);
+        serviceListerRemoveInternal(controller);
         controller.removeListener(this);
-        checkAndComplete();
+
+        if (!completeOnFirstFailure || controller.getStartException() == null) {
+            checkAndComplete();
+            return;
+        }
+
+        // Remove all tracked services and complete the tracker
+        Iterator<ServiceController<? extends S>> iterator = trackedControllers.iterator();
+        while (iterator.hasNext()) {
+            ServiceController<? extends S> aux = iterator.next();
+            serviceListerRemoveInternal(aux);
+            aux.removeListener(this);
+            iterator.remove();
+        }
+
+        completeInternal();
+    }
+
+    private void completeInternal() {
+        if (allComplete.compareAndSet(false, true)) {
+            LOGGER.tracef("ServiceTracker complete: " + getClass().getName());
+            complete();
+        }
     }
 
     public interface SynchronousListenerService<T> extends Service<T> {
         void addListener(ServiceTracker<T> listener);
+
         void removeListener(ServiceTracker<T> listener);
+
         void startCompleted(final StartContext context);
+
         void startFailed(StartContext context, Throwable th);
     }
 
     /**
-    * Service wrapper implementation that can be used with {@link ServiceTracker}.
-    * This service wrapper invokes the listener methods after the delegate's start method has
-    * been invoked.
-    *
-    * @author Stuart Douglas
-    * @author Thomas.Diesler@jboss.com
-    * @since
-    */
+     * Service wrapper implementation that can be used with {@link ServiceTracker}. This service wrapper invokes the listener
+     * methods after the delegate's start method has been invoked.
+     *
+     * @author Stuart Douglas
+     * @author Thomas.Diesler@jboss.com
+     * @since
+     */
     public static class SynchronousListenerServiceWrapper<T> implements SynchronousListenerService<T> {
 
         private final Set<ServiceTracker<T>> listeners = new HashSet<ServiceTracker<T>>();
@@ -226,7 +261,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         @SuppressWarnings("unchecked")
         public void startCompleted(final StartContext context) {
             for (ServiceTracker<T> listener : new ArrayList<ServiceTracker<T>>(listeners)) {
-                listener.synchronousListenerServiceStarted((ServiceController<? extends T>)context.getController());
+                listener.synchronousListenerServiceStarted((ServiceController<? extends T>) context.getController());
             }
         }
 
@@ -234,7 +269,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         @SuppressWarnings("unchecked")
         public void startFailed(StartContext context, Throwable th) {
             for (ServiceTracker<T> listener : new ArrayList<ServiceTracker<T>>(listeners)) {
-                listener.synchronousListenerServiceFailed((ServiceController<? extends T>)context.getController(), th);
+                listener.synchronousListenerServiceFailed((ServiceController<? extends T>) context.getController(), th);
             }
         }
 

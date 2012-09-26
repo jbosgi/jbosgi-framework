@@ -523,7 +523,7 @@ final class FrameworkProxy implements Framework, Adaptable {
                     shutdownInitiated.wait(2000);
                 }
             }
-            serviceContainer.awaitTermination(timeout, unit);
+            serviceContainer.awaitTermination(timeout == 0 ? Long.MAX_VALUE : timeout, unit);
         }
 
         boolean isShutdownComplete() {

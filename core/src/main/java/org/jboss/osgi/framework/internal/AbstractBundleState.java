@@ -49,6 +49,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.internal.AbstractBundleState.BundleLock.Method;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
@@ -147,6 +148,8 @@ abstract class AbstractBundleState implements XBundle {
             result = (T) getOSGiMetaData();
         } else if (type.isAssignableFrom(StorageState.class)) {
             result = (T) getStorageState();
+        } else if (type.isAssignableFrom(BundleManager.class)) {
+            result = (T) getBundleManager();
         }
         return result;
     }
@@ -176,7 +179,6 @@ abstract class AbstractBundleState implements XBundle {
     }
 
     void changeState(int state) {
-        // Get the corresponding bundle event type
         int bundleEvent;
         switch (state) {
             case Bundle.STARTING:
@@ -200,7 +202,6 @@ abstract class AbstractBundleState implements XBundle {
             default:
                 throw MESSAGES.illegalArgumentUnknownBundleState(state);
         }
-
         changeState(state, bundleEvent);
     }
 

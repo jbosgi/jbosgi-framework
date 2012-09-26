@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.internal.InternalServices.BUNDLE_BASE_NAME;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -61,6 +62,7 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
+import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
@@ -217,13 +219,6 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
             throw MESSAGES.illegalStateCannotAddProperty();
 
         properties.put(key, value);
-    }
-
-    static ServiceName getServiceName(Deployment dep) {
-        // Currently the bundleId is needed for uniqueness because of
-        // [MSC-97] Cannot re-install service with same name
-        Long bundleId = dep.getAttachment(Long.class);
-        return ServiceName.of(InternalServices.BUNDLE_BASE_NAME, "" + bundleId, "" + dep.getSymbolicName(), "" + dep.getVersion());
     }
 
     Set<XBundle> getBundles() {
@@ -443,6 +438,18 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
             result = bundleState.getServiceName(state);
         }
         return result;
+    }
+
+    @Override
+    public ServiceName getServiceName(Deployment dep, int state) {
+        // Currently the bundleId is needed for uniqueness because of
+        // [MSC-97] Cannot re-install service with same name
+        Long bundleId = dep.getAttachment(Long.class);
+        ServiceName serviceName = ServiceName.of(BUNDLE_BASE_NAME, "" + bundleId, "" + dep.getSymbolicName(), "" + dep.getVersion());
+        if (state == Bundle.INSTALLED || state == Bundle.RESOLVED || state == Bundle.ACTIVE) {
+            serviceName = serviceName.append(ConstantsHelper.bundleState(state));
+        }
+        return serviceName;
     }
 
     void setServiceMode(ServiceName serviceName, Mode mode) {
