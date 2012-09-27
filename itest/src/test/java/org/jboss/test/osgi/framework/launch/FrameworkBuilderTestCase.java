@@ -64,7 +64,7 @@ import org.osgi.service.startlevel.StartLevel;
  * @author thomas.diesler@jboss.com
  * @since 14-Jul-2012
  */
-public class FrameworkBuilderTestCase extends FrameworkLaunchTestBase {
+public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
 
     @Test
     public void testFrameworkInit() throws Exception {

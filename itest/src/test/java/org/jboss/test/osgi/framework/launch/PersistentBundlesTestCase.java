@@ -46,7 +46,7 @@ import org.osgi.framework.launch.FrameworkFactory;
  * @author thomas.diesler@jboss.com
  * @since 20-Oct-2010
  */
-public class PersistentBundlesTestCase extends FrameworkLaunchTestBase {
+public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
 
     @Test
     public void testInstalledBundle() throws Exception {

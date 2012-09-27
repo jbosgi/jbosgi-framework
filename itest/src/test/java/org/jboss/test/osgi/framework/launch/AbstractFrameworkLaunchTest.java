@@ -54,7 +54,7 @@ import org.osgi.service.startlevel.StartLevel;
  * @author thomas.diesler@jboss.com
  * @since 14-Jul-2012
  */
-public abstract class FrameworkLaunchTestBase extends OSGiTest {
+public abstract class AbstractFrameworkLaunchTest extends OSGiTest {
 
     private Framework framework;
 

@@ -47,7 +47,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 14-Jul-2012
  */
-public class AutoInstallTestCase extends FrameworkLaunchTestBase {
+public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
 
     static File fileA, fileB;
 

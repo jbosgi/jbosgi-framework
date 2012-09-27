@@ -516,7 +516,7 @@ final class FrameworkProxy implements Framework, Adaptable {
         }
 
         void awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-            LOGGER.debugf("awaitTermination");
+            LOGGER.debugf("awaitTermination: %dms", unit.toMillis(timeout));
             synchronized (shutdownInitiated) {
                 if (shutdownInitiated.get() == false) {
                     LOGGER.debugf("shutdownInitiated.wait");
