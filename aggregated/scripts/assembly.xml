@@ -45,7 +45,6 @@
                 <include>*:jbosgi-vfs:jar</include>
                 <include>*:jbosgi-vfs30:jar</include>
                 <include>*:jboss-logging:jar</include>
-                <include>*:jboss-logmanager:jar</include>
                 <include>*:jboss-modules:jar</include>
                 <include>*:jboss-msc:jar</include>
                 <include>*:jboss-vfs:jar</include>

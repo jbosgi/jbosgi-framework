@@ -21,20 +21,15 @@ package org.jboss.test.osgi.framework.launch;
  * #L%
  */
 
-import org.jboss.osgi.framework.FrameworkMain;
-import org.jboss.osgi.testing.OSGiFrameworkTest;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.launch.Framework;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.jboss.osgi.framework.FrameworkMain;
+import org.junit.Test;
 
 /**
  * Test aggregated framework bootstrap.
@@ -42,33 +37,12 @@ import static org.junit.Assert.assertTrue;
  * @author thomas.diesler@jboss.com
  * @since 29-Jul-2010
  */
-public class AggregatedFrameworkLaunchTestCase extends OSGiFrameworkTest {
-
-    @BeforeClass
-    public static void beforeClass() {
-        // prevent framework creation
-    }
-
-    @Test
-    public void testFrameworkStartStop() throws Exception {
-        Framework framework = createFramework();
-        assertNotNull("Framework not null", framework);
-
-        assertBundleState(Bundle.INSTALLED, framework.getState());
-
-        framework.start();
-        assertBundleState(Bundle.ACTIVE, framework.getState());
-
-        framework.stop();
-        framework.waitForStop(2000);
-        assertBundleState(Bundle.RESOLVED, framework.getState());
-    }
+public class AggregatedFrameworkLaunchTestCase {
 
     @Test
     public void testAggregatedFrameworkLaunch() throws Exception {
         // Get the aggregated jboss-osgi-framework-all.jar
         File[] files = new File("./target").listFiles(new FilenameFilter() {
-
             public boolean accept(File dir, String name) {
                 return name.startsWith("jbosgi-framework-aggregated-") && name.endsWith("-all.jar");
             }
@@ -78,25 +52,23 @@ public class AggregatedFrameworkLaunchTestCase extends OSGiFrameworkTest {
         assertEquals("Aggregated file exists: " + Arrays.asList(files), 1, files.length);
         assertTrue("File.length > 1M", files[0].length() > 1024 * 1014L);
 
+        File logManagerJar = new File("target/test-libs/jboss-logmanager.jar");
+        assertTrue("File exists: " + logManagerJar, logManagerJar.exists());
+        
+        File logConfig = new File("target/test-classes/logging.properties");
+        assertTrue("File exists: " + logConfig, logConfig.exists());
+        
         // Run the java command
-        String alljar = files[0].getAbsolutePath();
-        String javaopts = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager -Dorg.osgi.framework.storage=target/osgi-store";
-        String cmd = "java " + javaopts + " -cp " + alljar + " " + FrameworkMain.class.getName();
+        String jars = files[0].getCanonicalPath() + File.pathSeparator + logManagerJar.getCanonicalPath();
+        String logopts = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager -Dlogging.configuration=" + logConfig.toURI();
+        String javaopts = logopts + " -Dorg.osgi.framework.storage=target/osgi-store";
+        //javaopts += " -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y";
+        String cmd = "java " + javaopts + " -cp " + jars + " " + FrameworkMain.class.getName();
         Process proc = Runtime.getRuntime().exec(cmd);
         Thread.sleep(3000);
         proc.destroy();
 
-        File logfile = new File("./generated/jboss-osgi.log");
-        assertTrue("Logfile exists", logfile.exists());
-
-        // Delete/move the jboss-osgi-framework.log
-        File logdir = logfile.getParentFile();
-        File targetdir = new File("./target");
-        if (targetdir.exists()) {
-            logfile.renameTo(new File("./target/jboss-osgi.log"));
-        } else {
-            logfile.delete();
-        }
-        logdir.delete();
+        File logfile = new File("./target/test.log");
+        assertTrue("Logfile exists: " + logfile, logfile.exists());
     }
 }
