@@ -37,33 +37,6 @@ final class SecurityActions {
     private SecurityActions() {
     }
 
-    /**
-     * Get the thread context class loader
-     */
-    static ClassLoader getContextClassLoader() {
-        return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
-            @Override
-            public ClassLoader run() {
-                Thread currentThread = Thread.currentThread();
-                return currentThread.getContextClassLoader();
-            }
-        });
-    }
-
-    /**
-     * Set the thread context class loader
-     */
-    static Void setContextClassLoader(final ClassLoader classLoader) {
-        return AccessController.doPrivileged(new PrivilegedAction<Void>() {
-            @Override
-            public Void run() {
-                Thread currentThread = Thread.currentThread();
-                currentThread.setContextClassLoader(classLoader);
-                return null;
-            }
-        });
-    }
-
     static String getSystemProperty(final String key, final String defaultValue) {
         if (System.getSecurityManager() == null) {
             String value = System.getProperty(key);

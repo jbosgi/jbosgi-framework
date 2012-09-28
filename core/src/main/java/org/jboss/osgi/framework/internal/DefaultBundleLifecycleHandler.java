@@ -69,9 +69,7 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
             // #8 The BundleActivator.start(BundleContext) method of this bundle is called
             String className = hostState.getOSGiMetaData().getBundleActivator();
             if (className != null) {
-                ClassLoader tccl = Thread.currentThread().getContextClassLoader();
                 try {
-                    Thread.currentThread().setContextClassLoader(null);
                     hostState.bundleActivator = hostState.getDeployment().getAttachment(BundleActivator.class);
                     if (hostState.bundleActivator == null) {
                         Object result = hostState.loadClass(className).newInstance();
@@ -109,8 +107,6 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
                         throw (BundleException) th;
 
                     throw MESSAGES.cannotStartBundle(th, bundle);
-                } finally {
-                    Thread.currentThread().setContextClassLoader(tccl);
                 }
             }
 
