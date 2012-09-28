@@ -78,6 +78,34 @@ final class HostBundleState extends UserBundleState {
         return (HostBundleState) bundleState;
     }
 
+    // Invalid discovery of Bundle.getBundleContext() method
+    // http://issues.ops4j.org/browse/PAXSB-44
+    public BundleContext getBundleContext() {
+        return super.getBundleContext();
+    }
+
+    @Override
+    public boolean isFragment() {
+        return false;
+    }
+
+    @Override
+    public HostBundleRevision getBundleRevision() {
+        return (HostBundleRevision) super.getBundleRevision();
+    }
+
+    @Override
+    public Class<?> loadClass(String className) throws ClassNotFoundException {
+        LazyActivationTracker.startTracking(this, className);
+        try {
+            Class<?> loadedClass = super.loadClass(className);
+            LazyActivationTracker.processLoadedClass(loadedClass);
+            return loadedClass;
+        } finally {
+            LazyActivationTracker.stopTracking(this, className);
+        }
+    }
+
     void initLazyActivation() {
         awaitLazyActivation.set(isActivationLazy());
     }
@@ -92,17 +120,6 @@ final class HostBundleState extends UserBundleState {
         return new HostBundleRevision(getFrameworkState(), dep, metadata, storageState);
     }
 
-    // Invalid discovery of Bundle.getBundleContext() method
-    // http://issues.ops4j.org/browse/PAXSB-44
-    public BundleContext getBundleContext() {
-        return super.getBundleContext();
-    }
-
-    @Override
-    public boolean isFragment() {
-        return false;
-    }
-
     int getStartLevel() {
         return getStorageState().getStartLevel();
     }
@@ -111,11 +128,6 @@ final class HostBundleState extends UserBundleState {
         LOGGER.debugf("Setting bundle start level %d for: %s", level, this);
         InternalStorageState storageState = getStorageState();
         storageState.setStartLevel(level);
-    }
-
-    @Override
-    public HostBundleRevision getBundleRevision() {
-        return (HostBundleRevision) super.getBundleRevision();
     }
 
     boolean isPersistentlyStarted() {
@@ -148,28 +160,6 @@ final class HostBundleState extends UserBundleState {
                 startInternal(options);
             }
         }
-    }
-
-    @Override
-    public Class<?> loadClass(String className) throws ClassNotFoundException {
-        LazyActivationTracker.startTracking(this, className);
-        try {
-            Class<?> loadedClass = super.loadClass(className);
-            LazyActivationTracker.processLoadedClass(loadedClass);
-            return loadedClass;
-        } finally {
-            LazyActivationTracker.stopTracking(this, className);
-        }
-    }
-
-    private boolean startLevelValidForStart() {
-        StartLevel startLevelPlugin = getCoreServices().getStartLevel();
-        return getStartLevel() <= startLevelPlugin.getStartLevel();
-    }
-
-    private boolean isBundleActivationPolicyUsed() {
-        StorageState storageState = getStorageState();
-        return storageState.isBundleActivationPolicyUsed();
     }
 
     void setBundleActivationPolicyUsed(boolean usePolicy) {
@@ -255,6 +245,17 @@ final class HostBundleState extends UserBundleState {
         }
     }
 
+    @Override
+    void stopInternal(int options) throws BundleException {
+        BundleLifecyclePlugin lifecycle = getCoreServices().getBundleLifecyclePlugin();
+        lifecycle.stop(this, options, DefaultBundleLifecycleHandler.INSTANCE);
+    }
+
+    void setPersistentlyStarted(boolean started) {
+        InternalStorageState storageState = getStorageState();
+        storageState.setPersistentlyStarted(started);
+    }
+
     private void assertStartConditions() throws BundleException {
 
         // The service platform may run this bundle if any of the execution environments named in the
@@ -287,11 +288,6 @@ final class HostBundleState extends UserBundleState {
         }
     }
 
-    void setPersistentlyStarted(boolean started) {
-        InternalStorageState storageState = getStorageState();
-        storageState.setPersistentlyStarted(started);
-    }
-
     private void transitionToStarting(int options) throws BundleException {
         // #5.1 If this bundle's state is STARTING then this method returns immediately.
         if (getState() == STARTING)
@@ -317,21 +313,13 @@ final class HostBundleState extends UserBundleState {
         }
     }
 
-    @Override
-    void stopInternal(int options) throws BundleException {
-        BundleLifecyclePlugin lifecycle = getCoreServices().getBundleLifecyclePlugin();
-        lifecycle.stop(this, options, DefaultBundleLifecycleHandler.INSTANCE);
+    private boolean startLevelValidForStart() {
+        StartLevel startLevelPlugin = getCoreServices().getStartLevel();
+        return getStartLevel() <= startLevelPlugin.getStartLevel();
     }
 
-    void removeServicesAndListeners() {
-        // Any services registered by this bundle must be unregistered.
-        // Any services used by this bundle must be released.
-        for (ServiceState serviceState : getRegisteredServicesInternal()) {
-            serviceState.unregisterInternal();
-        }
-
-        // Any listeners registered by this bundle must be removed
-        FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
-        eventsPlugin.removeBundleListeners(this);
+    private boolean isBundleActivationPolicyUsed() {
+        StorageState storageState = getStorageState();
+        return storageState.isBundleActivationPolicyUsed();
     }
 }

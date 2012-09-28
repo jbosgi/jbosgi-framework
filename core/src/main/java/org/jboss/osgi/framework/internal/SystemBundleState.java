@@ -122,21 +122,22 @@ final class SystemBundleState extends AbstractBundleState {
 
     @Override
     void startInternal(int options) throws BundleException {
-        // do nothing
+        // Does nothing because the system bundle is already started
     }
 
     @Override
     void stopInternal(int options) throws BundleException {
-        // do nothing
+        // [TODO] Returns immediately and shuts down the Framework on another thread
     }
 
     @Override
     void updateInternal(InputStream input) throws BundleException {
-        // do nothing
+        // [TODO] Returns immediately, then stops and restarts the Framework on another thread.
     }
 
     @Override
     void uninstallInternal() throws BundleException {
+        // The Framework must throw a BundleException indicating that the system bundle cannot be uninstalled
         throw MESSAGES.cannotUninstallSystemBundle();
     }
 }

@@ -93,7 +93,7 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
                     // #8.3 Any services registered by this bundle must be unregistered.
                     // #8.4 Any services used by this bundle must be released.
                     // #8.5 Any listeners registered by this bundle must be removed.
-                    hostState.removeServicesAndListeners();
+                    removeServicesAndListeners(hostState);
 
                     // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
                     hostState.destroyBundleContext();
@@ -181,7 +181,7 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
             // #8 Any services registered by this bundle must be unregistered.
             // #9 Any services used by this bundle must be released.
             // #10 Any listeners registered by this bundle must be removed.
-            hostState.removeServicesAndListeners();
+            removeServicesAndListeners(hostState);
 
             // #11 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while the
             // BundleActivator.stop method was running, a BundleException must be thrown
@@ -212,5 +212,17 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
         BundleManager bundleManager = bundle.adapt(BundleManager.class);
         Deployment dep = bundle.adapt(Deployment.class);
         bundleManager.uninstallBundle(dep);
+    }
+
+    private void removeServicesAndListeners(HostBundleState hostState) {
+        // Any services registered by this bundle must be unregistered.
+        // Any services used by this bundle must be released.
+        for (ServiceState serviceState : hostState.getRegisteredServicesInternal()) {
+            serviceState.unregisterInternal();
+        }
+
+        // Any listeners registered by this bundle must be removed
+        FrameworkEventsPlugin eventsPlugin = hostState.getFrameworkState().getFrameworkEventsPlugin();
+        eventsPlugin.removeBundleListeners(hostState);
     }
 }

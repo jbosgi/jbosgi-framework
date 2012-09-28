@@ -24,12 +24,6 @@ package org.jboss.osgi.framework;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -40,7 +34,6 @@ import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.State;
 import org.jboss.msc.service.ServiceListener;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartException;
 
 /**
@@ -151,7 +144,6 @@ public final class FutureServiceValue<T> implements Future<T> {
         try {
             if (latch.await(timeout, unit) == false) {
                 TimeoutException ex = MESSAGES.timeoutGettingService(serviceName);
-                processTimeoutException(ex);
                 throw ex;
             }
         } catch (InterruptedException e) {
@@ -169,24 +161,5 @@ public final class FutureServiceValue<T> implements Future<T> {
             throw (RuntimeException)cause;
         }
         throw MESSAGES.cannotGetServiceValue(cause, serviceName);
-    }
-
-    private void processTimeoutException(TimeoutException exception) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream(baos);
-        Set<ServiceName> unavailableDependencies = controller.getImmediateUnavailableDependencies();
-        out.println("Unavailable dependencies: " + unavailableDependencies);
-        controller.getServiceContainer().dumpServices(out);
-        String serviceName = controller.getName().getCanonicalName();
-        LOGGER.debugf("Cannot get service value for: %s\n%s", serviceName, new String(baos.toByteArray()));
-        ThreadMXBean bean = ManagementFactory.getThreadMXBean();
-        ThreadInfo[] infos = bean.dumpAllThreads(true, true);
-        for (ThreadInfo info : infos) {
-            if (info.getThreadName().contains("MSC")) {
-                StringBuffer buffer = new StringBuffer();
-                buffer.append("ThreadInfo: " + info);
-                LOGGER.errorf("%s", buffer);
-            }
-        }
     }
 }
