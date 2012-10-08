@@ -33,14 +33,17 @@ import junit.framework.Assert;
 import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.osgi.framework.util.ServiceTracker;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
+ * Test the {@link ServiceTracker}
  *
  * @author Thomas.Diesler@jboss.com
  * @since 19-Apr-2012
@@ -52,7 +55,6 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
 
         final AtomicBoolean listenerAdded = new AtomicBoolean();
         ServiceListener<Object> listener = new AbstractServiceListener<Object>() {
-
             @Override
             public void listenerAdded(ServiceController<? extends Object> controller) {
                 listenerAdded.set(true);
@@ -70,7 +72,6 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
 
         final CountDownLatch latch = new CountDownLatch(1);
         ServiceListener<Object> listener = new ServiceTracker<Object>() {
-
             @Override
             public void complete() {
                 latch.countDown();
@@ -130,7 +131,6 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
 
         final CountDownLatch latch = new CountDownLatch(1);
         ServiceListener<Object> listener = new ServiceTracker<Object>() {
-
             @Override
             public void complete() {
                 latch.countDown();
@@ -149,6 +149,56 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
         });
         builder.addListener(listener);
         builder.install();
+
+        boolean outcome = latch.await(500, TimeUnit.MILLISECONDS);
+        Assert.assertTrue("All complete", outcome);
+    }
+
+
+    @Test
+    @Ignore
+    public void testUntrackedDependencyFailed() throws Exception {
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        ServiceListener<Object> listener = new ServiceTracker<Object>() {
+            @Override
+            public void complete() {
+                latch.countDown();
+            }
+        };
+        ServiceBuilder<String> builder = serviceTarget.addService(ServiceName.of("serviceA"), new ServiceA());
+        builder.addDependency(ServiceName.of("serviceB"));
+        builder.addListener(listener);
+        builder.install();
+
+        builder = serviceTarget.addService(ServiceName.of("serviceB"), new ServiceB() {
+            @Override
+            public void start(StartContext context) throws StartException {
+                throw new StartException("serviceB failed");
+            }
+        });
+        // don't add the tracker to this service
+        builder.install();
+
+        boolean outcome = latch.await(500, TimeUnit.MILLISECONDS);
+        Assert.assertTrue("All complete", outcome);
+    }
+
+    @Test
+    public void testTransitionToNever() throws Exception {
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        ServiceListener<Object> listener = new ServiceTracker<Object>() {
+            @Override
+            public void complete() {
+                latch.countDown();
+            }
+        };
+        ServiceBuilder<String> builder = serviceTarget.addService(ServiceName.of("serviceA"), new ServiceA());
+        builder.addListener(listener);
+        ServiceController<String> controller = builder.install();
+
+        controller.setMode(Mode.NEVER);
 
         boolean outcome = latch.await(500, TimeUnit.MILLISECONDS);
         Assert.assertTrue("All complete", outcome);

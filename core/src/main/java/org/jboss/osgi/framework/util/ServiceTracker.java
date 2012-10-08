@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -42,15 +43,17 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 
 /**
+ * Track a number of services and call complete when they are done.
  *
  * @author Thomas.Diesler@jboss.com
- *
  * @since 19-Apr-2012
  */
 public class ServiceTracker<S> extends AbstractServiceListener<S> {
 
     private final Set<ServiceName> addedNames = new HashSet<ServiceName>();
     private final Set<ServiceController<? extends S>> trackedControllers = new HashSet<ServiceController<? extends S>>();
+    private final List<ServiceController<?>> started = new ArrayList<ServiceController<?>>();
+    private final List<ServiceController<?>> failed = new ArrayList<ServiceController<?>>();
     private final AtomicBoolean allComplete = new AtomicBoolean();
     private final boolean completeOnFirstFailure;
 
@@ -72,10 +75,12 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
                 State state = controller.getState();
                 switch (state) {
                     case UP:
+                        started.add(controller);
                         serviceStarted(controller);
                         break;
                     case START_FAILED:
-                        serviceStartFailed(controller, controller.getStartException());
+                        failed.add(controller);
+                        serviceStartFailed(controller);
                         break;
                     default:
                         trackedControllers.add(controller);
@@ -90,21 +95,28 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     public void transition(ServiceController<? extends S> controller, Transition transition) {
         synchronized (trackedControllers) {
             Service<? extends S> service = controller.getService();
-            switch (transition) {
-                case STARTING_to_UP:
-                    if (!(service instanceof SynchronousListenerService)) {
-                        LOGGER.tracef("ServiceTracker transition to UP: " + controller.getName());
-                        serviceStarted(controller);
-                        serviceCompleteInternal(controller);
-                    }
-                    break;
-                case STARTING_to_START_FAILED:
-                    if (!(service instanceof SynchronousListenerService)) {
-                        LOGGER.tracef("ServiceTracker transition to START_FAILED: " + controller.getName());
-                        serviceStartFailed(controller, controller.getStartException());
-                        serviceCompleteInternal(controller);
-                    }
-                    break;
+            if (!allComplete.get()) {
+                switch (transition) {
+                    case STARTING_to_UP:
+                        if (!(service instanceof SynchronousListenerService)) {
+                            LOGGER.tracef("ServiceTracker transition to UP: " + controller.getName());
+                            started.add(controller);
+                            serviceStarted(controller);
+                            serviceCompleteInternal(controller, false);
+                        }
+                        break;
+                    case STARTING_to_START_FAILED:
+                        if (!(service instanceof SynchronousListenerService)) {
+                            LOGGER.tracef("ServiceTracker transition to START_FAILED: " + controller.getName());
+                            failed.add(controller);
+                            serviceStartFailed(controller);
+                            serviceCompleteInternal(controller, true);
+                        }
+                        break;
+                    case START_REQUESTED_to_DOWN:
+                        serviceCompleteInternal(controller, false);
+                        break;
+                }
             }
         }
     }
@@ -112,16 +124,18 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     public void synchronousListenerServiceStarted(ServiceController<? extends S> controller) {
         synchronized (trackedControllers) {
             LOGGER.tracef("Synchronous listener service started: " + controller.getName());
+            started.add(controller);
             serviceStarted(controller);
-            serviceCompleteInternal(controller);
+            serviceCompleteInternal(controller, false);
         }
     }
 
     public void synchronousListenerServiceFailed(ServiceController<? extends S> controller, Throwable th) {
         synchronized (trackedControllers) {
             LOGGER.tracef("Synchronous listener service failed: " + controller.getName());
-            serviceStartFailed(controller, th);
-            serviceCompleteInternal(controller);
+            failed.add(controller);
+            serviceStartFailed(controller);
+            serviceCompleteInternal(controller, true);
         }
     }
 
@@ -130,6 +144,28 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
             if (trackedControllers.size() == 0 && allServicesAdded(Collections.unmodifiableSet(addedNames))) {
                 completeInternal();
             }
+        }
+    }
+
+    public boolean isComplete() {
+        return allComplete.get();
+    }
+
+    public List<ServiceController<?>> getStartedServices() {
+        synchronized (trackedControllers) {
+            return Collections.unmodifiableList(started);
+        }
+    }
+
+    public List<ServiceController<?>> getFailedServices() {
+        synchronized (trackedControllers) {
+            return Collections.unmodifiableList(failed);
+        }
+    }
+
+    public boolean hasFailedServices() {
+        synchronized (trackedControllers) {
+            return !failed.isEmpty();
         }
     }
 
@@ -144,10 +180,10 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     protected void serviceListenerAdded(ServiceController<? extends S> controller) {
     }
 
-    protected void serviceStartFailed(ServiceController<? extends S> controller, Throwable th) {
+    protected void serviceStarted(ServiceController<? extends S> controller) {
     }
 
-    protected void serviceStarted(ServiceController<? extends S> controller) {
+    protected void serviceStartFailed(ServiceController<? extends S> controller) {
     }
 
     protected void complete() {
@@ -172,26 +208,24 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         }
     }
 
-    private void serviceCompleteInternal(ServiceController<? extends S> controller) {
+    private void serviceCompleteInternal(ServiceController<? extends S> controller, boolean failure) {
         trackedControllers.remove(controller);
         serviceListerRemoveInternal(controller);
         controller.removeListener(this);
 
-        if (!completeOnFirstFailure || controller.getStartException() == null) {
-            checkAndComplete();
-            return;
-        }
-
         // Remove all tracked services and complete the tracker
-        Iterator<ServiceController<? extends S>> iterator = trackedControllers.iterator();
-        while (iterator.hasNext()) {
-            ServiceController<? extends S> aux = iterator.next();
-            serviceListerRemoveInternal(aux);
-            aux.removeListener(this);
-            iterator.remove();
+        if (failure && completeOnFirstFailure) {
+            Iterator<ServiceController<? extends S>> iterator = trackedControllers.iterator();
+            while (iterator.hasNext()) {
+                ServiceController<? extends S> aux = iterator.next();
+                serviceListerRemoveInternal(aux);
+                aux.removeListener(this);
+                iterator.remove();
+            }
+            completeInternal();
+        } else {
+            checkAndComplete();
         }
-
-        completeInternal();
     }
 
     private void completeInternal() {
