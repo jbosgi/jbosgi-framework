@@ -105,19 +105,23 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
 
     @Override
     public ModuleSpec findModule(ModuleIdentifier identifier) throws ModuleLoadException {
-        ModuleHolder moduleHolder = moduleSpecs.get(identifier);
-        return moduleHolder != null ? moduleHolder.getModuleSpec() : null;
+        synchronized (moduleSpecs) {
+            ModuleHolder moduleHolder = moduleSpecs.get(identifier);
+            return moduleHolder != null ? moduleHolder.getModuleSpec() : null;
+        }
     }
 
     @Override
     protected Module preloadModule(ModuleIdentifier identifier) throws ModuleLoadException {
         Module module = null;
-        ModuleHolder moduleHolder = moduleSpecs.get(identifier);
-        if (moduleHolder != null) {
-            module = moduleHolder.getModule();
-            if (module == null) {
-                module = loadModuleLocal(identifier);
-                moduleHolder.setModule(module);
+        synchronized (moduleSpecs) {
+            ModuleHolder moduleHolder = moduleSpecs.get(identifier);
+            if (moduleHolder != null) {
+                module = moduleHolder.getModule();
+                if (module == null) {
+                    module = loadModuleLocal(identifier);
+                    moduleHolder.setModule(module);
+                }
             }
         }
         return module;
@@ -138,44 +142,49 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
     @Override
     public void addModuleSpec(XBundleRevision brev, ModuleSpec moduleSpec) {
         LOGGER.tracef("addModule: %s", moduleSpec.getModuleIdentifier());
-        ModuleIdentifier identifier = moduleSpec.getModuleIdentifier();
-        if (moduleSpecs.get(identifier) != null)
-            throw MESSAGES.illegalStateModuleAlreadyExists(identifier);
-        ModuleHolder moduleHolder = new ModuleHolder(moduleSpec);
-        moduleSpecs.put(identifier, moduleHolder);
+        synchronized (moduleSpecs) {
+            ModuleIdentifier identifier = moduleSpec.getModuleIdentifier();
+            if (moduleSpecs.get(identifier) != null)
+                throw MESSAGES.illegalStateModuleAlreadyExists(identifier);
+            ModuleHolder moduleHolder = new ModuleHolder(moduleSpec);
+            moduleSpecs.put(identifier, moduleHolder);
+        }
     }
 
     @Override
     public void addModule(XBundleRevision brev, Module module) {
         LOGGER.tracef("addModule: %s", module.getIdentifier());
-        ModuleIdentifier identifier = module.getIdentifier();
-        if (moduleSpecs.get(identifier) != null)
-            throw MESSAGES.illegalStateModuleAlreadyExists(identifier);
-        ModuleHolder moduleHolder = new ModuleHolder(module);
-        moduleSpecs.put(identifier, moduleHolder);
+        synchronized (moduleSpecs) {
+            ModuleIdentifier identifier = module.getIdentifier();
+            if (moduleSpecs.get(identifier) != null)
+                throw MESSAGES.illegalStateModuleAlreadyExists(identifier);
+            ModuleHolder moduleHolder = new ModuleHolder(module);
+            moduleSpecs.put(identifier, moduleHolder);
+        }
     }
 
     @Override
     public void removeModule(XBundleRevision brev, ModuleIdentifier identifier) {
         LOGGER.tracef("removeModule: %s", identifier);
+        synchronized (moduleSpecs) {
 
-        // Remove the ModuleSpec, which makes the Module unavailable for load
-        moduleSpecs.remove(identifier);
+            moduleSpecs.remove(identifier);
 
-        // Remove the module service
-        ServiceController<?> moduleService = serviceRegistry.getService(getModuleServiceName(identifier));
-        if (moduleService != null) {
-            moduleService.setMode(Mode.REMOVE);
-        }
-
-        // Unload the Module from the ModuleLoader
-        try {
-            Module module = loadModuleLocal(identifier);
-            if (module != null) {
-                unloadModuleLocal(module);
+            // Remove the module service
+            ServiceController<?> moduleService = serviceRegistry.getService(getModuleServiceName(identifier));
+            if (moduleService != null) {
+                moduleService.setMode(Mode.REMOVE);
             }
-        } catch (ModuleLoadException ex) {
-            // ignore
+
+            // Unload the Module from the ModuleLoader
+            try {
+                Module module = loadModuleLocal(identifier);
+                if (module != null) {
+                    unloadModuleLocal(module);
+                }
+            } catch (ModuleLoadException ex) {
+                // ignore
+            }
         }
     }
 
