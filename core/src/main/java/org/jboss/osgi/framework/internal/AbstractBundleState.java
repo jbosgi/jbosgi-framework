@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
@@ -56,6 +57,8 @@ import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageStat
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -65,6 +68,8 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
+import org.osgi.framework.namespace.PackageNamespace;
+import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.resource.Wire;
 import org.osgi.service.resolver.ResolutionException;
@@ -589,7 +594,9 @@ abstract class AbstractBundleState implements XBundle {
                 if (isResolved() == false) {
                     try {
                         ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
-                        resolverPlugin.resolveAndApply(Collections.singleton(getBundleRevision()), null);
+                        Set<BundleStateRevision> mandatoryResources = Collections.singleton(getBundleRevision());
+                        Set<XBundleRevision> optionalResources = getOptionalResources(getBundleRevision());
+                        resolverPlugin.resolveAndApply(mandatoryResources, optionalResources);
 
                         if (LOGGER.isDebugEnabled()) {
                             BundleWiring wiring = getBundleRevision().getWiring();
@@ -613,6 +620,22 @@ abstract class AbstractBundleState implements XBundle {
                 }
             } finally {
                 releaseBundleLock(Method.RESOLVE);
+            }
+        }
+        return result;
+    }
+
+    private Set<XBundleRevision> getOptionalResources(XBundleRevision brev) {
+        Set<XBundleRevision> result = null;
+        BundleManagerPlugin bundleManager = getBundleManager();
+        for (BundleRequirement req : brev.getDeclaredRequirements(PackageNamespace.PACKAGE_NAMESPACE)) {
+            XPackageRequirement preq = (XPackageRequirement) req;
+            if (preq.isOptional()) {
+                result = new HashSet<XBundleRevision>();
+                for (XBundle bundle : bundleManager.getBundles(Bundle.INSTALLED)) {
+                    result.add(bundle.getBundleRevision());
+                }
+                break;
             }
         }
         return result;

@@ -141,8 +141,8 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
 
     @Override
     public void addModuleSpec(XBundleRevision brev, ModuleSpec moduleSpec) {
-        LOGGER.tracef("addModule: %s", moduleSpec.getModuleIdentifier());
         synchronized (moduleSpecs) {
+            LOGGER.tracef("addModule: %s", moduleSpec.getModuleIdentifier());
             ModuleIdentifier identifier = moduleSpec.getModuleIdentifier();
             if (moduleSpecs.get(identifier) != null)
                 throw MESSAGES.illegalStateModuleAlreadyExists(identifier);
@@ -153,8 +153,8 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
 
     @Override
     public void addModule(XBundleRevision brev, Module module) {
-        LOGGER.tracef("addModule: %s", module.getIdentifier());
         synchronized (moduleSpecs) {
+            LOGGER.tracef("addModule: %s", module.getIdentifier());
             ModuleIdentifier identifier = module.getIdentifier();
             if (moduleSpecs.get(identifier) != null)
                 throw MESSAGES.illegalStateModuleAlreadyExists(identifier);
@@ -165,9 +165,8 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
 
     @Override
     public void removeModule(XBundleRevision brev, ModuleIdentifier identifier) {
-        LOGGER.tracef("removeModule: %s", identifier);
         synchronized (moduleSpecs) {
-
+            LOGGER.tracef("removeModule: %s", identifier);
             moduleSpecs.remove(identifier);
 
             // Remove the module service

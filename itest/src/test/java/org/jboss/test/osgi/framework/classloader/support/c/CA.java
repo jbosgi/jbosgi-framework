@@ -27,10 +27,10 @@ import org.jboss.test.osgi.framework.classloader.support.a.A;
  * CA.
  *
  * @author thomas.diesler@jboss.com
- * @version $Revision$
  */
 public class CA {
-
-    public CA(A a) {
+    static A someA;
+    static {
+        someA = new A();
     }
 }
