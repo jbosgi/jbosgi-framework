@@ -1,4 +1,4 @@
-package org.jboss.osgi.framework;
+package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,16 +21,31 @@ package org.jboss.osgi.framework;
  * #L%
  */
 
-import org.jboss.msc.service.Service;
-import org.osgi.framework.BundleContext;
+import java.util.Map;
+
+import org.osgi.framework.launch.Framework;
+import org.osgi.framework.launch.FrameworkFactory;
 
 /**
- * A service that registers additional system services.
+ * An impementation of an OSGi {@link FrameworkFactory}
  *
  * @author thomas.diesler@jboss.com
- * @since 25-Mar-2011
+ * @since 21-Aug-2009
  */
-public interface SystemServicesPlugin extends Service<SystemServicesPlugin> {
+public class FrameworkMain implements FrameworkFactory {
 
-    void registerSystemServices(BundleContext context);
+    /**
+     * The main entry point to the Framework
+     */
+    public static void main(String[] args) throws Exception {
+        FrameworkMain factory = new FrameworkMain();
+        Framework framework = factory.newFramework(null);
+        framework.start();
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public Framework newFramework(Map props) {
+        FrameworkBuilder builder = new FrameworkBuilder(props);
+        return builder.createFramework();
+    }
 }

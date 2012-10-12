@@ -33,7 +33,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Enumeration;
 
-import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
@@ -101,7 +101,7 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
     public void testGetEntryPaths() throws Exception {
         Bundle bundle = installBundle(getBundleA());
         try {
-            Enumeration urls = bundle.getEntryPaths("/");
+            Enumeration<?> urls = bundle.getEntryPaths("/");
             assertEquals("org/", urls.nextElement());
             assertEquals("META-INF/", urls.nextElement());
             assertFalse(urls.hasMoreElements());
@@ -117,7 +117,7 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
     public void testFindEntries() throws Exception {
         Bundle bundle = installBundle(getBundleA());
         try {
-            Enumeration urls = bundle.findEntries("/", "*.txt", true);
+            Enumeration<?> urls = bundle.findEntries("/", "*.txt", true);
             URL entry = (URL) urls.nextElement();
             assertTrue(entry.toExternalForm(), entry.getPath().endsWith("META-INF/resource-one.txt"));
             assertFalse(urls.hasMoreElements());
@@ -155,7 +155,7 @@ public class BundleURLTestCase extends OSGiFrameworkTest {
     public void testGetResources() throws Exception {
         Bundle bundle = installBundle(getBundleB());
         try {
-            Enumeration urls = bundle.getResources("/META-INF/resource-one.txt");
+            Enumeration<?> urls = bundle.getResources("/META-INF/resource-one.txt");
             URL url = (URL) urls.nextElement();
             assertEquals("/META-INF/resource-one.txt", url.getPath());
 

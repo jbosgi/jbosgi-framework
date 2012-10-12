@@ -27,7 +27,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
-import org.jboss.osgi.framework.util.ServiceTracker.SynchronousListenerServiceWrapper;
+import org.jboss.osgi.framework.spi.ServiceTracker.SynchronousListenerServiceWrapper;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;

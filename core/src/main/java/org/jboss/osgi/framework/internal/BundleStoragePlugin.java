@@ -45,7 +45,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;

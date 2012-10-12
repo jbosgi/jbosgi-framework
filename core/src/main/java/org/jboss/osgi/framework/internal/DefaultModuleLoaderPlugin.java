@@ -45,8 +45,8 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.service.ValueService;
 import org.jboss.msc.value.ImmediateValue;
-import org.jboss.osgi.framework.IntegrationService;
-import org.jboss.osgi.framework.ModuleLoaderPlugin;
+import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 

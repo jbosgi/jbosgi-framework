@@ -28,7 +28,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.Arrays;
 
-import org.jboss.osgi.framework.FrameworkMain;
+import org.jboss.osgi.framework.internal.FrameworkMain;
 import org.junit.Test;
 
 /**

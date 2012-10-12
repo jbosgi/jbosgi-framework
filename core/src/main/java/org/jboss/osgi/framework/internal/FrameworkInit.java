@@ -30,8 +30,8 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.IntegrationService;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
 

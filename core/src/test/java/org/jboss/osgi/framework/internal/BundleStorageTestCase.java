@@ -30,9 +30,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 
-import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
-import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.framework.spi.StorageState;
+import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;

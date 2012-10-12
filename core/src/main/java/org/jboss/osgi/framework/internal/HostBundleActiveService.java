@@ -26,7 +26,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.util.ServiceTracker.SynchronousListenerServiceWrapper;
+import org.jboss.osgi.framework.spi.ServiceTracker.SynchronousListenerServiceWrapper;
 
 /**
  * Represents the ACTIVE state of a host bundle.

@@ -32,8 +32,8 @@ import java.util.List;
 
 import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.StorageState;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;

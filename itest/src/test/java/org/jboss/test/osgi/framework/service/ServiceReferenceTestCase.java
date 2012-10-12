@@ -38,7 +38,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;

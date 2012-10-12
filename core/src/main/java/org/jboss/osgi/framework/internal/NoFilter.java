@@ -1,4 +1,4 @@
-package org.jboss.osgi.framework;
+package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,32 +21,44 @@ package org.jboss.osgi.framework;
  * #L%
  */
 
-import java.util.Map;
+import java.util.Dictionary;
 
-import org.jboss.osgi.framework.internal.FrameworkBuilder;
-import org.osgi.framework.launch.Framework;
-import org.osgi.framework.launch.FrameworkFactory;
+import org.osgi.framework.Filter;
+import org.osgi.framework.ServiceReference;
 
 /**
- * An impementation of an OSGi {@link FrameworkFactory}
+ * Dummy filter implementation
  *
- * @author thomas.diesler@jboss.com
- * @since 21-Aug-2009
+ * @author <a href="adrian@jboss.com">Adrian Brock</a>
+ * @version $Revision: 1.1 $
  */
-public class FrameworkMain implements FrameworkFactory {
+public class NoFilter implements Filter {
+
+    /** Singleton instance */
+    public static final Filter INSTANCE = new NoFilter();
 
     /**
-     * The main entry point to the Framework
+     * Singleton
      */
-    public static void main(String[] args) throws Exception {
-        FrameworkMain factory = new FrameworkMain();
-        Framework framework = factory.newFramework(null);
-        framework.start();
+    private NoFilter() {
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public Framework newFramework(Map props) {
-        FrameworkBuilder builder = new FrameworkBuilder(props);
-        return builder.createFramework();
+    @SuppressWarnings("rawtypes")
+    public boolean match(Dictionary dictionary) {
+        return true;
+    }
+
+    public boolean match(ServiceReference reference) {
+        return true;
+    }
+
+    @SuppressWarnings("rawtypes")
+    public boolean matchCase(Dictionary dictionary) {
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return null;
     }
 }

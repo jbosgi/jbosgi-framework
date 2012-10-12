@@ -1,4 +1,4 @@
-package org.jboss.osgi.framework;
+package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework
@@ -34,7 +34,8 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.util.ServiceTracker;
+import org.jboss.osgi.framework.BundleManager;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 

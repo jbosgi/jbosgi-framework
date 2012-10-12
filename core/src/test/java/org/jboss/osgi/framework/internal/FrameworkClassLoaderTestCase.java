@@ -30,9 +30,9 @@ import java.util.HashMap;
 import javax.management.MBeanServer;
 
 import org.jboss.modules.Module;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.junit.Before;
 import org.junit.Test;
-import org.kohsuke.args4j.CmdLineParser;
 import org.omg.CORBA.ORB;
 import org.osgi.framework.BundleActivator;
 
@@ -87,7 +87,7 @@ public class FrameworkClassLoaderTestCase extends AbstractFrameworkTest {
     @Test
     public void testLoadClassFail() throws Exception {
         try {
-            classLoader.loadClass(CmdLineParser.class.getName());
+            classLoader.loadClass(ShrinkWrap.class.getName());
             fail("ClassNotFoundException expected");
         } catch (ClassNotFoundException ex) {
             // expected

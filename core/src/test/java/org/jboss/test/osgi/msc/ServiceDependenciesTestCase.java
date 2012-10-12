@@ -31,7 +31,7 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceController.State;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.FutureServiceValue;
+import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.junit.Test;
 
 /**

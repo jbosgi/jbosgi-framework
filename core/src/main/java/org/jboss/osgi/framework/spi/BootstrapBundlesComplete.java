@@ -1,4 +1,4 @@
-package org.jboss.osgi.framework;
+package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework
@@ -25,7 +25,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.util.ServiceTracker.SynchronousListenerServiceWrapper;
+import org.jboss.osgi.framework.spi.ServiceTracker.SynchronousListenerServiceWrapper;
 
 public class BootstrapBundlesComplete<T> extends BootstrapBundlesService<T> {
 

@@ -39,7 +39,7 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.IntegrationService;
+import org.jboss.osgi.framework.spi.IntegrationService;
 import org.osgi.framework.launch.Framework;
 
 /**

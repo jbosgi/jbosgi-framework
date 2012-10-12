@@ -38,7 +38,7 @@ import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.osgi.framework.util.ServiceTracker;
+import org.jboss.osgi.framework.spi.ServiceTracker;
 import org.junit.Ignore;
 import org.junit.Test;
 

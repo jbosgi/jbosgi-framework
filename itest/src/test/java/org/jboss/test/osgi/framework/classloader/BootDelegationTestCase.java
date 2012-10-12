@@ -32,7 +32,7 @@ import java.util.Map;
 
 import javax.security.auth.x500.X500Principal;
 
-import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiTest;
 import org.jboss.osgi.testing.OSGiTestHelper;

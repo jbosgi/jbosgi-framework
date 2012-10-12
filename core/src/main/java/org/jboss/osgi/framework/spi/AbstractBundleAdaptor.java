@@ -1,4 +1,4 @@
-package org.jboss.osgi.framework;
+package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework
@@ -36,6 +36,7 @@ import java.util.Map;
 import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
+import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;

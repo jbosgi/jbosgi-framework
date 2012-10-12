@@ -29,10 +29,10 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.BundleLifecyclePlugin;
-import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.SystemServicesPlugin;
+import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
+import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.SystemServicesPlugin;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.packageadmin.PackageAdmin;
 

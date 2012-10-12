@@ -22,8 +22,8 @@ package org.jboss.osgi.framework.internal;
  */
 
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.ModuleLoaderPlugin;
-import org.jboss.osgi.framework.SystemPathsPlugin;
+import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
+import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.launch.Framework;
 

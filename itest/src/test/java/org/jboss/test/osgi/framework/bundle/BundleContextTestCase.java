@@ -36,8 +36,8 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 
-import org.jboss.osgi.spi.ManifestBuilder;
-import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.metadata.ManifestBuilder;
+import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;

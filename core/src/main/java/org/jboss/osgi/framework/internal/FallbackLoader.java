@@ -39,7 +39,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.Resource;
-import org.jboss.osgi.framework.SystemPathsPlugin;
+import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;

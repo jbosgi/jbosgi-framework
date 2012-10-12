@@ -48,8 +48,8 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.osgi.framework.IntegrationService;
-import org.jboss.osgi.framework.SystemPathsPlugin;
+import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 
 /**
  * A plugin manages the Framework's system packages.

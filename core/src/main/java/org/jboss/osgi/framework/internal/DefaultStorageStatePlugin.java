@@ -31,11 +31,11 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.StorageState;
-import org.jboss.osgi.framework.StorageStatePlugin;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.StorageState;
+import org.jboss.osgi.framework.spi.StorageStatePlugin;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.vfs.VirtualFile;
 

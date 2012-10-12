@@ -34,7 +34,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
-import org.jboss.osgi.framework.StorageState;
+import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.spi.BundleInfo;

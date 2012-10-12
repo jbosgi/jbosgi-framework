@@ -1,4 +1,4 @@
-package org.jboss.osgi.framework.util;
+package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework

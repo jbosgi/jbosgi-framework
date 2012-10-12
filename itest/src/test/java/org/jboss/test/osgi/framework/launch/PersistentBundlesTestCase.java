@@ -25,7 +25,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.Map;
 
-import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;

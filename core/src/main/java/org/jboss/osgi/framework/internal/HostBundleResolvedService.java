@@ -25,7 +25,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.util.ServiceTracker.SynchronousListenerServiceWrapper;
+import org.jboss.osgi.framework.spi.ServiceTracker.SynchronousListenerServiceWrapper;
 import org.osgi.framework.Bundle;
 
 /**

@@ -33,7 +33,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.osgi.framework.FutureServiceValue;
+import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.junit.Test;
 
 /**

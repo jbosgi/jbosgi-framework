@@ -43,14 +43,12 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.FrameworkModulePlugin;
-import org.jboss.osgi.framework.IntegrationService;
-import org.jboss.osgi.framework.SystemPathsPlugin;
+import org.jboss.osgi.framework.spi.FrameworkModulePlugin;
+import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 import org.osgi.framework.Bundle;
 
 /**

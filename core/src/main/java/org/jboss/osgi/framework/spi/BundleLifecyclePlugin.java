@@ -1,4 +1,4 @@
-package org.jboss.osgi.framework;
+package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework
@@ -23,6 +23,7 @@ package org.jboss.osgi.framework;
 
 import org.jboss.msc.service.Service;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 

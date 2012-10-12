@@ -25,7 +25,7 @@ import org.jboss.modules.DependencySpec;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.ResourceLoaderSpec;
-import org.jboss.osgi.framework.util.VirtualFileResourceLoader;
+import org.jboss.osgi.framework.spi.VirtualFileResourceLoader;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;

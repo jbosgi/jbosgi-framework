@@ -42,8 +42,6 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.util.NoFilter;
-import org.jboss.osgi.framework.util.RemoveOnlyCollection;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;

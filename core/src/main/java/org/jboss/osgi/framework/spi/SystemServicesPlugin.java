@@ -1,4 +1,4 @@
-package org.jboss.osgi.framework;
+package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,23 +21,16 @@ package org.jboss.osgi.framework;
  * #L%
  */
 
-import java.io.IOException;
-import java.util.Set;
-
 import org.jboss.msc.service.Service;
-import org.jboss.osgi.vfs.VirtualFile;
+import org.osgi.framework.BundleContext;
 
 /**
- * A provider of {@link StorageState}
+ * A service that registers additional system services.
  *
  * @author thomas.diesler@jboss.com
- * @since 12-Apr-2012
+ * @since 25-Mar-2011
  */
-public interface StorageStatePlugin extends Service<StorageStatePlugin> {
+public interface SystemServicesPlugin extends Service<SystemServicesPlugin> {
 
-    Set<StorageState> getStorageStates();
-
-    StorageState getStorageState(String location);
-
-    StorageState createStorageState(String location, int startlevel, VirtualFile rootFile) throws IOException;
+    void registerSystemServices(BundleContext context);
 }

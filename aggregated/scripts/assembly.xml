@@ -35,7 +35,6 @@
             <outputFileNameMapping>${artifact.artifactId}${dashClassifier?}.${artifact.extension}
             </outputFileNameMapping>
             <includes>
-                <include>*:args4j:jar</include>
                 <include>*:jbosgi-deployment:jar</include>
                 <include>*:jbosgi-framework-core:jar</include>
                 <include>*:jbosgi-metadata:jar</include>

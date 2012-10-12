@@ -28,7 +28,7 @@ import java.util.Map;
 import org.jboss.msc.service.ServiceController.State;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.spi.OSGiManifestBuilder;
+import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;

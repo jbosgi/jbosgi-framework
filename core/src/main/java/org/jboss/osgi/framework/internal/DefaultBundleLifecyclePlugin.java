@@ -29,9 +29,9 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleLifecyclePlugin;
-import org.jboss.osgi.framework.IntegrationService;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
+import org.jboss.osgi.framework.spi.IntegrationService;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
