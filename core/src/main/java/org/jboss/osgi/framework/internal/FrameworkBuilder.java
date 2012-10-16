@@ -136,7 +136,7 @@ public final class FrameworkBuilder {
         return serviceContainer;
     }
 
-    void createFrameworkServicesInternal(ServiceContainer serviceContainer, ServiceTarget serviceTarget, boolean firstInit) {
+    BundleManagerPlugin createFrameworkServicesInternal(ServiceContainer serviceContainer, ServiceTarget serviceTarget, boolean firstInit) {
         try {
             // Do this first so this URLStreamHandlerFactory gets installed
             URLHandlerPlugin.addService(serviceTarget);
@@ -146,7 +146,7 @@ public final class FrameworkBuilder {
                 Module.setModuleLogger(new JDKModuleLogger());
             }
 
-            BundleManagerPlugin bundleManager = BundleManagerPlugin.addService(serviceTarget, this);
+            BundleManagerPlugin bundleManager = BundleManagerPlugin.addService(serviceContainer, serviceTarget, this);
             FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
 
             BundleStoragePlugin.addService(serviceTarget, firstInit);
@@ -175,6 +175,8 @@ public final class FrameworkBuilder {
             installIntegrationService(serviceContainer, serviceTarget, new DefaultPersistentBundlesInstall());
             installIntegrationService(serviceContainer, serviceTarget, new DefaultSystemPathsPlugin(this));
             installIntegrationService(serviceContainer, serviceTarget, new DefaultSystemServicesPlugin());
+            
+            return bundleManager;
         } finally {
             closed = true;
         }

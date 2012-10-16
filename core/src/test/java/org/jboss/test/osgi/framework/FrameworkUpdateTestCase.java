@@ -77,7 +77,6 @@ public class FrameworkUpdateTestCase extends OSGiTest {
 
     @Test
     public void testWaitForStop() throws Exception {
-
         Framework framework = createFramework();
         try
         {

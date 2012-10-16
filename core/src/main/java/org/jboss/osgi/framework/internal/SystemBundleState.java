@@ -29,7 +29,6 @@ import java.util.List;
 
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.BundleManager;
-import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
@@ -71,13 +70,18 @@ final class SystemBundleState extends AbstractBundleState {
     }
 
     @Override
+    public String getSymbolicName() {
+        return getBundleManager().getManagerSymbolicName();
+    }
+
+    @Override
     public String getLocation() {
-        return Constants.SYSTEM_BUNDLE_LOCATION;
+        return getBundleManager().getManagerLocation();
     }
 
     @Override
     public Version getVersion() {
-        return Version.emptyVersion;
+        return getBundleManager().getManagerVersion();
     }
 
     @Override
@@ -127,7 +131,8 @@ final class SystemBundleState extends AbstractBundleState {
 
     @Override
     void stopInternal(int options) throws BundleException {
-        // [TODO] Returns immediately and shuts down the Framework on another thread
+        // Returns immediately and shuts down the Framework on another thread
+        getBundleManager().shutdownManager(false);
     }
 
     @Override

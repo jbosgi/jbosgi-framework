@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
@@ -37,6 +37,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.AbstractService;
@@ -68,6 +71,7 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.Version;
 import org.osgi.resource.Resource;
 
 /**
@@ -106,12 +110,17 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
     final InjectedValue<Boolean> injectedFrameworkActive = new InjectedValue<Boolean>();
 
     private final FrameworkBuilder frameworkBuilder;
+    private final ShutdownContainer shutdownContainer;
     private final Map<String, Object> properties = new HashMap<String, Object>();
-    private ServiceContainer serviceContainer;
+    private final AtomicInteger managerState = new AtomicInteger(Bundle.INSTALLED);
+    private final AtomicBoolean managerStopped = new AtomicBoolean();
+    private final ServiceContainer serviceContainer;
+    private SystemBundleState cachedSystemBundle;
     private ServiceTarget serviceTarget;
+    private int stoppedEvent;
 
-    static BundleManagerPlugin addService(ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
-        BundleManagerPlugin service = new BundleManagerPlugin(frameworkBuilder);
+    static BundleManagerPlugin addService(ServiceContainer serviceContainer, ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
+        BundleManagerPlugin service = new BundleManagerPlugin(serviceContainer, frameworkBuilder);
         ServiceBuilder<BundleManager> builder = serviceTarget.addService(Services.BUNDLE_MANAGER, service);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
         builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, service.injectedLockManager);
@@ -120,8 +129,10 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
         return service;
     }
 
-    private BundleManagerPlugin(FrameworkBuilder frameworkBuilder) {
+    private BundleManagerPlugin(ServiceContainer serviceContainer, FrameworkBuilder frameworkBuilder) {
+        this.serviceContainer = serviceContainer;
         this.frameworkBuilder = frameworkBuilder;
+        this.stoppedEvent = FrameworkEvent.STOPPED;
 
         // The properties on the BundleManager are mutable as long the framework is not created
         // Plugins may modify these properties in their respective constructor
@@ -142,12 +153,14 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
             setProperty(Constants.FRAMEWORK_VENDOR, OSGi_FRAMEWORK_VENDOR);
         if (getProperty(Constants.FRAMEWORK_VERSION) == null)
             setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
+        
+        boolean allowContainerShutdown = frameworkBuilder.getServiceContainer() == null;
+        shutdownContainer = new ShutdownContainer(serviceContainer, allowContainerShutdown);
     }
 
     @Override
     public void start(StartContext context) throws StartException {
         LOGGER.infoFrameworkImplementation(implementationVersion);
-        serviceContainer = context.getController().getServiceContainer();
         serviceTarget = context.getChildTarget();
         LOGGER.debugf("Framework properties");
         for (Entry<String, Object> entry : properties.entrySet()) {
@@ -195,6 +208,26 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
         return injectedFramework.getOptionalValue();
     }
 
+    String getManagerSymbolicName() {
+        return Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
+    }
+
+    String getManagerLocation() {
+        return Constants.SYSTEM_BUNDLE_LOCATION;
+    }
+
+    Version getManagerVersion() {
+        return Version.emptyVersion;
+    }
+    
+    int getManagerState() {
+        return managerState.get();
+    }
+    
+    void setManagerState(int state) {
+        managerState.set(state);
+    }
+    
     @Override
     public Object getProperty(String key) {
         Object value = properties.get(key);
@@ -494,6 +527,76 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
         }
     }
 
+    boolean isNotStopped() {
+        return !shutdownContainer.isShutdownInitiated() && !managerStopped.get();
+    }
+
+    void assertNotStopped() {
+        if (isNotStopped() == false)
+            throw MESSAGES.illegalStateFrameworkAlreadyStopped();
+    }
+
+    void shutdownManager(boolean stopForUpdate) {
+
+        // If the Framework is not STARTING and not ACTIVE there is nothing to do
+        int state = getManagerState();
+        if (state != Bundle.STARTING && state != Bundle.ACTIVE)
+            return;
+
+        LOGGER.debugf("Stop framework");
+
+        stoppedEvent = stopForUpdate ? FrameworkEvent.STOPPED_UPDATE : FrameworkEvent.STOPPED;
+        getSystemBundle().changeState(Bundle.STOPPING);
+        setManagerState(Bundle.STOPPING);
+
+        // Move to start level 0 in the current thread
+        FrameworkCoreServices coreServices = getFrameworkState().getCoreServices();
+        StartLevelPlugin startLevel = coreServices.getStartLevel();
+        if (startLevel != null) {
+            startLevel.decreaseStartLevel(0);
+        } else {
+            // No Start Level Service available, stop all bundles individually...
+            // All installed bundles must be stopped without changing each bundle's persistent autostart setting
+            for (Bundle bundle : getBundles()) {
+                if (bundle.getBundleId() != 0) {
+                    try {
+                        bundle.stop(Bundle.STOP_TRANSIENT);
+                    } catch (Exception ex) {
+                        // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then
+                        // published as a framework event of type FrameworkEvent.ERROR
+                        fireFrameworkError(bundle, "stopping bundle", ex);
+                    }
+                }
+            }
+        }
+
+        cachedSystemBundle = getSystemBundle();
+        shutdownContainer.shutdown();
+        setManagerState(Bundle.RESOLVED);
+    }
+
+    /**
+     * Wait until this Framework has completely stopped.
+     *
+     * The stop and update methods on a Framework performs an asynchronous stop of the Framework. This method can be used to
+     * wait until the asynchronous stop of this Framework has completed. This method will only wait if called when this
+     * Framework is in the Bundle.STARTING, Bundle.ACTIVE, or Bundle.STOPPING states. Otherwise it will return immediately.
+     *
+     * A Framework Event is returned to indicate why this Framework has stopped.
+     */
+    FrameworkEvent waitForStop(long timeout) throws InterruptedException {
+        SystemBundleState systemBundle = getSystemBundle();
+        Bundle eventSource = systemBundle != null ? systemBundle : cachedSystemBundle;
+
+        FrameworkEvent frameworkEvent = null;
+        shutdownContainer.awaitTermination(timeout, TimeUnit.MILLISECONDS);
+        if (eventSource != null) {
+            int eventType = shutdownContainer.isShutdownComplete() ? stoppedEvent : FrameworkEvent.WAIT_TIMEDOUT;
+            frameworkEvent = new FrameworkEvent(eventType, eventSource, null);
+        }
+        return frameworkEvent;
+    }
+    
     static {
         AccessController.doPrivileged(new PrivilegedAction<Object>() {
 
@@ -558,5 +661,54 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
         }
 
         return osgiVersion.toString();
+    }
+
+    // The TCK calls waitForStop before it initiates the shutdown, in which case the {@link ServiceContainer}
+    // returns imediately from awaitTermination and returns false from isShutdownComplete.
+    // We compensate with a grace periode that allows the shutdown to get initiated after awaitTermination.
+    static class ShutdownContainer {
+        private final ServiceContainer serviceContainer;
+        private final AtomicBoolean shutdownInitiated;
+        private final boolean allowContainerShutdown;
+
+        ShutdownContainer(final ServiceContainer serviceContainer, boolean allowContainerShutdown) {
+            this.serviceContainer = serviceContainer;
+            this.allowContainerShutdown = allowContainerShutdown;
+            this.shutdownInitiated = new AtomicBoolean(false);
+        }
+
+        ServiceController<?> getRequiredService(ServiceName serviceName) {
+            return serviceContainer.getRequiredService(serviceName);
+        }
+
+        boolean isShutdownInitiated() {
+            return shutdownInitiated.get();
+        }
+
+        void shutdown() {
+            if (allowContainerShutdown) {
+                serviceContainer.shutdown();
+                synchronized (shutdownInitiated) {
+                    shutdownInitiated.set(true);
+                    LOGGER.debugf("shutdownInitiated.notifyAll");
+                    shutdownInitiated.notifyAll();
+                }
+            }
+        }
+
+        void awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            LOGGER.debugf("awaitTermination: %dms", unit.toMillis(timeout));
+            synchronized (shutdownInitiated) {
+                if (shutdownInitiated.get() == false) {
+                    LOGGER.debugf("shutdownInitiated.wait");
+                    shutdownInitiated.wait(2000);
+                }
+            }
+            serviceContainer.awaitTermination(timeout == 0 ? Long.MAX_VALUE : timeout, unit);
+        }
+
+        boolean isShutdownComplete() {
+            return serviceContainer.isShutdownComplete();
+        }
     }
 }

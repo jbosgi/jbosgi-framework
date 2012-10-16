@@ -44,7 +44,6 @@ public class FrameworkShutdownTestCase extends AbstractFrameworkLaunchTest {
 
     @Test
     public void testFrameworkStopWithTimeout() throws Exception {
-
         Map<String, Object> props = getFrameworkInitProperties(true);
         FrameworkBuilder builder = new FrameworkBuilder(props);
         Framework framework = newFramework(builder);
@@ -63,7 +62,6 @@ public class FrameworkShutdownTestCase extends AbstractFrameworkLaunchTest {
 
     @Test
     public void testFrameworkStopNoTimeout() throws Exception {
-
         Map<String, Object> props = getFrameworkInitProperties(true);
         FrameworkBuilder builder = new FrameworkBuilder(props);
         Framework framework = newFramework(builder);
@@ -76,6 +74,46 @@ public class FrameworkShutdownTestCase extends AbstractFrameworkLaunchTest {
         assertBundleState(Bundle.INSTALLED, bundle.getState());
 
         framework.stop();
+        FrameworkEvent stopEvent = framework.waitForStop(0);
+        assertEquals(FrameworkEvent.STOPPED, stopEvent.getType());
+    }
+
+    @Test
+    public void testSystemBundleStopWithTimeout() throws Exception {
+        Map<String, Object> props = getFrameworkInitProperties(true);
+        FrameworkBuilder builder = new FrameworkBuilder(props);
+        Framework framework = newFramework(builder);
+        assertBundleState(Bundle.INSTALLED, framework.getState());
+
+        framework.init();
+        assertBundleState(Bundle.STARTING, framework.getState());
+
+        Bundle bundle = installBundle(getBundleA());
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
+
+        Bundle sysbundle = framework.getBundleContext().getBundle();
+        sysbundle.stop();
+        
+        FrameworkEvent stopEvent = framework.waitForStop(2000);
+        assertEquals(FrameworkEvent.STOPPED, stopEvent.getType());
+    }
+
+    @Test
+    public void testSystemBundleStopNoTimeout() throws Exception {
+        Map<String, Object> props = getFrameworkInitProperties(true);
+        FrameworkBuilder builder = new FrameworkBuilder(props);
+        Framework framework = newFramework(builder);
+        assertBundleState(Bundle.INSTALLED, framework.getState());
+
+        framework.init();
+        assertBundleState(Bundle.STARTING, framework.getState());
+
+        Bundle bundle = installBundle(getBundleA());
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
+
+        Bundle sysbundle = framework.getBundleContext().getBundle();
+        sysbundle.stop();
+        
         FrameworkEvent stopEvent = framework.waitForStop(0);
         assertEquals(FrameworkEvent.STOPPED, stopEvent.getType());
     }
