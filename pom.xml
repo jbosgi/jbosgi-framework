@@ -50,7 +50,7 @@
         <version.aqute.bnd>0.0.365.SP1</version.aqute.bnd>
         <version.javax.inject>1</version.javax.inject>
         <version.jboss.arquillian.core>1.0.0.Final</version.jboss.arquillian.core>
-        <version.jboss.arquillian.osgi>1.0.2.Final</version.jboss.arquillian.osgi>
+        <version.jboss.arquillian.osgi>1.0.3.CR1</version.jboss.arquillian.osgi>
         <version.jboss.logging>3.1.2.GA</version.jboss.logging>
         <version.jboss.logmanager>1.4.0.Beta1</version.jboss.logmanager>
         <version.jboss.logging.processor>1.1.0.Beta1</version.jboss.logging.processor>

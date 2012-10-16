@@ -26,10 +26,9 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.InputStream;
 
-import javax.inject.Inject;
-
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
@@ -52,6 +51,9 @@ import org.osgi.framework.ServiceReference;
 @RunWith(Arquillian.class)
 public class SimpleArquillianTestCase {
 
+    @ArquillianResource
+    BundleContext context;
+
     @Deployment
     public static JavaArchive createDeployment() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-arquillian");
@@ -70,20 +72,14 @@ public class SimpleArquillianTestCase {
         return archive;
     }
 
-    @Inject
-    public BundleContext context;
-
     @Test
     public void testBundleContextInjection() throws Exception {
         assertNotNull("BundleContext injected", context);
         assertEquals("System Bundle ID", 0, context.getBundle().getBundleId());
     }
 
-    @Inject
-    public Bundle bundle;
-
     @Test
-    public void testBundleInjection() throws Exception {
+    public void testBundleInjection(@ArquillianResource Bundle bundle) throws Exception {
         // Assert that the bundle is injected
         assertNotNull("Bundle injected", bundle);
 

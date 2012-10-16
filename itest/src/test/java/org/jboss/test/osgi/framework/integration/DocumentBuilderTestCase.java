@@ -27,12 +27,12 @@ import static org.junit.Assert.assertNotNull;
 import java.io.InputStream;
 import java.net.URL;
 
-import javax.inject.Inject;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
@@ -40,7 +40,6 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -53,12 +52,6 @@ import org.w3c.dom.Node;
  */
 @RunWith(Arquillian.class)
 public class DocumentBuilderTestCase {
-
-    @Inject
-    public static BundleContext context;
-
-    @Inject
-    public Bundle bundle;
 
     @Deployment
     public static JavaArchive createdeployment() {
@@ -77,7 +70,7 @@ public class DocumentBuilderTestCase {
     }
 
     @Test
-    public void testDOMParser() throws Exception {
+    public void testDOMParser(@ArquillianResource Bundle bundle) throws Exception {
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);

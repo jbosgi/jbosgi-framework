@@ -26,12 +26,12 @@ import static org.junit.Assert.assertEquals;
 import java.io.InputStream;
 import java.net.URL;
 
-import javax.inject.Inject;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.arquillian.test.api.ArquillianResource;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
@@ -39,7 +39,6 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -51,12 +50,6 @@ import org.xml.sax.helpers.DefaultHandler;
  */
 @RunWith(Arquillian.class)
 public class SAXParserTestCase {
-
-    @Inject
-    public BundleContext context;
-
-    @Inject
-    public Bundle bundle;
 
     @Deployment
     public static JavaArchive createdeployment() {
@@ -75,7 +68,7 @@ public class SAXParserTestCase {
     }
 
     @Test
-    public void testSAXParser() throws Exception {
+    public void testSAXParser(@ArquillianResource Bundle bundle) throws Exception {
 
         SAXParserFactory factory = SAXParserFactory.newInstance();
         factory.setNamespaceAware(true);
