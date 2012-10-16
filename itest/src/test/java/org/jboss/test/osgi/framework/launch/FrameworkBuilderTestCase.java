@@ -40,6 +40,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.ValueService;
 import org.jboss.msc.value.ImmediateValue;
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.FrameworkBuilder;
 import org.jboss.osgi.framework.spi.FutureServiceValue;
@@ -51,7 +52,6 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
@@ -131,14 +131,14 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
         Bundle systemBundle = systemContext.getBundle();
         assertNotNull("Bundle not null", systemBundle);
         assertEquals("System bundle id", 0, systemBundle.getBundleId());
-        assertEquals("System bundle name", Constants.SYSTEM_BUNDLE_SYMBOLICNAME, systemBundle.getSymbolicName());
-        assertEquals("System bundle location", Constants.SYSTEM_BUNDLE_LOCATION, systemBundle.getLocation());
+        assertEquals("System bundle name", Constants.FRAMEWORK_SYMBOLIC_NAME, systemBundle.getSymbolicName());
+        assertEquals("System bundle location", Constants.FRAMEWORK_LOCATION, systemBundle.getLocation());
 
         Bundle[] bundles = systemContext.getBundles();
         assertEquals("System bundle available", 1, bundles.length);
         assertEquals("System bundle id", 0, bundles[0].getBundleId());
-        assertEquals("System bundle name", Constants.SYSTEM_BUNDLE_SYMBOLICNAME, bundles[0].getSymbolicName());
-        assertEquals("System bundle location", Constants.SYSTEM_BUNDLE_LOCATION, bundles[0].getLocation());
+        assertEquals("System bundle name", Constants.FRAMEWORK_SYMBOLIC_NAME, bundles[0].getSymbolicName());
+        assertEquals("System bundle location", Constants.FRAMEWORK_LOCATION, bundles[0].getLocation());
 
         ServiceReference paRef = systemContext.getServiceReference(PackageAdmin.class.getName());
         PackageAdmin packageAdmin = (PackageAdmin) systemContext.getService(paRef);

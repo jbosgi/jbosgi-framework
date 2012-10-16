@@ -21,7 +21,6 @@ package org.jboss.osgi.framework;
  * #L%
  */
 
-
 /**
  * A collection of propriatary constants.
  *
@@ -30,6 +29,12 @@ package org.jboss.osgi.framework;
  */
 public interface Constants extends org.osgi.framework.Constants {
 
+    /** The framework symbolic */
+    String FRAMEWORK_SYMBOLIC_NAME = "org.jboss.osgi.framework";
+    
+    /** The framework location */
+    String FRAMEWORK_LOCATION = "org.jboss.osgi.framework";
+    
     /** The prefix for modules/services managed by the OSGi layer */
     String JBOSGI_PREFIX = "jbosgi";
 

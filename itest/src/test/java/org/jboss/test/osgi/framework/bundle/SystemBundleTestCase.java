@@ -33,11 +33,11 @@ import java.net.URL;
 import java.util.Dictionary;
 import java.util.Enumeration;
 
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
 
 /**
  * SystemBundleTest.
@@ -53,7 +53,12 @@ public class SystemBundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testSymbolicName() throws Exception {
-        assertEquals(Constants.SYSTEM_BUNDLE_SYMBOLICNAME, getFramework().getSymbolicName());
+        assertEquals(Constants.FRAMEWORK_SYMBOLIC_NAME, getFramework().getSymbolicName());
+    }
+
+    @Test
+    public void testLocation() throws Exception {
+        assertEquals(Constants.FRAMEWORK_LOCATION, getFramework().getLocation());
     }
 
     @Test
@@ -76,11 +81,6 @@ public class SystemBundleTestCase extends OSGiFrameworkTest {
     public void testGetHeaders() throws Exception {
         Dictionary dictionary = getFramework().getHeaders();
         assertEquals(Constants.SYSTEM_BUNDLE_SYMBOLICNAME, dictionary.get(Constants.BUNDLE_SYMBOLICNAME));
-    }
-
-    @Test
-    public void testLocation() throws Exception {
-        assertEquals(Constants.SYSTEM_BUNDLE_LOCATION, getFramework().getLocation());
     }
 
     @Test

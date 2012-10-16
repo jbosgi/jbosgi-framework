@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.Constants.FRAMEWORK_LOCATION;
+import static org.jboss.osgi.framework.Constants.FRAMEWORK_SYMBOLIC_NAME;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 import static org.jboss.osgi.framework.internal.InternalServices.BUNDLE_BASE_NAME;
@@ -209,15 +211,16 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
     }
 
     String getManagerSymbolicName() {
-        return Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
+        return FRAMEWORK_SYMBOLIC_NAME;
     }
 
     String getManagerLocation() {
-        return Constants.SYSTEM_BUNDLE_LOCATION;
+        return FRAMEWORK_LOCATION;
     }
 
     Version getManagerVersion() {
-        return Version.emptyVersion;
+        String versionSpec = getClass().getPackage().getImplementationVersion();
+        return Version.parseVersion(versionSpec);
     }
     
     int getManagerState() {
@@ -627,7 +630,7 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
                 OSGi_FRAMEWORK_OS_VERSION = getOSVersionInOSGiFormat();
                 OSGi_FRAMEWORK_PROCESSOR = SecurityActions.getSystemProperty("os.arch", null);
 
-                SecurityActions.setSystemProperty("org.osgi.vendor.framework", "org.jboss.osgi.framework");
+                SecurityActions.setSystemProperty("org.osgi.vendor.framework", org.jboss.osgi.framework.Constants.FRAMEWORK_SYMBOLIC_NAME);
                 return null;
             }
         });
