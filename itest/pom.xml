@@ -230,6 +230,18 @@
                     <scope>provided</scope>
                 </dependency>
             </dependencies>
+            <build>
+            	<plugins>
+					<plugin>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<systemPropertyVariables>
+								<org.jboss.osgi.spi.framework.OSGiBootstrapProvider>org.jboss.osgi.felix.FelixBootstrapProvider</org.jboss.osgi.spi.framework.OSGiBootstrapProvider>
+							</systemPropertyVariables>
+						</configuration>
+					</plugin>
+            	</plugins>
+            </build>
         </profile>
 
         <!--
