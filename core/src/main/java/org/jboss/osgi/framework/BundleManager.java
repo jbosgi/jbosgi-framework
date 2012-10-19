@@ -28,6 +28,7 @@ import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
@@ -128,6 +129,11 @@ public interface BundleManager extends Service<BundleManager> {
      * Get the service container
      */
     ServiceContainer getServiceContainer();
+
+    /**
+     * Get the service target
+     */
+    ServiceTarget getServiceTarget();
 
     /**
      * Returns the framework properties merged with the System properties.

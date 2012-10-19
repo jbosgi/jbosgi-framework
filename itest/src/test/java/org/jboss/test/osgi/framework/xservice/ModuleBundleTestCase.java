@@ -75,7 +75,7 @@ public class ModuleBundleTestCase extends AbstractModuleIntegrationTest {
         Assert.assertTrue("Last modified > 0", bundle.getLastModified() > 0);
         Assert.assertEquals(module.getIdentifier().getName(), bundle.getSymbolicName());
         Assert.assertEquals(Version.emptyVersion, bundle.getVersion());
-        Assert.assertEquals(module.getIdentifier().toString(), bundle.getLocation());
+        Assert.assertEquals(module.getIdentifier().getName(), bundle.getLocation());
 
         // getState
         Assert.assertEquals(Bundle.RESOLVED, bundle.getState());
@@ -101,19 +101,12 @@ public class ModuleBundleTestCase extends AbstractModuleIntegrationTest {
         // loadClass
         OSGiTestHelper.assertLoadClass(bundle, ModuleServiceX.class.getName());
 
-        // start, stop, uninstall, update
-        try {
-            bundle.start();
-            Assert.fail("BundleException expected");
-        } catch (BundleException ex) {
-            // expected
-        }
-        try {
-            bundle.stop();
-            Assert.fail("BundleException expected");
-        } catch (BundleException ex) {
-            // expected
-        }
+        bundle.start();
+        Assert.assertEquals(Bundle.ACTIVE, bundle.getState());
+
+        bundle.stop();
+        Assert.assertEquals(Bundle.RESOLVED, bundle.getState());
+
         try {
             bundle.update();
             Assert.fail("BundleException expected");

@@ -227,8 +227,8 @@ public interface FrameworkMessages {
     @Message(id = 11256, value = "Bundle was uninstalled during activator stop: %s")
     BundleException uninstalledDuringActivatorStop(Bundle bundle);
 
-    @Message(id = 11257, value = "Error during activator stop: %s")
-    BundleException errorDuringActivatorStop(@Cause Throwable cause, Bundle bundle);
+    @Message(id = 11257, value = "Cannot stop bundle: %s")
+    BundleException cannotStopBundle(@Cause Throwable cause, Bundle bundle);
 
     @Message(id = 11258, value = "Cannot acquire start/stop lock for: %s")
     BundleException cannotAcquireStartStopLock(Bundle bundle);

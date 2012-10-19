@@ -33,9 +33,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.internal.AbstractBundleState.BundleLock.Method;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
+import org.jboss.osgi.framework.spi.BundleLock.LockMethod;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -191,12 +191,16 @@ final class HostBundleState extends UserBundleState {
         // #1 If this bundle is in the process of being activated or deactivated
         // then this method must wait for activation or deactivation to complete before continuing.
         // If this does not occur in a reasonable time, a BundleException is thrown
-        aquireBundleLock(Method.START);
+        aquireBundleLock(LockMethod.START);
         alreadyStarting.set(true);
 
         try {
             // Assert the required start conditions
             assertStartConditions();
+
+            // #2 If this bundle's state is ACTIVE then this method returns immediately.
+            if (getState() == ACTIVE)
+                return;
 
             LOGGER.debugf("Starting bundle: %s", this);
 
@@ -213,10 +217,6 @@ final class HostBundleState extends UserBundleState {
                 persistAutoStartSettings(options);
                 return;
             }
-
-            // #2 If this bundle's state is ACTIVE then this method returns immediately.
-            if (getState() == ACTIVE)
-                return;
 
             // #3 Set this bundle's autostart setting
             persistAutoStartSettings(options);
@@ -241,7 +241,7 @@ final class HostBundleState extends UserBundleState {
             }
         } finally {
             alreadyStarting.set(false);
-            releaseBundleLock(Method.START);
+            releaseBundleLock(LockMethod.START);
         }
     }
 
@@ -304,11 +304,11 @@ final class HostBundleState extends UserBundleState {
             lifecycle.start(this, options, DefaultBundleLifecycleHandler.INSTANCE);
         } else {
             // If we are not ussing the default impl, we cannot call out holding the lock
-            releaseBundleLock(Method.START);
+            releaseBundleLock(LockMethod.START);
             try {
                 lifecycle.start(this, options, DefaultBundleLifecycleHandler.INSTANCE);
             } finally {
-                aquireBundleLock(Method.START);
+                aquireBundleLock(LockMethod.START);
             }
         }
     }

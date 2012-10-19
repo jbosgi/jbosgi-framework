@@ -21,6 +21,7 @@ package org.jboss.osgi.framework.spi;
  * #L%
  */
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
@@ -32,15 +33,19 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.framework.BundleManager;
+import org.jboss.osgi.framework.spi.BundleLock.LockMethod;
+import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.ServiceReference;
@@ -55,11 +60,13 @@ import org.osgi.framework.wiring.BundleRevision;
  */
 public class AbstractBundleAdaptor implements XBundle {
 
+    private final AtomicInteger bundleState = new AtomicInteger(Bundle.RESOLVED);
+    private final BundleLock bundleLock = new BundleLock();
     private final BundleContext context;
     private final XBundleRevision brev;
     private final Module module;
+    private BundleActivator bundleActivator;
     private long lastModified;
-    private int bundleState;
 
     public AbstractBundleAdaptor(BundleContext context, Module module, XBundleRevision brev) {
         if (context == null)
@@ -72,7 +79,6 @@ public class AbstractBundleAdaptor implements XBundle {
         this.module = module;
         this.brev = brev;
         this.lastModified = System.currentTimeMillis();
-        this.bundleState = Bundle.RESOLVED;
     }
 
     @Override
@@ -83,7 +89,12 @@ public class AbstractBundleAdaptor implements XBundle {
 
     @Override
     public String getLocation() {
-        return module.getIdentifier().toString();
+        String location = module.getIdentifier().getName();
+        String slot = module.getIdentifier().getSlot();
+        if (!slot.equals("main")) {
+            location += ":" + slot;
+        }
+        return location;
     }
 
     @Override
@@ -93,7 +104,7 @@ public class AbstractBundleAdaptor implements XBundle {
 
     @Override
     public int getState() {
-        return bundleState;
+        return bundleState.get();
     }
 
     @Override
@@ -130,22 +141,73 @@ public class AbstractBundleAdaptor implements XBundle {
 
     @Override
     public void start(int options) throws BundleException {
-        throw MESSAGES.unsupportedBundleOpertaion(this);
+        aquireBundleLock(LockMethod.START);
+        try {
+            // If this bundle's state is ACTIVE then this method returns immediately.
+            if (getState() == Bundle.ACTIVE)
+                return;
+
+            // [TODO] Integrate with StartLevel
+
+            bundleState.set(Bundle.STARTING);
+
+            // Load the {@link BundleActivator}
+            OSGiMetaData metadata = brev.getAttachment(OSGiMetaData.class);
+            String activatorName = metadata != null ? metadata.getBundleActivator() : null;
+            if (bundleActivator == null && activatorName != null) {
+                Object result = loadClass(activatorName).newInstance();
+                if (result instanceof BundleActivator) {
+                    bundleActivator = (BundleActivator) result;
+                } else {
+                    throw MESSAGES.invalidBundleActivator(activatorName);
+                }
+            }
+
+            if (bundleActivator != null) {
+                bundleActivator.start(context);
+            }
+
+            bundleState.set(Bundle.ACTIVE);
+            LOGGER.infoBundleStarted(this);
+
+        } catch (Throwable th) {
+            bundleState.set(Bundle.RESOLVED);
+            throw MESSAGES.cannotStartBundle(th, this);
+        } finally {
+            releaseBundleLock(LockMethod.START);
+        }
     }
 
     @Override
     public void start() throws BundleException {
-        throw MESSAGES.unsupportedBundleOpertaion(this);
+        start(0);
     }
 
     @Override
     public void stop(int options) throws BundleException {
-        throw MESSAGES.unsupportedBundleOpertaion(this);
+        aquireBundleLock(LockMethod.STOP);
+        try {
+            // If this bundle's state is not ACTIVE then this method returns immediately.
+            if (getState() != Bundle.ACTIVE)
+                return;
+
+            if (bundleActivator != null) {
+                bundleActivator.stop(context);
+            }
+
+            bundleState.set(Bundle.RESOLVED);
+            LOGGER.infoBundleStopped(this);
+
+        } catch (Throwable th) {
+            throw MESSAGES.cannotStopBundle(th, this);
+        } finally {
+            releaseBundleLock(LockMethod.STOP);
+        }
     }
 
     @Override
     public void stop() throws BundleException {
-        throw MESSAGES.unsupportedBundleOpertaion(this);
+        stop(0);
     }
 
     @Override
@@ -160,17 +222,22 @@ public class AbstractBundleAdaptor implements XBundle {
 
     @Override
     public void uninstall() throws BundleException {
-        XBundle sysbundle = (XBundle) context.getBundle();
-        // Uninstall from the environment
-        XEnvironment env = sysbundle.adapt(XEnvironment.class);
-        env.uninstallResources(getBundleRevision());
-        // Remove from the module loader
-        BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
-        ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        ServiceController<?> service = serviceContainer.getRequiredService(IntegrationService.MODULE_LOADER_PLUGIN);
-        ModuleLoaderPlugin provider = (ModuleLoaderPlugin) service.getValue();
-        provider.removeModule(brev, module.getIdentifier());
-        bundleState = Bundle.UNINSTALLED;
+        aquireBundleLock(LockMethod.UNINSTALL);
+        try {
+            XBundle sysbundle = (XBundle) context.getBundle();
+            // Uninstall from the environment
+            XEnvironment env = sysbundle.adapt(XEnvironment.class);
+            env.uninstallResources(getBundleRevision());
+            // Remove from the module loader
+            BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
+            ServiceContainer serviceContainer = bundleManager.getServiceContainer();
+            ServiceController<?> service = serviceContainer.getRequiredService(IntegrationService.MODULE_LOADER_PLUGIN);
+            ModuleLoaderPlugin provider = (ModuleLoaderPlugin) service.getValue();
+            provider.removeModule(brev, module.getIdentifier());
+            bundleState.set(Bundle.UNINSTALLED);
+        } finally {
+            releaseBundleLock(LockMethod.UNINSTALL);
+        }
     }
 
     @Override
@@ -280,6 +347,14 @@ public class AbstractBundleAdaptor implements XBundle {
 
         XBundle other = (XBundle) obj;
         return getBundleId() == other.getBundleId();
+    }
+
+    boolean aquireBundleLock(LockMethod method) {
+        return bundleLock.tryLock(this, method);
+    }
+
+    void releaseBundleLock(LockMethod method) {
+        bundleLock.unlock(this, method);
     }
 
     @Override

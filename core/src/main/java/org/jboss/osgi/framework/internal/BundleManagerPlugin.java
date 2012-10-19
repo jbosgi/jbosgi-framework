@@ -58,7 +58,7 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.internal.AbstractBundleState.BundleLock.Method;
+import org.jboss.osgi.framework.spi.BundleLock.LockMethod;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.VersionRange;
@@ -155,7 +155,7 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
             setProperty(Constants.FRAMEWORK_VENDOR, OSGi_FRAMEWORK_VENDOR);
         if (getProperty(Constants.FRAMEWORK_VERSION) == null)
             setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
-        
+
         boolean allowContainerShutdown = frameworkBuilder.getServiceContainer() == null;
         shutdownContainer = new ShutdownContainer(serviceContainer, allowContainerShutdown);
     }
@@ -182,6 +182,11 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
     @Override
     public ServiceContainer getServiceContainer() {
         return serviceContainer;
+    }
+
+    @Override
+    public ServiceTarget getServiceTarget() {
+        return serviceTarget;
     }
 
     @Override
@@ -222,15 +227,15 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
         String versionSpec = getClass().getPackage().getImplementationVersion();
         return Version.parseVersion(versionSpec);
     }
-    
+
     int getManagerState() {
         return managerState.get();
     }
-    
+
     void setManagerState(int state) {
         managerState.set(state);
     }
-    
+
     @Override
     public Object getProperty(String key) {
         Object value = properties.get(key);
@@ -385,7 +390,7 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
     }
 
     void uninstallBundle(UserBundleState userBundle, int options) {
-        if (userBundle.aquireBundleLock(Method.UNINSTALL)) {
+        if (userBundle.aquireBundleLock(LockMethod.UNINSTALL)) {
             try {
                 int state = userBundle.getState();
                 if (state == Bundle.UNINSTALLED)
@@ -431,7 +436,7 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
                     }
                 }
             } finally {
-                userBundle.releaseBundleLock(Method.UNINSTALL);
+                userBundle.releaseBundleLock(LockMethod.UNINSTALL);
             }
         }
     }
@@ -599,7 +604,7 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
         }
         return frameworkEvent;
     }
-    
+
     static {
         AccessController.doPrivileged(new PrivilegedAction<Object>() {
 

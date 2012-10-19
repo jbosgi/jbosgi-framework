@@ -1,5 +1,3 @@
-package org.jboss.osgi.framework.internal;
-
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
@@ -44,16 +43,15 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.BundleManager;
-import org.jboss.osgi.framework.internal.AbstractBundleState.BundleLock.Method;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.framework.spi.BundleLock;
 import org.jboss.osgi.framework.spi.StorageState;
+import org.jboss.osgi.framework.spi.BundleLock.LockMethod;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
@@ -570,11 +568,11 @@ abstract class AbstractBundleState implements XBundle {
 
     abstract void uninstallInternal() throws BundleException;
 
-    boolean aquireBundleLock(Method method) {
+    boolean aquireBundleLock(LockMethod method) {
         return bundleLock.tryLock(this, method);
     }
 
-    void releaseBundleLock(Method method) {
+    void releaseBundleLock(LockMethod method) {
         bundleLock.unlock(this, method);
     }
 
@@ -588,7 +586,7 @@ abstract class AbstractBundleState implements XBundle {
         // containing a BundleException with details of the reason this bundle could not be resolved.
 
         boolean result = false;
-        if (aquireBundleLock(Method.RESOLVE)) {
+        if (aquireBundleLock(LockMethod.RESOLVE)) {
             try {
                 result = true;
                 if (isResolved() == false) {
@@ -619,7 +617,7 @@ abstract class AbstractBundleState implements XBundle {
                     }
                 }
             } finally {
-                releaseBundleLock(Method.RESOLVE);
+                releaseBundleLock(LockMethod.RESOLVE);
             }
         }
         return result;
@@ -686,33 +684,5 @@ abstract class AbstractBundleState implements XBundle {
     @Override
     public String toString() {
         return getCanonicalName();
-    }
-
-    @SuppressWarnings("serial")
-    static class BundleLock extends ReentrantLock {
-
-        enum Method {
-            RESOLVE, START, STOP, UNINSTALL
-        }
-
-        boolean tryLock(XBundle bundle, Method method) {
-            try {
-                LOGGER.tracef("Aquire %s lock on: %s", method, bundle);
-                if (tryLock(30, TimeUnit.SECONDS)) {
-                    return true;
-                } else {
-                    LOGGER.errorCannotAquireBundleLock(method.toString(), bundle);
-                    return false;
-                }
-            } catch (InterruptedException ex) {
-                LOGGER.debugf("Interupted while trying to aquire %s lock on: %s", method, bundle);
-                return false;
-            }
-        }
-
-        void unlock(XBundle bundle, Method method) {
-            LOGGER.tracef("Release %s lock on: %s", method, bundle);
-            unlock();
-        }
     }
 }

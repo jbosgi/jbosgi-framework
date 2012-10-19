@@ -28,8 +28,8 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.framework.BundleManager;
-import org.jboss.osgi.framework.internal.AbstractBundleState.BundleLock.Method;
 import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
+import org.jboss.osgi.framework.spi.BundleLock.LockMethod;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleEvent;
@@ -56,7 +56,7 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
     @Override
     public void start(XBundle bundle, int options) throws BundleException {
         HostBundleState hostState = HostBundleState.assertBundleState(bundle);
-        hostState.aquireBundleLock(Method.START);
+        hostState.aquireBundleLock(LockMethod.START);
         try {
             // #6 This bundle's state is set to STARTING.
             // #7 A bundle event of type BundleEvent.STARTING is fired.
@@ -124,7 +124,7 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
 
             LOGGER.infoBundleStarted(bundle);
         } finally {
-            hostState.releaseBundleLock(Method.START);
+            hostState.releaseBundleLock(LockMethod.START);
         }
     }
 
@@ -136,7 +136,7 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
         // If this does not occur in a reasonable time, a BundleException is thrown to indicate this bundle was unable to be
         // stopped
         HostBundleState hostState = HostBundleState.assertBundleState(bundle);
-        hostState.aquireBundleLock(Method.STOP);
+        hostState.aquireBundleLock(LockMethod.STOP);
 
         try {
 
@@ -201,9 +201,9 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
             LOGGER.infoBundleStopped(bundle);
 
             if (rethrow != null)
-                throw MESSAGES.errorDuringActivatorStop(rethrow, bundle);
+                throw MESSAGES.cannotStopBundle(rethrow, bundle);
         } finally {
-            hostState.releaseBundleLock(Method.STOP);
+            hostState.releaseBundleLock(LockMethod.STOP);
         }
     }
 
