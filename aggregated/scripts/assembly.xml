@@ -47,8 +47,6 @@
                 <include>*:jboss-modules:jar</include>
                 <include>*:jboss-msc:jar</include>
                 <include>*:jboss-vfs:jar</include>
-                <include>*:org.osgi.core:jar</include>
-                <include>*:org.osgi.compendium:jar</include>
             </includes>
             <useStrictFiltering>true</useStrictFiltering>
             <scope>compile</scope>

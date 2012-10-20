@@ -23,7 +23,6 @@ package org.jboss.test.osgi.framework.classloader;
 
 import static org.junit.Assert.fail;
 
-import java.io.File;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -212,25 +211,6 @@ public class SystemPackageDependencyTestCase extends OSGiTest {
         JavaArchive archive = getBundleG();
         try {
             BundleContext context = framework.getBundleContext();
-            Bundle bundle = context.installBundle(archive.getName(), toInputStream(archive));
-            assertBundleState(Bundle.INSTALLED, bundle.getState());
-            bundle.start();
-            assertBundleState(Bundle.ACTIVE, bundle.getState());
-        } finally {
-            shutdownFramework(framework);
-        }
-    }
-
-    @Test
-    public void testXMLParserImportFromCompendium() throws Exception {
-        Map<String, String> configuration = new HashMap<String, String>();
-        Framework framework = createFramework(configuration);
-        BundleContext context = framework.getBundleContext();
-        File compFile = getTestArchiveFile("bundles/org.osgi.compendium.jar");
-        Bundle compendium = context.installBundle(compFile.getCanonicalPath());
-		assertLoadClass(compendium, XMLParserActivator.class.getName(), compendium);
-        JavaArchive archive = getBundleG();
-        try {
             Bundle bundle = context.installBundle(archive.getName(), toInputStream(archive));
             assertBundleState(Bundle.INSTALLED, bundle.getState());
             bundle.start();
