@@ -163,7 +163,7 @@ public final class FrameworkBuilder {
             PackageAdminPlugin.addService(serviceTarget);
             ResolverPlugin.addService(serviceTarget);
             ServiceManagerPlugin.addService(serviceTarget);
-            StartLevelPlugin.addService(serviceTarget);
+            DefaultStartLevelPlugin.addService(serviceTarget);
             DefaultStorageStatePlugin.addService(serviceTarget);
             SystemBundleService.addService(serviceTarget, frameworkState);
             SystemContextService.addService(serviceTarget);
@@ -175,7 +175,7 @@ public final class FrameworkBuilder {
             installIntegrationService(serviceContainer, serviceTarget, new DefaultPersistentBundlesInstall());
             installIntegrationService(serviceContainer, serviceTarget, new DefaultSystemPathsPlugin(this));
             installIntegrationService(serviceContainer, serviceTarget, new DefaultSystemServicesPlugin());
-            
+
             return bundleManager;
         } finally {
             closed = true;

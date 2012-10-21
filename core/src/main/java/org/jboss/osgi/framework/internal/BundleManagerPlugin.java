@@ -59,6 +59,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.BundleLock.LockMethod;
+import org.jboss.osgi.framework.spi.StartLevelPlugin;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.VersionRange;
@@ -559,7 +560,7 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
 
         // Move to start level 0 in the current thread
         FrameworkCoreServices coreServices = getFrameworkState().getCoreServices();
-        StartLevelPlugin startLevel = coreServices.getStartLevel();
+        StartLevelPlugin startLevel = coreServices.getStartLevelPlugin();
         if (startLevel != null) {
             startLevel.decreaseStartLevel(0);
         } else {

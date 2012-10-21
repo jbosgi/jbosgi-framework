@@ -32,6 +32,7 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
 import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.StartLevelPlugin;
 import org.jboss.osgi.framework.spi.SystemServicesPlugin;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.packageadmin.PackageAdmin;
@@ -104,7 +105,7 @@ final class FrameworkCoreServices extends AbstractService<FrameworkCoreServices>
         return injectedPackageAdmin.getValue();
     }
 
-    StartLevelPlugin getStartLevel() {
+    StartLevelPlugin getStartLevelPlugin() {
         return injectedStartLevel.getValue();
     }
 }

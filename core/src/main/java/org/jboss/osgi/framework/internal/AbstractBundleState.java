@@ -50,13 +50,14 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.framework.spi.BundleLock;
-import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.framework.spi.BundleLock.LockMethod;
+import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XPackageRequirement;
+import org.jboss.osgi.resolver.spi.AbstractElement;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -75,12 +76,12 @@ import org.osgi.service.resolver.ResolutionException;
 /**
  * An abstract representation of a {@link Bundle} state.
  * <p/>
- * It is used by the various {@link AbstractBundleService}s. The state is never given to the client.
+ * It is used by the various {@link AbstractBundleService}s.
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class AbstractBundleState implements XBundle {
+abstract class AbstractBundleState extends AbstractElement implements XBundle {
 
     private final long bundleId;
     private final String symbolicName;

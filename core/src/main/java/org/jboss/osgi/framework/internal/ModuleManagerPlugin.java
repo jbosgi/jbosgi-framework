@@ -61,8 +61,8 @@ import org.jboss.osgi.framework.internal.NativeCodePlugin.BundleNativeLibraryPro
 import org.jboss.osgi.framework.spi.FrameworkModulePlugin;
 import org.jboss.osgi.framework.spi.IntegrationService;
 import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
-import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 import org.jboss.osgi.framework.spi.ModuleLoaderPlugin.ModuleSpecBuilderContext;
+import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;

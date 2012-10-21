@@ -21,7 +21,10 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
+import java.util.List;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.StartContext;
@@ -35,9 +38,10 @@ import org.jboss.msc.service.StopContext;
  * @author thomas.diesler@jboss.com
  * @since 10-Mar-2011
  */
-abstract class AbstractExecutorService<T> extends AbstractService<T> {
+abstract class ExecutorServicePlugin<T> extends AbstractService<T> {
 
     private ExecutorService executorService;
+    private boolean immediateExecution;
 
     @Override
     public void start(StartContext context) throws StartException {
@@ -52,10 +56,44 @@ abstract class AbstractExecutorService<T> extends AbstractService<T> {
     abstract ExecutorService createExecutorService();
 
     ExecutorService getExecutorService() {
-        return executorService;
+        return !immediateExecution ? executorService : ImmediateExecutorService.INSTANCE;
     }
 
-    void setExecutorService(ExecutorService executorService) {
-        this.executorService = executorService;
+    public void enableImmediateExecution(boolean immediateExecution) {
+        this.immediateExecution = immediateExecution;
+    }
+
+    private static class ImmediateExecutorService extends AbstractExecutorService {
+
+        static ExecutorService INSTANCE = new ImmediateExecutorService();
+
+        @Override
+        public void execute(Runnable command) {
+            command.run();
+        }
+
+        @Override
+        public void shutdown() {
+        }
+
+        @Override
+        public List<Runnable> shutdownNow() {
+            return null;
+        }
+
+        @Override
+        public boolean isShutdown() {
+            return false;
+        }
+
+        @Override
+        public boolean isTerminated() {
+            return false;
+        }
+
+        @Override
+        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            return false;
+        }
     }
 }

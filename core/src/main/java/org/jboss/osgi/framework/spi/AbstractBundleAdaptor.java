@@ -44,6 +44,7 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.resolver.spi.AbstractElement;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -51,6 +52,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.service.startlevel.StartLevel;
 
 /**
  * An abstract implementation that adapts a {@link Module} to a {@link Bundle}
@@ -58,13 +60,14 @@ import org.osgi.framework.wiring.BundleRevision;
  * @author thomas.diesler@jboss.com
  * @since 30-May-2012
  */
-public class AbstractBundleAdaptor implements XBundle {
+public class AbstractBundleAdaptor extends AbstractElement implements XBundle {
 
     private final AtomicInteger bundleState = new AtomicInteger(Bundle.RESOLVED);
     private final BundleLock bundleLock = new BundleLock();
     private final BundleContext context;
     private final XBundleRevision brev;
     private final Module module;
+    private StartLevelPlugin startLevelPlugin;
     private BundleActivator bundleActivator;
     private long lastModified;
 
@@ -103,6 +106,11 @@ public class AbstractBundleAdaptor implements XBundle {
     }
 
     @Override
+    public String getCanonicalName() {
+        return getSymbolicName() + ":" + getVersion();
+    }
+
+    @Override
     public int getState() {
         return bundleState.get();
     }
@@ -115,11 +123,6 @@ public class AbstractBundleAdaptor implements XBundle {
         } catch (IllegalArgumentException ex) {
             return Version.emptyVersion;
         }
-    }
-
-    @Override
-    public String getCanonicalName() {
-        return getSymbolicName() + ":" + getVersion();
     }
 
     @Override
@@ -147,7 +150,18 @@ public class AbstractBundleAdaptor implements XBundle {
             if (getState() == Bundle.ACTIVE)
                 return;
 
-            // [TODO] Integrate with StartLevel
+            // If the Framework's current start level is less than this bundle's start level
+            if (startLevelValidForStart() == false) {
+
+                // If the START_TRANSIENT option is set, then a BundleException is thrown
+                // indicating this bundle cannot be started due to the Framework's current start level
+                if ((options & START_TRANSIENT) != 0)
+                    throw MESSAGES.cannotStartBundleDueToStartLevel();
+
+                LOGGER.debugf("Start level [%d] not valid for: %s", getStartLevel(), this);
+                setPersistentlyStarted(true);
+                return;
+            }
 
             bundleState.set(Bundle.STARTING);
 
@@ -167,6 +181,7 @@ public class AbstractBundleAdaptor implements XBundle {
                 bundleActivator.start(context);
             }
 
+            setPersistentlyStarted(true);
             bundleState.set(Bundle.ACTIVE);
             LOGGER.infoBundleStarted(this);
 
@@ -190,6 +205,9 @@ public class AbstractBundleAdaptor implements XBundle {
             // If this bundle's state is not ACTIVE then this method returns immediately.
             if (getState() != Bundle.ACTIVE)
                 return;
+
+            if ((options & Bundle.STOP_TRANSIENT) == 0)
+                setPersistentlyStarted(false);
 
             if (bundleActivator != null) {
                 bundleActivator.stop(context);
@@ -333,6 +351,34 @@ public class AbstractBundleAdaptor implements XBundle {
         return Collections.singletonList(brev);
     }
 
+    private boolean aquireBundleLock(LockMethod method) {
+        return bundleLock.tryLock(this, method);
+    }
+
+    private void releaseBundleLock(LockMethod method) {
+        bundleLock.unlock(this, method);
+    }
+
+    private int getStartLevel() {
+        return getStartLevelPlugin().getBundleStartLevel(this);
+    }
+
+    private void setPersistentlyStarted(boolean started) {
+        getStartLevelPlugin().setBundlePersistentlyStarted(this, started);
+    }
+
+    private boolean startLevelValidForStart() {
+        return getStartLevel() <= getStartLevelPlugin().getStartLevel();
+    }
+
+    private StartLevelPlugin getStartLevelPlugin() {
+        if (startLevelPlugin == null) {
+            ServiceReference sref = context.getServiceReference(StartLevel.class.getName());
+            startLevelPlugin = (StartLevelPlugin) context.getService(sref);
+        }
+        return startLevelPlugin;
+    }
+
     @Override
     public int hashCode() {
         return (int) getBundleId() * 51;
@@ -347,14 +393,6 @@ public class AbstractBundleAdaptor implements XBundle {
 
         XBundle other = (XBundle) obj;
         return getBundleId() == other.getBundleId();
-    }
-
-    boolean aquireBundleLock(LockMethod method) {
-        return bundleLock.tryLock(this, method);
-    }
-
-    void releaseBundleLock(LockMethod method) {
-        bundleLock.unlock(this, method);
     }
 
     @Override

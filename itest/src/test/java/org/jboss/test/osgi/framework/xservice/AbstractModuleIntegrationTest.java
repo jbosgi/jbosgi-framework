@@ -86,23 +86,23 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
         ServiceController<?> service = serviceContainer.getRequiredService(IntegrationService.MODULE_LOADER_PLUGIN);
-        ModuleLoaderPlugin provider = (ModuleLoaderPlugin) service.getValue();
-        provider.addModuleSpec(Mockito.mock(XBundleRevision.class), moduleSpec);
+        ModuleLoaderPlugin moduleLoader = (ModuleLoaderPlugin) service.getValue();
+        moduleLoader.addModuleSpec(Mockito.mock(XBundleRevision.class), moduleSpec);
 
         // Load the {@link Module}
-        Module module = provider.getModuleLoader().loadModule(identifier);
+        Module module = moduleLoader.getModuleLoader().loadModule(identifier);
         vfsmap.put(module, virtualFile);
         return module;
     }
 
-    protected void removeModule(XBundleRevision brev, Module module) throws Exception {
+    protected void removeModule(Module module) throws Exception {
         // Remove the {@link Module} from the {@link ModuleLoaderProvider}
         XBundle sysbundle = (XBundle) getSystemContext().getBundle();
         BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
         ServiceController<?> service = serviceContainer.getRequiredService(IntegrationService.MODULE_LOADER_PLUGIN);
-        ModuleLoaderPlugin provider = (ModuleLoaderPlugin) service.getValue();
-        provider.removeModule(brev, module.getIdentifier());
+        ModuleLoaderPlugin moduleLoader = (ModuleLoaderPlugin) service.getValue();
+        moduleLoader.removeModule(Mockito.mock(XBundleRevision.class), module.getIdentifier());
         VFSUtils.safeClose(vfsmap.remove(module));
     }
 
@@ -110,25 +110,26 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         // Build the {@link XBundleRevision}
         final BundleContext context = getSystemContext();
         XBundleRevisionBuilderFactory factory = new XBundleRevisionBuilderFactory() {
+            @Override
             public XBundleRevision createResource() {
                 return new AbstractBundleRevisionAdaptor(context, module);
             }
         };
         XResourceBuilder builder = XBundleRevisionBuilderFactory.create(factory);
-        XBundleRevision moduleRevision = (XBundleRevision) builder.loadFrom(module).getResource();
+        XBundleRevision brev = (XBundleRevision) builder.loadFrom(module).getResource();
 
         // Add the {@link XBundleRevision} to the {@link XEnvironment}
         XBundle sysbundle = (XBundle) context.getBundle();
         XEnvironment env = sysbundle.adapt(XEnvironment.class);
-        env.installResources(moduleRevision);
-        return moduleRevision;
+        env.installResources(brev);
+        return brev;
     }
 
-    protected void uninstallResource(final XBundleRevision moduleRev) throws BundleException {
+    protected void uninstallResource(final XBundleRevision brev) throws BundleException {
         // Remove the {@link XBundleRevision} from the {@link XEnvironment}
         XBundle sysbundle = (XBundle) getSystemContext().getBundle();
         XEnvironment env = sysbundle.adapt(XEnvironment.class);
-        env.uninstallResources(moduleRev);
+        env.uninstallResources(brev);
     }
 
     protected XBundle getSystemBundle() throws BundleException {

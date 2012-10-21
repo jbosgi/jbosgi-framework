@@ -100,7 +100,7 @@ public class ModuleInstallTestCase extends AbstractModuleIntegrationTest {
             Assert.assertSame(brevA, wireB.getRequirer());
             Assert.assertSame(bundleB, wireB.getProvider().getBundle());
         } finally {
-            removeModule(brevB, moduleB);
+            removeModule(moduleB);
         }
     }
 

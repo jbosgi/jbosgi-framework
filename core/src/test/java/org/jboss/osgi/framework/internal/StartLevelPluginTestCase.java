@@ -21,8 +21,14 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import org.jboss.osgi.testing.OSGiFrameworkTest;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import java.io.InputStream;
+
+import org.jboss.osgi.framework.spi.StartLevelPlugin;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
+import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -32,14 +38,6 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.startlevel.StartLevel;
-
-import java.io.InputStream;
-import java.util.List;
-import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * @author <a href="david@redhat.com">David Bosschaert</a>
@@ -52,7 +50,7 @@ public class StartLevelPluginTestCase extends OSGiFrameworkTest {
         int orgStartLevel = startLevel.getStartLevel();
         int orgInitialStartlevel = startLevel.getInitialBundleStartLevel();
         try {
-            setTestExecutor(startLevel);
+            enableImmediateExecution(startLevel);
 
             assertEquals(1, startLevel.getInitialBundleStartLevel());
             startLevel.setInitialBundleStartLevel(5);
@@ -112,7 +110,7 @@ public class StartLevelPluginTestCase extends OSGiFrameworkTest {
         int orgStartLevel = sls.getStartLevel();
         int orgInitialStartlevel = sls.getInitialBundleStartLevel();
         try {
-            setTestExecutor(sls);
+            enableImmediateExecution(sls);
 
             assertEquals(1, sls.getInitialBundleStartLevel());
             sls.setInitialBundleStartLevel(5);
@@ -146,13 +144,12 @@ public class StartLevelPluginTestCase extends OSGiFrameworkTest {
         BundleContext sc = getFramework().getBundleContext();
         ServiceReference sref = sc.getServiceReference(StartLevel.class.getName());
         StartLevel sls = (StartLevel) sc.getService(sref);
-
         assertEquals(0, sls.getBundleStartLevel(getFramework()));
     }
 
-    private void setTestExecutor(StartLevel sls) throws Exception {
+    private void enableImmediateExecution(StartLevel sls) throws Exception {
         StartLevelPlugin plugin = (StartLevelPlugin) sls;
-        plugin.setExecutorService(new ImmediateExecutorService());
+        plugin.enableImmediateExecution(true);
     }
 
     private JavaArchive createTestBundle(String name) {
@@ -169,37 +166,5 @@ public class StartLevelPluginTestCase extends OSGiFrameworkTest {
             }
         });
         return archive;
-    }
-
-    private static class ImmediateExecutorService extends AbstractExecutorService {
-
-        @Override
-        public void execute(Runnable command) {
-            command.run();
-        }
-
-        @Override
-        public void shutdown() {
-        }
-
-        @Override
-        public List<Runnable> shutdownNow() {
-            return null;
-        }
-
-        @Override
-        public boolean isShutdown() {
-            return false;
-        }
-
-        @Override
-        public boolean isTerminated() {
-            return false;
-        }
-
-        @Override
-        public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-            return false;
-        }
     }
 }

@@ -31,6 +31,7 @@ import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
 import org.jboss.osgi.framework.spi.BundleLock.LockMethod;
 import org.jboss.osgi.resolver.XBundle;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
@@ -61,7 +62,7 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
             // #6 This bundle's state is set to STARTING.
             // #7 A bundle event of type BundleEvent.STARTING is fired.
             try {
-                hostState.changeState(HostBundleState.STARTING);
+                hostState.changeState(Bundle.STARTING);
             } catch (LifecycleInterceptorException ex) {
                 throw MESSAGES.cannotTransitionToStarting(ex, bundle);
             }
@@ -88,7 +89,7 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
                 catch (Throwable th) {
                     // #8.1 This bundle's state is set to STOPPING
                     // #8.2 A bundle event of type BundleEvent.STOPPING is fired
-                    hostState.changeState(HostBundleState.STOPPING);
+                    hostState.changeState(Bundle.STOPPING);
 
                     // #8.3 Any services registered by this bundle must be unregistered.
                     // #8.4 Any services used by this bundle must be released.
@@ -100,7 +101,7 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
 
                     // #8.6 This bundle's state is set to RESOLVED
                     // #8.7 A bundle event of type BundleEvent.STOPPED is fired
-                    hostState.changeState(HostBundleState.RESOLVED);
+                    hostState.changeState(Bundle.RESOLVED);
 
                     // #8.8 A BundleException is then thrown
                     if (th instanceof BundleException)
@@ -112,15 +113,15 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
 
             // #9 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while
             // the BundleActivator.start method was running, a BundleException is thrown
-            if (hostState.getState() == HostBundleState.UNINSTALLED)
+            if (hostState.getState() == Bundle.UNINSTALLED)
                 throw MESSAGES.uninstalledDuringActivatorStart(bundle);
 
             // #10 This bundle's state is set to ACTIVE.
             // #11 A bundle event of type BundleEvent.STARTED is fired
-            hostState.changeState(HostBundleState.ACTIVE);
+            hostState.changeState(Bundle.ACTIVE);
 
             // Activate the service that represents bundle state ACTIVE
-            hostState.getBundleManager().setServiceMode(hostState.getServiceName(HostBundleState.ACTIVE), Mode.ACTIVE);
+            hostState.getBundleManager().setServiceMode(hostState.getServiceName(Bundle.ACTIVE), Mode.ACTIVE);
 
             LOGGER.infoBundleStarted(bundle);
         } finally {
@@ -141,25 +142,25 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
         try {
 
             // A concurrent thread may have uninstalled the bundle
-            if (hostState.getState() == HostBundleState.UNINSTALLED)
+            if (hostState.getState() == Bundle.UNINSTALLED)
                 return;
 
             // #3 If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to Stopped.
             // When the Framework is restarted and this bundle's autostart setting is Stopped, this bundle must not be
             // automatically started.
-            if ((options & HostBundleState.STOP_TRANSIENT) == 0) {
+            if ((options & Bundle.STOP_TRANSIENT) == 0) {
                 hostState.setPersistentlyStarted(false);
                 hostState.setBundleActivationPolicyUsed(false);
             }
 
             // #4 If this bundle's state is not STARTING or ACTIVE then this method returns immediately
             int priorState = hostState.getState();
-            if (priorState != HostBundleState.STARTING && priorState != HostBundleState.ACTIVE)
+            if (priorState != Bundle.STARTING && priorState != Bundle.ACTIVE)
                 return;
 
             // #5 This bundle's state is set to STOPPING
             // #6 A bundle event of type BundleEvent.STOPPING is fired
-            hostState.changeState(HostBundleState.STOPPING);
+            hostState.changeState(Bundle.STOPPING);
 
             // #7 If this bundle's state was ACTIVE prior to setting the state to STOPPING,
             // the BundleActivator.stop(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, if one is
@@ -168,7 +169,7 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
             // thrown after completion
             // of the remaining steps.
             Throwable rethrow = null;
-            if (priorState == HostBundleState.ACTIVE) {
+            if (priorState == Bundle.ACTIVE) {
                 if (hostState.bundleActivator != null) {
                     try {
                         hostState.bundleActivator.stop(hostState.getBundleContext());
@@ -185,7 +186,7 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
 
             // #11 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while the
             // BundleActivator.stop method was running, a BundleException must be thrown
-            if (hostState.getState() == HostBundleState.UNINSTALLED)
+            if (hostState.getState() == Bundle.UNINSTALLED)
                 throw MESSAGES.uninstalledDuringActivatorStop(bundle);
 
             // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
@@ -193,10 +194,10 @@ class DefaultBundleLifecycleHandler implements BundleLifecyclePlugin.DefaultHand
 
             // #12 This bundle's state is set to RESOLVED
             // #13 A bundle event of type BundleEvent.STOPPED is fired
-            hostState.changeState(HostBundleState.RESOLVED, BundleEvent.STOPPED);
+            hostState.changeState(Bundle.RESOLVED, BundleEvent.STOPPED);
 
             // Deactivate the service that represents bundle state ACTIVE
-            hostState.getBundleManager().setServiceMode(hostState.getServiceName(HostBundleState.ACTIVE), Mode.NEVER);
+            hostState.getBundleManager().setServiceMode(hostState.getServiceName(Bundle.ACTIVE), Mode.NEVER);
 
             LOGGER.infoBundleStopped(bundle);
 

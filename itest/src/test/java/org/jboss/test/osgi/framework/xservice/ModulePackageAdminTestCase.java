@@ -63,7 +63,7 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
     @After
     public void tearDown() throws Exception {
         uninstallResource(brev);
-        removeModule(brev, module);
+        removeModule(module);
     }
 
     @Test

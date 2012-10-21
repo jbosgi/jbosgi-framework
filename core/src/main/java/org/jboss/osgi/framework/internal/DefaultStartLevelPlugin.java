@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
@@ -41,8 +41,11 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.framework.spi.StartLevelPlugin;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -55,10 +58,9 @@ import org.osgi.service.startlevel.StartLevel;
  * An implementation of the {@link StartLevel} service.
  *
  * @author <a href="david@redhat.com">David Bosschaert</a>
+ * @author Thomas.Diesler@jboss.com
  */
-public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> implements StartLevel {
-
-    static final int BUNDLE_STARTLEVEL_UNSPECIFIED = -1;
+final class DefaultStartLevelPlugin extends ExecutorServicePlugin<StartLevelPlugin> implements StartLevelPlugin {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
@@ -69,8 +71,8 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
     private AtomicInteger startLevel = new AtomicInteger(0);
 
     static void addService(ServiceTarget serviceTarget) {
-        StartLevelPlugin service = new StartLevelPlugin();
-        ServiceBuilder<StartLevel> builder = serviceTarget.addService(Services.START_LEVEL, service);
+        DefaultStartLevelPlugin service = new DefaultStartLevelPlugin();
+        ServiceBuilder<StartLevelPlugin> builder = serviceTarget.addService(Services.START_LEVEL, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
         builder.addDependency(InternalServices.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
@@ -79,7 +81,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         builder.install();
     }
 
-    private StartLevelPlugin() {
+    private DefaultStartLevelPlugin() {
     }
 
     @Override
@@ -93,7 +95,6 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
     public void stop(StopContext context) {
         super.stop(context);
         registration.unregister();
-        registration = null;
     }
 
     @Override
@@ -122,14 +123,14 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
     @Override
     public synchronized void setStartLevel(final int level) {
         final FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
-        final AbstractBundleState bundleState = injectedSystemBundle.getValue();
+        final Bundle sysbundle = injectedSystemBundle.getValue();
         if (level > getStartLevel()) {
             getExecutorService().execute(new Runnable() {
                 @Override
                 public void run() {
                     LOGGER.infoIncreasingStartLevel(getStartLevel(), level);
                     increaseStartLevel(level);
-                    eventsPlugin.fireFrameworkEvent(bundleState, FrameworkEvent.STARTLEVEL_CHANGED, null);
+                    eventsPlugin.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null);
                 }
             });
         } else if (level < getStartLevel()) {
@@ -138,7 +139,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
                 public void run() {
                     LOGGER.infoDecreasingStartLevel(getStartLevel(), level);
                     decreaseStartLevel(level);
-                    eventsPlugin.fireFrameworkEvent(bundleState, FrameworkEvent.STARTLEVEL_CHANGED, null);
+                    eventsPlugin.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null);
                 }
             });
         }
@@ -146,15 +147,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
 
     @Override
     public int getBundleStartLevel(Bundle bundle) {
-        if (bundle instanceof Framework)
-            return 0;
-
-        if (bundle.getBundleId() == 0)
-            return 0;
-        else if (bundle instanceof HostBundleState)
-            return ((HostBundleState) bundle).getStartLevel();
-
-        return StartLevelPlugin.BUNDLE_STARTLEVEL_UNSPECIFIED;
+        return getBundleStartLevelState(bundle).getLevel();
     }
 
     @Override
@@ -162,29 +155,32 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         if (bundle.getBundleId() == 0)
             throw MESSAGES.illegalArgumentStartLevelOnSystemBundles();
 
+        final XBundle hostBundle = (XBundle) bundle;
         final FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
-        final HostBundleState hostBundle = HostBundleState.assertBundleState(bundle);
-        hostBundle.setStartLevel(level);
+        getBundleStartLevelState(hostBundle).setLevel(level);
 
-        if (level <= getStartLevel() && hostBundle.isPersistentlyStarted()) {
+        if (level <= getStartLevel()) {
             // If the bundle is active or starting, we don't need to start it again
             if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) > 0)
                 return;
 
-            LOGGER.infoStartingBundleDueToStartLevel(hostBundle);
-            getExecutorService().execute(new Runnable() {
-                public void run() {
-                    try {
-                        int opts = Bundle.START_TRANSIENT;
-                        if (isBundleActivationPolicyUsed(hostBundle))
-                            opts |= Bundle.START_ACTIVATION_POLICY;
+            if (isBundlePersistentlyStarted(bundle)) {
+                LOGGER.infoStartingBundleDueToStartLevel(hostBundle);
+                getExecutorService().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            int opts = Bundle.START_TRANSIENT;
+                            if (isBundleActivationPolicyUsed(hostBundle))
+                                opts |= Bundle.START_ACTIVATION_POLICY;
 
-                        hostBundle.start(opts);
-                    } catch (BundleException e) {
-                        eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
+                            hostBundle.start(opts);
+                        } catch (BundleException e) {
+                            eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
+                        }
                     }
-                }
-            });
+                });
+            }
         } else {
             // If the bundle is not active we don't need to stop it
             if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) == 0)
@@ -192,6 +188,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
 
             LOGGER.infoStoppingBundleDueToStartLevel(hostBundle);
             getExecutorService().execute(new Runnable() {
+                @Override
                 public void run() {
                     try {
                         hostBundle.stop(Bundle.STOP_TRANSIENT);
@@ -215,13 +212,12 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
 
     @Override
     public boolean isBundlePersistentlyStarted(Bundle bundle) {
-        boolean result = false;
-        if (bundle instanceof AbstractBundleState) {
-            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-            StorageState storageState = bundleState.getStorageState();
-            result = storageState.isPersistentlyStarted();
-        }
-        return result;
+        return getBundleStartLevelState(bundle).isStarted();
+    }
+
+    @Override
+    public void setBundlePersistentlyStarted(XBundle bundle, boolean started) {
+        getBundleStartLevelState(bundle).setStarted(started);
     }
 
     @Override
@@ -240,7 +236,8 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
      *
      * @param level the target Start Level to which the Framework should move.
      */
-    synchronized void increaseStartLevel(int level) {
+    @Override
+    public synchronized void increaseStartLevel(int level) {
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
 
         // Sort the bundles after their bundle id
@@ -248,7 +245,7 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         Comparator<XBundle> comparator = new Comparator<XBundle>() {
             @Override
             public int compare(XBundle b1, XBundle b2) {
-                return (int)(b1.getBundleId() - b2.getBundleId());
+                return (int) (b1.getBundleId() - b2.getBundleId());
             }
         };
         Collections.sort(bundles, comparator);
@@ -256,12 +253,12 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
         while (startLevel.get() < level) {
             startLevel.incrementAndGet();
             LOGGER.infoStartingBundlesForStartLevel(startLevel.get());
-            for (Bundle bundle : bundles) {
-                if (!(bundle instanceof HostBundleState))
+            for (XBundle bundle : bundles) {
+                if (bundle.getBundleId() == 0 || bundle.isFragment())
                     continue;
 
-                HostBundleState hostBundle = (HostBundleState) bundle;
-                if (hostBundle.getStartLevel() == startLevel.get() && hostBundle.isPersistentlyStarted()) {
+                BundleStartLevelState state = getBundleStartLevelState(bundle);
+                if (state.getLevel() == startLevel.get() && state.isStarted()) {
                     try {
                         int opts = Bundle.START_TRANSIENT;
                         if (isBundleActivationPolicyUsed(bundle)) {
@@ -282,7 +279,8 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
      *
      * @param level the target Start Level to which the Framework should move.
      */
-    synchronized void decreaseStartLevel(int level) {
+    @Override
+    public synchronized void decreaseStartLevel(int level) {
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         while (startLevel.get() > level) {
             LOGGER.infoStoppingBundlesForStartLevel(level);
@@ -292,26 +290,85 @@ public final class StartLevelPlugin extends AbstractExecutorService<StartLevel> 
             Comparator<XBundle> comparator = new Comparator<XBundle>() {
                 @Override
                 public int compare(XBundle b1, XBundle b2) {
-                    return (int)(b1.getBundleId() - b2.getBundleId());
+                    return (int) (b1.getBundleId() - b2.getBundleId());
                 }
             };
             Collections.sort(bundles, comparator);
             Collections.reverse(bundles);
 
             for (XBundle bundle : bundles) {
-                if (bundle instanceof HostBundleState) {
-                    HostBundleState hostBundle = (HostBundleState) bundle;
-                    if (hostBundle.getStartLevel() == startLevel.get()) {
-                        try {
-                            hostBundle.stopInternal(Bundle.STOP_TRANSIENT);
-                        } catch (Throwable e) {
-                            FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
-                            eventsPlugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, e);
-                        }
+                if (bundle.getBundleId() == 0 || bundle.isFragment())
+                    continue;
+
+                BundleStartLevelState state = getBundleStartLevelState(bundle);
+                if (state.getLevel() == startLevel.get()) {
+                    try {
+                        bundle.stop(Bundle.STOP_TRANSIENT);
+                    } catch (Throwable e) {
+                        FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
+                        eventsPlugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, e);
                     }
                 }
             }
             startLevel.decrementAndGet();
+        }
+    }
+
+    private BundleStartLevelState getBundleStartLevelState(Bundle bundle) {
+        if (bundle instanceof Framework)
+            return new BundleStartLevelState(bundle);
+
+        XBundle bundleState = (XBundle) bundle;
+        BundleStartLevelState state = bundleState.getAttachment(BundleStartLevelState.class);
+        if (state == null) {
+            state = new BundleStartLevelState(bundle);
+            bundleState.addAttachment(BundleStartLevelState.class, state);
+        }
+        return state;
+    }
+
+    class BundleStartLevelState {
+        final Bundle bundle;
+        boolean started;
+        int level;
+
+        public BundleStartLevelState(Bundle bundle) {
+            this.bundle = bundle;
+            if (bundle.getBundleId() > 0) {
+                XBundle bundleState = (XBundle) bundle;
+                level = !bundleState.isFragment() ? getInitialBundleStartLevel() : 0;
+                if (bundleState instanceof HostBundleState) {
+                    XBundleRevision brev = bundleState.getBundleRevision();
+                    InternalStorageState storageState = ((BundleStateRevision)brev).getStorageState();
+                    level = storageState.getStartLevel();
+                }
+            }
+        }
+
+        int getLevel() {
+            return level;
+        }
+
+        void setLevel(int level) {
+            this.level = level;
+            if (bundle instanceof HostBundleState) {
+                XBundleRevision brev = ((XBundle)bundle).getBundleRevision();
+                InternalStorageState storageState = ((BundleStateRevision)brev).getStorageState();
+                storageState.setStartLevel(level);
+            }
+        }
+
+        boolean isStarted() {
+            return started;
+        }
+
+        void setStarted(boolean started) {
+            this.started = started;
+            if (bundle instanceof HostBundleState) {
+                XBundleRevision brev = ((XBundle)bundle).getBundleRevision();
+                InternalStorageState storageState = ((BundleStateRevision)brev).getStorageState();
+                storageState.setPersistentlyStarted(started);
+            }
         }
     }
 }

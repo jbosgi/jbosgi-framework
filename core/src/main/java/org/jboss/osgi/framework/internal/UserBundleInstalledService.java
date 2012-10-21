@@ -110,7 +110,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
                 Integer startlevel = dep.getStartLevel();
                 if (startlevel == null) {
                     FrameworkCoreServices coreServices = getFrameworkState().getCoreServices();
-                    startlevel = coreServices.getStartLevel().getInitialBundleStartLevel();
+                    startlevel = coreServices.getStartLevelPlugin().getInitialBundleStartLevel();
                 }
                 storageState = storagePlugin.createStorageState(bundleId, location, startlevel, rootFile);
                 dep.addAttachment(StorageState.class, storageState);

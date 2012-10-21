@@ -280,7 +280,7 @@ abstract class UserBundleState extends AbstractBundleState {
     private InternalStorageState createStorageState(BundleStoragePlugin storagePlugin, String location, VirtualFile rootFile) throws BundleException {
         InternalStorageState storageState;
         try {
-            int startlevel = getCoreServices().getStartLevel().getInitialBundleStartLevel();
+            int startlevel = getCoreServices().getStartLevelPlugin().getInitialBundleStartLevel();
             storageState = storagePlugin.createStorageState(getBundleId(), location, startlevel, rootFile);
         } catch (IOException ex) {
             throw MESSAGES.cannotSetupStorage(ex, rootFile);

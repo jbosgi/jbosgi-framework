@@ -36,6 +36,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
 import org.jboss.osgi.framework.spi.BundleLock.LockMethod;
+import org.jboss.osgi.framework.spi.StartLevelPlugin;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -49,7 +50,6 @@ import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.resource.Wire;
 import org.osgi.service.resolver.ResolutionException;
-import org.osgi.service.startlevel.StartLevel;
 
 /**
  * Represents the INSTALLED state of a host bundle.
@@ -80,6 +80,7 @@ final class HostBundleState extends UserBundleState {
 
     // Invalid discovery of Bundle.getBundleContext() method
     // http://issues.ops4j.org/browse/PAXSB-44
+    @Override
     public BundleContext getBundleContext() {
         return super.getBundleContext();
     }
@@ -106,6 +107,7 @@ final class HostBundleState extends UserBundleState {
         }
     }
 
+    @Override
     void initLazyActivation() {
         awaitLazyActivation.set(isActivationLazy());
     }
@@ -118,21 +120,6 @@ final class HostBundleState extends UserBundleState {
     @Override
     HostBundleRevision createUpdateRevision(Deployment dep, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
         return new HostBundleRevision(getFrameworkState(), dep, metadata, storageState);
-    }
-
-    int getStartLevel() {
-        return getStorageState().getStartLevel();
-    }
-
-    void setStartLevel(int level) {
-        LOGGER.debugf("Setting bundle start level %d for: %s", level, this);
-        InternalStorageState storageState = getStorageState();
-        storageState.setStartLevel(level);
-    }
-
-    boolean isPersistentlyStarted() {
-        StorageState storageState = getStorageState();
-        return storageState.isPersistentlyStarted();
     }
 
     boolean isActivationLazy() {
@@ -186,6 +173,7 @@ final class HostBundleState extends UserBundleState {
         return result;
     }
 
+    @Override
     void startInternal(int options) throws BundleException {
 
         // #1 If this bundle is in the process of being activated or deactivated
@@ -211,7 +199,7 @@ final class HostBundleState extends UserBundleState {
                 if ((options & START_TRANSIENT) != 0)
                     throw MESSAGES.cannotStartBundleDueToStartLevel();
 
-                LOGGER.debugf("Start level [%d] not valid for: %s", getStartLevel(), this);
+                LOGGER.debugf("Start level [%d] not valid for: %s", getBundleStartLevel(), this);
 
                 // Set this bundle's autostart setting
                 persistAutoStartSettings(options);
@@ -249,11 +237,6 @@ final class HostBundleState extends UserBundleState {
     void stopInternal(int options) throws BundleException {
         BundleLifecyclePlugin lifecycle = getCoreServices().getBundleLifecyclePlugin();
         lifecycle.stop(this, options, DefaultBundleLifecycleHandler.INSTANCE);
-    }
-
-    void setPersistentlyStarted(boolean started) {
-        InternalStorageState storageState = getStorageState();
-        storageState.setPersistentlyStarted(started);
     }
 
     private void assertStartConditions() throws BundleException {
@@ -313,9 +296,19 @@ final class HostBundleState extends UserBundleState {
         }
     }
 
+    private int getBundleStartLevel() {
+        StartLevelPlugin startLevelPlugin = getCoreServices().getStartLevelPlugin();
+        return startLevelPlugin.getBundleStartLevel(this);
+    }
+
+    void setPersistentlyStarted(boolean started) {
+        StartLevelPlugin startLevelPlugin = getCoreServices().getStartLevelPlugin();
+        startLevelPlugin.setBundlePersistentlyStarted(this, started);
+    }
+
     private boolean startLevelValidForStart() {
-        StartLevel startLevelPlugin = getCoreServices().getStartLevel();
-        return getStartLevel() <= startLevelPlugin.getStartLevel();
+        StartLevelPlugin startLevelPlugin = getCoreServices().getStartLevelPlugin();
+        return startLevelPlugin.getBundleStartLevel(this) <= startLevelPlugin.getStartLevel();
     }
 
     private boolean isBundleActivationPolicyUsed() {

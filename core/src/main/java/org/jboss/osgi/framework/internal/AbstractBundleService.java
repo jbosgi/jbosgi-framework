@@ -30,7 +30,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 
 /**
- * Represents the INSTALLED state of a bundle.
+ * Represents a state of a bundle.
  *
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011

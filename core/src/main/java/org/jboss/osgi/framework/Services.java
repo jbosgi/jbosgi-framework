@@ -24,6 +24,7 @@ package org.jboss.osgi.framework;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolver;
+import org.osgi.framework.launch.Framework;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.startlevel.StartLevel;
 

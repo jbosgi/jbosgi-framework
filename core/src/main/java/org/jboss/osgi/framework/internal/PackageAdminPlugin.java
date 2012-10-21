@@ -47,6 +47,8 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.StartLevelPlugin;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
@@ -77,7 +79,7 @@ import org.osgi.service.resolver.ResolutionException;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2010
  */
-public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdminPlugin> implements PackageAdmin {
+public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdminPlugin> implements PackageAdmin {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
@@ -85,6 +87,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
     private final InjectedValue<ResolverPlugin> injectedResolver = new InjectedValue<ResolverPlugin>();
+    private final InjectedValue<StartLevelPlugin> injectedStartLevel = new InjectedValue<StartLevelPlugin>();
     private ServiceRegistration registration;
 
     static void addService(ServiceTarget serviceTarget) {
@@ -92,6 +95,7 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
         ServiceBuilder<PackageAdminPlugin> builder = serviceTarget.addService(Services.PACKAGE_ADMIN, service);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
+        builder.addDependency(Services.START_LEVEL, StartLevelPlugin.class, service.injectedStartLevel);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
         builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, service.injectedSystemContext);
@@ -327,7 +331,8 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
                 List<HostBundleState> stopList = new ArrayList<HostBundleState>(stopBundles);
                 List<UserBundleState> refreshList = new ArrayList<UserBundleState>(refreshBundles);
 
-                BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator();
+                StartLevelPlugin startLevelPlugin = injectedStartLevel.getValue();
+                BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator(startLevelPlugin);
                 Collections.sort(stopList, startLevelComparator);
 
                 for (ListIterator<HostBundleState> it = stopList.listIterator(stopList.size()); it.hasPrevious();) {
@@ -659,11 +664,14 @@ public final class PackageAdminPlugin extends AbstractExecutorService<PackageAdm
     }
 
     private static class BundleStartLevelComparator implements Comparator<HostBundleState> {
-
+        private final StartLevelPlugin startLevelPlugin;
+        BundleStartLevelComparator(StartLevelPlugin startLevelPlugin) {
+            this.startLevelPlugin = startLevelPlugin;
+        }
         @Override
         public int compare(HostBundleState o1, HostBundleState o2) {
-            int sl1 = o1.getStartLevel();
-            int sl2 = o2.getStartLevel();
+            int sl1 = startLevelPlugin.getBundleStartLevel(o1);
+            int sl2 = startLevelPlugin.getBundleStartLevel(o2);
             return sl1 < sl2 ? -1 : (sl1 == sl2 ? 0 : 1);
         }
     }

@@ -34,6 +34,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.StartLevelPlugin;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -132,7 +133,7 @@ public final class FrameworkActive extends AbstractFrameworkService {
             getSystemBundle().changeState(Bundle.ACTIVE);
 
             // Increase to initial start level
-            StartLevelPlugin startLevelPlugin = getValue().getCoreServices().getStartLevel();
+            StartLevelPlugin startLevelPlugin = getValue().getCoreServices().getStartLevelPlugin();
             startLevelPlugin.increaseStartLevel(getBeginningStartLevel());
 
             // Mark Framework as active in the bundle manager
