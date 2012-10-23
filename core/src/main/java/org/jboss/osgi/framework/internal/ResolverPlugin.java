@@ -55,6 +55,7 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XIdentityCapability;
+import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResolver;
@@ -65,6 +66,7 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.namespace.HostNamespace;
 import org.osgi.framework.namespace.IdentityNamespace;
+import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWire;
@@ -127,7 +129,9 @@ final class ResolverPlugin extends AbstractService<ResolverPlugin> implements XR
     public XResolveContext createResolveContext(XEnvironment environment, Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) {
         XEnvironment env = injectedEnvironment.getValue();
         Collection<Resource> manres = filterSingletons(mandatory);
-        Collection<Resource> optres = appendOptionalFragments(mandatory, optional);
+        Collection<Resource> optres = new HashSet<Resource>(optional != null ? optional : Collections.<Resource> emptySet());
+        appendOptionalFragments(mandatory, optres);
+        appendOptionalHostBundles(mandatory, optres);
         return resolver.createResolveContext(env, manres, optres);
     }
 
@@ -167,14 +171,30 @@ final class ResolverPlugin extends AbstractService<ResolverPlugin> implements XR
         return resolveAndApply(context);
     }
 
-    private Collection<Resource> appendOptionalFragments(Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) {
+    private void appendOptionalFragments(Collection<? extends Resource> mandatory, Collection<Resource> optional) {
         Collection<Capability> hostcaps = getHostCapabilities(mandatory);
-        Collection<Resource> result = new HashSet<Resource>();
         if (hostcaps.isEmpty() == false) {
-            result.addAll(optional != null ? optional : Collections.<Resource> emptySet());
-            result.addAll(findAttachableFragments(hostcaps));
+            optional.addAll(findAttachableFragments(hostcaps));
         }
-        return result;
+    }
+
+    // Append the set of all unresolved resources if there is at least one optional package requirement
+    private void appendOptionalHostBundles(Collection<? extends Resource> mandatory, Collection<Resource> optional) {
+        for (Resource res : mandatory) {
+            for (Requirement req : res.getRequirements(PackageNamespace.PACKAGE_NAMESPACE)) {
+                XPackageRequirement preq = (XPackageRequirement) req;
+                if (preq.isOptional()) {
+                    BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+                    for (XBundle bundle : bundleManager.getBundles(Bundle.INSTALLED)) {
+                        XResource auxrev = bundle.getBundleRevision();
+                        if (!bundle.isFragment() && !mandatory.contains(auxrev)) {
+                            optional.add(auxrev);
+                        }
+                    }
+                    return;
+                }
+            }
+        }
     }
 
     private Collection<Capability> getHostCapabilities(Collection<? extends Resource> resources) {
@@ -205,10 +225,10 @@ final class ResolverPlugin extends AbstractService<ResolverPlugin> implements XR
         return Collections.unmodifiableList(result);
     }
 
-    private Collection<? extends Resource> findAttachableFragments(Collection<? extends Capability> hostcaps) {
-        Set<Resource> result = new HashSet<Resource>();
+    private Collection<XResource> findAttachableFragments(Collection<? extends Capability> hostcaps) {
+        Set<XResource> result = new HashSet<XResource>();
         XEnvironment env = injectedEnvironment.getValue();
-        for (Resource res : env.getResources(IdentityNamespace.TYPE_FRAGMENT)) {
+        for (XResource res : env.getResources(IdentityNamespace.TYPE_FRAGMENT)) {
             Requirement req = res.getRequirements(HostNamespace.HOST_NAMESPACE).get(0);
             XRequirement xreq = (XRequirement) req;
             for (Capability cap : hostcaps) {

@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.spi;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -23,8 +24,10 @@ package org.jboss.osgi.framework.spi;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -43,13 +46,20 @@ import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.ServiceTracker.SynchronousListenerServiceWrapper;
 import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.resolver.XResolveContext;
+import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.Bundle;
 import org.osgi.service.packageadmin.PackageAdmin;
+import org.osgi.service.resolver.ResolutionException;
 
 public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<PackageAdmin> injectedPackageAdmin = new InjectedValue<PackageAdmin>();
+    private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
+    private final InjectedValue<XResolver> injectedResolver = new InjectedValue<XResolver>();
     private final Set<ServiceName> installedServices;
 
     public BootstrapBundlesResolve(ServiceName baseName, Set<ServiceName> installedServices) {
@@ -65,6 +75,8 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), new SynchronousListenerServiceWrapper<T>(this));
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
+        builder.addDependency(Services.RESOLVER, XResolver.class, injectedResolver);
         builder.addDependencies(getPreviousService());
         addServiceDependencies(builder);
         return builder.install();
@@ -91,9 +103,27 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
             }
         }
 
-        // Leniently resolve the bundles
-        Bundle[] bundles = resolvableServices.values().toArray(new Bundle[resolvableServices.size()]);
-        injectedPackageAdmin.getValue().resolveBundles(bundles);
+        // Strictly resolve the bootstrap bundles
+        if (IntegrationService.BOOTSTRAP_BUNDLES.isParentOf(getServiceName())) {
+            XEnvironment env = injectedEnvironment.getValue();
+            List<XBundleRevision> mandatory = new ArrayList<XBundleRevision>();
+            for (XBundle bundle : resolvableServices.values()) {
+                mandatory.add(bundle.getBundleRevision());
+            }
+            XResolver resolver = injectedResolver.getValue();
+            XResolveContext ctx = resolver.createResolveContext(env, mandatory, null);
+            try {
+                resolver.resolveAndApply(ctx);
+            } catch (ResolutionException ex) {
+                throw new StartException(ex);
+            }
+        }
+
+        if (IntegrationService.PERSISTENT_BUNDLES.isParentOf(getServiceName())) {
+            Bundle[] bundles = resolvableServices.values().toArray(new Bundle[resolvableServices.size()]);
+            PackageAdmin packageAdmin = injectedPackageAdmin.getValue();
+            packageAdmin.resolveBundles(bundles);
+        }
 
         // Collect the resolved service
         final Set<ServiceName> resolvedServices = new HashSet<ServiceName>();
