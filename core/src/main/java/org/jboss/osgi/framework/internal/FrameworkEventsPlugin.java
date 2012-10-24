@@ -41,13 +41,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.AllServiceListener;
@@ -76,7 +75,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class FrameworkEventsPlugin extends AbstractService<FrameworkEventsPlugin> {
+final class FrameworkEventsPlugin extends AbstractIntegrationService<FrameworkEventsPlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
@@ -97,17 +96,8 @@ final class FrameworkEventsPlugin extends AbstractService<FrameworkEventsPlugin>
     private final ExecutorService bundleEventExecutor;
     private final ExecutorService frameworkEventExecutor;
 
-    static void addService(ServiceTarget serviceTarget) {
-        FrameworkEventsPlugin service = new FrameworkEventsPlugin();
-        ServiceBuilder<FrameworkEventsPlugin> builder = serviceTarget.addService(InternalServices.FRAMEWORK_EVENTS_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-        builder.addDependency(InternalServices.SYSTEM_CONTEXT, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, service.injectedLockManager);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
-    }
-
-    private FrameworkEventsPlugin() {
+    FrameworkEventsPlugin() {
+        super(InternalServices.FRAMEWORK_EVENTS_PLUGIN);
         asyncBundleEvents.add(new Integer(BundleEvent.INSTALLED));
         asyncBundleEvents.add(new Integer(BundleEvent.RESOLVED));
         asyncBundleEvents.add(new Integer(BundleEvent.STARTED));
@@ -142,6 +132,14 @@ final class FrameworkEventsPlugin extends AbstractService<FrameworkEventsPlugin>
                 return thread;
             }
         });
+    }
+
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<FrameworkEventsPlugin> builder) {
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
+        builder.addDependency(InternalServices.SYSTEM_CONTEXT, BundleContext.class, injectedSystemContext);
+        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, injectedLockManager);
+        builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override

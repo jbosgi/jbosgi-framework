@@ -1,5 +1,3 @@
-package org.jboss.osgi.framework.internal;
-
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,15 +19,18 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceListener;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -37,6 +38,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractBundleWiring;
+import org.jboss.osgi.framework.spi.IntegrationService;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
@@ -50,19 +52,25 @@ import org.osgi.resource.Wiring;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-final class EnvironmentPlugin extends AbstractEnvironment implements Service<XEnvironment> {
+final class EnvironmentPlugin extends AbstractEnvironment implements IntegrationService<XEnvironment> {
 
     private final InjectedValue<LockManagerPlugin> injectedLockManager = new InjectedValue<LockManagerPlugin>();
 
-    static void addService(ServiceTarget serviceTarget) {
-        EnvironmentPlugin service = new EnvironmentPlugin();
-        ServiceBuilder<XEnvironment> builder = serviceTarget.addService(Services.ENVIRONMENT, service);
-        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, service.injectedLockManager);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    EnvironmentPlugin() {
     }
 
-    private EnvironmentPlugin() {
+    @Override
+    public ServiceName getServiceName() {
+        return Services.ENVIRONMENT;
+    }
+
+    @Override
+    public ServiceController<XEnvironment> install(ServiceTarget serviceTarget, ServiceListener<Object> listener) {
+        ServiceBuilder<XEnvironment> builder = serviceTarget.addService(Services.ENVIRONMENT, this);
+        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, injectedLockManager);
+        builder.setInitialMode(Mode.ON_DEMAND);
+        builder.addListener(listener);
+        return builder.install();
     }
 
     @Override

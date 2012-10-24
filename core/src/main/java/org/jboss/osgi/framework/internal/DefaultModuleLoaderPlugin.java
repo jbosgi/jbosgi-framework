@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -37,6 +38,7 @@ import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
@@ -46,6 +48,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.service.ValueService;
 import org.jboss.msc.value.ImmediateValue;
 import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
@@ -64,17 +67,16 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
 
     @Override
     public ServiceName getServiceName() {
-        return IntegrationService.MODULE_LOADER_PLUGIN;
+        return IntegrationServices.MODULE_LOADER_PLUGIN;
     }
-
 
     @Override
-    public ServiceController<ModuleLoaderPlugin> install(ServiceTarget serviceTarget) {
+    public ServiceController<ModuleLoaderPlugin> install(ServiceTarget serviceTarget, ServiceListener<Object> listener) {
         ServiceBuilder<ModuleLoaderPlugin> builder = serviceTarget.addService(getServiceName(), this);
         builder.setInitialMode(Mode.ON_DEMAND);
+        builder.addListener(listener);
         return builder.install();
     }
-
 
     @Override
     public void start(StartContext context) throws StartException {
@@ -202,7 +204,6 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
         }
         return moduleServiceName;
     }
-
 
     @Override
     public ServiceName getModuleServiceName(ModuleIdentifier identifier) {

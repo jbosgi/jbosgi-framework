@@ -38,6 +38,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.launch.Framework;
 import org.osgi.service.packageadmin.PackageAdmin;
 
@@ -107,12 +108,13 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
         initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileA.toURI().toString());
 
         Framework framework = newFramework(initprops);
-        framework.start();
-
-        PackageAdmin pa = getPackageAdmin();
-        Bundle bundleA = pa.getBundles("bundleA", null)[0];
-        Assert.assertEquals(fileA.toURI().toString(), bundleA.getLocation());
-        assertBundleState(Bundle.INSTALLED, bundleA.getState());
+        try {
+            framework.start();
+            Assert.fail("BundleException expected");
+        } catch (BundleException e) {
+            // expected
+        }
+        assertBundleState(Bundle.INSTALLED, framework.getState());
     }
 
     @Test

@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.BundleManager;
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
@@ -71,17 +72,17 @@ final class SystemBundleState extends AbstractBundleState {
 
     @Override
     public String getSymbolicName() {
-        return getBundleManager().getManagerSymbolicName();
+        return Constants.FRAMEWORK_SYMBOLIC_NAME;
     }
 
     @Override
     public String getLocation() {
-        return getBundleManager().getManagerLocation();
+        return Constants.FRAMEWORK_LOCATION;
     }
 
     @Override
     public Version getVersion() {
-        return getBundleManager().getManagerVersion();
+        return BundleManagerPlugin.getFrameworkVersion();
     }
 
     @Override

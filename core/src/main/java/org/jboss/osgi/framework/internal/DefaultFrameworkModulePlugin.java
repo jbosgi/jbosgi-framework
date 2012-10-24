@@ -37,17 +37,14 @@ import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.Resource;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.FrameworkModulePlugin;
-import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 import org.osgi.framework.Bundle;
 
@@ -57,24 +54,22 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 04-Feb-2011
  */
-final class DefaultFrameworkModulePlugin extends AbstractService<FrameworkModulePlugin> implements FrameworkModulePlugin, IntegrationService<FrameworkModulePlugin> {
+final class DefaultFrameworkModulePlugin extends AbstractIntegrationService<FrameworkModulePlugin> implements FrameworkModulePlugin {
 
     private static final ModuleIdentifier FRAMEWORK_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".framework");
     private final InjectedValue<SystemPathsPlugin> injectedSystemPaths = new InjectedValue<SystemPathsPlugin>();
 
     private Module frameworkModule;
 
-    @Override
-    public ServiceName getServiceName() {
-        return IntegrationService.FRAMEWORK_MODULE_PLUGIN;
+    DefaultFrameworkModulePlugin() {
+        super(IntegrationServices.FRAMEWORK_MODULE_PLUGIN);
     }
 
+
     @Override
-    public ServiceController<FrameworkModulePlugin> install(ServiceTarget serviceTarget) {
-        ServiceBuilder<FrameworkModulePlugin> builder = serviceTarget.addService(getServiceName(), this);
-        builder.addDependency(IntegrationService.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, injectedSystemPaths);
+    protected void addServiceDependencies(ServiceBuilder<FrameworkModulePlugin> builder) {
+        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, injectedSystemPaths);
         builder.setInitialMode(Mode.ON_DEMAND);
-        return builder.install();
     }
 
     @Override

@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,14 +19,12 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
+import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.SystemServicesPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -37,19 +34,15 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 04-Feb-2011
  */
-final class DefaultSystemServicesPlugin extends AbstractService<SystemServicesPlugin> implements SystemServicesPlugin, IntegrationService<SystemServicesPlugin> {
+final class DefaultSystemServicesPlugin extends AbstractIntegrationService<SystemServicesPlugin> implements SystemServicesPlugin {
 
-    @Override
-    public ServiceName getServiceName() {
-        return IntegrationService.SYSTEM_SERVICES_PLUGIN;
+    DefaultSystemServicesPlugin() {
+        super(IntegrationServices.SYSTEM_SERVICES_PLUGIN);
     }
 
-
     @Override
-    public ServiceController<SystemServicesPlugin> install(ServiceTarget serviceTarget) {
-        ServiceBuilder<SystemServicesPlugin> builder = serviceTarget.addService(getServiceName(), this);
+    protected void addServiceDependencies(ServiceBuilder<SystemServicesPlugin> builder) {
         builder.setInitialMode(Mode.ON_DEMAND);
-        return builder.install();
     }
 
     @Override

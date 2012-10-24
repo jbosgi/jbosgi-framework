@@ -36,9 +36,8 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.BootstrapBundlesInstall;
-import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.framework.spi.StorageStatePlugin;
 import org.osgi.framework.BundleException;
@@ -49,28 +48,26 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> implements IntegrationService<Void> {
+final class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void> {
 
-    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<StorageStatePlugin> injectedStoragePlugin = new InjectedValue<StorageStatePlugin>();
     private final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
 
     DefaultPersistentBundlesInstall() {
-        super(IntegrationService.PERSISTENT_BUNDLES);
+        super(IntegrationServices.PERSISTENT_BUNDLES);
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<Void> builder) {
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
-        builder.addDependency(IntegrationService.STORAGE_STATE_PLUGIN, StorageStatePlugin.class, injectedStoragePlugin);
+        super.addServiceDependencies(builder);
+        builder.addDependency(IntegrationServices.STORAGE_STATE_PLUGIN, StorageStatePlugin.class, injectedStoragePlugin);
         builder.addDependency(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, DeploymentFactoryPlugin.class, injectedDeploymentFactory);
-        builder.addDependencies(IntegrationService.BOOTSTRAP_BUNDLES_COMPLETE);
+        builder.addDependencies(IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
     }
 
     @Override
     public void start(StartContext context) throws StartException {
 
-        final BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         final DeploymentFactoryPlugin deploymentPlugin = injectedDeploymentFactory.getValue();
         final ServiceTarget serviceTarget = context.getChildTarget();
 
@@ -81,7 +78,7 @@ final class DefaultPersistentBundlesInstall extends BootstrapBundlesInstall<Void
         Iterator<StorageState> iterator = storageStates.iterator();
         while (iterator.hasNext()) {
             StorageState storageState = iterator.next();
-            if (bundleManager.getBundleById(storageState.getBundleId()) != null) {
+            if (getBundleManager().getBundleById(storageState.getBundleId()) != null) {
                 iterator.remove();
             }
         }

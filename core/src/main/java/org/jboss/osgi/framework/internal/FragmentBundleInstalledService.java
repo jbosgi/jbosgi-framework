@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceListener;

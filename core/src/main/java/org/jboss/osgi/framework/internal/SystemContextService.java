@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,15 +19,12 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
-import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
@@ -38,27 +34,18 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-public final class SystemContextService implements Service<BundleContext> {
+public final class SystemContextService extends AbstractIntegrationService<BundleContext> {
 
     final InjectedValue<Bundle> injectedSystemBundle = new InjectedValue<Bundle>();
 
-    static void addService(ServiceTarget serviceTarget) {
-        SystemContextService service = new SystemContextService();
-        ServiceBuilder<BundleContext> builder = serviceTarget.addService(InternalServices.SYSTEM_CONTEXT, service);
-        builder.addDependency(InternalServices.SYSTEM_BUNDLE, Bundle.class, service.injectedSystemBundle);
+    SystemContextService() {
+        super(InternalServices.SYSTEM_CONTEXT);
+    }
+
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<BundleContext> builder) {
+        builder.addDependency(InternalServices.SYSTEM_BUNDLE, Bundle.class, injectedSystemBundle);
         builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
-    }
-
-    private SystemContextService() {
-    }
-
-    @Override
-    public void start(StartContext context) throws StartException {
-    }
-
-    @Override
-    public void stop(StopContext context) {
     }
 
     @Override

@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,14 +19,16 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
-import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 
 /**
  * The base of all framework services.
@@ -35,7 +36,11 @@ import org.jboss.msc.service.StopContext;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class AbstractFrameworkService implements Service<FrameworkState> {
+abstract class AbstractFrameworkService extends AbstractIntegrationService<FrameworkState> {
+
+    AbstractFrameworkService(ServiceName serviceName) {
+        super(serviceName);
+    }
 
     @Override
     public void start(StartContext context) throws StartException {

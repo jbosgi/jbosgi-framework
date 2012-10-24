@@ -249,7 +249,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle {
             // Remove from the module loader
             BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
             ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-            ServiceController<?> service = serviceContainer.getRequiredService(IntegrationService.MODULE_LOADER_PLUGIN);
+            ServiceController<?> service = serviceContainer.getRequiredService(IntegrationServices.MODULE_LOADER_PLUGIN);
             ModuleLoaderPlugin provider = (ModuleLoaderPlugin) service.getValue();
             provider.removeModule(brev, module.getIdentifier());
             bundleState.set(Bundle.UNINSTALLED);

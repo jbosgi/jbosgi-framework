@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
@@ -70,18 +69,17 @@ final class DefaultStartLevelPlugin extends ExecutorServicePlugin<StartLevelPlug
     private ServiceRegistration registration;
     private AtomicInteger startLevel = new AtomicInteger(0);
 
-    static void addService(ServiceTarget serviceTarget) {
-        DefaultStartLevelPlugin service = new DefaultStartLevelPlugin();
-        ServiceBuilder<StartLevelPlugin> builder = serviceTarget.addService(Services.START_LEVEL, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-        builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
-        builder.addDependency(InternalServices.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
-        builder.addDependency(Services.FRAMEWORK_CREATE);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    DefaultStartLevelPlugin() {
+        super(Services.START_LEVEL);
     }
 
-    private DefaultStartLevelPlugin() {
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<StartLevelPlugin> builder) {
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
+        builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, injectedFrameworkEvents);
+        builder.addDependency(InternalServices.SYSTEM_BUNDLE, SystemBundleState.class, injectedSystemBundle);
+        builder.addDependency(Services.FRAMEWORK_CREATE);
+        builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override

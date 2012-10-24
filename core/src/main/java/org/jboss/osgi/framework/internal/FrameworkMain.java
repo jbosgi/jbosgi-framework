@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import java.util.Map;
 
+import org.jboss.msc.service.ServiceController.Mode;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
 
@@ -45,7 +46,7 @@ public class FrameworkMain implements FrameworkFactory {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Framework newFramework(Map props) {
-        FrameworkBuilder builder = new FrameworkBuilder(props);
+        FrameworkBuilder builder = new FrameworkBuilder(props, Mode.ACTIVE);
         return builder.createFramework();
     }
 }

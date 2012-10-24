@@ -31,18 +31,15 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
-import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.BootstrapBundlesInstall;
 import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.spi.BundleInfo;
 import org.jboss.osgi.spi.util.StringPropertyReplacer;
 import org.jboss.osgi.spi.util.StringPropertyReplacer.PropertyProvider;
@@ -56,37 +53,30 @@ import org.osgi.framework.BundleException;
  */
 class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> implements IntegrationService<Void> {
 
-    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-
     DefaultBootstrapBundlesInstall() {
-        super(IntegrationService.BOOTSTRAP_BUNDLES);
-    }
-
-    protected void addServiceDependencies(ServiceBuilder<Void> builder) {
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        super(IntegrationServices.BOOTSTRAP_BUNDLES);
     }
 
     @Override
     public void start(final StartContext context) throws StartException {
 
-        final BundleManager bundleManager = injectedBundleManager.getValue();
         final ServiceTarget serviceTarget = context.getChildTarget();
         final List<URL> autoInstall = new ArrayList<URL>();
         final List<URL> autoStart = new ArrayList<URL>();
 
-        String propValue = (String) bundleManager.getProperty(Constants.PROPERTY_AUTO_INSTALL_URLS);
+        String propValue = (String) getBundleManager().getProperty(Constants.PROPERTY_AUTO_INSTALL_URLS);
         if (propValue != null) {
             for (String path : propValue.split(",")) {
-                URL url = toURL(bundleManager, path.trim());
+                URL url = toURL(path.trim());
                 if (url != null) {
                     autoInstall.add(url);
                 }
             }
         }
-        propValue = (String) bundleManager.getProperty(Constants.PROPERTY_AUTO_START_URLS);
+        propValue = (String) getBundleManager().getProperty(Constants.PROPERTY_AUTO_START_URLS);
         if (propValue != null) {
             for (String path : propValue.split(",")) {
-                URL url = toURL(bundleManager, path.trim());
+                URL url = toURL(path.trim());
                 if (url != null) {
                     autoStart.add(url);
                 }
@@ -113,13 +103,13 @@ class DefaultBootstrapBundlesInstall extends BootstrapBundlesInstall<Void> imple
         installBootstrapBundles(serviceTarget, deployments);
     }
 
-    private URL toURL(final BundleManager bundleManager, final String path) {
+    private URL toURL(final String path) {
 
         URL pathURL = null;
         PropertyProvider provider = new PropertyProvider() {
             @Override
             public String getProperty(String key) {
-                return (String) bundleManager.getProperty(key);
+                return (String) getBundleManager().getProperty(key);
             }
         };
         String realPath = StringPropertyReplacer.replaceProperties(path, provider);

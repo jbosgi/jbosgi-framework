@@ -42,15 +42,14 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
@@ -67,7 +66,7 @@ import org.osgi.util.tracker.ServiceTracker;
  * @author Thomas.Diesler@jboss.com
  * @since 10-Jan-2011
  */
-final class URLHandlerPlugin extends AbstractService<URLHandlerPlugin> implements URLStreamHandlerFactory, ContentHandlerFactory {
+final class URLHandlerPlugin extends AbstractIntegrationService<URLHandlerPlugin> implements URLStreamHandlerFactory, ContentHandlerFactory {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
@@ -78,7 +77,7 @@ final class URLHandlerPlugin extends AbstractService<URLHandlerPlugin> implement
     private static OSGiContentHandlerFactoryDelegate contentHandlerDelegate;
     private static OSGiStreamHandlerFactoryDelegate streamHandlerDelegate;
 
-    public static void initURLHandlerPlugin() {
+    static void initURLHandlerPlugin() {
     	if (streamHandlerDelegate == null) {
             streamHandlerDelegate = new OSGiStreamHandlerFactoryDelegate();
             AccessController.doPrivileged(new PrivilegedAction<Void>() {
@@ -109,17 +108,16 @@ final class URLHandlerPlugin extends AbstractService<URLHandlerPlugin> implement
     	}
     }
 
-    static void addService(ServiceTarget serviceTarget) {
-        URLHandlerPlugin service = new URLHandlerPlugin();
-        ServiceBuilder<URLHandlerPlugin> builder = serviceTarget.addService(InternalServices.URL_HANDLER_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, service.injectedSystemContext);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    URLHandlerPlugin() {
+        super(InternalServices.URL_HANDLER_PLUGIN);
+        URLHandlerPlugin.initURLHandlerPlugin();
     }
 
-    private URLHandlerPlugin() {
-    	initURLHandlerPlugin();
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<URLHandlerPlugin> builder) {
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
+        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
+        builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override

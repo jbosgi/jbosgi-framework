@@ -30,6 +30,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.msc.service.AbstractServiceListener;
@@ -54,6 +57,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     private final Set<ServiceController<? extends S>> trackedControllers = new HashSet<ServiceController<? extends S>>();
     private final List<ServiceController<?>> started = new ArrayList<ServiceController<?>>();
     private final List<ServiceController<?>> failed = new ArrayList<ServiceController<?>>();
+    private final CountDownLatch completionLatch = new CountDownLatch(1);
     private final AtomicBoolean allComplete = new AtomicBoolean();
     private final boolean completeOnFirstFailure;
 
@@ -163,12 +167,37 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         }
     }
 
+    public Throwable getFirstFailure() {
+        synchronized (trackedControllers) {
+            Throwable failure = null;
+            for (ServiceController<?> controller : failed) {
+                StartException startex = controller.getStartException();
+                if (startex != null && startex.getCause() != null) {
+                    failure = startex.getCause();
+                    break;
+                }
+            }
+            return failure;
+        }
+    }
+
     public boolean hasFailedServices() {
         synchronized (trackedControllers) {
             return !failed.isEmpty();
         }
     }
 
+    public boolean awaitCompletion() throws InterruptedException {
+        completionLatch.await();
+        return !hasFailedServices();
+    }
+    
+    public boolean awaitCompletion(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+        if (!completionLatch.await(timeout, unit))
+            throw new TimeoutException();
+        return !hasFailedServices();
+    }
+    
     protected boolean trackService(ServiceController<? extends S> controller) {
         return true;
     }
@@ -231,27 +260,30 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
     private void completeInternal() {
         if (allComplete.compareAndSet(false, true)) {
             LOGGER.tracef("ServiceTracker complete: " + getClass().getName());
+            completionLatch.countDown();
             complete();
         }
     }
 
     public interface SynchronousListenerService<T> extends Service<T> {
+        
         void addListener(ServiceTracker<T> listener);
-
+        
         void removeListener(ServiceTracker<T> listener);
-
+        
         void startCompleted(final StartContext context);
-
+        
         void startFailed(StartContext context, Throwable th);
     }
 
     /**
      * Service wrapper implementation that can be used with {@link ServiceTracker}. This service wrapper invokes the listener
-     * methods after the delegate's start method has been invoked.
+     * methods after the delegate's start method has been invoked so there is a gurantee that these listeners run first.
+     * 
+     * Note, the state of the controller would be STARTING instead of UP when the ServiceTracker is called.  
      *
      * @author Stuart Douglas
      * @author Thomas.Diesler@jboss.com
-     * @since
      */
     public static class SynchronousListenerServiceWrapper<T> implements SynchronousListenerService<T> {
 

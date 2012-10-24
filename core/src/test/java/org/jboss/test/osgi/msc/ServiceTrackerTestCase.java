@@ -24,7 +24,6 @@ package org.jboss.test.osgi.msc;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -70,18 +69,12 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
     @Test
     public void testSimpleTracker() throws Exception {
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        ServiceListener<Object> listener = new ServiceTracker<Object>() {
-            @Override
-            public void complete() {
-                latch.countDown();
-            }
-        };
+        ServiceTracker<Object> tracker = new ServiceTracker<Object>();
         ServiceBuilder<String> builder = serviceTarget.addService(ServiceName.of("serviceA"), new ServiceA());
-        builder.addListener(listener);
+        builder.addListener(tracker);
         builder.install();
 
-        boolean outcome = latch.await(500, TimeUnit.MILLISECONDS);
+        boolean outcome = tracker.awaitCompletion(500, TimeUnit.MILLISECONDS);
         Assert.assertTrue("All complete", outcome);
     }
 
@@ -93,9 +86,8 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
             expected.add(ServiceName.of("service" + i));
         }
 
-        final CountDownLatch latch = new CountDownLatch(1);
         final Set<ServiceName> names = new HashSet<ServiceName>();
-        ServiceListener<Object> listener = new ServiceTracker<Object>() {
+        ServiceTracker<Object> tracker = new ServiceTracker<Object>() {
 
             @Override
             protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
@@ -106,21 +98,16 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
             public void serviceStarted(ServiceController<? extends Object> controller) {
                 names.add(controller.getName());
             }
-
-            @Override
-            public void complete() {
-                latch.countDown();
-            }
         };
 
         for (ServiceName serviceName : expected) {
             Thread.sleep(10);
             ServiceBuilder<String> builder = serviceTarget.addService(serviceName, new TestService());
-            builder.addListener(listener);
+            builder.addListener(tracker);
             builder.install();
         }
 
-        boolean outcome = latch.await(500, TimeUnit.MILLISECONDS);
+        boolean outcome = tracker.awaitCompletion(500, TimeUnit.MILLISECONDS);
         Assert.assertTrue("All complete", outcome);
         Assert.assertEquals("All services started", 10, names.size());
 
@@ -129,16 +116,10 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
     @Test
     public void testDependencyFailed() throws Exception {
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        ServiceListener<Object> listener = new ServiceTracker<Object>() {
-            @Override
-            public void complete() {
-                latch.countDown();
-            }
-        };
+        ServiceTracker<Object> tracker = new ServiceTracker<Object>();
         ServiceBuilder<String> builder = serviceTarget.addService(ServiceName.of("serviceA"), new ServiceA());
         builder.addDependency(ServiceName.of("serviceB"));
-        builder.addListener(listener);
+        builder.addListener(tracker);
         builder.install();
 
         builder = serviceTarget.addService(ServiceName.of("serviceB"), new ServiceB() {
@@ -147,11 +128,11 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
                 throw new StartException("serviceB failed");
             }
         });
-        builder.addListener(listener);
+        builder.addListener(tracker);
         builder.install();
 
-        boolean outcome = latch.await(500, TimeUnit.MILLISECONDS);
-        Assert.assertTrue("All complete", outcome);
+        boolean outcome = tracker.awaitCompletion(500, TimeUnit.MILLISECONDS);
+        Assert.assertFalse("All complete", outcome);
     }
 
 
@@ -159,16 +140,10 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
     @Ignore
     public void testUntrackedDependencyFailed() throws Exception {
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        ServiceListener<Object> listener = new ServiceTracker<Object>() {
-            @Override
-            public void complete() {
-                latch.countDown();
-            }
-        };
+        ServiceTracker<Object> tracker = new ServiceTracker<Object>();
         ServiceBuilder<String> builder = serviceTarget.addService(ServiceName.of("serviceA"), new ServiceA());
         builder.addDependency(ServiceName.of("serviceB"));
-        builder.addListener(listener);
+        builder.addListener(tracker);
         builder.install();
 
         builder = serviceTarget.addService(ServiceName.of("serviceB"), new ServiceB() {
@@ -180,27 +155,21 @@ public class ServiceTrackerTestCase extends AbstractServiceTestCase {
         // don't add the tracker to this service
         builder.install();
 
-        boolean outcome = latch.await(500, TimeUnit.MILLISECONDS);
+        boolean outcome = tracker.awaitCompletion(500, TimeUnit.MILLISECONDS);
         Assert.assertTrue("All complete", outcome);
     }
 
     @Test
     public void testTransitionToNever() throws Exception {
 
-        final CountDownLatch latch = new CountDownLatch(1);
-        ServiceListener<Object> listener = new ServiceTracker<Object>() {
-            @Override
-            public void complete() {
-                latch.countDown();
-            }
-        };
+        ServiceTracker<Object> tracker = new ServiceTracker<Object>();
         ServiceBuilder<String> builder = serviceTarget.addService(ServiceName.of("serviceA"), new ServiceA());
-        builder.addListener(listener);
+        builder.addListener(tracker);
         ServiceController<String> controller = builder.install();
 
         controller.setMode(Mode.NEVER);
 
-        boolean outcome = latch.await(500, TimeUnit.MILLISECONDS);
+        boolean outcome = tracker.awaitCompletion(500, TimeUnit.MILLISECONDS);
         Assert.assertTrue("All complete", outcome);
     }
 }

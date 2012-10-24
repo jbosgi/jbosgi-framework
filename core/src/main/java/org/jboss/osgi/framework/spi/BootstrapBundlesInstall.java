@@ -50,19 +50,17 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
     public BootstrapBundlesInstall(ServiceName baseName) {
-        super(baseName, IntegrationService.BootstrapPhase.INSTALL);
-    }
-
-    public ServiceController<T> install(ServiceTarget serviceTarget) {
-        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
-        builder.addDependency(Services.FRAMEWORK_CREATE);
-        addServiceDependencies(builder);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        return builder.install();
+        super(baseName, IntegrationServices.BootstrapPhase.INSTALL);
     }
 
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(Services.FRAMEWORK_CREATE);
+        builder.setInitialMode(Mode.ON_DEMAND);
+    }
+
+    protected BundleManager getBundleManager() {
+        return injectedBundleManager.getValue();
     }
 
     protected void installBootstrapBundles(final ServiceTarget serviceTarget, final List<Deployment> deployments) {
@@ -91,7 +89,7 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
         };
 
         // Install the auto install bundles
-        BundleManager bundleManager = injectedBundleManager.getValue();
+        BundleManager bundleManager = getBundleManager();
         for (Deployment dep : deployments) {
             try {
                 bundleManager.installBundle(dep, installTracker);
@@ -105,6 +103,6 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
     }
 
     protected ServiceController<T> installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices) {
-        return new BootstrapBundlesResolve<T>(getServiceName().getParent(), installedServices).install(serviceTarget);
+        return new BootstrapBundlesResolve<T>(getServiceName().getParent(), installedServices).install(serviceTarget, getServiceListener());
     }
 }

@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,18 +19,16 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
-import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
@@ -41,22 +38,19 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-final class DefaultBundleLifecyclePlugin extends AbstractService<BundleLifecyclePlugin> implements BundleLifecyclePlugin, IntegrationService<BundleLifecyclePlugin> {
+final class DefaultBundleLifecyclePlugin extends AbstractIntegrationService<BundleLifecyclePlugin> implements BundleLifecyclePlugin {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
 
-    @Override
-    public ServiceName getServiceName() {
-        return IntegrationService.BUNDLE_LIFECYCLE_PLUGIN;
+    DefaultBundleLifecyclePlugin() {
+        super(IntegrationServices.BUNDLE_LIFECYCLE_PLUGIN);
     }
 
     @Override
-    public ServiceController<BundleLifecyclePlugin> install(ServiceTarget serviceTarget) {
-        ServiceBuilder<BundleLifecyclePlugin> builder = serviceTarget.addService(getServiceName(), this);
+    protected void addServiceDependencies(ServiceBuilder<BundleLifecyclePlugin> builder) {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
-        return builder.install();
     }
 
     @Override

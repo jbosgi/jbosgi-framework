@@ -47,10 +47,8 @@ import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.modules.filter.ClassFilter;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
@@ -58,8 +56,9 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.NativeCodePlugin.BundleNativeLibraryProvider;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.FrameworkModulePlugin;
-import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.spi.ModuleLoaderPlugin.ModuleSpecBuilderContext;
 import org.jboss.osgi.framework.spi.SystemPathsPlugin;
@@ -90,7 +89,7 @@ import org.osgi.resource.Resource;
  * @author thomas.diesler@jboss.com
  * @since 06-Jul-2009
  */
-final class ModuleManagerPlugin extends AbstractService<ModuleManagerPlugin> {
+final class ModuleManagerPlugin extends AbstractIntegrationService<ModuleManagerPlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
@@ -100,20 +99,19 @@ final class ModuleManagerPlugin extends AbstractService<ModuleManagerPlugin> {
     private final InjectedValue<ModuleLoaderPlugin> injectedModuleLoader = new InjectedValue<ModuleLoaderPlugin>();
     private Module frameworkModule;
 
-    static void addService(ServiceTarget serviceTarget) {
-        ModuleManagerPlugin service = new ModuleManagerPlugin();
-        ServiceBuilder<ModuleManagerPlugin> builder = serviceTarget.addService(InternalServices.MODULE_MANGER_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
-        builder.addDependency(InternalServices.SYSTEM_BUNDLE, SystemBundleState.class, service.injectedSystemBundle);
-        builder.addDependency(IntegrationService.FRAMEWORK_MODULE_PLUGIN, FrameworkModulePlugin.class, service.injectedFrameworkModule);
-        builder.addDependency(IntegrationService.MODULE_LOADER_PLUGIN, ModuleLoaderPlugin.class, service.injectedModuleLoader);
-        builder.addDependency(IntegrationService.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, service.injectedSystemPaths);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    ModuleManagerPlugin() {
+        super(InternalServices.MODULE_MANGER_PLUGIN);
     }
 
-    private ModuleManagerPlugin() {
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<ModuleManagerPlugin> builder) {
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
+        builder.addDependency(InternalServices.SYSTEM_BUNDLE, SystemBundleState.class, injectedSystemBundle);
+        builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_PLUGIN, FrameworkModulePlugin.class, injectedFrameworkModule);
+        builder.addDependency(IntegrationServices.MODULE_LOADER_PLUGIN, ModuleLoaderPlugin.class, injectedModuleLoader);
+        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, injectedSystemPaths);
+        builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override

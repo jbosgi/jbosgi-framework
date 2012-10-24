@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
@@ -41,13 +41,11 @@ import java.util.concurrent.ThreadFactory;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.spi.IntegrationService;
 import org.jboss.osgi.framework.spi.StartLevelPlugin;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
@@ -90,21 +88,20 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
     private final InjectedValue<StartLevelPlugin> injectedStartLevel = new InjectedValue<StartLevelPlugin>();
     private ServiceRegistration registration;
 
-    static void addService(ServiceTarget serviceTarget) {
-        PackageAdminPlugin service = new PackageAdminPlugin();
-        ServiceBuilder<PackageAdminPlugin> builder = serviceTarget.addService(Services.PACKAGE_ADMIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
-        builder.addDependency(Services.START_LEVEL, StartLevelPlugin.class, service.injectedStartLevel);
-        builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, service.injectedFrameworkEvents);
-        builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, service.injectedModuleManager);
-        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, service.injectedSystemContext);
-        builder.addDependency(Services.RESOLVER, ResolverPlugin.class, service.injectedResolver);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    PackageAdminPlugin() {
+        super(Services.PACKAGE_ADMIN);
     }
 
-    private PackageAdminPlugin() {
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<PackageAdminPlugin> builder) {
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
+        builder.addDependency(Services.START_LEVEL, StartLevelPlugin.class, injectedStartLevel);
+        builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, injectedFrameworkEvents);
+        builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, injectedModuleManager);
+        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
+        builder.addDependency(Services.RESOLVER, ResolverPlugin.class, injectedResolver);
+        builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override

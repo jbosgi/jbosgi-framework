@@ -27,9 +27,7 @@ import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.modules.Module;
@@ -37,8 +35,10 @@ import org.jboss.modules.log.JDKModuleLogger;
 import org.jboss.modules.log.ModuleLogger;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.spi.IntegrationService;
 import org.osgi.framework.launch.Framework;
 
@@ -51,13 +51,19 @@ import org.osgi.framework.launch.Framework;
 public final class FrameworkBuilder {
 
     private final Map<String, Object> initialProperties = new HashMap<String, Object>();
-    private final Set<ServiceName> excludedServices = new HashSet<ServiceName>();
+    private final Map<FrameworkPhase, Map<ServiceName, IntegrationService<?>>> integrationServices;
+    private final Mode initialMode;
     private ServiceContainer serviceContainer;
     private ServiceTarget serviceTarget;
-    private Mode initialMode = Mode.LAZY;
     private boolean closed;
 
-    public FrameworkBuilder(Map<String, Object> props) {
+    public enum FrameworkPhase {
+        CREATE, INIT, ACTIVE
+    }
+
+    public FrameworkBuilder(Map<String, Object> props, Mode initialMode) {
+        this.initialMode = initialMode;
+        integrationServices = new HashMap<FrameworkPhase, Map<ServiceName, IntegrationService<?>>>();
         if (props != null) {
             initialProperties.putAll(props);
         }
@@ -105,22 +111,8 @@ public final class FrameworkBuilder {
         this.serviceTarget = serviceTarget;
     }
 
-    public void addExcludedService(ServiceName serviceName) {
-        assertNotClosed();
-        excludedServices.add(serviceName);
-    }
-
-    public Set<ServiceName> getExcludedServices() {
-        return Collections.unmodifiableSet(excludedServices);
-    }
-
     public Mode getInitialMode() {
         return initialMode;
-    }
-
-    public void setInitialMode(Mode initialMode) {
-        assertNotClosed();
-        this.initialMode = initialMode;
     }
 
     public Framework createFramework() {
@@ -128,73 +120,77 @@ public final class FrameworkBuilder {
         return new FrameworkProxy(this);
     }
 
-    public ServiceContainer createFrameworkServices(boolean firstInit) {
+    public void registerIntegrationService(FrameworkPhase phase, IntegrationService<?> service) {
         assertNotClosed();
-        ServiceContainer serviceContainer = getServiceContainerInternal();
-        ServiceTarget serviceTarget = getServiceTargetInternal(serviceContainer);
-        createFrameworkServicesInternal(serviceContainer, serviceTarget, firstInit);
-        return serviceContainer;
+        Map<ServiceName, IntegrationService<?>> phaseServices = integrationServices.get(phase);
+        if (phaseServices == null) {
+            phaseServices = new HashMap<ServiceName, IntegrationService<?>>();
+            integrationServices.put(phase, phaseServices);
+        }
+        phaseServices.put(service.getServiceName(), service);
     }
 
-    BundleManagerPlugin createFrameworkServicesInternal(ServiceContainer serviceContainer, ServiceTarget serviceTarget, boolean firstInit) {
+    public BundleManager registerFrameworkServices(ServiceContainer serviceContainer, boolean firstInit) {
+
+        integrationServices.clear();
+        closed = false;
+
+        // Do this first so this URLStreamHandlerFactory gets installed
+        registerIntegrationService(FrameworkPhase.CREATE, new URLHandlerPlugin());
+
+        // Setup the logging system for jboss-modules
+        if (getProperty(ModuleLogger.class.getName()) == null) {
+            Module.setModuleLogger(new JDKModuleLogger());
+        }
+
+        BundleManagerPlugin bundleManager = new BundleManagerPlugin(serviceContainer, this);
+        FrameworkState frameworkState = new FrameworkState(bundleManager);
+
+        registerIntegrationService(FrameworkPhase.CREATE, bundleManager);
+        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkCreate(frameworkState));
+        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkCreate.FrameworkCreated(initialMode));
+        registerIntegrationService(FrameworkPhase.CREATE, new DefaultBundleLifecyclePlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new DefaultFrameworkModulePlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new DefaultModuleLoaderPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new DefaultStartLevelPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new DefaultStorageStatePlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new DefaultSystemPathsPlugin(this));
+        registerIntegrationService(FrameworkPhase.CREATE, new DefaultSystemServicesPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkCoreServices());
+        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkEventsPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new BundleStoragePlugin(firstInit));
+        registerIntegrationService(FrameworkPhase.CREATE, new DeploymentFactoryPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new EnvironmentPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new LifecycleInterceptorPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new LockManagerPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new ModuleManagerPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new NativeCodePlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new PackageAdminPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new ResolverPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new ServiceManagerPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new SystemBundleService(frameworkState));
+        registerIntegrationService(FrameworkPhase.CREATE, new SystemContextService());
+
+        registerIntegrationService(FrameworkPhase.INIT, new FrameworkInit());
+        registerIntegrationService(FrameworkPhase.INIT, new FrameworkInit.FrameworkInitialized(initialMode));
+        registerIntegrationService(FrameworkPhase.INIT, new DefaultBootstrapBundlesInstall());
+        registerIntegrationService(FrameworkPhase.INIT, new DefaultPersistentBundlesInstall());
+
+        registerIntegrationService(FrameworkPhase.ACTIVE, new FrameworkActive());
+        registerIntegrationService(FrameworkPhase.ACTIVE, new FrameworkActive.FrameworkActivated(initialMode));
+
+        return bundleManager;
+    }
+
+    public void installFrameworkServices(FrameworkPhase phase, ServiceTarget serviceTarget, ServiceListener<Object> listener) {
         try {
-            // Do this first so this URLStreamHandlerFactory gets installed
-            URLHandlerPlugin.addService(serviceTarget);
-
-            // Setup the logging system for jboss-modules
-            if (getProperty(ModuleLogger.class.getName()) == null) {
-                Module.setModuleLogger(new JDKModuleLogger());
+            Map<ServiceName, IntegrationService<?>> phaseServices = integrationServices.get(phase);
+            for (IntegrationService<?> service : phaseServices.values()) {
+                service.install(serviceTarget, listener);
             }
-
-            BundleManagerPlugin bundleManager = BundleManagerPlugin.addService(serviceContainer, serviceTarget, this);
-            FrameworkState frameworkState = FrameworkCreate.addService(serviceTarget, bundleManager);
-
-            BundleStoragePlugin.addService(serviceTarget, firstInit);
-            DeploymentFactoryPlugin.addService(serviceTarget);
-            EnvironmentPlugin.addService(serviceTarget);
-            FrameworkActive.addService(serviceTarget, initialMode);
-            FrameworkCoreServices.addService(serviceTarget);
-            FrameworkEventsPlugin.addService(serviceTarget);
-            FrameworkInit.addService(serviceTarget);
-            LifecycleInterceptorPlugin.addService(serviceTarget);
-            LockManagerPlugin.addService(serviceTarget);
-            ModuleManagerPlugin.addService(serviceTarget);
-            NativeCodePlugin.addService(serviceTarget);
-            PackageAdminPlugin.addService(serviceTarget);
-            ResolverPlugin.addService(serviceTarget);
-            ServiceManagerPlugin.addService(serviceTarget);
-            DefaultStartLevelPlugin.addService(serviceTarget);
-            DefaultStorageStatePlugin.addService(serviceTarget);
-            SystemBundleService.addService(serviceTarget, frameworkState);
-            SystemContextService.addService(serviceTarget);
-
-            installIntegrationService(serviceContainer, serviceTarget, new DefaultBootstrapBundlesInstall());
-            installIntegrationService(serviceContainer, serviceTarget, new DefaultBundleLifecyclePlugin());
-            installIntegrationService(serviceContainer, serviceTarget, new DefaultFrameworkModulePlugin());
-            installIntegrationService(serviceContainer, serviceTarget, new DefaultModuleLoaderPlugin());
-            installIntegrationService(serviceContainer, serviceTarget, new DefaultPersistentBundlesInstall());
-            installIntegrationService(serviceContainer, serviceTarget, new DefaultSystemPathsPlugin(this));
-            installIntegrationService(serviceContainer, serviceTarget, new DefaultSystemServicesPlugin());
-
-            return bundleManager;
         } finally {
             closed = true;
         }
-    }
-
-    public void installIntegrationService(ServiceContainer serviceContainer, ServiceTarget serviceTarget, IntegrationService<?> service) {
-        ServiceName serviceName = service.getServiceName();
-        if (serviceContainer.getService(serviceName) == null && !excludedServices.contains(serviceName)) {
-            service.install(serviceTarget);
-        }
-    }
-
-    private ServiceContainer getServiceContainerInternal() {
-        return (serviceContainer != null ? serviceContainer : createServiceContainer());
-    }
-
-    private ServiceTarget getServiceTargetInternal(ServiceContainer serviceContainer) {
-        return (serviceTarget != null ? serviceTarget : serviceContainer.subTarget());
     }
 
     private void assertNotClosed() {

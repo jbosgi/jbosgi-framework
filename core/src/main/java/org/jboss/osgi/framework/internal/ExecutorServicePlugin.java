@@ -26,10 +26,11 @@ import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.jboss.msc.service.AbstractService;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 
 
 /**
@@ -38,10 +39,14 @@ import org.jboss.msc.service.StopContext;
  * @author thomas.diesler@jboss.com
  * @since 10-Mar-2011
  */
-abstract class ExecutorServicePlugin<T> extends AbstractService<T> {
+abstract class ExecutorServicePlugin<T> extends AbstractIntegrationService<T> {
 
     private ExecutorService executorService;
     private boolean immediateExecution;
+
+    ExecutorServicePlugin(ServiceName serviceName) {
+        super(serviceName);
+    }
 
     @Override
     public void start(StartContext context) throws StartException {

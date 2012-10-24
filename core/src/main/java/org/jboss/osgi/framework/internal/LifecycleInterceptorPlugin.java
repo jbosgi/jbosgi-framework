@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,13 +19,12 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
@@ -38,6 +36,7 @@ import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
 import org.jboss.osgi.deployment.internal.InvocationContextImpl;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.spi.AttachmentSupport;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -50,21 +49,20 @@ import org.osgi.framework.ServiceRegistration;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-final class LifecycleInterceptorPlugin extends AbstractService<LifecycleInterceptorPlugin> implements LifecycleInterceptorService {
+final class LifecycleInterceptorPlugin extends AbstractIntegrationService<LifecycleInterceptorPlugin> implements LifecycleInterceptorService {
 
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private AbstractLifecycleInterceptorService delegate;
     private ServiceRegistration registration;
 
-    static void addService(ServiceTarget serviceTarget) {
-        LifecycleInterceptorPlugin service = new LifecycleInterceptorPlugin();
-        ServiceBuilder<LifecycleInterceptorPlugin> builder = serviceTarget.addService(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN, service);
-        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, service.injectedSystemContext);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    LifecycleInterceptorPlugin() {
+        super(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN);
     }
 
-    private LifecycleInterceptorPlugin() {
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<LifecycleInterceptorPlugin> builder) {
+        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
+        builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override

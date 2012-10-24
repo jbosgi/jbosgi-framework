@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,20 +19,20 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import java.util.Collections;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.StartLevelPlugin;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -90,20 +89,15 @@ public final class FrameworkActive extends AbstractFrameworkService {
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
 
-    static void addService(ServiceTarget serviceTarget, Mode initialMode) {
-        FrameworkActive service = new FrameworkActive();
-        ServiceBuilder<FrameworkState> builder = serviceTarget.addService(InternalServices.FRAMEWORK_STATE_ACTIVE, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-        builder.addDependency(InternalServices.FRAMEWORK_STATE_INIT, FrameworkState.class, service.injectedFramework);
-        builder.setInitialMode(Mode.ON_DEMAND);
-
-        // Add the public FRAMEWORK_ACTIVE service that provides the BundleContext
-        FrameworkActivated.addService(serviceTarget, initialMode);
-
-        builder.install();
+    FrameworkActive() {
+        super(InternalServices.FRAMEWORK_STATE_ACTIVE);
     }
 
-    private FrameworkActive() {
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<FrameworkState> builder) {
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
+        builder.addDependency(InternalServices.FRAMEWORK_STATE_INIT, FrameworkState.class, injectedFramework);
+        builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     /**
@@ -174,17 +168,21 @@ public final class FrameworkActive extends AbstractFrameworkService {
         return 1;
     }
 
-    static class FrameworkActivated extends AbstractService<BundleContext> {
+    static class FrameworkActivated extends AbstractIntegrationService<BundleContext> {
 
-        final InjectedValue<BundleContext> injectedBundleContext = new InjectedValue<BundleContext>();
+        private final InjectedValue<BundleContext> injectedBundleContext = new InjectedValue<BundleContext>();
+        private final Mode initialMode;
 
-        static void addService(ServiceTarget serviceTarget, Mode initialMode) {
-            FrameworkActivated service = new FrameworkActivated();
-            ServiceBuilder<BundleContext> builder = serviceTarget.addService(Services.FRAMEWORK_ACTIVE, service);
-            builder.addDependency(Services.FRAMEWORK_INIT, BundleContext.class, service.injectedBundleContext);
+        FrameworkActivated(Mode initialMode) {
+            super(Services.FRAMEWORK_ACTIVE);
+            this.initialMode = initialMode;
+        }
+
+        @Override
+        protected void addServiceDependencies(ServiceBuilder<BundleContext> builder) {
+            builder.addDependency(Services.FRAMEWORK_INIT, BundleContext.class, injectedBundleContext);
             builder.addDependency(InternalServices.FRAMEWORK_STATE_ACTIVE);
             builder.setInitialMode(initialMode);
-            builder.install();
         }
 
         @Override

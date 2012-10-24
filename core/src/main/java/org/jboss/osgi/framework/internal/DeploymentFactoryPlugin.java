@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
@@ -28,12 +28,11 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.jar.Manifest;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
@@ -49,16 +48,15 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 12-Jul-2010
  */
-final class DeploymentFactoryPlugin extends AbstractService<DeploymentFactoryPlugin> {
-
-    static void addService(ServiceTarget serviceTarget) {
-        DeploymentFactoryPlugin service = new DeploymentFactoryPlugin();
-        ServiceBuilder<DeploymentFactoryPlugin> builder = serviceTarget.addService(InternalServices.DEPLOYMENT_FACTORY_PLUGIN, service);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
-    }
+final class DeploymentFactoryPlugin extends AbstractIntegrationService<DeploymentFactoryPlugin> {
 
     DeploymentFactoryPlugin() {
+        super(InternalServices.DEPLOYMENT_FACTORY_PLUGIN);
+    }
+
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<DeploymentFactoryPlugin> builder) {
+        builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override

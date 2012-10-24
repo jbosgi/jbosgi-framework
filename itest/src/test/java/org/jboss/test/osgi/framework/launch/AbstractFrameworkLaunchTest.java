@@ -100,6 +100,11 @@ public abstract class AbstractFrameworkLaunchTest extends OSGiTest {
         return serviceContainer.getRequiredService(serviceName);
     }
 
+    protected ServiceController<?> getService(ServiceName serviceName) {
+        ServiceContainer serviceContainer = getServiceContainer();
+        return serviceContainer.getService(serviceName);
+    }
+
     protected ServiceContainer getServiceContainer() {
         return ((Adaptable) framework).adapt(ServiceContainer.class);
     }

@@ -40,15 +40,12 @@ import java.util.Set;
 import org.jboss.modules.filter.MultiplePathFilterBuilder;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
+import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 
 /**
@@ -57,7 +54,7 @@ import org.jboss.osgi.framework.spi.SystemPathsPlugin;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class DefaultSystemPathsPlugin extends AbstractService<SystemPathsPlugin> implements SystemPathsPlugin, IntegrationService<SystemPathsPlugin> {
+final class DefaultSystemPathsPlugin extends AbstractIntegrationService<SystemPathsPlugin> implements SystemPathsPlugin {
 
     private final FrameworkBuilder frameworkBuilder;
     // The derived combination of all system packages
@@ -75,19 +72,13 @@ final class DefaultSystemPathsPlugin extends AbstractService<SystemPathsPlugin> 
     private PathFilter cachedSystemFilter;
 
     DefaultSystemPathsPlugin(FrameworkBuilder frameworkBuilder) {
+        super(IntegrationServices.SYSTEM_PATHS_PLUGIN);
         this.frameworkBuilder = frameworkBuilder;
     }
 
     @Override
-    public ServiceName getServiceName() {
-        return IntegrationService.SYSTEM_PATHS_PLUGIN;
-    }
-
-    @Override
-    public ServiceController<SystemPathsPlugin> install(ServiceTarget serviceTarget) {
-        ServiceBuilder<SystemPathsPlugin> builder = serviceTarget.addService(getServiceName(), this);
+    protected void addServiceDependencies(ServiceBuilder<SystemPathsPlugin> builder) {
         builder.setInitialMode(Mode.ON_DEMAND);
-        return builder.install();
     }
 
     @Override

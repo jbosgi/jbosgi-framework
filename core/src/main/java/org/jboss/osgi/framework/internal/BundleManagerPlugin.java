@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.Constants.FRAMEWORK_LOCATION;
-import static org.jboss.osgi.framework.Constants.FRAMEWORK_SYMBOLIC_NAME;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 import static org.jboss.osgi.framework.internal.InternalServices.BUNDLE_BASE_NAME;
@@ -44,7 +42,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
@@ -58,6 +55,7 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleLock.LockMethod;
 import org.jboss.osgi.framework.spi.StartLevelPlugin;
 import org.jboss.osgi.framework.spi.StorageState;
@@ -84,7 +82,7 @@ import org.osgi.resource.Resource;
  * @author David Bosschaert
  * @since 29-Jun-2010
  */
-final class BundleManagerPlugin extends AbstractService<BundleManager> implements BundleManager {
+final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager> implements BundleManager {
 
     // The framework execution environment
     private static String OSGi_FRAMEWORK_EXECUTIONENVIRONMENT;
@@ -122,17 +120,8 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
     private ServiceTarget serviceTarget;
     private int stoppedEvent;
 
-    static BundleManagerPlugin addService(ServiceContainer serviceContainer, ServiceTarget serviceTarget, FrameworkBuilder frameworkBuilder) {
-        BundleManagerPlugin service = new BundleManagerPlugin(serviceContainer, frameworkBuilder);
-        ServiceBuilder<BundleManager> builder = serviceTarget.addService(Services.BUNDLE_MANAGER, service);
-        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironment);
-        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, service.injectedLockManager);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
-        return service;
-    }
-
-    private BundleManagerPlugin(ServiceContainer serviceContainer, FrameworkBuilder frameworkBuilder) {
+    BundleManagerPlugin(ServiceContainer serviceContainer, FrameworkBuilder frameworkBuilder) {
+        super(Services.BUNDLE_MANAGER);
         this.serviceContainer = serviceContainer;
         this.frameworkBuilder = frameworkBuilder;
         this.stoppedEvent = FrameworkEvent.STOPPED;
@@ -159,6 +148,13 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
 
         boolean allowContainerShutdown = frameworkBuilder.getServiceContainer() == null;
         shutdownContainer = new ShutdownContainer(serviceContainer, allowContainerShutdown);
+    }
+
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<BundleManager> builder) {
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
+        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, injectedLockManager);
+        builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override
@@ -216,16 +212,8 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
         return injectedFramework.getOptionalValue();
     }
 
-    String getManagerSymbolicName() {
-        return FRAMEWORK_SYMBOLIC_NAME;
-    }
-
-    String getManagerLocation() {
-        return FRAMEWORK_LOCATION;
-    }
-
-    Version getManagerVersion() {
-        String versionSpec = getClass().getPackage().getImplementationVersion();
+    static Version getFrameworkVersion() {
+        String versionSpec = BundleManagerPlugin.class.getPackage().getImplementationVersion();
         return Version.parseVersion(versionSpec);
     }
 
@@ -367,7 +355,7 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
                 // Create the bundle services
                 if (metadata.getFragmentHost() == null) {
                     serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep, listener);
-                    HostBundleActiveService.addService(serviceTarget, getFrameworkState(), serviceName.getParent());
+                    HostBundleActiveService.addService(serviceTarget, getFrameworkState(), dep);
                 } else {
                     serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep, listener);
                 }
@@ -536,12 +524,12 @@ final class BundleManagerPlugin extends AbstractService<BundleManager> implement
         }
     }
 
-    boolean isNotStopped() {
-        return !shutdownContainer.isShutdownInitiated() && !managerStopped.get();
+    boolean hasStopped() {
+        return shutdownContainer.isShutdownInitiated() || managerStopped.get();
     }
 
     void assertNotStopped() {
-        if (isNotStopped() == false)
+        if (hasStopped())
             throw MESSAGES.illegalStateFrameworkAlreadyStopped();
     }
 

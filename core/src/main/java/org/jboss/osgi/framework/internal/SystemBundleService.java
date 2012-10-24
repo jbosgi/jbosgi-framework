@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 import static org.osgi.framework.Constants.SYSTEM_BUNDLE_LOCATION;
@@ -29,7 +29,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceListener;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -39,6 +42,7 @@ import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
@@ -53,25 +57,31 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-public final class SystemBundleService extends AbstractBundleService<SystemBundleState> {
+public final class SystemBundleService extends AbstractBundleService<SystemBundleState> implements IntegrationService<SystemBundleState> {
 
     private final InjectedValue<SystemPathsPlugin> injectedSystemPaths = new InjectedValue<SystemPathsPlugin>();
     private final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironmentPlugin = new InjectedValue<XEnvironment>();
     private SystemBundleState bundleState;
 
-    static void addService(ServiceTarget serviceTarget, FrameworkState frameworkState) {
-        SystemBundleService service = new SystemBundleService(frameworkState);
-        ServiceBuilder<SystemBundleState> builder = serviceTarget.addService(InternalServices.SYSTEM_BUNDLE, service);
-        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, service.injectedEnvironmentPlugin);
-        builder.addDependency(IntegrationService.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, service.injectedSystemPaths);
-        builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, service.injectedBundleStorage);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    SystemBundleService(FrameworkState frameworkState) {
+        super(frameworkState);
     }
 
-    private SystemBundleService(FrameworkState frameworkState) {
-        super(frameworkState);
+    @Override
+    public ServiceName getServiceName() {
+        return InternalServices.SYSTEM_BUNDLE;
+    }
+
+    @Override
+    public ServiceController<SystemBundleState> install(ServiceTarget serviceTarget, ServiceListener<Object> listener) {
+        ServiceBuilder<SystemBundleState> builder = serviceTarget.addService(getServiceName(), this);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironmentPlugin);
+        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, injectedSystemPaths);
+        builder.addDependency(InternalServices.BUNDLE_STORAGE_PLUGIN, BundleStoragePlugin.class, injectedBundleStorage);
+        builder.setInitialMode(Mode.ON_DEMAND);
+        builder.addListener(listener);
+        return builder.install();
     }
 
     @Override

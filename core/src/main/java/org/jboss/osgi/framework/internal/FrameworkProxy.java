@@ -21,10 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.Constants.DEFAULT_FRAMEWORK_INIT_TIMEOUT;
-import static org.jboss.osgi.framework.Constants.DEFAULT_FRAMEWORK_START_TIMEOUT;
-import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_INIT_TIMEOUT;
-import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_START_TIMEOUT;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
@@ -34,19 +30,13 @@ import java.net.URL;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.spi.FutureServiceValue;
+import org.jboss.osgi.framework.internal.FrameworkBuilder.FrameworkPhase;
+import org.jboss.osgi.framework.spi.ServiceTracker;
 import org.jboss.osgi.resolver.Adaptable;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -70,7 +60,6 @@ final class FrameworkProxy implements Framework, Adaptable {
 
     private final FrameworkBuilder frameworkBuilder;
     private BundleManagerPlugin bundleManager;
-    private FrameworkState frameworkState;
     private boolean firstInit;
 
     FrameworkProxy(FrameworkBuilder frameworkBuilder) {
@@ -85,24 +74,24 @@ final class FrameworkProxy implements Framework, Adaptable {
 
     @Override
     public String getSymbolicName() {
-        return bundleManager != null ? bundleManager.getManagerSymbolicName() : Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
+        return Constants.FRAMEWORK_SYMBOLIC_NAME;
     }
 
     @Override
     public String getLocation() {
-        return bundleManager != null ? bundleManager.getManagerLocation() : Constants.SYSTEM_BUNDLE_LOCATION;
+        return Constants.FRAMEWORK_LOCATION;
     }
 
     @Override
     public Version getVersion() {
-        return bundleManager != null ? bundleManager.getManagerVersion() : Version.emptyVersion;
+        return BundleManagerPlugin.getFrameworkVersion();
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T> T adapt(Class<T> type) {
-        BundleManagerPlugin bundleManager = getBundleManager();
-        if (bundleManager != null) {
+        if (!hasStopped()) {
+            BundleManagerPlugin bundleManager = getBundleManager();
             if (type.isAssignableFrom(BundleManager.class)) {
                 return (T) bundleManager;
             } else if (type.isAssignableFrom(ServiceContainer.class)) {
@@ -113,7 +102,7 @@ final class FrameworkProxy implements Framework, Adaptable {
     }
 
     private BundleManagerPlugin getBundleManager() {
-        return frameworkState != null ? frameworkState.getBundleManager() : null;
+        return bundleManager;
     }
 
     /**
@@ -144,21 +133,33 @@ final class FrameworkProxy implements Framework, Adaptable {
         LOGGER.debugf("Init framework");
         try {
             ServiceContainer serviceContainer = frameworkBuilder.getServiceContainer();
-            if (serviceContainer == null) 
+            if (serviceContainer == null)
                 serviceContainer = frameworkBuilder.createServiceContainer();
 
             ServiceTarget serviceTarget = frameworkBuilder.getServiceTarget();
             if (serviceTarget == null)
                 serviceTarget = serviceContainer.subTarget();
 
-            bundleManager = frameworkBuilder.createFrameworkServicesInternal(serviceContainer, serviceTarget, firstInit);
-
+            bundleManager = (BundleManagerPlugin) frameworkBuilder.registerFrameworkServices(serviceContainer, firstInit);
             bundleManager.setManagerState(Bundle.STARTING);
-            frameworkState = awaitFrameworkInit(serviceContainer);
-            firstInit = false;
 
-        } catch (Exception ex) {
+            ServiceTracker<Object> serviceTracker = new ServiceTracker<Object>();
+            frameworkBuilder.installFrameworkServices(FrameworkPhase.CREATE, serviceTarget, serviceTracker);
+            frameworkBuilder.installFrameworkServices(FrameworkPhase.INIT, serviceTarget, serviceTracker);
+
+            // Wait for all CREATE and INIT services to complete
+            if (!serviceTracker.awaitCompletion()) {
+                throw serviceTracker.getFirstFailure();
+            }
+
+        } catch (BundleException ex) {
+            bundleManager.setManagerState(Bundle.INSTALLED);
+            throw ex;
+        } catch (Throwable ex) {
+            bundleManager.setManagerState(Bundle.INSTALLED);
             throw MESSAGES.cannotInitializeFramework(ex);
+        } finally {
+            firstInit = false;
         }
     }
 
@@ -191,9 +192,20 @@ final class FrameworkProxy implements Framework, Adaptable {
 
         LOGGER.debugf("Start framework");
         try {
-            awaitFrameworkActive(bundleManager.getServiceContainer());
+
+            ServiceTracker<Object> serviceTracker = new ServiceTracker<Object>();
+            frameworkBuilder.installFrameworkServices(FrameworkPhase.ACTIVE, bundleManager.getServiceTarget(), serviceTracker);
+
+            // Wait for all CREATE and INIT services to complete
+            if (!serviceTracker.awaitCompletion()) {
+                throw serviceTracker.getFirstFailure();
+            }
+
             bundleManager.setManagerState(Bundle.ACTIVE);
-        } catch (Exception ex) {
+
+        } catch (BundleException ex) {
+            throw ex;
+        } catch (Throwable ex) {
             throw MESSAGES.cannotStartFramework(ex);
         }
     }
@@ -363,7 +375,7 @@ final class FrameworkProxy implements Framework, Adaptable {
 
     @Override
     public BundleContext getBundleContext() {
-        return isNotStopped() ? getSystemBundle().getBundleContext() : null;
+        return !hasStopped() ? getSystemBundle().getBundleContext() : null;
     }
 
     @Override
@@ -372,51 +384,18 @@ final class FrameworkProxy implements Framework, Adaptable {
         throw new UnsupportedOperationException();
     }
 
-    private boolean isNotStopped() {
-        return bundleManager != null && bundleManager.isNotStopped();
+    private boolean hasStopped() {
+        return bundleManager == null || bundleManager.hasStopped();
     }
 
     private void assertNotStopped() {
-        if (isNotStopped() == false)
+        if (hasStopped())
             throw MESSAGES.illegalStateFrameworkAlreadyStopped();
     }
 
     private SystemBundleState getSystemBundle() {
-        if (frameworkState == null)
+        if (bundleManager == null)
             throw MESSAGES.illegalStateFrameworkNotInitialized();
-        return frameworkState.getSystemBundle();
+        return bundleManager.getFrameworkState().getSystemBundle();
     }
-
-    @SuppressWarnings("unchecked")
-    private FrameworkState awaitFrameworkInit(ServiceContainer serviceContainer) throws ExecutionException, TimeoutException {
-        final ServiceController<BundleContext> controller = (ServiceController<BundleContext>) serviceContainer.getRequiredService(Services.FRAMEWORK_INIT);
-        final String serviceName = controller.getName().getCanonicalName();
-        controller.addListener(new AbstractServiceListener<BundleContext>() {
-            public void transition(final ServiceController<? extends BundleContext> controller, final ServiceController.Transition transition) {
-                LOGGER.tracef("awaitFrameworkInit %s => %s", serviceName, transition);
-                switch (transition) {
-                    case STARTING_to_START_FAILED:
-                    case STOPPING_to_DOWN:
-                        controller.removeListener(this);
-                        frameworkState = null;
-                        break;
-                }
-            }
-        });
-        controller.setMode(Mode.ACTIVE);
-        FutureServiceValue<BundleContext> future = new FutureServiceValue<BundleContext>(controller);
-        Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_INIT_TIMEOUT, DEFAULT_FRAMEWORK_INIT_TIMEOUT);
-        SystemBundleContext bundleContext = (SystemBundleContext) future.get(timeout, TimeUnit.MILLISECONDS);
-        return bundleContext.getFrameworkState();
-    }
-
-    @SuppressWarnings("unchecked")
-    private void awaitFrameworkActive(ServiceContainer serviceContainer) throws ExecutionException, TimeoutException {
-        final ServiceController<BundleContext> controller = (ServiceController<BundleContext>) serviceContainer.getRequiredService(Services.FRAMEWORK_ACTIVE);
-        controller.setMode(Mode.ACTIVE);
-        FutureServiceValue<BundleContext> future = new FutureServiceValue<BundleContext>(controller);
-        Integer timeout = (Integer) frameworkBuilder.getProperty(PROPERTY_FRAMEWORK_START_TIMEOUT, DEFAULT_FRAMEWORK_START_TIMEOUT);
-        future.get(timeout, TimeUnit.MILLISECONDS);
-    }
-
 }

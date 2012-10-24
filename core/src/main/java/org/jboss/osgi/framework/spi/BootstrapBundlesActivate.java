@@ -45,22 +45,12 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
     private final Set<ServiceName> resolvedServices;
 
     public BootstrapBundlesActivate(ServiceName baseName, Set<ServiceName> resolvedServices) {
-        super(baseName, IntegrationService.BootstrapPhase.ACTIVATE);
+        super(baseName, IntegrationServices.BootstrapPhase.ACTIVATE);
         this.resolvedServices = resolvedServices;
     }
 
-    @Override
-    public ServiceController<T> install(ServiceTarget serviceTarget) {
-        // The bootstrap activate service cannot have a direct dependency on
-        // the bundle RESOLVED services because it must be possible to uninstall
-        // a bundle without taking this service down
-        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
-        builder.addDependencies(getPreviousService());
-        addServiceDependencies(builder);
-        return builder.install();
-    }
-
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
+        builder.addDependencies(getPreviousService());
     }
 
     @Override
@@ -95,6 +85,6 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
     }
 
     protected ServiceController<T> installCompleteService(ServiceTarget serviceTarget) {
-        return new BootstrapBundlesComplete<T>(getServiceName().getParent()).install(serviceTarget);
+        return new BootstrapBundlesComplete<T>(getServiceName().getParent()).install(serviceTarget, getServiceListener());
     }
 }

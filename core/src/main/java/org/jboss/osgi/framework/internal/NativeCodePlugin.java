@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
@@ -37,12 +37,11 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.metadata.NativeLibrary;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -65,7 +64,7 @@ import org.osgi.framework.Version;
  * @author David Bosschaert
  * @since 11-Aug-2010
  */
-final class NativeCodePlugin extends AbstractService<NativeCodePlugin> {
+final class NativeCodePlugin extends AbstractIntegrationService<NativeCodePlugin> {
 
     /**
      * The string that is to be replaced with the absolute path of the native library as specified by the core spec with the
@@ -118,15 +117,14 @@ final class NativeCodePlugin extends AbstractService<NativeCodePlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
 
-    static void addService(ServiceTarget serviceTarget) {
-        NativeCodePlugin service = new NativeCodePlugin();
-        ServiceBuilder<NativeCodePlugin> builder = serviceTarget.addService(InternalServices.NATIVE_CODE_PLUGIN, service);
-        builder.addDependency(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    NativeCodePlugin() {
+        super(InternalServices.NATIVE_CODE_PLUGIN);
     }
 
-    private NativeCodePlugin() {
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<NativeCodePlugin> builder) {
+        builder.addDependency(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
+        builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override

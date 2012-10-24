@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
@@ -60,7 +60,7 @@ final class HostBundleInstalledService extends UserBundleInstalledService<HostBu
     }
 
     @Override
-    HostBundleRevision createBundleRevision(Deployment deployment, OSGiMetaData metadata, InternalStorageState storageState)  throws BundleException {
+    HostBundleRevision createBundleRevision(Deployment deployment, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
         return new HostBundleRevision(getFrameworkState(), deployment, metadata, storageState);
     }
 

@@ -21,45 +21,34 @@
  */
 package org.jboss.osgi.framework.spi;
 
+import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceListener;
-import org.jboss.msc.service.ServiceListener.Inheritance;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.spi.IntegrationServices.BootstrapPhase;
-import org.jboss.osgi.framework.spi.ServiceTracker.SynchronousListenerServiceWrapper;
 
-public abstract class BootstrapBundlesService<T> extends AbstractIntegrationService<T> {
+public abstract class AbstractIntegrationService<T> extends AbstractService<T> implements IntegrationService<T> {
 
-    private final ServiceName baseName;
-    private final BootstrapPhase phase;
-    private ServiceListener<Object> listener;
+    private final ServiceName serviceName;
 
-    public BootstrapBundlesService(ServiceName baseName, IntegrationServices.BootstrapPhase phase) {
-        super(BootstrapPhase.serviceName(baseName, phase));
-        this.baseName = baseName;
-        this.phase = phase;
+    public AbstractIntegrationService(ServiceName serviceName) {
+        this.serviceName = serviceName;
+    }
+
+    @Override
+    public ServiceName getServiceName() {
+        return serviceName;
     }
 
     @Override
     public ServiceController<T> install(ServiceTarget serviceTarget, ServiceListener<Object> listener) {
-        this.listener = listener;
-        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), new SynchronousListenerServiceWrapper<T>(this));
+        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), this);
         addServiceDependencies(builder);
-        builder.addListener(Inheritance.ALL, listener);
+        builder.addListener(listener);
         return builder.install();
     }
 
-    protected ServiceListener<Object> getServiceListener() {
-        return listener;
-    }
-
-    public ServiceName getPreviousService() {
-        return BootstrapPhase.serviceName(baseName, phase.previous());
-    }
-
-    public ServiceName getNextService() {
-        return BootstrapPhase.serviceName(baseName, phase.next());
+    protected void addServiceDependencies(ServiceBuilder<T> builder) {
     }
 }

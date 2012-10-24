@@ -44,7 +44,6 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.spi.ServiceTracker.SynchronousListenerServiceWrapper;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -63,26 +62,20 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
     private final Set<ServiceName> installedServices;
 
     public BootstrapBundlesResolve(ServiceName baseName, Set<ServiceName> installedServices) {
-        super(baseName, IntegrationService.BootstrapPhase.RESOLVE);
+        super(baseName, IntegrationServices.BootstrapPhase.RESOLVE);
         this.installedServices = installedServices;
     }
 
-    @Override
-    public ServiceController<T> install(ServiceTarget serviceTarget) {
-        // The bootstrap resolve service cannot have a direct dependency on
-        // the bundle INSTALLED services because it must be possible to uninstall
-        // a bundle without taking this service down
-        ServiceBuilder<T> builder = serviceTarget.addService(getServiceName(), new SynchronousListenerServiceWrapper<T>(this));
+    protected void addServiceDependencies(ServiceBuilder<T> builder) {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
         builder.addDependency(Services.RESOLVER, XResolver.class, injectedResolver);
         builder.addDependencies(getPreviousService());
-        addServiceDependencies(builder);
-        return builder.install();
     }
 
-    protected void addServiceDependencies(ServiceBuilder<T> builder) {
+    protected BundleManager getBundleManager() {
+        return injectedBundleManager.getValue();
     }
 
     @Override
@@ -104,7 +97,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         }
 
         // Strictly resolve the bootstrap bundles
-        if (IntegrationService.BOOTSTRAP_BUNDLES.isParentOf(getServiceName())) {
+        if (IntegrationServices.BOOTSTRAP_BUNDLES.isParentOf(getServiceName())) {
             XEnvironment env = injectedEnvironment.getValue();
             List<XBundleRevision> mandatory = new ArrayList<XBundleRevision>();
             for (XBundle bundle : resolvableServices.values()) {
@@ -119,7 +112,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
             }
         }
 
-        if (IntegrationService.PERSISTENT_BUNDLES.isParentOf(getServiceName())) {
+        if (IntegrationServices.PERSISTENT_BUNDLES.isParentOf(getServiceName())) {
             Bundle[] bundles = resolvableServices.values().toArray(new Bundle[resolvableServices.size()]);
             PackageAdmin packageAdmin = injectedPackageAdmin.getValue();
             packageAdmin.resolveBundles(bundles);
@@ -149,10 +142,9 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         };
 
         // Add the tracker to the Bundle RESOLVED services
-        BundleManager bundleManager = injectedBundleManager.getValue();
         for (ServiceName serviceName : resolvedServices) {
             XBundle bundle = resolvableServices.get(serviceName);
-            serviceName = bundleManager.getServiceName(bundle, Bundle.RESOLVED);
+            serviceName = getBundleManager().getServiceName(bundle, Bundle.RESOLVED);
             @SuppressWarnings("unchecked")
             ServiceController<XBundle> resolved = (ServiceController<XBundle>) serviceRegistry.getRequiredService(serviceName);
             resolved.addListener(resolvedTracker);
@@ -163,8 +155,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
     }
 
     private int getBeginningStartLevel() {
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        String levelSpec = (String) bundleManager.getProperty(Constants.FRAMEWORK_BEGINNING_STARTLEVEL);
+        String levelSpec = (String) getBundleManager().getProperty(Constants.FRAMEWORK_BEGINNING_STARTLEVEL);
         if (levelSpec != null) {
             try {
                 return Integer.parseInt(levelSpec);
@@ -176,7 +167,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
     }
 
     protected ServiceController<T> installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices) {
-        return new BootstrapBundlesActivate<T>(getServiceName().getParent(), resolvedServices).install(serviceTarget);
+        return new BootstrapBundlesActivate<T>(getServiceName().getParent(), resolvedServices).install(serviceTarget, getServiceListener());
     }
 
 }

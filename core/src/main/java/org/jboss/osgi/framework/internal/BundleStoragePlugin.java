@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
@@ -37,14 +37,13 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -57,23 +56,22 @@ import org.osgi.framework.Constants;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class BundleStoragePlugin extends AbstractService<BundleStoragePlugin> {
+final class BundleStoragePlugin extends AbstractIntegrationService<BundleStoragePlugin> {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final Map<String, InternalStorageState> storageStates = new HashMap<String, InternalStorageState>();
-    private File storageArea;
     private boolean firstInit;
+    private File storageArea;
 
-    static void addService(ServiceTarget serviceTarget, boolean firstInit) {
-        BundleStoragePlugin service = new BundleStoragePlugin(firstInit);
-        ServiceBuilder<BundleStoragePlugin> builder = serviceTarget.addService(InternalServices.BUNDLE_STORAGE_PLUGIN, service);
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, service.injectedBundleManager);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    BundleStoragePlugin(boolean firstInit) {
+        super(InternalServices.BUNDLE_STORAGE_PLUGIN);
+        this.firstInit = firstInit;
     }
 
-    private BundleStoragePlugin(boolean firstInit) {
-        this.firstInit = firstInit;
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<BundleStoragePlugin> builder) {
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
+        builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override

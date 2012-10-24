@@ -1,5 +1,3 @@
-package org.jboss.osgi.framework.internal;
-
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
@@ -29,30 +28,28 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.jboss.msc.service.AbstractService;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceTarget;
+import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 
 /**
  * The plugin for framework locks.
- * 
+ *
  * @author thomas.diesler@jboss.com
  * @since 15-Aug-2012
  */
-final class LockManagerPlugin extends AbstractService<LockManagerPlugin> {
+final class LockManagerPlugin extends AbstractIntegrationService<LockManagerPlugin> {
 
     private final ReentrantLock frameworkLock = new ReentrantLock();
     private RuntimeException lastLockAquisition;
 
-    static void addService(ServiceTarget serviceTarget) {
-        LockManagerPlugin service = new LockManagerPlugin();
-        ServiceBuilder<LockManagerPlugin> builder = serviceTarget.addService(InternalServices.LOCK_MANAGER_PLUGIN, service);
-        builder.setInitialMode(Mode.ON_DEMAND);
-        builder.install();
+    LockManagerPlugin() {
+        super(InternalServices.LOCK_MANAGER_PLUGIN);
     }
 
-    private LockManagerPlugin() {
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<LockManagerPlugin> builder) {
+        builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override

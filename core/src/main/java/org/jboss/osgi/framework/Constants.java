@@ -41,21 +41,9 @@ public interface Constants extends org.osgi.framework.Constants {
     /** The number of threads available for MSC services */
     String PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS = "org.jboss.osgi.framework.bootstrap.maxThreads";
 
-    /** The timeout in milliseconds for the framework to initialize */
-    String PROPERTY_FRAMEWORK_INIT_TIMEOUT = "org.jboss.osgi.framework.init.timeout";
-
-    /** The timeout in milliseconds for the framework to start */
-    String PROPERTY_FRAMEWORK_START_TIMEOUT = "org.jboss.osgi.framework.start.timeout";
-
     /** A list of URLs to bundles that get installed on framework startup */
     String PROPERTY_AUTO_INSTALL_URLS = "org.jboss.osgi.auto.install";
 
     /** A list of URLs to bundles that get installed and started on framework startup */
     String PROPERTY_AUTO_START_URLS = "org.jboss.osgi.auto.start";
-
-    /** The default timeout for the framework to initialize is 5sec */
-    int DEFAULT_FRAMEWORK_INIT_TIMEOUT = 5000;
-
-    /** The default timeout for the framework to start is 10sec */
-    int DEFAULT_FRAMEWORK_START_TIMEOUT = 10000;
 }
