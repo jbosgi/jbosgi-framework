@@ -26,7 +26,8 @@ import java.io.InputStream;
 import java.util.Map;
 
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.osgi.framework.internal.FrameworkBuilder;
+import org.jboss.osgi.framework.spi.FrameworkBuilderFactory;
+import org.jboss.osgi.framework.spi.FrameworkBuilder;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
@@ -47,7 +48,7 @@ public class FrameworkShutdownTestCase extends AbstractFrameworkLaunchTest {
     @Test
     public void testFrameworkStopWithTimeout() throws Exception {
         Map<String, Object> props = getFrameworkInitProperties(true);
-        FrameworkBuilder builder = new FrameworkBuilder(props, Mode.ACTIVE);
+        FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         Framework framework = newFramework(builder);
         assertBundleState(Bundle.INSTALLED, framework.getState());
 
@@ -65,7 +66,7 @@ public class FrameworkShutdownTestCase extends AbstractFrameworkLaunchTest {
     @Test
     public void testFrameworkStopNoTimeout() throws Exception {
         Map<String, Object> props = getFrameworkInitProperties(true);
-        FrameworkBuilder builder = new FrameworkBuilder(props, Mode.ACTIVE);
+        FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         Framework framework = newFramework(builder);
         assertBundleState(Bundle.INSTALLED, framework.getState());
 
@@ -83,7 +84,7 @@ public class FrameworkShutdownTestCase extends AbstractFrameworkLaunchTest {
     @Test
     public void testSystemBundleStopWithTimeout() throws Exception {
         Map<String, Object> props = getFrameworkInitProperties(true);
-        FrameworkBuilder builder = new FrameworkBuilder(props, Mode.ACTIVE);
+        FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         Framework framework = newFramework(builder);
         assertBundleState(Bundle.INSTALLED, framework.getState());
 
@@ -95,7 +96,7 @@ public class FrameworkShutdownTestCase extends AbstractFrameworkLaunchTest {
 
         Bundle sysbundle = framework.getBundleContext().getBundle();
         sysbundle.stop();
-        
+
         FrameworkEvent stopEvent = framework.waitForStop(2000);
         assertEquals(FrameworkEvent.STOPPED, stopEvent.getType());
     }
@@ -103,7 +104,7 @@ public class FrameworkShutdownTestCase extends AbstractFrameworkLaunchTest {
     @Test
     public void testSystemBundleStopNoTimeout() throws Exception {
         Map<String, Object> props = getFrameworkInitProperties(true);
-        FrameworkBuilder builder = new FrameworkBuilder(props, Mode.ACTIVE);
+        FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         Framework framework = newFramework(builder);
         assertBundleState(Bundle.INSTALLED, framework.getState());
 
@@ -115,7 +116,7 @@ public class FrameworkShutdownTestCase extends AbstractFrameworkLaunchTest {
 
         Bundle sysbundle = framework.getBundleContext().getBundle();
         sysbundle.stop();
-        
+
         FrameworkEvent stopEvent = framework.waitForStop(0);
         assertEquals(FrameworkEvent.STOPPED, stopEvent.getType());
     }

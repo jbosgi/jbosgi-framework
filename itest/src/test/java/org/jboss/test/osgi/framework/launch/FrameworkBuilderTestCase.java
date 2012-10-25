@@ -37,8 +37,9 @@ import org.jboss.msc.service.ValueService;
 import org.jboss.msc.value.ImmediateValue;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.internal.FrameworkBuilder;
-import org.jboss.osgi.framework.internal.FrameworkBuilder.FrameworkPhase;
+import org.jboss.osgi.framework.spi.FrameworkBuilderFactory;
+import org.jboss.osgi.framework.spi.FrameworkBuilder;
+import org.jboss.osgi.framework.spi.FrameworkBuilder.FrameworkPhase;
 import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
@@ -68,7 +69,7 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
     public void testFrameworkInit() throws Exception {
 
         Map<String, Object> props = getFrameworkInitProperties(true);
-        FrameworkBuilder builder = new FrameworkBuilder(props, Mode.ACTIVE);
+        FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         Framework framework = newFramework(builder);
         assertBundleState(Bundle.INSTALLED, framework.getState());
 
@@ -108,7 +109,7 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
     public void testFrameworkStartStop() throws Exception {
 
         Map<String, Object> props = getFrameworkInitProperties(true);
-        FrameworkBuilder builder = new FrameworkBuilder(props, Mode.ACTIVE);
+        FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         Framework framework = newFramework(builder);
 
         Assert.assertNotNull("Framework not null", framework);
@@ -164,12 +165,12 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
     public void testFrameworkServices() throws Exception {
 
         Map<String, Object> props = getFrameworkInitProperties(true);
-        FrameworkBuilder builder = new FrameworkBuilder(props, Mode.ACTIVE);
+        FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         ServiceContainer serviceContainer = builder.createServiceContainer();
         ServiceTarget serviceTarget = serviceContainer.subTarget();
-        builder.registerFrameworkServices(serviceContainer, true);
-        builder.installFrameworkServices(FrameworkPhase.CREATE, serviceTarget, Mockito.mock(ServiceListener.class));
-        builder.installFrameworkServices(FrameworkPhase.INIT, serviceTarget, Mockito.mock(ServiceListener.class));
+        builder.createFrameworkServices(serviceContainer, true);
+        builder.installServices(FrameworkPhase.CREATE, serviceTarget, Mockito.mock(ServiceListener.class));
+        builder.installServices(FrameworkPhase.INIT, serviceTarget, Mockito.mock(ServiceListener.class));
 
         assertServiceState(serviceContainer, State.DOWN, Services.FRAMEWORK_INIT);
         assertServiceState(serviceContainer, State.DOWN, IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL);
@@ -183,7 +184,7 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
         serviceBuilder.addDependencies(Services.FRAMEWORK_ACTIVE);
         ServiceController<Boolean> controller = serviceBuilder.install();
 
-        builder.installFrameworkServices(FrameworkPhase.ACTIVE, serviceTarget, Mockito.mock(ServiceListener.class));
+        builder.installServices(FrameworkPhase.ACTIVE, serviceTarget, Mockito.mock(ServiceListener.class));
         FutureServiceValue<Boolean> future = new FutureServiceValue<Boolean>(controller);
         Assert.assertTrue(future.get(2, TimeUnit.SECONDS));
 

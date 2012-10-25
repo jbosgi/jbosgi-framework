@@ -35,8 +35,9 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.internal.FrameworkBuilder.FrameworkPhase;
+import org.jboss.osgi.framework.spi.FrameworkBuilder;
 import org.jboss.osgi.framework.spi.ServiceTracker;
+import org.jboss.osgi.framework.spi.FrameworkBuilder.FrameworkPhase;
 import org.jboss.osgi.resolver.Adaptable;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -140,12 +141,12 @@ final class FrameworkProxy implements Framework, Adaptable {
             if (serviceTarget == null)
                 serviceTarget = serviceContainer.subTarget();
 
-            bundleManager = (BundleManagerPlugin) frameworkBuilder.registerFrameworkServices(serviceContainer, firstInit);
+            bundleManager = (BundleManagerPlugin) frameworkBuilder.createFrameworkServices(serviceContainer, firstInit);
             bundleManager.setManagerState(Bundle.STARTING);
 
             ServiceTracker<Object> serviceTracker = new ServiceTracker<Object>();
-            frameworkBuilder.installFrameworkServices(FrameworkPhase.CREATE, serviceTarget, serviceTracker);
-            frameworkBuilder.installFrameworkServices(FrameworkPhase.INIT, serviceTarget, serviceTracker);
+            frameworkBuilder.installServices(FrameworkPhase.CREATE, serviceTarget, serviceTracker);
+            frameworkBuilder.installServices(FrameworkPhase.INIT, serviceTarget, serviceTracker);
 
             // Wait for all CREATE and INIT services to complete
             if (!serviceTracker.awaitCompletion()) {
@@ -194,7 +195,7 @@ final class FrameworkProxy implements Framework, Adaptable {
         try {
 
             ServiceTracker<Object> serviceTracker = new ServiceTracker<Object>();
-            frameworkBuilder.installFrameworkServices(FrameworkPhase.ACTIVE, bundleManager.getServiceTarget(), serviceTracker);
+            frameworkBuilder.installServices(FrameworkPhase.ACTIVE, bundleManager.getServiceTarget(), serviceTracker);
 
             // Wait for all CREATE and INIT services to complete
             if (!serviceTracker.awaitCompletion()) {

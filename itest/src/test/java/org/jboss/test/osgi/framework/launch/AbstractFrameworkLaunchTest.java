@@ -32,7 +32,7 @@ import org.jboss.msc.service.ServiceController.State;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.internal.FrameworkBuilder;
+import org.jboss.osgi.framework.spi.FrameworkBuilder;
 import org.jboss.osgi.resolver.Adaptable;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.spi.util.ServiceLoader;

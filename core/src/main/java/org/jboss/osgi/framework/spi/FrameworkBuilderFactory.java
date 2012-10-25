@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,35 +19,25 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.spi;
 
 import java.util.Map;
 
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.osgi.framework.spi.FrameworkBuilderFactory;
-import org.jboss.osgi.framework.spi.FrameworkBuilder;
+import org.jboss.osgi.framework.internal.FrameworkBuilderImpl;
 import org.osgi.framework.launch.Framework;
-import org.osgi.framework.launch.FrameworkFactory;
 
 /**
- * An impementation of an OSGi {@link FrameworkFactory}
+ * A builder for the {@link Framework} implementation.
+ *
+ * Provides hooks for various integration aspects.
  *
  * @author thomas.diesler@jboss.com
- * @since 21-Aug-2009
+ * @since 24-Mar-2011
  */
-public class FrameworkMain implements FrameworkFactory {
+public class FrameworkBuilderFactory {
 
-    /**
-     * The main entry point to the Framework
-     */
-    public static void main(String[] args) throws Exception {
-        FrameworkMain factory = new FrameworkMain();
-        Framework framework = factory.newFramework(null);
-        framework.start();
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public Framework newFramework(Map props) {
-        FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
-        return builder.createFramework();
+    public static FrameworkBuilder create(Map<String, Object> props, Mode initialMode) {
+        return new FrameworkBuilderImpl(props, initialMode);
     }
 }

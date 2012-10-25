@@ -1,5 +1,3 @@
-package org.jboss.osgi.framework.internal;
-
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
@@ -39,16 +38,19 @@ import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.BundleManager;
+import org.jboss.osgi.framework.spi.FrameworkBuilder;
 import org.jboss.osgi.framework.spi.IntegrationService;
 import org.osgi.framework.launch.Framework;
 
 /**
- * A builder for the {@link Framework} implementation. Provides hooks for various integration aspects.
+ * A builder for the {@link Framework} implementation.
+ *
+ * Provides hooks for various integration aspects.
  *
  * @author thomas.diesler@jboss.com
  * @since 24-Mar-2011
  */
-public final class FrameworkBuilder {
+public final class FrameworkBuilderImpl implements FrameworkBuilder {
 
     private final Map<String, Object> initialProperties = new HashMap<String, Object>();
     private final Map<FrameworkPhase, Map<ServiceName, IntegrationService<?>>> integrationServices;
@@ -57,11 +59,7 @@ public final class FrameworkBuilder {
     private ServiceTarget serviceTarget;
     private boolean closed;
 
-    public enum FrameworkPhase {
-        CREATE, INIT, ACTIVE
-    }
-
-    public FrameworkBuilder(Map<String, Object> props, Mode initialMode) {
+    public FrameworkBuilderImpl(Map<String, Object> props, Mode initialMode) {
         this.initialMode = initialMode;
         integrationServices = new HashMap<FrameworkPhase, Map<ServiceName, IntegrationService<?>>>();
         if (props != null) {
@@ -69,28 +67,34 @@ public final class FrameworkBuilder {
         }
     }
 
+    @Override
     public Object getProperty(String key) {
         return getProperty(key, null);
     }
 
+    @Override
     public Object getProperty(String key, Object defaultValue) {
         Object value = initialProperties.get(key);
         return value != null ? value : defaultValue;
     }
 
+    @Override
     public Map<String, Object> getProperties() {
         return Collections.unmodifiableMap(initialProperties);
     }
 
+    @Override
     public ServiceContainer getServiceContainer() {
         return serviceContainer;
     }
 
+    @Override
     public void setServiceContainer(ServiceContainer serviceContainer) {
         assertNotClosed();
         this.serviceContainer = serviceContainer;
     }
 
+    @Override
     public ServiceContainer createServiceContainer() {
         Object maxThreads = getProperty(PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS);
         if (maxThreads == null)
@@ -102,24 +106,29 @@ public final class FrameworkBuilder {
         }
     }
 
+    @Override
     public ServiceTarget getServiceTarget() {
         return serviceTarget;
     }
 
+    @Override
     public void setServiceTarget(ServiceTarget serviceTarget) {
         assertNotClosed();
         this.serviceTarget = serviceTarget;
     }
 
+    @Override
     public Mode getInitialMode() {
         return initialMode;
     }
 
+    @Override
     public Framework createFramework() {
         assertNotClosed();
         return new FrameworkProxy(this);
     }
 
+    @Override
     public void registerIntegrationService(FrameworkPhase phase, IntegrationService<?> service) {
         assertNotClosed();
         Map<ServiceName, IntegrationService<?>> phaseServices = integrationServices.get(phase);
@@ -130,7 +139,8 @@ public final class FrameworkBuilder {
         phaseServices.put(service.getServiceName(), service);
     }
 
-    public BundleManager registerFrameworkServices(ServiceContainer serviceContainer, boolean firstInit) {
+    @Override
+    public BundleManager createFrameworkServices(ServiceContainer serviceContainer, boolean firstInit) {
 
         integrationServices.clear();
         closed = false;
@@ -182,7 +192,9 @@ public final class FrameworkBuilder {
         return bundleManager;
     }
 
-    public void installFrameworkServices(FrameworkPhase phase, ServiceTarget serviceTarget, ServiceListener<Object> listener) {
+    @Override
+    public void installServices(FrameworkPhase phase, ServiceTarget serviceTarget, ServiceListener<Object> listener) {
+        assertNotClosed();
         try {
             Map<ServiceName, IntegrationService<?>> phaseServices = integrationServices.get(phase);
             for (IntegrationService<?> service : phaseServices.values()) {
