@@ -195,12 +195,12 @@ public final class FrameworkBuilderImpl implements FrameworkBuilder {
     @Override
     public void installServices(FrameworkPhase phase, ServiceTarget serviceTarget, ServiceListener<Object> listener) {
         assertNotClosed();
-        try {
-            Map<ServiceName, IntegrationService<?>> phaseServices = integrationServices.get(phase);
-            for (IntegrationService<?> service : phaseServices.values()) {
-                service.install(serviceTarget, listener);
-            }
-        } finally {
+        Map<ServiceName, IntegrationService<?>> phaseServices = integrationServices.get(phase);
+        for (IntegrationService<?> service : phaseServices.values()) {
+            service.install(serviceTarget, listener);
+        }
+        FrameworkPhase[] phases = FrameworkPhase.values();
+        if (phase == phases[phases.length - 1]) {
             closed = true;
         }
     }
