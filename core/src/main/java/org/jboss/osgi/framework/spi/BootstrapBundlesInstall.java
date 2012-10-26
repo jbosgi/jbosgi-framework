@@ -22,6 +22,7 @@ package org.jboss.osgi.framework.spi;
  */
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.InternalServices.BUNDLE_BASE_NAME;
 
 import java.util.HashSet;
 import java.util.List;
@@ -53,6 +54,7 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
         super(baseName, IntegrationServices.BootstrapPhase.INSTALL);
     }
 
+    @Override
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_CREATE);
@@ -66,9 +68,15 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
     protected void installBootstrapBundles(final ServiceTarget serviceTarget, final List<Deployment> deployments) {
 
         // Track the Bundle INSTALLED services
-        ServiceTracker<XBundle> installTracker = new ServiceTracker<XBundle>() {
+        ServiceTracker<XBundle> installTracker = new ServiceTracker<XBundle>(getServiceName().getCanonicalName()) {
 
             Set<ServiceName> installedServices = new HashSet<ServiceName>();
+
+            @Override
+            protected boolean trackService(ServiceController<? extends XBundle> controller) {
+                ServiceName serviceName = controller.getName();
+                return BUNDLE_BASE_NAME.isParentOf(serviceName) && serviceName.getSimpleName().equals("INSTALLED");
+            }
 
             @Override
             protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
@@ -92,7 +100,7 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
         BundleManager bundleManager = getBundleManager();
         for (Deployment dep : deployments) {
             try {
-                bundleManager.installBundle(dep, installTracker);
+                bundleManager.installBundle(dep, serviceTarget, installTracker);
             } catch (BundleException ex) {
                 LOGGER.errorStateCannotInstallInitialBundle(ex, dep.getLocation());
             }

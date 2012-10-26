@@ -59,12 +59,6 @@ public class BundleServicesTestCase extends AbstractFrameworkTest {
         ServiceController<?> controller = serviceContainer.getService(bundleState.getServiceName(Bundle.INSTALLED));
         assertServiceState(controller, State.UP);
 
-        controller = serviceContainer.getService(bundleState.getServiceName(Bundle.RESOLVED));
-        assertServiceState(controller, State.DOWN);
-
-        controller = serviceContainer.getService(bundleState.getServiceName(Bundle.ACTIVE));
-        assertServiceState(controller, State.DOWN);
-
         URL url = bundle.getResource(JarFile.MANIFEST_NAME);
         assertNotNull("URL not null", url);
 
@@ -93,6 +87,7 @@ public class BundleServicesTestCase extends AbstractFrameworkTest {
                 checkState(controller);
             }
 
+            @Override
             public final void transition(final ServiceController<? extends Object> controller, final ServiceController.Transition transition) {
                 switch (transition) {
                     case STARTING_to_UP:
@@ -118,6 +113,7 @@ public class BundleServicesTestCase extends AbstractFrameworkTest {
     private JavaArchive getTestArchive() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

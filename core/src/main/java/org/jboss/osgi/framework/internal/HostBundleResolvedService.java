@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -42,6 +42,7 @@ final class HostBundleResolvedService extends UserBundleResolvedService<HostBund
         ServiceName serviceName = hostBundle.getServiceName(Bundle.RESOLVED);
         HostBundleResolvedService service = new HostBundleResolvedService(hostBundle);
         ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, new SynchronousListenerServiceWrapper<HostBundleState>(service));
+        builder.addDependency(hostBundle.getServiceName(Bundle.INSTALLED));
         builder.addDependency(moduleServiceName);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.install();

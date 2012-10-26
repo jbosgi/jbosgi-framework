@@ -77,4 +77,9 @@ final class HostBundleInstalledService extends UserBundleInstalledService<HostBu
         ServiceName moduleServiceName = moduleLoader.getModuleServiceName(identifier);
         HostBundleResolvedService.addService(serviceTarget, getBundleState(), moduleServiceName);
     }
+
+    @Override
+    void createActiveService(ServiceTarget serviceTarget, HostBundleRevision brev) {
+        HostBundleActiveService.addService(serviceTarget, getBundleState());
+    }
 }

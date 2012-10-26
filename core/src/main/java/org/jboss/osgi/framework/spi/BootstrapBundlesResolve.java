@@ -1,5 +1,3 @@
-package org.jboss.osgi.framework.spi;
-
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,6 +19,7 @@ package org.jboss.osgi.framework.spi;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.spi;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
@@ -29,7 +28,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
@@ -66,6 +64,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         this.installedServices = installedServices;
     }
 
+    @Override
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
@@ -79,20 +78,35 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
+    public void start(final StartContext context) throws StartException {
 
         ServiceContainer serviceRegistry = context.getController().getServiceContainer();
         int targetLevel = getBeginningStartLevel();
 
+        // Track the resolved services
+        final Map<ServiceName, XBundle> resolvableServices = new HashMap<ServiceName, XBundle>();
+        ServiceTracker<XBundle> resolvedTracker = new ServiceTracker<XBundle>(getServiceName().getCanonicalName()) {
+
+            @Override
+            protected boolean trackService(ServiceController<? extends XBundle> controller) {
+                return resolvableServices.keySet().contains(controller.getName());
+            }
+
+            @Override
+            protected void complete() {
+                installActivateService(context.getChildTarget(), resolvableServices.keySet());
+            }
+        };
+
         // Collect the set of resolvable bundles
-        Map<ServiceName, XBundle> resolvableServices = new HashMap<ServiceName, XBundle>();
-        for (ServiceName serviceName : installedServices) {
-            ServiceController<?> controller = serviceRegistry.getRequiredService(serviceName);
-            XBundle bundle = (XBundle) controller.getValue();
+        for (ServiceName installedName : installedServices) {
+            XBundle bundle = getServiceController(serviceRegistry, installedName).getValue();
             Deployment dep = bundle.adapt(Deployment.class);
             int bundleLevel = dep.getStartLevel() != null ? dep.getStartLevel() : 1;
             if (dep.isAutoStart() && !bundle.isFragment() && bundleLevel <= targetLevel) {
-                resolvableServices.put(serviceName, bundle);
+                ServiceName resolvedName = getBundleManager().getServiceName(bundle, Bundle.RESOLVED);
+                getServiceController(serviceRegistry, resolvedName).addListener(resolvedTracker);
+                resolvableServices.put(resolvedName, bundle);
             }
         }
 
@@ -112,46 +126,28 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
             }
         }
 
+        // Leniently resolve the persistent bundles
         if (IntegrationServices.PERSISTENT_BUNDLES.isParentOf(getServiceName())) {
             Bundle[] bundles = resolvableServices.values().toArray(new Bundle[resolvableServices.size()]);
             PackageAdmin packageAdmin = injectedPackageAdmin.getValue();
             packageAdmin.resolveBundles(bundles);
         }
 
-        // Collect the resolved service
-        final Set<ServiceName> resolvedServices = new HashSet<ServiceName>();
-        for (Entry<ServiceName, XBundle> entry : resolvableServices.entrySet()) {
-            if (entry.getValue().isResolved()) {
-                resolvedServices.add(entry.getKey());
+        // Remove the unresolved service from the tracker
+        for (ServiceName serviceName : new HashSet<ServiceName>(resolvableServices.keySet())) {
+            if (!resolvableServices.get(serviceName).isResolved()) {
+                resolvableServices.remove(serviceName);
+                resolvedTracker.untrackService(getServiceController(serviceRegistry, serviceName));
             }
-        }
-
-        // Track the resolved services
-        final ServiceTarget serviceTarget = context.getChildTarget();
-        ServiceTracker<XBundle> resolvedTracker = new ServiceTracker<XBundle>() {
-
-            @Override
-            protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
-                return resolvedServices.size() == trackedServices.size();
-            }
-
-            @Override
-            protected void complete() {
-                installActivateService(serviceTarget, resolvedServices);
-            }
-        };
-
-        // Add the tracker to the Bundle RESOLVED services
-        for (ServiceName serviceName : resolvedServices) {
-            XBundle bundle = resolvableServices.get(serviceName);
-            serviceName = getBundleManager().getServiceName(bundle, Bundle.RESOLVED);
-            @SuppressWarnings("unchecked")
-            ServiceController<XBundle> resolved = (ServiceController<XBundle>) serviceRegistry.getRequiredService(serviceName);
-            resolved.addListener(resolvedTracker);
         }
 
         // Check the tracker for completeness
         resolvedTracker.checkAndComplete();
+    }
+
+    @SuppressWarnings("unchecked")
+    private ServiceController<XBundle> getServiceController(ServiceContainer serviceRegistry, ServiceName serviceName) {
+        return (ServiceController<XBundle>) serviceRegistry.getRequiredService(serviceName);
     }
 
     private int getBeginningStartLevel() {

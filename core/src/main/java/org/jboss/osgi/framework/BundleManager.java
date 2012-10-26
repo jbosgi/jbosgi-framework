@@ -113,12 +113,27 @@ public interface BundleManager extends Service<BundleManager> {
 
     /**
      * Install a bundle from the given deployment
+     *
+     * @deprecated in 2.0.1.Final
+     *
      * @param deployment The bundle deployment
      * @param listener An optional listener on the INSTALL service
      *
      * @return The name of the INSTALL service
      */
+    @Deprecated
     ServiceName installBundle(Deployment deployment, ServiceListener<XBundle> listener) throws BundleException;
+
+    /**
+     * Install a bundle from the given deployment
+     *
+     * @param deployment The bundle deployment
+     * @param serviceTarget The service target for the INSTALL service
+     * @param listener An optional listener on the INSTALL service
+     *
+     * @return The name of the INSTALL service
+     */
+    ServiceName installBundle(Deployment deployment, ServiceTarget serviceTarget, ServiceListener<XBundle> listener) throws BundleException;
 
     /**
      * Uninstall the given deployment

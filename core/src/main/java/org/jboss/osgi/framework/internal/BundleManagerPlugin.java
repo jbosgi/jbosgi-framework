@@ -317,6 +317,11 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public ServiceName installBundle(Deployment dep, ServiceListener<XBundle> listener) throws BundleException {
+        return installBundle(dep, serviceTarget, listener);
+    }
+
+    @Override
+    public ServiceName installBundle(Deployment dep, ServiceTarget serviceTarget, ServiceListener<XBundle> listener) throws BundleException {
         if (dep == null)
             throw MESSAGES.illegalArgumentNull("deployment");
 
@@ -356,7 +361,6 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
                 // Create the bundle services
                 if (metadata.getFragmentHost() == null) {
                     serviceName = HostBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep, listener);
-                    HostBundleActiveService.addService(serviceTarget, getFrameworkState(), dep);
                 } else {
                     serviceName = FragmentBundleInstalledService.addService(serviceTarget, getFrameworkState(), dep, listener);
                 }
@@ -598,6 +602,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     static {
         AccessController.doPrivileged(new PrivilegedAction<Object>() {
 
+            @Override
             public Object run() {
                 List<String> execEnvironments = new ArrayList<String>();
                 if (Java.isCompatible(Java.VERSION_1_1)) {

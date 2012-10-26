@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,13 +19,12 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.ServiceTracker.SynchronousListenerServiceWrapper;
 import org.osgi.framework.Bundle;
 
@@ -38,24 +36,24 @@ import org.osgi.framework.Bundle;
  */
 final class HostBundleActiveService extends UserBundleActiveService<HostBundleState> {
 
-    private final InjectedValue<HostBundleState> injectedBundleState = new InjectedValue<HostBundleState>();
+    private final HostBundleState hostBundle;
 
-    static void addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep) {
-        ServiceName installedName = frameworkState.getBundleManager().getServiceName(dep, Bundle.INSTALLED);
-        ServiceName activeName = frameworkState.getBundleManager().getServiceName(dep, Bundle.ACTIVE);
-        HostBundleActiveService service = new HostBundleActiveService(frameworkState);
-        ServiceBuilder<HostBundleState> builder = serviceTarget.addService(activeName, new SynchronousListenerServiceWrapper<HostBundleState>(service));
-        builder.addDependency(installedName, HostBundleState.class, service.injectedBundleState);
+    static void addService(ServiceTarget serviceTarget, HostBundleState hostBundle) {
+        ServiceName serviceName = hostBundle.getServiceName(Bundle.ACTIVE);
+        HostBundleActiveService service = new HostBundleActiveService(hostBundle);
+        ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, new SynchronousListenerServiceWrapper<HostBundleState>(service));
+        builder.addDependency(hostBundle.getServiceName(Bundle.RESOLVED));
         builder.setInitialMode(Mode.NEVER);
         builder.install();
     }
 
-    private HostBundleActiveService(FrameworkState frameworkState) {
-        super(frameworkState);
+    private HostBundleActiveService(HostBundleState hostBundle) {
+        super(hostBundle.getFrameworkState());
+        this.hostBundle = hostBundle;
     }
 
     @Override
     HostBundleState getBundleState() {
-        return injectedBundleState.getValue();
+        return hostBundle;
     }
 }

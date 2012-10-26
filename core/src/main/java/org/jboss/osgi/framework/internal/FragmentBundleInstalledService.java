@@ -71,4 +71,9 @@ final class FragmentBundleInstalledService extends UserBundleInstalledService<Fr
     void createResolvedService(ServiceTarget serviceTarget, FragmentBundleRevision userRev) {
         // Fragments don't have a RESOLVED service
     }
+
+    @Override
+    void createActiveService(ServiceTarget serviceTarget, FragmentBundleRevision brev) {
+        // Fragments don't have a ACTIVE service
+    }
 }

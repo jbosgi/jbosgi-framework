@@ -30,12 +30,11 @@ import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.test.osgi.framework.simple.bundleC.SimpleActivator;
-import org.jboss.test.osgi.framework.simple.bundleC.SimpleService;
+import org.jboss.test.osgi.framework.simple.bundleA.BeanA;
+import org.jboss.test.osgi.framework.simple.bundleB.BeanB;
 import org.junit.Assert;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
@@ -62,7 +61,7 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
         Assert.assertTrue("File exists: " + systemStorageDir, systemStorageDir.exists());
 
         // Install a bundle and verify its state and storage dir
-        Bundle bundle = installBundle(getBundleArchive());
+        Bundle bundle = installBundle(getBundleB());
         Assert.assertEquals("Bundle Id", 1, bundle.getBundleId());
         assertBundleState(Bundle.INSTALLED, bundle.getState());
 
@@ -110,7 +109,7 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
         File systemStorageDir = new File(storageDir + "/bundle-0");
         Assert.assertTrue("File exists: " + systemStorageDir, systemStorageDir.exists());
 
-        Bundle bundle = installBundle(getBundleArchive());
+        Bundle bundle = installBundle(getBundleB());
         Assert.assertEquals("Bundle Id", 1, bundle.getBundleId());
         assertBundleState(Bundle.INSTALLED, bundle.getState());
 
@@ -133,7 +132,7 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
 
-        Bundle bundle = installBundle(getBundleArchive());
+        Bundle bundle = installBundle(getBundleB());
         assertBundleState(Bundle.INSTALLED, bundle.getState());
 
         bundle.start();
@@ -165,7 +164,7 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
 
-        JavaArchive archive = getBundleArchive();
+        JavaArchive archive = getBundleB();
         BundleContext syscontext = framework.getBundleContext();
         Bundle bundle = syscontext.installBundle(archive.getName(), toInputStream(archive));
         assertBundleState(Bundle.INSTALLED, bundle.getState());
@@ -204,7 +203,7 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
 
-        JavaArchive archive = getBundleArchive();
+        JavaArchive archive = getBundleB();
         BundleContext syscontext = framework.getBundleContext();
         Bundle bundle = syscontext.installBundle(archive.getName(), toInputStream(archive));
         assertBundleState(Bundle.INSTALLED, bundle.getState());
@@ -241,7 +240,7 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
 
-        JavaArchive archive = getBundleArchive();
+        JavaArchive archive = getBundleB();
         BundleContext syscontext = framework.getBundleContext();
         Bundle bundle = syscontext.installBundle(archive.getName(), toInputStream(archive));
         assertBundleState(Bundle.INSTALLED, bundle.getState());
@@ -265,17 +264,33 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
         assertBundleState(Bundle.RESOLVED, framework.getState());
     }
 
-    private JavaArchive getBundleArchive() {
-        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
-        archive.addClasses(SimpleService.class, SimpleActivator.class);
+    private static JavaArchive getBundleA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA");
+        archive.addClasses(BeanA.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
-                builder.addBundleVersion("1.0.0");
-                builder.addBundleActivator(SimpleActivator.class);
-                builder.addImportPackages(BundleActivator.class);
+                builder.addExportPackages(BeanA.class);
+                builder.addImportPackages(BeanB.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private static JavaArchive getBundleB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleB");
+        archive.addClasses(BeanB.class);
+        archive.setManifest(new Asset() {
+            @Override
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addExportPackages(BeanB.class);
                 return builder.openStream();
             }
         });

@@ -75,6 +75,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
             validateBundle(bundleState, metadata);
             processNativeCode(bundleState, dep);
             createResolvedService(context.getChildTarget(), brev);
+            createActiveService(context.getChildTarget(), brev);
             addToEnvironment(brev);
             bundleState.changeState(Bundle.INSTALLED, 0);
             bundleState.fireBundleEvent(BundleEvent.INSTALLED);
@@ -98,6 +99,8 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
     abstract B createBundleState(R revision, ServiceName serviceName) throws BundleException;
 
     abstract void createResolvedService(ServiceTarget serviceTarget, R brev);
+
+    abstract void createActiveService(ServiceTarget serviceTarget, R brev);
 
     InternalStorageState createStorageState(Deployment dep, Long bundleId) throws BundleException {
         // The storage state exists when we re-create the bundle from persistent storage
