@@ -55,7 +55,7 @@ public class AggregatedFrameworkLaunchTestCase {
 
         // Build the classpath
         String cp = files[0].getCanonicalPath();
-        String[] names = new String[] { "jboss-logmanager.jar", "org.osgi.core.jar" };
+        String[] names = new String[] { "jboss-logmanager.jar" };
         for (String name : names) {
             File file = new File("target/test-libs/" + name);
             assertTrue("File exists: " + file, file.exists());
