@@ -37,6 +37,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -113,6 +116,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     private final FrameworkBuilder frameworkBuilder;
     private final ShutdownContainer shutdownContainer;
+    private final Set<ExecutorService> executorServices = new HashSet<ExecutorService>();
     private final Map<String, Object> properties = new HashMap<String, Object>();
     private final AtomicInteger managerState = new AtomicInteger(Bundle.INSTALLED);
     private final AtomicBoolean managerStopped = new AtomicBoolean();
@@ -505,6 +509,21 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         }
     }
 
+    ExecutorService createExecutorService(final String threadName) {
+        synchronized (executorServices) {
+            ExecutorService service = Executors.newSingleThreadExecutor(new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable run) {
+                    Thread thread = new Thread(run);
+                    thread.setName(threadName);
+                    return thread;
+                }
+            });
+            executorServices.add(service);
+            return service;
+        }
+    }
+
     void fireFrameworkError(Bundle bundle, String context, Throwable t) {
         FrameworkEventsPlugin plugin = getFrameworkState().getFrameworkEventsPlugin();
         if (t instanceof BundleException) {
@@ -554,20 +573,17 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         // Move to start level 0 in the current thread
         FrameworkCoreServices coreServices = getFrameworkState().getCoreServices();
         StartLevelPlugin startLevel = coreServices.getStartLevelPlugin();
-        if (startLevel != null) {
-            startLevel.decreaseStartLevel(0);
-        } else {
-            // No Start Level Service available, stop all bundles individually...
-            // All installed bundles must be stopped without changing each bundle's persistent autostart setting
-            for (Bundle bundle : getBundles()) {
-                if (bundle.getBundleId() != 0) {
-                    try {
-                        bundle.stop(Bundle.STOP_TRANSIENT);
-                    } catch (Exception ex) {
-                        // Any exceptions that occur during bundle stopping must be wrapped in a BundleException and then
-                        // published as a framework event of type FrameworkEvent.ERROR
-                        fireFrameworkError(bundle, "stopping bundle", ex);
-                    }
+        startLevel.decreaseStartLevel(0);
+
+        synchronized (executorServices) {
+            for (ExecutorService service : executorServices) {
+                service.shutdown();
+            }
+            for (ExecutorService service : executorServices) {
+                try {
+                    service.awaitTermination(10, TimeUnit.SECONDS);
+                } catch (InterruptedException ex) {
+                    // ignore
                 }
             }
         }

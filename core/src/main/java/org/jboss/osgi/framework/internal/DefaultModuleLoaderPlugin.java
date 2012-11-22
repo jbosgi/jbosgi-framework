@@ -29,7 +29,7 @@ import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.concurrent.TimeUnit;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
@@ -38,6 +38,7 @@ import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceController.State;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
@@ -47,11 +48,13 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.service.ValueService;
 import org.jboss.msc.value.ImmediateValue;
+import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.jboss.osgi.framework.spi.IntegrationService;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
+import org.osgi.framework.Version;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -132,13 +135,11 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
     @Override
     public ModuleIdentifier getModuleIdentifier(XBundleRevision brev) {
         XBundle bundle = brev.getBundle();
-        String name = bundle.getSymbolicName();
-        String slot = bundle.getVersion().toString();
         List<XBundleRevision> allrevs = bundle.getAllBundleRevisions();
-        if (allrevs.size() > 1) {
-            name += "-rev" + (allrevs.size() - 1);
-        }
-        return ModuleIdentifier.create(JBOSGI_PREFIX + "." + name, slot);
+        String bundleId = "bid" + bundle.getBundleId() + "rev" + (allrevs.size() - 1);
+        String bsname = bundle.getSymbolicName();
+        Version version = bundle.getVersion();
+        return ModuleIdentifier.create(JBOSGI_PREFIX + "." + bsname, version + "." + bundleId);
     }
 
     @Override
@@ -191,10 +192,19 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
 
     @Override
     public ServiceName createModuleService(XBundleRevision resource, ModuleIdentifier identifier) {
-        Module module;
         ServiceName moduleServiceName = getModuleServiceName(identifier);
+        ServiceController<?> controller = serviceRegistry.getService(moduleServiceName);
+        if (controller != null) {
+            @SuppressWarnings({ "unchecked", "rawtypes" })
+            FutureServiceValue future = new FutureServiceValue(controller, State.REMOVED);
+            try {
+                future.get(10, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                // ignore
+            }
+        }
         try {
-            module = loadModule(identifier);
+            Module module = loadModule(identifier);
             ValueService<Module> service = new ValueService<Module>(new ImmediateValue<Module>(module));
             ServiceBuilder<Module> builder = serviceTarget.addService(moduleServiceName, service);
             builder.setInitialMode(Mode.ON_DEMAND);

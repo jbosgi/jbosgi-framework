@@ -26,10 +26,13 @@ import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 
 
@@ -41,16 +44,28 @@ import org.jboss.osgi.framework.spi.AbstractIntegrationService;
  */
 abstract class ExecutorServicePlugin<T> extends AbstractIntegrationService<T> {
 
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
+    private final String threadName;
     private ExecutorService executorService;
     private boolean immediateExecution;
 
-    ExecutorServicePlugin(ServiceName serviceName) {
+    ExecutorServicePlugin(ServiceName serviceName, String threadName) {
         super(serviceName);
+        this.threadName = threadName;
+    }
+
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<T> builder) {
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
     }
 
     @Override
     public void start(StartContext context) throws StartException {
-        executorService = createExecutorService();
+        executorService = getBundleManager().createExecutorService(threadName);
+    }
+
+    BundleManagerPlugin getBundleManager() {
+        return injectedBundleManager.getValue();
     }
 
     @Override
@@ -58,14 +73,12 @@ abstract class ExecutorServicePlugin<T> extends AbstractIntegrationService<T> {
         executorService.shutdown();
     }
 
-    abstract ExecutorService createExecutorService();
-
     ExecutorService getExecutorService() {
         return !immediateExecution ? executorService : ImmediateExecutorService.INSTANCE;
     }
 
-    public void enableImmediateExecution(boolean immediateExecution) {
-        this.immediateExecution = immediateExecution;
+    void enableImmediateExecution(boolean enable) {
+        this.immediateExecution = enable;
     }
 
     private static class ImmediateExecutorService extends AbstractExecutorService {

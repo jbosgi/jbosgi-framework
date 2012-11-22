@@ -31,7 +31,7 @@ import org.osgi.service.startlevel.StartLevel;
  */
 public interface StartLevelPlugin extends StartLevel {
 
-    void enableImmediateExecution(boolean flag);
+    void enableImmediateExecution(boolean enable);
 
     void setBundlePersistentlyStarted(XBundle bundle, boolean started);
 

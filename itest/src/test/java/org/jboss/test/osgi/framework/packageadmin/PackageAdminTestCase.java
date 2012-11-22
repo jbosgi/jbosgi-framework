@@ -38,8 +38,14 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
+import java.util.concurrent.TimeUnit;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceController.State;
+import org.jboss.osgi.framework.BundleManager;
+import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -649,7 +655,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
             pa.refreshPackages(null);
             assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
 
-            assertEquals(Bundle.ACTIVE, bundleI.getState());
+            assertBundleState(Bundle.ACTIVE, bundleI.getState());
             assertLoadClassFail(bundleI, Exported.class.getName());
             assertNull("Now that the packages are refreshed, bundle E should be no longer available for classloading", getImportedFieldValue(bundleI));
         } finally {
@@ -660,11 +666,31 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
         }
     }
 
-    private Object getImportedFieldValue(Bundle bundleI) throws Exception {
-        Class<?> iCls = bundleI.loadClass(OptionalImport.class.getName());
-        Object importing = iCls.newInstance();
-        Field field = iCls.getDeclaredField("imported");
-        return field.get(importing);
+    @Test
+    public void testRefreshPackagesRepeated() throws Exception {
+        PackageAdmin pa = getPackageAdmin();
+        XBundle bundleE = (XBundle) installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+        try {
+            assertServiceState(bundleE, Bundle.INSTALLED, State.UP);
+            assertServiceState(bundleE, Bundle.RESOLVED, State.DOWN);
+            assertServiceState(bundleE, Bundle.ACTIVE, State.DOWN);
+
+            bundleE.start();
+            assertLoadClass(bundleE, Exported.class.getName());
+
+            getSystemContext().addFrameworkListener(this);
+            for (int i = 0; i < 10; i++) {
+                pa.refreshPackages(new Bundle[] { bundleE });
+                assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
+                assertBundleState(Bundle.ACTIVE, bundleE.getState());
+                assertServiceState(bundleE, Bundle.INSTALLED, State.UP);
+                assertServiceState(bundleE, Bundle.RESOLVED, State.UP);
+                assertServiceState(bundleE, Bundle.ACTIVE, State.UP);
+            }
+        } finally {
+            getSystemContext().removeFrameworkListener(this);
+            bundleE.uninstall();
+        }
     }
 
     @Test
@@ -733,6 +759,22 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
         ExportedPackage fragmentPackage = getPackageAdmin().getExportedPackage("org.jboss.osgi.fragment");
         assertNotNull("Fragment package not null", fragmentPackage);
         assertEquals("Fragment package exported", hostA, fragmentPackage.getExportingBundle());
+    }
+
+    private Object getImportedFieldValue(Bundle bundleI) throws Exception {
+        Class<?> iCls = bundleI.loadClass(OptionalImport.class.getName());
+        Object importing = iCls.newInstance();
+        Field field = iCls.getDeclaredField("imported");
+        return field.get(importing);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void assertServiceState(XBundle bundle, int bundleState, State state) throws Exception {
+        BundleManager bundleManager = bundle.adapt(BundleManager.class);
+        ServiceName serviceName = bundleManager.getServiceName(bundle, bundleState);
+        ServiceController<?> controller = bundleManager.getServiceContainer().getRequiredService(serviceName);
+        FutureServiceValue<XBundle> future = new FutureServiceValue<XBundle>((ServiceController<XBundle>)controller, state);
+        future.get(3, TimeUnit.SECONDS);
     }
 
     private JavaArchive getHostA() {

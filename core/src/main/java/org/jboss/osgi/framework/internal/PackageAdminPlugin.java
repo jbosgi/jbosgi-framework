@@ -36,8 +36,6 @@ import java.util.ListIterator;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -79,7 +77,6 @@ import org.osgi.service.resolver.ResolutionException;
  */
 public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdminPlugin> implements PackageAdmin {
 
-    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
@@ -89,12 +86,12 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
     private ServiceRegistration registration;
 
     PackageAdminPlugin() {
-        super(Services.PACKAGE_ADMIN);
+        super(Services.PACKAGE_ADMIN, "PackageAdmin Refresh Thread");
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<PackageAdminPlugin> builder) {
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
+        super.addServiceDependencies(builder);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
         builder.addDependency(Services.START_LEVEL, StartLevelPlugin.class, injectedStartLevel);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, injectedFrameworkEvents);
@@ -123,19 +120,6 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
     }
 
     @Override
-    ExecutorService createExecutorService() {
-        return Executors.newSingleThreadExecutor(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable run) {
-                Thread thread = new Thread(run);
-                thread.setName("OSGi PackageAdmin refresh Thread");
-                thread.setDaemon(true);
-                return thread;
-            }
-        });
-    }
-
-    @Override
     public ExportedPackage[] getExportedPackages(Bundle bundle) {
 
         if (bundle == null)
@@ -148,8 +132,7 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
         // An uninstalled bundle can potentially live on if there are
         // other bundles depending on it. Only after a call to
         // {@link PackageAdmin#refreshPackages(Bundle[])} the bundle gets destroyed.
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        if (bundleManager.getBundleById(bundle.getBundleId()) == null)
+        if (getBundleManager().getBundleById(bundle.getBundleId()) == null)
             return null;
 
         List<ExportedPackage> result = new ArrayList<ExportedPackage>();
@@ -173,8 +156,7 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
 
     private ExportedPackage[] getAllExportedPackages() {
         List<ExportedPackage> result = new ArrayList<ExportedPackage>();
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        for (Bundle bundle : bundleManager.getBundles()) {
+        for (Bundle bundle : getBundleManager().getBundles()) {
             ExportedPackage[] pkgs = getExportedPackages(bundle);
             if (pkgs != null)
                 result.addAll(Arrays.asList(pkgs));
@@ -254,7 +236,6 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
     @Override
     public void refreshPackages(final Bundle[] bundlesToRefresh) {
 
-        final BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         final FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
         Runnable runner = new Runnable() {
 
@@ -266,7 +247,7 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
                     // all bundles updated or uninstalled since the last call to this method.
 
                     List<UserBundleState> bundlesToRefresh = new ArrayList<UserBundleState>();
-                    for (Bundle bundle : bundleManager.getBundles(null)) {
+                    for (Bundle bundle : getBundleManager().getBundles(null)) {
                         if (bundle.getBundleId() != 0) {
                             if (bundle instanceof UserBundleState) {
                                 UserBundleState userBundle = (UserBundleState) bundle;
@@ -299,7 +280,7 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
                 }
 
                 // Compute all depending bundles that need to be stopped and unresolved.
-                for (XBundle bundle : bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE)) {
+                for (XBundle bundle : getBundleManager().getBundles(Bundle.RESOLVED | Bundle.ACTIVE)) {
                     if (bundle instanceof HostBundleState) {
                         HostBundleState hostBundle = HostBundleState.assertBundleState(bundle);
                         for (UserBundleState depBundle : hostBundle.getDependentBundles()) {
@@ -342,7 +323,7 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
                 }
 
                 for (UserBundleState userBundle : uninstallBundles) {
-                    bundleManager.removeBundle(userBundle, 0);
+                    getBundleManager().removeBundle(userBundle, 0);
                 }
 
                 for (UserBundleState userBundle : refreshList) {
@@ -361,11 +342,13 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
                     }
                 }
 
-                eventsPlugin.fireFrameworkEvent(bundleManager.getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
+                eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
             }
         };
-        runner.run();
-        // getExecutorService().execute(runner);
+        ExecutorService executorService = getExecutorService();
+        if (!executorService.isShutdown()) {
+            executorService.execute(runner);
+        }
     }
 
     @Override
@@ -373,9 +356,8 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
         // Only bundles that are in state INSTALLED and are
         // registered with the resolver qualify as resolvable
         ResolverPlugin resolverPlugin = injectedResolver.getValue();
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         if (bundles == null) {
-            Set<XBundle> bundleset = bundleManager.getBundles(Bundle.INSTALLED);
+            Set<XBundle> bundleset = getBundleManager().getBundles(Bundle.INSTALLED);
             bundles = new Bundle[bundleset.size()];
             bundleset.toArray(bundles);
         }
@@ -404,15 +386,14 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
     @Override
     public RequiredBundle[] getRequiredBundles(String symbolicName) {
 
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         List<HostBundleState> matchingHosts = new ArrayList<HostBundleState>();
         if (symbolicName != null) {
-            for (Bundle aux : bundleManager.getBundles(symbolicName, null)) {
+            for (Bundle aux : getBundleManager().getBundles(symbolicName, null)) {
                 if (aux instanceof HostBundleState)
                     matchingHosts.add((HostBundleState) aux);
             }
         } else {
-            for (Bundle aux : bundleManager.getBundles()) {
+            for (Bundle aux : getBundleManager().getBundles()) {
                 if (aux instanceof HostBundleState)
                     matchingHosts.add((HostBundleState) aux);
             }
@@ -466,8 +447,7 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
                 }
             }
         });
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        for (Bundle bundleState : bundleManager.getBundles(symbolicName, versionRange)) {
+        for (Bundle bundleState : getBundleManager().getBundles(symbolicName, versionRange)) {
             if (bundleState.getState() != Bundle.UNINSTALLED) {
                 sortedSet.add(bundleState);
             }

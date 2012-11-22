@@ -29,8 +29,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.msc.service.ServiceBuilder;
@@ -61,7 +59,6 @@ import org.osgi.service.startlevel.StartLevel;
  */
 final class DefaultStartLevelPlugin extends ExecutorServicePlugin<StartLevelPlugin> implements StartLevelPlugin {
 
-    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     private final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
 
@@ -70,12 +67,12 @@ final class DefaultStartLevelPlugin extends ExecutorServicePlugin<StartLevelPlug
     private AtomicInteger startLevel = new AtomicInteger(0);
 
     DefaultStartLevelPlugin() {
-        super(Services.START_LEVEL);
+        super(Services.START_LEVEL, "StartLevel Thread");
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<StartLevelPlugin> builder) {
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
+        super.addServiceDependencies(builder);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, injectedFrameworkEvents);
         builder.addDependency(InternalServices.SYSTEM_BUNDLE, SystemBundleState.class, injectedSystemBundle);
         builder.addDependency(Services.FRAMEWORK_CREATE);
@@ -101,16 +98,8 @@ final class DefaultStartLevelPlugin extends ExecutorServicePlugin<StartLevelPlug
     }
 
     @Override
-    ExecutorService createExecutorService() {
-        return Executors.newSingleThreadExecutor(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable run) {
-                Thread thread = new Thread(run);
-                thread.setName("OSGi StartLevel Thread");
-                thread.setDaemon(true);
-                return thread;
-            }
-        });
+    public void enableImmediateExecution(boolean enable) {
+        super.enableImmediateExecution(enable);
     }
 
     @Override
@@ -123,23 +112,31 @@ final class DefaultStartLevelPlugin extends ExecutorServicePlugin<StartLevelPlug
         final FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
         final Bundle sysbundle = injectedSystemBundle.getValue();
         if (level > getStartLevel()) {
-            getExecutorService().execute(new Runnable() {
+            Runnable runner = new Runnable() {
                 @Override
                 public void run() {
                     LOGGER.infoIncreasingStartLevel(getStartLevel(), level);
                     increaseStartLevel(level);
                     eventsPlugin.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null);
                 }
-            });
+            };
+            ExecutorService executorService = getExecutorService();
+            if (!executorService.isShutdown()) {
+                executorService.execute(runner);
+            }
         } else if (level < getStartLevel()) {
-            getExecutorService().execute(new Runnable() {
+            Runnable runner = new Runnable() {
                 @Override
                 public void run() {
                     LOGGER.infoDecreasingStartLevel(getStartLevel(), level);
                     decreaseStartLevel(level);
                     eventsPlugin.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null);
                 }
-            });
+            };
+            ExecutorService executorService = getExecutorService();
+            if (!executorService.isShutdown()) {
+                executorService.execute(runner);
+            }
         }
     }
 
@@ -164,7 +161,7 @@ final class DefaultStartLevelPlugin extends ExecutorServicePlugin<StartLevelPlug
 
             if (isBundlePersistentlyStarted(bundle)) {
                 LOGGER.infoStartingBundleDueToStartLevel(hostBundle);
-                getExecutorService().execute(new Runnable() {
+                Runnable runner = new Runnable() {
                     @Override
                     public void run() {
                         try {
@@ -177,7 +174,12 @@ final class DefaultStartLevelPlugin extends ExecutorServicePlugin<StartLevelPlug
                             eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
                         }
                     }
-                });
+                };
+
+                ExecutorService executorService = getExecutorService();
+                if (!executorService.isShutdown()) {
+                    executorService.execute(runner);
+                }
             }
         } else {
             // If the bundle is not active we don't need to stop it
@@ -185,7 +187,7 @@ final class DefaultStartLevelPlugin extends ExecutorServicePlugin<StartLevelPlug
                 return;
 
             LOGGER.infoStoppingBundleDueToStartLevel(hostBundle);
-            getExecutorService().execute(new Runnable() {
+            Runnable runner = new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -194,7 +196,12 @@ final class DefaultStartLevelPlugin extends ExecutorServicePlugin<StartLevelPlug
                         eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
                     }
                 }
-            });
+            };
+
+            ExecutorService executorService = getExecutorService();
+            if (!executorService.isShutdown()) {
+                executorService.execute(runner);
+            }
         }
     }
 
@@ -236,10 +243,9 @@ final class DefaultStartLevelPlugin extends ExecutorServicePlugin<StartLevelPlug
      */
     @Override
     public synchronized void increaseStartLevel(int level) {
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
 
         // Sort the bundles after their bundle id
-        List<XBundle> bundles = new ArrayList<XBundle>(bundleManager.getBundles());
+        List<XBundle> bundles = new ArrayList<XBundle>(getBundleManager().getBundles());
         Comparator<XBundle> comparator = new Comparator<XBundle>() {
             @Override
             public int compare(XBundle b1, XBundle b2) {
@@ -279,12 +285,11 @@ final class DefaultStartLevelPlugin extends ExecutorServicePlugin<StartLevelPlug
      */
     @Override
     public synchronized void decreaseStartLevel(int level) {
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         while (startLevel.get() > level) {
             LOGGER.infoStoppingBundlesForStartLevel(level);
 
             // Sort the bundles after their bundle id
-            List<XBundle> bundles = new ArrayList<XBundle>(bundleManager.getBundles());
+            List<XBundle> bundles = new ArrayList<XBundle>(getBundleManager().getBundles());
             Comparator<XBundle> comparator = new Comparator<XBundle>() {
                 @Override
                 public int compare(XBundle b1, XBundle b2) {

@@ -38,15 +38,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.AllServiceListener;
@@ -75,9 +71,8 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-final class FrameworkEventsPlugin extends AbstractIntegrationService<FrameworkEventsPlugin> {
+final class FrameworkEventsPlugin extends ExecutorServicePlugin<FrameworkEventsPlugin> {
 
-    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private final InjectedValue<LockManagerPlugin> injectedLockManager = new InjectedValue<LockManagerPlugin>();
 
@@ -93,11 +88,8 @@ final class FrameworkEventsPlugin extends AbstractIntegrationService<FrameworkEv
     /** The set of events that are logged at INFO level */
     private Set<String> infoEvents = new HashSet<String>();
 
-    private final ExecutorService bundleEventExecutor;
-    private final ExecutorService frameworkEventExecutor;
-
     FrameworkEventsPlugin() {
-        super(InternalServices.FRAMEWORK_EVENTS_PLUGIN);
+        super(InternalServices.FRAMEWORK_EVENTS_PLUGIN, "Framework Events Thread");
         asyncBundleEvents.add(new Integer(BundleEvent.INSTALLED));
         asyncBundleEvents.add(new Integer(BundleEvent.RESOLVED));
         asyncBundleEvents.add(new Integer(BundleEvent.STARTED));
@@ -113,30 +105,11 @@ final class FrameworkEventsPlugin extends AbstractIntegrationService<FrameworkEv
         infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.STARTED));
         infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.STOPPED));
         infoEvents.add(ConstantsHelper.bundleEvent(BundleEvent.UNINSTALLED));
-
-        bundleEventExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable run) {
-                Thread thread = new Thread(run);
-                thread.setName("OSGi BundleEvent Thread");
-                thread.setDaemon(true);
-                return thread;
-            }
-        });
-        frameworkEventExecutor = Executors.newSingleThreadExecutor(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable run) {
-                Thread thread = new Thread(run);
-                thread.setName("OSGi FrameworkEvent Thread");
-                thread.setDaemon(true);
-                return thread;
-            }
-        });
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<FrameworkEventsPlugin> builder) {
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
+        super.addServiceDependencies(builder);
         builder.addDependency(InternalServices.SYSTEM_CONTEXT, BundleContext.class, injectedSystemContext);
         builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -311,8 +284,7 @@ final class FrameworkEventsPlugin extends AbstractIntegrationService<FrameworkEv
 
     private List<ListenerHook> getServiceListenerHooks() {
 
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        if (bundleManager.isFrameworkCreated() == false)
+        if (getBundleManager().isFrameworkCreated() == false)
             return Collections.emptyList();
 
         BundleContext context = injectedSystemContext.getValue();
@@ -335,8 +307,7 @@ final class FrameworkEventsPlugin extends AbstractIntegrationService<FrameworkEv
     void fireBundleEvent(final AbstractBundleState bundleState, final int type) {
 
         // Do nothing it the framework is not active
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        if (bundleManager.isFrameworkCreated() == false)
+        if (getBundleManager().isFrameworkCreated() == false)
             return;
 
         // Assert that the framework lock is not held by the current thread
@@ -373,7 +344,7 @@ final class FrameworkEventsPlugin extends AbstractIntegrationService<FrameworkEv
             }
         }
 
-        Runnable runnable = new Runnable() {
+        Runnable runner = new Runnable() {
             public void run() {
                 // BundleListeners are called with a BundleEvent object when a bundleState has been
                 // installed, resolved, started, stopped, updated, unresolved, or uninstalled
@@ -389,16 +360,16 @@ final class FrameworkEventsPlugin extends AbstractIntegrationService<FrameworkEv
                 }
             }
         };
-
-        // Fire the event in a runnable
-        bundleEventExecutor.execute(runnable);
+        ExecutorService executorService = getExecutorService();
+        if (!executorService.isShutdown()) {
+            executorService.execute(runner);
+        }
     }
 
     void fireFrameworkEvent(final Bundle bundle, final int type, final Throwable th) {
 
         // Do nothing it the framework is not active
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        if (bundleManager.isFrameworkCreated() == false)
+        if (getBundleManager().isFrameworkCreated() == false)
             return;
 
         // Assert that the framework lock is not held by the current thread
@@ -433,7 +404,7 @@ final class FrameworkEventsPlugin extends AbstractIntegrationService<FrameworkEv
         if (listeners.isEmpty())
             return;
 
-        Runnable runnable = new Runnable() {
+        Runnable runner = new Runnable() {
             public void run() {
                 // Call the listeners
                 for (FrameworkListener listener : listeners) {
@@ -454,16 +425,16 @@ final class FrameworkEventsPlugin extends AbstractIntegrationService<FrameworkEv
                 }
             }
         };
-
-        // Fire the event in a runnable
-        frameworkEventExecutor.execute(runnable);
+        ExecutorService executorService = getExecutorService();
+        if (!executorService.isShutdown()) {
+            executorService.execute(runner);
+        }
     }
 
     void fireServiceEvent(final XBundle bundleState, int type, final ServiceState serviceState) {
 
         // Do nothing it the framework is not active
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-        if (bundleManager.isFrameworkCreated() == false)
+        if (getBundleManager().isFrameworkCreated() == false)
             return;
 
         // Assert that the framework lock is not held by the current thread
