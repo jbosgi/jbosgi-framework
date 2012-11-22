@@ -21,14 +21,15 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.modules.ModuleIdentifier;
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
-import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.spi.ServiceTracker.SynchronousListenerServiceWrapper;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
@@ -46,6 +47,7 @@ final class HostBundleInstalledService extends UserBundleInstalledService<HostBu
     static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, ServiceListener<XBundle> listener) throws BundleException {
         ServiceName serviceName = frameworkState.getBundleManager().getServiceName(dep, Bundle.INSTALLED);
         HostBundleInstalledService service = new HostBundleInstalledService(frameworkState, dep);
+        LOGGER.debugf("Installing %s %s", service.getClass().getSimpleName(), serviceName);
         ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, new SynchronousListenerServiceWrapper<HostBundleState>(service));
         builder.addDependency(InternalServices.FRAMEWORK_CORE_SERVICES);
         if (listener != null) {
@@ -65,21 +67,9 @@ final class HostBundleInstalledService extends UserBundleInstalledService<HostBu
     }
 
     @Override
-    HostBundleState createBundleState(HostBundleRevision revision, ServiceName serviceName) {
-        return new HostBundleState(getFrameworkState(), revision, serviceName);
-    }
-
-    @Override
-    void createResolvedService(ServiceTarget serviceTarget, HostBundleRevision userRev) {
-        ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        ModuleLoaderPlugin moduleLoader = getFrameworkState().getModuleLoaderPlugin();
-        ModuleIdentifier identifier = moduleManager.getModuleIdentifier(userRev);
-        ServiceName moduleServiceName = moduleLoader.getModuleServiceName(identifier);
-        HostBundleResolvedService.addService(serviceTarget, getBundleState(), moduleServiceName);
-    }
-
-    @Override
-    void createActiveService(ServiceTarget serviceTarget, HostBundleRevision brev) {
-        HostBundleActiveService.addService(serviceTarget, getBundleState());
+    HostBundleState createBundleState(HostBundleRevision revision, ServiceController<HostBundleState> controller, ServiceTarget serviceTarget) {
+        HostBundleState hostState = new HostBundleState(getFrameworkState(), revision, controller, serviceTarget);
+        HostBundleActiveService.addService(hostState.getServiceTarget(), hostState);
+        return hostState;
     }
 }

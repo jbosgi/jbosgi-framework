@@ -85,18 +85,6 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
 
         // Track the resolved services
         final Map<ServiceName, XBundle> resolvableServices = new HashMap<ServiceName, XBundle>();
-        ServiceTracker<XBundle> resolvedTracker = new ServiceTracker<XBundle>(getServiceName().getCanonicalName()) {
-
-            @Override
-            protected boolean trackService(ServiceController<? extends XBundle> controller) {
-                return resolvableServices.keySet().contains(controller.getName());
-            }
-
-            @Override
-            protected void complete() {
-                installActivateService(context.getChildTarget(), resolvableServices.keySet());
-            }
-        };
 
         // Collect the set of resolvable bundles
         for (ServiceName installedName : installedServices) {
@@ -105,7 +93,6 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
             int bundleLevel = dep.getStartLevel() != null ? dep.getStartLevel() : 1;
             if (dep.isAutoStart() && !bundle.isFragment() && bundleLevel <= targetLevel) {
                 ServiceName resolvedName = getBundleManager().getServiceName(bundle, Bundle.RESOLVED);
-                getServiceController(serviceRegistry, resolvedName).addListener(resolvedTracker);
                 resolvableServices.put(resolvedName, bundle);
             }
         }
@@ -137,12 +124,10 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         for (ServiceName serviceName : new HashSet<ServiceName>(resolvableServices.keySet())) {
             if (!resolvableServices.get(serviceName).isResolved()) {
                 resolvableServices.remove(serviceName);
-                resolvedTracker.untrackService(getServiceController(serviceRegistry, serviceName));
             }
         }
 
-        // Check the tracker for completeness
-        resolvedTracker.checkAndComplete();
+        installActivateService(context.getChildTarget(), resolvableServices.keySet());
     }
 
     @SuppressWarnings("unchecked")

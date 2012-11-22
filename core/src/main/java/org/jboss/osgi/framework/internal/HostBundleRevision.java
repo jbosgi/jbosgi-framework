@@ -36,13 +36,17 @@ import java.util.TreeSet;
 import java.util.Vector;
 
 import org.jboss.modules.ModuleClassLoader;
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
-import org.osgi.resource.Resource;
+import org.osgi.framework.wiring.BundleRevision;
 
 /**
  * A {@link HostBundleRevision} is responsible for the classloading and resource loading of a bundle.
@@ -62,12 +66,9 @@ final class HostBundleRevision extends UserBundleRevision {
         super(frameworkState, dep, metadata, storageState);
     }
 
-    /**
-     * Assert that the given resource is an instance of HostBundleRevision
-     */
-    static HostBundleRevision assertHostRevision(Resource res) {
-        assert res instanceof HostBundleRevision : "Not a HostRevision: " + res;
-        return (HostBundleRevision) res;
+    static HostBundleRevision assertHostRevision(BundleRevision brev) {
+        assert brev instanceof HostBundleRevision : "Not a HostRevision: " + brev;
+        return (HostBundleRevision) brev;
     }
 
     HostBundleState getBundleState() {
@@ -77,6 +78,14 @@ final class HostBundleRevision extends UserBundleRevision {
     void refreshRevisionInternal() {
         super.refreshRevisionInternal();
         attachedFragments = null;
+    }
+
+    void createResolvedService(ServiceTarget serviceTarget) {
+        ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
+        ModuleLoaderPlugin moduleLoader = getFrameworkState().getModuleLoaderPlugin();
+        ModuleIdentifier identifier = moduleManager.getModuleIdentifier(this);
+        ServiceName moduleServiceName = moduleLoader.getModuleServiceName(identifier);
+        HostBundleResolvedService.addService(serviceTarget, getBundleState(), moduleServiceName);
     }
 
     void attachFragment(FragmentBundleRevision fragRev) {

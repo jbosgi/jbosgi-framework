@@ -31,7 +31,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
@@ -63,8 +64,8 @@ final class HostBundleState extends UserBundleState {
     private final AtomicBoolean awaitLazyActivation = new AtomicBoolean();
     BundleActivator bundleActivator;
 
-    HostBundleState(FrameworkState frameworkState, HostBundleRevision brev, ServiceName serviceName) {
-        super(frameworkState, brev, serviceName);
+    HostBundleState(FrameworkState frameworkState, HostBundleRevision brev, ServiceController<HostBundleState> controller, ServiceTarget serviceTarget) {
+        super(frameworkState, brev, controller, serviceTarget);
 
         // Assign the {@link ModuleIdentifier}
         ModuleManagerPlugin moduleManager = frameworkState.getModuleManagerPlugin();

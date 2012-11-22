@@ -34,8 +34,10 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
@@ -62,13 +64,15 @@ import org.osgi.service.packageadmin.PackageAdmin;
 abstract class UserBundleState extends AbstractBundleState {
 
     private final List<UserBundleRevision> revisions = new CopyOnWriteArrayList<UserBundleRevision>();
+    private final ServiceTarget serviceTarget;
     private final ServiceName serviceName;
 
     private Dictionary<String, String> headersOnUninstall;
 
-    UserBundleState(FrameworkState frameworkState, UserBundleRevision brev, ServiceName serviceName) {
+    UserBundleState(FrameworkState frameworkState, UserBundleRevision brev, ServiceController<? extends UserBundleState> controller, ServiceTarget serviceTarget) {
         super(frameworkState, brev, brev.getStorageState().getBundleId());
-        this.serviceName = serviceName;
+        this.serviceName = controller.getName().getParent();
+        this.serviceTarget = serviceTarget;
         addBundleRevision(brev);
     }
 
@@ -100,6 +104,10 @@ abstract class UserBundleState extends AbstractBundleState {
 
     boolean isSingleton() {
         return getOSGiMetaData().isSingleton();
+    }
+
+    ServiceTarget getServiceTarget() {
+        return serviceTarget;
     }
 
     abstract void initLazyActivation();
@@ -193,8 +201,7 @@ abstract class UserBundleState extends AbstractBundleState {
             }
         }
 
-        // Sent when the Framework detects that a bundle becomes unresolved
-        // This could happen when the bundle is refreshed or updated.
+        removeResolvedService();
         changeState(Bundle.INSTALLED, BundleEvent.UNRESOLVED);
 
         try {
@@ -317,11 +324,13 @@ abstract class UserBundleState extends AbstractBundleState {
                         fragRev.close();
                     }
                 }
-            }
 
-            ModuleIdentifier identifier = brev.getModuleIdentifier();
-            moduleManager.removeModule(brev, identifier);
+                ModuleIdentifier identifier = brev.getModuleIdentifier();
+                moduleManager.removeModule(brev, identifier);
+            }
         }
+
+        removeResolvedService();
 
         clearOldRevisions();
 
@@ -332,9 +341,11 @@ abstract class UserBundleState extends AbstractBundleState {
         currentRev.refreshRevision();
 
         changeState(Bundle.INSTALLED);
+    }
 
-        // Deactivate the service that represents bundle state RESOLVED
-        getBundleManager().setServiceMode(getServiceName(RESOLVED), Mode.NEVER);
+    void removeResolvedService() {
+        ServiceName resolvedName = getServiceName(RESOLVED);
+        getBundleManager().setServiceMode(resolvedName, Mode.REMOVE);
     }
 
     @Override
@@ -347,8 +358,6 @@ abstract class UserBundleState extends AbstractBundleState {
     void removeServices() {
         LOGGER.debugf("Remove services for: %s", this);
         BundleManagerPlugin bundleManager = getBundleManager();
-        bundleManager.setServiceMode(getServiceName(ACTIVE), Mode.REMOVE);
-        bundleManager.setServiceMode(getServiceName(RESOLVED), Mode.REMOVE);
         bundleManager.setServiceMode(getServiceName(INSTALLED), Mode.REMOVE);
     }
 }

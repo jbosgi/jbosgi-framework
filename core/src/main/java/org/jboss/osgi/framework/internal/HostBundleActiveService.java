@@ -21,6 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
@@ -41,6 +43,7 @@ final class HostBundleActiveService extends UserBundleActiveService<HostBundleSt
     static void addService(ServiceTarget serviceTarget, HostBundleState hostBundle) {
         ServiceName serviceName = hostBundle.getServiceName(Bundle.ACTIVE);
         HostBundleActiveService service = new HostBundleActiveService(hostBundle);
+        LOGGER.debugf("Installing %s %s", service.getClass().getSimpleName(), serviceName);
         ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, new SynchronousListenerServiceWrapper<HostBundleState>(service));
         builder.addDependency(hostBundle.getServiceName(Bundle.RESOLVED));
         builder.setInitialMode(Mode.NEVER);

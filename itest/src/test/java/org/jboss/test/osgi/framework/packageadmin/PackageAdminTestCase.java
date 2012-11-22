@@ -672,8 +672,6 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
         XBundle bundleE = (XBundle) installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
         try {
             assertServiceState(bundleE, Bundle.INSTALLED, State.UP);
-            assertServiceState(bundleE, Bundle.RESOLVED, State.DOWN);
-            assertServiceState(bundleE, Bundle.ACTIVE, State.DOWN);
 
             bundleE.start();
             assertLoadClass(bundleE, Exported.class.getName());
@@ -774,7 +772,7 @@ public class PackageAdminTestCase extends OSGiFrameworkTest {
         ServiceName serviceName = bundleManager.getServiceName(bundle, bundleState);
         ServiceController<?> controller = bundleManager.getServiceContainer().getRequiredService(serviceName);
         FutureServiceValue<XBundle> future = new FutureServiceValue<XBundle>((ServiceController<XBundle>)controller, state);
-        future.get(3, TimeUnit.SECONDS);
+        future.get(10, TimeUnit.SECONDS);
     }
 
     private JavaArchive getHostA() {

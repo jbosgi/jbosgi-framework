@@ -59,11 +59,11 @@ public class BundleUninstallTestCase extends AbstractFrameworkTest {
 
         List<ServiceName> additionalNames = getServiceNameDelta(initialNames);
         assertTrue("Contains INSTALLED", additionalNames.contains(bundleState.getServiceName(INSTALLED)));
-        assertTrue("Contains ACTIVE", additionalNames.contains(bundleState.getServiceName(Bundle.ACTIVE)));
 
         bundle.start();
         additionalNames = getServiceNameDelta(initialNames);
         assertTrue("Contains RESOLVED", additionalNames.contains(bundleState.getServiceName(RESOLVED)));
+        assertTrue("Contains ACTIVE", additionalNames.contains(bundleState.getServiceName(Bundle.ACTIVE)));
 
         bundle.uninstall();
         assertBundleState(UNINSTALLED, bundle.getState());

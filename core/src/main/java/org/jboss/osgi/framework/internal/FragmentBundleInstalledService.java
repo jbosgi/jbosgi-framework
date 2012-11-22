@@ -21,7 +21,10 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
@@ -44,6 +47,7 @@ final class FragmentBundleInstalledService extends UserBundleInstalledService<Fr
     static ServiceName addService(ServiceTarget serviceTarget, FrameworkState frameworkState, Deployment dep, ServiceListener<XBundle> listener) throws BundleException {
         ServiceName serviceName = frameworkState.getBundleManager().getServiceName(dep, Bundle.INSTALLED);
         FragmentBundleInstalledService service = new FragmentBundleInstalledService(frameworkState, dep);
+        LOGGER.debugf("Installing %s %s", service.getClass().getSimpleName(), serviceName);
         ServiceBuilder<FragmentBundleState> builder = serviceTarget.addService(serviceName, new SynchronousListenerServiceWrapper<FragmentBundleState>(service));
         builder.addDependency(InternalServices.FRAMEWORK_CORE_SERVICES);
         if (listener != null) {
@@ -63,17 +67,7 @@ final class FragmentBundleInstalledService extends UserBundleInstalledService<Fr
     }
 
     @Override
-    FragmentBundleState createBundleState(FragmentBundleRevision revision, ServiceName serviceName) {
-        return new FragmentBundleState(getFrameworkState(), revision, serviceName);
-    }
-
-    @Override
-    void createResolvedService(ServiceTarget serviceTarget, FragmentBundleRevision userRev) {
-        // Fragments don't have a RESOLVED service
-    }
-
-    @Override
-    void createActiveService(ServiceTarget serviceTarget, FragmentBundleRevision brev) {
-        // Fragments don't have a ACTIVE service
+    FragmentBundleState createBundleState(FragmentBundleRevision revision, ServiceController<FragmentBundleState> controller, ServiceTarget serviceTarget) {
+        return new FragmentBundleState(getFrameworkState(), revision, controller, serviceTarget);
     }
 }

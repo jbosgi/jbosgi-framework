@@ -26,7 +26,7 @@ import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 
-import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -59,6 +59,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void start(StartContext context) throws StartException {
         InternalStorageState storageState = null;
         try {
@@ -68,14 +69,12 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
             R brev = createBundleRevision(dep, metadata, storageState);
             brev.addAttachment(Long.class, bundleId);
-            ServiceName serviceName = context.getController().getName().getParent();
-            bundleState = createBundleState(brev, serviceName);
+            ServiceController<B> controller = (ServiceController<B>) context.getController();
+            bundleState = createBundleState(brev, controller, context.getChildTarget());
             dep.addAttachment(Bundle.class, bundleState);
             bundleState.initLazyActivation();
             validateBundle(bundleState, metadata);
             processNativeCode(bundleState, dep);
-            createResolvedService(context.getChildTarget(), brev);
-            createActiveService(context.getChildTarget(), brev);
             addToEnvironment(brev);
             bundleState.changeState(Bundle.INSTALLED, 0);
             bundleState.fireBundleEvent(BundleEvent.INSTALLED);
@@ -96,11 +95,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
 
     abstract R createBundleRevision(Deployment deployment, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException;
 
-    abstract B createBundleState(R revision, ServiceName serviceName) throws BundleException;
-
-    abstract void createResolvedService(ServiceTarget serviceTarget, R brev);
-
-    abstract void createActiveService(ServiceTarget serviceTarget, R brev);
+    abstract B createBundleState(R revision, ServiceController<B> controller, ServiceTarget serviceTarget) throws BundleException;
 
     InternalStorageState createStorageState(Deployment dep, Long bundleId) throws BundleException {
         // The storage state exists when we re-create the bundle from persistent storage

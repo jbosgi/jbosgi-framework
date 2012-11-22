@@ -345,6 +345,8 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
                 eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
             }
         };
+
+        //enableImmediateExecution(true);
         ExecutorService executorService = getExecutorService();
         if (!executorService.isShutdown()) {
             executorService.execute(runner);

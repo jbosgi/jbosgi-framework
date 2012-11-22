@@ -483,7 +483,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         // Currently the bundleId is needed for uniqueness because of
         // [MSC-97] Cannot re-install service with same name
         Long bundleId = dep.getAttachment(Long.class);
-        ServiceName serviceName = ServiceName.of(BUNDLE_BASE_NAME, "" + bundleId, "" + dep.getSymbolicName(), "" + dep.getVersion());
+        String bsname = dep.getSymbolicName();
+        String version = dep.getVersion();
+        ServiceName serviceName = ServiceName.of(BUNDLE_BASE_NAME, "" + bsname, "" + version, "bid" + bundleId);
         if (state == Bundle.INSTALLED || state == Bundle.RESOLVED || state == Bundle.ACTIVE) {
             serviceName = serviceName.append(ConstantsHelper.bundleState(state));
         }
@@ -492,15 +494,17 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     void setServiceMode(ServiceName serviceName, Mode mode) {
         ServiceController<?> controller = serviceContainer.getService(serviceName);
-        if (controller == null)
+        if (controller == null) {
             LOGGER.debugf("Cannot set mode %s on non-existing service: %s", mode, serviceName);
-        else
+        }
+        else {
             setServiceMode(controller, mode);
+        }
     }
 
     void setServiceMode(ServiceController<?> controller, Mode mode) {
+        LOGGER.debugf("Set mode %s on service: %s", mode, controller.getName());
         try {
-            LOGGER.tracef("Set mode %s on service: %s", mode, controller.getName());
             controller.setMode(mode);
         } catch (IllegalArgumentException rte) {
             // [MSC-105] Cannot determine whether container is shutting down

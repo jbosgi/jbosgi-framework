@@ -66,7 +66,6 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
 
     private Map<ModuleIdentifier, ModuleHolder> moduleSpecs = new ConcurrentHashMap<ModuleIdentifier, ModuleHolder>();
     private ServiceRegistry serviceRegistry;
-    private ServiceTarget serviceTarget;
 
     @Override
     public ServiceName getServiceName() {
@@ -85,7 +84,6 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
     public void start(StartContext context) throws StartException {
         LOGGER.tracef("Starting: %s", context.getController().getName());
         serviceRegistry = context.getController().getServiceContainer();
-        serviceTarget = context.getChildTarget();
     }
 
     @Override
@@ -191,7 +189,7 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
     }
 
     @Override
-    public ServiceName createModuleService(XBundleRevision resource, ModuleIdentifier identifier) {
+    public ServiceName createModuleService(XBundleRevision brev, ModuleIdentifier identifier) {
         ServiceName moduleServiceName = getModuleServiceName(identifier);
         ServiceController<?> controller = serviceRegistry.getService(moduleServiceName);
         if (controller != null) {
@@ -206,6 +204,7 @@ final class DefaultModuleLoaderPlugin extends ModuleLoader implements ModuleLoad
         try {
             Module module = loadModule(identifier);
             ValueService<Module> service = new ValueService<Module>(new ImmediateValue<Module>(module));
+            ServiceTarget serviceTarget = UserBundleState.assertBundleState(brev.getBundle()).getServiceTarget();
             ServiceBuilder<Module> builder = serviceTarget.addService(moduleServiceName, service);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();

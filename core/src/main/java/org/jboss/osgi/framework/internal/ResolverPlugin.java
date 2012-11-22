@@ -34,19 +34,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceController.State;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
+import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
@@ -277,6 +283,9 @@ final class ResolverPlugin extends AbstractIntegrationService<ResolverPlugin> im
         // For every resolved host bundle create a {@link Module} service
         createModuleServices(brevmap);
 
+        // For every resolved host bundle create a Bundle.RESOLVED service
+        createBundleServices(brevmap);
+
         // Construct and apply the resource wiring map
         XEnvironment env = injectedEnvironment.getValue();
         Map<Resource, Wiring> wirings = env.updateWiring(wiremap);
@@ -349,6 +358,31 @@ final class ResolverPlugin extends AbstractIntegrationService<ResolverPlugin> im
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private void createBundleServices(Map<BundleRevision, List<BundleWire>> wiremap) {
+        for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
+            XBundleRevision brev = (XBundleRevision) entry.getKey();
+            XBundle bundle = brev.getBundle();
+            if (bundle != null && bundle.getBundleId() != 0 && !brev.isFragment()) {
+                HostBundleRevision hostRev = HostBundleRevision.assertHostRevision(brev);
+                HostBundleState hostState = hostRev.getBundleState();
+                BundleManager bundleManager = hostState.adapt(BundleManager.class);
+                ServiceContainer serviceContainer = bundleManager.getServiceContainer();
+                ServiceName serviceName = hostState.getServiceName(Bundle.RESOLVED);
+                ServiceController<HostBundleState> controller = (ServiceController<HostBundleState>) serviceContainer.getService(serviceName);
+                if (controller != null) {
+                    FutureServiceValue<HostBundleState> future = new FutureServiceValue<HostBundleState>(controller, State.REMOVED);
+                    try {
+                        future.get(10, TimeUnit.SECONDS);
+                    } catch (Exception ex) {
+                        // ignore
+                    }
+                }
+                hostRev.createResolvedService(hostState.getServiceTarget());
+            }
+        }
+    }
+
     private void setBundleStatesToResolved(Map<BundleRevision, List<BundleWire>> wiremap) {
         for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
             Bundle bundle = entry.getKey().getBundle();
@@ -369,9 +403,6 @@ final class ResolverPlugin extends AbstractIntegrationService<ResolverPlugin> im
                 if (bundleManager.isFrameworkCreated()) {
                     bundleState.fireBundleEvent(BundleEvent.RESOLVED);
                 }
-                // Activate the service that represents bundle state RESOLVED
-                ServiceName serviceName = bundleState.getServiceName(Bundle.RESOLVED);
-                bundleManager.setServiceMode(serviceName, Mode.ACTIVE);
             }
         }
     }

@@ -33,6 +33,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.wiring.BundleRevision;
 
 /**
  * A {@link FragmentBundleRevision} is responsible for the classloading and resource loading of a fragment.
@@ -51,13 +52,9 @@ final class FragmentBundleRevision extends UserBundleRevision {
         super(frameworkState, dep, metadata, storageState);
     }
 
-    /**
-     * Assert that the given bundleRev is an instance of FragmentRevision
-     */
-    static FragmentBundleRevision assertFragmentRevision(BundleStateRevision bundleRev) {
-        assert bundleRev != null : "Null bundleRev";
-        assert bundleRev instanceof FragmentBundleRevision : "Not an FragmentRevision: " + bundleRev;
-        return (FragmentBundleRevision) bundleRev;
+    static FragmentBundleRevision assertFragmentRevision(BundleRevision brev) {
+        assert brev instanceof FragmentBundleRevision : "Not an FragmentRevision: " + brev;
+        return (FragmentBundleRevision) brev;
     }
 
     void refreshRevisionInternal() {

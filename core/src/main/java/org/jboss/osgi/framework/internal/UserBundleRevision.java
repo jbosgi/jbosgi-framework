@@ -69,9 +69,6 @@ abstract class UserBundleRevision extends BundleStateRevision {
         }
     }
 
-    /**
-     * Assert that the given resource is an instance of {@link UserBundleRevision}
-     */
     static UserBundleRevision assertBundleRevision(BundleRevision brev) {
         assert brev instanceof UserBundleRevision : "Not an UserBundleRevision: " + brev;
         return (UserBundleRevision) brev;

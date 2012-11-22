@@ -54,13 +54,13 @@ abstract class AbstractBundleService<T extends AbstractBundleState> implements S
     @Override
     public void start(StartContext context) throws StartException {
         ServiceController<?> controller = context.getController();
-        LOGGER.tracef("Starting: %s in mode %s", controller.getName(), controller.getMode());
+        LOGGER.debugf("Starting: %s in mode %s", controller.getName(), controller.getMode());
     }
 
     @Override
     public void stop(StopContext context) {
         ServiceController<?> controller = context.getController();
-        LOGGER.tracef("Stopping: %s in mode %s", controller.getName(), controller.getMode());
+        LOGGER.debugf("Stopping: %s in mode %s", controller.getName(), controller.getMode());
     }
 
     @Override
