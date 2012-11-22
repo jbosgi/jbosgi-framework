@@ -125,8 +125,11 @@ final class HostBundleRevision extends UserBundleRevision {
         if (getBundleState().ensureResolved(true) == false)
             throw MESSAGES.classNotFoundInRevision(className, this);
 
-        // Load the class through the module
+        // Load the class through the module classloader
         ModuleClassLoader loader = getModuleClassLoader();
+        if (loader == null) {
+            throw MESSAGES.classNotFoundInRevision(className, this);
+        }
         return loader.loadClass(className, true);
     }
 

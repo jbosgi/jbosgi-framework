@@ -130,7 +130,8 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
                 Module module = moduleManager.loadModule(identifier);
                 moduleClassLoader = module.getClassLoader();
             } catch (ModuleLoadException ex) {
-                // ignore
+                // log the error
+                FrameworkLogger.LOGGER.debug("Failed to load module identifier " + identifier, ex);
             }
         }
         return moduleClassLoader;
