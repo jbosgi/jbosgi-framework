@@ -201,7 +201,7 @@ abstract class AbstractBundleContext implements BundleContext {
         ServiceController<UserBundleState> controller = (ServiceController<UserBundleState>) serviceContainer.getService(serviceName);
         FutureServiceValue<UserBundleState> future = new FutureServiceValue<UserBundleState>(controller);
         try {
-            return future.get(5, TimeUnit.SECONDS);
+            return future.get(30, TimeUnit.SECONDS);
         } catch (Exception ex) {
             Throwable cause = ex.getCause();
             if (cause instanceof BundleException) {

@@ -39,6 +39,7 @@ import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.State;
+import org.jboss.msc.service.ServiceController.Substate;
 import org.jboss.msc.service.ServiceController.Transition;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
@@ -108,8 +109,9 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         synchronized (trackedControllers) {
             Service<? extends S> service = controller.getService();
             if (!allComplete.get()) {
-                switch (transition) {
-                    case STARTING_to_UP:
+                Substate targetState = transition.getAfter();
+                switch (targetState) {
+                    case UP:
                         if (!(service instanceof SynchronousListenerService)) {
                             LOGGER.debugf("ServiceTracker %s transition to UP: %s", trackerName, controller.getName());
                             started.add(controller);
@@ -117,7 +119,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
                             serviceCompleteInternal(controller, false);
                         }
                         break;
-                    case STARTING_to_START_FAILED:
+                    case START_FAILED:
                         if (!(service instanceof SynchronousListenerService)) {
                             LOGGER.debugf("ServiceTracker %s transition to START_FAILED: %s", trackerName, controller.getName());
                             failed.add(controller);
@@ -125,7 +127,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
                             serviceCompleteInternal(controller, true);
                         }
                         break;
-                    case START_REQUESTED_to_DOWN:
+                    case DOWN:
                         serviceCompleteInternal(controller, false);
                         break;
                 }

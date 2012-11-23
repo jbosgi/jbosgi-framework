@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.spi;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -33,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.State;
+import org.jboss.msc.service.ServiceController.Substate;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.StartException;
 
@@ -58,8 +60,8 @@ public final class FutureServiceValue<T> implements Future<T> {
             throw MESSAGES.illegalArgumentNull("controller");
         if (state == null)
             throw MESSAGES.illegalArgumentNull("state");
-       this.controller = controller;
-       this.expectedState = state;
+        this.controller = controller;
+        this.expectedState = state;
     }
 
     @Override
@@ -111,27 +113,23 @@ public final class FutureServiceValue<T> implements Future<T> {
             @Override
             public void transition(final ServiceController<? extends T> controller, final ServiceController.Transition transition) {
                 LOGGER.tracef("transition %s %s => %s", futureServiceValue, serviceName, transition);
-                if (expectedState == State.UP) {
-                    switch (transition) {
-                        case STARTING_to_UP:
-                        case STARTING_to_START_FAILED:
+                Substate targetState = transition.getAfter();
+                switch (expectedState) {
+                    case UP:
+                        if (targetState == Substate.UP || targetState == Substate.START_FAILED) {
                             listenerDone(controller);
-                            break;
-                    }
-                } else if (expectedState == State.DOWN) {
-                    switch (transition) {
-                        case STOPPING_to_DOWN:
-                        case REMOVING_to_DOWN:
-                        case WAITING_to_DOWN:
+                        }
+                        break;
+                    case DOWN:
+                        if (targetState == Substate.DOWN) {
                             listenerDone(controller);
-                            break;
-                    }
-                } else if (expectedState == State.REMOVED) {
-                    switch (transition) {
-                        case REMOVING_to_REMOVED:
+                        }
+                        break;
+                    case REMOVED:
+                        if (targetState == Substate.REMOVED) {
                             listenerDone(controller);
-                            break;
-                    }
+                        }
+                        break;
                 }
             }
 
@@ -155,10 +153,12 @@ public final class FutureServiceValue<T> implements Future<T> {
         if (controller.getState() == expectedState)
             return expectedState == State.UP ? controller.getValue() : null;
 
-        StartException startException = controller.getStartException();
-        Throwable cause = startException != null ? startException.getCause() : startException;
+        Throwable cause = controller.getStartException();
+        while (cause instanceof StartException && cause.getCause() != null) {
+            cause = cause.getCause();
+        }
         if (cause instanceof RuntimeException) {
-            throw (RuntimeException)cause;
+            throw (RuntimeException) cause;
         }
         throw MESSAGES.cannotGetServiceValue(cause, serviceName);
     }
