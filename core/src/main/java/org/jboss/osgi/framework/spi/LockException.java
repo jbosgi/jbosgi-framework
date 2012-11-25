@@ -19,34 +19,27 @@
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.osgi.framework.internal;
-
-import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.osgi.framework.spi.AbstractIntegrationService;
-import org.jboss.osgi.framework.spi.LockManager;
+package org.jboss.osgi.framework.spi;
 
 /**
- * The plugin for the {@link LockManager}.
+ * An exception that is thrown on lock errors.
  *
  * @author thomas.diesler@jboss.com
- * @since 15-Aug-2012
+ * @since 25-Nov-2012
  */
-public class LockManagerPlugin extends AbstractIntegrationService<LockManager> {
+public class LockException extends RuntimeException {
 
-    protected final LockManager lockManager = LockManager.Factory.create();
-    
-    public LockManagerPlugin() {
-        super(InternalServices.LOCK_MANAGER_PLUGIN);
+    private static final long serialVersionUID = -6238812001199545215L;
+
+    public LockException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    @Override
-    protected void addServiceDependencies(ServiceBuilder<LockManager> builder) {
-        builder.setInitialMode(Mode.ON_DEMAND);
+    public LockException(String message) {
+        super(message);
     }
 
-    @Override
-    public LockManager getValue() throws IllegalStateException {
-        return lockManager;
+    public LockException(Throwable cause) {
+        super(cause);
     }
 }

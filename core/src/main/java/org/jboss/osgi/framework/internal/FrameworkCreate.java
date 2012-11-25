@@ -30,6 +30,7 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.IntegrationServices;
+import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -65,6 +66,7 @@ public final class FrameworkCreate extends AbstractFrameworkService {
         builder.addDependency(InternalServices.SERVICE_MANAGER_PLUGIN, ServiceManagerPlugin.class, frameworkState.injectedServiceManager);
         builder.addDependency(IntegrationServices.SYSTEM_PATHS_PLUGIN, SystemPathsPlugin.class, frameworkState.injectedSystemPaths);
         builder.addDependency(InternalServices.SYSTEM_BUNDLE, SystemBundleState.class, frameworkState.injectedSystemBundle);
+        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManager.class, frameworkState.injectedLockManager);
         builder.addDependency(Services.RESOLVER, ResolverPlugin.class, frameworkState.injectedResolverPlugin);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, frameworkState.injectedEnvironment);
         builder.addDependency(IntegrationServices.STORAGE_STATE_PLUGIN);

@@ -23,7 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
-import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
@@ -41,8 +41,8 @@ import org.osgi.framework.BundleException;
  */
 final class FragmentBundleState extends UserBundleState {
 
-    FragmentBundleState(FrameworkState frameworkState, FragmentBundleRevision brev, ServiceController<FragmentBundleState> controller, ServiceTarget serviceTarget) {
-        super(frameworkState, brev, controller, serviceTarget);
+    FragmentBundleState(FrameworkState frameworkState, FragmentBundleRevision brev, ServiceName serviceName, ServiceTarget serviceTarget) {
+        super(frameworkState, brev, serviceName, serviceTarget);
     }
 
     static FragmentBundleState assertBundleState(Bundle bundle) {

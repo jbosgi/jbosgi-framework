@@ -24,7 +24,6 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
@@ -67,7 +66,7 @@ final class FragmentBundleInstalledService extends UserBundleInstalledService<Fr
     }
 
     @Override
-    FragmentBundleState createBundleState(FragmentBundleRevision revision, ServiceController<FragmentBundleState> controller, ServiceTarget serviceTarget) {
-        return new FragmentBundleState(getFrameworkState(), revision, controller, serviceTarget);
+    FragmentBundleState createBundleState(FragmentBundleRevision revision, ServiceName serviceName, ServiceTarget serviceTarget) {
+        return new FragmentBundleState(getFrameworkState(), revision, serviceName, serviceTarget);
     }
 }

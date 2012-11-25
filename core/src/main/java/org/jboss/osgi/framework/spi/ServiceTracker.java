@@ -113,7 +113,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
                 switch (targetState) {
                     case UP:
                         if (!(service instanceof SynchronousListenerService)) {
-                            LOGGER.debugf("ServiceTracker %s transition to UP: %s", trackerName, controller.getName());
+                            LOGGER.tracef("ServiceTracker %s transition to UP: %s", trackerName, controller.getName());
                             started.add(controller);
                             serviceStarted(controller);
                             serviceCompleteInternal(controller, false);
@@ -121,7 +121,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
                         break;
                     case START_FAILED:
                         if (!(service instanceof SynchronousListenerService)) {
-                            LOGGER.debugf("ServiceTracker %s transition to START_FAILED: %s", trackerName, controller.getName());
+                            LOGGER.tracef("ServiceTracker %s transition to START_FAILED: %s", trackerName, controller.getName());
                             failed.add(controller);
                             serviceStartFailed(controller);
                             serviceCompleteInternal(controller, true);
@@ -137,7 +137,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
 
     public void synchronousListenerServiceStarted(ServiceController<? extends S> controller) {
         synchronized (trackedControllers) {
-            LOGGER.debugf("ServiceTracker %s synchronous service started: %s",trackerName, controller.getName());
+            LOGGER.tracef("ServiceTracker %s synchronous service started: %s",trackerName, controller.getName());
             started.add(controller);
             serviceStarted(controller);
             serviceCompleteInternal(controller, false);
@@ -146,7 +146,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
 
     public void synchronousListenerServiceFailed(ServiceController<? extends S> controller, Throwable th) {
         synchronized (trackedControllers) {
-            LOGGER.debugf("ServiceTracker %s synchronous service failed: %s", trackerName, controller.getName());
+            LOGGER.tracef("ServiceTracker %s synchronous service failed: %s", trackerName, controller.getName());
             failed.add(controller);
             serviceStartFailed(controller);
             serviceCompleteInternal(controller, true);
@@ -167,7 +167,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
 
     public void untrackService(ServiceController<? extends S> controller) {
         synchronized (trackedControllers) {
-            LOGGER.debugf("ServiceTracker %s untrack service: %s", trackerName, controller.getName());
+            LOGGER.tracef("ServiceTracker %s untrack service: %s", trackerName, controller.getName());
             trackedControllers.remove(controller);
             serviceListerRemoveInternal(controller);
             controller.removeListener(this);
@@ -240,7 +240,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
 
     @SuppressWarnings("unchecked")
     private void serviceListerAddedInternal(ServiceController<? extends S> controller) {
-        LOGGER.debugf("ServiceTracker %s controller added: %s", trackerName, controller.getName());
+        LOGGER.tracef("ServiceTracker %s controller added: %s", trackerName, controller.getName());
         addedNames.add(controller.getName());
         serviceListenerAdded(controller);
         Service<? extends S> service = controller.getService();

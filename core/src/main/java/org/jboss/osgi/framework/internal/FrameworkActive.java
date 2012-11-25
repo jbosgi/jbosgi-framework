@@ -23,8 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
-import java.util.Collections;
-
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
@@ -40,8 +38,6 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.launch.Framework;
-import org.osgi.framework.wiring.BundleRevision;
-import org.osgi.service.resolver.ResolutionException;
 
 /**
  * A service that represents the ACTIVE state of the {@link Framework}.
@@ -117,31 +113,22 @@ public final class FrameworkActive extends AbstractFrameworkService {
      */
     @Override
     public void start(StartContext context) throws StartException {
-        try {
-            // Resolve the system bundle
-            ResolverPlugin resolverPlugin = getValue().getResolverPlugin();
-            BundleRevision sysrev = getSystemBundle().getBundleRevision();
-            resolverPlugin.resolveAndApply(Collections.singleton(sysrev), null);
+        // This Framework's state is set to ACTIVE
+        getSystemBundle().changeState(Bundle.ACTIVE);
 
-            // This Framework's state is set to ACTIVE
-            getSystemBundle().changeState(Bundle.ACTIVE);
+        // Increase to initial start level
+        StartLevelPlugin startLevelPlugin = getValue().getCoreServices().getStartLevelPlugin();
+        startLevelPlugin.increaseStartLevel(getBeginningStartLevel());
 
-            // Increase to initial start level
-            StartLevelPlugin startLevelPlugin = getValue().getCoreServices().getStartLevelPlugin();
-            startLevelPlugin.increaseStartLevel(getBeginningStartLevel());
+        // Mark Framework as active in the bundle manager
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        bundleManager.injectedFrameworkActive.inject(Boolean.TRUE);
 
-            // Mark Framework as active in the bundle manager
-            BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
-            bundleManager.injectedFrameworkActive.inject(Boolean.TRUE);
+        // A framework event of type STARTED is fired
+        FrameworkEventsPlugin eventsPlugin = getValue().getFrameworkEventsPlugin();
+        eventsPlugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
 
-            // A framework event of type STARTED is fired
-            FrameworkEventsPlugin eventsPlugin = getValue().getFrameworkEventsPlugin();
-            eventsPlugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
-
-            LOGGER.infoFrameworkStarted();
-        } catch (ResolutionException ex) {
-            throw new StartException(ex);
-        }
+        LOGGER.infoFrameworkStarted();
     }
 
     @Override

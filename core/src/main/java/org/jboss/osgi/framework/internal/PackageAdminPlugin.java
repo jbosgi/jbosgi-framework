@@ -44,6 +44,10 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.FrameworkWiringLock;
+import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.LockManager.LockContext;
+import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.StartLevelPlugin;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
@@ -83,6 +87,7 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
     private final InjectedValue<ResolverPlugin> injectedResolver = new InjectedValue<ResolverPlugin>();
     private final InjectedValue<StartLevelPlugin> injectedStartLevel = new InjectedValue<StartLevelPlugin>();
+    private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
     private ServiceRegistration registration;
 
     PackageAdminPlugin() {
@@ -96,6 +101,7 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
         builder.addDependency(Services.START_LEVEL, StartLevelPlugin.class, injectedStartLevel);
         builder.addDependency(InternalServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEventsPlugin.class, injectedFrameworkEvents);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, injectedModuleManager);
+        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
         builder.addDependency(Services.RESOLVER, ResolverPlugin.class, injectedResolver);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -136,7 +142,7 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
             return null;
 
         List<ExportedPackage> result = new ArrayList<ExportedPackage>();
-        XBundle bundleState = (XBundle)bundle;
+        XBundle bundleState = (XBundle) bundle;
         for (XBundleRevision brev : bundleState.getAllBundleRevisions()) {
             if (brev.getWiring() != null) {
                 for (Capability cap : brev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
@@ -223,7 +229,7 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
         BundleWiring wiring = ((BundleRevision) cap.getResource()).getWiring();
         if (wiring != null) {
             for (BundleWire wire : wiring.getProvidedWires(cap.getNamespace())) {
-				if (cap.equals(wire.getCapability()))
+                if (cap.equals(wire.getCapability()))
                     return true;
             }
             List<BundleWire> requireBundleWires = wiring.getProvidedWires(BundleNamespace.BUNDLE_NAMESPACE);
@@ -234,114 +240,126 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
     }
 
     @Override
-    public void refreshPackages(final Bundle[] bundlesToRefresh) {
+    public void refreshPackages(final Bundle[] bundles) {
 
-        final FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
+        final List<Bundle> bundlesToRefresh = new ArrayList<Bundle>();
+        if (bundles != null) {
+            bundlesToRefresh.addAll(Arrays.asList(bundles));
+        }
+
         Runnable runner = new Runnable() {
-
             @Override
             public void run() {
-                Bundle[] bundles = bundlesToRefresh;
-                if (bundles == null) {
-                    // 4.2 core spec 7.5.3.11 on null:
-                    // all bundles updated or uninstalled since the last call to this method.
+                
+                FrameworkEventsPlugin eventsPlugin = injectedFrameworkEvents.getValue();
+                
+                LockContext lockContext = null;
+                LockManager lockManager = injectedLockManager.getValue();
+                try {
+                    FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+                    lockContext = lockManager.lockItems(Method.REFRESH, wireLock);
+                    
+                    if (bundles == null) {
+                        // 4.2 core spec 7.5.3.11 on null:
+                        // all bundles updated or uninstalled since the last call to this method.
 
-                    List<UserBundleState> bundlesToRefresh = new ArrayList<UserBundleState>();
-                    for (Bundle bundle : getBundleManager().getBundles(null)) {
-                        if (bundle.getBundleId() != 0) {
-                            if (bundle instanceof UserBundleState) {
-                                UserBundleState userBundle = (UserBundleState) bundle;
-                                // a bundle with more than 1 revision has been updated since the last refresh packages call
-                                if (userBundle.getAllBundleRevisions().size() > 1 || bundle.getState() == Bundle.UNINSTALLED)
-                                    bundlesToRefresh.add(userBundle);
-                            }
-                        }
-                    }
-                    bundles = bundlesToRefresh.toArray(new Bundle[bundlesToRefresh.size()]);
-                }
-
-                Set<UserBundleState> providedBundles = new LinkedHashSet<UserBundleState>();
-                for (Bundle bundle : bundles) {
-                    if (bundle instanceof UserBundleState) {
-                        UserBundleState bundleState = UserBundleState.assertBundleState(bundle);
-                        providedBundles.add(bundleState);
-                    }
-                }
-
-                Set<HostBundleState> stopBundles = new HashSet<HostBundleState>();
-                Set<UserBundleState> refreshBundles = new HashSet<UserBundleState>();
-                Set<UserBundleState> uninstallBundles = new HashSet<UserBundleState>();
-
-                for (UserBundleState userBundle : providedBundles) {
-                    if (userBundle.getState() == Bundle.UNINSTALLED)
-                        uninstallBundles.add(userBundle);
-                    else if (userBundle.isResolved() == true)
-                        refreshBundles.add(userBundle);
-                }
-
-                // Compute all depending bundles that need to be stopped and unresolved.
-                for (XBundle bundle : getBundleManager().getBundles(Bundle.RESOLVED | Bundle.ACTIVE)) {
-                    if (bundle instanceof HostBundleState) {
-                        HostBundleState hostBundle = HostBundleState.assertBundleState(bundle);
-                        for (UserBundleState depBundle : hostBundle.getDependentBundles()) {
-                            if (providedBundles.contains(depBundle)) {
-                                int state = hostBundle.getState();
-                                if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
-                                    stopBundles.add(hostBundle);
+                        for (Bundle bundle : getBundleManager().getBundles(null)) {
+                            if (bundle.getBundleId() != 0) {
+                                if (bundle instanceof UserBundleState) {
+                                    UserBundleState userBundle = (UserBundleState) bundle;
+                                    // a bundle with more than 1 revision has been updated since the last refresh packages call
+                                    if (userBundle.getAllBundleRevisions().size() > 1 || bundle.getState() == Bundle.UNINSTALLED)
+                                        bundlesToRefresh.add(userBundle);
                                 }
-                                refreshBundles.add(hostBundle);
-                                break;
                             }
                         }
                     }
-                }
 
-                // Add relevant bundles to be refreshed also to the stop list.
-                for (UserBundleState aux : refreshBundles) {
-                    if (aux instanceof HostBundleState) {
-                        int state = aux.getState();
-                        if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
-                            stopBundles.add((HostBundleState) aux);
+                    Set<UserBundleState> providedBundles = new LinkedHashSet<UserBundleState>();
+                    for (Bundle bundle : bundlesToRefresh) {
+                        if (bundle instanceof UserBundleState) {
+                            UserBundleState bundleState = UserBundleState.assertBundleState(bundle);
+                            providedBundles.add(bundleState);
                         }
                     }
-                }
 
-                List<HostBundleState> stopList = new ArrayList<HostBundleState>(stopBundles);
-                List<UserBundleState> refreshList = new ArrayList<UserBundleState>(refreshBundles);
+                    Set<HostBundleState> stopBundles = new HashSet<HostBundleState>();
+                    Set<UserBundleState> refreshBundles = new HashSet<UserBundleState>();
+                    Set<UserBundleState> uninstallBundles = new HashSet<UserBundleState>();
 
-                StartLevelPlugin startLevelPlugin = injectedStartLevel.getValue();
-                BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator(startLevelPlugin);
-                Collections.sort(stopList, startLevelComparator);
-
-                for (ListIterator<HostBundleState> it = stopList.listIterator(stopList.size()); it.hasPrevious();) {
-                    HostBundleState hostBundle = it.previous();
-                    try {
-                        hostBundle.stop(Bundle.STOP_TRANSIENT);
-                    } catch (Exception th) {
-                        eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
+                    for (UserBundleState userBundle : providedBundles) {
+                        if (userBundle.getState() == Bundle.UNINSTALLED)
+                            uninstallBundles.add(userBundle);
+                        else if (userBundle.isResolved() == true)
+                            refreshBundles.add(userBundle);
                     }
-                }
 
-                for (UserBundleState userBundle : uninstallBundles) {
-                    getBundleManager().removeBundle(userBundle, 0);
-                }
-
-                for (UserBundleState userBundle : refreshList) {
-                    try {
-                        userBundle.refresh();
-                    } catch (Exception th) {
-                        eventsPlugin.fireFrameworkEvent(userBundle, FrameworkEvent.ERROR, th);
+                    // Compute all depending bundles that need to be stopped and unresolved.
+                    for (XBundle bundle : getBundleManager().getBundles(Bundle.RESOLVED | Bundle.ACTIVE)) {
+                        if (bundle instanceof HostBundleState) {
+                            HostBundleState hostBundle = HostBundleState.assertBundleState(bundle);
+                            for (UserBundleState depBundle : hostBundle.getDependentBundles()) {
+                                if (providedBundles.contains(depBundle)) {
+                                    int state = hostBundle.getState();
+                                    if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
+                                        stopBundles.add(hostBundle);
+                                    }
+                                    refreshBundles.add(hostBundle);
+                                    break;
+                                }
+                            }
+                        }
                     }
-                }
 
-                for (HostBundleState hostBundle : stopList) {
-                    try {
-                        hostBundle.start(Bundle.START_TRANSIENT);
-                    } catch (Exception th) {
-                        eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
+                    // Add relevant bundles to be refreshed also to the stop list.
+                    for (UserBundleState aux : refreshBundles) {
+                        if (aux instanceof HostBundleState) {
+                            int state = aux.getState();
+                            if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
+                                stopBundles.add((HostBundleState) aux);
+                            }
+                        }
                     }
-                }
 
+                    List<HostBundleState> stopList = new ArrayList<HostBundleState>(stopBundles);
+                    List<UserBundleState> refreshList = new ArrayList<UserBundleState>(refreshBundles);
+
+                    StartLevelPlugin startLevelPlugin = injectedStartLevel.getValue();
+                    BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator(startLevelPlugin);
+                    Collections.sort(stopList, startLevelComparator);
+
+                    for (ListIterator<HostBundleState> it = stopList.listIterator(stopList.size()); it.hasPrevious();) {
+                        HostBundleState hostBundle = it.previous();
+                        try {
+                            hostBundle.stop(Bundle.STOP_TRANSIENT);
+                        } catch (Exception th) {
+                            eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
+                        }
+                    }
+
+                    for (UserBundleState userBundle : uninstallBundles) {
+                        getBundleManager().removeBundle(userBundle, 0);
+                    }
+
+                    for (UserBundleState userBundle : refreshList) {
+                        try {
+                            userBundle.refresh();
+                        } catch (Exception th) {
+                            eventsPlugin.fireFrameworkEvent(userBundle, FrameworkEvent.ERROR, th);
+                        }
+                    }
+
+                    for (HostBundleState hostBundle : stopList) {
+                        try {
+                            hostBundle.start(Bundle.START_TRANSIENT);
+                        } catch (Exception th) {
+                            eventsPlugin.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
+                        }
+                    }
+                } finally {
+                    lockManager.unlockItems(lockContext);
+                }
+                
                 eventsPlugin.fireFrameworkEvent(getBundleManager().getSystemBundle(), FrameworkEvent.PACKAGES_REFRESHED, null);
             }
         };
@@ -443,7 +461,7 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
             @Override
             public int compare(Bundle b1, Bundle b2) {
                 if (symbolicName == null) {
-                    return (int)(b1.getBundleId() - b2.getBundleId());
+                    return (int) (b1.getBundleId() - b2.getBundleId());
                 } else {
                     return b2.getVersion().compareTo(b1.getVersion());
                 }
@@ -568,7 +586,7 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
         public boolean isRemovalPending() {
             XBundleRevision brev = (XBundleRevision) capability.getResource();
             XBundle bundle = brev.getBundle();
-            if (bundle instanceof AbstractBundleState && ((AbstractBundleState)bundle).isUninstalled()) {
+            if (bundle instanceof AbstractBundleState && ((AbstractBundleState) bundle).isUninstalled()) {
                 return true;
             }
             return brev != bundle.getBundleRevision();
@@ -644,9 +662,11 @@ public final class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdmin
 
     private static class BundleStartLevelComparator implements Comparator<HostBundleState> {
         private final StartLevelPlugin startLevelPlugin;
+
         BundleStartLevelComparator(StartLevelPlugin startLevelPlugin) {
             this.startLevelPlugin = startLevelPlugin;
         }
+
         @Override
         public int compare(HostBundleState o1, HostBundleState o2) {
             int sl1 = startLevelPlugin.getBundleStartLevel(o1);

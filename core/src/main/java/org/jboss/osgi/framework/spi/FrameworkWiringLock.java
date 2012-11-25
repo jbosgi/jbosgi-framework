@@ -19,34 +19,31 @@
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.osgi.framework.internal;
+package org.jboss.osgi.framework.spi;
 
-import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.osgi.framework.spi.AbstractIntegrationService;
-import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.LockManager.LockSupport;
+
 
 /**
- * The plugin for the {@link LockManager}.
+ * A lock for the framework wiring.
+ * 
+ * There is a gurantee that the framework wiring is not changed 
+ * by another thread while the owner thread holds this lock.
  *
  * @author thomas.diesler@jboss.com
- * @since 15-Aug-2012
+ * @since 12-Nov-2012
  */
-public class LockManagerPlugin extends AbstractIntegrationService<LockManager> {
+public final class FrameworkWiringLock implements LockManager.LockableItem {
 
-    protected final LockManager lockManager = LockManager.Factory.create();
+    private final LockSupport lockSupport = LockManager.Factory.addLockSupport(this);
     
-    public LockManagerPlugin() {
-        super(InternalServices.LOCK_MANAGER_PLUGIN);
+    @Override
+    public LockManager.LockSupport getLockSupport() {
+        return lockSupport;
     }
 
     @Override
-    protected void addServiceDependencies(ServiceBuilder<LockManager> builder) {
-        builder.setInitialMode(Mode.ON_DEMAND);
-    }
-
-    @Override
-    public LockManager getValue() throws IllegalStateException {
-        return lockManager;
+    public String toString() {
+        return getClass().getSimpleName();
     }
 }

@@ -22,6 +22,7 @@ package org.jboss.osgi.framework.internal;
  */
 
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -40,11 +41,11 @@ final class FrameworkState {
 
     private final BundleManagerPlugin bundleManager;
 
-    final InjectedValue<FrameworkCoreServices> injectedCoreServices = new InjectedValue<FrameworkCoreServices>();
-    final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
     final InjectedValue<BundleStoragePlugin> injectedBundleStorage = new InjectedValue<BundleStoragePlugin>();
-    final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
+    final InjectedValue<DeploymentFactoryPlugin> injectedDeploymentFactory = new InjectedValue<DeploymentFactoryPlugin>();
+    final InjectedValue<FrameworkCoreServices> injectedCoreServices = new InjectedValue<FrameworkCoreServices>();
     final InjectedValue<FrameworkEventsPlugin> injectedFrameworkEvents = new InjectedValue<FrameworkEventsPlugin>();
+    final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
     final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
     final InjectedValue<ModuleLoaderPlugin> injectedModuleLoader = new InjectedValue<ModuleLoaderPlugin>();
     final InjectedValue<NativeCodePlugin> injectedNativeCode = new InjectedValue<NativeCodePlugin>();
@@ -52,6 +53,7 @@ final class FrameworkState {
     final InjectedValue<ServiceManagerPlugin> injectedServiceManager = new InjectedValue<ServiceManagerPlugin>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     final InjectedValue<SystemPathsPlugin> injectedSystemPaths = new InjectedValue<SystemPathsPlugin>();
+    final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
 
     FrameworkState(BundleManagerPlugin bundleManager) {
         this.bundleManager = bundleManager;
@@ -107,5 +109,9 @@ final class FrameworkState {
 
     SystemPathsPlugin getSystemPathsPlugin() {
         return injectedSystemPaths.getValue();
+    }
+    
+    LockManager getLockManager() {
+        return injectedLockManager.getValue();
     }
 }

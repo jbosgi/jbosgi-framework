@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
@@ -52,8 +51,12 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
+import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.jboss.osgi.framework.spi.IntegrationServices;
+import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.LockManager.LockContext;
+import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.resolver.XBundle;
@@ -96,7 +99,7 @@ final class ResolverPlugin extends AbstractIntegrationService<ResolverPlugin> im
     private final InjectedValue<ModuleManagerPlugin> injectedModuleManager = new InjectedValue<ModuleManagerPlugin>();
     private final InjectedValue<ModuleLoaderPlugin> injectedModuleLoader = new InjectedValue<ModuleLoaderPlugin>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
-    private final InjectedValue<LockManagerPlugin> injectedLockManager = new InjectedValue<LockManagerPlugin>();
+    private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
     private XResolver resolver;
 
     ResolverPlugin() {
@@ -110,7 +113,7 @@ final class ResolverPlugin extends AbstractIntegrationService<ResolverPlugin> im
         builder.addDependency(InternalServices.NATIVE_CODE_PLUGIN, NativeCodePlugin.class, injectedNativeCode);
         builder.addDependency(InternalServices.MODULE_MANGER_PLUGIN, ModuleManagerPlugin.class, injectedModuleManager);
         builder.addDependency(IntegrationServices.MODULE_LOADER_PLUGIN, ModuleLoaderPlugin.class, injectedModuleLoader);
-        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, injectedLockManager);
+        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
@@ -140,27 +143,35 @@ final class ResolverPlugin extends AbstractIntegrationService<ResolverPlugin> im
     }
 
     @Override
-    public Map<Resource, List<Wire>> resolve(ResolveContext context) throws ResolutionException {
-        aquireFrameworkLock();
+    public synchronized Map<Resource, List<Wire>> resolve(ResolveContext resolveContext) throws ResolutionException {
+        LockContext lockContext = null;
+        LockManager lockManager = injectedLockManager.getValue();
         try {
-            return resolver.resolve(context);
+            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+            lockContext = lockManager.lockItems(Method.RESOLVE, wireLock);
+            
+            return resolver.resolve(resolveContext);
         } finally {
-            releaseFrameworkLock();
+            lockManager.unlockItems(lockContext);
         }
     }
 
     @Override
-    public Map<Resource, Wiring> resolveAndApply(XResolveContext context) throws ResolutionException {
+    public synchronized Map<Resource, Wiring> resolveAndApply(XResolveContext resolveContext) throws ResolutionException {
 
         Map<Resource, List<Wire>> wiremap;
         Map<Resource, Wiring> wirings;
 
-        aquireFrameworkLock();
+        LockContext lockContext = null;
+        LockManager lockManager = injectedLockManager.getValue();
         try {
-            wiremap = resolver.resolve(context);
+            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+            lockContext = lockManager.lockItems(Method.RESOLVE, wireLock);
+            
+            wiremap = resolver.resolve(resolveContext);
             wirings = applyResolverResults(wiremap);
         } finally {
-            releaseFrameworkLock();
+            lockManager.unlockItems(lockContext);
         }
 
         // Send the {@link BundleEvent.RESOLVED} event outside the lock
@@ -405,19 +416,5 @@ final class ResolverPlugin extends AbstractIntegrationService<ResolverPlugin> im
                 }
             }
         }
-    }
-
-    private void aquireFrameworkLock() throws ResolutionException {
-        try {
-            LockManagerPlugin lockManager = injectedLockManager.getValue();
-            lockManager.aquireFrameworkLock();
-        } catch (TimeoutException ex) {
-            throw new ResolutionException(ex);
-        }
-    }
-
-    private void releaseFrameworkLock() {
-        LockManagerPlugin lockManager = injectedLockManager.getValue();
-        lockManager.releaseFrameworkLock();
     }
 }

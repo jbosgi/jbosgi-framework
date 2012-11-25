@@ -21,6 +21,9 @@ package org.jboss.test.osgi.framework.xservice;
  * #L%
  */
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import junit.framework.Assert;
 
 import org.jboss.modules.Module;
@@ -35,6 +38,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.Version;
 import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.service.packageadmin.ExportedPackage;
@@ -114,8 +119,27 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
 
     @Test
     public void testRefreshResolve() throws Exception {
-        // These should be noops
-        packageAdmin.refreshPackages(new Bundle[] {brev.getBundle()});
+        
+        final CountDownLatch latch = new CountDownLatch(1);
+        FrameworkListener listener = new FrameworkListener() {
+            @Override
+            public void frameworkEvent(FrameworkEvent event) {
+                if (event.getType() == FrameworkEvent.PACKAGES_REFRESHED) {
+                    latch.countDown();
+                }
+            }
+        };
+        getSystemContext().addFrameworkListener(listener);
+        
+        try {
+            // This should be a noop
+            packageAdmin.refreshPackages(new Bundle[] {brev.getBundle()});
+            Assert.assertTrue("FrameworkEvent.PACKAGES_REFRESHED", latch.await(10, TimeUnit.SECONDS));
+        } finally {
+            getSystemContext().removeFrameworkListener(listener);
+        }
+        
+        // This should be a noop
         packageAdmin.resolveBundles(new Bundle[] {brev.getBundle()});
     }
 

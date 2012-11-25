@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,12 +22,11 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 
-import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
@@ -35,12 +35,10 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
-
 
 /**
  * Represents the INSTALLED state of a user bundle.
@@ -48,7 +46,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class UserBundleInstalledService<B extends UserBundleState,R extends UserBundleRevision> extends AbstractBundleService<B> {
+abstract class UserBundleInstalledService<B extends UserBundleState, R extends UserBundleRevision> extends AbstractBundleService<B> {
 
     private final Deployment initialDeployment;
     private B bundleState;
@@ -59,7 +57,6 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void start(StartContext context) throws StartException {
         InternalStorageState storageState = null;
         try {
@@ -69,16 +66,14 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
             R brev = createBundleRevision(dep, metadata, storageState);
             brev.addAttachment(Long.class, bundleId);
-            ServiceController<B> controller = (ServiceController<B>) context.getController();
-            bundleState = createBundleState(brev, controller, context.getChildTarget());
+            ServiceName serviceName = context.getController().getName().getParent();
+            bundleState = createBundleState(brev, serviceName, context.getChildTarget());
             dep.addAttachment(Bundle.class, bundleState);
             bundleState.initLazyActivation();
             validateBundle(bundleState, metadata);
             processNativeCode(bundleState, dep);
-            addToEnvironment(brev);
-            bundleState.changeState(Bundle.INSTALLED, 0);
+            getBundleManager().installBundle(bundleState);
             bundleState.fireBundleEvent(BundleEvent.INSTALLED);
-            LOGGER.infoBundleInstalled(bundleState);
         } catch (BundleException ex) {
             if (storageState != null) {
                 BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
@@ -90,12 +85,14 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
 
     @Override
     public void stop(StopContext context) {
-        getBundleManager().uninstallBundle(getBundleState(), Bundle.STOP_TRANSIENT);
+        if (getBundleState().getState() != Bundle.UNINSTALLED) {
+            getBundleManager().uninstallBundle(getBundleState(), Bundle.STOP_TRANSIENT);
+        }
     }
 
     abstract R createBundleRevision(Deployment deployment, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException;
 
-    abstract B createBundleState(R revision, ServiceController<B> controller, ServiceTarget serviceTarget) throws BundleException;
+    abstract B createBundleState(R revision, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException;
 
     InternalStorageState createStorageState(Deployment dep, Long bundleId) throws BundleException {
         // The storage state exists when we re-create the bundle from persistent storage
@@ -140,22 +137,5 @@ abstract class UserBundleInstalledService<B extends UserBundleState,R extends Us
             NativeCodePlugin nativeCodePlugin = frameworkState.getNativeCodePlugin();
             nativeCodePlugin.deployNativeCode(dep);
         }
-    }
-
-    private void addToEnvironment(UserBundleRevision userRev) {
-        UserBundleState userBundle = userRev.getBundleState();
-        if (userBundle.isSingleton()) {
-            String symbolicName = getBundleState().getSymbolicName();
-            for (Bundle bundle : getBundleManager().getBundles(symbolicName, null)) {
-                AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-                if (bundleState != userBundle && bundleState.isSingleton()) {
-                    LOGGER.infoNoResolvableSingleton(userBundle);
-                    return;
-                }
-            }
-        }
-        FrameworkState frameworkState = userBundle.getFrameworkState();
-        XEnvironment env = frameworkState.getEnvironment();
-        env.installResources(userRev);
     }
 }

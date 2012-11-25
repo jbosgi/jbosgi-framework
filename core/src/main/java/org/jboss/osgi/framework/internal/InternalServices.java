@@ -25,6 +25,7 @@ package org.jboss.osgi.framework.internal;
 import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.LockManager;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
@@ -60,7 +61,7 @@ public interface InternalServices {
     ServiceName FRAMEWORK_EVENTS_PLUGIN = INTERNAL_SERVICE_BASE.append("FrameworkEvents");
     /** The {@link LifecycleInterceptorPlugin} service name */
     ServiceName LIFECYCLE_INTERCEPTOR_PLUGIN = INTERNAL_SERVICE_BASE.append("LifecycleInterceptor");
-    /** The {@link LockManagerPlugin} service name */
+    /** The {@link LockManager} service name */
     ServiceName LOCK_MANAGER_PLUGIN = INTERNAL_SERVICE_BASE.append("LockManager");
     /** The {@link ModuleManagerPlugin} service name */
     ServiceName MODULE_MANGER_PLUGIN = INTERNAL_SERVICE_BASE.append("ModuleManager");

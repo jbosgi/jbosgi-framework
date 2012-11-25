@@ -36,6 +36,8 @@ import org.jboss.logging.annotations.MessageBundle;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.spi.LockException;
+import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.metadata.ParameterizedAttribute;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -230,8 +232,8 @@ public interface FrameworkMessages {
     @Message(id = 11257, value = "Cannot stop bundle: %s")
     BundleException cannotStopBundle(@Cause Throwable cause, Bundle bundle);
 
-    @Message(id = 11258, value = "Cannot acquire start/stop lock for: %s")
-    BundleException cannotAcquireStartStopLock(Bundle bundle);
+    //@Message(id = 11258, value = "Cannot acquire start/stop lock for: %s")
+    //BundleException cannotAcquireStartStopLock(Bundle bundle);
 
     @Message(id = 11259, value = "Cannot find Bundle-NativeCode header for: %s")
     BundleException cannotFindNativeCodeHeader(BundleRevision brev);
@@ -296,9 +298,12 @@ public interface FrameworkMessages {
     @Message(id = 11279, value = "Unsupported operation on bundle: %s")
     BundleException unsupportedBundleOpertaion(Bundle bundle);
 
-    @Message(id = 11280, value = "Cannot acquire framework lock")
-    TimeoutException cannotAquireFrameworkLock();
+    //@Message(id = 11280, value = "Attempt to expand current lock context by: %s")
+    //IllegalStateException cannotExpandCurrentLock(LockContext context);
 
-    @Message(id = 11281, value = "Framework lock held by current thread")
-    IllegalStateException frameworkLockHeldByCurrentThread(@Cause Throwable cause);
+    //@Message(id = 11281, value = "Cannot call out to client code while holding a lock: %s")
+    //IllegalStateException currentThreadIsHoldingLock(LockContext context);
+
+    @Message(id = 11282, value = "Cannot obtain lock in timely fashion: %s")
+    LockException cannotObtainLockTimely(@Cause Throwable cause, LockContext context);
 }

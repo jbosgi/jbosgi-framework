@@ -24,7 +24,6 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
 
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
@@ -67,8 +66,8 @@ final class HostBundleInstalledService extends UserBundleInstalledService<HostBu
     }
 
     @Override
-    HostBundleState createBundleState(HostBundleRevision revision, ServiceController<HostBundleState> controller, ServiceTarget serviceTarget) {
-        HostBundleState hostState = new HostBundleState(getFrameworkState(), revision, controller, serviceTarget);
+    HostBundleState createBundleState(HostBundleRevision revision, ServiceName serviceName, ServiceTarget serviceTarget) {
+        HostBundleState hostState = new HostBundleState(getFrameworkState(), revision, serviceName, serviceTarget);
         HostBundleActiveService.addService(hostState.getServiceTarget(), hostState);
         return hostState;
     }

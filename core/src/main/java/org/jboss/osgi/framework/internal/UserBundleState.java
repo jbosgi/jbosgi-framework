@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -34,13 +35,14 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
-import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
+import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.LockManager.LockContext;
+import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -69,10 +71,10 @@ abstract class UserBundleState extends AbstractBundleState {
 
     private Dictionary<String, String> headersOnUninstall;
 
-    UserBundleState(FrameworkState frameworkState, UserBundleRevision brev, ServiceController<? extends UserBundleState> controller, ServiceTarget serviceTarget) {
+    UserBundleState(FrameworkState frameworkState, UserBundleRevision brev, ServiceName serviceName, ServiceTarget serviceTarget) {
         super(frameworkState, brev, brev.getStorageState().getBundleId());
-        this.serviceName = controller.getName().getParent();
         this.serviceTarget = serviceTarget;
+        this.serviceName = serviceName;
         addBundleRevision(brev);
     }
 
@@ -186,7 +188,20 @@ abstract class UserBundleState extends AbstractBundleState {
 
     @Override
     void updateInternal(InputStream input) throws BundleException {
-        // Not checking that the bundle is uninstalled as that already happened
+        LockContext lockContext = null;
+        LockManager lockManager = getFrameworkState().getLockManager();
+        try {
+            lockContext = lockManager.lockItems(Method.UPDATE, this);
+            
+            // We got the permit, now update
+            updateInternalNow(input);
+
+        } finally {
+            lockManager.unlockItems(lockContext);
+        }
+    }
+
+    private void updateInternalNow(InputStream input) throws BundleException {
 
         boolean restart = false;
         if (isFragment() == false) {
@@ -234,6 +249,9 @@ abstract class UserBundleState extends AbstractBundleState {
                 eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, e);
             }
         }
+
+        LOGGER.infoBundleUpdated(this);
+        updateLastModified();
     }
 
     /**
@@ -351,13 +369,7 @@ abstract class UserBundleState extends AbstractBundleState {
     @Override
     void uninstallInternal() throws BundleException {
         headersOnUninstall = getHeaders(null);
-        BundleLifecyclePlugin lifecyclePlugin = getCoreServices().getBundleLifecyclePlugin();
-        lifecyclePlugin.uninstall(this, DefaultBundleLifecycleHandler.INSTANCE);
-    }
-
-    void removeServices() {
-        LOGGER.debugf("Remove services for: %s", this);
         BundleManagerPlugin bundleManager = getBundleManager();
-        bundleManager.setServiceMode(getServiceName(INSTALLED), Mode.REMOVE);
+        bundleManager.uninstallBundle(this, 0);
     }
 }

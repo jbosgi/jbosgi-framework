@@ -31,12 +31,16 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
-import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
-import org.jboss.osgi.framework.spi.BundleLock.LockMethod;
+import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.LockManager.LockContext;
+import org.jboss.osgi.framework.spi.LockManager.LockableItem;
+import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.StartLevelPlugin;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
@@ -64,8 +68,8 @@ final class HostBundleState extends UserBundleState {
     private final AtomicBoolean awaitLazyActivation = new AtomicBoolean();
     BundleActivator bundleActivator;
 
-    HostBundleState(FrameworkState frameworkState, HostBundleRevision brev, ServiceController<HostBundleState> controller, ServiceTarget serviceTarget) {
-        super(frameworkState, brev, controller, serviceTarget);
+    HostBundleState(FrameworkState frameworkState, HostBundleRevision brev, ServiceName serviceName, ServiceTarget serviceTarget) {
+        super(frameworkState, brev, serviceName, serviceTarget);
 
         // Assign the {@link ModuleIdentifier}
         ModuleManagerPlugin moduleManager = frameworkState.getModuleManagerPlugin();
@@ -180,64 +184,232 @@ final class HostBundleState extends UserBundleState {
         // #1 If this bundle is in the process of being activated or deactivated
         // then this method must wait for activation or deactivation to complete before continuing.
         // If this does not occur in a reasonable time, a BundleException is thrown
-        aquireBundleLock(LockMethod.START);
-        alreadyStarting.set(true);
-
+        LockContext lockContext = null;
+        LockManager lockManager = getFrameworkState().getLockManager();
         try {
-            // Assert the required start conditions
-            assertStartConditions();
+            lockContext = lockManager.lockItems(Method.START, this);
 
-            // #2 If this bundle's state is ACTIVE then this method returns immediately.
-            if (getState() == ACTIVE)
-                return;
-
-            LOGGER.debugf("Starting bundle: %s", this);
-
-            // If the Framework's current start level is less than this bundle's start level
-            if (startLevelValidForStart() == false) {
-                // If the START_TRANSIENT option is set, then a BundleException is thrown
-                // indicating this bundle cannot be started due to the Framework's current start level
-                if ((options & START_TRANSIENT) != 0)
-                    throw MESSAGES.cannotStartBundleDueToStartLevel();
-
-                LOGGER.debugf("Start level [%d] not valid for: %s", getBundleStartLevel(), this);
-
-                // Set this bundle's autostart setting
-                persistAutoStartSettings(options);
-                return;
+            // We got the permit, now start
+            try {
+                alreadyStarting.set(true);
+                startInternalNow(options);
+            } finally {
+                alreadyStarting.set(false);
             }
 
-            // #3 Set this bundle's autostart setting
-            persistAutoStartSettings(options);
-
-            // #4 If this bundle's state is not RESOLVED, an attempt is made to resolve this bundle.
-            // If the Framework cannot resolve this bundle, a BundleException is thrown.
-            if (ensureResolved(true) == false) {
-                ResolutionException resex = getLastResolutionException();
-                throw MESSAGES.cannotResolveBundle(resex, this);
-            }
-
-            // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
-            if (getBundleContextInternal() == null)
-                createBundleContext();
-
-            // #5 If the START_ACTIVATION_POLICY option is set and this bundle's declared activation policy is lazy
-            boolean useActivationPolicy = (options & START_ACTIVATION_POLICY) != 0;
-            if (awaitLazyActivation.get() == true && useActivationPolicy == true) {
-                transitionToStarting(options);
-            } else {
-                transitionToActive(options);
-            }
         } finally {
-            alreadyStarting.set(false);
-            releaseBundleLock(LockMethod.START);
+            lockManager.unlockItems(lockContext);
         }
+    }
+
+    private void startInternalNow(int options) throws BundleException {
+
+        // Assert the required start conditions
+        assertStartConditions();
+
+        // #2 If this bundle's state is ACTIVE then this method returns immediately.
+        if (getState() == ACTIVE)
+            return;
+
+        LOGGER.debugf("Starting bundle: %s", this);
+
+        // If the Framework's current start level is less than this bundle's start level
+        if (startLevelValidForStart() == false) {
+            // If the START_TRANSIENT option is set, then a BundleException is thrown
+            // indicating this bundle cannot be started due to the Framework's current start level
+            if ((options & START_TRANSIENT) != 0)
+                throw MESSAGES.cannotStartBundleDueToStartLevel();
+
+            LOGGER.debugf("Start level [%d] not valid for: %s", getBundleStartLevel(), this);
+
+            // Set this bundle's autostart setting
+            persistAutoStartSettings(options);
+            return;
+        }
+
+        // #3 Set this bundle's autostart setting
+        persistAutoStartSettings(options);
+
+        // #4 If this bundle's state is not RESOLVED, an attempt is made to resolve this bundle.
+        // If the Framework cannot resolve this bundle, a BundleException is thrown.
+        if (ensureResolved(true) == false) {
+            ResolutionException resex = getLastResolutionException();
+            throw MESSAGES.cannotResolveBundle(resex, this);
+        }
+
+        // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
+        if (getBundleContextInternal() == null)
+            createBundleContext();
+
+        // #5 If the START_ACTIVATION_POLICY option is set and this bundle's declared activation policy is lazy
+        boolean useActivationPolicy = (options & START_ACTIVATION_POLICY) != 0;
+        if (awaitLazyActivation.get() == true && useActivationPolicy == true) {
+
+            // #5.1 If this bundle's state is STARTING then this method returns immediately.
+            if (getState() == STARTING)
+                return;
+
+            // #5.2 This bundle's state is set to STARTING.
+            // #5.3 A bundle event of type BundleEvent.LAZY_ACTIVATION is fired
+            changeState(STARTING, BundleEvent.LAZY_ACTIVATION);
+            return;
+        }
+
+        // #6 This bundle's state is set to STARTING.
+        // #7 A bundle event of type BundleEvent.STARTING is fired.
+        try {
+            changeState(Bundle.STARTING);
+        } catch (LifecycleInterceptorException ex) {
+            throw MESSAGES.cannotTransitionToStarting(ex, this);
+        }
+
+        // #8 The BundleActivator.start(BundleContext) method of this bundle is called
+        String className = getOSGiMetaData().getBundleActivator();
+        if (className != null) {
+            try {
+                bundleActivator = getDeployment().getAttachment(BundleActivator.class);
+                if (bundleActivator == null) {
+                    Object result = loadClass(className).newInstance();
+                    if (result instanceof BundleActivator) {
+                        bundleActivator = (BundleActivator) result;
+                    } else {
+                        throw MESSAGES.invalidBundleActivator(className);
+                    }
+                }
+                if (bundleActivator != null) {
+                    bundleActivator.start(getBundleContext());
+                }
+            }
+
+            // If the BundleActivator is invalid or throws an exception then
+            catch (Throwable th) {
+                // #8.1 This bundle's state is set to STOPPING
+                // #8.2 A bundle event of type BundleEvent.STOPPING is fired
+                changeState(Bundle.STOPPING);
+
+                // #8.3 Any services registered by this bundle must be unregistered.
+                // #8.4 Any services used by this bundle must be released.
+                // #8.5 Any listeners registered by this bundle must be removed.
+                removeServicesAndListeners(this);
+
+                // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
+                destroyBundleContext();
+
+                // #8.6 This bundle's state is set to RESOLVED
+                // #8.7 A bundle event of type BundleEvent.STOPPED is fired
+                changeState(Bundle.RESOLVED);
+
+                // #8.8 A BundleException is then thrown
+                if (th instanceof BundleException)
+                    throw (BundleException) th;
+
+                throw MESSAGES.cannotStartBundle(th, this);
+            }
+        }
+
+        // #9 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while
+        // the BundleActivator.start method was running, a BundleException is thrown
+        if (getState() == Bundle.UNINSTALLED)
+            throw MESSAGES.uninstalledDuringActivatorStart(this);
+
+        // #10 This bundle's state is set to ACTIVE.
+        // #11 A bundle event of type BundleEvent.STARTED is fired
+        changeState(Bundle.ACTIVE);
+
+        // Activate the service that represents bundle state ACTIVE
+        getBundleManager().setServiceMode(getServiceName(Bundle.ACTIVE), Mode.ACTIVE);
+
+        LOGGER.infoBundleStarted(this);
     }
 
     @Override
     void stopInternal(int options) throws BundleException {
-        BundleLifecyclePlugin lifecycle = getCoreServices().getBundleLifecyclePlugin();
-        lifecycle.stop(this, options, DefaultBundleLifecycleHandler.INSTANCE);
+        // #2 If this bundle is in the process of being activated or deactivated
+        // then this method must wait for activation or deactivation to complete before continuing.
+        // If this does not occur in a reasonable time, a BundleException is thrown to indicate this bundle was unable to be
+        // stopped
+        LockContext lockContext = null;
+        LockManager lockManager = getFrameworkState().getLockManager();
+        try {
+            lockContext = lockManager.lockItems(Method.STOP, this);
+            
+            // We got the permit, now stop
+            stopInternalNow(options);
+
+        } finally {
+            lockManager.unlockItems(lockContext);
+        }
+    }
+
+    private void stopInternalNow(int options) throws BundleException {
+
+        int priorState = getState();
+
+        LockContext lockContext = null;
+        LockManager lockManager = getFrameworkState().getLockManager();
+        try {
+            LockManager.LockableItem[] lockItems = new LockableItem[] { this };
+            lockContext = lockManager.lockItems(Method.STOP, lockItems);
+
+            // #3 If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to Stopped.
+            // When the Framework is restarted and this bundle's autostart setting is Stopped, this bundle must not be
+            // automatically started.
+            if ((options & Bundle.STOP_TRANSIENT) == 0) {
+                setPersistentlyStarted(false);
+                setBundleActivationPolicyUsed(false);
+            }
+
+            // #4 If this bundle's state is not STARTING or ACTIVE then this method returns immediately
+            if (priorState != Bundle.STARTING && priorState != Bundle.ACTIVE)
+                return;
+
+            // #5 This bundle's state is set to STOPPING
+            // #6 A bundle event of type BundleEvent.STOPPING is fired
+            changeState(Bundle.STOPPING);
+        } finally {
+            lockManager.unlockItems(lockContext);
+        }
+
+        // #7 If this bundle's state was ACTIVE prior to setting the state to STOPPING,
+        // the BundleActivator.stop(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, 
+        // if one is specified, is called. If that method throws an exception, this method must continue to stop 
+        // this bundle and a BundleException must be thrown after completion of the remaining steps.
+        Throwable rethrow = null;
+        if (priorState == Bundle.ACTIVE) {
+            if (bundleActivator != null) {
+                try {
+                    bundleActivator.stop(getBundleContext());
+                } catch (Throwable t) {
+                    rethrow = t;
+                }
+            }
+        }
+
+        // #8 Any services registered by this bundle must be unregistered.
+        // #9 Any services used by this bundle must be released.
+        // #10 Any listeners registered by this bundle must be removed.
+        removeServicesAndListeners(this);
+
+        // #11 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while the
+        // BundleActivator.stop method was running, a BundleException must be thrown
+        if (getState() == Bundle.UNINSTALLED)
+            throw MESSAGES.uninstalledDuringActivatorStop(this);
+
+        // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
+        destroyBundleContext();
+
+        // #12 This bundle's state is set to RESOLVED
+        // #13 A bundle event of type BundleEvent.STOPPED is fired
+        changeState(Bundle.RESOLVED, BundleEvent.STOPPED);
+
+        // Deactivate the service that represents bundle state ACTIVE
+        getBundleManager().setServiceMode(getServiceName(Bundle.ACTIVE), Mode.NEVER);
+
+        if (rethrow != null) {
+            throw MESSAGES.cannotStopBundle(rethrow, this);
+        } else {
+            LOGGER.infoBundleStopped(this);
+        }
     }
 
     private void assertStartConditions() throws BundleException {
@@ -272,31 +444,6 @@ final class HostBundleState extends UserBundleState {
         }
     }
 
-    private void transitionToStarting(int options) throws BundleException {
-        // #5.1 If this bundle's state is STARTING then this method returns immediately.
-        if (getState() == STARTING)
-            return;
-
-        // #5.2 This bundle's state is set to STARTING.
-        // #5.3 A bundle event of type BundleEvent.LAZY_ACTIVATION is fired
-        changeState(STARTING, BundleEvent.LAZY_ACTIVATION);
-    }
-
-    private void transitionToActive(int options) throws BundleException {
-        BundleLifecyclePlugin lifecycle = getCoreServices().getBundleLifecyclePlugin();
-        if (lifecycle instanceof DefaultBundleLifecyclePlugin) {
-            lifecycle.start(this, options, DefaultBundleLifecycleHandler.INSTANCE);
-        } else {
-            // If we are not ussing the default impl, we cannot call out holding the lock
-            releaseBundleLock(LockMethod.START);
-            try {
-                lifecycle.start(this, options, DefaultBundleLifecycleHandler.INSTANCE);
-            } finally {
-                aquireBundleLock(LockMethod.START);
-            }
-        }
-    }
-
     private int getBundleStartLevel() {
         StartLevelPlugin startLevelPlugin = getCoreServices().getStartLevelPlugin();
         return startLevelPlugin.getBundleStartLevel(this);
@@ -315,5 +462,17 @@ final class HostBundleState extends UserBundleState {
     private boolean isBundleActivationPolicyUsed() {
         StorageState storageState = getStorageState();
         return storageState.isBundleActivationPolicyUsed();
+    }
+
+    private void removeServicesAndListeners(HostBundleState hostState) {
+        // Any services registered by this bundle must be unregistered.
+        // Any services used by this bundle must be released.
+        for (ServiceState serviceState : hostState.getRegisteredServicesInternal()) {
+            serviceState.unregisterInternal();
+        }
+
+        // Any listeners registered by this bundle must be removed
+        FrameworkEventsPlugin eventsPlugin = hostState.getFrameworkState().getFrameworkEventsPlugin();
+        eventsPlugin.removeBundleListeners(hostState);
     }
 }

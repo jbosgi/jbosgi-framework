@@ -36,7 +36,6 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
 import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -186,15 +185,14 @@ abstract class AbstractBundleContext implements BundleContext {
         }
     }
 
-    Bundle installBundle(Deployment deployment) throws BundleException {
+    Bundle installBundle(Deployment dep) throws BundleException {
         checkValidBundleContext();
 
-        BundleLifecyclePlugin lifecyclePlugin = bundleState.getCoreServices().getBundleLifecyclePlugin();
-        lifecyclePlugin.install(deployment, DefaultBundleLifecycleHandler.INSTANCE);
-
-        ServiceName serviceName = deployment.getAttachment(ServiceName.class);
         FrameworkState frameworkState = getFrameworkState();
         BundleManagerPlugin bundleManager = frameworkState.getBundleManager();
+        bundleManager.installBundle(dep, bundleManager.getServiceTarget(), null);
+
+        ServiceName serviceName = dep.getAttachment(ServiceName.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
 
         @SuppressWarnings("unchecked")
@@ -207,7 +205,7 @@ abstract class AbstractBundleContext implements BundleContext {
             if (cause instanceof BundleException) {
                 throw (BundleException) cause;
             }
-            throw MESSAGES.cannotInstallBundleFromDeployment(ex, deployment);
+            throw MESSAGES.cannotInstallBundleFromDeployment(ex, dep);
         }
     }
 

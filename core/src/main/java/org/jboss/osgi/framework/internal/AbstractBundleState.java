@@ -48,8 +48,9 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
-import org.jboss.osgi.framework.spi.BundleLock;
-import org.jboss.osgi.framework.spi.BundleLock.LockMethod;
+import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.LockManager.LockSupport;
+import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -77,13 +78,13 @@ import org.osgi.service.resolver.ResolutionException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class AbstractBundleState extends AbstractElement implements XBundle {
+abstract class AbstractBundleState extends AbstractElement implements XBundle, LockableItem {
 
     private final long bundleId;
     private final String symbolicName;
     private final FrameworkState frameworkState;
-    private final BundleLock bundleLock = new BundleLock();
     private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
+    private final LockSupport bundleLock = LockManager.Factory.addLockSupport(this);
     private final List<ServiceState> registeredServices = new CopyOnWriteArrayList<ServiceState>();
     private final ConcurrentHashMap<ServiceState, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
     private ResolutionException lastResolutionException;
@@ -105,6 +106,12 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle {
 
         // Link the bundle revision to this state
         brev.addAttachment(Bundle.class, this);
+    }
+
+    static AbstractBundleState assertBundleState(Bundle bundle) {
+        assert bundle != null : "Null bundle";
+        assert bundle instanceof AbstractBundleState : "Not a BundleState: " + bundle;
+        return (AbstractBundleState) bundle;
     }
 
     FrameworkState getFrameworkState() {
@@ -542,16 +549,12 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle {
     public void update() throws BundleException {
         assertNotUninstalled();
         updateInternal(null);
-        LOGGER.infoBundleUpdated(this);
-        updateLastModified();
     }
 
     @Override
     public void update(InputStream input) throws BundleException {
         assertNotUninstalled();
         updateInternal(input);
-        LOGGER.infoBundleUpdated(this);
-        updateLastModified();
     }
 
     abstract void updateInternal(InputStream input) throws BundleException;
@@ -565,14 +568,6 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle {
 
     abstract void uninstallInternal() throws BundleException;
 
-    boolean aquireBundleLock(LockMethod method) {
-        return bundleLock.tryLock(this, method);
-    }
-
-    void releaseBundleLock(LockMethod method) {
-        bundleLock.unlock(this, method);
-    }
-
     boolean ensureResolved(boolean fireEvent) {
 
         if (isUninstalled())
@@ -582,38 +577,31 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle {
         // If this bundle cannot be resolved, a Framework event of type FrameworkEvent.ERROR is fired
         // containing a BundleException with details of the reason this bundle could not be resolved.
 
-        boolean result = false;
-        if (aquireBundleLock(LockMethod.RESOLVE)) {
+        boolean result = true;
+        if (isResolved() == false) {
             try {
-                result = true;
-                if (isResolved() == false) {
-                    try {
-                        ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
-                        Set<XBundleRevision> mandatory = Collections.singleton((XBundleRevision) getBundleRevision());
-                        resolverPlugin.resolveAndApply(mandatory, null);
+                ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
+                Set<XBundleRevision> mandatory = Collections.singleton((XBundleRevision) getBundleRevision());
+                resolverPlugin.resolveAndApply(mandatory, null);
 
-                        if (LOGGER.isDebugEnabled()) {
-                            BundleWiring wiring = getBundleRevision().getWiring();
-                            LOGGER.tracef("Required resource wires for: %s", wiring.getResource());
-                            for (Wire wire : wiring.getRequiredResourceWires(null)) {
-                                LOGGER.tracef("   %s", wire);
-                            }
-                            LOGGER.tracef("Provided resource wires for: %s", wiring.getResource());
-                            for (Wire wire : wiring.getProvidedResourceWires(null)) {
-                                LOGGER.tracef("   %s", wire);
-                            }
-                        }
-                    } catch (ResolutionException ex) {
-                        lastResolutionException = ex;
-                        result = false;
-                        if (fireEvent == true) {
-                            FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
-                            eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, new BundleException(ex.getMessage(), ex));
-                        }
+                if (LOGGER.isDebugEnabled()) {
+                    BundleWiring wiring = getBundleRevision().getWiring();
+                    LOGGER.tracef("Required resource wires for: %s", wiring.getResource());
+                    for (Wire wire : wiring.getRequiredResourceWires(null)) {
+                        LOGGER.tracef("   %s", wire);
+                    }
+                    LOGGER.tracef("Provided resource wires for: %s", wiring.getResource());
+                    for (Wire wire : wiring.getProvidedResourceWires(null)) {
+                        LOGGER.tracef("   %s", wire);
                     }
                 }
-            } finally {
-                releaseBundleLock(LockMethod.RESOLVE);
+            } catch (ResolutionException ex) {
+                lastResolutionException = ex;
+                result = false;
+                if (fireEvent == true) {
+                    FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
+                    eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, new BundleException(ex.getMessage(), ex));
+                }
             }
         }
         return result;
@@ -623,18 +611,14 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle {
         return lastResolutionException;
     }
 
+    @Override
+    public LockSupport getLockSupport() {
+        return bundleLock;
+    }
+
     void assertNotUninstalled() {
         if (isUninstalled())
             throw MESSAGES.illegalStateBundleAlreadyUninstalled(this);
-    }
-
-    /**
-     * Assert that the given bundle is an instance of AbstractBundleState
-     */
-    static AbstractBundleState assertBundleState(Bundle bundle) {
-        assert bundle != null : "Null bundle";
-        assert bundle instanceof AbstractBundleState : "Not a BundleState: " + bundle;
-        return (AbstractBundleState) bundle;
     }
 
     @Override

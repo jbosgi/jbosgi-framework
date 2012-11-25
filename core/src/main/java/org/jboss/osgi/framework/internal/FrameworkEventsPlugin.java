@@ -43,6 +43,8 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.AllServiceListener;
@@ -74,7 +76,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 final class FrameworkEventsPlugin extends ExecutorServicePlugin<FrameworkEventsPlugin> {
 
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
-    private final InjectedValue<LockManagerPlugin> injectedLockManager = new InjectedValue<LockManagerPlugin>();
+    private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
 
     /** The bundleState listeners */
     private final Map<AbstractBundleState, List<BundleListener>> bundleListeners = new ConcurrentHashMap<AbstractBundleState, List<BundleListener>>();
@@ -111,7 +113,7 @@ final class FrameworkEventsPlugin extends ExecutorServicePlugin<FrameworkEventsP
     protected void addServiceDependencies(ServiceBuilder<FrameworkEventsPlugin> builder) {
         super.addServiceDependencies(builder);
         builder.addDependency(InternalServices.SYSTEM_CONTEXT, BundleContext.class, injectedSystemContext);
-        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, injectedLockManager);
+        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
@@ -310,10 +312,6 @@ final class FrameworkEventsPlugin extends ExecutorServicePlugin<FrameworkEventsP
         if (getBundleManager().isFrameworkCreated() == false)
             return;
 
-        // Assert that the framework lock is not held by the current thread
-        LockManagerPlugin lockManager = injectedLockManager.getValue();
-        lockManager.assertNotHeldByCurrentThread();
-
         // Get a snapshot of the current listeners
         final List<BundleListener> listeners = new ArrayList<BundleListener>();
         synchronized (bundleListeners) {
@@ -334,35 +332,50 @@ final class FrameworkEventsPlugin extends ExecutorServicePlugin<FrameworkEventsP
         if (listeners.isEmpty())
             return;
 
+        // Sanity check that we are not holding a lock
+        LockManager lockManager = injectedLockManager.getValue();
+        LockContext currentLock = lockManager.getCurrentLockContext();
+        
         // Synchronous listeners first
-        for (BundleListener listener : listeners) {
+        Iterator<BundleListener> iterator = listeners.iterator();
+        while(iterator.hasNext()) {
+            BundleListener listener = iterator.next();
             try {
-                if (listener instanceof SynchronousBundleListener)
+                if (listener instanceof SynchronousBundleListener) {
+                    if (currentLock != null) {
+                        // This has the potential for deadlock!
+                        LOGGER.debugf("Calling out to client code with current lock: %s", currentLock);
+                    }
+                    iterator.remove();
                     listener.bundleChanged(event);
+                }
             } catch (Throwable th) {
                 LOGGER.warnErrorWhileFiringBundleEvent(th, typeName, bundleState);
             }
         }
 
-        Runnable runner = new Runnable() {
-            public void run() {
-                // BundleListeners are called with a BundleEvent object when a bundleState has been
-                // installed, resolved, started, stopped, updated, unresolved, or uninstalled
-                if (asyncBundleEvents.contains(type)) {
-                    for (BundleListener listener : listeners) {
-                        try {
-                            if (listener instanceof SynchronousBundleListener == false)
-                                listener.bundleChanged(event);
-                        } catch (Throwable th) {
-                            LOGGER.warnErrorWhileFiringBundleEvent(th, typeName, bundleState);
+        if (!listeners.isEmpty()) {
+            Runnable runner = new Runnable() {
+                public void run() {
+                    // BundleListeners are called with a BundleEvent object when a bundleState has been
+                    // installed, resolved, started, stopped, updated, unresolved, or uninstalled
+                    if (asyncBundleEvents.contains(type)) {
+                        for (BundleListener listener : listeners) {
+                            try {
+                                if (!(listener instanceof SynchronousBundleListener)) {
+                                    listener.bundleChanged(event);
+                                }
+                            } catch (Throwable th) {
+                                LOGGER.warnErrorWhileFiringBundleEvent(th, typeName, bundleState);
+                            }
                         }
                     }
                 }
+            };
+            ExecutorService executorService = getExecutorService();
+            if (!executorService.isShutdown()) {
+                executorService.execute(runner);
             }
-        };
-        ExecutorService executorService = getExecutorService();
-        if (!executorService.isShutdown()) {
-            executorService.execute(runner);
         }
     }
 
@@ -371,10 +384,6 @@ final class FrameworkEventsPlugin extends ExecutorServicePlugin<FrameworkEventsP
         // Do nothing it the framework is not active
         if (getBundleManager().isFrameworkCreated() == false)
             return;
-
-        // Assert that the framework lock is not held by the current thread
-        LockManagerPlugin lockManager = injectedLockManager.getValue();
-        lockManager.assertNotHeldByCurrentThread();
 
         // Get a snapshot of the current listeners
         final ArrayList<FrameworkListener> listeners = new ArrayList<FrameworkListener>();
@@ -436,10 +445,6 @@ final class FrameworkEventsPlugin extends ExecutorServicePlugin<FrameworkEventsP
         // Do nothing it the framework is not active
         if (getBundleManager().isFrameworkCreated() == false)
             return;
-
-        // Assert that the framework lock is not held by the current thread
-        LockManagerPlugin lockManager = injectedLockManager.getValue();
-        lockManager.assertNotHeldByCurrentThread();
 
         // Get a snapshot of the current listeners
         List<ServiceListenerRegistration> listenerRegs = new ArrayList<ServiceListenerRegistration>();

@@ -96,18 +96,18 @@ final class FallbackLoader implements LocalLoader {
         }
     }
 
-    void lock() {
+    void lockFallbackLoader() {
         fallbackLoaderLock.lock();
     }
 
-    void unlock() {
+    void unlockFallbackLoader() {
         fallbackLoaderLock.unlock();
     }
 
     @Override
     public Class<?> loadClassLocal(String className, boolean resolve) {
+        lockFallbackLoader();
         try {
-            fallbackLoaderLock.lock();
             List<XPackageRequirement> matchingPatterns = findMatchingPatterns(className);
             if (!enabled.get() || matchingPatterns.isEmpty())
                 return null;
@@ -125,7 +125,7 @@ final class FallbackLoader implements LocalLoader {
                 return null;
             }
         } finally {
-            fallbackLoaderLock.unlock();
+            unlockFallbackLoader();
         }
     }
 

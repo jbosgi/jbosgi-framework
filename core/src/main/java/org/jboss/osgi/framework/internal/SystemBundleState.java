@@ -30,6 +30,7 @@ import java.util.List;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
@@ -104,6 +105,8 @@ final class SystemBundleState extends AbstractBundleState {
                 result = (T) getBundleManager();
             } else if (type.isAssignableFrom(XEnvironment.class)) {
                 result = (T) getFrameworkState().getEnvironment();
+            } else if (type.isAssignableFrom(LockManager.class)) {
+                result = (T) getFrameworkState().getLockManager();
             }
         }
         return result;

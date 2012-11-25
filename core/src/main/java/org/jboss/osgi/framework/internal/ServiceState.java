@@ -336,12 +336,12 @@ final class ServiceState implements ServiceRegistration, ServiceReference {
         try {
             if (fallbackLoader != null) {
                 try {
-                    fallbackLoader.lock();
+                    fallbackLoader.lockFallbackLoader();
                     fallbackLoader.setEnabled(false);
                     targetClass = bundleClassLoader.loadClass(className);
                 } finally {
                     fallbackLoader.setEnabled(true);
-                    fallbackLoader.unlock();
+                    fallbackLoader.unlockFallbackLoader();
                 }
             } else {
                 targetClass = bundleClassLoader.loadClass(className);

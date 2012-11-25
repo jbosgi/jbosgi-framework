@@ -50,31 +50,36 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testBundleLifecycle() throws Exception {
-        Bundle bundle = installBundle(getTestArchive());
-        assertEquals("simple-bundle", bundle.getSymbolicName());
-        assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
-        assertBundleState(Bundle.INSTALLED, bundle.getState());
+        getSystemContext().addBundleListener(this);
+        try {
+            Bundle bundle = installBundle(getTestArchive());
+            assertEquals("simple-bundle", bundle.getSymbolicName());
+            assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-        bundle.start();
-        assertBundleState(Bundle.ACTIVE, bundle.getState());
+            bundle.start();
+            assertBundleState(Bundle.ACTIVE, bundle.getState());
 
-        BundleContext context = bundle.getBundleContext();
-        assertNotNull("BundleContext not null", context);
+            BundleContext context = bundle.getBundleContext();
+            assertNotNull("BundleContext not null", context);
 
-        ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
-        assertNotNull("ServiceReference not null", sref);
+            ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
+            assertNotNull("ServiceReference not null", sref);
 
-        Object service = context.getService(sref);
-        assertEquals(SimpleService.class.getName(), service.getClass().getName());
+            Object service = context.getService(sref);
+            assertEquals(SimpleService.class.getName(), service.getClass().getName());
 
-        bundle.stop();
-        assertBundleState(Bundle.RESOLVED, bundle.getState());
+            bundle.stop();
+            assertBundleState(Bundle.RESOLVED, bundle.getState());
 
-        sref = getSystemContext().getServiceReference(SimpleService.class.getName());
-        assertNull("ServiceReference null", sref);
+            sref = getSystemContext().getServiceReference(SimpleService.class.getName());
+            assertNull("ServiceReference null", sref);
 
-        bundle.uninstall();
-        assertBundleState(Bundle.UNINSTALLED, bundle.getState());
+            bundle.uninstall();
+            assertBundleState(Bundle.UNINSTALLED, bundle.getState());
+        } finally {
+            getSystemContext().removeBundleListener(this);
+        }
     }
 
     private JavaArchive getTestArchive() {

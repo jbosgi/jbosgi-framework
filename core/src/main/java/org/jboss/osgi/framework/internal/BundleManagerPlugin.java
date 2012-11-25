@@ -59,8 +59,11 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
-import org.jboss.osgi.framework.spi.BundleLock.LockMethod;
 import org.jboss.osgi.framework.spi.FrameworkBuilder;
+import org.jboss.osgi.framework.spi.FrameworkWiringLock;
+import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.LockManager.LockContext;
+import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.StartLevelPlugin;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -111,7 +114,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
-    final InjectedValue<LockManagerPlugin> injectedLockManager = new InjectedValue<LockManagerPlugin>();
+    final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
     final InjectedValue<Boolean> injectedFrameworkActive = new InjectedValue<Boolean>();
 
     private final FrameworkBuilder frameworkBuilder;
@@ -158,7 +161,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     protected void addServiceDependencies(ServiceBuilder<BundleManager> builder) {
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
-        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, injectedLockManager);
+        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
@@ -319,9 +322,38 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         return Collections.unmodifiableSet(resultSet);
     }
 
-    @Override
-    public ServiceName installBundle(Deployment dep, ServiceListener<XBundle> listener) throws BundleException {
-        return installBundle(dep, serviceTarget, listener);
+    void installBundle(UserBundleState userBundle) throws BundleException {
+
+        // [TODO] Add singleton support this to XBundle
+        // it is not ok to simple not add it to the Environment
+        boolean addToEnvironment = true;
+        if (userBundle.isSingleton()) {
+            String symbolicName = userBundle.getSymbolicName();
+            for (XBundle aux : getBundles(symbolicName, null)) {
+                if (aux != userBundle && isSingleton(aux)) {
+                    LOGGER.infoNoResolvableSingleton(userBundle);
+                    addToEnvironment = false;
+                    break;
+                }
+            }
+        }
+
+        if (addToEnvironment) {
+            XEnvironment env = injectedEnvironment.getValue();
+            env.installResources(userBundle.getBundleRevision());
+        }
+
+        userBundle.changeState(Bundle.INSTALLED, 0);
+        LOGGER.infoBundleInstalled(userBundle);
+    }
+
+    // [TODO] Add singleton support this to XBundle
+    private boolean isSingleton(XBundle userBundle) {
+        if (userBundle instanceof UserBundleState) {
+            UserBundleState bundleState = (UserBundleState) userBundle;
+            return bundleState.isSingleton();
+        }
+        return false;
     }
 
     @Override
@@ -388,55 +420,59 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     void uninstallBundle(UserBundleState userBundle, int options) {
-        if (userBundle.aquireBundleLock(LockMethod.UNINSTALL)) {
-            try {
-                int state = userBundle.getState();
-                if (state == Bundle.UNINSTALLED)
-                    return;
 
-                // #2 If the bundle's state is ACTIVE, STARTING or STOPPING, the bundle is stopped
-                if (userBundle.isFragment() == false) {
-                    if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING) {
-                        try {
-                            userBundle.stopInternal(options);
-                        } catch (Exception ex) {
-                            // If Bundle.stop throws an exception, a Framework event of type FrameworkEvent.ERROR is fired
-                            fireFrameworkError(userBundle, "stopping bundle: " + userBundle, ex);
-                        }
+        LockContext lockContext = null;
+        LockManager lockManager = injectedLockManager.getValue();
+        try {
+            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+            lockContext = lockManager.lockItems(Method.UNINSTALL, wireLock, userBundle);
+
+            int state = userBundle.getState();
+            if (state == Bundle.UNINSTALLED)
+                return;
+
+            // #2 If the bundle's state is ACTIVE, STARTING or STOPPING, the bundle is stopped
+            if (userBundle.isFragment() == false) {
+                if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING) {
+                    try {
+                        userBundle.stopInternal(options);
+                    } catch (Exception ex) {
+                        // If Bundle.stop throws an exception, a Framework event of type FrameworkEvent.ERROR is fired
+                        fireFrameworkError(userBundle, "stopping bundle: " + userBundle, ex);
                     }
                 }
-
-                // #3 This bundle's state is set to UNINSTALLED
-                FrameworkEventsPlugin eventsPlugin = userBundle.getFrameworkState().getFrameworkEventsPlugin();
-                userBundle.changeState(Bundle.UNINSTALLED, 0);
-
-                // Remove the bundle services
-                userBundle.removeServices();
-
-                // Check if the bundle has still active wires
-                boolean hasActiveWires = userBundle.hasActiveWires();
-                if (hasActiveWires == false) {
-                    // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
-                    removeBundle(userBundle, options);
-                }
-
-                // #4 A bundle event of type BundleEvent.UNINSTALLED is fired
-                eventsPlugin.fireBundleEvent(userBundle, BundleEvent.UNINSTALLED);
-
-                LOGGER.infoBundleUninstalled(userBundle);
-
-                // Remove other uninstalled bundles that now also have no active wires any more
-                Set<XBundle> uninstalled = getBundles(Bundle.UNINSTALLED);
-                for (Bundle auxState : uninstalled) {
-                    UserBundleState auxUser = UserBundleState.assertBundleState(auxState);
-                    if (auxUser.hasActiveWires() == false) {
-                        removeBundle(auxUser, options);
-                    }
-                }
-            } finally {
-                userBundle.releaseBundleLock(LockMethod.UNINSTALL);
             }
+
+            // #3 This bundle's state is set to UNINSTALLED
+            userBundle.changeState(Bundle.UNINSTALLED, 0);
+
+            // Check if the bundle has still active wires
+            boolean hasActiveWires = userBundle.hasActiveWires();
+            if (hasActiveWires == false) {
+                // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
+                removeBundle(userBundle, options);
+            }
+
+            // Remove other uninstalled bundles that now also have no active wires any more
+            Set<XBundle> uninstalled = getBundles(Bundle.UNINSTALLED);
+            for (Bundle auxState : uninstalled) {
+                UserBundleState auxUser = UserBundleState.assertBundleState(auxState);
+                if (auxUser.hasActiveWires() == false) {
+                    removeBundle(auxUser, options);
+                }
+            }
+
+            LOGGER.infoBundleUninstalled(userBundle);
+        } finally {
+            lockManager.unlockItems(lockContext);
         }
+
+        // Remove the Bundle INSTALL service after we changed the state
+        LOGGER.debugf("Remove service for: %s", this);
+        setServiceMode(userBundle.getServiceName(Bundle.INSTALLED), Mode.REMOVE);
+        
+        // #4 A bundle event of type BundleEvent.UNINSTALLED is fired
+        userBundle.fireBundleEvent(BundleEvent.UNINSTALLED);
     }
 
     void removeBundle(UserBundleState userBundle, int options) {
@@ -472,7 +508,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     public ServiceName getServiceName(XBundle bundle, int state) {
         ServiceName result = null;
         if (bundle instanceof AbstractBundleState) {
-            AbstractBundleState bundleState = (AbstractBundleState)bundle;
+            AbstractBundleState bundleState = (AbstractBundleState) bundle;
             result = bundleState.getServiceName(state);
         }
         return result;
@@ -496,8 +532,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         ServiceController<?> controller = serviceContainer.getService(serviceName);
         if (controller == null) {
             LOGGER.debugf("Cannot set mode %s on non-existing service: %s", mode, serviceName);
-        }
-        else {
+        } else {
             setServiceMode(controller, mode);
         }
     }

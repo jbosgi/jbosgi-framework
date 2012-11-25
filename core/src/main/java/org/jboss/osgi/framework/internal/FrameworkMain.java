@@ -24,8 +24,8 @@ package org.jboss.osgi.framework.internal;
 import java.util.Map;
 
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.osgi.framework.spi.FrameworkBuilderFactory;
 import org.jboss.osgi.framework.spi.FrameworkBuilder;
+import org.jboss.osgi.framework.spi.FrameworkBuilderFactory;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
 

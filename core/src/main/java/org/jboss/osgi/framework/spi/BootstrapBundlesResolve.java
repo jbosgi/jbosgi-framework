@@ -42,6 +42,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.internal.InternalServices;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -56,6 +57,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<PackageAdmin> injectedPackageAdmin = new InjectedValue<PackageAdmin>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
+    private final InjectedValue<XBundle> injectedSystemBundle = new InjectedValue<XBundle>();
     private final InjectedValue<XResolver> injectedResolver = new InjectedValue<XResolver>();
     private final Set<ServiceName> installedServices;
 
@@ -66,6 +68,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
+        builder.addDependency(InternalServices.SYSTEM_BUNDLE, XBundle.class, injectedSystemBundle);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
@@ -101,6 +104,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         if (IntegrationServices.BOOTSTRAP_BUNDLES.isParentOf(getServiceName())) {
             XEnvironment env = injectedEnvironment.getValue();
             List<XBundleRevision> mandatory = new ArrayList<XBundleRevision>();
+            mandatory.add(injectedSystemBundle.getValue().getBundleRevision());
             for (XBundle bundle : resolvableServices.values()) {
                 mandatory.add(bundle.getBundleRevision());
             }
@@ -113,17 +117,20 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
             }
         }
 
-        // Leniently resolve the persistent bundles
-        if (IntegrationServices.PERSISTENT_BUNDLES.isParentOf(getServiceName())) {
-            Bundle[] bundles = resolvableServices.values().toArray(new Bundle[resolvableServices.size()]);
-            PackageAdmin packageAdmin = injectedPackageAdmin.getValue();
-            packageAdmin.resolveBundles(bundles);
-        }
+        if (!resolvableServices.isEmpty()) {
+            
+            // Leniently resolve the persistent bundles
+            if (IntegrationServices.PERSISTENT_BUNDLES.isParentOf(getServiceName())) {
+                Bundle[] bundles = resolvableServices.values().toArray(new Bundle[resolvableServices.size()]);
+                PackageAdmin packageAdmin = injectedPackageAdmin.getValue();
+                packageAdmin.resolveBundles(bundles);
+            }
 
-        // Remove the unresolved service from the tracker
-        for (ServiceName serviceName : new HashSet<ServiceName>(resolvableServices.keySet())) {
-            if (!resolvableServices.get(serviceName).isResolved()) {
-                resolvableServices.remove(serviceName);
+            // Remove the unresolved service from the tracker
+            for (ServiceName serviceName : new HashSet<ServiceName>(resolvableServices.keySet())) {
+                if (!resolvableServices.get(serviceName).isResolved()) {
+                    resolvableServices.remove(serviceName);
+                }
             }
         }
 

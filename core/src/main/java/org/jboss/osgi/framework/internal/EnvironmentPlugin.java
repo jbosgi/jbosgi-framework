@@ -23,8 +23,8 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
@@ -38,7 +38,11 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractBundleWiring;
+import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.LockManager.LockContext;
+import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
@@ -54,7 +58,7 @@ import org.osgi.resource.Wiring;
  */
 final class EnvironmentPlugin extends AbstractEnvironment implements IntegrationService<XEnvironment> {
 
-    private final InjectedValue<LockManagerPlugin> injectedLockManager = new InjectedValue<LockManagerPlugin>();
+    private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
 
     EnvironmentPlugin() {
     }
@@ -67,7 +71,7 @@ final class EnvironmentPlugin extends AbstractEnvironment implements Integration
     @Override
     public ServiceController<XEnvironment> install(ServiceTarget serviceTarget, ServiceListener<Object> listener) {
         ServiceBuilder<XEnvironment> builder = serviceTarget.addService(Services.ENVIRONMENT, this);
-        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManagerPlugin.class, injectedLockManager);
+        builder.addDependency(InternalServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
         builder.addListener(listener);
         return builder.install();
@@ -98,32 +102,33 @@ final class EnvironmentPlugin extends AbstractEnvironment implements Integration
                 throw MESSAGES.cannotObtainBundleFromResource(res);
         }
 
-        aquireFrameworkLock();
+        LockContext lockContext = null;
+        LockManager lockManager = injectedLockManager.getValue();
         try {
+            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+            lockContext = lockManager.lockItems(Method.INSTALL, getLockableItems(wireLock, resources));
             super.installResources(resources);
         } finally {
-            releaseFrameworkLock();
+            lockManager.unlockItems(lockContext);
         }
     }
 
     @Override
     public synchronized void uninstallResources(XResource... resources) {
-        aquireFrameworkLock();
+        LockContext lockContext = null;
+        LockManager lockManager = injectedLockManager.getValue();
         try {
+            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+            lockContext = lockManager.lockItems(Method.UNINSTALL, getLockableItems(wireLock, resources));
             super.uninstallResources(resources);
         } finally {
-            releaseFrameworkLock();
+            lockManager.unlockItems(lockContext);
         }
     }
 
     @Override
     public void refreshResources(XResource... resources) {
-        aquireFrameworkLock();
-        try {
-            super.refreshResources(resources);
-        } finally {
-            releaseFrameworkLock();
-        }
+        super.refreshResources(resources);
     }
 
     @Override
@@ -132,17 +137,17 @@ final class EnvironmentPlugin extends AbstractEnvironment implements Integration
         return new AbstractBundleWiring(brev, required, provided);
     }
 
-    private void aquireFrameworkLock() {
-        try {
-            LockManagerPlugin lockManager = injectedLockManager.getValue();
-            lockManager.aquireFrameworkLock();
-        } catch (TimeoutException ex) {
-            throw new IllegalStateException(ex);
+    private LockManager.LockableItem[] getLockableItems(LockManager.LockableItem item, XResource... resources) {
+        List<LockManager.LockableItem> items = new ArrayList<LockManager.LockableItem>();
+        items.add(item);
+        if (resources != null) {
+            for (XResource res : resources) {
+                XBundleRevision brev = (XBundleRevision) res;
+                if (brev.getBundle() instanceof LockManager.LockableItem) {
+                    items.add((LockManager.LockableItem) brev.getBundle());
+                }
+            }
         }
-    }
-
-    private void releaseFrameworkLock() {
-        LockManagerPlugin lockManager = injectedLockManager.getValue();
-        lockManager.releaseFrameworkLock();
+        return items.toArray(new LockManager.LockableItem[items.size()]);
     }
 }
