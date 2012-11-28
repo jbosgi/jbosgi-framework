@@ -29,6 +29,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.StartLevelImpl;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
@@ -50,7 +51,7 @@ public class StartLevelPlugin extends ExecutorServicePlugin<StartLevelSupport> i
     private StartLevelSupport startLevelSupport;
 
     public StartLevelPlugin() {
-        super(IntegrationServices.START_LEVEL, "StartLevel Thread");
+        super(Services.START_LEVEL, "StartLevel Thread");
     }
 
     @Override
@@ -58,7 +59,7 @@ public class StartLevelPlugin extends ExecutorServicePlugin<StartLevelSupport> i
         super.addServiceDependencies(builder);
         builder.addDependency(IntegrationServices.SYSTEM_CONTEXT_INTERNAL, BundleContext.class, injectedSystemContext);
         builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, injectedFrameworkEvents);
-        builder.addDependency(IntegrationServices.FRAMEWORK_CREATE);
+        builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

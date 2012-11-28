@@ -40,6 +40,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -66,10 +67,10 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
     @Override
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
         builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, XBundle.class, injectedSystemBundle);
-        builder.addDependency(IntegrationServices.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
-        builder.addDependency(IntegrationServices.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
-        builder.addDependency(IntegrationServices.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
-        builder.addDependency(IntegrationServices.RESOLVER, XResolver.class, injectedResolver);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
+        builder.addDependency(Services.RESOLVER, XResolver.class, injectedResolver);
         builder.addDependencies(getPreviousService());
     }
 

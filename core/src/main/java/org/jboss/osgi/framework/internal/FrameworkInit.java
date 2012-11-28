@@ -28,6 +28,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.osgi.framework.BundleContext;
@@ -74,13 +75,13 @@ public final class FrameworkInit extends AbstractFrameworkService {
         private final Mode initialMode;
         
         FrameworkInitialized(Mode initialMode) {
-            super(IntegrationServices.FRAMEWORK_INIT);
+            super(Services.FRAMEWORK_INIT);
             this.initialMode = initialMode;
         }
 
         @Override
         protected void addServiceDependencies(ServiceBuilder<BundleContext> builder) {
-            builder.addDependency(IntegrationServices.FRAMEWORK_CREATE, BundleContext.class, injectedBundleContext);
+            builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedBundleContext);
             builder.addDependency(IntegrationServices.FRAMEWORK_INIT_INTERNAL);
             builder.setInitialMode(initialMode);
         }

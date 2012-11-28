@@ -35,6 +35,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
@@ -54,8 +55,8 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
-        builder.addDependency(IntegrationServices.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
-        builder.addDependency(IntegrationServices.FRAMEWORK_CREATE);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

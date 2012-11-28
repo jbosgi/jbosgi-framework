@@ -31,6 +31,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.BundleStorageImpl;
 import org.jboss.osgi.vfs.VirtualFile;
 
@@ -53,7 +54,7 @@ public class BundleStoragePlugin extends AbstractIntegrationService<BundleStorag
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<BundleStorage> builder) {
-        builder.addDependency(IntegrationServices.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

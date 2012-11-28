@@ -57,6 +57,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleStorage;
@@ -131,7 +132,7 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
     private int stoppedEvent;
 
     BundleManagerImpl(ServiceContainer serviceContainer, FrameworkBuilder frameworkBuilder) {
-        super(IntegrationServices.BUNDLE_MANAGER);
+        super(Services.BUNDLE_MANAGER);
         this.serviceContainer = serviceContainer;
         this.frameworkBuilder = frameworkBuilder;
         this.stoppedEvent = FrameworkEvent.STOPPED;
@@ -162,7 +163,7 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<BundleManager> builder) {
-        builder.addDependency(IntegrationServices.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
         builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
@@ -202,7 +203,7 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
     }
 
     /**
-     * True if the framework has reached the {@link IntegrationServices#FRAMEWORK_CREATE} state
+     * True if the framework has reached the {@link Services#FRAMEWORK_CREATE} state
      */
     boolean isFrameworkCreated() {
         return getFrameworkState() != null;

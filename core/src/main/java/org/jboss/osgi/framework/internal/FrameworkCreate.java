@@ -27,6 +27,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
@@ -63,7 +64,7 @@ public final class FrameworkCreate extends AbstractFrameworkService {
         builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, frameworkState.injectedFrameworkEvents);
         builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_LOADER, FrameworkModuleLoader.class, frameworkState.injectedModuleLoader);
         builder.addDependency(IntegrationServices.NATIVE_CODE_PLUGIN, NativeCode.class, frameworkState.injectedNativeCode);
-        builder.addDependency(IntegrationServices.RESOLVER, XResolver.class, frameworkState.injectedResolverPlugin);
+        builder.addDependency(Services.RESOLVER, XResolver.class, frameworkState.injectedResolverPlugin);
         builder.addDependency(IntegrationServices.SERVICE_MANAGER, ServiceManager.class, frameworkState.injectedServiceManager);
         builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, XBundle.class, frameworkState.injectedSystemBundle);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -90,7 +91,7 @@ public final class FrameworkCreate extends AbstractFrameworkService {
         private final Mode initialMode;
 
         FrameworkCreated(Mode initialMode) {
-            super(IntegrationServices.FRAMEWORK_CREATE);
+            super(Services.FRAMEWORK_CREATE);
             this.initialMode = initialMode;
         }
 

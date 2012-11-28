@@ -27,6 +27,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.IntegrationServices;
@@ -61,8 +62,8 @@ final class FrameworkCoreServices extends AbstractIntegrationService<FrameworkCo
         builder.addDependency(IntegrationServices.BUNDLE_LIFECYCLE_PLUGIN, BundleLifecycle.class, injectedBundleLifecycle);
         builder.addDependency(IntegrationServices.FRAMEWORK_CREATE_INTERNAL, FrameworkState.class, injectedFramework);
         builder.addDependency(IntegrationServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, injectedLifecycleInterceptor);
-        builder.addDependency(IntegrationServices.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
-        builder.addDependency(IntegrationServices.START_LEVEL, StartLevelSupport.class, injectedStartLevel);
+        builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
+        builder.addDependency(Services.START_LEVEL, StartLevelSupport.class, injectedStartLevel);
         builder.addDependency(IntegrationServices.SYSTEM_CONTEXT_INTERNAL, BundleContext.class, injectedSystemContext);
         builder.addDependency(IntegrationServices.SYSTEM_SERVICES_PLUGIN, SystemServices.class, injectedSystemServices);
         builder.addDependencies(IntegrationServices.URL_HANDLER_PLUGIN);

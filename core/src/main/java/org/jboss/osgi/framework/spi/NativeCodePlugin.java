@@ -49,7 +49,7 @@ public class NativeCodePlugin extends AbstractIntegrationService<NativeCode> imp
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<NativeCode> builder) {
-        builder.addDependency(org.jboss.osgi.framework.spi.IntegrationServices.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(org.jboss.osgi.framework.Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

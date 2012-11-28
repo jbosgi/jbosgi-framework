@@ -34,6 +34,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.IntegrationServices;
@@ -67,7 +68,7 @@ final class SystemBundlePlugin extends AbstractIntegrationService<XBundle> {
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<XBundle> builder) {
-        builder.addDependency(IntegrationServices.ENVIRONMENT, XEnvironment.class, frameworkState.injectedEnvironment);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, frameworkState.injectedEnvironment);
         builder.addDependency(IntegrationServices.BUNDLE_STORAGE, BundleStorage.class, frameworkState.injectedBundleStorage);
         builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, frameworkState.injectedLockManager);
         builder.addDependency(IntegrationServices.MODULE_MANGER, ModuleManager.class, frameworkState.injectedModuleManager);

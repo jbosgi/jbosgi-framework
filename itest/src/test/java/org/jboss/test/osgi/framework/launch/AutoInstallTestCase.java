@@ -27,7 +27,7 @@ import java.util.Map;
 
 import org.jboss.msc.service.ServiceController.State;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.spi.IntegrationServices;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
@@ -150,7 +150,7 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
             bundleB.uninstall();
 
             // Verify that the framework is still active
-            assertServiceState(State.UP, IntegrationServices.FRAMEWORK_ACTIVE);
+            assertServiceState(State.UP, Services.FRAMEWORK_ACTIVE);
         } finally {
             framework.stop();
             framework.waitForStop(5000);
@@ -188,7 +188,7 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
             bundleB.uninstall();
 
             // Verify that the framework is still active
-            assertServiceState(State.UP, IntegrationServices.FRAMEWORK_ACTIVE);
+            assertServiceState(State.UP, Services.FRAMEWORK_ACTIVE);
 
             framework.stop();
             framework.waitForStop(2000);

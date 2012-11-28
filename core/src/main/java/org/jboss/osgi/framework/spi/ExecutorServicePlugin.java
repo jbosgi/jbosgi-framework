@@ -29,6 +29,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 
 
 /**
@@ -50,7 +51,7 @@ public abstract class ExecutorServicePlugin<T> extends AbstractIntegrationServic
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
-        builder.addDependency(IntegrationServices.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
     }
 
     @Override

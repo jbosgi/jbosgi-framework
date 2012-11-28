@@ -39,6 +39,7 @@ import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockSupport;
 import org.jboss.osgi.framework.spi.LockManager.Method;
@@ -258,7 +259,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
             lockContext = lockManager.lockItems(Method.RESOLVE, wireLock, this);
 
             // Uninstall from the environment
-            XEnvironment env = getPluginService(IntegrationServices.ENVIRONMENT, XEnvironment.class);
+            XEnvironment env = getPluginService(Services.ENVIRONMENT, XEnvironment.class);
             env.uninstallResources(getBundleRevision());
             // Remove from the module loader
             FrameworkModuleLoader provider = getPluginService(IntegrationServices.FRAMEWORK_MODULE_LOADER, FrameworkModuleLoader.class);
@@ -363,17 +364,17 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     }
 
     private int getStartLevel() {
-        StartLevelSupport startLevel = getPluginService(IntegrationServices.START_LEVEL, StartLevelSupport.class);
+        StartLevelSupport startLevel = getPluginService(Services.START_LEVEL, StartLevelSupport.class);
         return startLevel.getBundleStartLevel(this);
     }
 
     private void setPersistentlyStarted(boolean started) {
-        StartLevelSupport startLevel = getPluginService(IntegrationServices.START_LEVEL, StartLevelSupport.class);
+        StartLevelSupport startLevel = getPluginService(Services.START_LEVEL, StartLevelSupport.class);
         startLevel.setBundlePersistentlyStarted(this, started);
     }
 
     private boolean startLevelValidForStart() {
-        StartLevelSupport startLevel = getPluginService(IntegrationServices.START_LEVEL, StartLevelSupport.class);
+        StartLevelSupport startLevel = getPluginService(Services.START_LEVEL, StartLevelSupport.class);
         return getStartLevel() <= startLevel.getStartLevel();
     }
 

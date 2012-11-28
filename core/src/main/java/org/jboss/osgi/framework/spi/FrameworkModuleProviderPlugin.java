@@ -27,6 +27,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.FrameworkModuleProviderImpl;
 import org.jboss.osgi.resolver.XBundle;
 
@@ -49,7 +50,7 @@ public class FrameworkModuleProviderPlugin extends AbstractIntegrationService<Fr
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<FrameworkModuleProvider> builder) {
-        builder.addDependency(IntegrationServices.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(IntegrationServices.SYSTEM_PATHS, SystemPaths.class, injectedSystemPaths);
         builder.setInitialMode(Mode.ON_DEMAND);
     }

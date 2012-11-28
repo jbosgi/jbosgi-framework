@@ -29,6 +29,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.ResolverImpl;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolveContext;
@@ -56,13 +57,13 @@ public class ResolverPlugin extends AbstractIntegrationService<XResolver> implem
     private XResolver resolver;
 
     public ResolverPlugin() {
-        super(IntegrationServices.RESOLVER);
+        super(Services.RESOLVER);
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<XResolver> builder) {
-        builder.addDependency(IntegrationServices.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
-        builder.addDependency(IntegrationServices.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
         builder.addDependency(IntegrationServices.NATIVE_CODE_PLUGIN, NativeCode.class, injectedNativeCode);
         builder.addDependency(IntegrationServices.MODULE_MANGER, ModuleManager.class, injectedModuleManager);
         builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_LOADER, FrameworkModuleLoader.class, injectedModuleLoader);

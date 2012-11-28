@@ -28,6 +28,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.ServiceManagerImpl;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.InvalidSyntaxException;
@@ -52,7 +53,7 @@ public class ServiceManagerPlugin extends AbstractIntegrationService<ServiceMana
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<ServiceManager> builder) {
-        builder.addDependency(IntegrationServices.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, injectedFrameworkEvents);
         builder.addDependency(IntegrationServices.MODULE_MANGER, ModuleManager.class, injectedModuleManager);
         builder.setInitialMode(Mode.ON_DEMAND);

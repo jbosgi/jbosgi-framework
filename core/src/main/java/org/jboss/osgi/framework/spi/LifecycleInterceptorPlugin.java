@@ -28,6 +28,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.LifecycleInterceptorServiceImpl;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -51,7 +52,7 @@ public class LifecycleInterceptorPlugin extends AbstractIntegrationService<Lifec
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<LifecycleInterceptorService> builder) {
-        builder.addDependency(IntegrationServices.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
+        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

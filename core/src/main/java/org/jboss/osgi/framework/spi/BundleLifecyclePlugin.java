@@ -27,6 +27,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
@@ -46,8 +47,8 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<BundleLifecycle> builder) {
-        builder.addDependency(IntegrationServices.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
-        builder.addDependency(IntegrationServices.FRAMEWORK_CREATE);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

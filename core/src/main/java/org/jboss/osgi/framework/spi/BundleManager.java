@@ -32,6 +32,7 @@ import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -109,7 +110,7 @@ public interface BundleManager extends Service<BundleManager> {
     XBundle getSystemBundle();
 
     /**
-     * True the framework has reached the {@link IntegrationServices#FRAMEWORK_ACTIVE} state
+     * True the framework has reached the {@link Services#FRAMEWORK_ACTIVE} state
      */
     boolean isFrameworkActive();
 

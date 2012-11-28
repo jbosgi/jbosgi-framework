@@ -29,6 +29,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.URLHandlerSupport;
@@ -55,8 +56,8 @@ final class URLHandlerPlugin extends AbstractIntegrationService<URLHandlerSuppor
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<URLHandlerSupport> builder) {
-        builder.addDependency(IntegrationServices.BUNDLE_MANAGER, BundleManagerImpl.class, injectedBundleManager);
-        builder.addDependency(IntegrationServices.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerImpl.class, injectedBundleManager);
+        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

@@ -29,6 +29,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.PackageAdminImpl;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolver;
@@ -60,19 +61,19 @@ public class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdminSuppor
     private ServiceRegistration registration;
 
     public PackageAdminPlugin() {
-        super(IntegrationServices.PACKAGE_ADMIN, "PackageAdmin Refresh Thread");
+        super(Services.PACKAGE_ADMIN, "PackageAdmin Refresh Thread");
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<PackageAdminSupport> builder) {
         super.addServiceDependencies(builder);
-        builder.addDependency(IntegrationServices.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
-        builder.addDependency(IntegrationServices.START_LEVEL, StartLevel.class, injectedStartLevel);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
+        builder.addDependency(Services.START_LEVEL, StartLevel.class, injectedStartLevel);
         builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, injectedFrameworkEvents);
         builder.addDependency(IntegrationServices.MODULE_MANGER, ModuleManager.class, injectedModuleManager);
         builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, injectedLockManager);
-        builder.addDependency(IntegrationServices.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
-        builder.addDependency(IntegrationServices.RESOLVER, XResolver.class, injectedResolver);
+        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
+        builder.addDependency(Services.RESOLVER, XResolver.class, injectedResolver);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

@@ -30,6 +30,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.EnvironmentImpl;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
@@ -51,7 +52,7 @@ public class EnvironmentPlugin extends AbstractIntegrationService<XEnvironment> 
     private XEnvironment environment;
 
     public EnvironmentPlugin() {
-        super(IntegrationServices.ENVIRONMENT);
+        super(Services.ENVIRONMENT);
     }
 
     @Override
