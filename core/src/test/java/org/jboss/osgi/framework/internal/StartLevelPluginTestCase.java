@@ -26,7 +26,7 @@ import static org.junit.Assert.fail;
 
 import java.io.InputStream;
 
-import org.jboss.osgi.framework.spi.StartLevelPlugin;
+import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -148,7 +148,7 @@ public class StartLevelPluginTestCase extends OSGiFrameworkTest {
     }
 
     private void enableImmediateExecution(StartLevel sls) throws Exception {
-        StartLevelPlugin plugin = (StartLevelPlugin) sls;
+        StartLevelSupport plugin = (StartLevelSupport) sls;
         plugin.enableImmediateExecution(true);
     }
 

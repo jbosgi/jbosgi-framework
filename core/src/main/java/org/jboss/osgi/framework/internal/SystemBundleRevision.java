@@ -27,7 +27,8 @@ import java.util.Enumeration;
 
 import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.framework.spi.ModuleManager;
+import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -41,8 +42,9 @@ import org.osgi.framework.Constants;
  */
 final class SystemBundleRevision extends BundleStateRevision {
 
-    SystemBundleRevision(FrameworkState frameworkState, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
+    SystemBundleRevision(FrameworkState frameworkState, OSGiMetaData metadata, StorageState storageState) throws BundleException {
         super(frameworkState, metadata, storageState);
+        addAttachment(Long.class, new Long(0));
     }
 
     @Override
@@ -100,7 +102,7 @@ final class SystemBundleRevision extends BundleStateRevision {
     }
 
     private ClassLoader getFrameworkClassLoader() {
-        ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
+        ModuleManager moduleManager = getFrameworkState().getModuleManager();
         Module module = moduleManager.getFrameworkModule();
         return module.getClassLoader();
     }

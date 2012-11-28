@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -38,8 +38,6 @@ import org.osgi.framework.Bundle;
  */
 final class HostBundleActiveService extends UserBundleActiveService<HostBundleState> {
 
-    private final HostBundleState hostBundle;
-
     static void addService(ServiceTarget serviceTarget, HostBundleState hostBundle) {
         ServiceName serviceName = hostBundle.getServiceName(Bundle.ACTIVE);
         HostBundleActiveService service = new HostBundleActiveService(hostBundle);
@@ -51,12 +49,6 @@ final class HostBundleActiveService extends UserBundleActiveService<HostBundleSt
     }
 
     private HostBundleActiveService(HostBundleState hostBundle) {
-        super(hostBundle.getFrameworkState());
-        this.hostBundle = hostBundle;
-    }
-
-    @Override
-    HostBundleState getBundleState() {
-        return hostBundle;
+        super(hostBundle);
     }
 }

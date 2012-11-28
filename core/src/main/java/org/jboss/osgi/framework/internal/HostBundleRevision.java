@@ -21,8 +21,8 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 import java.net.URL;
@@ -40,8 +40,9 @@ import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
-import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
+import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
+import org.jboss.osgi.framework.spi.ModuleManager;
+import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -62,7 +63,7 @@ final class HostBundleRevision extends UserBundleRevision {
     private Set<FragmentBundleRevision> attachedFragments;
     private FallbackLoader fallbackLoader;
 
-    HostBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
+    HostBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
         super(frameworkState, dep, metadata, storageState);
     }
 
@@ -81,8 +82,8 @@ final class HostBundleRevision extends UserBundleRevision {
     }
 
     void createResolvedService(ServiceTarget serviceTarget) {
-        ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
-        ModuleLoaderPlugin moduleLoader = getFrameworkState().getModuleLoaderPlugin();
+        ModuleManager moduleManager = getFrameworkState().getModuleManager();
+        FrameworkModuleLoader moduleLoader = getFrameworkState().getFrameworkModuleLoader();
         ModuleIdentifier identifier = moduleManager.getModuleIdentifier(this);
         ServiceName moduleServiceName = moduleLoader.getModuleServiceName(identifier);
         HostBundleResolvedService.addService(serviceTarget, getBundleState(), moduleServiceName);

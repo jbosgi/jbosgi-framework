@@ -25,16 +25,15 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.spi.IntegrationServices.BootstrapPhase;
 
 public abstract class BootstrapBundlesService<T> extends AbstractIntegrationService<T> {
 
     private final ServiceName baseName;
-    private final BootstrapPhase phase;
+    private final IntegrationServices.BootstrapPhase phase;
     private ServiceListener<Object> listener;
 
     public BootstrapBundlesService(ServiceName baseName, IntegrationServices.BootstrapPhase phase) {
-        super(BootstrapPhase.serviceName(baseName, phase));
+        super(IntegrationServices.BootstrapPhase.serviceName(baseName, phase));
         this.baseName = baseName;
         this.phase = phase;
     }
@@ -50,10 +49,10 @@ public abstract class BootstrapBundlesService<T> extends AbstractIntegrationServ
     }
 
     public ServiceName getPreviousService() {
-        return BootstrapPhase.serviceName(baseName, phase.previous());
+        return IntegrationServices.BootstrapPhase.serviceName(baseName, phase.previous());
     }
 
     public ServiceName getNextService() {
-        return BootstrapPhase.serviceName(baseName, phase.next());
+        return IntegrationServices.BootstrapPhase.serviceName(baseName, phase.next());
     }
 }

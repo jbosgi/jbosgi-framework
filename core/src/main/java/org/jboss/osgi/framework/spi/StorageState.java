@@ -21,13 +21,21 @@ package org.jboss.osgi.framework.spi;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
 
+import org.jboss.osgi.vfs.AbstractVFS;
+import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 
 /**
@@ -47,6 +55,7 @@ public class StorageState {
     public static final String PROPERTY_ACTIVATION_POLICY_USED = "ActivationPolicyUsed";
     public static final String PROPERTY_START_LEVEL = "StartLevel";
     public static final String BUNDLE_PERSISTENT_PROPERTIES = "bundle-persistent.properties";
+    public static final String BUNDLE_DIRECTORY_PREFIX = "bundle-";
 
     private final File storageDir;
     private final VirtualFile rootFile;
@@ -62,6 +71,54 @@ public class StorageState {
         requiredProps.add(PROPERTY_BUNDLE_LOCATION);
         requiredProps.add(PROPERTY_START_LEVEL);
         requiredProps.add(PROPERTY_LAST_MODIFIED);
+    }
+
+    public static StorageState createStorageState(File storageDir) throws IOException {
+        VirtualFile rootFile = null;
+        Properties props = loadProperties(storageDir);
+        String vfsLocation = props.getProperty(PROPERTY_BUNDLE_FILE);
+        if (vfsLocation != null) {
+            File revFile = new File(storageDir + "/" + vfsLocation);
+            rootFile = AbstractVFS.toVirtualFile(revFile.toURI());
+        }
+        StorageState storageState = new StorageState(storageDir, rootFile, props);
+        LOGGER.debugf("Created storage state: %s", storageState);
+        return storageState;
+    }
+
+    public static StorageState createStorageState(File storageDir, VirtualFile rootFile, Properties props) throws IOException {
+        StorageState storageState = new StorageState(storageDir, rootFile, props);
+        if (rootFile != null) {
+            String bundleId = props.getProperty(StorageState.PROPERTY_BUNDLE_ID);
+            String revision = props.getProperty(StorageState.PROPERTY_BUNDLE_REV);
+            File revFile = new File(storageDir + File.separator + StorageState.BUNDLE_DIRECTORY_PREFIX + bundleId + "-rev-" + revision + ".jar");
+            FileOutputStream output = new FileOutputStream(revFile);
+            storageDir.mkdirs();
+            InputStream input = rootFile.openStream();
+            try {
+                VFSUtils.copyStream(input, output);
+            } finally {
+                input.close();
+                output.close();
+            }
+            props.put(StorageState.PROPERTY_BUNDLE_FILE, revFile.getName());
+        }
+        storageState.writeProperties();
+        return storageState;
+    }
+
+    public static Properties loadProperties(File storageDir) throws FileNotFoundException, IOException {
+        Properties props = new Properties();
+        File propsFile = new File(storageDir + "/" + BUNDLE_PERSISTENT_PROPERTIES);
+        if (propsFile.exists()) {
+            FileInputStream input = new FileInputStream(propsFile);
+            try {
+                props.load(input);
+            } finally {
+                VFSUtils.safeClose(input);
+            }
+        }
+        return props;
     }
 
     public StorageState(File storageDir, VirtualFile rootFile, Properties props) {
@@ -125,6 +182,40 @@ public class StorageState {
     public int getStartLevel() {
         String value = props.getProperty(PROPERTY_START_LEVEL);
         return Integer.parseInt(value);
+    }
+
+    public void updateLastModified() {
+        getProperties().setProperty(PROPERTY_LAST_MODIFIED, new Long(System.currentTimeMillis()).toString());
+        writeProperties();
+    }
+
+    public void setPersistentlyStarted(boolean started) {
+        getProperties().setProperty(PROPERTY_PERSISTENTLY_STARTED, new Boolean(started).toString());
+        writeProperties();
+    }
+
+    public void setBundleActivationPolicyUsed(boolean usePolicy) {
+        getProperties().setProperty(PROPERTY_ACTIVATION_POLICY_USED, new Boolean(usePolicy).toString());
+        writeProperties();
+    }
+
+    public void setStartLevel(int level) {
+        getProperties().setProperty(PROPERTY_START_LEVEL, new Integer(level).toString());
+        writeProperties();
+    }
+
+    private void writeProperties() {
+        try {
+            File propsFile = new File(getStorageDir() + "/" + BUNDLE_PERSISTENT_PROPERTIES);
+            FileOutputStream output = new FileOutputStream(propsFile);
+            try {
+                getProperties().store(output, "Persistent Bundle Properties");
+            } finally {
+                VFSUtils.safeClose(output);
+            }
+        } catch (IOException ex) {
+            LOGGER.errorCannotWritePersistentStorage(ex, getStorageDir());
+        }
     }
 
     @Override

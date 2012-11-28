@@ -22,8 +22,8 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jboss.modules.ModuleIdentifier;
@@ -39,11 +40,17 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.DeploymentProvider;
+import org.jboss.osgi.framework.spi.FrameworkEvents;
+import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.Method;
+import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.spi.ConstantsHelper;
@@ -114,7 +121,7 @@ abstract class UserBundleState extends AbstractBundleState {
 
     abstract void initLazyActivation();
 
-    abstract UserBundleRevision createUpdateRevision(Deployment dep, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException;
+    abstract UserBundleRevision createUpdateRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -192,7 +199,7 @@ abstract class UserBundleState extends AbstractBundleState {
         LockManager lockManager = getFrameworkState().getLockManager();
         try {
             lockContext = lockManager.lockItems(Method.UPDATE, this);
-            
+
             // We got the permit, now update
             updateInternalNow(input);
 
@@ -236,7 +243,7 @@ abstract class UserBundleState extends AbstractBundleState {
             throw be;
         }
 
-        FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
+        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
         eventsPlugin.fireBundleEvent(this, BundleEvent.UPDATED);
         if (restart) {
             // If this bundle's state was originally ACTIVE or STARTING, the updated bundle is started as described in the
@@ -281,10 +288,10 @@ abstract class UserBundleState extends AbstractBundleState {
         if (rootFile == null && input != null)
             rootFile = AbstractVFS.toVirtualFile(input);
 
-        BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
-        InternalStorageState storageState = createStorageState(storagePlugin, getLocation(), rootFile);
+        BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
+        StorageState storageState = createStorageState(storagePlugin, getLocation(), rootFile);
         try {
-            DeploymentFactoryPlugin deploymentPlugin = getFrameworkState().getDeploymentFactoryPlugin();
+            DeploymentProvider deploymentPlugin = getFrameworkState().getDeploymentFactoryPlugin();
             Deployment dep = deploymentPlugin.createDeployment(storageState);
             OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
             dep.addAttachment(OSGiMetaData.class, metadata);
@@ -302,8 +309,8 @@ abstract class UserBundleState extends AbstractBundleState {
         }
     }
 
-    private InternalStorageState createStorageState(BundleStoragePlugin storagePlugin, String location, VirtualFile rootFile) throws BundleException {
-        InternalStorageState storageState;
+    private StorageState createStorageState(BundleStorage storagePlugin, String location, VirtualFile rootFile) throws BundleException {
+        StorageState storageState;
         try {
             int startlevel = getCoreServices().getStartLevelPlugin().getInitialBundleStartLevel();
             storageState = storagePlugin.createStorageState(getBundleId(), location, startlevel, rootFile);
@@ -323,7 +330,7 @@ abstract class UserBundleState extends AbstractBundleState {
             throw MESSAGES.illegalStateRefreshUnresolvedBundle(this);
 
         // Remove the revisions from the environment
-        ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
+        ModuleManager moduleManager = getFrameworkState().getModuleManager();
         UserBundleRevision currentRev = getBundleRevision();
         for (XBundleRevision brev : getAllBundleRevisions()) {
 
@@ -352,7 +359,7 @@ abstract class UserBundleState extends AbstractBundleState {
 
         clearOldRevisions();
 
-        FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
+        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
         eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
 
         // Update the the current revision
@@ -367,9 +374,66 @@ abstract class UserBundleState extends AbstractBundleState {
     }
 
     @Override
-    void uninstallInternal() throws BundleException {
+    void uninstallInternal(int options) {
         headersOnUninstall = getHeaders(null);
-        BundleManagerPlugin bundleManager = getBundleManager();
-        bundleManager.uninstallBundle(this, 0);
+
+        LockContext lockContext = null;
+        LockManager lockManager = getFrameworkState().getLockManager();
+        try {
+            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+            lockContext = lockManager.lockItems(Method.UNINSTALL, wireLock, this);
+
+            // We got the permit, now uninstall
+            uninstallInternalNow(options);
+        } finally {
+            lockManager.unlockItems(lockContext);
+        }
+
+        // Remove the Bundle INSTALL service after we changed the state
+        LOGGER.debugf("Remove service for: %s", this);
+        getBundleManager().setServiceMode(getServiceName(Bundle.INSTALLED), Mode.REMOVE);
+
+        // #4 A bundle event of type BundleEvent.UNINSTALLED is fired
+        fireBundleEvent(BundleEvent.UNINSTALLED);
+    }
+
+    void uninstallInternalNow(int options) {
+
+        int state = getState();
+        if (state == Bundle.UNINSTALLED)
+            return;
+
+        // #2 If the bundle's state is ACTIVE, STARTING or STOPPING, the bundle is stopped
+        if (isFragment() == false) {
+            if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING) {
+                try {
+                    stopInternal(options);
+                } catch (Exception ex) {
+                    // If Bundle.stop throws an exception, a Framework event of type FrameworkEvent.ERROR is fired
+                    getBundleManager().fireFrameworkError(this, "stopping bundle: " + this, ex);
+                }
+            }
+        }
+
+        // #3 This bundle's state is set to UNINSTALLED
+        changeState(Bundle.UNINSTALLED, 0);
+
+        // Check if the bundle has still active wires
+        boolean hasActiveWires = hasActiveWires();
+        if (hasActiveWires == false) {
+            // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
+            getBundleManager().removeBundle(this, options);
+        }
+
+        // Remove other uninstalled bundles that now also have no active wires any more
+        Set<XBundle> uninstalled = getBundleManager().getBundles(Bundle.UNINSTALLED);
+        for (Bundle auxState : uninstalled) {
+            UserBundleState auxUser = UserBundleState.assertBundleState(auxState);
+            if (auxUser.hasActiveWires() == false) {
+                getBundleManager().removeBundle(auxUser, options);
+            }
+        }
+
+        LOGGER.infoBundleUninstalled(this);
     }
 }

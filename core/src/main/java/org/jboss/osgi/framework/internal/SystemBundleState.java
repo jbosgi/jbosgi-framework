@@ -21,15 +21,16 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 
 import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.framework.spi.BundleManager;
+import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -47,14 +48,11 @@ final class SystemBundleState extends AbstractBundleState {
 
     private final SystemBundleRevision systemRevision;
 
-    SystemBundleState(FrameworkState frameworkState, SystemBundleRevision revision) {
-        super(frameworkState, revision, 0);
-        this.systemRevision = revision;
+    SystemBundleState(FrameworkState frameworkState, SystemBundleRevision brev) {
+        super(frameworkState, brev, 0);
+        this.systemRevision = brev;
     }
 
-    /**
-     * Assert that the given bundle is an instance of {@link UserBundleState}
-     */
     static SystemBundleState assertBundleState(Bundle bundle) {
         bundle = AbstractBundleState.assertBundleState(bundle);
         assert bundle instanceof SystemBundleState : "Not an SystemBundleState: " + bundle;
@@ -68,7 +66,7 @@ final class SystemBundleState extends AbstractBundleState {
 
     @Override
     ServiceName getServiceName(int state) {
-        return InternalServices.SYSTEM_BUNDLE;
+        return IntegrationServices.SYSTEM_BUNDLE_INTERNAL;
     }
 
     @Override
@@ -83,7 +81,7 @@ final class SystemBundleState extends AbstractBundleState {
 
     @Override
     public Version getVersion() {
-        return BundleManagerPlugin.getFrameworkVersion();
+        return BundleManagerImpl.getFrameworkVersion();
     }
 
     @Override
@@ -145,7 +143,7 @@ final class SystemBundleState extends AbstractBundleState {
     }
 
     @Override
-    void uninstallInternal() throws BundleException {
+    void uninstallInternal(int options) throws BundleException {
         // The Framework must throw a BundleException indicating that the system bundle cannot be uninstalled
         throw MESSAGES.cannotUninstallSystemBundle();
     }

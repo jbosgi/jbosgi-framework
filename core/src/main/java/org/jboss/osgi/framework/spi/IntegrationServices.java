@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,88 +19,136 @@ package org.jboss.osgi.framework.spi;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.spi;
 
+import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.Services;
-
+import org.jboss.osgi.framework.Constants;
+import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.resolver.XResolver;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.launch.Framework;
+import org.osgi.service.packageadmin.PackageAdmin;
+import org.osgi.service.startlevel.StartLevel;
 
 /**
- * An integration service.
+ * The collection of integration service names.
  *
  * @author thomas.diesler@jboss.com
- * @since 01-Aug-2012
+ * @since 04-Apr-2011
  */
 public interface IntegrationServices {
 
-    /** The prefix for all integration plugin services */
-    ServiceName INTEGRATION_BASE_NAME = Services.JBOSGI_BASE_NAME.append("integration");
+	/** The prefix for all OSGi services */
+	ServiceName JBOSGI_BASE_NAME = ServiceName.of(Constants.JBOSGI_PREFIX);
 
-    /** The {@link BootstrapBundlesInstall} service for auto install bundles */
-    ServiceName BOOTSTRAP_BUNDLES = INTEGRATION_BASE_NAME.append("BootstrapBundles");
+    /** The prefix for all OSGi services */
+    ServiceName SERVICE_BASE_NAME = JBOSGI_BASE_NAME.append("service");
+    /** The prefix for all OSGi bundle services */
+    ServiceName BUNDLE_BASE_NAME = JBOSGI_BASE_NAME.append("bundle");
+    /** The prefix for all internal services */
+    ServiceName INTERNAL_BASE_NAME = JBOSGI_BASE_NAME.append("internal");
+    /** The {@link Module} service name */
+    ServiceName MODULE_SERVICE = JBOSGI_BASE_NAME.append("module");
 
-    /** The {@link BootstrapBundlesInstall} service for auto install bundles */
-    ServiceName BOOTSTRAP_BUNDLES_INSTALL = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.INSTALL);
-
-    /** The {@link BootstrapBundlesResolve} service for auto install bundles */
-    ServiceName BOOTSTRAP_BUNDLES_RESOLVE = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.RESOLVE);
-
-    /** The {@link BootstrapBundlesActivate} service for auto install bundles */
-    ServiceName BOOTSTRAP_BUNDLES_ACTIVATE = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.ACTIVATE);
-
-    /** The {@link BootstrapBundlesComplete} service for auto install bundles */
-    ServiceName BOOTSTRAP_BUNDLES_COMPLETE = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.COMPLETE);
-
-    /** The service name for the {@link BundleLifecyclePlugin} */
-    ServiceName BUNDLE_LIFECYCLE_PLUGIN = INTEGRATION_BASE_NAME.append("BundleLifecyclePlugin");
-
-    /** The service name for the {@link FrameworkModulePlugin} */
-    ServiceName FRAMEWORK_MODULE_PLUGIN = INTEGRATION_BASE_NAME.append("FrameworkModulePlugin");
-
-    /** The service name for the {@link ModuleLoaderPlugin} */
-    ServiceName MODULE_LOADER_PLUGIN = INTEGRATION_BASE_NAME.append("ModuleLoaderPlugin");
-
-    /** The {@link BootstrapBundlesInstall} service for persistent bundles */
-    ServiceName PERSISTENT_BUNDLES = INTEGRATION_BASE_NAME.append("PersistentBundles");
-
-    /** The {@link BootstrapBundlesInstall} service for persistent bundles */
-    ServiceName PERSISTENT_BUNDLES_INSTALL = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.INSTALL);
-
-    /** The {@link BootstrapBundlesResolve} service forpersistent bundles */
-    ServiceName PERSISTENT_BUNDLES_RESOLVE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.RESOLVE);
-
-    /** The {@link BootstrapBundlesActivate} service for persistent bundles */
-    ServiceName PERSISTENT_BUNDLES_ACTIVATE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.ACTIVATE);
-
-    /** The {@link BootstrapBundlesComplete} service for persistent bundles */
-    ServiceName PERSISTENT_BUNDLES_COMPLETE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.COMPLETE);
-
-    /** The service name for the {@link StorageStatePlugin} */
-    ServiceName STORAGE_STATE_PLUGIN = INTEGRATION_BASE_NAME.append("StorageStatePlugin");
-
-    /** The service name for the {@link SystemPathsPlugin} */
-    ServiceName SYSTEM_PATHS_PLUGIN = INTEGRATION_BASE_NAME.append("SystemPathsPlugin");
-
-    /** The service name for the {@link SystemServicesPlugin} */
-    ServiceName SYSTEM_SERVICES_PLUGIN = INTEGRATION_BASE_NAME.append("SystemServicesPlugin");
+    /** The service name for the started {@link Framework} */
+    ServiceName FRAMEWORK_ACTIVE_INTERNAL = INTERNAL_BASE_NAME.append("framework", "ACTIVE");
+    /** The service name for the created {@link Framework} */
+    ServiceName FRAMEWORK_CREATE_INTERNAL = INTERNAL_BASE_NAME.append("framework", "CREATE");
+    /** The service name for the initialized {@link Framework} */
+    ServiceName FRAMEWORK_INIT_INTERNAL = INTERNAL_BASE_NAME.append("framework", "INIT");
+    /** The service name for the system {@link Bundle} */
+    ServiceName SYSTEM_BUNDLE_INTERNAL = INTERNAL_BASE_NAME.append("SystemBundle");
+    /** The service name for the system {@link BundleContext} */
+    ServiceName SYSTEM_CONTEXT_INTERNAL = INTERNAL_BASE_NAME.append("SystemContext");
+    
+	/** The {@link BootstrapBundlesInstall} service for auto install bundles */
+	ServiceName BOOTSTRAP_BUNDLES = JBOSGI_BASE_NAME.append("BootstrapBundles");
+	/** The {@link BootstrapBundlesActivate} service for auto install bundles */
+	ServiceName BOOTSTRAP_BUNDLES_ACTIVATE = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.ACTIVATE);
+	/** The {@link BootstrapBundlesResolve} service for auto install bundles */
+	ServiceName BOOTSTRAP_BUNDLES_RESOLVE = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.RESOLVE);
+	/** The {@link BootstrapBundlesInstall} service for auto install bundles */
+	ServiceName BOOTSTRAP_BUNDLES_INSTALL = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.INSTALL);
+	/** The {@link BootstrapBundlesComplete} service for auto install bundles */
+	ServiceName BOOTSTRAP_BUNDLES_COMPLETE = BootstrapPhase.serviceName(BOOTSTRAP_BUNDLES, BootstrapPhase.COMPLETE);
+	/** The service name for the {@link BundleLifecycle} */
+	ServiceName BUNDLE_LIFECYCLE_PLUGIN = JBOSGI_BASE_NAME.append("BundleLifecycle");
+	/** The {@link BundleManager} service name. */
+	ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("BundleManager");
+	/** The {@link BundleStorage} plugin service name */
+	ServiceName BUNDLE_STORAGE = JBOSGI_BASE_NAME.append("BundleStorage");
+    /** The {@link DeploymentProvider} service name */
+    ServiceName DEPLOYMENT_PROVIDER_PLUGIN = JBOSGI_BASE_NAME.append("DeploymentProvider");
+	/** The {@link XEnvironment} service name */
+	ServiceName ENVIRONMENT = JBOSGI_BASE_NAME.append("Environment");
+   /** The {@link FrameworkCoreServices} service name. */
+    ServiceName FRAMEWORK_CORE_SERVICES = JBOSGI_BASE_NAME.append("CoreServices");
+    /** The {@link FrameworkEvents} service name */
+    ServiceName FRAMEWORK_EVENTS = JBOSGI_BASE_NAME.append("FrameworkEvents");
+	/** The service name for the {@link FrameworkModuleProvider} */
+	ServiceName FRAMEWORK_MODULE_PROVIDER = JBOSGI_BASE_NAME.append("FrameworkModule");
+	/** The service name for the created {@link Framework} */
+	ServiceName FRAMEWORK_CREATE = JBOSGI_BASE_NAME.append("framework", "CREATE");
+	/** The service name for the initialized {@link Framework} */
+	ServiceName FRAMEWORK_INIT = JBOSGI_BASE_NAME.append("framework", "INIT");
+	/** The service name for the started {@link Framework} */
+	ServiceName FRAMEWORK_ACTIVE = JBOSGI_BASE_NAME.append("framework", "ACTIVE");
+    /** The {@link LifecycleInterceptorPlugin} service name */
+    ServiceName LIFECYCLE_INTERCEPTOR_PLUGIN = JBOSGI_BASE_NAME.append("LifecycleInterceptor");
+	/** The {@link LockManager} service name */
+	ServiceName LOCK_MANAGER = JBOSGI_BASE_NAME.append("LockManager");
+	/** The service name for the {@link FrameworkModuleLoader} */
+	ServiceName FRAMEWORK_MODULE_LOADER = JBOSGI_BASE_NAME.append("ModuleLoader");
+    /** The {@link ModuleManager} service name */
+    ServiceName MODULE_MANGER = JBOSGI_BASE_NAME.append("ModuleManager");
+    /** The {@link NativeCode} service name */
+    ServiceName NATIVE_CODE_PLUGIN = JBOSGI_BASE_NAME.append("NativeCode");
+	/** The service name for the {@link PackageAdmin} service */
+	ServiceName PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("PackageAdmin");
+	/** The {@link BootstrapBundlesInstall} service for persistent bundles */
+	ServiceName PERSISTENT_BUNDLES = JBOSGI_BASE_NAME.append("PersistentBundles");
+	/** The {@link BootstrapBundlesInstall} service for persistent bundles */
+	ServiceName PERSISTENT_BUNDLES_INSTALL = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.INSTALL);
+	/** The {@link BootstrapBundlesResolve} service forpersistent bundles */
+	ServiceName PERSISTENT_BUNDLES_RESOLVE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.RESOLVE);
+	/** The {@link BootstrapBundlesActivate} service for persistent bundles */
+	ServiceName PERSISTENT_BUNDLES_ACTIVATE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.ACTIVATE);
+	/** The {@link BootstrapBundlesComplete} service for persistent bundles */
+	ServiceName PERSISTENT_BUNDLES_COMPLETE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.COMPLETE);
+	/** The {@link XResolver} service name */
+	ServiceName RESOLVER = JBOSGI_BASE_NAME.append("Resolver");
+    /** The {@link ServiceManager} service name */
+    ServiceName SERVICE_MANAGER = JBOSGI_BASE_NAME.append("ServiceManager");
+	/** The service name for the {@link StartLevel} service */
+	ServiceName START_LEVEL = JBOSGI_BASE_NAME.append("StartLevel");
+	/** The service name for the {@link SystemPaths} */
+	ServiceName SYSTEM_PATHS = JBOSGI_BASE_NAME.append("SystemPaths");
+	/** The service name for the {@link SystemServices} */
+	ServiceName SYSTEM_SERVICES_PLUGIN = JBOSGI_BASE_NAME.append("SystemServices");
+    /** The {@link URLHandlerSupport} service name */
+    ServiceName URL_HANDLER_PLUGIN = JBOSGI_BASE_NAME.append("URLHandler");
 
     public enum BootstrapPhase {
-
-        INSTALL, RESOLVE, ACTIVATE, COMPLETE;
-
-        public BootstrapPhase previous() {
-            final int ord = ordinal() - 1;
-            final BootstrapPhase[] phases = BootstrapPhase.values();
-            return ord < 0 ? null : phases[ord];
-        }
-
-        public BootstrapPhase next() {
-            final int ord = ordinal() + 1;
-            final BootstrapPhase[] phases = BootstrapPhase.values();
-            return ord == phases.length ? null : phases[ord];
-        }
-
-        public static ServiceName serviceName(ServiceName baseName, BootstrapPhase phase) {
-            return baseName.append(phase.toString());
-        }
-    }
+    	
+	    INSTALL, RESOLVE, ACTIVATE, COMPLETE;
+	
+	    public BootstrapPhase previous() {
+	        final int ord = ordinal() - 1;
+	        final BootstrapPhase[] phases = BootstrapPhase.values();
+	        return ord < 0 ? null : phases[ord];
+	    }
+	
+	    public BootstrapPhase next() {
+	        final int ord = ordinal() + 1;
+	        final BootstrapPhase[] phases = BootstrapPhase.values();
+	        return ord == phases.length ? null : phases[ord];
+	    }
+	
+	    public static ServiceName serviceName(ServiceName baseName, BootstrapPhase phase) {
+	        return baseName.append(phase.toString());
+	    }
+	}
+    
 }

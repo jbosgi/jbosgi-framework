@@ -21,7 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -39,7 +39,8 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.Resource;
-import org.jboss.osgi.framework.spi.SystemPathsPlugin;
+import org.jboss.osgi.framework.spi.ModuleManager;
+import org.jboss.osgi.framework.spi.SystemPaths;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
@@ -68,8 +69,8 @@ final class FallbackLoader implements LocalLoader {
     private final ModuleIdentifier identifier;
     private final Set<String> importedPaths;
     private final FrameworkState frameworkState;
-    private final BundleManagerPlugin bundleManager;
-    private final ModuleManagerPlugin moduleManager;
+    private final BundleManagerImpl bundleManager;
+    private final ModuleManager moduleManager;
 
     private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;
 
@@ -83,7 +84,7 @@ final class FallbackLoader implements LocalLoader {
         this.hostBundle = hostRev.getBundleState();
         this.bundleManager = hostBundle.getBundleManager();
         this.frameworkState = hostBundle.getFrameworkState();
-        this.moduleManager = frameworkState.getModuleManagerPlugin();
+        this.moduleManager = frameworkState.getModuleManager();
         hostRev.setFallbackLoader(this);
     }
 
@@ -296,7 +297,7 @@ final class FallbackLoader implements LocalLoader {
         int lastIndex = resName.lastIndexOf('/');
         String pathName = lastIndex > 0 ? resName.substring(0, lastIndex) : resName;
         Module candidate = moduleManager.getFrameworkModule();
-        SystemPathsPlugin systemPaths = frameworkState.getSystemPathsPlugin();
+        SystemPaths systemPaths = frameworkState.getSystemPathsPlugin();
         return systemPaths.getSystemPaths().contains(pathName) ? candidate : null;
     }
 

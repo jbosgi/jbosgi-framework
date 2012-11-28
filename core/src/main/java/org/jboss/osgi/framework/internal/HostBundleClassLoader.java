@@ -25,6 +25,7 @@ import org.jboss.modules.ClassSpec;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleClassLoaderFactory;
 import org.jboss.modules.filter.PathFilter;
+import org.jboss.osgi.framework.spi.BundleReferenceClassLoader;
 
 /**
  * A {@link ModuleClassLoader} that hosld a reference to the underlying bundle.

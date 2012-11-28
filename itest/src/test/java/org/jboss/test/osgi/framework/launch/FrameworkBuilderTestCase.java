@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.launch;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.test.osgi.framework.launch;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.launch;
 
 import java.io.InputStream;
 import java.util.Map;
@@ -36,10 +36,9 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.ValueService;
 import org.jboss.msc.value.ImmediateValue;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.spi.FrameworkBuilderFactory;
 import org.jboss.osgi.framework.spi.FrameworkBuilder;
 import org.jboss.osgi.framework.spi.FrameworkBuilder.FrameworkPhase;
+import org.jboss.osgi.framework.spi.FrameworkBuilderFactory;
 import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
@@ -71,38 +70,43 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
         Map<String, Object> props = getFrameworkInitProperties(true);
         FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         Framework framework = newFramework(builder);
-        assertBundleState(Bundle.INSTALLED, framework.getState());
+        try {
+            assertBundleState(Bundle.INSTALLED, framework.getState());
 
-        Assert.assertNull("ServiceContainer is null", getServiceContainer());
+            Assert.assertNull("ServiceContainer is null", getServiceContainer());
 
-        framework.init();
-        assertBundleState(Bundle.STARTING, framework.getState());
+            framework.init();
+            assertBundleState(Bundle.STARTING, framework.getState());
 
-        assertServiceState(State.UP, IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
-        assertServiceState(State.UP, IntegrationServices.PERSISTENT_BUNDLES_COMPLETE);
-        assertServiceState(State.UP, Services.FRAMEWORK_INIT);
-        Assert.assertNull(getService(Services.FRAMEWORK_ACTIVE));
+            assertServiceState(State.UP, IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
+            assertServiceState(State.UP, IntegrationServices.PERSISTENT_BUNDLES_COMPLETE);
+            assertServiceState(State.UP, IntegrationServices.FRAMEWORK_INIT);
+            Assert.assertNull(getService(IntegrationServices.FRAMEWORK_ACTIVE));
 
-        BundleContext bundleContext = framework.getBundleContext();
-        ServiceReference sref = bundleContext.getServiceReference(StartLevel.class.getName());
-        StartLevel startLevel = (StartLevel) bundleContext.getService(sref);
-        Assert.assertEquals("Framework should be at Start Level 0 on init()", 0, startLevel.getStartLevel());
+            BundleContext bundleContext = framework.getBundleContext();
+            ServiceReference sref = bundleContext.getServiceReference(StartLevel.class.getName());
+            StartLevel startLevel = (StartLevel) bundleContext.getService(sref);
+            Assert.assertEquals("Framework should be at Start Level 0 on init()", 0, startLevel.getStartLevel());
 
-        sref = bundleContext.getServiceReference(PackageAdmin.class.getName());
-        PackageAdmin packageAdmin = (PackageAdmin) bundleContext.getService(sref);
-        Assert.assertNotNull("The Package Admin service should be available", packageAdmin);
+            sref = bundleContext.getServiceReference(PackageAdmin.class.getName());
+            PackageAdmin packageAdmin = (PackageAdmin) bundleContext.getService(sref);
+            Assert.assertNotNull("The Package Admin service should be available", packageAdmin);
 
-        // It should be possible to install a bundle into this framework, even though it's only inited...
-        Bundle bundle = installBundle(getBundleA());
-        assertBundleState(Bundle.INSTALLED, bundle.getState());
-        Assert.assertNotNull("BundleContext not null", framework.getBundleContext());
+            // It should be possible to install a bundle into this framework, even though it's only inited...
+            Bundle bundle = installBundle(getBundleA());
+            assertBundleState(Bundle.INSTALLED, bundle.getState());
+            Assert.assertNotNull("BundleContext not null", framework.getBundleContext());
 
-        framework.stop();
-        Assert.assertNull("BundleContext null", framework.getBundleContext());
-        FrameworkEvent stopEvent = framework.waitForStop(2000);
-        Assert.assertEquals(FrameworkEvent.STOPPED, stopEvent.getType());
+            framework.stop();
+            Assert.assertNull("BundleContext null", framework.getBundleContext());
+            FrameworkEvent stopEvent = framework.waitForStop(2000);
+            Assert.assertEquals(FrameworkEvent.STOPPED, stopEvent.getType());
 
-        Assert.assertNull("ServiceContainer is null", getServiceContainer());
+            Assert.assertNull("ServiceContainer is null", getServiceContainer());
+        } finally {
+            framework.stop();
+            framework.waitForStop(5000);
+        }
     }
 
     @Test
@@ -111,53 +115,57 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
         Map<String, Object> props = getFrameworkInitProperties(true);
         FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         Framework framework = newFramework(builder);
+        try {
+            Assert.assertNotNull("Framework not null", framework);
+            assertBundleState(Bundle.INSTALLED, framework.getState());
 
-        Assert.assertNotNull("Framework not null", framework);
-        assertBundleState(Bundle.INSTALLED, framework.getState());
+            Assert.assertNull("ServiceContainer is null", getServiceContainer());
 
-        Assert.assertNull("ServiceContainer is null", getServiceContainer());
+            framework.init();
+            assertBundleState(Bundle.STARTING, framework.getState());
 
-        framework.init();
-        assertBundleState(Bundle.STARTING, framework.getState());
+            assertServiceState(State.UP, IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
+            assertServiceState(State.UP, IntegrationServices.PERSISTENT_BUNDLES_COMPLETE);
+            assertServiceState(State.UP, IntegrationServices.FRAMEWORK_INIT);
+            Assert.assertNull(getService(IntegrationServices.FRAMEWORK_ACTIVE));
 
-        assertServiceState(State.UP, IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
-        assertServiceState(State.UP, IntegrationServices.PERSISTENT_BUNDLES_COMPLETE);
-        assertServiceState(State.UP, Services.FRAMEWORK_INIT);
-        Assert.assertNull(getService(Services.FRAMEWORK_ACTIVE));
+            BundleContext systemContext = framework.getBundleContext();
+            Assert.assertNotNull("BundleContext not null", systemContext);
+            Bundle systemBundle = systemContext.getBundle();
+            Assert.assertNotNull("Bundle not null", systemBundle);
+            Assert.assertEquals("System bundle id", 0, systemBundle.getBundleId());
+            Assert.assertEquals("System bundle name", Constants.FRAMEWORK_SYMBOLIC_NAME, systemBundle.getSymbolicName());
+            Assert.assertEquals("System bundle location", Constants.FRAMEWORK_LOCATION, systemBundle.getLocation());
 
-        BundleContext systemContext = framework.getBundleContext();
-        Assert.assertNotNull("BundleContext not null", systemContext);
-        Bundle systemBundle = systemContext.getBundle();
-        Assert.assertNotNull("Bundle not null", systemBundle);
-        Assert.assertEquals("System bundle id", 0, systemBundle.getBundleId());
-        Assert.assertEquals("System bundle name", Constants.FRAMEWORK_SYMBOLIC_NAME, systemBundle.getSymbolicName());
-        Assert.assertEquals("System bundle location", Constants.FRAMEWORK_LOCATION, systemBundle.getLocation());
+            Bundle[] bundles = systemContext.getBundles();
+            Assert.assertEquals("System bundle available", 1, bundles.length);
+            Assert.assertEquals("System bundle id", 0, bundles[0].getBundleId());
+            Assert.assertEquals("System bundle name", Constants.FRAMEWORK_SYMBOLIC_NAME, bundles[0].getSymbolicName());
+            Assert.assertEquals("System bundle location", Constants.FRAMEWORK_LOCATION, bundles[0].getLocation());
 
-        Bundle[] bundles = systemContext.getBundles();
-        Assert.assertEquals("System bundle available", 1, bundles.length);
-        Assert.assertEquals("System bundle id", 0, bundles[0].getBundleId());
-        Assert.assertEquals("System bundle name", Constants.FRAMEWORK_SYMBOLIC_NAME, bundles[0].getSymbolicName());
-        Assert.assertEquals("System bundle location", Constants.FRAMEWORK_LOCATION, bundles[0].getLocation());
+            ServiceReference paRef = systemContext.getServiceReference(PackageAdmin.class.getName());
+            PackageAdmin packageAdmin = (PackageAdmin) systemContext.getService(paRef);
+            Assert.assertNotNull("PackageAdmin not null", packageAdmin);
 
-        ServiceReference paRef = systemContext.getServiceReference(PackageAdmin.class.getName());
-        PackageAdmin packageAdmin = (PackageAdmin) systemContext.getService(paRef);
-        Assert.assertNotNull("PackageAdmin not null", packageAdmin);
+            ServiceReference slRef = systemContext.getServiceReference(StartLevel.class.getName());
+            StartLevel startLevel = (StartLevel) systemContext.getService(slRef);
+            Assert.assertNotNull("StartLevel not null", startLevel);
+            Assert.assertEquals("Framework start level", 0, startLevel.getStartLevel());
 
-        ServiceReference slRef = systemContext.getServiceReference(StartLevel.class.getName());
-        StartLevel startLevel = (StartLevel) systemContext.getService(slRef);
-        Assert.assertNotNull("StartLevel not null", startLevel);
-        Assert.assertEquals("Framework start level", 0, startLevel.getStartLevel());
+            framework.start();
+            assertBundleState(Bundle.ACTIVE, framework.getState());
+            assertServiceState(State.UP, IntegrationServices.FRAMEWORK_ACTIVE);
 
-        framework.start();
-        assertBundleState(Bundle.ACTIVE, framework.getState());
-        assertServiceState(State.UP, Services.FRAMEWORK_ACTIVE);
+            framework.stop();
+            FrameworkEvent stopEvent = framework.waitForStop(2000);
+            Assert.assertEquals(FrameworkEvent.STOPPED, stopEvent.getType());
+            assertBundleState(Bundle.RESOLVED, framework.getState());
 
-        framework.stop();
-        FrameworkEvent stopEvent = framework.waitForStop(2000);
-        Assert.assertEquals(FrameworkEvent.STOPPED, stopEvent.getType());
-        assertBundleState(Bundle.RESOLVED, framework.getState());
-
-        Assert.assertNull("ServiceContainer is null", getServiceContainer());
+            Assert.assertNull("ServiceContainer is null", getServiceContainer());
+        } finally {
+            framework.stop();
+            framework.waitForStop(5000);
+        }
     }
 
     @Test
@@ -172,16 +180,16 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
         builder.installServices(FrameworkPhase.CREATE, serviceTarget, Mockito.mock(ServiceListener.class));
         builder.installServices(FrameworkPhase.INIT, serviceTarget, Mockito.mock(ServiceListener.class));
 
-        assertServiceState(serviceContainer, State.DOWN, Services.FRAMEWORK_INIT);
+        assertServiceState(serviceContainer, State.DOWN, IntegrationServices.FRAMEWORK_INIT);
         assertServiceState(serviceContainer, State.DOWN, IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL);
         assertServiceState(serviceContainer, State.DOWN, IntegrationServices.PERSISTENT_BUNDLES_INSTALL);
-        Assert.assertNull(serviceContainer.getService(Services.FRAMEWORK_ACTIVE));
+        Assert.assertNull(serviceContainer.getService(IntegrationServices.FRAMEWORK_ACTIVE));
 
         // Register a service that has a dependency on {@link FrameworkActive}
         ServiceName serviceName = ServiceName.parse("someService");
         ValueService<Boolean> service = new ValueService<Boolean>(new ImmediateValue<Boolean>(true));
         ServiceBuilder<Boolean> serviceBuilder = serviceTarget.addService(serviceName, service);
-        serviceBuilder.addDependencies(Services.FRAMEWORK_ACTIVE);
+        serviceBuilder.addDependencies(IntegrationServices.FRAMEWORK_ACTIVE);
         ServiceController<Boolean> controller = serviceBuilder.install();
 
         builder.installServices(FrameworkPhase.ACTIVE, serviceTarget, Mockito.mock(ServiceListener.class));
@@ -189,10 +197,10 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
         Assert.assertTrue(future.get(2, TimeUnit.SECONDS));
 
         // Check that all the framework service are UP
-        assertServiceState(serviceContainer, State.UP, Services.FRAMEWORK_INIT);
+        assertServiceState(serviceContainer, State.UP, IntegrationServices.FRAMEWORK_INIT);
         assertServiceState(serviceContainer, State.UP, IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
         assertServiceState(serviceContainer, State.UP, IntegrationServices.PERSISTENT_BUNDLES_COMPLETE);
-        assertServiceState(serviceContainer, State.UP, Services.FRAMEWORK_ACTIVE);
+        assertServiceState(serviceContainer, State.UP, IntegrationServices.FRAMEWORK_ACTIVE);
 
         // Remove the dependent service
         controller.setMode(Mode.REMOVE);
@@ -200,10 +208,10 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
         Assert.assertNull(future.get(2, TimeUnit.SECONDS));
 
         // Check that all the framework service are still UP
-        assertServiceState(serviceContainer, State.UP, Services.FRAMEWORK_INIT);
+        assertServiceState(serviceContainer, State.UP, IntegrationServices.FRAMEWORK_INIT);
         assertServiceState(serviceContainer, State.UP, IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
         assertServiceState(serviceContainer, State.UP, IntegrationServices.PERSISTENT_BUNDLES_COMPLETE);
-        assertServiceState(serviceContainer, State.UP, Services.FRAMEWORK_ACTIVE);
+        assertServiceState(serviceContainer, State.UP, IntegrationServices.FRAMEWORK_ACTIVE);
     }
 
     private static JavaArchive getBundleA() {

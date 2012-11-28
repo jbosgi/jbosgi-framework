@@ -33,10 +33,10 @@ import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.ResourceLoaderSpec;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.framework.spi.AbstractBundleRevisionAdaptor;
+import org.jboss.osgi.framework.spi.BundleManager;
+import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
 import org.jboss.osgi.framework.spi.IntegrationServices;
-import org.jboss.osgi.framework.spi.ModuleLoaderPlugin;
 import org.jboss.osgi.framework.spi.VirtualFileResourceLoader;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
@@ -85,8 +85,8 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         XBundle sysbundle = (XBundle) getSystemContext().getBundle();
         BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        ServiceController<?> service = serviceContainer.getRequiredService(IntegrationServices.MODULE_LOADER_PLUGIN);
-        ModuleLoaderPlugin moduleLoader = (ModuleLoaderPlugin) service.getValue();
+        ServiceController<?> service = serviceContainer.getRequiredService(IntegrationServices.FRAMEWORK_MODULE_LOADER);
+        FrameworkModuleLoader moduleLoader = (FrameworkModuleLoader) service.getValue();
         moduleLoader.addModuleSpec(Mockito.mock(XBundleRevision.class), moduleSpec);
 
         // Load the {@link Module}
@@ -100,8 +100,8 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         XBundle sysbundle = (XBundle) getSystemContext().getBundle();
         BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        ServiceController<?> service = serviceContainer.getRequiredService(IntegrationServices.MODULE_LOADER_PLUGIN);
-        ModuleLoaderPlugin moduleLoader = (ModuleLoaderPlugin) service.getValue();
+        ServiceController<?> service = serviceContainer.getRequiredService(IntegrationServices.FRAMEWORK_MODULE_LOADER);
+        FrameworkModuleLoader moduleLoader = (FrameworkModuleLoader) service.getValue();
         moduleLoader.removeModule(Mockito.mock(XBundleRevision.class), module.getIdentifier());
         VFSUtils.safeClose(vfsmap.remove(module));
     }

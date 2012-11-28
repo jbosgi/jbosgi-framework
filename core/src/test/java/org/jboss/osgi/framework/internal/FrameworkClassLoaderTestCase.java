@@ -30,6 +30,7 @@ import java.util.HashMap;
 import javax.management.MBeanServer;
 
 import org.jboss.modules.Module;
+import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,7 +49,7 @@ public class FrameworkClassLoaderTestCase extends AbstractFrameworkTest {
 
     @Before
     public void before() throws Exception {
-        ModuleManagerPlugin moduleManager = getFrameworkState().getModuleManagerPlugin();
+        ModuleManager moduleManager = getFrameworkState().getModuleManager();
         Module frameworkModule = moduleManager.getFrameworkModule();
         classLoader = frameworkModule.getClassLoader();
     }

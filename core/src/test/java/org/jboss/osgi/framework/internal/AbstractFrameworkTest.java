@@ -21,7 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import org.jboss.osgi.framework.BundleManager;
+import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.osgi.framework.BundleException;
@@ -34,9 +34,9 @@ import org.osgi.framework.BundleException;
  */
 public abstract class AbstractFrameworkTest extends OSGiFrameworkTest {
 
-    protected BundleManagerPlugin getBundleManager() throws BundleException {
+    protected BundleManagerImpl getBundleManager() throws BundleException {
         XBundle sysbundle = (XBundle) getSystemContext().getBundle();
-        return (BundleManagerPlugin) sysbundle.adapt(BundleManager.class);
+        return (BundleManagerImpl) sysbundle.adapt(BundleManager.class);
     }
 
     protected FrameworkState getFrameworkState() throws BundleException {

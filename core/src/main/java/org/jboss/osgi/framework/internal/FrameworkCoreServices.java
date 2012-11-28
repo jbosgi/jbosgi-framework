@@ -27,12 +27,12 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
-import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
+import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.IntegrationServices;
-import org.jboss.osgi.framework.spi.StartLevelPlugin;
-import org.jboss.osgi.framework.spi.SystemServicesPlugin;
+import org.jboss.osgi.framework.spi.LifecycleInterceptorPlugin;
+import org.jboss.osgi.framework.spi.StartLevelSupport;
+import org.jboss.osgi.framework.spi.SystemServices;
 import org.osgi.framework.BundleContext;
 import org.osgi.service.packageadmin.PackageAdmin;
 
@@ -45,34 +45,34 @@ import org.osgi.service.packageadmin.PackageAdmin;
 final class FrameworkCoreServices extends AbstractIntegrationService<FrameworkCoreServices> {
 
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
-    private final InjectedValue<BundleLifecyclePlugin> injectedBundleLifecycle = new InjectedValue<BundleLifecyclePlugin>();
+    private final InjectedValue<BundleLifecycle> injectedBundleLifecycle = new InjectedValue<BundleLifecycle>();
     private final InjectedValue<LifecycleInterceptorPlugin> injectedLifecycleInterceptor = new InjectedValue<LifecycleInterceptorPlugin>();
     private final InjectedValue<PackageAdmin> injectedPackageAdmin = new InjectedValue<PackageAdmin>();
-    private final InjectedValue<StartLevelPlugin> injectedStartLevel = new InjectedValue<StartLevelPlugin>();
+    private final InjectedValue<StartLevelSupport> injectedStartLevel = new InjectedValue<StartLevelSupport>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
-    private final InjectedValue<SystemServicesPlugin> injectedSystemServices = new InjectedValue<SystemServicesPlugin>();
+    private final InjectedValue<SystemServices> injectedSystemServices = new InjectedValue<SystemServices>();
 
     FrameworkCoreServices() {
-        super(InternalServices.FRAMEWORK_CORE_SERVICES);
+        super(IntegrationServices.FRAMEWORK_CORE_SERVICES);
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<FrameworkCoreServices> builder) {
-        builder.addDependency(IntegrationServices.BUNDLE_LIFECYCLE_PLUGIN, BundleLifecyclePlugin.class, injectedBundleLifecycle);
-        builder.addDependency(InternalServices.FRAMEWORK_STATE_CREATE, FrameworkState.class, injectedFramework);
-        builder.addDependency(InternalServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, injectedLifecycleInterceptor);
-        builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
-        builder.addDependency(Services.START_LEVEL, StartLevelPlugin.class, injectedStartLevel);
-        builder.addDependency(InternalServices.SYSTEM_CONTEXT, BundleContext.class, injectedSystemContext);
-        builder.addDependency(IntegrationServices.SYSTEM_SERVICES_PLUGIN, SystemServicesPlugin.class, injectedSystemServices);
-        builder.addDependencies(InternalServices.URL_HANDLER_PLUGIN);
+        builder.addDependency(IntegrationServices.BUNDLE_LIFECYCLE_PLUGIN, BundleLifecycle.class, injectedBundleLifecycle);
+        builder.addDependency(IntegrationServices.FRAMEWORK_CREATE_INTERNAL, FrameworkState.class, injectedFramework);
+        builder.addDependency(IntegrationServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorPlugin.class, injectedLifecycleInterceptor);
+        builder.addDependency(IntegrationServices.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
+        builder.addDependency(IntegrationServices.START_LEVEL, StartLevelSupport.class, injectedStartLevel);
+        builder.addDependency(IntegrationServices.SYSTEM_CONTEXT_INTERNAL, BundleContext.class, injectedSystemContext);
+        builder.addDependency(IntegrationServices.SYSTEM_SERVICES_PLUGIN, SystemServices.class, injectedSystemServices);
+        builder.addDependencies(IntegrationServices.URL_HANDLER_PLUGIN);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override
     public void start(StartContext context) throws StartException {
         BundleContext systemContext = injectedSystemContext.getValue();
-        SystemServicesPlugin systemServices = injectedSystemServices.getValue();
+        SystemServices systemServices = injectedSystemServices.getValue();
         systemServices.registerSystemServices(systemContext);
         getFrameworkState().injectedCoreServices.inject(this);
     }
@@ -87,7 +87,7 @@ final class FrameworkCoreServices extends AbstractIntegrationService<FrameworkCo
         return this;
     }
 
-    BundleLifecyclePlugin getBundleLifecyclePlugin() {
+    BundleLifecycle getBundleLifecycle() {
         return injectedBundleLifecycle.getValue();
     }
 
@@ -103,7 +103,7 @@ final class FrameworkCoreServices extends AbstractIntegrationService<FrameworkCo
         return injectedPackageAdmin.getValue();
     }
 
-    StartLevelPlugin getStartLevelPlugin() {
+    StartLevelSupport getStartLevelPlugin() {
         return injectedStartLevel.getValue();
     }
 }

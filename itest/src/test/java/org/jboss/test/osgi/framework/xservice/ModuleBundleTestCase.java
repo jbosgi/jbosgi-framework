@@ -22,7 +22,7 @@
 package org.jboss.test.osgi.framework.xservice;
 
 import org.jboss.modules.Module;
-import org.jboss.osgi.framework.spi.StartLevelPlugin;
+import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.testing.OSGiTestHelper;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -186,7 +186,7 @@ public class ModuleBundleTestCase extends AbstractModuleIntegrationTest {
     }
 
     private void enableImmediateExecution(StartLevel sls) throws Exception {
-        StartLevelPlugin plugin = (StartLevelPlugin) sls;
+        StartLevelSupport plugin = (StartLevelSupport) sls;
         plugin.enableImmediateExecution(true);
     }
 

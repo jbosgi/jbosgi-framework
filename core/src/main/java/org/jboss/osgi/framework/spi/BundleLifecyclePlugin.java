@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,33 +19,70 @@ package org.jboss.osgi.framework.spi;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.spi;
 
-import org.jboss.msc.service.Service;
+import java.io.InputStream;
+
+import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleManager;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
 /**
- * A handler for bundle deployments.
+ * An integration point for the bundle lifecycle.
  *
  * @author thomas.diesler@jboss.com
- * @since 29-Mar-2011
+ * @since 19-Oct-2009
  */
-public interface BundleLifecyclePlugin extends Service<BundleLifecyclePlugin> {
+public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLifecycle> implements BundleLifecycle {
 
-    void install(Deployment dep, DefaultHandler handler) throws BundleException;
+    private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
-    void start(XBundle bundle, int options, DefaultHandler handler) throws BundleException;
+    public BundleLifecyclePlugin() {
+        super(IntegrationServices.BUNDLE_LIFECYCLE_PLUGIN);
+    }
 
-    void stop(XBundle bundle, int options, DefaultHandler handler) throws BundleException;
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<BundleLifecycle> builder) {
+        builder.addDependency(IntegrationServices.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(IntegrationServices.FRAMEWORK_CREATE);
+        builder.setInitialMode(Mode.ON_DEMAND);
+    }
 
-    void uninstall(XBundle bundle, DefaultHandler handler);
+    @Override
+    public BundleLifecycle getValue() throws IllegalStateException {
+        return this;
+    }
 
-    interface DefaultHandler {
-        void install(BundleManager bundleManager, Deployment dep) throws BundleException;
-        void start(XBundle bundle, int options) throws BundleException;
-        void stop(XBundle bundle, int options) throws BundleException;
-        void uninstall(XBundle bundle);
+    @Override
+    public void install(Deployment dep) throws BundleException {
+        BundleManager bundleManager = injectedBundleManager.getValue();
+        bundleManager.installBundle(dep, null, null);
+    }
+
+    @Override
+    public void start(XBundle bundle, int options) throws BundleException {
+        BundleManager bundleManager = injectedBundleManager.getValue();
+        bundleManager.startBundle(bundle, options);
+    }
+
+    @Override
+    public void stop(XBundle bundle, int options) throws BundleException {
+        BundleManager bundleManager = injectedBundleManager.getValue();
+        bundleManager.stopBundle(bundle, options);
+    }
+
+    @Override
+    public void update(XBundle bundle, InputStream input) throws BundleException {
+        BundleManager bundleManager = injectedBundleManager.getValue();
+        bundleManager.updateBundle(bundle, input);
+    }
+
+    @Override
+    public void uninstall(XBundle bundle, int options) throws BundleException {
+        BundleManager bundleManager = injectedBundleManager.getValue();
+        bundleManager.uninstallBundle(bundle, options);
     }
 }

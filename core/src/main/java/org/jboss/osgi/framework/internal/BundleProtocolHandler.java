@@ -21,8 +21,8 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 import java.net.URL;
@@ -40,9 +40,9 @@ public class BundleProtocolHandler extends AbstractURLStreamHandlerService {
 
     public static final String PROTOCOL_NAME = "bundle";
 
-    private final BundleManagerPlugin bundleManager;
+    private final BundleManagerImpl bundleManager;
 
-    BundleProtocolHandler(BundleManagerPlugin bundleManager) {
+    BundleProtocolHandler(BundleManagerImpl bundleManager) {
         this.bundleManager = bundleManager;
     }
 

@@ -21,7 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import java.util.Stack;
 

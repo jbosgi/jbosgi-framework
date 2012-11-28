@@ -21,8 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -36,12 +36,14 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
-import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.LockManager.Method;
-import org.jboss.osgi.framework.spi.StartLevelPlugin;
+import org.jboss.osgi.framework.spi.FrameworkEvents;
+import org.jboss.osgi.framework.spi.ModuleManager;
+import org.jboss.osgi.framework.spi.ServiceState;
+import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -72,7 +74,7 @@ final class HostBundleState extends UserBundleState {
         super(frameworkState, brev, serviceName, serviceTarget);
 
         // Assign the {@link ModuleIdentifier}
-        ModuleManagerPlugin moduleManager = frameworkState.getModuleManagerPlugin();
+        ModuleManager moduleManager = frameworkState.getModuleManager();
         ModuleIdentifier moduleIdentifier = moduleManager.getModuleIdentifier(brev);
         brev.addAttachment(ModuleIdentifier.class, moduleIdentifier);
     }
@@ -123,7 +125,7 @@ final class HostBundleState extends UserBundleState {
     }
 
     @Override
-    HostBundleRevision createUpdateRevision(Deployment dep, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
+    HostBundleRevision createUpdateRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
         return new HostBundleRevision(getFrameworkState(), dep, metadata, storageState);
     }
 
@@ -155,7 +157,7 @@ final class HostBundleState extends UserBundleState {
     }
 
     void setBundleActivationPolicyUsed(boolean usePolicy) {
-        InternalStorageState storageState = getStorageState();
+        StorageState storageState = getStorageState();
         storageState.setBundleActivationPolicyUsed(usePolicy);
     }
 
@@ -204,28 +206,21 @@ final class HostBundleState extends UserBundleState {
 
     private void startInternalNow(int options) throws BundleException {
 
-        // Assert the required start conditions
-        assertStartConditions();
+        // #2 If this bundle's state is ACTIVE then this method returns immediately.
+        if (getState() == ACTIVE)
+            return;
+
+        // If the Framework's current start level is less than this bundle's start level
+        if (startLevelValidForStart() == false) {
+            LOGGER.debugf("Start level [%d] not valid for: %s", getBundleStartLevel(), this);
+            return;
+        }
 
         // #2 If this bundle's state is ACTIVE then this method returns immediately.
         if (getState() == ACTIVE)
             return;
 
         LOGGER.debugf("Starting bundle: %s", this);
-
-        // If the Framework's current start level is less than this bundle's start level
-        if (startLevelValidForStart() == false) {
-            // If the START_TRANSIENT option is set, then a BundleException is thrown
-            // indicating this bundle cannot be started due to the Framework's current start level
-            if ((options & START_TRANSIENT) != 0)
-                throw MESSAGES.cannotStartBundleDueToStartLevel();
-
-            LOGGER.debugf("Start level [%d] not valid for: %s", getBundleStartLevel(), this);
-
-            // Set this bundle's autostart setting
-            persistAutoStartSettings(options);
-            return;
-        }
 
         // #3 Set this bundle's autostart setting
         persistAutoStartSettings(options);
@@ -332,7 +327,7 @@ final class HostBundleState extends UserBundleState {
         LockManager lockManager = getFrameworkState().getLockManager();
         try {
             lockContext = lockManager.lockItems(Method.STOP, this);
-            
+
             // We got the permit, now stop
             stopInternalNow(options);
 
@@ -371,8 +366,8 @@ final class HostBundleState extends UserBundleState {
         }
 
         // #7 If this bundle's state was ACTIVE prior to setting the state to STOPPING,
-        // the BundleActivator.stop(org.osgi.framework.BundleContext) method of this bundle's BundleActivator, 
-        // if one is specified, is called. If that method throws an exception, this method must continue to stop 
+        // the BundleActivator.stop(org.osgi.framework.BundleContext) method of this bundle's BundleActivator,
+        // if one is specified, is called. If that method throws an exception, this method must continue to stop
         // this bundle and a BundleException must be thrown after completion of the remaining steps.
         Throwable rethrow = null;
         if (priorState == Bundle.ACTIVE) {
@@ -412,7 +407,9 @@ final class HostBundleState extends UserBundleState {
         }
     }
 
-    private void assertStartConditions() throws BundleException {
+    @Override
+    void assertStartConditions(int options) throws BundleException {
+        super.assertStartConditions(options);
 
         // The service platform may run this bundle if any of the execution environments named in the
         // Bundle-RequiredExecutionEnvironment header matches one of the execution environments it implements.
@@ -430,13 +427,23 @@ final class HostBundleState extends UserBundleState {
             if (foundSupportedEnv == false)
                 throw MESSAGES.unsupportedExecutionEnvironment(requiredEnvs, availableEnvs);
         }
+
+        // If the Framework's current start level is less than this bundle's start level
+        if (startLevelValidForStart() == false) {
+            // If the START_TRANSIENT option is set, then a BundleException is thrown
+            // indicating this bundle cannot be started due to the Framework's current start level
+            if ((options & START_TRANSIENT) != 0)
+                throw MESSAGES.cannotStartBundleDueToStartLevel();
+
+            // Set this bundle's autostart setting
+            persistAutoStartSettings(options);
+        }
     }
 
     private void persistAutoStartSettings(int options) {
         // The Framework must set this bundle's persistent autostart setting to
         // Started with declared activation if the START_ACTIVATION_POLICY option is set or
         // Started with eager activation if not set.
-
         if ((options & START_TRANSIENT) == 0) {
             setPersistentlyStarted(true);
             boolean activationPolicyUsed = (options & START_ACTIVATION_POLICY) != 0;
@@ -445,17 +452,17 @@ final class HostBundleState extends UserBundleState {
     }
 
     private int getBundleStartLevel() {
-        StartLevelPlugin startLevelPlugin = getCoreServices().getStartLevelPlugin();
+        StartLevelSupport startLevelPlugin = getCoreServices().getStartLevelPlugin();
         return startLevelPlugin.getBundleStartLevel(this);
     }
 
     void setPersistentlyStarted(boolean started) {
-        StartLevelPlugin startLevelPlugin = getCoreServices().getStartLevelPlugin();
+        StartLevelSupport startLevelPlugin = getCoreServices().getStartLevelPlugin();
         startLevelPlugin.setBundlePersistentlyStarted(this, started);
     }
 
     private boolean startLevelValidForStart() {
-        StartLevelPlugin startLevelPlugin = getCoreServices().getStartLevelPlugin();
+        StartLevelSupport startLevelPlugin = getCoreServices().getStartLevelPlugin();
         return startLevelPlugin.getBundleStartLevel(this) <= startLevelPlugin.getStartLevel();
     }
 
@@ -472,7 +479,7 @@ final class HostBundleState extends UserBundleState {
         }
 
         // Any listeners registered by this bundle must be removed
-        FrameworkEventsPlugin eventsPlugin = hostState.getFrameworkState().getFrameworkEventsPlugin();
+        FrameworkEvents eventsPlugin = hostState.getFrameworkState().getFrameworkEventsPlugin();
         eventsPlugin.removeBundleListeners(hostState);
     }
 }

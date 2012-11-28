@@ -24,6 +24,8 @@ package org.jboss.osgi.framework.internal;
 import java.net.ContentHandler;
 import java.net.ContentHandlerFactory;
 
+import org.jboss.osgi.framework.spi.URLHandlerSupport;
+
 
 /**
  * A {@link ContentHandlerFactory} which is backed by OSGi services.
@@ -34,9 +36,9 @@ import java.net.ContentHandlerFactory;
  */
 final class OSGiContentHandlerFactory implements ContentHandlerFactory {
 
-    private URLHandlerPlugin handlerPlugin;
+    private URLHandlerSupport handlerPlugin;
 
-    OSGiContentHandlerFactory(URLHandlerPlugin handlerPlugin) {
+    OSGiContentHandlerFactory(URLHandlerSupport handlerPlugin) {
         this.handlerPlugin = handlerPlugin;
     }
 

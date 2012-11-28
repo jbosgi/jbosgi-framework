@@ -21,7 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.BundleException;

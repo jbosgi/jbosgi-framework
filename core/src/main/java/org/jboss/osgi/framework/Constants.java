@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework;
 
 /**
  * A collection of propriatary constants.
@@ -29,15 +29,15 @@ package org.jboss.osgi.framework;
  */
 public interface Constants extends org.osgi.framework.Constants {
 
+    /** The prefix for modules/services managed by the OSGi layer */
+    String JBOSGI_PREFIX = "jbosgi";
+
     /** The framework symbolic */
     String FRAMEWORK_SYMBOLIC_NAME = "org.jboss.osgi.framework";
     
     /** The framework location */
     String FRAMEWORK_LOCATION = "org.jboss.osgi.framework";
     
-    /** The prefix for modules/services managed by the OSGi layer */
-    String JBOSGI_PREFIX = "jbosgi";
-
     /** The number of threads available for MSC services */
     String PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS = "org.jboss.osgi.framework.bootstrap.maxThreads";
 

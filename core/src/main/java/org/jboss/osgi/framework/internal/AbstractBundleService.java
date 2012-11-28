@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,8 +19,9 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceController;
@@ -47,7 +47,7 @@ abstract class AbstractBundleService<T extends AbstractBundleState> implements S
         return frameworkState;
     }
 
-    BundleManagerPlugin getBundleManager() {
+    BundleManagerImpl getBundleManager() {
         return frameworkState.getBundleManager();
     }
 

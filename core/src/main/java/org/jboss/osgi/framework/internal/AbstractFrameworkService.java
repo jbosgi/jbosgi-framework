@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
@@ -29,6 +29,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
+import org.jboss.osgi.resolver.XBundle;
 
 /**
  * The base of all framework services.
@@ -54,11 +55,11 @@ abstract class AbstractFrameworkService extends AbstractIntegrationService<Frame
         LOGGER.tracef("Stopping: %s in mode %s", controller.getName(), controller.getMode());
     }
 
-    BundleManagerPlugin getBundleManager() {
+    BundleManagerImpl getBundleManager() {
         return getValue().getBundleManager();
     }
 
-    SystemBundleState getSystemBundle() {
+    XBundle getSystemBundle() {
         return getValue().getSystemBundle();
     }
 }

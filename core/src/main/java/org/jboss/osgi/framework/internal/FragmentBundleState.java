@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,13 +19,14 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -62,7 +62,7 @@ final class FragmentBundleState extends UserBundleState {
     }
 
     @Override
-    FragmentBundleRevision createUpdateRevision(Deployment deployment, OSGiMetaData metaData, InternalStorageState storageState) throws BundleException {
+    FragmentBundleRevision createUpdateRevision(Deployment deployment, OSGiMetaData metaData, StorageState storageState) throws BundleException {
         return new FragmentBundleRevision(getFrameworkState(), deployment, metaData, storageState);
     }
 

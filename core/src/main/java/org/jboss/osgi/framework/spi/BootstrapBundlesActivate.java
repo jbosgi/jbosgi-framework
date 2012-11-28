@@ -21,7 +21,7 @@ package org.jboss.osgi.framework.spi;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import java.util.ArrayList;
 import java.util.Collections;

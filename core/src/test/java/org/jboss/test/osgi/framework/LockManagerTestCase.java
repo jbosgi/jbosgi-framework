@@ -30,6 +30,7 @@ import java.util.concurrent.TimeoutException;
 
 import junit.framework.Assert;
 
+import org.jboss.osgi.framework.internal.LockManagerImpl;
 import org.jboss.osgi.framework.spi.LockException;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
@@ -58,8 +59,8 @@ public class LockManagerTestCase {
     ExecutorService executor;
 
     @Before
-    public void setUp() {
-        lockManager = LockManager.Factory.create();
+    public void setUp() throws Exception {
+        lockManager = new LockManagerImpl();
         executor = Executors.newFixedThreadPool(notasks);
         for (int i = 0; i < noitems; i++) {
             items[i] = new TestItem("item" + i);
@@ -110,7 +111,7 @@ public class LockManagerTestCase {
             public void run() {
                 threadHolder[0] = Thread.currentThread();
                 LockContext lockContext = null;
-                try { 
+                try {
                     lockContext = lockManager.lockItems(Method.START, items[0]);
                     latch.countDown();
                     // Do some heavy crunching
@@ -125,10 +126,10 @@ public class LockManagerTestCase {
             }
         };
         executor.execute(taskA);
-        
+
         // Wait for taskA to start
         Assert.assertTrue("TaskA started", latch.await(500, TimeUnit.MILLISECONDS));
-        
+
         try {
             // Try to obtain a lock on the same item with a short timeout
             lockManager.lockItems(Method.STOP, 500, TimeUnit.MILLISECONDS, items[0]);
@@ -137,7 +138,7 @@ public class LockManagerTestCase {
             Throwable cause = ex.getCause();
             Assert.assertSame(TimeoutException.class, cause.getClass());
         }
-        
+
         // Interrupt the heavy crunching
         threadHolder[0].interrupt();
     }

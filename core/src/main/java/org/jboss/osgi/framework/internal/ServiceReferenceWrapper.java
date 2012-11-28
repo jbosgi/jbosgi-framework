@@ -21,6 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
+import org.jboss.osgi.framework.spi.ServiceState;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
 

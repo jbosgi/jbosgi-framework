@@ -21,14 +21,13 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.osgi.framework.BundleContext;
@@ -47,13 +46,13 @@ public final class FrameworkInit extends AbstractFrameworkService {
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
 
     FrameworkInit() {
-        super(InternalServices.FRAMEWORK_STATE_INIT);
+        super(IntegrationServices.FRAMEWORK_INIT_INTERNAL);
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<FrameworkState> builder) {
-        builder.addDependency(InternalServices.FRAMEWORK_STATE_CREATE, FrameworkState.class, injectedFramework);
-        builder.addDependencies(InternalServices.FRAMEWORK_CORE_SERVICES);
+        builder.addDependency(IntegrationServices.FRAMEWORK_CREATE_INTERNAL, FrameworkState.class, injectedFramework);
+        builder.addDependencies(IntegrationServices.FRAMEWORK_CORE_SERVICES);
         builder.addDependencies(IntegrationServices.BOOTSTRAP_BUNDLES_INSTALL, IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
         builder.addDependencies(IntegrationServices.PERSISTENT_BUNDLES_INSTALL, IntegrationServices.PERSISTENT_BUNDLES_COMPLETE);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -75,14 +74,14 @@ public final class FrameworkInit extends AbstractFrameworkService {
         private final Mode initialMode;
         
         FrameworkInitialized(Mode initialMode) {
-            super(Services.FRAMEWORK_INIT);
+            super(IntegrationServices.FRAMEWORK_INIT);
             this.initialMode = initialMode;
         }
 
         @Override
         protected void addServiceDependencies(ServiceBuilder<BundleContext> builder) {
-            builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedBundleContext);
-            builder.addDependency(InternalServices.FRAMEWORK_STATE_INIT);
+            builder.addDependency(IntegrationServices.FRAMEWORK_CREATE, BundleContext.class, injectedBundleContext);
+            builder.addDependency(IntegrationServices.FRAMEWORK_INIT_INTERNAL);
             builder.setInitialMode(initialMode);
         }
 

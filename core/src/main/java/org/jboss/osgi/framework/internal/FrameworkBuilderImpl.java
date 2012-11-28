@@ -22,7 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.Constants.PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS;
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,9 +37,25 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.BundleManager;
+import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
+import org.jboss.osgi.framework.spi.BundleManager;
+import org.jboss.osgi.framework.spi.DeploymentProviderPlugin;
+import org.jboss.osgi.framework.spi.LifecycleInterceptorPlugin;
+import org.jboss.osgi.framework.spi.FrameworkModuleLoaderPlugin;
+import org.jboss.osgi.framework.spi.BundleStoragePlugin;
+import org.jboss.osgi.framework.spi.EnvironmentPlugin;
 import org.jboss.osgi.framework.spi.FrameworkBuilder;
+import org.jboss.osgi.framework.spi.FrameworkModuleProviderPlugin;
 import org.jboss.osgi.framework.spi.IntegrationService;
+import org.jboss.osgi.framework.spi.LockManagerPlugin;
+import org.jboss.osgi.framework.spi.ModuleManagerPlugin;
+import org.jboss.osgi.framework.spi.NativeCodePlugin;
+import org.jboss.osgi.framework.spi.PackageAdminPlugin;
+import org.jboss.osgi.framework.spi.ResolverPlugin;
+import org.jboss.osgi.framework.spi.ServiceManagerPlugin;
+import org.jboss.osgi.framework.spi.StartLevelPlugin;
+import org.jboss.osgi.framework.spi.SystemPathsPlugin;
+import org.jboss.osgi.framework.spi.SystemServicesPlugin;
 import org.osgi.framework.launch.Framework;
 
 /**
@@ -153,23 +169,22 @@ public final class FrameworkBuilderImpl implements FrameworkBuilder {
             Module.setModuleLogger(new JDKModuleLogger());
         }
 
-        BundleManagerPlugin bundleManager = new BundleManagerPlugin(serviceContainer, this);
+        BundleManagerImpl bundleManager = new BundleManagerImpl(serviceContainer, this);
         FrameworkState frameworkState = new FrameworkState(bundleManager);
 
         registerIntegrationService(FrameworkPhase.CREATE, bundleManager);
         registerIntegrationService(FrameworkPhase.CREATE, new FrameworkCreate(frameworkState));
         registerIntegrationService(FrameworkPhase.CREATE, new FrameworkCreate.FrameworkCreated(initialMode));
-        registerIntegrationService(FrameworkPhase.CREATE, new DefaultBundleLifecyclePlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new DefaultFrameworkModulePlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new DefaultModuleLoaderPlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new DefaultStartLevelPlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new DefaultStorageStatePlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new DefaultSystemPathsPlugin(this));
-        registerIntegrationService(FrameworkPhase.CREATE, new DefaultSystemServicesPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new BundleLifecyclePlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkModuleProviderPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkModuleLoaderPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new StartLevelPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new SystemPathsPlugin(this));
+        registerIntegrationService(FrameworkPhase.CREATE, new SystemServicesPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new FrameworkCoreServices());
         registerIntegrationService(FrameworkPhase.CREATE, new FrameworkEventsPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new BundleStoragePlugin(firstInit));
-        registerIntegrationService(FrameworkPhase.CREATE, new DeploymentFactoryPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new DeploymentProviderPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new EnvironmentPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new LifecycleInterceptorPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new LockManagerPlugin());
@@ -178,13 +193,13 @@ public final class FrameworkBuilderImpl implements FrameworkBuilder {
         registerIntegrationService(FrameworkPhase.CREATE, new PackageAdminPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new ResolverPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new ServiceManagerPlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new SystemBundleService(frameworkState));
-        registerIntegrationService(FrameworkPhase.CREATE, new SystemContextService());
+        registerIntegrationService(FrameworkPhase.CREATE, new SystemBundlePlugin(frameworkState));
+        registerIntegrationService(FrameworkPhase.CREATE, new SystemContextPlugin());
 
         registerIntegrationService(FrameworkPhase.INIT, new FrameworkInit());
         registerIntegrationService(FrameworkPhase.INIT, new FrameworkInit.FrameworkInitialized(initialMode));
-        registerIntegrationService(FrameworkPhase.INIT, new DefaultBootstrapBundlesInstall());
-        registerIntegrationService(FrameworkPhase.INIT, new DefaultPersistentBundlesInstall());
+        registerIntegrationService(FrameworkPhase.INIT, new BootstrapBundlesInstallPlugin());
+        registerIntegrationService(FrameworkPhase.INIT, new PersistentBundlesInstallPlugin());
 
         registerIntegrationService(FrameworkPhase.ACTIVE, new FrameworkActive());
         registerIntegrationService(FrameworkPhase.ACTIVE, new FrameworkActive.FrameworkActivated(initialMode));

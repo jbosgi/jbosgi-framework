@@ -21,8 +21,8 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,9 +46,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.BundleManager;
-import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.framework.spi.BundleLifecycle;
+import org.jboss.osgi.framework.spi.BundleManager;
+import org.jboss.osgi.framework.spi.FrameworkEvents;
+import org.jboss.osgi.framework.spi.LifecycleInterceptorPlugin;
 import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.framework.spi.LockManager.LockSupport;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.StorageState;
@@ -56,6 +59,9 @@ import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.resolver.XResolveContext;
+import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.spi.AbstractElement;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.Bundle;
@@ -118,11 +124,11 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
         return frameworkState;
     }
 
-    BundleManagerPlugin getBundleManager() {
+    BundleManagerImpl getBundleManager() {
         return frameworkState.getBundleManager();
     }
 
-    SystemBundleState getSystemBundle() {
+    XBundle getSystemBundle() {
         return frameworkState.getSystemBundle();
     }
 
@@ -177,7 +183,7 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
 
     abstract boolean isSingleton();
 
-    InternalStorageState getStorageState() {
+    StorageState getStorageState() {
         return getBundleRevision().getStorageState();
     }
 
@@ -232,7 +238,7 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
     }
 
     void fireBundleEvent(int eventType) {
-        FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
+        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
         eventsPlugin.fireBundleEvent(this, eventType);
     }
 
@@ -519,14 +525,20 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
 
     @Override
     public void start() throws BundleException {
-        assertNotUninstalled();
-        startInternal(0);
+        assertStartConditions(0);
+        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
+        bundleLifecycle.start(this, 0);
     }
 
     @Override
     public void start(int options) throws BundleException {
+        assertStartConditions(options);
+        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
+        bundleLifecycle.start(this, options);
+    }
+
+    void assertStartConditions(int options) throws BundleException {
         assertNotUninstalled();
-        startInternal(options);
     }
 
     abstract void startInternal(int options) throws BundleException;
@@ -534,13 +546,15 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
     @Override
     public void stop() throws BundleException {
         assertNotUninstalled();
-        stopInternal(0);
+        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
+        bundleLifecycle.stop(this, 0);
     }
 
     @Override
     public void stop(int options) throws BundleException {
         assertNotUninstalled();
-        stopInternal(options);
+        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
+        bundleLifecycle.stop(this, options);
     }
 
     abstract void stopInternal(int options) throws BundleException;
@@ -548,13 +562,15 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
     @Override
     public void update() throws BundleException {
         assertNotUninstalled();
-        updateInternal(null);
+        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
+        bundleLifecycle.update(this, null);
     }
 
     @Override
     public void update(InputStream input) throws BundleException {
         assertNotUninstalled();
-        updateInternal(input);
+        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
+        bundleLifecycle.update(this, input);
     }
 
     abstract void updateInternal(InputStream input) throws BundleException;
@@ -563,10 +579,11 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
     public void uninstall() throws BundleException {
         // #1 If this bundle's state is UNINSTALLED then an IllegalStateException is thrown
         assertNotUninstalled();
-        uninstallInternal();
+        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
+        bundleLifecycle.uninstall(this, 0);
     }
 
-    abstract void uninstallInternal() throws BundleException;
+    abstract void uninstallInternal(int options) throws BundleException;
 
     boolean ensureResolved(boolean fireEvent) {
 
@@ -580,9 +597,11 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
         boolean result = true;
         if (isResolved() == false) {
             try {
-                ResolverPlugin resolverPlugin = getFrameworkState().getResolverPlugin();
+                XResolver resolver = getFrameworkState().getResolverPlugin();
                 Set<XBundleRevision> mandatory = Collections.singleton((XBundleRevision) getBundleRevision());
-                resolverPlugin.resolveAndApply(mandatory, null);
+                XEnvironment env = getFrameworkState().getEnvironment();
+                XResolveContext context = resolver.createResolveContext(env, mandatory, null);
+                resolver.resolveAndApply(context);
 
                 if (LOGGER.isDebugEnabled()) {
                     BundleWiring wiring = getBundleRevision().getWiring();
@@ -599,7 +618,7 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
                 lastResolutionException = ex;
                 result = false;
                 if (fireEvent == true) {
-                    FrameworkEventsPlugin eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
+                    FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
                     eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, new BundleException(ex.getMessage(), ex));
                 }
             }

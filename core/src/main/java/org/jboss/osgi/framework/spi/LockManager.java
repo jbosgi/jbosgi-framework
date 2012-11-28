@@ -25,7 +25,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.jboss.osgi.framework.spi.LockManagerImpl.LockSupportImpl;
+import org.jboss.osgi.framework.internal.LockManagerImpl;
+
 
 /**
  * A manager for framework wide locks.
@@ -61,15 +62,12 @@ public interface LockManager {
     LockContext lockItems(Method method, LockableItem... items);
 
     LockContext lockItems(Method method, long timeout, TimeUnit unit, LockableItem... items);
-    
+
     void unlockItems(LockContext context);
 
     class Factory {
-        public static LockManager create() {
-            return new LockManagerImpl();
-        }
         public static LockSupport addLockSupport(LockableItem item) {
-            return new LockSupportImpl();
+            return new LockManagerImpl.LockSupportImpl(item);
         }
     }
 }

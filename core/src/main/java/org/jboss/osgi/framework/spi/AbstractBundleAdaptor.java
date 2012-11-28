@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,11 +19,10 @@ package org.jboss.osgi.framework.spi;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.spi;
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
-import static org.jboss.osgi.framework.internal.InternalServices.LOCK_MANAGER_PLUGIN;
-import static org.jboss.osgi.framework.spi.IntegrationServices.MODULE_LOADER_PLUGIN;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,9 +39,6 @@ import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.osgi.framework.BundleManager;
-import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.internal.InternalServices;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockSupport;
 import org.jboss.osgi.framework.spi.LockManager.Method;
@@ -89,7 +84,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
         this.context = context;
         this.module = module;
         this.brev = brev;
-        
+
         this.lastModified = System.currentTimeMillis();
     }
 
@@ -154,10 +149,10 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     @Override
     public void start(int options) throws BundleException {
         LockContext lockContext = null;
-        LockManager lockManager = getPluginService(LOCK_MANAGER_PLUGIN, LockManager.class);
+        LockManager lockManager = getPluginService(IntegrationServices.LOCK_MANAGER, LockManager.class);
         try {
             lockContext = lockManager.lockItems(Method.START, this);
-            
+
             // If this bundle's state is ACTIVE then this method returns immediately.
             if (getState() == Bundle.ACTIVE)
                 return;
@@ -212,12 +207,12 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
 
     @Override
     public void stop(int options) throws BundleException {
-        
+
         LockContext lockContext = null;
-        LockManager lockManager = getPluginService(InternalServices.LOCK_MANAGER_PLUGIN, LockManager.class);
+        LockManager lockManager = getPluginService(IntegrationServices.LOCK_MANAGER, LockManager.class);
         try {
             lockContext = lockManager.lockItems(Method.STOP, this);
-            
+
             // If this bundle's state is not ACTIVE then this method returns immediately.
             if (getState() != Bundle.ACTIVE)
                 return;
@@ -257,16 +252,16 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     @Override
     public void uninstall() throws BundleException {
         LockContext lockContext = null;
-        LockManager lockManager = getPluginService(InternalServices.LOCK_MANAGER_PLUGIN, LockManager.class);
+        LockManager lockManager = getPluginService(IntegrationServices.LOCK_MANAGER, LockManager.class);
         try {
             FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
             lockContext = lockManager.lockItems(Method.RESOLVE, wireLock, this);
-            
+
             // Uninstall from the environment
-            XEnvironment env = getPluginService(Services.ENVIRONMENT, XEnvironment.class);
+            XEnvironment env = getPluginService(IntegrationServices.ENVIRONMENT, XEnvironment.class);
             env.uninstallResources(getBundleRevision());
             // Remove from the module loader
-            ModuleLoaderPlugin provider = getPluginService(MODULE_LOADER_PLUGIN, ModuleLoaderPlugin.class);
+            FrameworkModuleLoader provider = getPluginService(IntegrationServices.FRAMEWORK_MODULE_LOADER, FrameworkModuleLoader.class);
             provider.removeModule(brev, module.getIdentifier());
             bundleState.set(Bundle.UNINSTALLED);
         } finally {
@@ -368,17 +363,17 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     }
 
     private int getStartLevel() {
-        StartLevelPlugin startLevel = getPluginService(Services.START_LEVEL, StartLevelPlugin.class);
+        StartLevelSupport startLevel = getPluginService(IntegrationServices.START_LEVEL, StartLevelSupport.class);
         return startLevel.getBundleStartLevel(this);
     }
 
     private void setPersistentlyStarted(boolean started) {
-        StartLevelPlugin startLevel = getPluginService(Services.START_LEVEL, StartLevelPlugin.class);
+        StartLevelSupport startLevel = getPluginService(IntegrationServices.START_LEVEL, StartLevelSupport.class);
         startLevel.setBundlePersistentlyStarted(this, started);
     }
 
     private boolean startLevelValidForStart() {
-        StartLevelPlugin startLevel = getPluginService(Services.START_LEVEL, StartLevelPlugin.class);
+        StartLevelSupport startLevel = getPluginService(IntegrationServices.START_LEVEL, StartLevelSupport.class);
         return getStartLevel() <= startLevel.getStartLevel();
     }
 
@@ -386,7 +381,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     public LockManager.LockSupport getLockSupport() {
         return bundleLock;
     }
-    
+
     @SuppressWarnings("unchecked")
     private <T extends Object> T getPluginService(ServiceName serviceName, Class<T> pluginType) {
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();

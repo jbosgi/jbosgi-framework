@@ -119,7 +119,7 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
 
     @Test
     public void testRefreshResolve() throws Exception {
-        
+
         final CountDownLatch latch = new CountDownLatch(1);
         FrameworkListener listener = new FrameworkListener() {
             @Override
@@ -130,7 +130,7 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
             }
         };
         getSystemContext().addFrameworkListener(listener);
-        
+
         try {
             // This should be a noop
             packageAdmin.refreshPackages(new Bundle[] {brev.getBundle()});
@@ -138,7 +138,7 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
         } finally {
             getSystemContext().removeFrameworkListener(listener);
         }
-        
+
         // This should be a noop
         packageAdmin.resolveBundles(new Bundle[] {brev.getBundle()});
     }

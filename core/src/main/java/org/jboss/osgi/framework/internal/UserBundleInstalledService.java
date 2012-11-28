@@ -1,5 +1,3 @@
-package org.jboss.osgi.framework.internal;
-
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,20 +19,29 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 
+import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.IntegrationServices;
+import org.jboss.osgi.framework.spi.NativeCode;
+import org.jboss.osgi.framework.spi.ServiceTracker.SynchronousListenerServiceWrapper;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
@@ -56,9 +63,24 @@ abstract class UserBundleInstalledService<B extends UserBundleState, R extends U
         this.initialDeployment = deployment;
     }
 
+    ServiceName install(ServiceTarget serviceTarget, ServiceListener<XBundle> listener) {
+        ServiceName serviceName = getBundleManager().getServiceName(initialDeployment, Bundle.INSTALLED);
+        LOGGER.debugf("Installing %s %s", getClass().getSimpleName(), serviceName);
+        ServiceBuilder<B> builder = serviceTarget.addService(serviceName, new SynchronousListenerServiceWrapper<B>(this));
+        addServiceDependencies(builder);
+        if (listener != null) {
+            builder.addListener(listener);
+        }
+        return builder.install().getName();
+    }
+
+    protected void addServiceDependencies(ServiceBuilder<B> builder) {
+        builder.addDependency(IntegrationServices.FRAMEWORK_CORE_SERVICES);
+    }
+
     @Override
     public void start(StartContext context) throws StartException {
-        InternalStorageState storageState = null;
+        StorageState storageState = null;
         try {
             Deployment dep = initialDeployment;
             Long bundleId = dep.getAttachment(Long.class);
@@ -72,11 +94,11 @@ abstract class UserBundleInstalledService<B extends UserBundleState, R extends U
             bundleState.initLazyActivation();
             validateBundle(bundleState, metadata);
             processNativeCode(bundleState, dep);
-            getBundleManager().installBundle(bundleState);
+            installBundle(bundleState);
             bundleState.fireBundleEvent(BundleEvent.INSTALLED);
         } catch (BundleException ex) {
             if (storageState != null) {
-                BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+                BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
                 storagePlugin.deleteStorageState(storageState);
             }
             throw new StartException(ex);
@@ -86,22 +108,26 @@ abstract class UserBundleInstalledService<B extends UserBundleState, R extends U
     @Override
     public void stop(StopContext context) {
         if (getBundleState().getState() != Bundle.UNINSTALLED) {
-            getBundleManager().uninstallBundle(getBundleState(), Bundle.STOP_TRANSIENT);
+            try {
+                getBundleManager().uninstallBundle(getBundleState(), Bundle.STOP_TRANSIENT);
+            } catch (BundleException ex) {
+                throw new IllegalStateException(ex);
+            }
         }
     }
 
-    abstract R createBundleRevision(Deployment deployment, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException;
+    abstract R createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState) throws BundleException;
 
     abstract B createBundleState(R revision, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException;
 
-    InternalStorageState createStorageState(Deployment dep, Long bundleId) throws BundleException {
+    StorageState createStorageState(Deployment dep, Long bundleId) throws BundleException {
         // The storage state exists when we re-create the bundle from persistent storage
-        InternalStorageState storageState = (InternalStorageState) dep.getAttachment(StorageState.class);
+        StorageState storageState = dep.getAttachment(StorageState.class);
         if (storageState == null) {
             String location = dep.getLocation();
             VirtualFile rootFile = dep.getRoot();
             try {
-                BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+                BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
                 Integer startlevel = dep.getStartLevel();
                 if (startlevel == null) {
                     FrameworkCoreServices coreServices = getFrameworkState().getCoreServices();
@@ -121,6 +147,40 @@ abstract class UserBundleInstalledService<B extends UserBundleState, R extends U
         return bundleState;
     }
 
+    private void installBundle(UserBundleState userBundle) throws BundleException {
+
+        // [TODO] Add singleton support this to XBundle
+        // it is not ok to simple not add it to the Environment
+        boolean addToEnvironment = true;
+        if (userBundle.isSingleton()) {
+            String symbolicName = userBundle.getSymbolicName();
+            for (XBundle aux : getBundleManager().getBundles(symbolicName, null)) {
+                if (aux != userBundle && isSingleton(aux)) {
+                    LOGGER.infoNoResolvableSingleton(userBundle);
+                    addToEnvironment = false;
+                    break;
+                }
+            }
+        }
+
+        if (addToEnvironment) {
+            XEnvironment env = getFrameworkState().getEnvironment();
+            env.installResources(userBundle.getBundleRevision());
+        }
+
+        userBundle.changeState(Bundle.INSTALLED, 0);
+        LOGGER.infoBundleInstalled(userBundle);
+    }
+
+    // [TODO] Add singleton support this to XBundle
+    private boolean isSingleton(XBundle userBundle) {
+        if (userBundle instanceof UserBundleState) {
+            UserBundleState bundleState = (UserBundleState) userBundle;
+            return bundleState.isSingleton();
+        }
+        return false;
+    }
+
     private void validateBundle(UserBundleState userBundle, OSGiMetaData metadata) throws BundleException {
         if (metadata.getBundleManifestVersion() > 1) {
             new BundleValidatorR4().validateBundle(userBundle, metadata);
@@ -134,7 +194,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState, R extends U
         OSGiMetaData metadata = userBundle.getOSGiMetaData();
         if (metadata.getBundleNativeCode() != null) {
             FrameworkState frameworkState = userBundle.getFrameworkState();
-            NativeCodePlugin nativeCodePlugin = frameworkState.getNativeCodePlugin();
+            NativeCode nativeCodePlugin = frameworkState.getNativeCodePlugin();
             nativeCodePlugin.deployNativeCode(dep);
         }
     }

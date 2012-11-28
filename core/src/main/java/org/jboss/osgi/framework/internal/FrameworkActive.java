@@ -21,7 +21,7 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -29,9 +29,26 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
+import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
+import org.jboss.osgi.framework.spi.BundleStoragePlugin;
+import org.jboss.osgi.framework.spi.DeploymentProviderPlugin;
+import org.jboss.osgi.framework.spi.EnvironmentPlugin;
+import org.jboss.osgi.framework.spi.FrameworkEvents;
+import org.jboss.osgi.framework.spi.FrameworkModuleProviderPlugin;
+import org.jboss.osgi.framework.spi.LifecycleInterceptorPlugin;
+import org.jboss.osgi.framework.spi.LockManagerPlugin;
+import org.jboss.osgi.framework.spi.FrameworkModuleLoaderPlugin;
+import org.jboss.osgi.framework.spi.ModuleManagerPlugin;
+import org.jboss.osgi.framework.spi.NativeCodePlugin;
+import org.jboss.osgi.framework.spi.PackageAdminPlugin;
+import org.jboss.osgi.framework.spi.ResolverPlugin;
+import org.jboss.osgi.framework.spi.ServiceManagerPlugin;
+import org.jboss.osgi.framework.spi.IntegrationServices;
+import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.framework.spi.StartLevelPlugin;
+import org.jboss.osgi.framework.spi.SystemPathsPlugin;
+import org.jboss.osgi.framework.spi.SystemServicesPlugin;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -48,33 +65,33 @@ import org.osgi.framework.launch.Framework;
  *
  * <code>
  * {@link FrameworkActive}
- *         +---{@link FrameworkInit}
- *             +---{@link DefaultPersistentBundlesInstall}
- *                 +---{@link DefaultBootstrapBundlesInstall}
- *             +---{@link FrameworkCoreServices}
- *                 +---{@link LifecycleInterceptorPlugin}
- *                 +---{@link PackageAdminPlugin}
- *                 +---{@link StartLevelPlugin}
- *                 +---{@link DefaultSystemServicesPlugin}
- *                 +---{@link URLHandlerPlugin}
- *                 +---{@link DefaultBundleLifecyclePlugin}
- *                     +---{@link FrameworkCreate}
- *                         +---{@link DefaultStorageStatePlugin}
- *                         +---{@link DeploymentFactoryPlugin}
- *                         +---{@link ResolverPlugin}
- *                         |   +---{@link NativeCodePlugin}
- *                         +---{@link ServiceManagerPlugin}
- *                             +---{@link ModuleManagerPlugin}
- *                             |   +---{@link DefaultModuleLoaderPlugin}
- *                             +---{@link FrameworkEventsPlugin}
- *                                 +---{@link SystemContextService}
- *                                     +---{@link SystemBundleService}
- *                                         +---{@link DefaultFrameworkModulePlugin}
- *                                         |   +---{@link DefaultSystemPathsPlugin}
- *                                         +---{@link BundleStoragePlugin}
- *                                             +---{@link BundleManagerPlugin}
- *                                                 +---{@link EnvironmentPlugin}
- *                                                     +---{@link LockManagerPlugin}
+ * +---{@link FrameworkInit}
+ *     +---{@link FrameworkCoreServices}
+ *     |   +---{@link BundleLifecyclePlugin}
+ *     |   +---{@link LifecycleInterceptorPlugin}
+ *     |   +---{@link PackageAdminPlugin}
+ *     |   +---{@link StartLevelPlugin
+ *     |   +---{@link SystemServicesPlugin}
+ *     |   +---{@link URLHandlerPlugin}
+ *     +---{@link PersistentBundlesInstallPlugin}
+ *         +---{@link BootstrapBundlesInstallPlugin}
+ *             +---{@link FrameworkCreate}
+ *                 +---{@link DeploymentProviderPlugin}
+ *                 +---{@link ServiceManagerPlugin}
+ *                 |   +---{@link FrameworkEventsPlugin}
+ *                 |       +---{@link SystemContextPlugin}
+ *                 |           +---{@link SystemBundlePlugin}
+ *                 |               +---{@link BundleStoragePlugin}
+ *                 +---{@link ResolverPlugin}
+ *                     +---{@link NativeCodePlugin}
+ *                     +---{@link ModuleManagerPlugin}
+ *                         +---{@link FrameworkModuleLoaderPlugin}
+ *                         +---{@link FrameworkModuleProviderPlugin}
+ *                             +---{@link SystemPathsPlugin}
+ *                             +---{@link BundleManagerImpl}
+ *                                 +---{@link EnvironmentPlugin}
+ *                                     +---{@link LockManagerPlugin}
+ *                                                     
  * </code>
  *
  * @author thomas.diesler@jboss.com
@@ -82,17 +99,17 @@ import org.osgi.framework.launch.Framework;
  */
 public final class FrameworkActive extends AbstractFrameworkService {
 
-    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
+    private final InjectedValue<BundleManagerImpl> injectedBundleManager = new InjectedValue<BundleManagerImpl>();
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
 
     FrameworkActive() {
-        super(InternalServices.FRAMEWORK_STATE_ACTIVE);
+        super(IntegrationServices.FRAMEWORK_ACTIVE_INTERNAL);
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<FrameworkState> builder) {
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
-        builder.addDependency(InternalServices.FRAMEWORK_STATE_INIT, FrameworkState.class, injectedFramework);
+        builder.addDependency(IntegrationServices.BUNDLE_MANAGER, BundleManagerImpl.class, injectedBundleManager);
+        builder.addDependency(IntegrationServices.FRAMEWORK_INIT_INTERNAL, FrameworkState.class, injectedFramework);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
@@ -114,18 +131,19 @@ public final class FrameworkActive extends AbstractFrameworkService {
     @Override
     public void start(StartContext context) throws StartException {
         // This Framework's state is set to ACTIVE
-        getSystemBundle().changeState(Bundle.ACTIVE);
+        SystemBundleState bundleState = SystemBundleState.assertBundleState(getSystemBundle());
+        bundleState.changeState(Bundle.ACTIVE);
 
         // Increase to initial start level
-        StartLevelPlugin startLevelPlugin = getValue().getCoreServices().getStartLevelPlugin();
+        StartLevelSupport startLevelPlugin = getValue().getCoreServices().getStartLevelPlugin();
         startLevelPlugin.increaseStartLevel(getBeginningStartLevel());
 
         // Mark Framework as active in the bundle manager
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        BundleManagerImpl bundleManager = injectedBundleManager.getValue();
         bundleManager.injectedFrameworkActive.inject(Boolean.TRUE);
 
         // A framework event of type STARTED is fired
-        FrameworkEventsPlugin eventsPlugin = getValue().getFrameworkEventsPlugin();
+        FrameworkEvents eventsPlugin = getValue().getFrameworkEventsPlugin();
         eventsPlugin.fireFrameworkEvent(getSystemBundle(), FrameworkEvent.STARTED, null);
 
         LOGGER.infoFrameworkStarted();
@@ -133,7 +151,7 @@ public final class FrameworkActive extends AbstractFrameworkService {
 
     @Override
     public void stop(StopContext context) {
-        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        BundleManagerImpl bundleManager = injectedBundleManager.getValue();
         bundleManager.injectedFrameworkActive.uninject();
         super.stop(context);
     }
@@ -161,14 +179,14 @@ public final class FrameworkActive extends AbstractFrameworkService {
         private final Mode initialMode;
 
         FrameworkActivated(Mode initialMode) {
-            super(Services.FRAMEWORK_ACTIVE);
+            super(IntegrationServices.FRAMEWORK_ACTIVE);
             this.initialMode = initialMode;
         }
 
         @Override
         protected void addServiceDependencies(ServiceBuilder<BundleContext> builder) {
-            builder.addDependency(Services.FRAMEWORK_INIT, BundleContext.class, injectedBundleContext);
-            builder.addDependency(InternalServices.FRAMEWORK_STATE_ACTIVE);
+            builder.addDependency(IntegrationServices.FRAMEWORK_INIT, BundleContext.class, injectedBundleContext);
+            builder.addDependency(IntegrationServices.FRAMEWORK_ACTIVE_INTERNAL);
             builder.setInitialMode(initialMode);
         }
 

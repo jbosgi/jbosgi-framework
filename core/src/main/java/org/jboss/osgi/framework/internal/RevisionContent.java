@@ -21,7 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import java.io.IOException;
 import java.net.URL;
@@ -69,7 +69,7 @@ final class RevisionContent implements EntriesProvider {
         LOGGER.tracef("new RevisionContent: %s", identity);
     }
 
-    static RevisionContent findRevisionContent(BundleManagerPlugin bundleManager, String identity) {
+    static RevisionContent findRevisionContent(BundleManagerImpl bundleManager, String identity) {
         assert identity != null : "Null identity";
         String[] parts = identity.split("-");
         assert parts.length == 4 : "Invalid identity: " + identity;

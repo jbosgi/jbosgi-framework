@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.launch;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.test.osgi.framework.launch;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.launch;
 
 import static org.junit.Assert.assertEquals;
 import java.io.InputStream;

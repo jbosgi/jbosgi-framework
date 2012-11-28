@@ -30,7 +30,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 
-import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.AbstractVFS;
@@ -55,11 +55,11 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
     @Test
     public void testBundleStorageForInputStream() throws Exception {
 
-        BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+        BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
         assertNotNull("BundleStoragePlugin not null", storagePlugin);
 
         JavaArchive archive = getArchive();
-        InternalStorageState storageState = storagePlugin.createStorageState(1, archive.getName(), 1, toVirtualFile(archive));
+        StorageState storageState = storagePlugin.createStorageState(1, archive.getName(), 1, toVirtualFile(archive));
         assertStorageState(storageState);
 
         storagePlugin.deleteStorageState(storageState);
@@ -81,7 +81,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
     @Test
     public void testBundleStorageForExternalFile() throws Exception {
 
-        BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+        BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
         assertNotNull("BundleStoragePlugin not null", storagePlugin);
 
         File file = new File(storagePlugin.getStorageDir(0) + "/testBundleExternalFile.jar");
@@ -90,7 +90,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
         fos.close();
 
         VirtualFile rootFile = AbstractVFS.toVirtualFile(file.toURI().toURL());
-        InternalStorageState storageState = storagePlugin.createStorageState(1, file.getAbsolutePath(), 1, rootFile);
+        StorageState storageState = storagePlugin.createStorageState(1, file.getAbsolutePath(), 1, rootFile);
         assertStorageState(storageState);
 
         storagePlugin.deleteStorageState(storageState);

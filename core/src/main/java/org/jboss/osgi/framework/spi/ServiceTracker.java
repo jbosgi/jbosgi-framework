@@ -22,7 +22,7 @@ package org.jboss.osgi.framework.spi;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,7 +39,6 @@ import org.jboss.msc.service.AbstractServiceListener;
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.State;
-import org.jboss.msc.service.ServiceController.Substate;
 import org.jboss.msc.service.ServiceController.Transition;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
@@ -109,9 +108,8 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
         synchronized (trackedControllers) {
             Service<? extends S> service = controller.getService();
             if (!allComplete.get()) {
-                Substate targetState = transition.getAfter();
-                switch (targetState) {
-                    case UP:
+                switch (transition) {
+                    case STARTING_to_UP:
                         if (!(service instanceof SynchronousListenerService)) {
                             LOGGER.tracef("ServiceTracker %s transition to UP: %s", trackerName, controller.getName());
                             started.add(controller);
@@ -119,7 +117,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
                             serviceCompleteInternal(controller, false);
                         }
                         break;
-                    case START_FAILED:
+                    case STARTING_to_START_FAILED:
                         if (!(service instanceof SynchronousListenerService)) {
                             LOGGER.tracef("ServiceTracker %s transition to START_FAILED: %s", trackerName, controller.getName());
                             failed.add(controller);
@@ -127,7 +125,7 @@ public class ServiceTracker<S> extends AbstractServiceListener<S> {
                             serviceCompleteInternal(controller, true);
                         }
                         break;
-                    case DOWN:
+                    case START_REQUESTED_to_DOWN:
                         serviceCompleteInternal(controller, false);
                         break;
                 }

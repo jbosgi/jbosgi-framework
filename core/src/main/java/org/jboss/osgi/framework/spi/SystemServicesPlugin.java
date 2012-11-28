@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,17 +19,36 @@ package org.jboss.osgi.framework.spi;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.spi;
 
-import org.jboss.msc.service.Service;
+import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.osgi.framework.BundleContext;
 
 /**
- * A service that registers additional system services.
+ * A noop placeholder for additional system services
  *
  * @author thomas.diesler@jboss.com
- * @since 25-Mar-2011
+ * @since 04-Feb-2011
  */
-public interface SystemServicesPlugin extends Service<SystemServicesPlugin> {
+public class SystemServicesPlugin extends AbstractIntegrationService<SystemServices> implements SystemServices {
 
-    void registerSystemServices(BundleContext context);
+    public SystemServicesPlugin() {
+        super(IntegrationServices.SYSTEM_SERVICES_PLUGIN);
+    }
+
+    @Override
+    protected void addServiceDependencies(ServiceBuilder<SystemServices> builder) {
+        builder.setInitialMode(Mode.ON_DEMAND);
+    }
+
+    @Override
+    public void registerSystemServices(BundleContext context) {
+        // do nothing
+    }
+
+    @Override
+    public SystemServices getValue() {
+        return this;
+    }
 }

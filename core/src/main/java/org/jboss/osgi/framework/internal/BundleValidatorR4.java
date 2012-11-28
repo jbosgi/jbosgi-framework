@@ -21,7 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 import static org.osgi.framework.Constants.EXTENSION_BOOTCLASSPATH;
 import static org.osgi.framework.Constants.EXTENSION_DIRECTIVE;
 import static org.osgi.framework.Constants.EXTENSION_FRAMEWORK;

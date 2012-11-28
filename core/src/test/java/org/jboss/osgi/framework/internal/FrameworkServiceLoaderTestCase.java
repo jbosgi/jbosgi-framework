@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
+import org.jboss.osgi.framework.spi.ModuleManager;
 import org.junit.Test;
 
 import java.net.URL;
@@ -46,7 +47,7 @@ public class FrameworkServiceLoaderTestCase extends AbstractFrameworkTest {
 
         // The {@link ModularURLStreamHandlerFactory} follows a pattern similar to this.
         SystemBundleState systemBundle = getBundleManager().getSystemBundle();
-        ModuleManagerPlugin plugin = getFrameworkState().getModuleManagerPlugin();
+        ModuleManager plugin = getFrameworkState().getModuleManager();
         Module frameworkModule = plugin.loadModule(systemBundle.getModuleIdentifier());
         assertNotNull("Framework module not null", frameworkModule);
 

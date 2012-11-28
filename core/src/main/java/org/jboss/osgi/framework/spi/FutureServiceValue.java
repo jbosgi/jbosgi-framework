@@ -22,8 +22,8 @@ package org.jboss.osgi.framework.spi;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;

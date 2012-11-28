@@ -21,7 +21,7 @@ package org.jboss.osgi.framework.spi;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;

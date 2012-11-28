@@ -21,7 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,7 +36,13 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.spi.BundleLifecycle;
+import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.DeploymentProvider;
+import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FutureServiceValue;
+import org.jboss.osgi.framework.spi.ServiceManager;
+import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -85,7 +91,7 @@ abstract class AbstractBundleContext implements BundleContext {
         return bundleState;
     }
 
-    BundleManagerPlugin getBundleManager() {
+    BundleManagerImpl getBundleManager() {
         return bundleState.getBundleManager();
     }
 
@@ -171,7 +177,7 @@ abstract class AbstractBundleContext implements BundleContext {
             if (rootFile == null)
                 throw MESSAGES.cannotObtainVirtualFileForLocation(null, location);
 
-            DeploymentFactoryPlugin deploymentPlugin = frameworkState.getDeploymentFactoryPlugin();
+            DeploymentProvider deploymentPlugin = frameworkState.getDeploymentFactoryPlugin();
             dep = deploymentPlugin.createDeployment(location, rootFile);
 
             return installBundle(dep);
@@ -189,8 +195,10 @@ abstract class AbstractBundleContext implements BundleContext {
         checkValidBundleContext();
 
         FrameworkState frameworkState = getFrameworkState();
-        BundleManagerPlugin bundleManager = frameworkState.getBundleManager();
-        bundleManager.installBundle(dep, bundleManager.getServiceTarget(), null);
+        BundleManagerImpl bundleManager = frameworkState.getBundleManager();
+        FrameworkCoreServices coreServices = frameworkState.getCoreServices();
+        BundleLifecycle bundleLifecycle = coreServices.getBundleLifecycle();
+        bundleLifecycle.install(dep);
 
         ServiceName serviceName = dep.getAttachment(ServiceName.class);
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
@@ -299,7 +307,7 @@ abstract class AbstractBundleContext implements BundleContext {
         if (service == null)
             throw MESSAGES.illegalArgumentNull("service");
         checkValidBundleContext();
-        ServiceManagerPlugin serviceManager = getFrameworkState().getServiceManagerPlugin();
+        ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         ServiceState serviceState = serviceManager.registerService(bundleState, classNames, service, properties);
         return serviceState.getRegistration();
     }
@@ -309,7 +317,7 @@ abstract class AbstractBundleContext implements BundleContext {
         if (className == null)
             throw MESSAGES.illegalArgumentNull("className");
         checkValidBundleContext();
-        ServiceManagerPlugin serviceManager = getFrameworkState().getServiceManagerPlugin();
+        ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         ServiceState serviceState = serviceManager.getServiceReference(bundleState, className);
         return (serviceState != null ? new ServiceReferenceWrapper(serviceState) : null);
     }
@@ -317,7 +325,7 @@ abstract class AbstractBundleContext implements BundleContext {
     @Override
     public ServiceReference[] getServiceReferences(String className, String filter) throws InvalidSyntaxException {
         checkValidBundleContext();
-        ServiceManagerPlugin serviceManager = getFrameworkState().getServiceManagerPlugin();
+        ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         List<ServiceState> srefs = serviceManager.getServiceReferences(bundleState, className, filter, true);
         if (srefs.isEmpty())
             return null;
@@ -332,7 +340,7 @@ abstract class AbstractBundleContext implements BundleContext {
     @Override
     public ServiceReference[] getAllServiceReferences(String className, String filter) throws InvalidSyntaxException {
         checkValidBundleContext();
-        ServiceManagerPlugin serviceManager = getFrameworkState().getServiceManagerPlugin();
+        ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         List<ServiceState> srefs = serviceManager.getServiceReferences(bundleState, className, filter, false);
         if (srefs.isEmpty())
             return null;
@@ -349,8 +357,8 @@ abstract class AbstractBundleContext implements BundleContext {
         if (sref == null)
             throw MESSAGES.illegalArgumentNull("sref");
         checkValidBundleContext();
-        ServiceState serviceState = ServiceState.assertServiceState(sref);
-        ServiceManagerPlugin serviceManager = getFrameworkState().getServiceManagerPlugin();
+        ServiceStateImpl serviceState = ServiceStateImpl.assertServiceState(sref);
+        ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         Object service = serviceManager.getService(bundleState, serviceState);
         return service;
     }
@@ -360,14 +368,14 @@ abstract class AbstractBundleContext implements BundleContext {
         if (sref == null)
             throw MESSAGES.illegalArgumentNull("sref");
         checkValidBundleContext();
-        ServiceState serviceState = ServiceState.assertServiceState(sref);
+        ServiceState serviceState = ServiceStateImpl.assertServiceState(sref);
         return getServiceManager().ungetService(bundleState, serviceState);
     }
 
     @Override
     public File getDataFile(String filename) {
         checkValidBundleContext();
-        BundleStoragePlugin storagePlugin = getFrameworkState().getBundleStoragePlugin();
+        BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
         return storagePlugin.getDataFile(bundleState.getBundleId(), filename);
     }
 
@@ -382,11 +390,11 @@ abstract class AbstractBundleContext implements BundleContext {
             throw MESSAGES.illegalStateInvalidBundleContext(bundleState);
     }
 
-    private ServiceManagerPlugin getServiceManager() {
+    private ServiceManager getServiceManager() {
         return getFrameworkState().getServiceManagerPlugin();
     }
 
-    private FrameworkEventsPlugin getFrameworkEventsPlugin() {
+    private FrameworkEvents getFrameworkEventsPlugin() {
         return getFrameworkState().getFrameworkEventsPlugin();
     }
 

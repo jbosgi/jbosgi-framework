@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import java.util.Comparator;
 
+import org.jboss.osgi.framework.spi.ServiceState;
 import org.osgi.framework.ServiceReference;
 
 /**
@@ -49,8 +50,8 @@ final class ServiceReferenceComparator implements Comparator<ServiceReference> {
 
     @Override
     public int compare(ServiceReference ref1, ServiceReference ref2) {
-        ServiceState s1 = ServiceState.assertServiceState((ServiceReference) ref1);
-        ServiceState s2 = ServiceState.assertServiceState((ServiceReference) ref2);
+        ServiceState s1 = ServiceStateImpl.assertServiceState((ServiceReference) ref1);
+        ServiceState s2 = ServiceStateImpl.assertServiceState((ServiceReference) ref2);
 
         // If this ServiceReference and the specified ServiceReference have the same service id they are equal
         if (s1.getServiceId() == s2.getServiceId())

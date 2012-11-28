@@ -34,9 +34,9 @@ import org.osgi.framework.ServiceRegistration;
  */
 final class ServiceRegistrationWrapper implements ServiceRegistration {
 
-    private ServiceState delegate;
+    private ServiceStateImpl delegate;
 
-    ServiceRegistrationWrapper(ServiceState serviceState) {
+    ServiceRegistrationWrapper(ServiceStateImpl serviceState) {
         assert serviceState != null : "Null serviceState";
         this.delegate = serviceState;
     }

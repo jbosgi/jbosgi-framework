@@ -21,7 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +34,7 @@ import org.jboss.modules.ClassSpec;
 import org.jboss.modules.PackageSpec;
 import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoader;
+import org.jboss.osgi.framework.spi.NativeLibraryProvider;
 
 /**
  * @author thomas.diesler@jboss.com

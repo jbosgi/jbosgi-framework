@@ -24,6 +24,8 @@ package org.jboss.osgi.framework.internal;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
 
+import org.jboss.osgi.framework.spi.URLHandlerSupport;
+
 
 /**
  * A {@link URLStreamHandlerFactory} that provides {@link URLStreamHandler} instances which are backed by an OSGi service.
@@ -37,9 +39,9 @@ import java.net.URLStreamHandlerFactory;
  */
 final class OSGiStreamHandlerFactory implements URLStreamHandlerFactory {
 
-    private URLHandlerPlugin delegate;
+    private URLHandlerSupport delegate;
 
-    OSGiStreamHandlerFactory(URLHandlerPlugin handlerPlugin) {
+    OSGiStreamHandlerFactory(URLHandlerSupport handlerPlugin) {
         this.delegate = handlerPlugin;
     }
 

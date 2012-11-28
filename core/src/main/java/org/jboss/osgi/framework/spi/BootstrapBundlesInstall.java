@@ -21,8 +21,8 @@ package org.jboss.osgi.framework.spi;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
-import static org.jboss.osgi.framework.internal.InternalServices.BUNDLE_BASE_NAME;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.spi.IntegrationServices.BUNDLE_BASE_NAME;
 
 import java.util.HashSet;
 import java.util.List;
@@ -35,8 +35,6 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.BundleManager;
-import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
@@ -56,8 +54,8 @@ public abstract class BootstrapBundlesInstall<T> extends BootstrapBundlesService
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
-        builder.addDependency(Services.FRAMEWORK_CREATE);
+        builder.addDependency(IntegrationServices.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(IntegrationServices.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

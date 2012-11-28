@@ -21,7 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
-import static org.jboss.osgi.framework.internal.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import java.io.IOException;
 import java.net.URL;
@@ -32,7 +32,6 @@ import java.util.List;
 
 import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.AbstractVFS;
@@ -53,9 +52,8 @@ abstract class UserBundleRevision extends BundleStateRevision {
     private final List<RevisionContent> contentList;
     private final EntriesProvider entriesProvider;
 
-    UserBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
+    UserBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
         super(frameworkState, metadata, storageState);
-
         this.deployment = dep;
 
         if (dep.getRoot() != null) {
@@ -67,6 +65,8 @@ abstract class UserBundleRevision extends BundleStateRevision {
             contentList = Collections.emptyList();
             addAttachment(Module.class, module);
         }
+
+        addAttachment(Deployment.class, dep);
     }
 
     static UserBundleRevision assertBundleRevision(BundleRevision brev) {

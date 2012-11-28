@@ -27,7 +27,6 @@ import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.osgi.framework.BundleManager;
 import org.osgi.framework.launch.Framework;
 
 /**

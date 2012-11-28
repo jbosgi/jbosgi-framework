@@ -29,7 +29,14 @@ package org.jboss.osgi.framework.internal;
  */
 abstract class UserBundleResolvedService<T extends UserBundleState> extends AbstractBundleService<T> {
 
-    UserBundleResolvedService(FrameworkState frameworkState) {
-        super(frameworkState);
+    private final T bundleState;
+    
+    UserBundleResolvedService(T bundleState) {
+        super(bundleState.getFrameworkState());
+        this.bundleState = bundleState;
+    }
+
+    public T getBundleState() {
+        return bundleState;
     }
 }

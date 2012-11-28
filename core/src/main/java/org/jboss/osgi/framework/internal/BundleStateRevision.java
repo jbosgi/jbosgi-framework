@@ -1,5 +1,3 @@
-package org.jboss.osgi.framework.internal;
-
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import java.net.URL;
 
@@ -28,7 +27,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.osgi.framework.internal.BundleStoragePlugin.InternalStorageState;
+import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.ResourceBuilderException;
@@ -53,13 +52,13 @@ import org.osgi.resource.Wiring;
  */
 abstract class BundleStateRevision extends AbstractBundleRevision {
 
-    private final OSGiMetaData metadata;
     private final FrameworkState frameworkState;
-    private final InternalStorageState storageState;
+    private final OSGiMetaData metadata;
+    private final StorageState storageState;
 
     private ModuleClassLoader moduleClassLoader;
 
-    BundleStateRevision(FrameworkState frameworkState, OSGiMetaData metadata, InternalStorageState storageState) throws BundleException {
+    BundleStateRevision(FrameworkState frameworkState, OSGiMetaData metadata, StorageState storageState) throws BundleException {
         assert frameworkState != null : "Null frameworkState";
         assert metadata != null : "Null metadata";
         assert storageState != null : "Null storageState";
@@ -83,6 +82,7 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
         }
 
         addAttachment(StorageState.class, storageState);
+        addAttachment(OSGiMetaData.class, metadata);
     }
 
     FrameworkState getFrameworkState() {
@@ -101,7 +101,7 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
         return metadata;
     }
 
-    InternalStorageState getStorageState() {
+    StorageState getStorageState() {
         return storageState;
     }
 
@@ -126,7 +126,7 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
         ModuleIdentifier identifier = getModuleIdentifier();
         if (moduleClassLoader == null && identifier != null) {
             try {
-                ModuleManagerPlugin moduleManager = frameworkState.getModuleManagerPlugin();
+                ModuleManager moduleManager = getFrameworkState().getModuleManager();
                 Module module = moduleManager.loadModule(identifier);
                 moduleClassLoader = module.getClassLoader();
             } catch (ModuleLoadException ex) {
@@ -137,7 +137,7 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
     }
 
     void refreshRevision() throws BundleException {
-        XEnvironment env = frameworkState.getEnvironment();
+        XEnvironment env = getFrameworkState().getEnvironment();
         env.refreshResources(this);
         refreshRevisionInternal();
     }
