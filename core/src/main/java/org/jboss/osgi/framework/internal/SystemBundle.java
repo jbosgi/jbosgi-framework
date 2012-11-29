@@ -44,7 +44,6 @@ import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.framework.spi.SystemPaths;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
-import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -56,18 +55,18 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class SystemBundlePlugin extends AbstractIntegrationService<XBundle> {
+final class SystemBundle extends AbstractIntegrationService<SystemBundleState> {
 
     private final FrameworkState frameworkState;
     private SystemBundleState bundleState;
 
-    SystemBundlePlugin(FrameworkState frameworkState) {
+    SystemBundle(FrameworkState frameworkState) {
         super(IntegrationServices.SYSTEM_BUNDLE_INTERNAL);
         this.frameworkState = frameworkState;
     }
 
     @Override
-    protected void addServiceDependencies(ServiceBuilder<XBundle> builder) {
+    protected void addServiceDependencies(ServiceBuilder<SystemBundleState> builder) {
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, frameworkState.injectedEnvironment);
         builder.addDependency(IntegrationServices.BUNDLE_STORAGE, BundleStorage.class, frameworkState.injectedBundleStorage);
         builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, frameworkState.injectedLockManager);
@@ -77,9 +76,9 @@ final class SystemBundlePlugin extends AbstractIntegrationService<XBundle> {
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
+    protected SystemBundleState createServiceValue(StartContext startContext) throws StartException {
         StorageState storageState = null;
-        BundleManagerImpl bundleManager = frameworkState.getBundleManager();
+        BundleManagerPlugin bundleManager = frameworkState.getBundleManagerPlugin();
         try {
             OSGiMetaData metadata = createMetaData();
             storageState = createStorageState();
@@ -96,17 +95,13 @@ final class SystemBundlePlugin extends AbstractIntegrationService<XBundle> {
             }
             throw new StartException(ex);
         }
+        return bundleState;
     }
 
     @Override
     public void stop(StopContext context) {
-        BundleManagerImpl bundleManager = frameworkState.getBundleManager();
+        BundleManagerPlugin bundleManager = frameworkState.getBundleManagerPlugin();
         bundleManager.injectedSystemBundle.uninject();
-    }
-
-    @Override
-    public XBundle getValue() throws IllegalStateException {
-        return bundleState;
     }
 
     private StorageState createStorageState() {

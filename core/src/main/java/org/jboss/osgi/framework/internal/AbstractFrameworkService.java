@@ -21,15 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
-
-import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
-import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.framework.spi.BundleManager;
 
 /**
  * The base of all framework services.
@@ -43,23 +37,14 @@ abstract class AbstractFrameworkService extends AbstractIntegrationService<Frame
         super(serviceName);
     }
 
-    @Override
-    public void start(StartContext context) throws StartException {
-        ServiceController<?> controller = context.getController();
-        LOGGER.tracef("Starting: %s in mode %s", controller.getName(), controller.getMode());
+    BundleManager getBundleManager() {
+        FrameworkState frameworkState = getValue();
+        return frameworkState.getBundleManager();
     }
 
-    @Override
-    public void stop(StopContext context) {
-        ServiceController<?> controller = context.getController();
-        LOGGER.tracef("Stopping: %s in mode %s", controller.getName(), controller.getMode());
+    BundleManagerPlugin getBundleManagerPlugin() {
+        BundleManager bundleManager = getBundleManager();
+        return BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
     }
 
-    BundleManagerImpl getBundleManager() {
-        return getValue().getBundleManager();
-    }
-
-    XBundle getSystemBundle() {
-        return getValue().getSystemBundle();
-    }
 }

@@ -33,12 +33,9 @@ import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.PackageAdminImpl;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolver;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.packageadmin.ExportedPackage;
 import org.osgi.service.packageadmin.PackageAdmin;
-import org.osgi.service.packageadmin.RequiredBundle;
 import org.osgi.service.startlevel.StartLevel;
 
 /**
@@ -48,7 +45,7 @@ import org.osgi.service.startlevel.StartLevel;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 06-Jul-2010
  */
-public class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdminSupport> implements PackageAdminSupport {
+public class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdminSupport> {
 
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private final InjectedValue<FrameworkEvents> injectedFrameworkEvents = new InjectedValue<FrameworkEvents>();
@@ -57,7 +54,6 @@ public class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdminSuppor
     private final InjectedValue<XResolver> injectedResolver = new InjectedValue<XResolver>();
     private final InjectedValue<StartLevel> injectedStartLevel = new InjectedValue<StartLevel>();
     private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
-    private PackageAdminSupport packageAdmin;
     private ServiceRegistration registration;
 
     public PackageAdminPlugin() {
@@ -80,74 +76,24 @@ public class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdminSuppor
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
+        BundleContext systemContext = injectedSystemContext.getValue();
+        registration = systemContext.registerService(PackageAdmin.class.getName(), getValue(), null);
+    }
+
+    @Override
+    protected PackageAdminSupport createServiceValue(StartContext startContext) throws StartException {
         XEnvironment env = injectedEnvironment.getValue();
         FrameworkEvents events = injectedFrameworkEvents.getValue();
         ModuleManager moduleManager = injectedModuleManager.getValue();
         XResolver resolver = injectedResolver.getValue();
         StartLevel startLevel = injectedStartLevel.getValue();
         LockManager lockManager = injectedLockManager.getValue();
-        packageAdmin = new PackageAdminImpl(getBundleManager(), env, events, moduleManager, resolver, startLevel, lockManager, getExecutorService(), new AtomicBoolean(false));
-        BundleContext systemContext = injectedSystemContext.getValue();
-        registration = systemContext.registerService(PackageAdmin.class.getName(), this, null);
+        return new PackageAdminImpl(getBundleManager(), env, events, moduleManager, resolver, startLevel, lockManager, getExecutorService(), new AtomicBoolean(false));
     }
 
     @Override
     public void stop(StopContext context) {
         registration.unregister();
         super.stop(context);
-    }
-
-    @Override
-    public PackageAdminSupport getValue() {
-        return this;
-    }
-
-    public void enableImmediateExecution(boolean enable) {
-        packageAdmin.enableImmediateExecution(enable);
-    }
-
-    public ExportedPackage[] getExportedPackages(Bundle bundle) {
-        return packageAdmin.getExportedPackages(bundle);
-    }
-
-    public ExportedPackage[] getExportedPackages(String name) {
-        return packageAdmin.getExportedPackages(name);
-    }
-
-    public ExportedPackage getExportedPackage(String name) {
-        return packageAdmin.getExportedPackage(name);
-    }
-
-    public void refreshPackages(Bundle[] bundles) {
-        packageAdmin.refreshPackages(bundles);
-    }
-
-    public boolean resolveBundles(Bundle[] bundles) {
-        return packageAdmin.resolveBundles(bundles);
-    }
-
-    public RequiredBundle[] getRequiredBundles(String symbolicName) {
-        return packageAdmin.getRequiredBundles(symbolicName);
-    }
-
-    public Bundle[] getBundles(String symbolicName, String versionRange) {
-        return packageAdmin.getBundles(symbolicName, versionRange);
-    }
-
-    public Bundle[] getFragments(Bundle bundle) {
-        return packageAdmin.getFragments(bundle);
-    }
-
-    public Bundle[] getHosts(Bundle bundle) {
-        return packageAdmin.getHosts(bundle);
-    }
-
-    @SuppressWarnings("rawtypes")
-    public Bundle getBundle(Class clazz) {
-        return packageAdmin.getBundle(clazz);
-    }
-
-    public int getBundleType(Bundle bundle) {
-        return packageAdmin.getBundleType(bundle);
     }
 }

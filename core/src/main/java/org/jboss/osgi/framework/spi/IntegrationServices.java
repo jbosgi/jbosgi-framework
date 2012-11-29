@@ -72,7 +72,7 @@ public interface IntegrationServices {
 	ServiceName BUNDLE_STORAGE = Services.JBOSGI_BASE_NAME.append("BundleStorage");
     /** The {@link DeploymentProvider} service name */
     ServiceName DEPLOYMENT_PROVIDER_PLUGIN = Services.JBOSGI_BASE_NAME.append("DeploymentProvider");
-	/** The {@link FrameworkCoreServices} service name. */
+	/** The {@link CoreServices} service name. */
     ServiceName FRAMEWORK_CORE_SERVICES = Services.JBOSGI_BASE_NAME.append("CoreServices");
     /** The {@link FrameworkEvents} service name */
     ServiceName FRAMEWORK_EVENTS = Services.JBOSGI_BASE_NAME.append("FrameworkEvents");

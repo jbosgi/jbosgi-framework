@@ -25,6 +25,8 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
 
 public abstract class BootstrapBundlesService<T> extends AbstractIntegrationService<T> {
 
@@ -54,5 +56,10 @@ public abstract class BootstrapBundlesService<T> extends AbstractIntegrationServ
 
     public ServiceName getNextService() {
         return IntegrationServices.BootstrapPhase.serviceName(baseName, phase.next());
+    }
+
+    @Override
+    protected T createServiceValue(StartContext startContext) throws StartException {
+        return null;
     }
 }

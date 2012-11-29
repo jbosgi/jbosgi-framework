@@ -23,6 +23,11 @@ package org.jboss.osgi.framework.spi;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.StopContext;
+import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.Services;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -31,7 +36,9 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 04-Feb-2011
  */
-public class SystemServicesPlugin extends AbstractIntegrationService<SystemServices> implements SystemServices {
+public class SystemServicesPlugin extends AbstractIntegrationService<SystemServices> {
+
+    private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
 
     public SystemServicesPlugin() {
         super(IntegrationServices.SYSTEM_SERVICES_PLUGIN);
@@ -39,16 +46,37 @@ public class SystemServicesPlugin extends AbstractIntegrationService<SystemServi
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<SystemServices> builder) {
+        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override
-    public void registerSystemServices(BundleContext context) {
-        // do nothing
+    public void start(StartContext startContext) throws StartException {
+        super.start(startContext);
+        BundleContext systemContext = injectedSystemContext.getValue();
+        getValue().registerServices(systemContext);
     }
 
     @Override
-    public SystemServices getValue() {
-        return this;
+    protected SystemServices createServiceValue(StartContext startContext) throws StartException {
+        return new SystemServicesImpl();
+    }
+
+    @Override
+    public void stop(StopContext context) {
+        getValue().unregisterServices();
+    }
+
+    static class SystemServicesImpl implements SystemServices {
+
+        @Override
+        public void registerServices(BundleContext context) {
+            // do nothing
+        }
+
+        @Override
+        public void unregisterServices() {
+            // do nothing
+        }
     }
 }

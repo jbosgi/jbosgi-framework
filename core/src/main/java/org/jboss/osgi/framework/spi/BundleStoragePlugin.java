@@ -21,10 +21,7 @@
  */
 package org.jboss.osgi.framework.spi;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -33,7 +30,6 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.BundleStorageImpl;
-import org.jboss.osgi.vfs.VirtualFile;
 
 /**
  * A simple implementation of a BundleStorage
@@ -41,11 +37,10 @@ import org.jboss.osgi.vfs.VirtualFile;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public class BundleStoragePlugin extends AbstractIntegrationService<BundleStorage> implements BundleStorage {
+public class BundleStoragePlugin extends AbstractIntegrationService<BundleStorage> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final boolean firstInit;
-    private BundleStorage bundleStorage;
 
     public BundleStoragePlugin(boolean firstInit) {
         super(IntegrationServices.BUNDLE_STORAGE);
@@ -59,58 +54,20 @@ public class BundleStoragePlugin extends AbstractIntegrationService<BundleStorag
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        bundleStorage = new BundleStorageImpl(bundleManager);
+    public void start(StartContext startContext) throws StartException {
+        super.start(startContext);
         try {
-            initialize(bundleManager.getProperties(), firstInit);
+            BundleStorage bundleStorage = getValue();
+            BundleManager bundleManager = injectedBundleManager.getValue();
+            bundleStorage.initialize(bundleManager.getProperties(), firstInit);
         } catch (IOException ex) {
             throw new StartException(ex);
         }
     }
 
     @Override
-    public BundleStorage getValue() {
-        return this;
-    }
-
-    @Override
-    public void initialize(Map<String, Object> props, boolean firstInit) throws IOException {
-        bundleStorage.initialize(props, firstInit);
-    }
-
-    @Override
-    public StorageState createStorageState(long bundleId, String location, int startlevel, VirtualFile rootFile) throws IOException {
-        return bundleStorage.createStorageState(bundleId, location, startlevel, rootFile);
-    }
-
-    @Override
-    public void deleteStorageState(StorageState storageState) {
-        bundleStorage.deleteStorageState(storageState);
-    }
-
-    @Override
-    public Set<StorageState> getStorageStates() {
-        return bundleStorage.getStorageStates();
-    }
-
-    @Override
-    public StorageState getStorageState(String location) {
-        return bundleStorage.getStorageState(location);
-    }
-
-    @Override
-    public File getStorageDir(long bundleId) {
-        return bundleStorage.getStorageDir(bundleId);
-    }
-
-    @Override
-    public File getStorageArea() {
-        return bundleStorage.getStorageArea();
-    }
-
-    @Override
-    public File getDataFile(long bundleId, String filename) {
-        return bundleStorage.getDataFile(bundleId, filename);
+    protected BundleStorage createServiceValue(StartContext startContext) throws StartException {
+        BundleManager bundleManager = injectedBundleManager.getValue();
+        return new BundleStorageImpl(bundleManager);
     }
 }

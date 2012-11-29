@@ -21,7 +21,6 @@ package org.jboss.osgi.framework.spi;
  * #L%
  */
 
-import org.jboss.msc.service.Service;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -30,7 +29,9 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 25-Mar-2011
  */
-public interface SystemServices extends Service<SystemServices> {
+public interface SystemServices {
 
-    void registerSystemServices(BundleContext context);
+    void registerServices(BundleContext context);
+
+    void unregisterServices();
 }

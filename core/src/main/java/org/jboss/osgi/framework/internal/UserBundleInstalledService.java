@@ -130,8 +130,8 @@ abstract class UserBundleInstalledService<B extends UserBundleState, R extends U
                 BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
                 Integer startlevel = dep.getStartLevel();
                 if (startlevel == null) {
-                    FrameworkCoreServices coreServices = getFrameworkState().getCoreServices();
-                    startlevel = coreServices.getStartLevelPlugin().getInitialBundleStartLevel();
+                    CoreServices coreServices = getFrameworkState().getCoreServices();
+                    startlevel = coreServices.getStartLevelSupport().getInitialBundleStartLevel();
                 }
                 storageState = storagePlugin.createStorageState(bundleId, location, startlevel, rootFile);
                 dep.addAttachment(StorageState.class, storageState);
@@ -194,7 +194,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState, R extends U
         OSGiMetaData metadata = userBundle.getOSGiMetaData();
         if (metadata.getBundleNativeCode() != null) {
             FrameworkState frameworkState = userBundle.getFrameworkState();
-            NativeCode nativeCodePlugin = frameworkState.getNativeCodePlugin();
+            NativeCode nativeCodePlugin = frameworkState.getNativeCode();
             nativeCodePlugin.deployNativeCode(dep);
         }
     }

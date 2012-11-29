@@ -39,8 +39,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -92,7 +90,7 @@ import org.osgi.resource.Resource;
  * @author David Bosschaert
  * @since 29-Jun-2010
  */
-final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> implements BundleManager {
+final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager> implements BundleManager {
 
     // The framework execution environment
     private static String OSGi_FRAMEWORK_EXECUTIONENVIRONMENT;
@@ -111,7 +109,7 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
 
     private static String implementationVersion;
     static {
-        implementationVersion = BundleManagerImpl.class.getPackage().getImplementationVersion();
+        implementationVersion = BundleManagerPlugin.class.getPackage().getImplementationVersion();
     }
 
     final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
@@ -131,7 +129,7 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
     private ServiceTarget serviceTarget;
     private int stoppedEvent;
 
-    BundleManagerImpl(ServiceContainer serviceContainer, FrameworkBuilder frameworkBuilder) {
+    BundleManagerPlugin(ServiceContainer serviceContainer, FrameworkBuilder frameworkBuilder) {
         super(Services.BUNDLE_MANAGER);
         this.serviceContainer = serviceContainer;
         this.frameworkBuilder = frameworkBuilder;
@@ -170,6 +168,7 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
 
     @Override
     public void start(StartContext context) throws StartException {
+        super.start(context);
         LOGGER.infoFrameworkImplementation(implementationVersion);
         serviceTarget = context.getChildTarget();
         LOGGER.debugf("Framework properties");
@@ -179,8 +178,14 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
     }
 
     @Override
-    public BundleManagerImpl getValue() throws IllegalStateException {
+    protected BundleManager createServiceValue(StartContext startContext) {
         return this;
+    }
+
+    static BundleManagerPlugin assertBundleManagerPlugin(BundleManager bundleManager) {
+        assert bundleManager != null : "Null bundleManager";
+        assert bundleManager instanceof BundleManagerPlugin : "Not an BundleManagerPlugin: " + bundleManager;
+        return (BundleManagerPlugin) bundleManager;
     }
 
     FrameworkBuilder getFrameworkBuilder() {
@@ -225,7 +230,7 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
 
     static Version getFrameworkVersion() {
         Version version;
-        String versionSpec = BundleManagerImpl.class.getPackage().getImplementationVersion();
+        String versionSpec = BundleManagerPlugin.class.getPackage().getImplementationVersion();
         try {
             version = Version.parseVersion(versionSpec);
         } catch (IllegalArgumentException ex) {
@@ -270,7 +275,8 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
         properties.put(key, value);
     }
 
-    Set<XBundle> getBundles() {
+    @Override
+    public Set<XBundle> getBundles() {
         Set<XBundle> result = new HashSet<XBundle>();
         XEnvironment env = injectedEnvironment.getValue();
         for (Resource aux : env.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
@@ -371,7 +377,7 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
                 // Check that we have valid metadata
                 OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
                 if (metadata == null) {
-                    DeploymentProvider plugin = getFrameworkState().getDeploymentFactoryPlugin();
+                    DeploymentProvider plugin = getFrameworkState().getDeploymentProvider();
                     metadata = plugin.createOSGiMetaData(dep);
                 }
 
@@ -432,7 +438,7 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
             env.uninstallResources(abr);
         }
 
-        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
+        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
         eventsPlugin.fireBundleEvent(userBundle, BundleEvent.UNRESOLVED);
 
         ModuleManager moduleManager = getFrameworkState().getModuleManager();
@@ -492,23 +498,22 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
         }
     }
 
-    public ExecutorService createExecutorService(final String threadName) {
+    @Override
+    public void registerExecutorService(ExecutorService executorService) {
         synchronized (executorServices) {
-            ExecutorService service = Executors.newSingleThreadExecutor(new ThreadFactory() {
-                @Override
-                public Thread newThread(Runnable run) {
-                    Thread thread = new Thread(run);
-                    thread.setName(threadName);
-                    return thread;
-                }
-            });
-            executorServices.add(service);
-            return service;
+            executorServices.add(executorService);
+        }
+    }
+
+    @Override
+    public void unregisterExecutorService(ExecutorService executorService) {
+        synchronized (executorServices) {
+            executorServices.remove(executorService);
         }
     }
 
     void fireFrameworkError(Bundle bundle, String context, Throwable t) {
-        FrameworkEvents plugin = getFrameworkState().getFrameworkEventsPlugin();
+        FrameworkEvents plugin = getFrameworkState().getFrameworkEvents();
         if (t instanceof BundleException) {
             plugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, t);
         } else if (bundle != null) {
@@ -520,7 +525,7 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
     }
 
     void fireFrameworkWarning(AbstractBundleState bundleState, String context, Throwable t) {
-        FrameworkEvents plugin = getFrameworkState().getFrameworkEventsPlugin();
+        FrameworkEvents plugin = getFrameworkState().getFrameworkEvents();
         if (t instanceof BundleException) {
             plugin.fireFrameworkEvent(bundleState, FrameworkEvent.WARNING, t);
         } else if (bundleState != null) {
@@ -554,8 +559,8 @@ final class BundleManagerImpl extends AbstractIntegrationService<BundleManager> 
         setManagerState(Bundle.STOPPING);
 
         // Move to start level 0 in the current thread
-        FrameworkCoreServices coreServices = getFrameworkState().getCoreServices();
-        StartLevelSupport startLevel = coreServices.getStartLevelPlugin();
+        CoreServices coreServices = getFrameworkState().getCoreServices();
+        StartLevelSupport startLevel = coreServices.getStartLevelSupport();
         startLevel.decreaseStartLevel(0);
 
         synchronized (executorServices) {

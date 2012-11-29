@@ -69,7 +69,7 @@ final class RevisionContent implements EntriesProvider {
         LOGGER.tracef("new RevisionContent: %s", identity);
     }
 
-    static RevisionContent findRevisionContent(BundleManagerImpl bundleManager, String identity) {
+    static RevisionContent findRevisionContent(BundleManagerPlugin bundleManager, String identity) {
         assert identity != null : "Null identity";
         String[] parts = identity.split("-");
         assert parts.length == 4 : "Invalid identity: " + identity;

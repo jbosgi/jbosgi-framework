@@ -53,30 +53,26 @@ import org.jboss.osgi.resolver.XBundle;
 public class FrameworkModuleProviderImpl implements FrameworkModuleProvider {
 
     private static final ModuleIdentifier FRAMEWORK_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".framework");
-    private final BundleManagerImpl bundleManager;
+    private final BundleManagerPlugin bundleManager;
     private final SystemPaths systemPaths;
     private Module frameworkModule;
 
     public FrameworkModuleProviderImpl(BundleManager bundleManager, SystemPaths systemPaths) {
-        this.bundleManager = (BundleManagerImpl) bundleManager;
+        this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
         this.systemPaths = systemPaths;
     }
 
     @Override
-    public XBundle getSystemBundle() {
-        return bundleManager.getSystemBundle();
-    }
-    
-    @Override
     public Module getFrameworkModule() {
-        if (frameworkModule == null) {
-            frameworkModule = createFrameworkModule();
+        synchronized (this) {
+            if (frameworkModule == null) {
+                frameworkModule = createFrameworkModule();
+            }
+            return frameworkModule;
         }
-        return frameworkModule;
     }
 
-    @Override
-    public Module createFrameworkModule() {
+    private Module createFrameworkModule() {
 
         ModuleSpec.Builder specBuilder = ModuleSpec.build(FRAMEWORK_MODULE_IDENTIFIER);
         Set<String> bootPaths = systemPaths.getBootDelegationPaths();
@@ -84,7 +80,7 @@ public class FrameworkModuleProviderImpl implements FrameworkModuleProvider {
         PathFilter acceptAll = PathFilters.acceptAll();
         specBuilder.addDependency(DependencySpec.createSystemDependencySpec(bootFilter, acceptAll, bootPaths));
 
-        final ClassLoader classLoader = BundleManagerImpl.class.getClassLoader();
+        final ClassLoader classLoader = BundleManagerPlugin.class.getClassLoader();
         LocalLoader localLoader = new LocalLoader() {
 
             @Override
@@ -108,9 +104,11 @@ public class FrameworkModuleProviderImpl implements FrameworkModuleProvider {
         };
         Set<String> paths = systemPaths.getSystemPaths();
         PathFilter filter = systemPaths.getSystemFilter();
+        SystemBundleState systemBundle = bundleManager.getSystemBundle();
         specBuilder.addDependency(DependencySpec.createLocalDependencySpec(filter, PathFilters.acceptAll(), localLoader, paths));
-        specBuilder.setModuleClassLoaderFactory(new BundleReferenceClassLoader.Factory<XBundle>(getSystemBundle()));
+        specBuilder.setModuleClassLoaderFactory(new BundleReferenceClassLoader.Factory<XBundle>(systemBundle));
 
+        Module frameworkModule;
         try {
             final ModuleSpec moduleSpec = specBuilder.create();
             ModuleLoader moduleLoader = new ModuleLoader() {
@@ -125,9 +123,10 @@ public class FrameworkModuleProviderImpl implements FrameworkModuleProvider {
                     return getClass().getSimpleName();
                 }
             };
-            return moduleLoader.loadModule(specBuilder.getIdentifier());
+            frameworkModule = moduleLoader.loadModule(specBuilder.getIdentifier());
         } catch (ModuleLoadException ex) {
             throw MESSAGES.illegalStateCannotCreateFrameworkModule(ex);
         }
+        return frameworkModule;
     }
 }

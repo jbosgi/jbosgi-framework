@@ -52,7 +52,7 @@ import org.osgi.service.startlevel.StartLevel;
  */
 public final class StartLevelImpl implements StartLevelSupport {
 
-    private final BundleManagerImpl bundleManager;
+    private final BundleManagerPlugin bundleManager;
     private final FrameworkEvents events;
     private final ExecutorService executorService;
     private final AtomicBoolean immediateExecution;
@@ -60,7 +60,7 @@ public final class StartLevelImpl implements StartLevelSupport {
     private AtomicInteger startLevel = new AtomicInteger(0);
 
     public StartLevelImpl(BundleManager bundleManager, FrameworkEvents frameworkEvents, ExecutorService executorService, AtomicBoolean immediateExecution) {
-        this.bundleManager = (BundleManagerImpl) bundleManager;
+        this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
         this.events = frameworkEvents;
         this.executorService = executorService;
         this.immediateExecution = immediateExecution;

@@ -59,7 +59,7 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 final class URLHandlerSupportImpl implements URLHandlerSupport {
 
-    private final BundleManagerImpl bundleManager;
+    private final BundleManagerPlugin bundleManager;
     private ServiceTracker streamServiceTracker;
     private ServiceTracker contentServiceTracker;
     private ServiceRegistration registration;
@@ -71,6 +71,7 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
     	if (streamHandlerDelegate == null) {
             streamHandlerDelegate = new OSGiStreamHandlerFactoryDelegate();
             AccessController.doPrivileged(new PrivilegedAction<Void>() {
+                @Override
                 public Void run() {
                     try {
                         URL.setURLStreamHandlerFactory(streamHandlerDelegate);
@@ -85,6 +86,7 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
     	if (contentHandlerDelegate == null) {
             contentHandlerDelegate = new OSGiContentHandlerFactoryDelegate();
             AccessController.doPrivileged(new PrivilegedAction<Void>() {
+                @Override
                 public Void run() {
                     try {
                         URLConnection.setContentHandlerFactory(contentHandlerDelegate);
@@ -98,20 +100,22 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
     	}
     }
 
-    public URLHandlerSupportImpl(BundleManagerImpl bundleManager) {
+    public URLHandlerSupportImpl(BundleManagerPlugin bundleManager) {
         this.bundleManager = bundleManager;
     }
 
-    void start() {
+    @Override
+    public void start(BundleContext systemContext) {
         OSGiStreamHandlerFactoryService.setDelegateFactory(this);
         streamHandlerDelegate.setDelegateFactory(new OSGiStreamHandlerFactory(this));
         contentHandlerDelegate.setDelegateFactory(new OSGiContentHandlerFactory(this));
         registerStreamHandlerService();
-        setupStreamHandlerTracker();
-        setupContentHandlerTracker();
+        setupStreamHandlerTracker(systemContext);
+        setupContentHandlerTracker(systemContext);
     }
 
-    void stop() {
+    @Override
+    public void stop() {
         streamHandlerDelegate.clearHandlers();
         contentHandlerDelegate.clearHandlers();
         registration.unregister();
@@ -129,8 +133,7 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
         registration = systemContext.registerService(URLStreamHandlerService.class.getName(), service, props);
     }
 
-    private void setupContentHandlerTracker() {
-        BundleContext systemContext = bundleManager.getSystemBundle().getBundleContext();
+    private void setupContentHandlerTracker(BundleContext systemContext) {
         contentServiceTracker = new ServiceTracker(systemContext, ContentHandler.class.getName(), null) {
 
             @Override
@@ -161,8 +164,7 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
         contentServiceTracker.open();
     }
 
-    private void setupStreamHandlerTracker() {
-        BundleContext systemContext = bundleManager.getSystemBundle().getBundleContext();
+    private void setupStreamHandlerTracker(BundleContext systemContext) {
         streamServiceTracker = new ServiceTracker(systemContext, URLStreamHandlerService.class.getName(), null) {
 
             @Override
@@ -198,6 +200,7 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
      *
      * @see java.net.URLStreamHandler
      */
+    @Override
     public URLStreamHandler createURLStreamHandler(String protocol) {
         List<ServiceReference> refList = streamHandlerDelegate.getStreamHandlers(protocol);
         if (refList == null || refList.isEmpty())
@@ -212,6 +215,7 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
      * @see java.net.ContentHandler
      * @see java.net.URLStreamHandler
      */
+    @Override
     public ContentHandler createContentHandler(String mimetype) {
         List<ServiceReference> refList = contentHandlerDelegate.getContentHandlers(mimetype);
         if (refList == null || refList.isEmpty())

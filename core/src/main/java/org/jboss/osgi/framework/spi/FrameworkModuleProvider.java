@@ -22,7 +22,6 @@
 package org.jboss.osgi.framework.spi;
 
 import org.jboss.modules.Module;
-import org.jboss.osgi.resolver.XBundle;
 
 /**
  * The framework module provider.
@@ -32,9 +31,5 @@ import org.jboss.osgi.resolver.XBundle;
  */
 public interface FrameworkModuleProvider {
 
-    XBundle getSystemBundle();
-    
-    Module createFrameworkModule();
-    
     Module getFrameworkModule();
 }

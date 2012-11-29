@@ -21,24 +21,13 @@
  */
 package org.jboss.osgi.framework.spi;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.EnvironmentImpl;
 import org.jboss.osgi.resolver.XEnvironment;
-import org.jboss.osgi.resolver.XResource;
-import org.osgi.resource.Capability;
-import org.osgi.resource.Requirement;
-import org.osgi.resource.Resource;
-import org.osgi.resource.Wire;
-import org.osgi.resource.Wiring;
 
 /**
  * The default {@link XEnvironment} plugin.
@@ -46,10 +35,9 @@ import org.osgi.resource.Wiring;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-public class EnvironmentPlugin extends AbstractIntegrationService<XEnvironment> implements XEnvironment {
+public class EnvironmentPlugin extends AbstractIntegrationService<XEnvironment> {
 
     private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
-    private XEnvironment environment;
 
     public EnvironmentPlugin() {
         super(Services.ENVIRONMENT);
@@ -62,57 +50,7 @@ public class EnvironmentPlugin extends AbstractIntegrationService<XEnvironment> 
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        environment = new EnvironmentImpl(injectedLockManager.getValue());
-    }
-
-    @Override
-    public XEnvironment getValue() {
-        return this;
-    }
-
-    @Override
-    public void installResources(XResource... resources) {
-        environment.installResources(resources);
-    }
-
-    @Override
-    public void uninstallResources(XResource... resources) {
-        environment.uninstallResources(resources);
-    }
-
-    @Override
-    public void refreshResources(XResource... resources) {
-        environment.refreshResources(resources);
-    }
-
-    @Override
-    public Collection<XResource> getResources(String... types) {
-        return environment.getResources(types);
-    }
-
-    @Override
-    public Long nextResourceIdentifier(Long value, String symbolicName) {
-        return environment.nextResourceIdentifier(value, symbolicName);
-    }
-
-    @Override
-    public List<Capability> findProviders(Requirement req) {
-        return environment.findProviders(req);
-    }
-
-    @Override
-    public Map<Resource, Wiring> updateWiring(Map<Resource, List<Wire>> delta) {
-        return environment.updateWiring(delta);
-    }
-
-    @Override
-    public Wiring createWiring(XResource res, List<Wire> required, List<Wire> provided) {
-        return environment.createWiring(res, required, provided);
-    }
-
-    @Override
-    public Map<Resource, Wiring> getWirings() {
-        return environment.getWirings();
+    protected XEnvironment createServiceValue(StartContext startContext) {
+        return new EnvironmentImpl(injectedLockManager.getValue());
     }
 }

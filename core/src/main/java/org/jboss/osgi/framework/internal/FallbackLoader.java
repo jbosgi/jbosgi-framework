@@ -39,6 +39,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.Resource;
+import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.SystemPaths;
 import org.jboss.osgi.resolver.XBundle;
@@ -69,7 +70,7 @@ final class FallbackLoader implements LocalLoader {
     private final ModuleIdentifier identifier;
     private final Set<String> importedPaths;
     private final FrameworkState frameworkState;
-    private final BundleManagerImpl bundleManager;
+    private final BundleManager bundleManager;
     private final ModuleManager moduleManager;
 
     private static ThreadLocal<Map<String, AtomicInteger>> dynamicLoadAttempts;

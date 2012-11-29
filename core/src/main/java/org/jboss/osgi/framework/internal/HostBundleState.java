@@ -312,7 +312,7 @@ final class HostBundleState extends UserBundleState {
         changeState(Bundle.ACTIVE);
 
         // Activate the service that represents bundle state ACTIVE
-        getBundleManager().setServiceMode(getServiceName(Bundle.ACTIVE), Mode.ACTIVE);
+        getBundleManagerPlugin().setServiceMode(getServiceName(Bundle.ACTIVE), Mode.ACTIVE);
 
         LOGGER.infoBundleStarted(this);
     }
@@ -398,7 +398,7 @@ final class HostBundleState extends UserBundleState {
         changeState(Bundle.RESOLVED, BundleEvent.STOPPED);
 
         // Deactivate the service that represents bundle state ACTIVE
-        getBundleManager().setServiceMode(getServiceName(Bundle.ACTIVE), Mode.NEVER);
+        getBundleManagerPlugin().setServiceMode(getServiceName(Bundle.ACTIVE), Mode.NEVER);
 
         if (rethrow != null) {
             throw MESSAGES.cannotStopBundle(rethrow, this);
@@ -452,17 +452,17 @@ final class HostBundleState extends UserBundleState {
     }
 
     private int getBundleStartLevel() {
-        StartLevelSupport startLevelPlugin = getCoreServices().getStartLevelPlugin();
+        StartLevelSupport startLevelPlugin = getCoreServices().getStartLevelSupport();
         return startLevelPlugin.getBundleStartLevel(this);
     }
 
     void setPersistentlyStarted(boolean started) {
-        StartLevelSupport startLevelPlugin = getCoreServices().getStartLevelPlugin();
+        StartLevelSupport startLevelPlugin = getCoreServices().getStartLevelSupport();
         startLevelPlugin.setBundlePersistentlyStarted(this, started);
     }
 
     private boolean startLevelValidForStart() {
-        StartLevelSupport startLevelPlugin = getCoreServices().getStartLevelPlugin();
+        StartLevelSupport startLevelPlugin = getCoreServices().getStartLevelSupport();
         return startLevelPlugin.getBundleStartLevel(this) <= startLevelPlugin.getStartLevel();
     }
 
@@ -479,7 +479,7 @@ final class HostBundleState extends UserBundleState {
         }
 
         // Any listeners registered by this bundle must be removed
-        FrameworkEvents eventsPlugin = hostState.getFrameworkState().getFrameworkEventsPlugin();
+        FrameworkEvents eventsPlugin = hostState.getFrameworkState().getFrameworkEvents();
         eventsPlugin.removeBundleListeners(hostState);
     }
 }

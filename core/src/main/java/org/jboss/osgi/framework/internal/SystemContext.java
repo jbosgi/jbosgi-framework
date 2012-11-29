@@ -23,10 +23,11 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.IntegrationServices;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -35,22 +36,23 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class SystemContextPlugin extends AbstractIntegrationService<BundleContext> {
+final class SystemContext extends AbstractIntegrationService<BundleContext> {
 
-    final InjectedValue<Bundle> injectedSystemBundle = new InjectedValue<Bundle>();
+    final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
 
-    SystemContextPlugin() {
+    SystemContext() {
         super(IntegrationServices.SYSTEM_CONTEXT_INTERNAL);
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<BundleContext> builder) {
-        builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, Bundle.class, injectedSystemBundle);
+        builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, SystemBundleState.class, injectedSystemBundle);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override
-    public BundleContext getValue()  {
-        return injectedSystemBundle.getValue().getBundleContext();
+    protected BundleContext createServiceValue(StartContext startContext) throws StartException {
+        SystemBundleState systemBundle = injectedSystemBundle.getValue();
+        return systemBundle.getBundleContext();
     }
 }

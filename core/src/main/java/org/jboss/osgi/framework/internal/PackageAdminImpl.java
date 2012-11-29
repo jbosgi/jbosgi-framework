@@ -79,7 +79,7 @@ import org.osgi.service.startlevel.StartLevel;
  */
 public class PackageAdminImpl implements PackageAdminSupport {
 
-    private final BundleManagerImpl bundleManager;
+    private final BundleManagerPlugin bundleManager;
     private final XEnvironment environment;
     private final FrameworkEvents events;
     private final ModuleManager moduleManager;
@@ -92,7 +92,7 @@ public class PackageAdminImpl implements PackageAdminSupport {
     public PackageAdminImpl(BundleManager bundleManager, XEnvironment environment, FrameworkEvents events,
             ModuleManager moduleManager, XResolver resolver, StartLevel startLevelPlugin, LockManager lockManager,
             ExecutorService executorService, AtomicBoolean immediateExecution) {
-        this.bundleManager = (BundleManagerImpl) bundleManager;
+        this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
         this.environment = environment;
         this.events = events;
         this.moduleManager = moduleManager;

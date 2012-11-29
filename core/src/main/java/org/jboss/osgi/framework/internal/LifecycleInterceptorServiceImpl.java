@@ -42,9 +42,8 @@ import org.osgi.framework.BundleContext;
 public final class LifecycleInterceptorServiceImpl extends AbstractLifecycleInterceptorService {
 
 	private final BundleContext systemContext;
-	
+
     public LifecycleInterceptorServiceImpl(BundleContext systemContext) {
-		super(systemContext);
 		this.systemContext = systemContext;
 	}
 

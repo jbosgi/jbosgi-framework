@@ -87,7 +87,7 @@ import org.osgi.service.resolver.ResolveContext;
  */
 public final class ResolverImpl extends StatelessResolver implements XResolver {
 
-    private final BundleManagerImpl bundleManager;
+    private final BundleManagerPlugin bundleManager;
     private final NativeCode nativeCode;
     private final ModuleManager moduleManager;
     private final FrameworkModuleLoader moduleLoader;
@@ -96,7 +96,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
 
     public ResolverImpl(BundleManager bundleManager, NativeCode nativeCode, ModuleManager moduleManager, FrameworkModuleLoader moduleLoader,
             XEnvironment environment, LockManager lockManager) {
-        this.bundleManager = (BundleManagerImpl) bundleManager;
+        this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
         this.nativeCode = nativeCode;
         this.moduleManager = moduleManager;
         this.moduleLoader = moduleLoader;

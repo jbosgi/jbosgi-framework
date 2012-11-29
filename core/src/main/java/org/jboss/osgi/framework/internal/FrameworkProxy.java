@@ -61,7 +61,7 @@ import org.osgi.framework.launch.Framework;
 final class FrameworkProxy implements Framework, Adaptable {
 
     private final FrameworkBuilder frameworkBuilder;
-    private BundleManagerImpl bundleManager;
+    private BundleManagerPlugin bundleManager;
     private boolean firstInit;
 
     FrameworkProxy(FrameworkBuilder frameworkBuilder) {
@@ -86,14 +86,14 @@ final class FrameworkProxy implements Framework, Adaptable {
 
     @Override
     public Version getVersion() {
-        return BundleManagerImpl.getFrameworkVersion();
+        return BundleManagerPlugin.getFrameworkVersion();
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T> T adapt(Class<T> type) {
         if (!hasStopped()) {
-            BundleManagerImpl bundleManager = getBundleManager();
+            BundleManagerPlugin bundleManager = getBundleManager();
             if (type.isAssignableFrom(BundleManager.class)) {
                 return (T) bundleManager;
             } else if (type.isAssignableFrom(ServiceContainer.class)) {
@@ -103,7 +103,7 @@ final class FrameworkProxy implements Framework, Adaptable {
         return null;
     }
 
-    private BundleManagerImpl getBundleManager() {
+    private BundleManagerPlugin getBundleManager() {
         return bundleManager;
     }
 
@@ -142,7 +142,8 @@ final class FrameworkProxy implements Framework, Adaptable {
             if (serviceTarget == null)
                 serviceTarget = serviceContainer.subTarget();
 
-            bundleManager = (BundleManagerImpl) frameworkBuilder.createFrameworkServices(serviceContainer, firstInit);
+            BundleManager auxBundleManager = frameworkBuilder.createFrameworkServices(serviceContainer, firstInit);
+            bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(auxBundleManager);
             bundleManager.setManagerState(Bundle.STARTING);
 
             ServiceTracker<Object> serviceTracker = new ServiceTracker<Object>("Framework.init");

@@ -22,16 +22,16 @@ package org.jboss.osgi.framework.internal;
  */
 
 import org.jboss.msc.value.InjectedValue;
+import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
-import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
+import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.framework.spi.ServiceManager;
 import org.jboss.osgi.framework.spi.SystemPaths;
-import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.launch.Framework;
@@ -47,11 +47,11 @@ import org.osgi.framework.launch.Framework;
  */
 final class FrameworkState {
 
-    private final BundleManagerImpl bundleManager;
+    private final BundleManager bundleManager;
 
     final InjectedValue<BundleStorage> injectedBundleStorage = new InjectedValue<BundleStorage>();
     final InjectedValue<DeploymentProvider> injectedDeploymentFactory = new InjectedValue<DeploymentProvider>();
-    final InjectedValue<FrameworkCoreServices> injectedCoreServices = new InjectedValue<FrameworkCoreServices>();
+    final InjectedValue<CoreServices> injectedCoreServices = new InjectedValue<CoreServices>();
     final InjectedValue<FrameworkEvents> injectedFrameworkEvents = new InjectedValue<FrameworkEvents>();
     final InjectedValue<FrameworkModuleLoader> injectedModuleLoader = new InjectedValue<FrameworkModuleLoader>();
     final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
@@ -59,31 +59,35 @@ final class FrameworkState {
     final InjectedValue<NativeCode> injectedNativeCode = new InjectedValue<NativeCode>();
     final InjectedValue<ServiceManager> injectedServiceManager = new InjectedValue<ServiceManager>();
     final InjectedValue<SystemPaths> injectedSystemPaths = new InjectedValue<SystemPaths>();
-    final InjectedValue<XBundle> injectedSystemBundle = new InjectedValue<XBundle>();
+    final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     final InjectedValue<XResolver> injectedResolverPlugin = new InjectedValue<XResolver>();
 
-    FrameworkState(BundleManagerImpl bundleManager) {
+    FrameworkState(BundleManager bundleManager) {
         this.bundleManager = bundleManager;
     }
 
-    BundleManagerImpl getBundleManager() {
+    BundleManager getBundleManager() {
         return bundleManager;
+    }
+
+    BundleManagerPlugin getBundleManagerPlugin() {
+        return BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
     }
 
     BundleStorage getBundleStorage() {
         return injectedBundleStorage.getValue();
     }
 
-    DeploymentProvider getDeploymentFactoryPlugin() {
+    DeploymentProvider getDeploymentProvider() {
         return injectedDeploymentFactory.getValue();
     }
 
-    FrameworkCoreServices getCoreServices() {
+    CoreServices getCoreServices() {
         return injectedCoreServices.getValue();
     }
 
-    FrameworkEvents getFrameworkEventsPlugin() {
+    FrameworkEvents getFrameworkEvents() {
         return injectedFrameworkEvents.getValue();
     }
 
@@ -99,7 +103,7 @@ final class FrameworkState {
         return injectedModuleManager.getValue();
     }
 
-    NativeCode getNativeCodePlugin() {
+    NativeCode getNativeCode() {
         return injectedNativeCode.getValue();
     }
 
@@ -107,12 +111,12 @@ final class FrameworkState {
         return injectedServiceManager.getValue();
     }
 
-    SystemPaths getSystemPathsPlugin() {
-        return injectedSystemPaths.getValue();
+    SystemBundleState getSystemBundle() {
+        return injectedSystemBundle.getValue();
     }
 
-    XBundle getSystemBundle() {
-        return injectedSystemBundle.getValue();
+    SystemPaths getSystemPathsPlugin() {
+        return injectedSystemPaths.getValue();
     }
 
     XEnvironment getEnvironment() {

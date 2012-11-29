@@ -24,6 +24,8 @@ package org.jboss.osgi.framework.spi;
 import java.net.ContentHandlerFactory;
 import java.net.URLStreamHandlerFactory;
 
+import org.osgi.framework.BundleContext;
+
 /**
  * This plugin provides OSGi URL handler support as per the specification.
  * The interface is through the java.net.URL class and the OSGi Service Registry.
@@ -32,5 +34,9 @@ import java.net.URLStreamHandlerFactory;
  * @since 27-Nov-2012
  */
 public interface URLHandlerSupport extends URLStreamHandlerFactory, ContentHandlerFactory {
+
+    void start(BundleContext systemContext);
+
+    void stop();
 
 }

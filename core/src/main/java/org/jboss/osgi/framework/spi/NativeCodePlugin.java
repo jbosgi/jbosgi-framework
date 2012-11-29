@@ -26,10 +26,7 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.internal.NativeCodeImpl;
-import org.jboss.osgi.resolver.XBundleRevision;
-import org.osgi.framework.BundleException;
 
 /**
  * The bundle native code plugin
@@ -38,10 +35,9 @@ import org.osgi.framework.BundleException;
  * @author David Bosschaert
  * @since 11-Aug-2010
  */
-public class NativeCodePlugin extends AbstractIntegrationService<NativeCode> implements NativeCode {
+public class NativeCodePlugin extends AbstractIntegrationService<NativeCode> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-    private NativeCode nativeCode;
 
     public NativeCodePlugin() {
         super(IntegrationServices.NATIVE_CODE_PLUGIN);
@@ -54,22 +50,7 @@ public class NativeCodePlugin extends AbstractIntegrationService<NativeCode> imp
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        nativeCode = new NativeCodeImpl(injectedBundleManager.getValue());
-    }
-
-    @Override
-    public NativeCode getValue() {
-        return this;
-    }
-
-    @Override
-    public void deployNativeCode(Deployment dep) {
-        nativeCode.deployNativeCode(dep);
-    }
-
-    @Override
-    public void resolveNativeCode(XBundleRevision bev) throws BundleException {
-        nativeCode.resolveNativeCode(bev);
+    protected NativeCode createServiceValue(StartContext startContext) throws StartException {
+        return new NativeCodeImpl(injectedBundleManager.getValue());
     }
 }

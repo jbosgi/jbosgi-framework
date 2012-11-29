@@ -66,23 +66,24 @@ public final class FrameworkCreate extends AbstractFrameworkService {
         builder.addDependency(IntegrationServices.NATIVE_CODE_PLUGIN, NativeCode.class, frameworkState.injectedNativeCode);
         builder.addDependency(Services.RESOLVER, XResolver.class, frameworkState.injectedResolverPlugin);
         builder.addDependency(IntegrationServices.SERVICE_MANAGER, ServiceManager.class, frameworkState.injectedServiceManager);
-        builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, XBundle.class, frameworkState.injectedSystemBundle);
+        builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, SystemBundleState.class, frameworkState.injectedSystemBundle);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        getBundleManager().injectedFramework.inject(frameworkState);
+    public void start(StartContext startContext) throws StartException {
+        super.start(startContext);
+        getBundleManagerPlugin().injectedFramework.inject(frameworkState);
+    }
+
+    @Override
+    protected FrameworkState createServiceValue(StartContext startContext) throws StartException {
+        return frameworkState;
     }
 
     @Override
     public void stop(StopContext context) {
-        getBundleManager().injectedFramework.uninject();
-    }
-
-    @Override
-    public FrameworkState getValue() {
-        return frameworkState;
+        getBundleManagerPlugin().injectedFramework.uninject();
     }
 
     static class FrameworkCreated extends AbstractIntegrationService<BundleContext> {
@@ -102,7 +103,7 @@ public final class FrameworkCreate extends AbstractFrameworkService {
         }
 
         @Override
-        public BundleContext getValue() throws IllegalStateException {
+        protected BundleContext createServiceValue(StartContext startContext) throws StartException {
             FrameworkState frameworkState = injectedFramework.getValue();
             XBundle systemBundle = frameworkState.getSystemBundle();
             return systemBundle.getBundleContext();

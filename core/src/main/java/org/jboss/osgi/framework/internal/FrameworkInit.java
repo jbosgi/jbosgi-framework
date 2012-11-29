@@ -60,12 +60,8 @@ public final class FrameworkInit extends AbstractFrameworkService {
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
+    protected FrameworkState createServiceValue(StartContext startContext) throws StartException {
         LOGGER.debugf("OSGi Framework initialized");
-    }
-
-    @Override
-    public FrameworkState getValue() {
         return injectedFramework.getValue();
     }
 
@@ -73,7 +69,7 @@ public final class FrameworkInit extends AbstractFrameworkService {
 
         private final InjectedValue<BundleContext> injectedBundleContext = new InjectedValue<BundleContext>();
         private final Mode initialMode;
-        
+
         FrameworkInitialized(Mode initialMode) {
             super(Services.FRAMEWORK_INIT);
             this.initialMode = initialMode;
@@ -87,7 +83,7 @@ public final class FrameworkInit extends AbstractFrameworkService {
         }
 
         @Override
-        public BundleContext getValue() throws IllegalStateException {
+        protected BundleContext createServiceValue(StartContext startContext) throws StartException {
             return injectedBundleContext.getValue();
         }
     }

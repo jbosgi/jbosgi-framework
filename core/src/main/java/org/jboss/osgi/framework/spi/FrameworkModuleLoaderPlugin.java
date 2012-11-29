@@ -21,18 +21,12 @@
  */
 package org.jboss.osgi.framework.spi;
 
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoader;
-import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
 import org.jboss.osgi.framework.internal.FrameworkModuleLoaderImpl;
-import org.jboss.osgi.resolver.XBundleRevision;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -40,9 +34,7 @@ import org.jboss.osgi.resolver.XBundleRevision;
  * @author thomas.diesler@jboss.com
  * @since 20-Apr-2011
  */
-public class FrameworkModuleLoaderPlugin extends AbstractIntegrationService<FrameworkModuleLoader> implements FrameworkModuleLoader  {
-
-    private FrameworkModuleLoader moduleLoader;
+public class FrameworkModuleLoaderPlugin extends AbstractIntegrationService<FrameworkModuleLoader> {
 
     public FrameworkModuleLoaderPlugin() {
         super(IntegrationServices.FRAMEWORK_MODULE_LOADER);
@@ -54,47 +46,8 @@ public class FrameworkModuleLoaderPlugin extends AbstractIntegrationService<Fram
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        ServiceContainer serviceContainer = context.getController().getServiceContainer();
-        moduleLoader = new FrameworkModuleLoaderImpl(serviceContainer);
+    protected FrameworkModuleLoader createServiceValue(StartContext startContext) {
+        ServiceContainer serviceContainer = startContext.getController().getServiceContainer();
+        return new FrameworkModuleLoaderImpl(serviceContainer);
     }
-
-
-    @Override
-    public FrameworkModuleLoader getValue() {
-        return this;
-    }
-
-    public ModuleLoader getModuleLoader() {
-        return moduleLoader.getModuleLoader();
-    }
-
-    public ModuleIdentifier getModuleIdentifier(XBundleRevision brev) {
-        return moduleLoader.getModuleIdentifier(brev);
-    }
-
-    public void addIntegrationDependencies(ModuleSpecBuilderContext context) {
-        moduleLoader.addIntegrationDependencies(context);
-    }
-
-    public void addModuleSpec(XBundleRevision brev, ModuleSpec moduleSpec) {
-        moduleLoader.addModuleSpec(brev, moduleSpec);
-    }
-
-    public void addModule(XBundleRevision brev, Module module) {
-        moduleLoader.addModule(brev, module);
-    }
-
-    public ServiceName createModuleService(XBundleRevision brev, ModuleIdentifier identifier) {
-        return moduleLoader.createModuleService(brev, identifier);
-    }
-
-    public void removeModule(XBundleRevision brev, ModuleIdentifier identifier) {
-        moduleLoader.removeModule(brev, identifier);
-    }
-
-    public ServiceName getModuleServiceName(ModuleIdentifier identifier) {
-        return moduleLoader.getModuleServiceName(identifier);
-    }
-
 }

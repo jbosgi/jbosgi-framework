@@ -74,7 +74,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
  */
 final class FrameworkEventsImpl implements FrameworkEvents {
 
-    private final BundleManagerImpl bundleManager;
+    private final BundleManagerPlugin bundleManager;
     private final ExecutorService executorService;
     private final LockManager lockManager;
 
@@ -91,7 +91,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     private Set<String> infoEvents = new HashSet<String>();
 
     FrameworkEventsImpl(BundleManager bundleManager, ExecutorService executorService, LockManager lockManager) {
-        this.bundleManager = (BundleManagerImpl) bundleManager;
+        this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
         this.executorService = executorService;
         this.lockManager = lockManager;
         asyncBundleEvents.add(new Integer(BundleEvent.INSTALLED));

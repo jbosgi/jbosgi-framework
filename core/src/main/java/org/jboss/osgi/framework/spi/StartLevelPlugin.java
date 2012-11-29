@@ -31,8 +31,6 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.StartLevelImpl;
-import org.jboss.osgi.resolver.XBundle;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.startlevel.StartLevel;
@@ -43,12 +41,11 @@ import org.osgi.service.startlevel.StartLevel;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @author Thomas.Diesler@jboss.com
  */
-public class StartLevelPlugin extends ExecutorServicePlugin<StartLevelSupport> implements StartLevelSupport {
+public class StartLevelPlugin extends ExecutorServicePlugin<StartLevelSupport> {
 
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private final InjectedValue<FrameworkEvents> injectedFrameworkEvents = new InjectedValue<FrameworkEvents>();
     private ServiceRegistration registration;
-    private StartLevelSupport startLevelSupport;
 
     public StartLevelPlugin() {
         super(Services.START_LEVEL, "StartLevel Thread");
@@ -66,10 +63,14 @@ public class StartLevelPlugin extends ExecutorServicePlugin<StartLevelSupport> i
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        FrameworkEvents events = injectedFrameworkEvents.getValue();
-        startLevelSupport = new StartLevelImpl(getBundleManager(), events, getExecutorService(), new AtomicBoolean(false));
         BundleContext systemContext = injectedSystemContext.getValue();
-        registration = systemContext.registerService(StartLevel.class.getName(), this, null);
+        registration = systemContext.registerService(StartLevel.class.getName(), getValue(), null);
+    }
+
+    @Override
+    protected StartLevelSupport createServiceValue(StartContext startContext) throws StartException {
+        FrameworkEvents events = injectedFrameworkEvents.getValue();
+        return new StartLevelImpl(getBundleManager(), events, getExecutorService(), new AtomicBoolean(false));
     }
 
     @Override
@@ -77,59 +78,4 @@ public class StartLevelPlugin extends ExecutorServicePlugin<StartLevelSupport> i
         registration.unregister();
         super.stop(context);
     }
-
-    @Override
-    public StartLevelSupport getValue() {
-        return this;
-    }
-
-    @Override
-    public void enableImmediateExecution(boolean enable) {
-        startLevelSupport.enableImmediateExecution(enable);
-    }
-
-    public void setBundlePersistentlyStarted(XBundle bundle, boolean started) {
-        startLevelSupport.setBundlePersistentlyStarted(bundle, started);
-    }
-
-    public void decreaseStartLevel(int level) {
-        startLevelSupport.decreaseStartLevel(level);
-    }
-
-    public void increaseStartLevel(int level) {
-        startLevelSupport.increaseStartLevel(level);
-    }
-
-    public int getStartLevel() {
-        return startLevelSupport.getStartLevel();
-    }
-
-    public void setStartLevel(int startlevel) {
-        startLevelSupport.setStartLevel(startlevel);
-    }
-
-    public int getBundleStartLevel(Bundle bundle) {
-        return startLevelSupport.getBundleStartLevel(bundle);
-    }
-
-    public void setBundleStartLevel(Bundle bundle, int startlevel) {
-        startLevelSupport.setBundleStartLevel(bundle, startlevel);
-    }
-
-    public int getInitialBundleStartLevel() {
-        return startLevelSupport.getInitialBundleStartLevel();
-    }
-
-    public void setInitialBundleStartLevel(int startlevel) {
-        startLevelSupport.setInitialBundleStartLevel(startlevel);
-    }
-
-    public boolean isBundlePersistentlyStarted(Bundle bundle) {
-        return startLevelSupport.isBundlePersistentlyStarted(bundle);
-    }
-
-    public boolean isBundleActivationPolicyUsed(Bundle bundle) {
-        return startLevelSupport.isBundleActivationPolicyUsed(bundle);
-    }
-
 }

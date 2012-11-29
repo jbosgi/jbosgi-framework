@@ -169,7 +169,7 @@ public final class FrameworkBuilderImpl implements FrameworkBuilder {
             Module.setModuleLogger(new JDKModuleLogger());
         }
 
-        BundleManagerImpl bundleManager = new BundleManagerImpl(serviceContainer, this);
+        BundleManagerPlugin bundleManager = new BundleManagerPlugin(serviceContainer, this);
         FrameworkState frameworkState = new FrameworkState(bundleManager);
 
         registerIntegrationService(FrameworkPhase.CREATE, bundleManager);
@@ -181,7 +181,7 @@ public final class FrameworkBuilderImpl implements FrameworkBuilder {
         registerIntegrationService(FrameworkPhase.CREATE, new StartLevelPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new SystemPathsPlugin(this));
         registerIntegrationService(FrameworkPhase.CREATE, new SystemServicesPlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkCoreServices());
+        registerIntegrationService(FrameworkPhase.CREATE, new CoreServices());
         registerIntegrationService(FrameworkPhase.CREATE, new FrameworkEventsPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new BundleStoragePlugin(firstInit));
         registerIntegrationService(FrameworkPhase.CREATE, new DeploymentProviderPlugin());
@@ -193,8 +193,8 @@ public final class FrameworkBuilderImpl implements FrameworkBuilder {
         registerIntegrationService(FrameworkPhase.CREATE, new PackageAdminPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new ResolverPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new ServiceManagerPlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new SystemBundlePlugin(frameworkState));
-        registerIntegrationService(FrameworkPhase.CREATE, new SystemContextPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new SystemBundle(frameworkState));
+        registerIntegrationService(FrameworkPhase.CREATE, new SystemContext());
 
         registerIntegrationService(FrameworkPhase.INIT, new FrameworkInit());
         registerIntegrationService(FrameworkPhase.INIT, new FrameworkInit.FrameworkInitialized(initialMode));

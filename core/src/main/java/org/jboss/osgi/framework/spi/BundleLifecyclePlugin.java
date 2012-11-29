@@ -25,6 +25,8 @@ import java.io.InputStream;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
@@ -37,7 +39,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLifecycle> implements BundleLifecycle {
+public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLifecycle> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
 
@@ -53,37 +55,42 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
     }
 
     @Override
-    public BundleLifecycle getValue() throws IllegalStateException {
-        return this;
+    protected BundleLifecycle createServiceValue(StartContext startContext) throws StartException {
+        BundleManager bundleManager = injectedBundleManager.getValue();
+        return new BundleLifecycleImpl(bundleManager);
     }
 
-    @Override
-    public void install(Deployment dep) throws BundleException {
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        bundleManager.installBundle(dep, null, null);
-    }
+    static class BundleLifecycleImpl implements BundleLifecycle {
 
-    @Override
-    public void start(XBundle bundle, int options) throws BundleException {
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        bundleManager.startBundle(bundle, options);
-    }
+        private final BundleManager bundleManager;
 
-    @Override
-    public void stop(XBundle bundle, int options) throws BundleException {
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        bundleManager.stopBundle(bundle, options);
-    }
+        BundleLifecycleImpl(BundleManager bundleManager) {
+            this.bundleManager = bundleManager;
+        }
 
-    @Override
-    public void update(XBundle bundle, InputStream input) throws BundleException {
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        bundleManager.updateBundle(bundle, input);
-    }
+        @Override
+        public void install(Deployment dep) throws BundleException {
+            bundleManager.installBundle(dep, null, null);
+        }
 
-    @Override
-    public void uninstall(XBundle bundle, int options) throws BundleException {
-        BundleManager bundleManager = injectedBundleManager.getValue();
-        bundleManager.uninstallBundle(bundle, options);
+        @Override
+        public void start(XBundle bundle, int options) throws BundleException {
+            bundleManager.startBundle(bundle, options);
+        }
+
+        @Override
+        public void stop(XBundle bundle, int options) throws BundleException {
+            bundleManager.stopBundle(bundle, options);
+        }
+
+        @Override
+        public void update(XBundle bundle, InputStream input) throws BundleException {
+            bundleManager.updateBundle(bundle, input);
+        }
+
+        @Override
+        public void uninstall(XBundle bundle, int options) throws BundleException {
+            bundleManager.uninstallBundle(bundle, options);
+        }
     }
 }

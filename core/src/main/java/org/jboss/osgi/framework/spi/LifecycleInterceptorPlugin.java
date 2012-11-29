@@ -30,7 +30,6 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.LifecycleInterceptorServiceImpl;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 
@@ -40,10 +39,9 @@ import org.osgi.framework.ServiceRegistration;
  * @author thomas.diesler@jboss.com
  * @since 19-Oct-2009
  */
-public class LifecycleInterceptorPlugin extends AbstractIntegrationService<LifecycleInterceptorService> implements LifecycleInterceptorService {
+public class LifecycleInterceptorPlugin extends AbstractIntegrationService<LifecycleInterceptorService> {
 
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
-    private LifecycleInterceptorServiceImpl interceptorService;
     private ServiceRegistration registration;
 
     public LifecycleInterceptorPlugin() {
@@ -57,25 +55,22 @@ public class LifecycleInterceptorPlugin extends AbstractIntegrationService<Lifec
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        final BundleContext systemContext = injectedSystemContext.getValue();
-        interceptorService = new LifecycleInterceptorServiceImpl(systemContext);
-        registration = systemContext.registerService(LifecycleInterceptorService.class.getName(), this, null);
-        interceptorService.open();
+    public void start(StartContext startContext) throws StartException {
+        super.start(startContext);
+        BundleContext systemContext = injectedSystemContext.getValue();
+        registration = systemContext.registerService(LifecycleInterceptorService.class.getName(), getValue(), null);
+        getValue().start(systemContext);
+    }
+
+    @Override
+    protected LifecycleInterceptorService createServiceValue(StartContext startContext) throws StartException {
+        BundleContext systemContext = injectedSystemContext.getValue();
+        return new LifecycleInterceptorServiceImpl(systemContext);
     }
 
     @Override
     public void stop(StopContext context) {
-    	interceptorService.close();
+    	getValue().stop();
         registration.unregister();
     }
-
-    @Override
-    public LifecycleInterceptorService getValue() {
-        return this;
-    }
-
-	public void handleStateChange(int state, Bundle bundle) {
-		interceptorService.handleStateChange(state, bundle);
-	}
 }

@@ -21,11 +21,9 @@
  */
 package org.jboss.osgi.framework.spi;
 
-import java.util.concurrent.TimeUnit;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.framework.internal.LockManagerImpl;
 
 /**
@@ -34,9 +32,7 @@ import org.jboss.osgi.framework.internal.LockManagerImpl;
  * @author thomas.diesler@jboss.com
  * @since 22-Nov-2012
  */
-public class LockManagerPlugin extends AbstractIntegrationService<LockManager> implements LockManager {
-
-    private LockManager lockManager;
+public class LockManagerPlugin extends AbstractIntegrationService<LockManager> {
 
     public LockManagerPlugin() {
         super(IntegrationServices.LOCK_MANAGER);
@@ -48,37 +44,7 @@ public class LockManagerPlugin extends AbstractIntegrationService<LockManager> i
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        lockManager = new LockManagerImpl();
-    }
-
-    @Override
-    public LockManager getValue() throws IllegalStateException {
-        return this;
-    }
-
-    @Override
-    public <T extends LockableItem> T getItemForType(Class<T> type) {
-        return lockManager.getItemForType(type);
-    }
-
-    @Override
-    public LockContext getCurrentLockContext() {
-        return lockManager.getCurrentLockContext();
-    }
-
-    @Override
-    public LockContext lockItems(Method method, LockableItem... items) {
-        return lockManager.lockItems(method, items);
-    }
-
-    @Override
-    public LockContext lockItems(Method method, long timeout, TimeUnit unit, LockableItem... items) {
-        return lockManager.lockItems(method, timeout, unit, items);
-    }
-
-    @Override
-    public void unlockItems(LockContext context) {
-        lockManager.unlockItems(context);
+    protected LockManager createServiceValue(StartContext startContext) {
+        return new LockManagerImpl();
     }
 }

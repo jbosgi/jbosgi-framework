@@ -21,11 +21,6 @@
  */
 package org.jboss.osgi.framework.spi;
 
-import java.util.List;
-
-import org.jboss.modules.Module;
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
@@ -33,10 +28,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.ModuleManagerImpl;
-import org.jboss.osgi.resolver.XBundle;
-import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
-import org.osgi.framework.wiring.BundleWire;
 
 /**
  * The module manager plugin.
@@ -44,13 +36,12 @@ import org.osgi.framework.wiring.BundleWire;
  * @author thomas.diesler@jboss.com
  * @since 06-Jul-2009
  */
-public class ModuleManagerPlugin extends AbstractIntegrationService<ModuleManager> implements ModuleManager {
+public class ModuleManagerPlugin extends AbstractIntegrationService<ModuleManager> {
 
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private final InjectedValue<SystemPaths> injectedSystemPaths = new InjectedValue<SystemPaths>();
     private final InjectedValue<FrameworkModuleProvider> injectedFrameworkModule = new InjectedValue<FrameworkModuleProvider>();
     private final InjectedValue<FrameworkModuleLoader> injectedModuleLoader = new InjectedValue<FrameworkModuleLoader>();
-    private ModuleManager moduleManager;
 
     public ModuleManagerPlugin() {
         super(IntegrationServices.MODULE_MANGER);
@@ -66,45 +57,11 @@ public class ModuleManagerPlugin extends AbstractIntegrationService<ModuleManage
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
+    protected ModuleManager createServiceValue(StartContext startContext) throws StartException {
         FrameworkModuleProvider moduleProvider = injectedFrameworkModule.getValue();
         XEnvironment env = injectedEnvironment.getValue();
         SystemPaths syspaths = injectedSystemPaths.getValue();
         FrameworkModuleLoader moduleLoader = injectedModuleLoader.getValue();
-        moduleManager = new ModuleManagerImpl(env, syspaths, moduleProvider, moduleLoader);
+        return new ModuleManagerImpl(env, syspaths, moduleProvider, moduleLoader);
     }
-
-    @Override
-    public ModuleManager getValue() {
-        return this;
-    }
-
-    public Module getModule(ModuleIdentifier identifier) {
-        return moduleManager.getModule(identifier);
-    }
-
-    public XBundle getBundleState(Class<?> clazz) {
-        return moduleManager.getBundleState(clazz);
-    }
-
-    public Module loadModule(ModuleIdentifier identifier) throws ModuleLoadException {
-        return moduleManager.loadModule(identifier);
-    }
-
-    public void removeModule(XBundleRevision brev, ModuleIdentifier identifier) {
-        moduleManager.removeModule(brev, identifier);
-    }
-
-    public Module getFrameworkModule() {
-        return moduleManager.getFrameworkModule();
-    }
-
-    public ModuleIdentifier getModuleIdentifier(XBundleRevision brev) {
-        return moduleManager.getModuleIdentifier(brev);
-    }
-
-    public ModuleIdentifier addModule(XBundleRevision brev, List<BundleWire> wires) {
-        return moduleManager.addModule(brev, wires);
-    }
-
 }

@@ -21,9 +21,6 @@
  */
 package org.jboss.osgi.framework.spi;
 
-import java.util.Set;
-
-import org.jboss.modules.filter.PathFilter;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
@@ -36,10 +33,9 @@ import org.jboss.osgi.framework.internal.SystemPathsImpl;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public class SystemPathsPlugin extends AbstractIntegrationService<SystemPaths> implements SystemPaths {
+public class SystemPathsPlugin extends AbstractIntegrationService<SystemPaths> {
 
     private final FrameworkBuilder frameworkBuilder;
-    private SystemPaths systemPaths;
 
     public SystemPathsPlugin(FrameworkBuilder frameworkBuilder) {
         super(IntegrationServices.SYSTEM_PATHS);
@@ -52,42 +48,7 @@ public class SystemPathsPlugin extends AbstractIntegrationService<SystemPaths> i
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        systemPaths = new SystemPathsImpl(frameworkBuilder);
-    }
-
-    @Override
-    public SystemPaths getValue() {
-        return this;
-    }
-
-    @Override
-    public Set<String> getBootDelegationPackages() {
-        return systemPaths.getBootDelegationPackages();
-    }
-
-    @Override
-    public PathFilter getBootDelegationFilter() {
-        return systemPaths.getBootDelegationFilter();
-    }
-
-    @Override
-    public Set<String> getBootDelegationPaths() {
-        return systemPaths.getBootDelegationPaths();
-    }
-
-    @Override
-    public Set<String> getSystemPackages() {
-        return systemPaths.getSystemPackages();
-    }
-
-    @Override
-    public PathFilter getSystemFilter() {
-        return systemPaths.getSystemFilter();
-    }
-
-    @Override
-    public Set<String> getSystemPaths() {
-        return systemPaths.getSystemPaths();
+    protected SystemPaths createServiceValue(StartContext startContext) throws StartException {
+        return new SystemPathsImpl(frameworkBuilder);
     }
 }

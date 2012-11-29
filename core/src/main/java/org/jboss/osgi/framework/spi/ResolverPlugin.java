@@ -21,9 +21,6 @@
  */
 package org.jboss.osgi.framework.spi;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
@@ -32,13 +29,7 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.internal.ResolverImpl;
 import org.jboss.osgi.resolver.XEnvironment;
-import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResolver;
-import org.osgi.resource.Resource;
-import org.osgi.resource.Wire;
-import org.osgi.resource.Wiring;
-import org.osgi.service.resolver.ResolutionException;
-import org.osgi.service.resolver.ResolveContext;
 
 /**
  * The resolver plugin.
@@ -46,7 +37,7 @@ import org.osgi.service.resolver.ResolveContext;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-public class ResolverPlugin extends AbstractIntegrationService<XResolver> implements XResolver {
+public class ResolverPlugin extends AbstractIntegrationService<XResolver> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<NativeCode> injectedNativeCode = new InjectedValue<NativeCode>();
@@ -54,7 +45,6 @@ public class ResolverPlugin extends AbstractIntegrationService<XResolver> implem
     private final InjectedValue<FrameworkModuleLoader> injectedModuleLoader = new InjectedValue<FrameworkModuleLoader>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
-    private XResolver resolver;
 
     public ResolverPlugin() {
         super(Services.RESOLVER);
@@ -72,31 +62,13 @@ public class ResolverPlugin extends AbstractIntegrationService<XResolver> implem
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
+    protected XResolver createServiceValue(StartContext startContext) throws StartException {
         BundleManager bundleManager = injectedBundleManager.getValue();
         NativeCode nativeCode = injectedNativeCode.getValue();
         ModuleManager moduleManager = injectedModuleManager.getValue();
         FrameworkModuleLoader moduleLoader = injectedModuleLoader.getValue();
         XEnvironment env = injectedEnvironment.getValue();
         LockManager lockManager = injectedLockManager.getValue();
-        resolver = new ResolverImpl(bundleManager, nativeCode, moduleManager, moduleLoader, env, lockManager);
+        return new ResolverImpl(bundleManager, nativeCode, moduleManager, moduleLoader, env, lockManager);
     }
-
-    @Override
-    public XResolver getValue() {
-        return this;
-    }
-
-    public XResolveContext createResolveContext(XEnvironment environment, Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) {
-        return resolver.createResolveContext(environment, mandatory, optional);
-    }
-
-    public Map<Resource, List<Wire>> resolve(ResolveContext context) throws ResolutionException {
-        return resolver.resolve(context);
-    }
-
-    public Map<Resource, Wiring> resolveAndApply(XResolveContext context) throws ResolutionException {
-        return resolver.resolveAndApply(context);
-    }
-
 }

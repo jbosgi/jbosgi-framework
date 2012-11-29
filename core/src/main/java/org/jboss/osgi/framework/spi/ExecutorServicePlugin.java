@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.spi;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -22,6 +23,8 @@ package org.jboss.osgi.framework.spi;
  */
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
@@ -30,7 +33,6 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
-
 
 /**
  * Plugin that provides an ExecutorService.
@@ -55,20 +57,36 @@ public abstract class ExecutorServicePlugin<T> extends AbstractIntegrationServic
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        executorService = getBundleManager().createExecutorService(threadName);
+    public void start(StartContext startContext) throws StartException {
+        executorService = createExecutorService(threadName);
+        getBundleManager().registerExecutorService(executorService);
+        super.start(startContext);
+    }
+
+    @Override
+    public void stop(StopContext context) {
+        executorService.shutdown();
+        getBundleManager().unregisterExecutorService(executorService);
+        super.stop(context);
     }
 
     protected BundleManager getBundleManager() {
         return injectedBundleManager.getValue();
     }
 
-    @Override
-    public void stop(StopContext context) {
-        executorService.shutdown();
-    }
-
     protected ExecutorService getExecutorService() {
         return executorService;
+    }
+
+    private ExecutorService createExecutorService(final String threadName) {
+        ExecutorService service = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable run) {
+                Thread thread = new Thread(run);
+                thread.setName(threadName);
+                return thread;
+            }
+        });
+        return service;
     }
 }

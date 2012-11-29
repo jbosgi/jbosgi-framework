@@ -40,9 +40,9 @@ public class BundleProtocolHandler extends AbstractURLStreamHandlerService {
 
     public static final String PROTOCOL_NAME = "bundle";
 
-    private final BundleManagerImpl bundleManager;
+    private final BundleManagerPlugin bundleManager;
 
-    BundleProtocolHandler(BundleManagerImpl bundleManager) {
+    BundleProtocolHandler(BundleManagerPlugin bundleManager) {
         this.bundleManager = bundleManager;
     }
 

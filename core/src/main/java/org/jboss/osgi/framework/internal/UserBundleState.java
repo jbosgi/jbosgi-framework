@@ -243,7 +243,7 @@ abstract class UserBundleState extends AbstractBundleState {
             throw be;
         }
 
-        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
+        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
         eventsPlugin.fireBundleEvent(this, BundleEvent.UPDATED);
         if (restart) {
             // If this bundle's state was originally ACTIVE or STARTING, the updated bundle is started as described in the
@@ -291,7 +291,7 @@ abstract class UserBundleState extends AbstractBundleState {
         BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
         StorageState storageState = createStorageState(storagePlugin, getLocation(), rootFile);
         try {
-            DeploymentProvider deploymentPlugin = getFrameworkState().getDeploymentFactoryPlugin();
+            DeploymentProvider deploymentPlugin = getFrameworkState().getDeploymentProvider();
             Deployment dep = deploymentPlugin.createDeployment(storageState);
             OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
             dep.addAttachment(OSGiMetaData.class, metadata);
@@ -312,7 +312,7 @@ abstract class UserBundleState extends AbstractBundleState {
     private StorageState createStorageState(BundleStorage storagePlugin, String location, VirtualFile rootFile) throws BundleException {
         StorageState storageState;
         try {
-            int startlevel = getCoreServices().getStartLevelPlugin().getInitialBundleStartLevel();
+            int startlevel = getCoreServices().getStartLevelSupport().getInitialBundleStartLevel();
             storageState = storagePlugin.createStorageState(getBundleId(), location, startlevel, rootFile);
         } catch (IOException ex) {
             throw MESSAGES.cannotSetupStorage(ex, rootFile);
@@ -359,7 +359,7 @@ abstract class UserBundleState extends AbstractBundleState {
 
         clearOldRevisions();
 
-        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
+        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
         eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
 
         // Update the the current revision
@@ -370,7 +370,7 @@ abstract class UserBundleState extends AbstractBundleState {
 
     void removeResolvedService() {
         ServiceName resolvedName = getServiceName(RESOLVED);
-        getBundleManager().setServiceMode(resolvedName, Mode.REMOVE);
+        getBundleManagerPlugin().setServiceMode(resolvedName, Mode.REMOVE);
     }
 
     @Override
@@ -391,7 +391,7 @@ abstract class UserBundleState extends AbstractBundleState {
 
         // Remove the Bundle INSTALL service after we changed the state
         LOGGER.debugf("Remove service for: %s", this);
-        getBundleManager().setServiceMode(getServiceName(Bundle.INSTALLED), Mode.REMOVE);
+        getBundleManagerPlugin().setServiceMode(getServiceName(Bundle.INSTALLED), Mode.REMOVE);
 
         // #4 A bundle event of type BundleEvent.UNINSTALLED is fired
         fireBundleEvent(BundleEvent.UNINSTALLED);
@@ -410,7 +410,7 @@ abstract class UserBundleState extends AbstractBundleState {
                     stopInternal(options);
                 } catch (Exception ex) {
                     // If Bundle.stop throws an exception, a Framework event of type FrameworkEvent.ERROR is fired
-                    getBundleManager().fireFrameworkError(this, "stopping bundle: " + this, ex);
+                    getBundleManagerPlugin().fireFrameworkError(this, "stopping bundle: " + this, ex);
                 }
             }
         }
@@ -422,7 +422,7 @@ abstract class UserBundleState extends AbstractBundleState {
         boolean hasActiveWires = hasActiveWires();
         if (hasActiveWires == false) {
             // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
-            getBundleManager().removeBundle(this, options);
+            getBundleManagerPlugin().removeBundle(this, options);
         }
 
         // Remove other uninstalled bundles that now also have no active wires any more
@@ -430,7 +430,7 @@ abstract class UserBundleState extends AbstractBundleState {
         for (Bundle auxState : uninstalled) {
             UserBundleState auxUser = UserBundleState.assertBundleState(auxState);
             if (auxUser.hasActiveWires() == false) {
-                getBundleManager().removeBundle(auxUser, options);
+                getBundleManagerPlugin().removeBundle(auxUser, options);
             }
         }
 

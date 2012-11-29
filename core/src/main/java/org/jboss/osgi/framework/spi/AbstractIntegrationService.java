@@ -27,10 +27,13 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
 
 public abstract class AbstractIntegrationService<T> extends AbstractService<T> implements IntegrationService<T> {
 
     private final ServiceName serviceName;
+    private T serviceValue;
 
     public AbstractIntegrationService(ServiceName serviceName) {
         this.serviceName = serviceName;
@@ -50,5 +53,17 @@ public abstract class AbstractIntegrationService<T> extends AbstractService<T> i
     }
 
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
+    }
+
+    @Override
+    public void start(StartContext startContext) throws StartException {
+        serviceValue = createServiceValue(startContext);
+    }
+
+    protected abstract T createServiceValue(StartContext startContext) throws StartException;
+
+    @Override
+    public T getValue() throws IllegalStateException {
+        return serviceValue;
     }
 }

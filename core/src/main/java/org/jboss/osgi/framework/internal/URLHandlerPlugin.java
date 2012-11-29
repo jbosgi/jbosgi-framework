@@ -21,8 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import java.net.ContentHandler;
-import java.net.URLStreamHandler;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
@@ -43,11 +41,10 @@ import org.osgi.framework.BundleContext;
  * @author Thomas.Diesler@jboss.com
  * @since 10-Jan-2011
  */
-final class URLHandlerPlugin extends AbstractIntegrationService<URLHandlerSupport> implements URLHandlerSupport {
+final class URLHandlerPlugin extends AbstractIntegrationService<URLHandlerSupport> {
 
-    private final InjectedValue<BundleManagerImpl> injectedBundleManager = new InjectedValue<BundleManagerImpl>();
+    private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
-    private URLHandlerSupportImpl handlerSupport;
 
     URLHandlerPlugin() {
         super(IntegrationServices.URL_HANDLER_PLUGIN);
@@ -56,33 +53,27 @@ final class URLHandlerPlugin extends AbstractIntegrationService<URLHandlerSuppor
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<URLHandlerSupport> builder) {
-        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerImpl.class, injectedBundleManager);
+        builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
+
     @Override
-    public void start(StartContext context) throws StartException {
-        BundleManagerImpl bundleManager = injectedBundleManager.getValue();
-        handlerSupport = new URLHandlerSupportImpl(bundleManager);
-        handlerSupport.start();
+    public void start(StartContext startContext) throws StartException {
+        super.start(startContext);
+        BundleContext systemContext = injectedSystemContext.getValue();
+        getValue().start(systemContext);
+    }
+
+    @Override
+    protected URLHandlerSupport createServiceValue(StartContext startContext) throws StartException {
+        BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
+        return new URLHandlerSupportImpl(bundleManager);
     }
 
     @Override
     public void stop(StopContext context) {
-        handlerSupport.stop();
-    }
-
-    @Override
-    public URLHandlerSupport getValue() {
-        return this;
-    }
-
-    public URLStreamHandler createURLStreamHandler(String protocol) {
-        return handlerSupport.createURLStreamHandler(protocol);
-    }
-
-    public ContentHandler createContentHandler(String mimetype) {
-        return handlerSupport.createContentHandler(mimetype);
+        getValue().stop();
     }
 }

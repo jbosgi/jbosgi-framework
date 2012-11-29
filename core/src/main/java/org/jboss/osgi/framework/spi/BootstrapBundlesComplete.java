@@ -30,6 +30,7 @@ public class BootstrapBundlesComplete<T> extends BootstrapBundlesService<T> {
         super(baseName, IntegrationServices.BootstrapPhase.COMPLETE);
     }
 
+    @Override
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
         builder.addDependency(getPreviousService());
     }

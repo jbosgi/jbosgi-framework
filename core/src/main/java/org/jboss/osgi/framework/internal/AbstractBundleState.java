@@ -46,14 +46,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
-import org.jboss.osgi.framework.spi.LifecycleInterceptorPlugin;
 import org.jboss.osgi.framework.spi.LockManager;
-import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.framework.spi.LockManager.LockSupport;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
+import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -124,15 +124,16 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
         return frameworkState;
     }
 
-    BundleManagerImpl getBundleManager() {
+    BundleManager getBundleManager() {
         return frameworkState.getBundleManager();
     }
 
-    XBundle getSystemBundle() {
-        return frameworkState.getSystemBundle();
+    BundleManagerPlugin getBundleManagerPlugin() {
+        BundleManager bundleManager = frameworkState.getBundleManager();
+        return BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
     }
 
-    FrameworkCoreServices getCoreServices() {
+    CoreServices getCoreServices() {
         return frameworkState.getCoreServices();
     }
 
@@ -223,9 +224,9 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
         LOGGER.tracef("changeState: %s -> %s", this, ConstantsHelper.bundleState(state));
 
         // Invoke the lifecycle interceptors
-        boolean frameworkActive = getBundleManager().isFrameworkCreated();
+        boolean frameworkActive = getBundleManagerPlugin().isFrameworkCreated();
         if (frameworkActive && getBundleId() > 0) {
-            LifecycleInterceptorPlugin plugin = getCoreServices().getLifecycleInterceptorPlugin();
+            LifecycleInterceptorService plugin = getCoreServices().getLifecycleInterceptorService();
             plugin.handleStateChange(state, this);
         }
 
@@ -238,7 +239,7 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
     }
 
     void fireBundleEvent(int eventType) {
-        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
+        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
         eventsPlugin.fireBundleEvent(this, eventType);
     }
 
@@ -618,7 +619,7 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
                 lastResolutionException = ex;
                 result = false;
                 if (fireEvent == true) {
-                    FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEventsPlugin();
+                    FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
                     eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, new BundleException(ex.getMessage(), ex));
                 }
             }

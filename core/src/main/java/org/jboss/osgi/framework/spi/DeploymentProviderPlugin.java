@@ -27,9 +27,6 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.internal.DeploymentProviderImpl;
-import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.vfs.VirtualFile;
-import org.osgi.framework.BundleException;
 
 /**
  * A plugin taht create bundle {@link Deployment} objects.
@@ -37,9 +34,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 12-Jul-2010
  */
-public class DeploymentProviderPlugin extends AbstractIntegrationService<DeploymentProvider> implements DeploymentProvider {
-
-    private DeploymentProvider provider;
+public class DeploymentProviderPlugin extends AbstractIntegrationService<DeploymentProvider> {
 
     public DeploymentProviderPlugin() {
         super(IntegrationServices.DEPLOYMENT_PROVIDER_PLUGIN);
@@ -51,24 +46,7 @@ public class DeploymentProviderPlugin extends AbstractIntegrationService<Deploym
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
-        provider = new DeploymentProviderImpl();
-    }
-
-    @Override
-    public DeploymentProvider getValue() {
-        return this;
-    }
-
-    public Deployment createDeployment(StorageState storageState) throws BundleException {
-        return provider.createDeployment(storageState);
-    }
-
-    public OSGiMetaData createOSGiMetaData(Deployment deployment) throws BundleException {
-        return provider.createOSGiMetaData(deployment);
-    }
-
-    public Deployment createDeployment(String location, VirtualFile rootFile) throws BundleException {
-        return provider.createDeployment(location, rootFile);
+    protected DeploymentProvider createServiceValue(StartContext startContext) throws StartException {
+        return new DeploymentProviderImpl();
     }
 }

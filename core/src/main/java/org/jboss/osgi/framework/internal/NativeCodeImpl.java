@@ -116,10 +116,10 @@ public final class NativeCodeImpl implements NativeCode {
         osAlias.put("WinXP", "WindowsXP");
     }
 
-    private final BundleManagerImpl bundleManager;
+    private final BundleManagerPlugin bundleManager;
 
     public NativeCodeImpl(BundleManager bundleManager) {
-        this.bundleManager = (BundleManagerImpl) bundleManager;
+        this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
     }
 
     @Override

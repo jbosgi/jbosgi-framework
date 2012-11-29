@@ -81,7 +81,7 @@ final class SystemBundleState extends AbstractBundleState {
 
     @Override
     public Version getVersion() {
-        return BundleManagerImpl.getFrameworkVersion();
+        return BundleManagerPlugin.getFrameworkVersion();
     }
 
     @Override
@@ -134,7 +134,7 @@ final class SystemBundleState extends AbstractBundleState {
     @Override
     void stopInternal(int options) throws BundleException {
         // Returns immediately and shuts down the Framework on another thread
-        getBundleManager().shutdownManager(false);
+        getBundleManagerPlugin().shutdownManager(false);
     }
 
     @Override

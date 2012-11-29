@@ -49,15 +49,17 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
         this.resolvedServices = resolvedServices;
     }
 
+    @Override
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
         builder.addDependencies(getPreviousService());
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
+    public void start(StartContext startContext) throws StartException {
+        super.start(startContext);
 
         // Collect the resolved bundles
-        ServiceContainer serviceRegistry = context.getController().getServiceContainer();
+        ServiceContainer serviceRegistry = startContext.getController().getServiceContainer();
         List<XBundle> bundles = new ArrayList<XBundle>();
         for (ServiceName serviceName : resolvedServices) {
             ServiceController<?> controller = serviceRegistry.getRequiredService(serviceName);
@@ -66,6 +68,7 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
 
         // Sort the bundles by Id
         Collections.sort(bundles, new Comparator<Bundle>(){
+            @Override
             public int compare(Bundle o1, Bundle o2) {
                 return (int) (o1.getBundleId() - o2.getBundleId());
             }
@@ -81,7 +84,7 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
         }
 
         // We are done
-        installCompleteService(context.getChildTarget());
+        installCompleteService(startContext.getChildTarget());
     }
 
     protected ServiceController<T> installCompleteService(ServiceTarget serviceTarget) {

@@ -37,6 +37,7 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
+import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
@@ -67,11 +68,15 @@ import org.osgi.framework.ServiceRegistration;
 abstract class AbstractBundleContext implements BundleContext {
 
     private final AbstractBundleState bundleState;
+    private final FrameworkState frameworkState;
+    private final BundleManager bundleManager;
     private boolean destroyed;
 
     AbstractBundleContext(AbstractBundleState bundleState) {
         assert bundleState != null : "Null bundleState";
         this.bundleState = bundleState;
+        this.frameworkState = bundleState.getFrameworkState();
+        this.bundleManager = bundleState.getBundleManager();
     }
 
     /**
@@ -91,18 +96,22 @@ abstract class AbstractBundleContext implements BundleContext {
         return bundleState;
     }
 
-    BundleManagerImpl getBundleManager() {
-        return bundleState.getBundleManager();
+    BundleManager getBundleManager() {
+        return bundleManager;
+    }
+
+    BundleManagerPlugin getBundleManagerPlugin() {
+        return BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
     }
 
     FrameworkState getFrameworkState() {
-        return bundleState.getFrameworkState();
+        return frameworkState;
     }
 
     @Override
     public String getProperty(String key) {
         checkValidBundleContext();
-        getBundleManager().assertFrameworkCreated();
+        getBundleManagerPlugin().assertFrameworkCreated();
         Object value = getBundleManager().getProperty(key);
         return (value instanceof String ? (String) value : null);
     }
@@ -177,7 +186,7 @@ abstract class AbstractBundleContext implements BundleContext {
             if (rootFile == null)
                 throw MESSAGES.cannotObtainVirtualFileForLocation(null, location);
 
-            DeploymentProvider deploymentPlugin = frameworkState.getDeploymentFactoryPlugin();
+            DeploymentProvider deploymentPlugin = frameworkState.getDeploymentProvider();
             dep = deploymentPlugin.createDeployment(location, rootFile);
 
             return installBundle(dep);
@@ -195,8 +204,8 @@ abstract class AbstractBundleContext implements BundleContext {
         checkValidBundleContext();
 
         FrameworkState frameworkState = getFrameworkState();
-        BundleManagerImpl bundleManager = frameworkState.getBundleManager();
-        FrameworkCoreServices coreServices = frameworkState.getCoreServices();
+        BundleManager bundleManager = frameworkState.getBundleManager();
+        CoreServices coreServices = frameworkState.getCoreServices();
         BundleLifecycle bundleLifecycle = coreServices.getBundleLifecycle();
         bundleLifecycle.install(dep);
 
@@ -395,7 +404,7 @@ abstract class AbstractBundleContext implements BundleContext {
     }
 
     private FrameworkEvents getFrameworkEventsPlugin() {
-        return getFrameworkState().getFrameworkEventsPlugin();
+        return getFrameworkState().getFrameworkEvents();
     }
 
     @Override
