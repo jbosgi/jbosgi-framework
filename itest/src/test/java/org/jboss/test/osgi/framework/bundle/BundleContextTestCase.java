@@ -154,7 +154,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
             bundle.start();
             BundleContext bundleContext = bundle.getBundleContext();
             assertNotNull(bundleContext);
-            assertEquals("1.5", bundleContext.getProperty(Constants.FRAMEWORK_VERSION));
+            assertEquals("1.7", bundleContext.getProperty(Constants.FRAMEWORK_VERSION));
             assertEquals("jboss.org", bundleContext.getProperty(Constants.FRAMEWORK_VENDOR));
             assertEquals(Locale.getDefault().getLanguage(), bundleContext.getProperty(Constants.FRAMEWORK_LANGUAGE));
             assertSystemProperty(bundleContext, "os.name", Constants.FRAMEWORK_OS_NAME);

@@ -29,17 +29,21 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
+import org.jboss.osgi.framework.spi.BundleStartLevelSupport;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
-import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
+import org.jboss.osgi.framework.spi.FrameworkStartLevelSupport;
+import org.jboss.osgi.framework.spi.IntegrationService;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.framework.spi.ServiceManager;
+import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
+import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
  * A service that represents the CREATED state of the {@link Framework}.
@@ -61,12 +65,16 @@ public final class FrameworkCreate extends AbstractFrameworkService {
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<FrameworkState> builder) {
-        builder.addDependency(IntegrationServices.DEPLOYMENT_PROVIDER_PLUGIN, DeploymentProvider.class, frameworkState.injectedDeploymentFactory);
+        builder.addDependency(IntegrationServices.BUNDLE_START_LEVEL_PLUGIN, BundleStartLevelSupport.class, frameworkState.injectedBundleStartLevel);
+        builder.addDependency(IntegrationServices.DEPLOYMENT_PROVIDER_PLUGIN, DeploymentProvider.class, frameworkState.injectedDeploymentProvider);
         builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, frameworkState.injectedFrameworkEvents);
         builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_LOADER, FrameworkModuleLoader.class, frameworkState.injectedModuleLoader);
+        builder.addDependency(IntegrationServices.FRAMEWORK_START_LEVEL_PLUGIN, FrameworkStartLevelSupport.class, frameworkState.injectedFrameworkStartLevel);
+        builder.addDependency(IntegrationServices.FRAMEWORK_WIRING_PLUGIN, FrameworkWiring.class, frameworkState.injectedFrameworkWiring);
         builder.addDependency(IntegrationServices.NATIVE_CODE_PLUGIN, NativeCode.class, frameworkState.injectedNativeCode);
         builder.addDependency(Services.RESOLVER, XResolver.class, frameworkState.injectedResolverPlugin);
         builder.addDependency(IntegrationServices.SERVICE_MANAGER, ServiceManager.class, frameworkState.injectedServiceManager);
+        builder.addDependency(IntegrationService.START_LEVEL_SUPPORT, StartLevelSupport.class, frameworkState.injectedStartLevel);
         builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, SystemBundleState.class, frameworkState.injectedSystemBundle);
         builder.setInitialMode(Mode.ON_DEMAND);
     }

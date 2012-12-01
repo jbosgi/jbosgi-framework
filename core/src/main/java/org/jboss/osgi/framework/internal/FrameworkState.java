@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,22 +19,27 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.spi.BundleManager;
+import org.jboss.osgi.framework.spi.BundleStartLevelSupport;
 import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
 import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
+import org.jboss.osgi.framework.spi.FrameworkStartLevelSupport;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.framework.spi.ServiceManager;
+import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.framework.spi.SystemPaths;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.launch.Framework;
+import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
  * Represents the state of the {@link Framework}.
@@ -50,16 +54,20 @@ final class FrameworkState {
 
     private final BundleManager bundleManager;
 
+    final InjectedValue<BundleStartLevelSupport> injectedBundleStartLevel = new InjectedValue<BundleStartLevelSupport>();
     final InjectedValue<BundleStorage> injectedBundleStorage = new InjectedValue<BundleStorage>();
-    final InjectedValue<DeploymentProvider> injectedDeploymentFactory = new InjectedValue<DeploymentProvider>();
+    final InjectedValue<DeploymentProvider> injectedDeploymentProvider = new InjectedValue<DeploymentProvider>();
     final InjectedValue<CoreServices> injectedCoreServices = new InjectedValue<CoreServices>();
     final InjectedValue<FrameworkEvents> injectedFrameworkEvents = new InjectedValue<FrameworkEvents>();
     final InjectedValue<FrameworkModuleLoader> injectedModuleLoader = new InjectedValue<FrameworkModuleLoader>();
     final InjectedValue<FrameworkModuleProvider> injectedModuleProvider = new InjectedValue<FrameworkModuleProvider>();
+    final InjectedValue<FrameworkStartLevelSupport> injectedFrameworkStartLevel = new InjectedValue<FrameworkStartLevelSupport>();
+    final InjectedValue<FrameworkWiring> injectedFrameworkWiring = new InjectedValue<FrameworkWiring>();
     final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
     final InjectedValue<ModuleManager> injectedModuleManager = new InjectedValue<ModuleManager>();
     final InjectedValue<NativeCode> injectedNativeCode = new InjectedValue<NativeCode>();
     final InjectedValue<ServiceManager> injectedServiceManager = new InjectedValue<ServiceManager>();
+    final InjectedValue<StartLevelSupport> injectedStartLevel = new InjectedValue<StartLevelSupport>();
     final InjectedValue<SystemPaths> injectedSystemPaths = new InjectedValue<SystemPaths>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
     final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
@@ -77,12 +85,16 @@ final class FrameworkState {
         return BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
     }
 
+    BundleStartLevelSupport getBundleStartLevel() {
+        return injectedBundleStartLevel.getValue();
+    }
+
     BundleStorage getBundleStorage() {
         return injectedBundleStorage.getValue();
     }
 
     DeploymentProvider getDeploymentProvider() {
-        return injectedDeploymentFactory.getValue();
+        return injectedDeploymentProvider.getValue();
     }
 
     CoreServices getCoreServices() {
@@ -101,6 +113,14 @@ final class FrameworkState {
         return injectedModuleProvider.getValue();
     }
 
+    FrameworkStartLevelSupport getFrameworkStartLevel() {
+        return injectedFrameworkStartLevel.getValue();
+    }
+
+    FrameworkWiring getFrameworkWiring() {
+        return injectedFrameworkWiring.getValue();
+    }
+
     LockManager getLockManager() {
         return injectedLockManager.getValue();
     }
@@ -115,6 +135,10 @@ final class FrameworkState {
 
     ServiceManager getServiceManagerPlugin() {
         return injectedServiceManager.getValue();
+    }
+
+    StartLevelSupport getStartLevelSupport() {
+        return injectedStartLevel.getValue();
     }
 
     SystemBundleState getSystemBundle() {

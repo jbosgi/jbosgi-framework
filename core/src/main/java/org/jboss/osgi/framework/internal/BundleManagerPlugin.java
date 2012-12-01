@@ -38,6 +38,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -62,13 +64,12 @@ import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkBuilder;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
+import org.jboss.osgi.framework.spi.FrameworkStartLevelSupport;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.ModuleManager;
-import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.metadata.VersionRange;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -80,7 +81,12 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.Version;
+import org.osgi.framework.VersionRange;
+import org.osgi.framework.launch.Framework;
+import org.osgi.framework.startlevel.FrameworkStartLevel;
+import org.osgi.framework.wiring.FrameworkWiring;
 import org.osgi.resource.Resource;
 
 /**
@@ -104,8 +110,8 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     private static String OSGi_FRAMEWORK_PROCESSOR;
     // The framework vendor
     private static String OSGi_FRAMEWORK_VENDOR = "jboss.org";
-    // The framework version. This is the version of the org.osgi.framework package in r4v42
-    private static String OSGi_FRAMEWORK_VERSION = "1.5";
+    // The framework version. This is the version of the org.osgi.framework package in R5
+    private static String OSGi_FRAMEWORK_VERSION = "1.7";
 
     private static String implementationVersion;
     static {
@@ -125,10 +131,12 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     private final AtomicInteger managerState = new AtomicInteger(Bundle.INSTALLED);
     private final AtomicBoolean managerStopped = new AtomicBoolean();
     private final ServiceContainer serviceContainer;
+    private Framework framework;
     private SystemBundleState cachedSystemBundle;
     private ServiceTarget serviceTarget;
     private int stoppedEvent;
 
+    @SuppressWarnings("deprecation")
     BundleManagerPlugin(ServiceContainer serviceContainer, FrameworkBuilder frameworkBuilder) {
         super(Services.BUNDLE_MANAGER);
         this.serviceContainer = serviceContainer;
@@ -154,6 +162,10 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             setProperty(Constants.FRAMEWORK_VENDOR, OSGi_FRAMEWORK_VENDOR);
         if (getProperty(Constants.FRAMEWORK_VERSION) == null)
             setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
+        if (getProperty(Constants.FRAMEWORK_UUID) == null)
+            setProperty(Constants.FRAMEWORK_UUID, UUID.randomUUID().toString());
+        if (getProperty(Constants.FRAMEWORK_BSNVERSION) == null)
+            setProperty(Constants.FRAMEWORK_BSNVERSION, Constants.FRAMEWORK_BSNVERSION_MANAGED);
 
         boolean allowContainerShutdown = frameworkBuilder.getServiceContainer() == null;
         shutdownContainer = new ShutdownContainer(serviceContainer, allowContainerShutdown);
@@ -205,6 +217,48 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public SystemBundleState getSystemBundle() {
         return injectedSystemBundle.getOptionalValue();
+    }
+
+    FrameworkStartLevel getFrameworkStartLevel() {
+        return getFrameworkState().getFrameworkStartLevel();
+    }
+
+    Framework getFramework() {
+        return framework;
+    }
+
+    void setFramework(Framework framework) {
+        this.framework = framework;
+    }
+
+    /**
+     * Required by spec:
+     *
+     * {@link Framework} The Framework object from the launching API.
+     * {@link FrameworkStartLevel} The Framework Start Level.
+     * {@link FrameworkWiring} The Framework Wiring.
+     *
+     * Proprietary extensions:
+     *
+     * {@link ServiceContainer} The Bundle metadata.
+     * {@link XEnvironment} The Bundle's storage state.
+     */
+    @SuppressWarnings("unchecked")
+    <T> T adapt(Class<T> type) {
+        if (!hasStopped()) {
+            if (type.isAssignableFrom(FrameworkStartLevel.class)) {
+                return (T) getFrameworkStartLevel();
+            } else if (type.isAssignableFrom(Framework.class)) {
+                return (T) getFramework();
+            } else if (type.isAssignableFrom(FrameworkWiring.class)) {
+                return (T) getFrameworkState().getFrameworkWiring();
+            } else if (type.isAssignableFrom(ServiceContainer.class)) {
+                return (T) getServiceContainer();
+            } else if (type.isAssignableFrom(XEnvironment.class)) {
+                return (T) getFrameworkState().getEnvironment();
+            }
+        }
+        return null;
     }
 
     /**
@@ -318,6 +372,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public XBundle getBundleByLocation(String location) {
         assert location != null : "Null location";
+        if (Constants.SYSTEM_BUNDLE_LOCATION.equals(location)) {
+            return getSystemBundle();
+        }
         for (XBundle aux : getBundles()) {
             String auxLocation = aux.getLocation();
             if (location.equals(auxLocation)) {
@@ -330,10 +387,14 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public Set<XBundle> getBundles(String symbolicName, String versionRange) {
         Set<XBundle> resultSet = new HashSet<XBundle>();
-        for (XBundle aux : getBundles(null)) {
-            if (symbolicName == null || symbolicName.equals(aux.getSymbolicName())) {
-                if (versionRange == null || VersionRange.parse(versionRange).isInRange(aux.getVersion())) {
-                    resultSet.add(aux);
+        if (Constants.SYSTEM_BUNDLE_SYMBOLICNAME.equals(symbolicName) && versionRange == null) {
+            resultSet.add(getSystemBundle());
+        } else {
+            for (XBundle aux : getBundles(null)) {
+                if (symbolicName == null || symbolicName.equals(aux.getSymbolicName())) {
+                    if (versionRange == null || new VersionRange(versionRange).includes(aux.getVersion())) {
+                        resultSet.add(aux);
+                    }
                 }
             }
         }
@@ -558,11 +619,28 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         getSystemBundle().changeState(Bundle.STOPPING);
         setManagerState(Bundle.STOPPING);
 
-        // Move to start level 0 in the current thread
-        CoreServices coreServices = getFrameworkState().getCoreServices();
-        StartLevelSupport startLevel = coreServices.getStartLevelSupport();
-        startLevel.decreaseStartLevel(0);
+        final CountDownLatch latch = new CountDownLatch(1);
+        FrameworkListener listener = new FrameworkListener() {
+            @Override
+            public void frameworkEvent(FrameworkEvent event) {
+                if (event.getType() == FrameworkEvent.STARTLEVEL_CHANGED) {
+                    latch.countDown();
+                }
+            }
+        };
 
+        // Move to start level 0 in the current thread
+        FrameworkStartLevel startLevel = getSystemBundle().adapt(FrameworkStartLevel.class);
+        ((FrameworkStartLevelSupport) startLevel).shutdownFramework(listener);
+
+        // Wait for the start level event
+        try {
+            latch.await(10, TimeUnit.SECONDS);
+        } catch (InterruptedException ex) {
+            // ignore
+        }
+
+        // Shutdown all executor services
         synchronized (executorServices) {
             for (ExecutorService service : executorServices) {
                 service.shutdown();

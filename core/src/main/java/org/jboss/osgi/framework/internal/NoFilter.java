@@ -22,6 +22,7 @@ package org.jboss.osgi.framework.internal;
  */
 
 import java.util.Dictionary;
+import java.util.Map;
 
 import org.osgi.framework.Filter;
 import org.osgi.framework.ServiceReference;
@@ -30,16 +31,13 @@ import org.osgi.framework.ServiceReference;
  * Dummy filter implementation
  *
  * @author <a href="adrian@jboss.com">Adrian Brock</a>
- * @version $Revision: 1.1 $
+ * @author Thomas.Diesler@jboss.com
  */
 public class NoFilter implements Filter {
 
     /** Singleton instance */
     public static final Filter INSTANCE = new NoFilter();
 
-    /**
-     * Singleton
-     */
     private NoFilter() {
     }
 
@@ -48,7 +46,7 @@ public class NoFilter implements Filter {
         return true;
     }
 
-    public boolean match(ServiceReference reference) {
+    public boolean match(ServiceReference<?> reference) {
         return true;
     }
 
@@ -56,9 +54,10 @@ public class NoFilter implements Filter {
     public boolean matchCase(Dictionary dictionary) {
         return true;
     }
-
+    
     @Override
-    public String toString() {
-        return null;
+    public boolean matches(Map<String, ?> map) {
+        // [TODO] R5 Filter.matches 
+        throw new UnsupportedOperationException();
     }
 }

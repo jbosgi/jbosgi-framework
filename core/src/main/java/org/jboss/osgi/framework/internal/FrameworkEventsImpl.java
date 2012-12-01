@@ -259,8 +259,8 @@ final class FrameworkEventsImpl implements FrameworkEvents {
                     // This method will be called as service listeners are removed while this hook is registered.
                     for (ListenerHook hook : getServiceListenerHooks()) {
                         try {
-                            ListenerInfoImpl info = (ListenerInfoImpl) slreg.getListenerInfo();
-                            info.setRemoved(true);
+                            ListenerInfo info = slreg.getListenerInfo();
+                            ((ListenerInfoImpl)info).setRemoved(true);
                             hook.removed(Collections.singleton(info));
                         } catch (RuntimeException ex) {
                             LOGGER.errorProcessingServiceListenerHook(ex, hook);
@@ -370,6 +370,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
 
         if (!listeners.isEmpty()) {
             Runnable runner = new Runnable() {
+                @Override
                 public void run() {
                     // BundleListeners are called with a BundleEvent object when a bundleState has been
                     // installed, resolved, started, stopped, updated, unresolved, or uninstalled
@@ -393,7 +394,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     }
 
     @Override
-    public void fireFrameworkEvent(final Bundle bundle, final int type, final Throwable th) {
+    public void fireFrameworkEvent(final Bundle bundle, final int type, final Throwable th, final FrameworkListener... providedListeners) {
 
         // Do nothing it the framework is not active
         if (bundleManager.isFrameworkCreated() == false)
@@ -402,6 +403,9 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         // Get a snapshot of the current listeners
         final ArrayList<FrameworkListener> listeners = new ArrayList<FrameworkListener>();
         synchronized (frameworkListeners) {
+            if (providedListeners != null) {
+                listeners.addAll(Arrays.asList(providedListeners));
+            }
             for (Entry<XBundle, List<FrameworkListener>> entry : frameworkListeners.entrySet()) {
                 for (FrameworkListener listener : entry.getValue()) {
                     listeners.add(listener);
@@ -428,6 +432,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             return;
 
         Runnable runner = new Runnable() {
+            @Override
             public void run() {
                 // Call the listeners
                 for (FrameworkListener listener : listeners) {

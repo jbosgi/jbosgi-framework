@@ -4,5 +4,5 @@ Bundle-ManifestVersion: 2
 Bundle-License: http://repository.jboss.com/licenses/lgpl.txt
 Bundle-Description: JBossOSGi Framework
 Bundle-SymbolicName: org.jboss.osgi.framework
-Bundle-Version: 1.0.0
-Export-Package: org.osgi.framework;version="1.5",org.osgi.framework.launch;version="1.0",org.osgi.framework.hooks.service;version="1.0",org.osgi.service.packageadmin;version="1.2",org.osgi.service.startlevel;version="1.1",org.osgi.util.tracker;version="1.4"
+Bundle-Version: 3.0.0
+Export-Package: org.osgi.framework;version=1.7,org.osgi.framework.hooks.service;version=1.1,org.osgi.framework.launch;version=1.1,org.osgi.framework.namespace;version=1.0,org.osgi.framework.wiring;version=1.1,org.osgi.resource;version=1.0,org.osgi.service.packageadmin;version=1.2,org.osgi.service.resolver;version=1.0,org.osgi.service.startlevel;version=1.1,org.osgi.service.url;version=1.0,org.osgi.util.tracker;version=1.5,org.osgi.util.xml;version=1.0

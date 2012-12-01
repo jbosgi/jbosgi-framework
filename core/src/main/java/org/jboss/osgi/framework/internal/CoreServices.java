@@ -33,7 +33,6 @@ import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.PackageAdminSupport;
-import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -48,7 +47,6 @@ final class CoreServices extends AbstractIntegrationService<CoreServices> {
     private final InjectedValue<BundleLifecycle> injectedBundleLifecycle = new InjectedValue<BundleLifecycle>();
     private final InjectedValue<LifecycleInterceptorService> injectedLifecycleInterceptor = new InjectedValue<LifecycleInterceptorService>();
     private final InjectedValue<PackageAdminSupport> injectedPackageAdmin = new InjectedValue<PackageAdminSupport>();
-    private final InjectedValue<StartLevelSupport> injectedStartLevel = new InjectedValue<StartLevelSupport>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
 
     CoreServices() {
@@ -61,7 +59,6 @@ final class CoreServices extends AbstractIntegrationService<CoreServices> {
         builder.addDependency(IntegrationServices.FRAMEWORK_CREATE_INTERNAL, FrameworkState.class, injectedFrameworkState);
         builder.addDependency(IntegrationServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorService.class, injectedLifecycleInterceptor);
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdminSupport.class, injectedPackageAdmin);
-        builder.addDependency(Services.START_LEVEL, StartLevelSupport.class, injectedStartLevel);
         builder.addDependency(IntegrationServices.SYSTEM_CONTEXT_INTERNAL, BundleContext.class, injectedSystemContext);
         builder.addDependencies(IntegrationServices.SYSTEM_SERVICES_PLUGIN, IntegrationServices.URL_HANDLER_PLUGIN);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -97,7 +94,4 @@ final class CoreServices extends AbstractIntegrationService<CoreServices> {
         return injectedPackageAdmin.getValue();
     }
 
-    StartLevelSupport getStartLevelSupport() {
-        return injectedStartLevel.getValue();
-    }
 }

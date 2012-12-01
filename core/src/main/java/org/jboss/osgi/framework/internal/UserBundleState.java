@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -60,8 +59,9 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.BundleWiring;
-import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * This is the internal implementation of a Bundle based on a user {@link Deployment}.
@@ -71,7 +71,7 @@ import org.osgi.service.packageadmin.PackageAdmin;
  */
 abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBundleState<R> {
 
-    private final List<R> revisions = new CopyOnWriteArrayList<R>();
+    private final List<R> revisions = new ArrayList<R>();
     private final ServiceTarget serviceTarget;
     private final ServiceName serviceName;
 
@@ -157,9 +157,33 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
     }
 
     @Override
+    BundleRevisions getBundleRevisions() {
+        synchronized (revisions) {
+            final Bundle bundle = this;
+            final List<BundleRevision> bundleRevisions = new ArrayList<BundleRevision>(revisions.size());
+            for(XBundleRevision rev : revisions) {
+                bundleRevisions.add(rev);
+            }
+            return new BundleRevisions() {
+
+                @Override
+                public Bundle getBundle() {
+                    return bundle;
+                }
+
+                @Override
+                public List<BundleRevision> getRevisions() {
+                    return Collections.unmodifiableList(bundleRevisions);
+                }
+            };
+        }
+    }
+    @Override
     void addBundleRevision(R rev) {
-        super.addBundleRevision(rev);
-        revisions.add(0, rev);
+        synchronized (revisions) {
+            super.addBundleRevision(rev);
+            revisions.add(0, rev);
+        }
     }
 
     @Override
@@ -169,24 +193,32 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
 
     @Override
     public List<XBundleRevision> getAllBundleRevisions() {
-        List<XBundleRevision> result = new ArrayList<XBundleRevision>(revisions);
-        return Collections.unmodifiableList(result);
+        synchronized (revisions) {
+            List<XBundleRevision> result = new ArrayList<XBundleRevision>(revisions);
+            return Collections.unmodifiableList(result);
+        }
     }
 
     void clearOldRevisions() {
-        R rev = getBundleRevision();
-        revisions.clear();
-        revisions.add(rev);
+        synchronized (revisions) {
+            R rev = getBundleRevision();
+            revisions.clear();
+            revisions.add(rev);
+        }
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     R getBundleRevisionById(int revisionId) {
-        for (R rev : revisions) {
-            if (rev.getRevisionId() == revisionId) {
-                return rev;
+        synchronized (revisions) {
+            for (XBundleRevision rev : revisions) {
+                R stateRev = (R) rev;
+                if (stateRev.getRevisionId() == revisionId) {
+                    return stateRev;
+                }
             }
+            return null;
         }
-        return null;
     }
 
     boolean hasActiveWires() {
@@ -313,7 +345,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
     private StorageState createStorageState(BundleStorage storagePlugin, String location, VirtualFile rootFile) throws BundleException {
         StorageState storageState;
         try {
-            int startlevel = getCoreServices().getStartLevelSupport().getInitialBundleStartLevel();
+            int startlevel = getFrameworkState().getStartLevelSupport().getInitialBundleStartLevel();
             storageState = storagePlugin.createStorageState(getBundleId(), location, startlevel, rootFile);
         } catch (IOException ex) {
             throw MESSAGES.cannotSetupStorage(ex, rootFile);
@@ -322,7 +354,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
     }
 
     /**
-     * This method gets called by {@link PackageAdmin} when the bundle needs to be refreshed,
+     * This method gets called by when the bundle needs to be refreshed,
      * this means that all the old revisions are thrown out.
      */
     void refresh() throws BundleException {

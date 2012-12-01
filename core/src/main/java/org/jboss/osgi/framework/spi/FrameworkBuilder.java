@@ -43,11 +43,11 @@ public interface FrameworkBuilder {
         CREATE, INIT, ACTIVE
     }
 
-    Object getProperty(String key);
+    String getProperty(String key);
 
-    Object getProperty(String key, Object defaultValue);
+    String getProperty(String key, String defaultValue);
 
-    Map<String, Object> getProperties();
+    Map<String, String> getProperties();
 
     ServiceContainer getServiceContainer();
 

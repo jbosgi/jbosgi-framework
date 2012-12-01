@@ -88,8 +88,11 @@ public class NativeCodeTestCase extends OSGiFrameworkTest {
             Bundle bundleA = context.installBundle(getTestArchivePath("nativecode2.jar"));
             assertBundleState(Bundle.INSTALLED, bundleA.getState());
 
-            bundleA.start();
-            assertBundleState(Bundle.ACTIVE, bundleA.getState());
+            String fwOSName = context.getProperty(Constants.FRAMEWORK_OS_NAME);
+            if (!fwOSName.startsWith("Mac OS")) {
+                bundleA.start();
+                assertBundleState(Bundle.ACTIVE, bundleA.getState());
+            }
 
             bundleA.uninstall();
             assertBundleState(Bundle.UNINSTALLED, bundleA.getState());
@@ -165,14 +168,17 @@ public class NativeCodeTestCase extends OSGiFrameworkTest {
 
             BundleContext context = fw.getBundleContext();
 
-            Bundle bundleA = context.installBundle(getTestArchivePath("nativecode4.jar"));
-            assertBundleState(Bundle.INSTALLED, bundleA.getState());
+            String fwOSName = context.getProperty(Constants.FRAMEWORK_OS_NAME);
+            if (!fwOSName.startsWith("Mac OS")) {
+                Bundle bundleA = context.installBundle(getTestArchivePath("nativecode4.jar"));
+                assertBundleState(Bundle.INSTALLED, bundleA.getState());
 
-            bundleA.start();
-            assertBundleState(Bundle.ACTIVE, bundleA.getState());
+                bundleA.start();
+                assertBundleState(Bundle.ACTIVE, bundleA.getState());
 
-            bundleA.uninstall();
-            assertBundleState(Bundle.UNINSTALLED, bundleA.getState());
+                bundleA.uninstall();
+                assertBundleState(Bundle.UNINSTALLED, bundleA.getState());
+            }
 
             fw.stop();
             fw.waitForStop(2000);

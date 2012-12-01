@@ -22,20 +22,38 @@
 package org.jboss.osgi.framework.spi;
 
 import org.jboss.osgi.resolver.XBundle;
-import org.osgi.service.startlevel.StartLevel;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkListener;
 
 /**
- * An implementation of the {@link StartLevel} service.
+ * An plugin to support {@link BundleStartLevel} and {@link FrameworkStartLevel}.
  *
  * @author Thomas.Diesler@jboss.com
  */
-public interface StartLevelSupport extends StartLevel {
+public interface StartLevelSupport {
 
-    void enableImmediateExecution(boolean enable);
+    void enableImmediateExecution(boolean flag);
+
+    int getFrameworkStartLevel();
+
+    void setFrameworkStartLevel(int level, FrameworkListener... listeners);
+
+    void shutdownFramework(FrameworkListener... listeners);
+
+    void decreaseFrameworkStartLevel(int level);
+
+    void increaseFrameworkStartLevel(int level);
+
+    int getBundleStartLevel(XBundle bundle);
+
+    void setBundleStartLevel(XBundle bundle, int level);
+
+    int getInitialBundleStartLevel();
+
+    void setInitialBundleStartLevel(int startlevel);
+
+    boolean isBundlePersistentlyStarted(Bundle bundle);
 
     void setBundlePersistentlyStarted(XBundle bundle, boolean started);
 
-    void decreaseStartLevel(int level);
-
-    void increaseStartLevel(int level);
-}
+    boolean isBundleActivationPolicyUsed(Bundle bundle);}

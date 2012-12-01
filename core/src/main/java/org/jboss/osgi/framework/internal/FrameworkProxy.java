@@ -24,11 +24,14 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.security.cert.X509Certificate;
 import java.util.Dictionary;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 
 import org.jboss.msc.service.ServiceContainer;
@@ -38,8 +41,6 @@ import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.FrameworkBuilder;
 import org.jboss.osgi.framework.spi.FrameworkBuilder.FrameworkPhase;
 import org.jboss.osgi.framework.spi.ServiceTracker;
-import org.jboss.osgi.resolver.Adaptable;
-import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -58,7 +59,7 @@ import org.osgi.framework.launch.Framework;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class FrameworkProxy implements Framework, Adaptable {
+final class FrameworkProxy implements Framework {
 
     private final FrameworkBuilder frameworkBuilder;
     private BundleManagerPlugin bundleManager;
@@ -90,21 +91,13 @@ final class FrameworkProxy implements Framework, Adaptable {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> T adapt(Class<T> type) {
-        if (!hasStopped()) {
-            BundleManagerPlugin bundleManager = getBundleManager();
-            if (type.isAssignableFrom(BundleManager.class)) {
-                return (T) bundleManager;
-            } else if (type.isAssignableFrom(ServiceContainer.class)) {
-                return (T) bundleManager.getServiceContainer();
-            }
+        T result = null;
+        if (bundleManager != null) {
+            SystemBundleState sysbundle = bundleManager.getSystemBundle();
+            result = sysbundle != null ? sysbundle.adapt(type) : null;
         }
-        return null;
-    }
-
-    private BundleManagerPlugin getBundleManager() {
-        return bundleManager;
+        return result;
     }
 
     /**
@@ -154,6 +147,8 @@ final class FrameworkProxy implements Framework, Adaptable {
             if (!serviceTracker.awaitCompletion()) {
                 throw serviceTracker.getFirstFailure();
             }
+
+            bundleManager.setFramework(this);
 
         } catch (BundleException ex) {
             bundleManager.setManagerState(Bundle.INSTALLED);
@@ -305,7 +300,6 @@ final class FrameworkProxy implements Framework, Adaptable {
         return bundleManager != null ? bundleManager.getManagerState() : Bundle.INSTALLED;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Dictionary<String, String> getHeaders() {
         assertNotStopped();
@@ -313,13 +307,13 @@ final class FrameworkProxy implements Framework, Adaptable {
     }
 
     @Override
-    public ServiceReference[] getRegisteredServices() {
+    public ServiceReference<?>[] getRegisteredServices() {
         assertNotStopped();
         return getSystemBundle().getRegisteredServices();
     }
 
     @Override
-    public ServiceReference[] getServicesInUse() {
+    public ServiceReference<?>[] getServicesInUse() {
         assertNotStopped();
         return getSystemBundle().getServicesInUse();
     }
@@ -336,7 +330,6 @@ final class FrameworkProxy implements Framework, Adaptable {
         return getSystemBundle().getResource(name);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Dictionary<String, String> getHeaders(String locale) {
         assertNotStopped();
@@ -349,14 +342,12 @@ final class FrameworkProxy implements Framework, Adaptable {
         return getSystemBundle().loadClass(name);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Enumeration<URL> getResources(String name) throws IOException {
         assertNotStopped();
         return getSystemBundle().getResources(name);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Enumeration<String> getEntryPaths(String path) {
         assertNotStopped();
@@ -375,7 +366,6 @@ final class FrameworkProxy implements Framework, Adaptable {
         return getSystemBundle().getLastModified();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Enumeration<URL> findEntries(String path, String filePattern, boolean recurse) {
         assertNotStopped();
@@ -388,8 +378,7 @@ final class FrameworkProxy implements Framework, Adaptable {
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public Map getSignerCertificates(int signersType) {
+    public Map<X509Certificate, List<X509Certificate>> getSignerCertificates(int signersType) {
         throw new UnsupportedOperationException();
     }
 
@@ -402,9 +391,21 @@ final class FrameworkProxy implements Framework, Adaptable {
             throw MESSAGES.illegalStateFrameworkAlreadyStopped();
     }
 
-    private XBundle getSystemBundle() {
+    private SystemBundleState getSystemBundle() {
         if (bundleManager == null)
             throw MESSAGES.illegalStateFrameworkNotInitialized();
         return bundleManager.getFrameworkState().getSystemBundle();
+    }
+
+    @Override
+    public File getDataFile(String filename) {
+        // [TODO] R5 Bundle.getDataFile
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int compareTo(Bundle o) {
+        // [TODO] R5 Bundle.compareTo
+        throw new UnsupportedOperationException();
     }
 }

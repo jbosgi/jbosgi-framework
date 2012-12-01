@@ -21,13 +21,13 @@ package org.jboss.test.osgi.framework;
  * #L%
  */
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import org.jboss.osgi.metadata.VersionRange;
 import org.junit.Assert;
 import org.junit.Test;
 import org.osgi.framework.Version;
+import org.osgi.framework.VersionRange;
 
 /**
  * Test versions with suffix
@@ -69,38 +69,38 @@ public class VersionRangeTestCase {
     @Test
     public void testVersionRange() throws Exception {
 
-        VersionRange rA = VersionRange.parse("[1.0,3.0)");
-        assertTrue(rA.isInRange(v200Final));
-        assertTrue(rA.isInRange(v200GA));
-        assertTrue(rA.isInRange(v200CR1));
-        assertTrue(rA.isInRange(v200Beta1));
-        assertTrue(rA.isInRange(v200Alpha1));
-        assertTrue(rA.isInRange(v200));
+        VersionRange rA = new VersionRange("[1.0,3.0)");
+        assertTrue(rA.includes(v200Final));
+        assertTrue(rA.includes(v200GA));
+        assertTrue(rA.includes(v200CR1));
+        assertTrue(rA.includes(v200Beta1));
+        assertTrue(rA.includes(v200Alpha1));
+        assertTrue(rA.includes(v200));
 
-        VersionRange rB = VersionRange.parse("[2.0,3.0)");
-        assertTrue(rB.isInRange(v200Final));
-        assertTrue(rB.isInRange(v200GA));
-        assertTrue(rB.isInRange(v200CR1));
-        assertTrue(rB.isInRange(v200Beta1));
-        assertTrue(rB.isInRange(v200Alpha1));
-        assertTrue(rB.isInRange(v200));
+        VersionRange rB = new VersionRange("[2.0,3.0)");
+        assertTrue(rB.includes(v200Final));
+        assertTrue(rB.includes(v200GA));
+        assertTrue(rB.includes(v200CR1));
+        assertTrue(rB.includes(v200Beta1));
+        assertTrue(rB.includes(v200Alpha1));
+        assertTrue(rB.includes(v200));
 
-        VersionRange rC = VersionRange.parse("[1.0,2.0)");
-        assertFalse(rC.isInRange(v200Final));
-        assertFalse(rC.isInRange(v200GA));
-        assertFalse(rC.isInRange(v200CR1));
-        assertFalse(rC.isInRange(v200Beta1));
-        assertFalse(rC.isInRange(v200Alpha1));
-        assertFalse(rC.isInRange(v200));
+        VersionRange rC = new VersionRange("[1.0,2.0)");
+        assertFalse(rC.includes(v200Final));
+        assertFalse(rC.includes(v200GA));
+        assertFalse(rC.includes(v200CR1));
+        assertFalse(rC.includes(v200Beta1));
+        assertFalse(rC.includes(v200Alpha1));
+        assertFalse(rC.includes(v200));
 
-        VersionRange rD = VersionRange.parse("[2.0,2.0]");
-        assertTrue(rD.isInRange(v200));
+        VersionRange rD = new VersionRange("[2.0,2.0]");
+        assertTrue(rD.includes(v200));
 
         // Versions with qualifier not in range
-        assertFalse(rD.isInRange(v200Final));
-        assertFalse(rD.isInRange(v200GA));
-        assertFalse(rD.isInRange(v200CR1));
-        assertFalse(rD.isInRange(v200Beta1));
-        assertFalse(rD.isInRange(v200Alpha1));
+        assertFalse(rD.includes(v200Final));
+        assertFalse(rD.includes(v200GA));
+        assertFalse(rD.includes(v200CR1));
+        assertFalse(rD.includes(v200Beta1));
+        assertFalse(rD.includes(v200Alpha1));
     }
 }

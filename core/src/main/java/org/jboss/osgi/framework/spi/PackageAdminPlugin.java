@@ -36,7 +36,6 @@ import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.packageadmin.PackageAdmin;
-import org.osgi.service.startlevel.StartLevel;
 
 /**
  * An implementation of the {@link PackageAdmin} service.
@@ -52,7 +51,7 @@ public class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdminSuppor
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private final InjectedValue<ModuleManager> injectedModuleManager = new InjectedValue<ModuleManager>();
     private final InjectedValue<XResolver> injectedResolver = new InjectedValue<XResolver>();
-    private final InjectedValue<StartLevel> injectedStartLevel = new InjectedValue<StartLevel>();
+    private final InjectedValue<StartLevelSupport> injectedStartLevel = new InjectedValue<StartLevelSupport>();
     private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
     private ServiceRegistration registration;
 
@@ -64,7 +63,7 @@ public class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdminSuppor
     protected void addServiceDependencies(ServiceBuilder<PackageAdminSupport> builder) {
         super.addServiceDependencies(builder);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
-        builder.addDependency(Services.START_LEVEL, StartLevel.class, injectedStartLevel);
+        builder.addDependency(IntegrationService.START_LEVEL_SUPPORT, StartLevelSupport.class, injectedStartLevel);
         builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, injectedFrameworkEvents);
         builder.addDependency(IntegrationServices.MODULE_MANGER, ModuleManager.class, injectedModuleManager);
         builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, injectedLockManager);
@@ -86,7 +85,7 @@ public class PackageAdminPlugin extends ExecutorServicePlugin<PackageAdminSuppor
         FrameworkEvents events = injectedFrameworkEvents.getValue();
         ModuleManager moduleManager = injectedModuleManager.getValue();
         XResolver resolver = injectedResolver.getValue();
-        StartLevel startLevel = injectedStartLevel.getValue();
+        StartLevelSupport startLevel = injectedStartLevel.getValue();
         LockManager lockManager = injectedLockManager.getValue();
         return new PackageAdminImpl(getBundleManager(), env, events, moduleManager, resolver, startLevel, lockManager, getExecutorService(), new AtomicBoolean(false));
     }

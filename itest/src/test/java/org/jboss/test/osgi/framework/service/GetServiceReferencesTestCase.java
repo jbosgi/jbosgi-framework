@@ -95,21 +95,21 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest {
             assertNoAllReferences(context1, B.class.getName());
 
             try {
-                context1.getServiceReference(null);
+                context1.getServiceReference((String)null);
                 fail("Should not be here!");
             } catch (IllegalArgumentException t) {
                 // expected
             }
 
             try {
-                context1.getServiceReferences(null, "invalid");
+                context1.getServiceReferences((String)null, "invalid");
                 fail("Should not be here!");
             } catch (InvalidSyntaxException t) {
                 // expected
             }
 
             try {
-                context1.getAllServiceReferences(null, "invalid");
+                context1.getAllServiceReferences((String)null, "invalid");
                 fail("Should not be here!");
             } catch (InvalidSyntaxException t) {
                 // expected
@@ -125,7 +125,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest {
             }
 
             try {
-                context1.getServiceReferences(null, null);
+                context1.getServiceReferences((String)null, null);
                 fail("Should not be here!");
             } catch (IllegalStateException t) {
                 // expected
@@ -148,6 +148,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest {
         archiveA.addClass(A.class);
         archiveA.setManifest(new Asset() {
 
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -196,6 +197,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest {
             JavaArchive archiveB = ShrinkWrap.create(JavaArchive.class, "bundleB");
             archiveB.setManifest(new Asset() {
 
+                @Override
                 public InputStream openStream() {
                     OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                     builder.addBundleManifestVersion(2);
@@ -641,6 +643,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
         archive.addClasses(A.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -656,6 +659,7 @@ public class GetServiceReferencesTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple2");
         archive.addClasses(A.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

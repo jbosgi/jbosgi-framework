@@ -26,6 +26,8 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
+import org.jboss.osgi.framework.Services;
+import org.osgi.service.startlevel.StartLevel;
 
 /**
  * An integration service.
@@ -34,6 +36,9 @@ import org.jboss.msc.service.ServiceTarget;
  * @since 01-Aug-2012
  */
 public interface IntegrationService<T> extends Service<T> {
+
+    /** The service name for the {@link StartLevel} service */
+    ServiceName START_LEVEL_SUPPORT = Services.JBOSGI_BASE_NAME.append("StartLevelSupport");
 
     ServiceName getServiceName();
 

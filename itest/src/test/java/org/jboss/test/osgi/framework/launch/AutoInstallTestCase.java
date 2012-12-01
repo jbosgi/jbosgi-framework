@@ -1,3 +1,4 @@
+package org.jboss.test.osgi.framework.launch;
 /*
  * #%L
  * JBossOSGi Framework
@@ -19,7 +20,6 @@
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework.launch;
 
 import java.io.File;
 import java.io.InputStream;
@@ -63,22 +63,17 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
 
         Assert.assertTrue("File exists: " + fileB, fileB.exists());
 
-        Map<String, Object> initprops = getFrameworkInitProperties(true);
+        Map<String, String> initprops = getFrameworkInitProperties(true);
         initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileB.toURI().toString());
         initprops.put(Constants.PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS, new Integer(1).toString());
 
         Framework framework = newFramework(initprops);
-        try {
-            framework.start();
+        framework.start();
 
-            PackageAdmin pa = getPackageAdmin();
-            Bundle bundleB = pa.getBundles("bundleB", null)[0];
-            Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
-            assertBundleState(Bundle.ACTIVE, bundleB.getState());
-        } finally {
-            framework.stop();
-            framework.waitForStop(5000);
-        }
+        PackageAdmin pa = getPackageAdmin();
+        Bundle bundleB = pa.getBundles("bundleB", null)[0];
+        Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
+        assertBundleState(Bundle.ACTIVE, bundleB.getState());
     }
 
 
@@ -88,25 +83,20 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
         Assert.assertTrue("File exists: " + fileA, fileA.exists());
         Assert.assertTrue("File exists: " + fileB, fileB.exists());
 
-        Map<String, Object> initprops = getFrameworkInitProperties(true);
+        Map<String, String> initprops = getFrameworkInitProperties(true);
         initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileA.toURI() + "," + fileB.toURI());
 
         Framework framework = newFramework(initprops);
-        try {
-            framework.start();
+        framework.start();
 
-            PackageAdmin pa = getPackageAdmin();
-            Bundle bundleA = pa.getBundles("bundleA", null)[0];
-            Assert.assertEquals(fileA.toURI().toString(), bundleA.getLocation());
-            assertBundleState(Bundle.ACTIVE, bundleA.getState());
+        PackageAdmin pa = getPackageAdmin();
+        Bundle bundleA = pa.getBundles("bundleA", null)[0];
+        Assert.assertEquals(fileA.toURI().toString(), bundleA.getLocation());
+        assertBundleState(Bundle.ACTIVE, bundleA.getState());
 
-            Bundle bundleB = pa.getBundles("bundleB", null)[0];
-            Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
-            assertBundleState(Bundle.ACTIVE, bundleB.getState());            
-        } finally {
-            framework.stop();
-            framework.waitForStop(5000);
-        }
+        Bundle bundleB = pa.getBundles("bundleB", null)[0];
+        Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
+        assertBundleState(Bundle.ACTIVE, bundleB.getState());
     }
 
     @Test
@@ -114,7 +104,7 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
 
         Assert.assertTrue("File exists: " + fileA, fileA.exists());
 
-        Map<String, Object> initprops = getFrameworkInitProperties(true);
+        Map<String, String> initprops = getFrameworkInitProperties(true);
         initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileA.toURI().toString());
 
         Framework framework = newFramework(initprops);
@@ -122,11 +112,9 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
             framework.start();
             Assert.fail("BundleException expected");
         } catch (BundleException e) {
-            assertBundleState(Bundle.INSTALLED, framework.getState());
-        } finally {
-            framework.stop();
-            framework.waitForStop(5000);
+            // expected
         }
+        assertBundleState(Bundle.INSTALLED, framework.getState());
     }
 
     @Test
@@ -134,27 +122,22 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
 
         Assert.assertTrue("File exists: " + fileB, fileB.exists());
 
-        Map<String, Object> initprops = getFrameworkInitProperties(true);
+        Map<String, String> initprops = getFrameworkInitProperties(true);
         initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileB.toURI().toString());
         initprops.put(Constants.PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS, new Integer(1).toString());
 
         Framework framework = newFramework(initprops);
-        try {
-            framework.start();
+        framework.start();
 
-            PackageAdmin pa = getPackageAdmin();
-            Bundle bundleB = pa.getBundles("bundleB", null)[0];
-            Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
-            assertBundleState(Bundle.ACTIVE, bundleB.getState());
+        PackageAdmin pa = getPackageAdmin();
+        Bundle bundleB = pa.getBundles("bundleB", null)[0];
+        Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
+        assertBundleState(Bundle.ACTIVE, bundleB.getState());
 
-            bundleB.uninstall();
+        bundleB.uninstall();
 
-            // Verify that the framework is still active
-            assertServiceState(State.UP, Services.FRAMEWORK_ACTIVE);
-        } finally {
-            framework.stop();
-            framework.waitForStop(5000);
-        }
+        // Verify that the framework is still active
+        assertServiceState(State.UP, Services.FRAMEWORK_ACTIVE);
     }
 
     @Test
@@ -162,55 +145,50 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
 
         Assert.assertTrue("File exists: " + fileB, fileB.exists());
 
-        Map<String, Object> initprops = getFrameworkInitProperties(true);
+        Map<String, String> initprops = getFrameworkInitProperties(true);
         initprops.put(Constants.PROPERTY_AUTO_START_URLS, fileB.toURI().toString());
         initprops.put(Constants.PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS, new Integer(1).toString());
 
         Framework framework = newFramework(initprops);
-        try {
-            framework.start();
+        framework.start();
 
-            PackageAdmin pa = getPackageAdmin();
-            Bundle bundleB = pa.getBundles("bundleB", null)[0];
-            Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
-            assertBundleState(Bundle.ACTIVE, bundleB.getState());
+        PackageAdmin pa = getPackageAdmin();
+        Bundle bundleB = pa.getBundles("bundleB", null)[0];
+        Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
+        assertBundleState(Bundle.ACTIVE, bundleB.getState());
 
-            Bundle bundleC = installBundle(getBundleC());
-            assertBundleState(Bundle.INSTALLED, bundleC.getState());
+        Bundle bundleC = installBundle(getBundleC());
+        assertBundleState(Bundle.INSTALLED, bundleC.getState());
 
-            Bundle bundleD = installBundle(getBundleD());
-            assertBundleState(Bundle.INSTALLED, bundleD.getState());
+        Bundle bundleD = installBundle(getBundleD());
+        assertBundleState(Bundle.INSTALLED, bundleD.getState());
 
-            bundleD.start();
-            assertBundleState(Bundle.INSTALLED, bundleC.getState());
-            assertBundleState(Bundle.ACTIVE, bundleD.getState());
+        bundleD.start();
+        assertBundleState(Bundle.INSTALLED, bundleC.getState());
+        assertBundleState(Bundle.ACTIVE, bundleD.getState());
 
-            bundleB.uninstall();
+        bundleB.uninstall();
 
-            // Verify that the framework is still active
-            assertServiceState(State.UP, Services.FRAMEWORK_ACTIVE);
+        // Verify that the framework is still active
+        assertServiceState(State.UP, Services.FRAMEWORK_ACTIVE);
 
-            framework.stop();
-            framework.waitForStop(2000);
+        framework.stop();
+        framework.waitForStop(2000);
 
-            assertBundleState(Bundle.UNINSTALLED, bundleB.getState());
-            assertBundleState(Bundle.UNINSTALLED, bundleC.getState());
-            assertBundleState(Bundle.UNINSTALLED, bundleD.getState());
+        assertBundleState(Bundle.UNINSTALLED, bundleB.getState());
+        assertBundleState(Bundle.UNINSTALLED, bundleC.getState());
+        assertBundleState(Bundle.UNINSTALLED, bundleD.getState());
 
-            framework.start();
+        framework.start();
 
-            pa = getPackageAdmin();
-            bundleB = pa.getBundles("bundleB", null)[0];
-            bundleC = pa.getBundles("bundleC", null)[0];
-            bundleD = pa.getBundles("bundleD", null)[0];
+        pa = getPackageAdmin();
+        bundleB = pa.getBundles("bundleB", null)[0];
+        bundleC = pa.getBundles("bundleC", null)[0];
+        bundleD = pa.getBundles("bundleD", null)[0];
 
-            assertBundleState(Bundle.ACTIVE, bundleB.getState());
-            assertBundleState(Bundle.INSTALLED, bundleC.getState());
-            assertBundleState(Bundle.ACTIVE, bundleD.getState());          
-        } finally {
-            framework.stop();
-            framework.waitForStop(5000);
-        }
+        assertBundleState(Bundle.ACTIVE, bundleB.getState());
+        assertBundleState(Bundle.INSTALLED, bundleC.getState());
+        assertBundleState(Bundle.ACTIVE, bundleD.getState());
     }
 
     private static JavaArchive getBundleA() {

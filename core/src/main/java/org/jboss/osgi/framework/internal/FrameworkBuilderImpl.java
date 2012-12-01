@@ -39,7 +39,10 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
 import org.jboss.osgi.framework.spi.BundleManager;
+import org.jboss.osgi.framework.spi.BundleStartLevelPlugin;
 import org.jboss.osgi.framework.spi.DeploymentProviderPlugin;
+import org.jboss.osgi.framework.spi.FrameworkStartLevelPlugin;
+import org.jboss.osgi.framework.spi.FrameworkWiringPlugin;
 import org.jboss.osgi.framework.spi.LifecycleInterceptorPlugin;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoaderPlugin;
 import org.jboss.osgi.framework.spi.BundleStoragePlugin;
@@ -53,7 +56,7 @@ import org.jboss.osgi.framework.spi.NativeCodePlugin;
 import org.jboss.osgi.framework.spi.PackageAdminPlugin;
 import org.jboss.osgi.framework.spi.ResolverPlugin;
 import org.jboss.osgi.framework.spi.ServiceManagerPlugin;
-import org.jboss.osgi.framework.spi.StartLevelPlugin;
+import org.jboss.osgi.framework.spi.StartLevelSupportPlugin;
 import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 import org.jboss.osgi.framework.spi.SystemServicesPlugin;
 import org.osgi.framework.launch.Framework;
@@ -68,14 +71,14 @@ import org.osgi.framework.launch.Framework;
  */
 public final class FrameworkBuilderImpl implements FrameworkBuilder {
 
-    private final Map<String, Object> initialProperties = new HashMap<String, Object>();
+    private final Map<String, String> initialProperties = new HashMap<String, String>();
     private final Map<FrameworkPhase, Map<ServiceName, IntegrationService<?>>> integrationServices;
     private final Mode initialMode;
     private ServiceContainer serviceContainer;
     private ServiceTarget serviceTarget;
     private boolean closed;
 
-    public FrameworkBuilderImpl(Map<String, Object> props, Mode initialMode) {
+    public FrameworkBuilderImpl(Map<String, String> props, Mode initialMode) {
         this.initialMode = initialMode;
         integrationServices = new HashMap<FrameworkPhase, Map<ServiceName, IntegrationService<?>>>();
         if (props != null) {
@@ -84,18 +87,18 @@ public final class FrameworkBuilderImpl implements FrameworkBuilder {
     }
 
     @Override
-    public Object getProperty(String key) {
+    public String getProperty(String key) {
         return getProperty(key, null);
     }
 
     @Override
-    public Object getProperty(String key, Object defaultValue) {
-        Object value = initialProperties.get(key);
+    public String getProperty(String key, String defaultValue) {
+        String value = initialProperties.get(key);
         return value != null ? value : defaultValue;
     }
 
     @Override
-    public Map<String, Object> getProperties() {
+    public Map<String, String> getProperties() {
         return Collections.unmodifiableMap(initialProperties);
     }
 
@@ -176,16 +179,16 @@ public final class FrameworkBuilderImpl implements FrameworkBuilder {
         registerIntegrationService(FrameworkPhase.CREATE, new FrameworkCreate(frameworkState));
         registerIntegrationService(FrameworkPhase.CREATE, new FrameworkCreate.FrameworkCreated(initialMode));
         registerIntegrationService(FrameworkPhase.CREATE, new BundleLifecyclePlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkModuleProviderPlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkModuleLoaderPlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new StartLevelPlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new SystemPathsPlugin(this));
-        registerIntegrationService(FrameworkPhase.CREATE, new SystemServicesPlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new CoreServices());
-        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkEventsPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new BundleStartLevelPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new BundleStoragePlugin(firstInit));
+        registerIntegrationService(FrameworkPhase.CREATE, new CoreServices());
         registerIntegrationService(FrameworkPhase.CREATE, new DeploymentProviderPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new EnvironmentPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkEventsPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkModuleProviderPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkModuleLoaderPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkStartLevelPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkWiringPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new LifecycleInterceptorPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new LockManagerPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new ModuleManagerPlugin());
@@ -193,8 +196,11 @@ public final class FrameworkBuilderImpl implements FrameworkBuilder {
         registerIntegrationService(FrameworkPhase.CREATE, new PackageAdminPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new ResolverPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new ServiceManagerPlugin());
+        registerIntegrationService(FrameworkPhase.CREATE, new StartLevelSupportPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new SystemBundlePlugin(frameworkState));
         registerIntegrationService(FrameworkPhase.CREATE, new SystemContext());
+        registerIntegrationService(FrameworkPhase.CREATE, new SystemPathsPlugin(this));
+        registerIntegrationService(FrameworkPhase.CREATE, new SystemServicesPlugin());
 
         registerIntegrationService(FrameworkPhase.INIT, new FrameworkInit());
         registerIntegrationService(FrameworkPhase.INIT, new FrameworkInit.FrameworkInitialized(initialMode));

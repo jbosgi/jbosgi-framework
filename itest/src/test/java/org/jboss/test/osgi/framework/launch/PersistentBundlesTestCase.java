@@ -1,3 +1,4 @@
+package org.jboss.test.osgi.framework.launch;
 /*
  * #%L
  * JBossOSGi Framework
@@ -19,13 +20,11 @@
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework.launch;
 
 import java.io.File;
 import java.io.InputStream;
 import java.util.Map;
 
-import org.jboss.osgi.framework.FrameworkLogger;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -34,6 +33,7 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.simple.bundleA.BeanA;
 import org.jboss.test.osgi.framework.simple.bundleB.BeanB;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -50,14 +50,8 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
 
     @Test
     public void testInstalledBundle() throws Exception {
-        Map<String, Object> initprops = getFrameworkInitProperties(true);
+        Map<String, String> initprops = getFrameworkInitProperties(true);
         Framework framework = newFramework(initprops);
-        try {
-            
-        } finally {
-            framework.stop();
-            framework.waitForStop(5000);
-        }
 
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
@@ -106,14 +100,8 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
 
     @Test
     public void testUninstalledBundle() throws Exception {
-        Map<String, Object> initprops = getFrameworkInitProperties(true);
+        Map<String, String> initprops = getFrameworkInitProperties(true);
         Framework framework = newFramework(initprops);
-        try {
-            
-        } finally {
-            framework.stop();
-            framework.waitForStop(5000);
-        }
 
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
@@ -139,46 +127,30 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
 
     @Test
     public void testActiveBundle() throws Exception {
-        Map<String, Object> initprops = getFrameworkInitProperties(true);
+        Map<String, String> initprops = getFrameworkInitProperties(true);
         Framework framework = newFramework(initprops);
-        try {
-            
-        } finally {
-            framework.stop();
-            framework.waitForStop(5000);
-        }
 
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
 
-        Bundle bundleA = installBundle(getBundleA());
-        assertBundleState(Bundle.INSTALLED, bundleA.getState());
+        Bundle bundle = installBundle(getBundleB());
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-        Bundle bundleB = installBundle(getBundleB());
-        assertBundleState(Bundle.INSTALLED, bundleB.getState());
-
-        bundleA.start();
-        assertBundleState(Bundle.ACTIVE, bundleA.getState());
-        assertBundleState(Bundle.RESOLVED, bundleB.getState());
+        bundle.start();
+        assertBundleState(Bundle.ACTIVE, bundle.getState());
 
         framework.stop();
         framework.waitForStop(2000);
         assertBundleState(Bundle.RESOLVED, framework.getState());
 
-        FrameworkLogger.LOGGER.infof("<<RESTART>>");
-        
         // Restart the Framework
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
 
-        bundleA = getBundleContext().getBundle(bundleA.getBundleId());
-        Assert.assertNotNull("Bundle available", bundleA);
+        bundle = getBundleContext().getBundle(bundle.getBundleId());
+        Assert.assertNotNull("Bundle available", bundle);
 
-        bundleB = getBundleContext().getBundle(bundleB.getBundleId());
-        Assert.assertNotNull("Bundle available", bundleB);
-
-        assertBundleState(Bundle.ACTIVE, bundleA.getState());
-        assertBundleState(Bundle.RESOLVED, bundleB.getState());
+        assertBundleState(Bundle.ACTIVE, bundle.getState());
 
         framework.stop();
         framework.waitForStop(2000);
@@ -186,15 +158,10 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
     }
 
     @Test
+    @Ignore
     public void testBundleStartLevel() throws Exception {
-        Map<String, Object> initprops = getFrameworkInitProperties(true);
+        Map<String, String> initprops = getFrameworkInitProperties(true);
         Framework framework = newFramework(initprops);
-        try {
-            
-        } finally {
-            framework.stop();
-            framework.waitForStop(5000);
-        }
 
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
@@ -234,12 +201,6 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
     public void testStoppedBundle() throws Exception {
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
         Framework framework = factory.newFramework(getFrameworkInitProperties(true));
-        try {
-            
-        } finally {
-            framework.stop();
-            framework.waitForStop(5000);
-        }
 
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
@@ -277,12 +238,6 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
     public void testFrameworkInit() throws Exception {
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
         Framework framework = factory.newFramework(getFrameworkInitProperties(true));
-        try {
-            
-        } finally {
-            framework.stop();
-            framework.waitForStop(5000);
-        }
 
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());

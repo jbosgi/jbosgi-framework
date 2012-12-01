@@ -69,7 +69,7 @@ public interface FrameworkEvents {
 
     void fireBundleEvent(XBundle bundle, int type);
 
-    void fireFrameworkEvent(Bundle bundle, int type, Throwable th);
+    void fireFrameworkEvent(Bundle bundle, int type, Throwable th, FrameworkListener... listeners);
 
     void fireServiceEvent(XBundle bundle, int type, ServiceState serviceState);
 

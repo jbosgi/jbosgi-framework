@@ -41,16 +41,16 @@ import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.launch.Framework;
-import org.osgi.service.startlevel.StartLevel;
 
 /**
- * An implementation of the {@link StartLevel} service.
+ * An implementation of the {@link StartLevelSupport} service.
  *
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @author Thomas.Diesler@jboss.com
  */
-public final class StartLevelImpl implements StartLevelSupport {
+public final class StartLevelSupportImpl implements StartLevelSupport {
 
     private final BundleManagerPlugin bundleManager;
     private final FrameworkEvents events;
@@ -59,7 +59,7 @@ public final class StartLevelImpl implements StartLevelSupport {
     private AtomicInteger initialBundleStartLevel = new AtomicInteger(1);
     private AtomicInteger startLevel = new AtomicInteger(0);
 
-    public StartLevelImpl(BundleManager bundleManager, FrameworkEvents frameworkEvents, ExecutorService executorService, AtomicBoolean immediateExecution) {
+    public StartLevelSupportImpl(BundleManager bundleManager, FrameworkEvents frameworkEvents, ExecutorService executorService, AtomicBoolean immediateExecution) {
         this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
         this.events = frameworkEvents;
         this.executorService = executorService;
@@ -70,125 +70,56 @@ public final class StartLevelImpl implements StartLevelSupport {
     public void enableImmediateExecution(boolean enable) {
         this.immediateExecution.set(enable);
     }
-    
+
     @Override
-    public int getStartLevel() {
+    public int getFrameworkStartLevel() {
         return startLevel.get();
     }
 
     @Override
-    public synchronized void setStartLevel(final int level) {
-        final Bundle sysbundle = bundleManager.getSystemBundle();
-        if (level > getStartLevel()) {
-            Runnable runner = new Runnable() {
-                @Override
-                public void run() {
-                    LOGGER.infoIncreasingStartLevel(getStartLevel(), level);
-                    increaseStartLevel(level);
-                    events.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null);
-                }
-            };
-            executeTask(runner);
-        } else if (level < getStartLevel()) {
-            Runnable runner = new Runnable() {
-                @Override
-                public void run() {
-                    LOGGER.infoDecreasingStartLevel(getStartLevel(), level);
-                    decreaseStartLevel(level);
-                    events.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null);
-                }
-            };
-            executeTask(runner);
-        }
+    public synchronized void setFrameworkStartLevel(final int level, FrameworkListener... listeners) {
+        setFrameworkStartLevelInternal(level, immediateExecution.get(), listeners);
     }
 
     @Override
-    public int getBundleStartLevel(Bundle bundle) {
-        return getBundleStartLevelState(bundle).getLevel();
+    public void shutdownFramework(FrameworkListener... listeners) {
+        setFrameworkStartLevelInternal(0, true, listeners);
     }
 
-    @Override
-    public void setBundleStartLevel(final Bundle bundle, final int level) {
-        if (bundle.getBundleId() == 0)
-            throw MESSAGES.illegalArgumentStartLevelOnSystemBundles();
-
-        final XBundle hostBundle = (XBundle) bundle;
-        getBundleStartLevelState(bundle).setLevel(level);
-
-        if (level <= getStartLevel()) {
-            // If the bundle is active or starting, we don't need to start it again
-            if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) > 0)
-                return;
-
-            if (isBundlePersistentlyStarted(bundle)) {
-                LOGGER.infoStartingBundleDueToStartLevel(hostBundle);
-                Runnable runner = new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            int opts = Bundle.START_TRANSIENT;
-                            if (isBundleActivationPolicyUsed(hostBundle))
-                                opts |= Bundle.START_ACTIVATION_POLICY;
-
-                            hostBundle.start(opts);
-                        } catch (BundleException e) {
-                            events.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
-                        }
-                    }
-                };
-
-                executeTask(runner);
-            }
+    private synchronized void setFrameworkStartLevelInternal(final int level, final boolean synchronous, final FrameworkListener... listeners) {
+        if (level > getFrameworkStartLevel()) {
+            Runnable runner = new Runnable() {
+                @Override
+                public void run() {
+                    LOGGER.infoIncreasingStartLevel(getFrameworkStartLevel(), level);
+                    increaseFrameworkStartLevel(level);
+                    Bundle sysbundle = bundleManager.getSystemBundle();
+                    events.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null, listeners);
+                }
+            };
+            executeTask(runner, synchronous);
+        } else if (level < getFrameworkStartLevel()) {
+            Runnable runner = new Runnable() {
+                @Override
+                public void run() {
+                    LOGGER.infoDecreasingStartLevel(getFrameworkStartLevel(), level);
+                    decreaseFrameworkStartLevel(level);
+                    Bundle sysbundle = bundleManager.getSystemBundle();
+                    events.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null, listeners);
+                }
+            };
+            executeTask(runner, synchronous);
         } else {
-            // If the bundle is not active we don't need to stop it
-            if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) == 0)
-                return;
-
-            LOGGER.infoStoppingBundleDueToStartLevel(hostBundle);
             Runnable runner = new Runnable() {
                 @Override
                 public void run() {
-                    try {
-                        hostBundle.stop(Bundle.STOP_TRANSIENT);
-                    } catch (BundleException e) {
-                        events.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
-                    }
+                    // In case of equality just fire the event
+                    Bundle sysbundle = bundleManager.getSystemBundle();
+                    events.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null, listeners);
                 }
             };
-
-            executeTask(runner);
+            executeTask(runner, synchronous);
         }
-    }
-
-    @Override
-    public int getInitialBundleStartLevel() {
-        return initialBundleStartLevel.get();
-    }
-
-    @Override
-    public void setInitialBundleStartLevel(int startlevel) {
-        initialBundleStartLevel.set(startlevel);
-    }
-
-    @Override
-    public boolean isBundlePersistentlyStarted(Bundle bundle) {
-        return getBundleStartLevelState((XBundle) bundle).isStarted();
-    }
-
-    @Override
-    public void setBundlePersistentlyStarted(XBundle bundle, boolean started) {
-        getBundleStartLevelState(bundle).setStarted(started);
-    }
-
-    @Override
-    public boolean isBundleActivationPolicyUsed(Bundle bundle) {
-        boolean result = false;
-        if (bundle instanceof AbstractBundleState) {
-            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-            StorageState storageState = bundleState.getStorageState();
-            result = storageState.isBundleActivationPolicyUsed();
-        }
-        return result;
     }
 
     /**
@@ -197,7 +128,7 @@ public final class StartLevelImpl implements StartLevelSupport {
      * @param level the target Start Level to which the Framework should move.
      */
     @Override
-    public synchronized void increaseStartLevel(int level) {
+    public synchronized void increaseFrameworkStartLevel(int level) {
 
         // Sort the bundles after their bundle id
         List<XBundle> bundles = new ArrayList<XBundle>(bundleManager.getBundles());
@@ -238,7 +169,7 @@ public final class StartLevelImpl implements StartLevelSupport {
      * @param level the target Start Level to which the Framework should move.
      */
     @Override
-    public synchronized void decreaseStartLevel(int level) {
+    public synchronized void decreaseFrameworkStartLevel(int level) {
         while (startLevel.get() > level) {
             LOGGER.infoStoppingBundlesForStartLevel(level);
 
@@ -270,6 +201,95 @@ public final class StartLevelImpl implements StartLevelSupport {
         }
     }
 
+    @Override
+    public int getBundleStartLevel(XBundle bundle) {
+        return getBundleStartLevelState(bundle).getLevel();
+    }
+
+    @Override
+    public void setBundleStartLevel(final XBundle bundle, final int level) {
+        if (bundle.getBundleId() == 0)
+            throw MESSAGES.illegalArgumentStartLevelOnSystemBundles();
+
+        final XBundle hostBundle = bundle;
+        getBundleStartLevelState(bundle).setLevel(level);
+
+        if (level <= getFrameworkStartLevel()) {
+            // If the bundle is active or starting, we don't need to start it again
+            if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) > 0)
+                return;
+
+            if (isBundlePersistentlyStarted(bundle)) {
+                LOGGER.infoStartingBundleDueToStartLevel(hostBundle);
+                Runnable runner = new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            int opts = Bundle.START_TRANSIENT;
+                            if (isBundleActivationPolicyUsed(hostBundle))
+                                opts |= Bundle.START_ACTIVATION_POLICY;
+
+                            hostBundle.start(opts);
+                        } catch (BundleException e) {
+                            events.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
+                        }
+                    }
+                };
+
+                executeTask(runner, immediateExecution.get());
+            }
+        } else {
+            // If the bundle is not active we don't need to stop it
+            if ((bundle.getState() & (Bundle.ACTIVE | Bundle.STARTING)) == 0)
+                return;
+
+            LOGGER.infoStoppingBundleDueToStartLevel(hostBundle);
+            Runnable runner = new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        hostBundle.stop(Bundle.STOP_TRANSIENT);
+                    } catch (BundleException e) {
+                        events.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, e);
+                    }
+                }
+            };
+
+            executeTask(runner, immediateExecution.get());
+        }
+    }
+
+    @Override
+    public int getInitialBundleStartLevel() {
+        return initialBundleStartLevel.get();
+    }
+
+    @Override
+    public void setInitialBundleStartLevel(int startlevel) {
+        initialBundleStartLevel.set(startlevel);
+    }
+
+    @Override
+    public boolean isBundlePersistentlyStarted(Bundle bundle) {
+        return getBundleStartLevelState(bundle).isStarted();
+    }
+
+    @Override
+    public void setBundlePersistentlyStarted(XBundle bundle, boolean started) {
+        getBundleStartLevelState(bundle).setStarted(started);
+    }
+
+    @Override
+    public boolean isBundleActivationPolicyUsed(Bundle bundle) {
+        boolean result = false;
+        if (bundle instanceof AbstractBundleState) {
+            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+            StorageState storageState = bundleState.getStorageState();
+            result = storageState.isBundleActivationPolicyUsed();
+        }
+        return result;
+    }
+
     private BundleStartLevelState getBundleStartLevelState(Bundle bundle) {
         if (bundle instanceof Framework)
             return new BundleStartLevelState(bundle);
@@ -286,9 +306,9 @@ public final class StartLevelImpl implements StartLevelSupport {
         return state;
     }
 
-    private void executeTask(Runnable runner) {
+    private void executeTask(Runnable runner, boolean synchronous) {
         if (!executorService.isShutdown()) {
-            if (immediateExecution.get()) {
+            if (synchronous) {
                 runner.run();
             } else {
                 executorService.execute(runner);

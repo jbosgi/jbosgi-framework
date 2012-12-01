@@ -1,4 +1,5 @@
 package org.jboss.test.osgi.framework.launch;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -68,7 +69,7 @@ public class AggregatedFrameworkLaunchTestCase {
         // Run the java command
         String logopts = "-Djava.util.logging.manager=org.jboss.logmanager.LogManager -Dlogging.configuration=" + logConfig.toURI();
         String javaopts = logopts + " -Dorg.osgi.framework.storage=target/osgi-store";
-        // javaopts += " -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y";
+        //javaopts += " -Xrunjdwp:transport=dt_socket,address=8787,server=y,suspend=y";
         String cmd = "java " + javaopts + " -cp " + cp + " " + FrameworkMain.class.getName();
         Process proc = Runtime.getRuntime().exec(cmd);
         Thread.sleep(3000);

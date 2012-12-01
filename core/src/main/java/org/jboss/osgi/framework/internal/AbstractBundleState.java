@@ -24,10 +24,12 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.security.Permission;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
@@ -49,6 +51,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
+import org.jboss.osgi.framework.spi.BundleStartLevelSupport;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockSupport;
@@ -68,6 +71,9 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
+import org.osgi.framework.startlevel.BundleStartLevel;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.resource.Wire;
 import org.osgi.service.resolver.ResolutionException;
@@ -80,7 +86,7 @@ import org.osgi.service.resolver.ResolutionException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class AbstractBundleState<R extends BundleStateRevision> extends AbstractElement implements XBundle, LockableItem {
+abstract class AbstractBundleState<R extends BundleStateRevision> extends AbstractElement implements XBundle, LockableItem, BundleStartLevel {
 
     private final long bundleId;
     private final String symbolicName;
@@ -150,11 +156,36 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     abstract AbstractBundleContext createContextInternal();
 
+    /**
+     * Required by spec:
+     *
+     * {@link BundleContext} The Bundle Context for this bundle.
+     * {@link BundleRevision} The current Bundle Revision for this bundle.
+     * {@link BundleRevisions} All existing Bundle Revision objects for this bundle.
+     * {@link BundleStartLevel} The Bundle Start Level for this bundle.
+     * {@link BundleWiring} The Bundle Wiring for the current Bundle Revision.
+     *
+     * Proprietary extensions:
+     *
+     * {@link OSGiMetaData} The Bundle metadata.
+     * {@link StorageState} The Bundle's storage state.
+     * {@link BundleManager} The Bundle manager.
+     */
     @Override
     @SuppressWarnings("unchecked")
     public <T> T adapt(Class<T> type) {
         T result = null;
-        if (type.isAssignableFrom(OSGiMetaData.class)) {
+        if (type.isAssignableFrom(BundleContext.class)) {
+            result = (T) getBundleContext();
+        } else if (type.isAssignableFrom(BundleRevision.class)) {
+            result = (T) getBundleRevision();
+        } else if (type.isAssignableFrom(BundleRevisions.class)) {
+            result = (T) getBundleRevisions();
+        } else if (type.isAssignableFrom(BundleStartLevel.class)) {
+            result = (T) this;
+        } else if (type.isAssignableFrom(BundleWiring.class)) {
+            result = (T) getBundleWiring();
+        } else if (type.isAssignableFrom(OSGiMetaData.class)) {
             result = (T) getOSGiMetaData();
         } else if (type.isAssignableFrom(StorageState.class)) {
             result = (T) getStorageState();
@@ -163,6 +194,8 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         }
         return result;
     }
+
+    abstract BundleRevisions getBundleRevisions();
 
     @Override
     public R getBundleRevision() {
@@ -244,19 +277,48 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         registeredServices.add(serviceState);
     }
 
+    @Override
+    public Bundle getBundle() {
+        return this;
+    }
+
+    @Override
+    public int getStartLevel() {
+        BundleStartLevelSupport plugin = frameworkState.getBundleStartLevel();
+        return plugin.getBundleStartLevel(this);
+    }
+
+    @Override
+    public void setStartLevel(int level) {
+        BundleStartLevelSupport plugin = frameworkState.getBundleStartLevel();
+        plugin.setBundleStartLevel(this, level);
+    }
+
+    @Override
+    public boolean isPersistentlyStarted() {
+        BundleStartLevelSupport plugin = frameworkState.getBundleStartLevel();
+        return plugin.isBundlePersistentlyStarted(this);
+    }
+
+    @Override
+    public boolean isActivationPolicyUsed() {
+        BundleStartLevelSupport plugin = frameworkState.getBundleStartLevel();
+        return plugin.isBundleActivationPolicyUsed(this);
+    }
+
     void removeRegisteredService(ServiceState serviceState) {
         LOGGER.tracef("Remove registered service %s from: %s", serviceState, this);
         registeredServices.remove(serviceState);
     }
 
     @Override
-    public ServiceReference[] getRegisteredServices() {
+    public ServiceReference<?>[] getRegisteredServices() {
         assertNotUninstalled();
         List<ServiceState> rs = getRegisteredServicesInternal();
         if (rs.isEmpty())
             return null;
 
-        List<ServiceReference> srefs = new ArrayList<ServiceReference>();
+        List<ServiceReference<?>> srefs = new ArrayList<ServiceReference<?>>();
         for (ServiceState serviceState : rs)
             srefs.add(serviceState.getReference());
 
@@ -268,13 +330,13 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     }
 
     @Override
-    public ServiceReference[] getServicesInUse() {
+    public ServiceReference<?>[] getServicesInUse() {
         assertNotUninstalled();
         Set<ServiceState> servicesInUse = getServicesInUseInternal();
         if (servicesInUse.isEmpty())
             return null;
 
-        List<ServiceReference> srefs = new ArrayList<ServiceReference>();
+        List<ServiceReference<?>> srefs = new ArrayList<ServiceReference<?>>();
         for (ServiceState serviceState : servicesInUse)
             srefs.add(serviceState.getReference());
 
@@ -398,7 +460,11 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     @Override
     public boolean isResolved() {
-        return getBundleRevision().getWiring() != null;
+        return getBundleWiring() != null;
+    }
+
+    BundleWiring getBundleWiring() {
+        return getBundleRevision().getWiring();
     }
 
     boolean isUninstalled() {
@@ -510,8 +576,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public Map getSignerCertificates(int signersType) {
+    public Map<X509Certificate, List<X509Certificate>> getSignerCertificates(int signersType) {
         throw new UnsupportedOperationException();
     }
 
@@ -660,5 +725,17 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     @Override
     public String toString() {
         return getCanonicalName();
+    }
+
+    @Override
+    public File getDataFile(String filename) {
+        // [TODO] R5 Bundle.getDataFile
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int compareTo(Bundle o) {
+        // [TODO] R5 Bundle.compareTo
+        throw new UnsupportedOperationException();
     }
 }

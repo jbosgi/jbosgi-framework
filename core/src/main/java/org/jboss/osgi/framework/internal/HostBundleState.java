@@ -405,6 +405,7 @@ final class HostBundleState extends UserBundleState<HostBundleRevision> {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     void assertStartConditions(int options) throws BundleException {
         super.assertStartConditions(options);
 
@@ -449,12 +450,12 @@ final class HostBundleState extends UserBundleState<HostBundleRevision> {
     }
 
     private int getBundleStartLevel() {
-        StartLevelSupport startLevelPlugin = getCoreServices().getStartLevelSupport();
+        StartLevelSupport startLevelPlugin = getFrameworkState().getStartLevelSupport();
         return startLevelPlugin.getBundleStartLevel(this);
     }
 
     void setPersistentlyStarted(boolean started) {
-        StartLevelSupport startLevelPlugin = getCoreServices().getStartLevelSupport();
+        StartLevelSupport startLevelPlugin = getFrameworkState().getStartLevelSupport();
         startLevelPlugin.setBundlePersistentlyStarted(this, started);
     }
 
@@ -465,8 +466,8 @@ final class HostBundleState extends UserBundleState<HostBundleRevision> {
     }
 
     private boolean startLevelValidForStart() {
-        StartLevelSupport startLevelPlugin = getCoreServices().getStartLevelSupport();
-        return startLevelPlugin.getBundleStartLevel(this) <= startLevelPlugin.getStartLevel();
+        StartLevelSupport startLevelPlugin = getFrameworkState().getStartLevelSupport();
+        return startLevelPlugin.getBundleStartLevel(this) <= startLevelPlugin.getFrameworkStartLevel();
     }
 
     private boolean isBundleActivationPolicyUsed() {

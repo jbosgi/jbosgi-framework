@@ -46,7 +46,7 @@ import org.jboss.osgi.framework.spi.NativeCodePlugin;
 import org.jboss.osgi.framework.spi.PackageAdminPlugin;
 import org.jboss.osgi.framework.spi.ResolverPlugin;
 import org.jboss.osgi.framework.spi.ServiceManagerPlugin;
-import org.jboss.osgi.framework.spi.StartLevelPlugin;
+import org.jboss.osgi.framework.spi.StartLevelSupportPlugin;
 import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 import org.jboss.osgi.framework.spi.SystemServicesPlugin;
@@ -71,7 +71,7 @@ import org.osgi.framework.launch.Framework;
  *     |   +---{@link BundleLifecyclePlugin}
  *     |   +---{@link LifecycleInterceptorPlugin}
  *     |   +---{@link PackageAdminPlugin}
- *     |   +---{@link StartLevelPlugin
+ *     |   +---{@link StartLevelSupportPlugin
  *     |   +---{@link SystemServicesPlugin}
  *     |   +---{@link URLHandlerPlugin}
  *     +---{@link PersistentBundlesInstallPlugin}
@@ -81,17 +81,21 @@ import org.osgi.framework.launch.Framework;
  *                 +---{@link ResolverPlugin}
  *                 |   +---{@link NativeCodePlugin}
  *                 +---{@link ServiceManagerPlugin}
- *                     +---{@link FrameworkEventsPlugin}
- *                         +---{@link SystemContext}
- *                             +---{@link SystemBundlePlugin}
- *                                 +---{@link BundleStoragePlugin}
- *                                 +---{@link SystemPathsPlugin}
- *                                 +---{@link ModuleManagerPlugin}
- *                                     +---{@link FrameworkModuleLoaderPlugin}
- *                                     +---{@link FrameworkModuleProviderPlugin}
- *                                         +---{@link BundleManagerPlugin}
- *                                             +---{@link EnvironmentPlugin}
- *                                                 +---{@link LockManagerPlugin}
+ *                 +---{@link FrameworkWiringPlugin}
+ *                 +---{@link FrameworkStartLevelPlugin}
+ *                 +---{@link BundleStartLevelPlugin}
+ *                     +---{@link StartLevelSupportPlugin}
+ *                         +---{@link FrameworkEventsPlugin}
+ *                             +---{@link SystemContext}
+ *                                 +---{@link SystemBundle}
+ *                                     +---{@link BundleStoragePlugin}
+ *                                     +---{@link SystemPathsPlugin}
+ *                                     +---{@link ModuleManagerPlugin}
+ *                                         +---{@link FrameworkModuleLoaderPlugin}
+ *                                         +---{@link FrameworkModuleProviderPlugin}
+ *                                             +---{@link BundleManagerPlugin}
+ *                                                 +---{@link EnvironmentPlugin}
+ *                                                     +---{@link LockManagerPlugin}
  *
  *
  * </code>
@@ -139,8 +143,8 @@ public final class FrameworkActive extends AbstractFrameworkService {
         systemBundle.changeState(Bundle.ACTIVE);
 
         // Increase to initial start level
-        StartLevelSupport startLevelPlugin = frameworkState.getCoreServices().getStartLevelSupport();
-        startLevelPlugin.increaseStartLevel(getBeginningStartLevel(bundleManager));
+        StartLevelSupport startLevelPlugin = frameworkState.getStartLevelSupport();
+        startLevelPlugin.increaseFrameworkStartLevel(getBeginningStartLevel(bundleManager));
 
         // Mark Framework as active in the bundle manager
         bundleManager.injectedFrameworkActive.inject(Boolean.TRUE);

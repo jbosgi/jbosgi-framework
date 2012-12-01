@@ -166,12 +166,7 @@ public class ServiceRegistrationTestCase extends OSGiFrameworkTest {
             assertEquals(objectClass, reference.getProperty(Constants.OBJECTCLASS));
             assertEquals(objectClass, reference.getProperty(Constants.OBJECTCLASS.toLowerCase()));
 
-            try {
-                assertNoAllReferences(bundleContext, null, "(" + Constants.SERVICE_ID + "=rubbish1)");
-                fail("NumberFormatException expected");
-            } catch (NumberFormatException ex) {
-                // expected
-            }
+            assertNoAllReferences(bundleContext, null, "(" + Constants.SERVICE_ID + "=rubbish1)");
 
             assertAllReferences(bundleContext, null, "(" + Constants.SERVICE_ID + "=" + serviceID + ")", reference);
 

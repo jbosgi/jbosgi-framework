@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
@@ -30,15 +30,14 @@ import java.util.List;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
 import org.jboss.osgi.framework.spi.IntegrationServices;
-import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.resolver.XBundleRevision;
-import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleRevisions;
 
 /**
  * Represents the state of the system {@link Bundle}.
@@ -49,13 +48,28 @@ import org.osgi.framework.Version;
 final class SystemBundleState extends AbstractBundleState<SystemBundleRevision> {
 
     private final SystemBundleRevision systemRevision;
+    private final BundleRevisions bundleRevisions;
 
-    SystemBundleState(FrameworkState frameworkState, SystemBundleRevision brev) {
+    SystemBundleState(final FrameworkState frameworkState, final SystemBundleRevision brev) {
         super(frameworkState, brev, 0);
         this.systemRevision = brev;
 
         // Assign the {@link ModuleIdentifier}
         brev.addAttachment(ModuleIdentifier.class, FrameworkModuleProvider.FRAMEWORK_MODULE_IDENTIFIER);
+
+        final Bundle bundle = this;
+        bundleRevisions = new BundleRevisions() {
+
+            @Override
+            public Bundle getBundle() {
+                return bundle;
+            }
+
+            @Override
+            public List<BundleRevision> getRevisions() {
+                return Collections.singletonList((BundleRevision)brev);
+            }
+        };
     }
 
     static SystemBundleState assertBundleState(Bundle bundle) {
@@ -100,17 +114,15 @@ final class SystemBundleState extends AbstractBundleState<SystemBundleRevision> 
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    BundleRevisions getBundleRevisions() {
+        return bundleRevisions;
+    }
+
+    @Override
     public <T> T adapt(Class<T> type) {
         T result = super.adapt(type);
         if (result == null) {
-            if (type.isAssignableFrom(BundleManager.class)) {
-                result = (T) getBundleManager();
-            } else if (type.isAssignableFrom(XEnvironment.class)) {
-                result = (T) getFrameworkState().getEnvironment();
-            } else if (type.isAssignableFrom(LockManager.class)) {
-                result = (T) getFrameworkState().getLockManager();
-            }
+            result = getBundleManagerPlugin().adapt(type);
         }
         return result;
     }

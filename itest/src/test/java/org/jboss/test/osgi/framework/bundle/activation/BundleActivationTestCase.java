@@ -49,6 +49,7 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.SynchronousBundleListener;
+import org.osgi.framework.startlevel.FrameworkStartLevel;
 import org.osgi.service.startlevel.StartLevel;
 
 /**
@@ -200,7 +201,7 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
         BundleContext context = getSystemContext();
         context.addBundleListener(new ActivationListener());
 
-        StartLevel startLevel = getStartLevel();
+        FrameworkStartLevel startLevel = getFramework().adapt(FrameworkStartLevel.class);
         int initialFrameworkSL = startLevel.getStartLevel();
         int initialBundleStartLevel = startLevel.getInitialBundleStartLevel();
 

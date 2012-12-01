@@ -37,7 +37,7 @@ import org.osgi.framework.launch.Framework;
  */
 public class FrameworkBuilderFactory {
 
-    public static FrameworkBuilder create(Map<String, Object> props, Mode initialMode) {
+    public static FrameworkBuilder create(Map<String, String> props, Mode initialMode) {
         return new FrameworkBuilderImpl(props, initialMode);
     }
 }

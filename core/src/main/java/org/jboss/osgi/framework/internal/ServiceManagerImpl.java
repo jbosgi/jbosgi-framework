@@ -107,10 +107,12 @@ public final class ServiceManagerImpl implements ServiceManager {
         }
 
         ServiceState.ValueProvider valueProvider = new ServiceState.ValueProvider() {
+            @Override
             public boolean isFactoryValue() {
                 return serviceValue instanceof ServiceFactory;
             }
 
+            @Override
             public Object getValue() {
                 return serviceValue;
             }
@@ -346,14 +348,14 @@ public final class ServiceManagerImpl implements ServiceManager {
         Collections.reverse(sortedHookRefs);
 
         List<FindHook> hooks = new ArrayList<FindHook>();
-        for (ServiceReference hookRef : sortedHookRefs)
+        for (ServiceReference<?> hookRef : sortedHookRefs)
             hooks.add((FindHook) context.getService(hookRef));
 
-        Collection<ServiceReference> hookParam = new ArrayList<ServiceReference>();
+        Collection<ServiceReference<?>> hookParam = new ArrayList<ServiceReference<?>>();
         for (ServiceState aux : serviceStates)
             hookParam.add(aux.getReference());
 
-        hookParam = new RemoveOnlyCollection<ServiceReference>(hookParam);
+        hookParam = new RemoveOnlyCollection<ServiceReference<?>>(hookParam);
         for (FindHook hook : hooks) {
             try {
                 hook.find(context, clazz, filterStr, !checkAssignable, hookParam);
@@ -363,7 +365,7 @@ public final class ServiceManagerImpl implements ServiceManager {
         }
 
         List<ServiceState> result = new ArrayList<ServiceState>();
-        for (ServiceReference aux : hookParam) {
+        for (ServiceReference<?> aux : hookParam) {
             ServiceState serviceState = ServiceStateImpl.assertServiceState(aux);
             result.add(serviceState);
         }

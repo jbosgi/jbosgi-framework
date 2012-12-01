@@ -1,3 +1,4 @@
+package org.jboss.test.osgi.framework.launch;
 /*
  * #%L
  * JBossOSGi Framework
@@ -19,7 +20,6 @@
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework.launch;
 
 import java.io.File;
 import java.io.InputStream;
@@ -33,7 +33,6 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.FrameworkBuilder;
-import org.jboss.osgi.resolver.Adaptable;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.spi.util.ServiceLoader;
 import org.jboss.osgi.testing.OSGiTest;
@@ -58,8 +57,8 @@ public abstract class AbstractFrameworkLaunchTest extends OSGiTest {
 
     private Framework framework;
 
-    protected Map<String, Object> getFrameworkInitProperties(boolean cleanOnFirstInit) {
-        Map<String, Object> props = new HashMap<String, Object>();
+    protected Map<String, String> getFrameworkInitProperties(boolean cleanOnFirstInit) {
+        Map<String, String> props = new HashMap<String, String>();
         props.put(Constants.FRAMEWORK_STORAGE, getBundleStorageDir().getAbsolutePath());
         if (cleanOnFirstInit == true) {
             props.put(Constants.FRAMEWORK_STORAGE_CLEAN, Constants.FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT);
@@ -71,7 +70,7 @@ public abstract class AbstractFrameworkLaunchTest extends OSGiTest {
         return framework = builder.createFramework();
     }
 
-    protected Framework newFramework(Map<String, Object> initprops) {
+    protected Framework newFramework(Map<String, String> initprops) {
         FrameworkFactory factory = ServiceLoader.loadService(FrameworkFactory.class);
         return framework = factory.newFramework(initprops);
     }
@@ -106,11 +105,11 @@ public abstract class AbstractFrameworkLaunchTest extends OSGiTest {
     }
 
     protected ServiceContainer getServiceContainer() {
-        return ((Adaptable) framework).adapt(ServiceContainer.class);
+        return framework.adapt(ServiceContainer.class);
     }
 
     protected BundleManager getBundleManager() {
-        return ((Adaptable) framework).adapt(BundleManager.class);
+        return framework.adapt(BundleManager.class);
     }
 
     protected PackageAdmin getPackageAdmin() throws BundleException {

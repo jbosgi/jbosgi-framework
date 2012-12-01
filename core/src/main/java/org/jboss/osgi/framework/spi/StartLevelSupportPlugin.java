@@ -27,55 +27,33 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.internal.StartLevelImpl;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.startlevel.StartLevel;
+import org.jboss.osgi.framework.internal.StartLevelSupportImpl;
 
 /**
- * An implementation of the {@link StartLevel} service.
+ * An implementation of the {@link StartLevelSupport} service.
  *
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @author Thomas.Diesler@jboss.com
  */
-public class StartLevelPlugin extends ExecutorServicePlugin<StartLevelSupport> {
+public class StartLevelSupportPlugin extends ExecutorServicePlugin<StartLevelSupport> {
 
-    private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private final InjectedValue<FrameworkEvents> injectedFrameworkEvents = new InjectedValue<FrameworkEvents>();
-    private ServiceRegistration registration;
 
-    public StartLevelPlugin() {
-        super(Services.START_LEVEL, "StartLevel Thread");
+    public StartLevelSupportPlugin() {
+        super(IntegrationService.START_LEVEL_SUPPORT, "StartLevel Thread");
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<StartLevelSupport> builder) {
         super.addServiceDependencies(builder);
-        builder.addDependency(IntegrationServices.SYSTEM_CONTEXT_INTERNAL, BundleContext.class, injectedSystemContext);
         builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, injectedFrameworkEvents);
-        builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
-    }
-
-    @Override
-    public void start(StartContext context) throws StartException {
-        super.start(context);
-        BundleContext systemContext = injectedSystemContext.getValue();
-        registration = systemContext.registerService(StartLevel.class.getName(), getValue(), null);
     }
 
     @Override
     protected StartLevelSupport createServiceValue(StartContext startContext) throws StartException {
         FrameworkEvents events = injectedFrameworkEvents.getValue();
-        return new StartLevelImpl(getBundleManager(), events, getExecutorService(), new AtomicBoolean(false));
-    }
-
-    @Override
-    public void stop(StopContext context) {
-        registration.unregister();
-        super.stop(context);
+        return new StartLevelSupportImpl(getBundleManager(), events, getExecutorService(), new AtomicBoolean(false));
     }
 }

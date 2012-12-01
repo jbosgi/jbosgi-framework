@@ -46,6 +46,7 @@ import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.PackageAdminSupport;
+import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
@@ -68,7 +69,6 @@ import org.osgi.service.packageadmin.ExportedPackage;
 import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.packageadmin.RequiredBundle;
 import org.osgi.service.resolver.ResolutionException;
-import org.osgi.service.startlevel.StartLevel;
 
 /**
  * An implementation of the {@link PackageAdmin} service.
@@ -84,20 +84,20 @@ public class PackageAdminImpl implements PackageAdminSupport {
     private final FrameworkEvents events;
     private final ModuleManager moduleManager;
     private final XResolver resolver;
-    private final StartLevel startLevelPlugin;
+    private final StartLevelSupport startLevel;
     private final LockManager lockManager;
     private final ExecutorService executorService;
     private final AtomicBoolean immediateExecution;
 
     public PackageAdminImpl(BundleManager bundleManager, XEnvironment environment, FrameworkEvents events,
-            ModuleManager moduleManager, XResolver resolver, StartLevel startLevelPlugin, LockManager lockManager,
+            ModuleManager moduleManager, XResolver resolver, StartLevelSupport startLevel, LockManager lockManager,
             ExecutorService executorService, AtomicBoolean immediateExecution) {
         this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
         this.environment = environment;
         this.events = events;
         this.moduleManager = moduleManager;
         this.resolver = resolver;
-        this.startLevelPlugin = startLevelPlugin;
+        this.startLevel = startLevel;
         this.lockManager = lockManager;
         this.executorService = executorService;
         this.immediateExecution = immediateExecution;
@@ -107,7 +107,7 @@ public class PackageAdminImpl implements PackageAdminSupport {
     public void enableImmediateExecution(boolean enable) {
         this.immediateExecution.set(enable);
     }
-    
+
     @Override
     public ExportedPackage[] getExportedPackages(Bundle bundle) {
 
@@ -303,7 +303,7 @@ public class PackageAdminImpl implements PackageAdminSupport {
                     List<HostBundleState> stopList = new ArrayList<HostBundleState>(stopBundles);
                     List<UserBundleState> refreshList = new ArrayList<UserBundleState>(refreshBundles);
 
-                    BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator(startLevelPlugin);
+                    BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator(startLevel);
                     Collections.sort(stopList, startLevelComparator);
 
                     for (ListIterator<HostBundleState> it = stopList.listIterator(stopList.size()); it.hasPrevious();) {
@@ -644,9 +644,9 @@ public class PackageAdminImpl implements PackageAdminSupport {
     }
 
     private static class BundleStartLevelComparator implements Comparator<HostBundleState> {
-        private final StartLevel startLevelPlugin;
+        private final StartLevelSupport startLevelPlugin;
 
-        BundleStartLevelComparator(StartLevel startLevel) {
+        BundleStartLevelComparator(StartLevelSupport startLevel) {
             this.startLevelPlugin = startLevel;
         }
 

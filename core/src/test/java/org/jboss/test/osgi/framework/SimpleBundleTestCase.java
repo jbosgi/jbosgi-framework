@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.test.osgi.framework;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
@@ -50,42 +50,38 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testBundleLifecycle() throws Exception {
-        getSystemContext().addBundleListener(this);
-        try {
-            Bundle bundle = installBundle(getTestArchive());
-            assertEquals("simple-bundle", bundle.getSymbolicName());
-            assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
-            assertBundleState(Bundle.INSTALLED, bundle.getState());
+        Bundle bundle = installBundle(getTestArchive());
+        assertEquals("simple-bundle", bundle.getSymbolicName());
+        assertEquals(Version.parseVersion("1.0.0"), bundle.getVersion());
+        assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-            bundle.start();
-            assertBundleState(Bundle.ACTIVE, bundle.getState());
+        bundle.start();
+        assertBundleState(Bundle.ACTIVE, bundle.getState());
 
-            BundleContext context = bundle.getBundleContext();
-            assertNotNull("BundleContext not null", context);
+        BundleContext context = bundle.getBundleContext();
+        assertNotNull("BundleContext not null", context);
 
-            ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
-            assertNotNull("ServiceReference not null", sref);
+        ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
+        assertNotNull("ServiceReference not null", sref);
 
-            Object service = context.getService(sref);
-            assertEquals(SimpleService.class.getName(), service.getClass().getName());
+        Object service = context.getService(sref);
+        assertEquals(SimpleService.class.getName(), service.getClass().getName());
 
-            bundle.stop();
-            assertBundleState(Bundle.RESOLVED, bundle.getState());
+        bundle.stop();
+        assertBundleState(Bundle.RESOLVED, bundle.getState());
 
-            sref = getSystemContext().getServiceReference(SimpleService.class.getName());
-            assertNull("ServiceReference null", sref);
+        sref = getSystemContext().getServiceReference(SimpleService.class.getName());
+        assertNull("ServiceReference null", sref);
 
-            bundle.uninstall();
-            assertBundleState(Bundle.UNINSTALLED, bundle.getState());
-        } finally {
-            getSystemContext().removeBundleListener(this);
-        }
+        bundle.uninstall();
+        assertBundleState(Bundle.UNINSTALLED, bundle.getState());
     }
 
     private JavaArchive getTestArchive() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
         archive.addClasses(SimpleService.class, SimpleActivator.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

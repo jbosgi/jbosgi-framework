@@ -24,9 +24,11 @@ package org.jboss.osgi.framework.spi;
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
@@ -271,26 +273,24 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public Dictionary getHeaders() {
+    public Dictionary<String, String> getHeaders() {
         return getHeaders(null);
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public Dictionary getHeaders(String locale) {
+    public Dictionary<String, String> getHeaders(String locale) {
         // [TODO] Add support for manifest header related APIs on Module adaptors
         // https://issues.jboss.org/browse/JBOSGI-567
-        return new Hashtable();
+        return new Hashtable<String, String>();
     }
 
     @Override
-    public ServiceReference[] getRegisteredServices() {
+    public ServiceReference<?>[] getRegisteredServices() {
         return null;
     }
 
     @Override
-    public ServiceReference[] getServicesInUse() {
+    public ServiceReference<?>[] getServicesInUse() {
         return null;
     }
 
@@ -305,14 +305,12 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public Enumeration getResources(String name) throws IOException {
+    public Enumeration<URL> getResources(String name) throws IOException {
         return getBundleRevision().getResources(name);
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public Enumeration getEntryPaths(String path) {
+    public Enumeration<String> getEntryPaths(String path) {
         return getBundleRevision().getEntryPaths(path);
     }
 
@@ -322,8 +320,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public Enumeration findEntries(String path, String filePattern, boolean recurse) {
+    public Enumeration<URL> findEntries(String path, String filePattern, boolean recurse) {
         return getBundleRevision().findEntries(path, filePattern, recurse);
     }
 
@@ -338,8 +335,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public Map getSignerCertificates(int signersType) {
+    public Map<X509Certificate, List<X509Certificate>> getSignerCertificates(int signersType) {
         return Collections.emptyMap();
     }
 
@@ -364,18 +360,18 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     }
 
     private int getStartLevel() {
-        StartLevelSupport startLevel = getPluginService(Services.START_LEVEL, StartLevelSupport.class);
+        StartLevelSupport startLevel = getPluginService(IntegrationService.START_LEVEL_SUPPORT, StartLevelSupport.class);
         return startLevel.getBundleStartLevel(this);
     }
 
     private void setPersistentlyStarted(boolean started) {
-        StartLevelSupport startLevel = getPluginService(Services.START_LEVEL, StartLevelSupport.class);
+        StartLevelSupport startLevel = getPluginService(IntegrationService.START_LEVEL_SUPPORT, StartLevelSupport.class);
         startLevel.setBundlePersistentlyStarted(this, started);
     }
 
     private boolean startLevelValidForStart() {
-        StartLevelSupport startLevel = getPluginService(Services.START_LEVEL, StartLevelSupport.class);
-        return getStartLevel() <= startLevel.getStartLevel();
+        StartLevelSupport startLevel = getPluginService(IntegrationService.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        return getStartLevel() <= startLevel.getFrameworkStartLevel();
     }
 
     @Override
@@ -404,6 +400,18 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
 
         XBundle other = (XBundle) obj;
         return getBundleId() == other.getBundleId();
+    }
+
+    @Override
+    public File getDataFile(String filename) {
+        // [TODO] R5 Bundle.getDataFile
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int compareTo(Bundle o) {
+        // [TODO] R5 Bundle.compareTo
+        throw new UnsupportedOperationException();
     }
 
     @Override

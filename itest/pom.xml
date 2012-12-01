@@ -50,6 +50,10 @@
             <groupId>biz.aQute</groupId>
             <artifactId>aQute.bnd</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.enterprise</artifactId>
+        </dependency>
 
         <!-- Test Dependencies -->
         <dependency>
@@ -75,11 +79,6 @@
         <dependency>
             <groupId>org.jboss.osgi.testing</groupId>
             <artifactId>jbosgi-testing</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.compendium</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

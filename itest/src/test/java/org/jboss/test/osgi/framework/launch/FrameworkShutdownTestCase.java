@@ -1,3 +1,4 @@
+package org.jboss.test.osgi.framework.launch;
 /*
  * #%L
  * JBossOSGi Framework
@@ -19,7 +20,6 @@
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework.launch;
 
 import static org.junit.Assert.assertEquals;
 import java.io.InputStream;
@@ -47,7 +47,7 @@ public class FrameworkShutdownTestCase extends AbstractFrameworkLaunchTest {
 
     @Test
     public void testFrameworkStopWithTimeout() throws Exception {
-        Map<String, Object> props = getFrameworkInitProperties(true);
+        Map<String, String> props = getFrameworkInitProperties(true);
         FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         Framework framework = newFramework(builder);
         assertBundleState(Bundle.INSTALLED, framework.getState());
@@ -65,7 +65,7 @@ public class FrameworkShutdownTestCase extends AbstractFrameworkLaunchTest {
 
     @Test
     public void testFrameworkStopNoTimeout() throws Exception {
-        Map<String, Object> props = getFrameworkInitProperties(true);
+        Map<String, String> props = getFrameworkInitProperties(true);
         FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         Framework framework = newFramework(builder);
         assertBundleState(Bundle.INSTALLED, framework.getState());
@@ -83,7 +83,7 @@ public class FrameworkShutdownTestCase extends AbstractFrameworkLaunchTest {
 
     @Test
     public void testSystemBundleStopWithTimeout() throws Exception {
-        Map<String, Object> props = getFrameworkInitProperties(true);
+        Map<String, String> props = getFrameworkInitProperties(true);
         FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         Framework framework = newFramework(builder);
         assertBundleState(Bundle.INSTALLED, framework.getState());
@@ -103,7 +103,7 @@ public class FrameworkShutdownTestCase extends AbstractFrameworkLaunchTest {
 
     @Test
     public void testSystemBundleStopNoTimeout() throws Exception {
-        Map<String, Object> props = getFrameworkInitProperties(true);
+        Map<String, String> props = getFrameworkInitProperties(true);
         FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         Framework framework = newFramework(builder);
         assertBundleState(Bundle.INSTALLED, framework.getState());
