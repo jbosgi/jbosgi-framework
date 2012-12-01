@@ -41,8 +41,7 @@
     <!-- Setup property defaults -->
     <property environment="env" />
     <property name="username" value="${env.USER}" />
-    <property name="tck.checkout.dir" value="/home/${username}/git/org.osgi.tck" />
-    <property name="maven.local.repository" value="/home/${username}/.m2/repository" />
+    <property name="tck.checkout.dir" value="${env.TCKCHECKOUT}" />
     <property name="framework.groupId" value="org/jboss/osgi/framework" />
     <property name="framework.artifactId" value="jbosgi-framework-aggregated" />
     <property name="framework.jar" value="${framework.artifactId}-${framework.version}-all.jar" />
@@ -76,8 +75,8 @@
 
   <!-- Setup the TCK to use the Vendor Implemenation -->
   <target name="setup.vi" description="Setup the TCK using the Vendor Implemenation" depends="init,update-framework">
-    <!-- Build the TCK - ->
-    <ant dir="${tck.checkout.dir}" target="build" /-->
+    <!-- Build the TCK -->
+    <ant dir="${tck.checkout.dir}" target="build" />
 
     <mkdir dir="${tck.checkout.dir}/licensed/repo/org.jboss.logging" />
     <copy file="${basedir}/../aggregated/target/test-libs/jboss-logmanager.jar" tofile="${tck.checkout.dir}/licensed/repo/org.jboss.logging/jboss-logmanager.jar" overwrite="true" />
