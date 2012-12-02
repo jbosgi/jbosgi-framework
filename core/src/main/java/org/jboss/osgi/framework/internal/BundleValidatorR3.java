@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,10 +19,12 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -35,7 +36,7 @@ import org.osgi.framework.BundleException;
 final class BundleValidatorR3 implements BundleValidator {
 
     @Override
-    public void validateBundle(UserBundleState userBundle, OSGiMetaData osgiMetaData) throws BundleException {
+    public void validateBundle(XBundle userBundle, OSGiMetaData osgiMetaData) throws BundleException {
         int manifestVersion = osgiMetaData.getBundleManifestVersion();
         if (manifestVersion != 1)
             throw MESSAGES.unsupportedBundleManifestVersion(manifestVersion, userBundle);

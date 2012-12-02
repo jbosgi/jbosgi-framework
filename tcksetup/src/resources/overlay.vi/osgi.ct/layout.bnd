@@ -1,0 +1,123 @@
+core.ct.version			= ${build.version}
+cmpn.ct.version			= ${build.version}
+enterprise.ct.version	= ${build.version}
+residential.ct.version	= ${build.version}
+proposed.ct.version		= ${build.version}
+
+build.tests                 = ${uniq; ${build.core.tests}, ${build.cmpn.tests}, ${build.enterprise.tests}, ${build.residential.tests}}
+
+jar.core.tests = \
+	${repo;org.apache.servicemix.bundles.bcel}
+	
+# Disable security related sections
+#    org.osgi.test.cases.framework.secure, \
+#    org.osgi.test.cases.framework.launch.secure, \
+#    org.osgi.test.cases.condpermadmin, \
+#    org.osgi.test.cases.permissionadmin, \
+build.core.tests = \
+    org.osgi.test.cases.framework, \
+    org.osgi.test.cases.framework.launch, \
+    org.osgi.test.cases.url, \
+    org.osgi.test.cases.tracker
+
+jar.cmpn.tests =
+
+build.cmpn.tests = \
+    org.osgi.test.cases.application, \
+    org.osgi.test.cases.blueprint, \
+    org.osgi.test.cases.blueprint.java5, \
+    org.osgi.test.cases.blueprint.secure, \
+    org.osgi.test.cases.cm, \
+    org.osgi.test.cases.coordinator, \
+    org.osgi.test.cases.coordinator.secure, \
+    org.osgi.test.cases.component, \
+    org.osgi.test.cases.deploymentadmin.mo, \
+    org.osgi.test.cases.deploymentadmin.tc1, \
+    org.osgi.test.cases.deploymentadmin.tc2, \
+    org.osgi.test.cases.device, \
+    org.osgi.test.cases.dmt.tc1, \
+    org.osgi.test.cases.dmt.tc2, \
+    org.osgi.test.cases.dmt.tc3, \
+    org.osgi.test.cases.dmt.tc4, \
+    org.osgi.test.cases.event, \
+    org.osgi.test.cases.http, \
+    org.osgi.test.cases.io, \
+    org.osgi.test.cases.jdbc, \
+    org.osgi.test.cases.jndi, \
+    org.osgi.test.cases.jndi.secure, \
+    org.osgi.test.cases.jpa, \
+    org.osgi.test.cases.log, \
+    org.osgi.test.cases.measurement, \
+    org.osgi.test.cases.metatype, \
+    org.osgi.test.cases.monitor, \
+    org.osgi.test.cases.provisioning, \
+    org.osgi.test.cases.policy, \
+    org.osgi.test.cases.position, \
+    org.osgi.test.cases.prefs, \
+    org.osgi.test.cases.remoteserviceadmin, \
+    org.osgi.test.cases.remoteserviceadmin.secure, \
+    org.osgi.test.cases.remoteservices, \
+    org.osgi.test.cases.scaconfigtype, \
+    org.osgi.test.cases.transaction, \
+    org.osgi.test.cases.upnp, \
+    org.osgi.test.cases.useradmin, \
+    org.osgi.test.cases.webcontainer, \
+    org.osgi.test.cases.wireadmin, \
+    org.osgi.test.cases.xml
+
+jar.enterprise.tests =
+
+build.enterprise.tests = \
+    org.osgi.test.cases.blueprint, \
+    org.osgi.test.cases.blueprint.java5, \
+    org.osgi.test.cases.blueprint.secure, \
+    org.osgi.test.cases.cm, \
+    org.osgi.test.cases.component, \
+    org.osgi.test.cases.coordinator, \
+    org.osgi.test.cases.coordinator.secure, \
+    org.osgi.test.cases.event, \
+    org.osgi.test.cases.http, \
+	org.osgi.test.cases.jdbc, \
+    org.osgi.test.cases.jmx.cm, \
+    org.osgi.test.cases.jmx.framework, \
+    org.osgi.test.cases.jmx.framework.secure, \
+    org.osgi.test.cases.jmx.provisioning, \
+    org.osgi.test.cases.jmx.useradmin, \
+	org.osgi.test.cases.jndi, \
+	org.osgi.test.cases.jndi.secure, \
+    org.osgi.test.cases.jpa, \
+    org.osgi.test.cases.log, \
+    org.osgi.test.cases.metatype, \
+    org.osgi.test.cases.provisioning, \
+    org.osgi.test.cases.remoteserviceadmin, \
+    org.osgi.test.cases.remoteserviceadmin.secure, \
+    org.osgi.test.cases.remoteservices, \
+    org.osgi.test.cases.scaconfigtype, \
+    org.osgi.test.cases.subsystem, \
+    org.osgi.test.cases.subsystem.secure, \
+	org.osgi.test.cases.transaction, \
+    org.osgi.test.cases.useradmin, \
+    org.osgi.test.cases.webcontainer, \
+   	org.osgi.test.cases.xml
+
+jar.residential.tests =
+
+build.residential.tests = \
+    org.osgi.test.cases.cm, \
+    org.osgi.test.cases.component, \
+    org.osgi.test.cases.device, \
+    org.osgi.test.cases.dmt.tc1, \
+    org.osgi.test.cases.dmt.tc2, \
+    org.osgi.test.cases.dmt.tc3, \
+    org.osgi.test.cases.dmt.tc4, \
+    org.osgi.test.cases.event, \
+    org.osgi.test.cases.http, \
+    org.osgi.test.cases.log, \
+    org.osgi.test.cases.metatype, \
+    org.osgi.test.cases.provisioning, \
+    org.osgi.test.cases.tracker, \
+    org.osgi.test.cases.tr069todmt, \
+    org.osgi.test.cases.upnp, \
+    org.osgi.test.cases.useradmin, \
+    org.osgi.test.cases.xml
+

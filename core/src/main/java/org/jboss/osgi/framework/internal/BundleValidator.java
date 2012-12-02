@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,8 +19,10 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -35,5 +36,5 @@ interface BundleValidator {
     /**
      * Validate the bundle
      */
-    void validateBundle(UserBundleState userBundle, OSGiMetaData osgiMetaData) throws BundleException;
+    void validateBundle(XBundle userBundle, OSGiMetaData osgiMetaData) throws BundleException;
 }

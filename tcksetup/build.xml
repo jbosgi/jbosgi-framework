@@ -75,7 +75,15 @@
 
   <!-- Setup the TCK to use the Vendor Implemenation -->
   <target name="setup.vi" description="Setup the TCK using the Vendor Implemenation" depends="init,update-framework">
-    <!-- Build the TCK -->
+
+  	<!-- Disable security related sections -->
+    <copy todir="${tck.checkout.dir}" overwrite="true">
+      <fileset dir="${basedir}/src/resources/overlay.vi" >
+        <include name="osgi.ct/layout.bnd" />
+      </fileset>
+    </copy>
+  	
+  	<!-- Build the TCK -->
     <ant dir="${tck.checkout.dir}" target="build" />
 
     <mkdir dir="${tck.checkout.dir}/licensed/repo/org.jboss.logging" />
