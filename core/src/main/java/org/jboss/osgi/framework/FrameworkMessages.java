@@ -180,7 +180,7 @@ public interface FrameworkMessages {
     BundleException packageCannotSpecifyBundleVersion(String packageName, Bundle bundle);
 
     @Message(id = 11240, value = "Bundle name and version already installed: %s")
-    BundleException nameAndVersionAlreadyInstalled(Bundle bundle);
+    String nameAndVersionAlreadyInstalled(Bundle bundle);
 
     @Message(id = 11241, value = "Invalid Fragment-Host for extension fragment: %s")
     BundleException invalidFragmentHostForExtensionFragment(Bundle bundle);
