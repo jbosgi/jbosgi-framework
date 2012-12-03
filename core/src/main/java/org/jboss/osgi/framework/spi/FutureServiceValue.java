@@ -95,8 +95,9 @@ public final class FutureServiceValue<T> implements Future<T> {
 
     private T getValue(long timeout, TimeUnit unit) throws ExecutionException, TimeoutException {
 
-        if (controller.getState() == expectedState)
-            return controller.getValue();
+        if (controller.getState() == expectedState) {
+            return State.UP == expectedState ? controller.getValue() : null;
+        }
 
         final CountDownLatch latch = new CountDownLatch(1);
         final FutureServiceValue<T> futureServiceValue = this;

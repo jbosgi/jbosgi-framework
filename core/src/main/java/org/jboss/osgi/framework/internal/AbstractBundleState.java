@@ -96,8 +96,9 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     private final List<ServiceState> registeredServices = new CopyOnWriteArrayList<ServiceState>();
     private final ConcurrentHashMap<ServiceState, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
     private ResolutionException lastResolutionException;
-    private R currentRevision;
     private AbstractBundleContext bundleContext;
+    private String canonicalName;
+    private R currentRevision;
 
     AbstractBundleState(FrameworkState frameworkState, R brev, long bundleId) {
         assert frameworkState != null : "Null frameworkState";
@@ -700,10 +701,13 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     @Override
     public String getCanonicalName() {
-        OSGiMetaData metadata = getOSGiMetaData();
-        String name = metadata.getBundleSymbolicName();
-        name = name != null ? name : metadata.getBundleName();
-        return name + ":" + metadata.getBundleVersion();
+    	if (canonicalName == null) {
+            OSGiMetaData metadata = getOSGiMetaData();
+            String name = metadata.getBundleSymbolicName();
+            name = name != null ? name : metadata.getBundleName();
+            canonicalName = name + ":" + metadata.getBundleVersion();
+    	}
+    	return canonicalName;
     }
 
     @Override
