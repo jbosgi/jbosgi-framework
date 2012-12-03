@@ -22,6 +22,8 @@
 package org.jboss.osgi.framework.spi;
 
 import org.jboss.modules.Module;
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.osgi.framework.Constants;
 
 /**
  * The framework module provider.
@@ -30,6 +32,8 @@ import org.jboss.modules.Module;
  * @since 25-Mar-2011
  */
 public interface FrameworkModuleProvider {
+
+    public static final ModuleIdentifier FRAMEWORK_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".framework");
 
     Module getFrameworkModule();
 }

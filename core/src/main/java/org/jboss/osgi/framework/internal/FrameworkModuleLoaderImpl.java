@@ -48,9 +48,11 @@ import org.jboss.msc.value.ImmediateValue;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
 import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.jboss.osgi.framework.spi.IntegrationServices;
+import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.Version;
+import org.osgi.framework.wiring.BundleWire;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -104,8 +106,9 @@ public final class FrameworkModuleLoaderImpl extends ModuleLoader implements Fra
     @Override
     public ModuleIdentifier getModuleIdentifier(XBundleRevision brev) {
         XBundle bundle = brev.getBundle();
-        List<XBundleRevision> allrevs = bundle.getAllBundleRevisions();
-        String bundleId = "bid" + bundle.getBundleId() + "rev" + (allrevs.size() - 1);
+        StorageState storageState = brev.getAttachment(StorageState.class);
+        int revisionId = storageState.getRevisionId();
+        String bundleId = "bid" + bundle.getBundleId() + "rev" + revisionId;
         String bsname = bundle.getSymbolicName();
         Version version = bundle.getVersion();
         return ModuleIdentifier.create(JBOSGI_PREFIX + "." + bsname, version + "." + bundleId);
@@ -136,8 +139,9 @@ public final class FrameworkModuleLoaderImpl extends ModuleLoader implements Fra
     }
 
     @Override
-    public void removeModule(XBundleRevision brev, ModuleIdentifier identifier) {
+    public void removeModule(XBundleRevision brev) {
         synchronized (moduleSpecs) {
+            ModuleIdentifier identifier = brev.getModuleIdentifier();
             LOGGER.tracef("removeModule: %s", identifier);
             moduleSpecs.remove(identifier);
 
@@ -160,7 +164,8 @@ public final class FrameworkModuleLoaderImpl extends ModuleLoader implements Fra
     }
 
     @Override
-    public ServiceName createModuleService(XBundleRevision brev, ModuleIdentifier identifier) {
+    public ServiceName createModuleService(XBundleRevision brev, List<BundleWire> wires) {
+        ModuleIdentifier identifier = brev.getModuleIdentifier();
         ServiceName moduleServiceName = getModuleServiceName(identifier);
         ServiceController<?> controller = serviceRegistry.getService(moduleServiceName);
         if (controller != null) {

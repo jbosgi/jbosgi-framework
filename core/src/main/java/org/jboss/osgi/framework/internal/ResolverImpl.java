@@ -36,7 +36,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.State;
@@ -305,8 +304,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
             XBundleRevision brev = (XBundleRevision) entry.getKey();
             if (brev.isFragment() == false) {
                 List<BundleWire> wires = wiremap.get(brev);
-                ModuleIdentifier identifier = moduleManager.addModule(brev, wires);
-                brev.addAttachment(ModuleIdentifier.class, identifier);
+                moduleManager.addModule(brev, wires);
             }
         }
     }
@@ -314,10 +312,10 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
     private void createModuleServices(Map<BundleRevision, List<BundleWire>> wiremap) {
         for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
             XBundleRevision brev = (XBundleRevision) entry.getKey();
+            List<BundleWire> wires = entry.getValue();
             XBundle bundle = brev.getBundle();
             if (bundle != null && bundle.getBundleId() != 0 && !brev.isFragment()) {
-                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(brev);
-                moduleLoader.createModuleService(brev, identifier);
+                moduleLoader.createModuleService(brev, wires);
             }
         }
     }

@@ -37,6 +37,7 @@ import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.ModuleManager;
@@ -55,12 +56,12 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class SystemBundle extends AbstractIntegrationService<SystemBundleState> {
+final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleState> {
 
     private final FrameworkState frameworkState;
     private SystemBundleState bundleState;
 
-    SystemBundle(FrameworkState frameworkState) {
+    SystemBundlePlugin(FrameworkState frameworkState) {
         super(IntegrationServices.SYSTEM_BUNDLE_INTERNAL);
         this.frameworkState = frameworkState;
     }
@@ -69,6 +70,7 @@ final class SystemBundle extends AbstractIntegrationService<SystemBundleState> {
     protected void addServiceDependencies(ServiceBuilder<SystemBundleState> builder) {
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, frameworkState.injectedEnvironment);
         builder.addDependency(IntegrationServices.BUNDLE_STORAGE, BundleStorage.class, frameworkState.injectedBundleStorage);
+        builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, frameworkState.injectedModuleProvider);
         builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, frameworkState.injectedLockManager);
         builder.addDependency(IntegrationServices.MODULE_MANGER, ModuleManager.class, frameworkState.injectedModuleManager);
         builder.addDependency(IntegrationServices.SYSTEM_PATHS, SystemPaths.class, frameworkState.injectedSystemPaths);

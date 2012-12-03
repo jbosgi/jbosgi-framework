@@ -84,7 +84,7 @@ import org.osgi.service.resolver.ResolutionException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class AbstractBundleState extends AbstractElement implements XBundle, LockableItem {
+abstract class AbstractBundleState<R extends BundleStateRevision> extends AbstractElement implements XBundle, LockableItem {
 
     private final long bundleId;
     private final String symbolicName;
@@ -94,10 +94,10 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
     private final List<ServiceState> registeredServices = new CopyOnWriteArrayList<ServiceState>();
     private final ConcurrentHashMap<ServiceState, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
     private ResolutionException lastResolutionException;
-    private BundleStateRevision currentRevision;
+    private R currentRevision;
     private AbstractBundleContext bundleContext;
 
-    AbstractBundleState(FrameworkState frameworkState, BundleStateRevision brev, long bundleId) {
+    AbstractBundleState(FrameworkState frameworkState, R brev, long bundleId) {
         assert frameworkState != null : "Null frameworkState";
         assert brev != null : "Null revision";
 
@@ -114,10 +114,10 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
         brev.addAttachment(Bundle.class, this);
     }
 
-    static AbstractBundleState assertBundleState(Bundle bundle) {
+    static AbstractBundleState<?> assertBundleState(Bundle bundle) {
         assert bundle != null : "Null bundle";
         assert bundle instanceof AbstractBundleState : "Not a BundleState: " + bundle;
-        return (AbstractBundleState) bundle;
+        return (AbstractBundleState<?>) bundle;
     }
 
     FrameworkState getFrameworkState() {
@@ -169,16 +169,16 @@ abstract class AbstractBundleState extends AbstractElement implements XBundle, L
     }
 
     @Override
-    public BundleStateRevision getBundleRevision() {
+    public R getBundleRevision() {
         return currentRevision;
     }
 
-    void addBundleRevision(BundleStateRevision rev) {
+    void addBundleRevision(R rev) {
         rev.addAttachment(Bundle.class, this);
         currentRevision = rev;
     }
 
-    abstract BundleStateRevision getBundleRevisionById(int revisionId);
+    abstract R getBundleRevisionById(int revisionId);
 
     abstract ServiceName getServiceName(int state);
 

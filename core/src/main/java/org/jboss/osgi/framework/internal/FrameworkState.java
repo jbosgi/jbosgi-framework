@@ -27,6 +27,7 @@ import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
+import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.NativeCode;
@@ -54,6 +55,7 @@ final class FrameworkState {
     final InjectedValue<CoreServices> injectedCoreServices = new InjectedValue<CoreServices>();
     final InjectedValue<FrameworkEvents> injectedFrameworkEvents = new InjectedValue<FrameworkEvents>();
     final InjectedValue<FrameworkModuleLoader> injectedModuleLoader = new InjectedValue<FrameworkModuleLoader>();
+    final InjectedValue<FrameworkModuleProvider> injectedModuleProvider = new InjectedValue<FrameworkModuleProvider>();
     final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
     final InjectedValue<ModuleManager> injectedModuleManager = new InjectedValue<ModuleManager>();
     final InjectedValue<NativeCode> injectedNativeCode = new InjectedValue<NativeCode>();
@@ -93,6 +95,10 @@ final class FrameworkState {
 
     FrameworkModuleLoader getFrameworkModuleLoader() {
         return injectedModuleLoader.getValue();
+    }
+
+    FrameworkModuleProvider getFrameworkModuleProvider() {
+        return injectedModuleProvider.getValue();
     }
 
     LockManager getLockManager() {

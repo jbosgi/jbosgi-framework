@@ -83,7 +83,7 @@ import org.osgi.framework.launch.Framework;
  *                 +---{@link ServiceManagerPlugin}
  *                     +---{@link FrameworkEventsPlugin}
  *                         +---{@link SystemContext}
- *                             +---{@link SystemBundle}
+ *                             +---{@link SystemBundlePlugin}
  *                                 +---{@link BundleStoragePlugin}
  *                                 +---{@link SystemPathsPlugin}
  *                                 +---{@link ModuleManagerPlugin}

@@ -72,10 +72,12 @@ final class HostBundleRevision extends UserBundleRevision {
         return (HostBundleRevision) brev;
     }
 
+    @Override
     HostBundleState getBundleState() {
         return (HostBundleState) getBundle();
     }
 
+    @Override
     void refreshRevisionInternal() {
         super.refreshRevisionInternal();
         attachedFragments = null;
@@ -120,6 +122,7 @@ final class HostBundleRevision extends UserBundleRevision {
         return fallbackLoader;
     }
 
+    @Override
     Class<?> loadClass(String className) throws ClassNotFoundException {
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle

@@ -355,7 +355,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         XBundle bundle = getBundleByLocation(dep.getLocation());
         if (bundle instanceof AbstractBundleState) {
             LOGGER.debugf("Installing an already existing bundle: %s", dep);
-            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+            AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
             serviceName = bundleState.getServiceName(Bundle.INSTALLED);
             VFSUtils.safeClose(dep.getRoot());
         } else {
@@ -403,29 +403,29 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public void startBundle(XBundle bundle, int options) throws BundleException {
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
         bundleState.startInternal(options);
     }
 
     @Override
     public void stopBundle(XBundle bundle, int options) throws BundleException {
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
         bundleState.stopInternal(options);
     }
 
     @Override
     public void updateBundle(XBundle bundle, InputStream input) throws BundleException {
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
         bundleState.updateInternal(input);
     }
 
     @Override
     public void uninstallBundle(XBundle bundle, int options) throws BundleException {
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
         bundleState.uninstallInternal(options);
     }
 
-    void removeBundle(UserBundleState userBundle, int options) {
+    void removeBundle(UserBundleState<?> userBundle, int options) {
         LOGGER.tracef("Start removing bundle: %s", userBundle);
 
         if ((options & Bundle.STOP_TRANSIENT) == 0) {
@@ -458,7 +458,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     public ServiceName getServiceName(XBundle bundle, int state) {
         ServiceName result = null;
         if (bundle instanceof AbstractBundleState) {
-            AbstractBundleState bundleState = (AbstractBundleState) bundle;
+            AbstractBundleState<?> bundleState = (AbstractBundleState<?>) bundle;
             result = bundleState.getServiceName(state);
         }
         return result;
@@ -524,7 +524,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         }
     }
 
-    void fireFrameworkWarning(AbstractBundleState bundleState, String context, Throwable t) {
+    void fireFrameworkWarning(AbstractBundleState<?> bundleState, String context, Throwable t) {
         FrameworkEvents plugin = getFrameworkState().getFrameworkEvents();
         if (t instanceof BundleException) {
             plugin.fireFrameworkEvent(bundleState, FrameworkEvent.WARNING, t);

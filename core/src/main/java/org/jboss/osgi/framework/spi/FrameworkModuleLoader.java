@@ -21,6 +21,7 @@ package org.jboss.osgi.framework.spi;
  * #L%
  */
 
+import java.util.List;
 import java.util.Map;
 
 import org.jboss.modules.DependencySpec;
@@ -30,6 +31,7 @@ import org.jboss.modules.ModuleLoader;
 import org.jboss.modules.ModuleSpec;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.resolver.XBundleRevision;
+import org.osgi.framework.wiring.BundleWire;
 
 /**
  * Integration point for the {@link ModuleLoader}.
@@ -49,9 +51,9 @@ public interface FrameworkModuleLoader {
 
     void addModule(XBundleRevision brev, Module module);
 
-    ServiceName createModuleService(XBundleRevision brev, ModuleIdentifier identifier);
+    ServiceName createModuleService(XBundleRevision brev, List<BundleWire> wires);
 
-    void removeModule(XBundleRevision brev, ModuleIdentifier identifier);
+    void removeModule(XBundleRevision brev);
 
     ServiceName getModuleServiceName(ModuleIdentifier identifier);
 

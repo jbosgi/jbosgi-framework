@@ -27,9 +27,11 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 
+import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.spi.BundleManager;
+import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.resolver.XBundleRevision;
@@ -44,13 +46,16 @@ import org.osgi.framework.Version;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class SystemBundleState extends AbstractBundleState {
+final class SystemBundleState extends AbstractBundleState<SystemBundleRevision> {
 
     private final SystemBundleRevision systemRevision;
 
     SystemBundleState(FrameworkState frameworkState, SystemBundleRevision brev) {
         super(frameworkState, brev, 0);
         this.systemRevision = brev;
+
+        // Assign the {@link ModuleIdentifier}
+        brev.addAttachment(ModuleIdentifier.class, FrameworkModuleProvider.FRAMEWORK_MODULE_IDENTIFIER);
     }
 
     static SystemBundleState assertBundleState(Bundle bundle) {

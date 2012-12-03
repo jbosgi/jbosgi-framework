@@ -193,7 +193,7 @@ public final class FrameworkBuilderImpl implements FrameworkBuilder {
         registerIntegrationService(FrameworkPhase.CREATE, new PackageAdminPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new ResolverPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new ServiceManagerPlugin());
-        registerIntegrationService(FrameworkPhase.CREATE, new SystemBundle(frameworkState));
+        registerIntegrationService(FrameworkPhase.CREATE, new SystemBundlePlugin(frameworkState));
         registerIntegrationService(FrameworkPhase.CREATE, new SystemContext());
 
         registerIntegrationService(FrameworkPhase.INIT, new FrameworkInit());

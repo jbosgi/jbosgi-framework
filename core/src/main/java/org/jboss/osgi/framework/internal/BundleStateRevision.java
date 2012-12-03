@@ -27,6 +27,7 @@ import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
+import org.jboss.osgi.framework.FrameworkMessages;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -71,6 +72,7 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
         try {
             final BundleStateRevision brev = this;
             XBundleRevisionBuilderFactory factory = new XBundleRevisionBuilderFactory() {
+                @Override
                 public XBundleRevision createResource() {
                     return brev;
                 }
@@ -123,14 +125,14 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
 
     @Override
     public synchronized ModuleClassLoader getModuleClassLoader() {
-        ModuleIdentifier identifier = getModuleIdentifier();
-        if (moduleClassLoader == null && identifier != null) {
+        if (moduleClassLoader == null && getBundle().isResolved()) {
+            ModuleIdentifier identifier = getModuleIdentifier();
             try {
                 ModuleManager moduleManager = getFrameworkState().getModuleManager();
                 Module module = moduleManager.loadModule(identifier);
                 moduleClassLoader = module.getClassLoader();
             } catch (ModuleLoadException ex) {
-                // ignore
+                throw FrameworkMessages.MESSAGES.illegalStateCannotLoadModule(ex, identifier);
             }
         }
         return moduleClassLoader;
@@ -144,7 +146,6 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
 
     synchronized void refreshRevisionInternal() {
         removeAttachment(Wiring.class);
-        removeAttachment(ModuleIdentifier.class);
         removeAttachment(Module.class);
         moduleClassLoader = null;
     }

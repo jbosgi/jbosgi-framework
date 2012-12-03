@@ -102,7 +102,9 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
         ServiceController<?> service = serviceContainer.getRequiredService(IntegrationServices.FRAMEWORK_MODULE_LOADER);
         FrameworkModuleLoader moduleLoader = (FrameworkModuleLoader) service.getValue();
-        moduleLoader.removeModule(Mockito.mock(XBundleRevision.class), module.getIdentifier());
+        XBundleRevision brev = Mockito.mock(XBundleRevision.class);
+        Mockito.when(brev.getModuleIdentifier()).thenReturn(module.getIdentifier());
+        moduleLoader.removeModule(brev);
         VFSUtils.safeClose(vfsmap.remove(module));
     }
 

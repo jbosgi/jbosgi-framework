@@ -37,7 +37,6 @@ import org.jboss.modules.ModuleSpec;
 import org.jboss.modules.Resource;
 import org.jboss.modules.filter.PathFilter;
 import org.jboss.modules.filter.PathFilters;
-import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleReferenceClassLoader;
 import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
@@ -52,7 +51,6 @@ import org.jboss.osgi.resolver.XBundle;
  */
 public class FrameworkModuleProviderImpl implements FrameworkModuleProvider {
 
-    private static final ModuleIdentifier FRAMEWORK_MODULE_IDENTIFIER = ModuleIdentifier.create(Constants.JBOSGI_PREFIX + ".framework");
     private final BundleManagerPlugin bundleManager;
     private final SystemPaths systemPaths;
     private Module frameworkModule;
@@ -74,7 +72,7 @@ public class FrameworkModuleProviderImpl implements FrameworkModuleProvider {
 
     private Module createFrameworkModule() {
 
-        ModuleSpec.Builder specBuilder = ModuleSpec.build(FRAMEWORK_MODULE_IDENTIFIER);
+        ModuleSpec.Builder specBuilder = ModuleSpec.build(FrameworkModuleProvider.FRAMEWORK_MODULE_IDENTIFIER);
         Set<String> bootPaths = systemPaths.getBootDelegationPaths();
         PathFilter bootFilter = systemPaths.getBootDelegationFilter();
         PathFilter acceptAll = PathFilters.acceptAll();

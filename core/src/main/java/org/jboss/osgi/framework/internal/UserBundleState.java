@@ -45,9 +45,9 @@ import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.LockManager;
-import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.Method;
+import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
@@ -70,15 +70,15 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
-abstract class UserBundleState extends AbstractBundleState {
+abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBundleState<R> {
 
-    private final List<UserBundleRevision> revisions = new CopyOnWriteArrayList<UserBundleRevision>();
+    private final List<R> revisions = new CopyOnWriteArrayList<R>();
     private final ServiceTarget serviceTarget;
     private final ServiceName serviceName;
 
     private Dictionary<String, String> headersOnUninstall;
 
-    UserBundleState(FrameworkState frameworkState, UserBundleRevision brev, ServiceName serviceName, ServiceTarget serviceTarget) {
+    UserBundleState(FrameworkState frameworkState, R brev, ServiceName serviceName, ServiceTarget serviceTarget) {
         super(frameworkState, brev, brev.getStorageState().getBundleId());
         this.serviceTarget = serviceTarget;
         this.serviceName = serviceName;
@@ -88,10 +88,10 @@ abstract class UserBundleState extends AbstractBundleState {
     /**
      * Assert that the given bundle is an instance of {@link UserBundleState}
      */
-    static UserBundleState assertBundleState(Bundle bundle) {
+    static UserBundleState<?> assertBundleState(Bundle bundle) {
         bundle = AbstractBundleState.assertBundleState(bundle);
         assert bundle instanceof UserBundleState : "Not an UserBundleState: " + bundle;
-        return (UserBundleState) bundle;
+        return (UserBundleState<?>) bundle;
     }
 
     @Override
@@ -111,6 +111,7 @@ abstract class UserBundleState extends AbstractBundleState {
         return getBundleRevision().getContentList();
     }
 
+    @Override
     boolean isSingleton() {
         return getOSGiMetaData().isSingleton();
     }
@@ -121,7 +122,7 @@ abstract class UserBundleState extends AbstractBundleState {
 
     abstract void initLazyActivation();
 
-    abstract UserBundleRevision createUpdateRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException;
+    abstract R createUpdateRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -156,14 +157,15 @@ abstract class UserBundleState extends AbstractBundleState {
         }
     }
 
-    void addBundleRevision(BundleStateRevision rev) {
+    @Override
+    void addBundleRevision(R rev) {
         super.addBundleRevision(rev);
-        revisions.add(0, (UserBundleRevision) rev);
+        revisions.add(0, rev);
     }
 
     @Override
-    public UserBundleRevision getBundleRevision() {
-        return (UserBundleRevision) super.getBundleRevision();
+    public R getBundleRevision() {
+        return super.getBundleRevision();
     }
 
     @Override
@@ -173,14 +175,14 @@ abstract class UserBundleState extends AbstractBundleState {
     }
 
     void clearOldRevisions() {
-        UserBundleRevision rev = getBundleRevision();
+        R rev = getBundleRevision();
         revisions.clear();
         revisions.add(rev);
     }
 
     @Override
-    BundleStateRevision getBundleRevisionById(int revisionId) {
-        for (BundleStateRevision rev : revisions) {
+    R getBundleRevisionById(int revisionId) {
+        for (R rev : revisions) {
             if (rev.getRevisionId() == revisionId) {
                 return rev;
             }
@@ -296,7 +298,7 @@ abstract class UserBundleState extends AbstractBundleState {
             OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
             dep.addAttachment(OSGiMetaData.class, metadata);
             dep.addAttachment(Bundle.class, this);
-            UserBundleRevision updateRevision = createUpdateRevision(dep, metadata, storageState);
+            R updateRevision = createUpdateRevision(dep, metadata, storageState);
             addBundleRevision(updateRevision);
             XEnvironment env = getFrameworkState().getEnvironment();
             env.installResources(updateRevision);
@@ -331,7 +333,7 @@ abstract class UserBundleState extends AbstractBundleState {
 
         // Remove the revisions from the environment
         ModuleManager moduleManager = getFrameworkState().getModuleManager();
-        UserBundleRevision currentRev = getBundleRevision();
+        R currentRev = getBundleRevision();
         for (XBundleRevision brev : getAllBundleRevisions()) {
 
             UserBundleRevision userRev = UserBundleRevision.assertBundleRevision(brev);
@@ -428,7 +430,7 @@ abstract class UserBundleState extends AbstractBundleState {
         // Remove other uninstalled bundles that now also have no active wires any more
         Set<XBundle> uninstalled = getBundleManager().getBundles(Bundle.UNINSTALLED);
         for (Bundle auxState : uninstalled) {
-            UserBundleState auxUser = UserBundleState.assertBundleState(auxState);
+            UserBundleState<?> auxUser = UserBundleState.assertBundleState(auxState);
             if (auxUser.hasActiveWires() == false) {
                 getBundleManagerPlugin().removeBundle(auxUser, options);
             }

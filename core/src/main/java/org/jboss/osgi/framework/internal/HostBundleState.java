@@ -64,7 +64,7 @@ import org.osgi.service.resolver.ResolutionException;
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
  */
-final class HostBundleState extends UserBundleState {
+final class HostBundleState extends UserBundleState<HostBundleRevision> {
 
     private final AtomicBoolean alreadyStarting = new AtomicBoolean();
     private final AtomicBoolean awaitLazyActivation = new AtomicBoolean();
@@ -72,15 +72,10 @@ final class HostBundleState extends UserBundleState {
 
     HostBundleState(FrameworkState frameworkState, HostBundleRevision brev, ServiceName serviceName, ServiceTarget serviceTarget) {
         super(frameworkState, brev, serviceName, serviceTarget);
-
-        // Assign the {@link ModuleIdentifier}
-        ModuleManager moduleManager = frameworkState.getModuleManager();
-        ModuleIdentifier moduleIdentifier = moduleManager.getModuleIdentifier(brev);
-        brev.addAttachment(ModuleIdentifier.class, moduleIdentifier);
     }
 
     static HostBundleState assertBundleState(Bundle bundle) {
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
         assert bundleState instanceof HostBundleState : "Not a HostBundleState: " + bundleState;
         return (HostBundleState) bundleState;
     }
@@ -99,7 +94,13 @@ final class HostBundleState extends UserBundleState {
 
     @Override
     public HostBundleRevision getBundleRevision() {
-        return (HostBundleRevision) super.getBundleRevision();
+        return super.getBundleRevision();
+    }
+
+    @Override
+    void addBundleRevision(HostBundleRevision brev) {
+        super.addBundleRevision(brev);
+        assignModuleIdentifier(brev);
     }
 
     @Override
@@ -165,8 +166,8 @@ final class HostBundleState extends UserBundleState {
         return alreadyStarting.get();
     }
 
-    Set<UserBundleState> getDependentBundles() {
-        Set<UserBundleState> result = new HashSet<UserBundleState>();
+    Set<HostBundleState> getDependentBundles() {
+        Set<HostBundleState> result = new HashSet<HostBundleState>();
         if (isResolved() == true) {
             BundleWiring wiring = getBundleRevision().getWiring();
             List<Wire> wires = wiring.getRequiredResourceWires(null);
@@ -174,7 +175,7 @@ final class HostBundleState extends UserBundleState {
                 BundleRevision brev = (BundleRevision) wire.getProvider();
                 Bundle bundle = brev.getBundle();
                 if (bundle instanceof UserBundleState)
-                    result.add((UserBundleState) bundle);
+                    result.add((HostBundleState) bundle);
             }
         }
         return result;
@@ -459,6 +460,12 @@ final class HostBundleState extends UserBundleState {
     void setPersistentlyStarted(boolean started) {
         StartLevelSupport startLevelPlugin = getCoreServices().getStartLevelSupport();
         startLevelPlugin.setBundlePersistentlyStarted(this, started);
+    }
+
+    private void assignModuleIdentifier(HostBundleRevision brev) {
+        ModuleManager moduleManager = getFrameworkState().getModuleManager();
+        ModuleIdentifier moduleIdentifier = moduleManager.getModuleIdentifier(brev);
+        brev.addAttachment(ModuleIdentifier.class, moduleIdentifier);
     }
 
     private boolean startLevelValidForStart() {

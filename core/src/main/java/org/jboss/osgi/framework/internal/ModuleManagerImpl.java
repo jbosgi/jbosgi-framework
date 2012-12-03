@@ -539,7 +539,7 @@ public final class ModuleManagerImpl implements ModuleManager {
      */
     @Override
     public void removeModule(XBundleRevision brev, ModuleIdentifier identifier) {
-        moduleLoader.removeModule(brev, identifier);
+        moduleLoader.removeModule(brev);
     }
 
     private class ModuleDependencyHolder {

@@ -263,7 +263,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
             env.uninstallResources(getBundleRevision());
             // Remove from the module loader
             FrameworkModuleLoader provider = getPluginService(IntegrationServices.FRAMEWORK_MODULE_LOADER, FrameworkModuleLoader.class);
-            provider.removeModule(brev, module.getIdentifier());
+            provider.removeModule(brev);
             bundleState.set(Bundle.UNINSTALLED);
         } finally {
             lockManager.unlockItems(lockContext);
