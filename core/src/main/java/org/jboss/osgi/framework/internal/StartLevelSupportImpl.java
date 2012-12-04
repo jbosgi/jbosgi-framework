@@ -87,6 +87,14 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
     }
 
     private synchronized void setFrameworkStartLevelInternal(final int level, final boolean synchronous, final FrameworkListener... listeners) {
+    	
+        // In case of equality just fire the event
+        if (level == getFrameworkStartLevel()) {
+            Bundle sysbundle = bundleManager.getSystemBundle();
+            events.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null, listeners);
+            return;
+        }
+        
         if (level > getFrameworkStartLevel()) {
             Runnable runner = new Runnable() {
                 @Override
@@ -104,16 +112,6 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
                 public void run() {
                     LOGGER.infoDecreasingStartLevel(getFrameworkStartLevel(), level);
                     decreaseFrameworkStartLevel(level);
-                    Bundle sysbundle = bundleManager.getSystemBundle();
-                    events.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null, listeners);
-                }
-            };
-            executeTask(runner, synchronous);
-        } else {
-            Runnable runner = new Runnable() {
-                @Override
-                public void run() {
-                    // In case of equality just fire the event
                     Bundle sysbundle = bundleManager.getSystemBundle();
                     events.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null, listeners);
                 }
@@ -283,7 +281,7 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
     public boolean isBundleActivationPolicyUsed(Bundle bundle) {
         boolean result = false;
         if (bundle instanceof AbstractBundleState) {
-            AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+            AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
             StorageState storageState = bundleState.getStorageState();
             result = storageState.isBundleActivationPolicyUsed();
         }

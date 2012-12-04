@@ -22,7 +22,6 @@
 package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleStartLevelSupport;
 import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
@@ -52,7 +51,7 @@ import org.osgi.framework.wiring.FrameworkWiring;
  */
 final class FrameworkState {
 
-    private final BundleManager bundleManager;
+    private final BundleManagerPlugin bundleManager;
 
     final InjectedValue<BundleStartLevelSupport> injectedBundleStartLevel = new InjectedValue<BundleStartLevelSupport>();
     final InjectedValue<BundleStorage> injectedBundleStorage = new InjectedValue<BundleStorage>();
@@ -73,11 +72,11 @@ final class FrameworkState {
     final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     final InjectedValue<XResolver> injectedResolverPlugin = new InjectedValue<XResolver>();
 
-    FrameworkState(BundleManager bundleManager) {
+    FrameworkState(BundleManagerPlugin bundleManager) {
         this.bundleManager = bundleManager;
     }
 
-    BundleManager getBundleManager() {
+    BundleManagerPlugin getBundleManager() {
         return bundleManager;
     }
 

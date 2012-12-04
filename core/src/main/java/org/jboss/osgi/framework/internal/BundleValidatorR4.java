@@ -33,12 +33,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.PackageAttribute;
 import org.jboss.osgi.metadata.ParameterizedAttribute;
 import org.jboss.osgi.resolver.XBundle;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 
@@ -123,23 +121,6 @@ final class BundleValidatorR4 implements BundleValidator {
             }
         }
 
-        BundleManager bundleManager = userBundle.adapt(BundleManager.class);
-        String bsnversion = (String) bundleManager.getProperty(Constants.FRAMEWORK_BSNVERSION);
-
-        // Specifies the framework will only allow a single bundle to be installed for a given symbolic name and version.
-        // It will be an error to install a bundle or update a bundle to have the same symbolic name and version as another installed bundle.
-        if (Constants.FRAMEWORK_BSNVERSION_SINGLE.equals(bsnversion)) {
-            assertFrameworkBSNSingle(bundleManager, userBundle);
-        }
-
-        // Specifies the framework must consult the bundle collision hook services to determine if it will be an error to install
-        // a bundle or update a bundle to have the same symbolic name and version as another installed bundle.
-        // If no bundle collision hook services are registered, then it will be an error to install a bundle or update a bundle
-        // to have the same symbolic name and version as another installed bundle.
-        else if (Constants.FRAMEWORK_BSNVERSION_MANAGED.equals(bsnversion)) {
-            assertFrameworkBSNSingle(bundleManager, userBundle);
-        }
-
         // Verify Fragment-Host header
         if (userBundle.isFragment()) {
             ParameterizedAttribute hostAttr = osgiMetaData.getFragmentHost();
@@ -167,13 +148,5 @@ final class BundleValidatorR4 implements BundleValidator {
         // [TODO] The manifest lists a OSGI-INF/permission.perm file but no such file is present.
 
         // [TODO] Requiring the same bundle symbolic name more than once
-    }
-
-    private void assertFrameworkBSNSingle(BundleManager bundleManager, XBundle userBundle) throws BundleException {
-        for (Bundle bundle : bundleManager.getBundles()) {
-            if (userBundle.getSymbolicName().equals(bundle.getSymbolicName()) && userBundle.getVersion().equals(bundle.getVersion())) {
-                throw new BundleException(MESSAGES.nameAndVersionAlreadyInstalled(userBundle), BundleException.DUPLICATE_BUNDLE_ERROR);
-            }
-        }
     }
 }

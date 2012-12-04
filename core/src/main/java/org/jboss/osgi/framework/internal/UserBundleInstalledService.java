@@ -25,6 +25,9 @@ import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceListener;
@@ -44,8 +47,11 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.hooks.bundle.CollisionHook;
 
 /**
  * Represents the INSTALLED state of a user bundle.
@@ -53,7 +59,7 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class UserBundleInstalledService<B extends UserBundleState, R extends UserBundleRevision> extends AbstractBundleService<B> {
+abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extends UserBundleRevision> extends AbstractBundleService<B> {
 
     private final Deployment initialDeployment;
     private B bundleState;
@@ -146,7 +152,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState, R extends U
         return bundleState;
     }
 
-    private void installBundle(UserBundleState userBundle) throws BundleException {
+    private void installBundle(UserBundleState<?> userBundle) throws BundleException {
 
         // [TODO] Add singleton support this to XBundle
         // it is not ok to simple not add it to the Environment

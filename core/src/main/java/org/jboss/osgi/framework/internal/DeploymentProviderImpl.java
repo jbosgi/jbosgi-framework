@@ -72,7 +72,7 @@ public final class DeploymentProviderImpl implements DeploymentProvider {
             dep.addAttachment(BundleInfo.class, info);
             dep.addAttachment(OSGiMetaData.class, metadata);
             return dep;
-        } catch (NumberFormatException nfe) {
+        } catch (IllegalArgumentException nfe) {
             throw FrameworkMessages.MESSAGES.invalidNumberFormat(nfe, nfe.getMessage());
         } catch (BundleException ex) {
             // No valid OSGi manifest. Fallback to jbosgi-xservice.properties

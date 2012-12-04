@@ -80,6 +80,7 @@
     <copy todir="${tck.checkout.dir}" overwrite="true">
       <fileset dir="${basedir}/src/resources/overlay.vi" >
         <include name="osgi.ct/layout.bnd" />
+      	<include name="org.osgi.test.cases.framework.launch/**"/>
       </fileset>
     </copy>
   	

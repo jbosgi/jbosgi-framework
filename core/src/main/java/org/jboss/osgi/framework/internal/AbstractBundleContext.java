@@ -60,6 +60,8 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.Version;
+import org.osgi.framework.hooks.bundle.CollisionHook;
 
 /**
  * The base of all {@link BundleContext} implementations.
@@ -196,7 +198,6 @@ abstract class AbstractBundleContext implements BundleContext {
 
             DeploymentProvider deploymentPlugin = frameworkState.getDeploymentProvider();
             dep = deploymentPlugin.createDeployment(location, rootFile);
-
             return installBundle(dep);
 
         } catch (RuntimeException rte) {
@@ -211,6 +212,10 @@ abstract class AbstractBundleContext implements BundleContext {
     Bundle installBundle(Deployment dep) throws BundleException {
         checkValidBundleContext();
 
+        String symbolicName = dep.getSymbolicName();
+        Version version = Version.parseVersion(dep.getVersion());
+        getBundleState().checkUniqunessPolicy(symbolicName, version, CollisionHook.INSTALLING);
+
         FrameworkState frameworkState = getFrameworkState();
         BundleManager bundleManager = frameworkState.getBundleManager();
         CoreServices coreServices = frameworkState.getCoreServices();
@@ -221,8 +226,8 @@ abstract class AbstractBundleContext implements BundleContext {
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
 
         @SuppressWarnings("unchecked")
-        ServiceController<UserBundleState> controller = (ServiceController<UserBundleState>) serviceContainer.getService(serviceName);
-        FutureServiceValue<UserBundleState> future = new FutureServiceValue<UserBundleState>(controller);
+        ServiceController<UserBundleState<?>> controller = (ServiceController<UserBundleState<?>>) serviceContainer.getService(serviceName);
+        FutureServiceValue<UserBundleState<?>> future = new FutureServiceValue<UserBundleState<?>>(controller);
         try {
             return future.get(30, TimeUnit.SECONDS);
         } catch (Exception ex) {

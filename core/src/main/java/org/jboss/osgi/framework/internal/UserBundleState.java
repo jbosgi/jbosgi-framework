@@ -59,6 +59,7 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.hooks.bundle.CollisionHook;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.BundleWiring;
@@ -242,6 +243,8 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
     }
 
     private void updateInternalNow(InputStream input) throws BundleException {
+
+        checkUniqunessPolicy(getSymbolicName(), getVersion(), CollisionHook.UPDATING);
 
         boolean restart = false;
         if (isFragment() == false) {

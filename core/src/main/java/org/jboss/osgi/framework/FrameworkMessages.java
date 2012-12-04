@@ -44,6 +44,7 @@ import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Version;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.service.url.URLStreamHandlerService;
 
@@ -179,8 +180,8 @@ public interface FrameworkMessages {
     @Message(id = 11239, value = "Package '%s' cannot specify explicit bundle-version in: %s")
     BundleException packageCannotSpecifyBundleVersion(String packageName, Bundle bundle);
 
-    @Message(id = 11240, value = "Bundle name and version already installed: %s")
-    String nameAndVersionAlreadyInstalled(Bundle bundle);
+    @Message(id = 11240, value = "Bundle name and version already installed: [%s:%s]")
+    String nameAndVersionAlreadyInstalled(String symbolicName, Version version);
 
     @Message(id = 11241, value = "Invalid Fragment-Host for extension fragment: %s")
     BundleException invalidFragmentHostForExtensionFragment(Bundle bundle);

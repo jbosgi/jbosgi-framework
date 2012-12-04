@@ -113,15 +113,29 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     // The framework version. This is the version of the org.osgi.framework package in R5
     private static String OSGi_FRAMEWORK_VERSION = "1.7";
 
+    enum UniquenessPolicy {
+        // Specifies the framework will allow multiple bundles to be installed having the same symbolic name and version.
+        multiple,
+        // Specifies the framework will only allow a single bundle to be installed for a given symbolic name and version.
+        // It will be an error to install a bundle or update a bundle to have the same symbolic name and version as another installed bundle.
+        single,
+        // Specifies the framework must consult the bundle collision hook services to determine if it will be an error to install
+        // a bundle or update a bundle to have the same symbolic name and version as another installed bundle.
+        // If no bundle collision hook services are registered, then it will be an error to install a bundle or update a bundle
+        // to have the same symbolic name and version as another installed bundle.
+        managed
+    }
+
     private static String implementationVersion;
     static {
         implementationVersion = BundleManagerPlugin.class.getPackage().getImplementationVersion();
     }
 
+    private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
+    private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
+
     final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
-    final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
-    final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
     final InjectedValue<Boolean> injectedFrameworkActive = new InjectedValue<Boolean>();
 
     private final FrameworkBuilder frameworkBuilder;
@@ -131,6 +145,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     private final AtomicInteger managerState = new AtomicInteger(Bundle.INSTALLED);
     private final AtomicBoolean managerStopped = new AtomicBoolean();
     private final ServiceContainer serviceContainer;
+    private final UniquenessPolicy uniquenessPolicy;
     private Framework framework;
     private SystemBundleState cachedSystemBundle;
     private ServiceTarget serviceTarget;
@@ -166,6 +181,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             setProperty(Constants.FRAMEWORK_UUID, UUID.randomUUID().toString());
         if (getProperty(Constants.FRAMEWORK_BSNVERSION) == null)
             setProperty(Constants.FRAMEWORK_BSNVERSION, Constants.FRAMEWORK_BSNVERSION_MANAGED);
+
+        // Get and cache the BSNVERSION
+        uniquenessPolicy = UniquenessPolicy.valueOf((String)getProperty(Constants.FRAMEWORK_BSNVERSION));
 
         boolean allowContainerShutdown = frameworkBuilder.getServiceContainer() == null;
         shutdownContainer = new ShutdownContainer(serviceContainer, allowContainerShutdown);
@@ -229,6 +247,10 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     void setFramework(Framework framework) {
         this.framework = framework;
+    }
+
+    UniquenessPolicy getUniquenessPolicy() {
+        return uniquenessPolicy;
     }
 
     /**
@@ -385,14 +407,14 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     @Override
-    public Set<XBundle> getBundles(String symbolicName, String versionRange) {
+    public Set<XBundle> getBundles(String symbolicName, VersionRange versionRange) {
         Set<XBundle> resultSet = new HashSet<XBundle>();
         if (Constants.SYSTEM_BUNDLE_SYMBOLICNAME.equals(symbolicName) && versionRange == null) {
             resultSet.add(getSystemBundle());
         } else {
             for (XBundle aux : getBundles(null)) {
                 if (symbolicName == null || symbolicName.equals(aux.getSymbolicName())) {
-                    if (versionRange == null || new VersionRange(versionRange).includes(aux.getVersion())) {
+                    if (versionRange == null || versionRange.includes(aux.getVersion())) {
                         resultSet.add(aux);
                     }
                 }
@@ -414,10 +436,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         // If a bundle containing the same location identifier is already installed,
         // the Bundle object for that bundle is returned.
         XBundle bundle = getBundleByLocation(dep.getLocation());
-        if (bundle instanceof AbstractBundleState) {
+        if (bundle != null) {
             LOGGER.debugf("Installing an already existing bundle: %s", dep);
-            AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
-            serviceName = bundleState.getServiceName(Bundle.INSTALLED);
+            serviceName = getServiceName(bundle, Bundle.INSTALLED);
             VFSUtils.safeClose(dep.getRoot());
         } else {
             try {

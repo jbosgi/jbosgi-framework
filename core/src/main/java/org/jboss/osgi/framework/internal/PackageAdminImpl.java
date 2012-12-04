@@ -58,6 +58,7 @@ import org.jboss.osgi.resolver.XResource;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
+import org.osgi.framework.VersionRange;
 import org.osgi.framework.namespace.BundleNamespace;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleRevision;
@@ -428,7 +429,7 @@ public class PackageAdminImpl implements PackageAdminSupport {
      *         version order, or <code>null</code> if no bundles are found.
      */
     @Override
-    public Bundle[] getBundles(final String symbolicName, final String versionRange) {
+    public Bundle[] getBundles(final String symbolicName, final String versionRangeSpec) {
         Set<Bundle> sortedSet = new TreeSet<Bundle>(new Comparator<Bundle>() {
             // Makes sure that the bundles are sorted correctly in the returned array
             // Matching bundles with the highest version should come first.
@@ -441,7 +442,8 @@ public class PackageAdminImpl implements PackageAdminSupport {
                 }
             }
         });
-        for (Bundle bundleState : bundleManager.getBundles(symbolicName, versionRange)) {
+        VersionRange versionRange = versionRangeSpec != null ? new VersionRange(versionRangeSpec) : null;
+        for (XBundle bundleState : bundleManager.getBundles(symbolicName, versionRange)) {
             if (bundleState.getState() != Bundle.UNINSTALLED) {
                 sortedSet.add(bundleState);
             }

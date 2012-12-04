@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
@@ -48,7 +49,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
+import org.jboss.osgi.framework.internal.BundleManagerPlugin.UniquenessPolicy;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleStartLevelSupport;
@@ -71,6 +74,8 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
+import org.osgi.framework.VersionRange;
+import org.osgi.framework.hooks.bundle.CollisionHook;
 import org.osgi.framework.startlevel.BundleStartLevel;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
@@ -127,7 +132,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         return frameworkState;
     }
 
-    BundleManager getBundleManager() {
+    BundleManagerPlugin getBundleManager() {
         return frameworkState.getBundleManager();
     }
 
@@ -271,6 +276,44 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     void fireBundleEvent(int eventType) {
         FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
         eventsPlugin.fireBundleEvent(this, eventType);
+    }
+
+    void checkUniqunessPolicy(String symbolicName, Version version, int operationType) throws BundleException {
+
+        UniquenessPolicy uniquenessPolicy = getBundleManager().getUniquenessPolicy();
+        if (uniquenessPolicy == UniquenessPolicy.multiple || operationType != CollisionHook.INSTALLING)
+            return;
+
+        Set<Bundle> candidates = new HashSet<Bundle>();
+        if (symbolicName != null) {
+            VersionRange versionRange = null;
+            if (!Version.emptyVersion.equals(version)) {
+                versionRange = new VersionRange("[" + version + "," + version + "]");
+            }
+            for (XBundle aux : getBundleManager().getBundles(symbolicName, versionRange)) {
+                if (aux.getState() != Bundle.UNINSTALLED) {
+                    candidates.add(aux);
+                }
+            }
+        }
+        if (candidates.isEmpty())
+            return;
+
+        if (uniquenessPolicy == UniquenessPolicy.managed) {
+            BundleContext syscontext = getFrameworkState().getSystemBundle().getBundleContext();
+            ServiceReference<CollisionHook> sref = syscontext.getServiceReference(CollisionHook.class);
+            if (sref != null) {
+                try {
+                    CollisionHook hook = syscontext.getService(sref);
+                    hook.filterCollisions(operationType, this, candidates);
+                } finally {
+                    syscontext.ungetService(sref);
+                }
+            }
+        }
+        if (!candidates.isEmpty()) {
+            throw new BundleException(MESSAGES.nameAndVersionAlreadyInstalled(symbolicName, version), BundleException.DUPLICATE_BUNDLE_ERROR);
+        }
     }
 
     void addRegisteredService(ServiceState serviceState) {

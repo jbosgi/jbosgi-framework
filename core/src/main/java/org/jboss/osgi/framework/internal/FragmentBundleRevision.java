@@ -58,6 +58,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
         return (FragmentBundleRevision) brev;
     }
 
+    @Override
     void refreshRevisionInternal() {
         attachedHosts = null;
     }
@@ -69,6 +70,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
         return Collections.unmodifiableSet(attachedHosts);
     }
 
+    @Override
     Class<?> loadClass(String className) throws ClassNotFoundException {
         throw MESSAGES.cannotLoadClassFromFragment(this);
     }

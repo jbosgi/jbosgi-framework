@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.bundle;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.test.osgi.framework.bundle;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.bundle;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;

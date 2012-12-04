@@ -36,6 +36,7 @@ import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.VersionRange;
 
 /**
  * Integration point for {@link Bundle} management.
@@ -102,10 +103,10 @@ public interface BundleManager extends Service<BundleManager> {
      * Note, this will get bundles regadless of their state. i.e. The returned bundles may have been UNINSTALLED
      *
      * @param symbolicName The bundle symbolic name
-     * @param versionRange The optional bundle version
+     * @param versionRange The optional bundle version range
      * @return The bundles or an empty list if there is no bundle with that name and version
      */
-    Set<XBundle> getBundles(String symbolicName, String versionRange);
+    Set<XBundle> getBundles(String symbolicName, VersionRange versionRange);
 
     /**
      * Get the system bundle

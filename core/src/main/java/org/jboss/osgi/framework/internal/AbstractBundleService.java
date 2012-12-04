@@ -28,7 +28,6 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.osgi.framework.spi.BundleManager;
 
 /**
  * Represents a state of a bundle.
@@ -36,7 +35,7 @@ import org.jboss.osgi.framework.spi.BundleManager;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-abstract class AbstractBundleService<T extends AbstractBundleState> implements Service<T> {
+abstract class AbstractBundleService<T extends AbstractBundleState<?>> implements Service<T> {
 
     private final FrameworkState frameworkState;
 
@@ -48,7 +47,7 @@ abstract class AbstractBundleService<T extends AbstractBundleState> implements S
         return frameworkState;
     }
 
-    BundleManager getBundleManager() {
+    BundleManagerPlugin getBundleManager() {
         return frameworkState.getBundleManager();
     }
 

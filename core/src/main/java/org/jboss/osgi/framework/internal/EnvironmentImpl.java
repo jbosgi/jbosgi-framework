@@ -32,6 +32,7 @@ import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.LockManager.Method;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
@@ -58,10 +59,13 @@ public final class EnvironmentImpl extends AbstractEnvironment implements XEnvir
 
         // Check that all installed resources are instances of {@link XBundleRevision} and have an associated {@link Bundle}
         for (XResource res : resources) {
+
             if (!(res instanceof XBundleRevision))
                 throw MESSAGES.unsupportedResourceType(res);
+
             XBundleRevision brev = (XBundleRevision) res;
-            if (brev.getBundle() == null)
+            XBundle bundle = brev.getBundle();
+            if (bundle == null)
                 throw MESSAGES.cannotObtainBundleFromResource(res);
         }
 
