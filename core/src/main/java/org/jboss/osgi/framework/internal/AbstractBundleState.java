@@ -58,10 +58,6 @@ import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
-import org.jboss.osgi.resolver.XBundleRevision;
-import org.jboss.osgi.resolver.XEnvironment;
-import org.jboss.osgi.resolver.XResolveContext;
-import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.spi.AbstractElement;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.Bundle;
@@ -598,12 +594,8 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         boolean result = true;
         if (isResolved() == false) {
             try {
-                XResolver resolver = getFrameworkState().getResolverPlugin();
-                Set<XBundleRevision> mandatory = Collections.singleton((XBundleRevision) getBundleRevision());
-                XEnvironment env = getFrameworkState().getEnvironment();
-                XResolveContext context = resolver.createResolveContext(env, mandatory, null);
-                resolver.resolveAndApply(context);
-
+                BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
+                bundleLifecycle.resolve(this);
                 if (LOGGER.isDebugEnabled()) {
                     BundleWiring wiring = getBundleRevision().getWiring();
                     LOGGER.tracef("Required resource wires for: %s", wiring.getResource());

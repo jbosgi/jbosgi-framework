@@ -217,10 +217,6 @@ final class HostBundleState extends UserBundleState<HostBundleRevision> {
             return;
         }
 
-        // #2 If this bundle's state is ACTIVE then this method returns immediately.
-        if (getState() == ACTIVE)
-            return;
-
         LOGGER.debugf("Starting bundle: %s", this);
 
         // #3 Set this bundle's autostart setting
