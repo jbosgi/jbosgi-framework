@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import java.util.Map;
 
@@ -35,13 +35,13 @@ import org.osgi.framework.launch.FrameworkFactory;
  * @author thomas.diesler@jboss.com
  * @since 21-Aug-2009
  */
-public class FrameworkMain implements FrameworkFactory {
+public class FrameworkFactoryImpl implements FrameworkFactory {
 
     /**
      * The main entry point to the Framework
      */
     public static void main(String[] args) throws Exception {
-        FrameworkMain factory = new FrameworkMain();
+        FrameworkFactoryImpl factory = new FrameworkFactoryImpl();
         Framework framework = factory.newFramework(null);
         framework.start();
     }

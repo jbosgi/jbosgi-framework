@@ -19,7 +19,7 @@
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.test.osgi.framework.jbosgi450;
+package org.jboss.test.osgi.framework.bundle.tracker;
 
 import static java.util.jar.JarFile.MANIFEST_NAME;
 import static org.jboss.osgi.spi.ConstantsHelper.bundleEvent;
@@ -55,7 +55,7 @@ import org.osgi.framework.SynchronousBundleListener;
  * @author thomas.diesler@jboss.com
  * @since 19-May-2011
  */
-public class OSGi450TestCase extends OSGiFrameworkTest {
+public class BundleTrackerTestCase extends OSGiFrameworkTest {
 
     private final List<BundleEvent> bundleEvents = new CopyOnWriteArrayList<BundleEvent>();
     private final static Map<String, String> eventMap = new HashMap<String, String>();
