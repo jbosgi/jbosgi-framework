@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.jbosgi450;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.test.osgi.framework.jbosgi450;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.jbosgi450;
 
 import static java.util.jar.JarFile.MANIFEST_NAME;
 import static org.jboss.osgi.spi.ConstantsHelper.bundleEvent;
@@ -64,8 +64,8 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
         eventMap.put(bundleEvent(BundleEvent.RESOLVED), bundleState(Bundle.RESOLVED));
         eventMap.put(bundleEvent(BundleEvent.STARTED), bundleState(Bundle.ACTIVE));
         eventMap.put(bundleEvent(BundleEvent.STOPPED), bundleState(Bundle.RESOLVED));
+        eventMap.put(bundleEvent(BundleEvent.UNRESOLVED), bundleState(Bundle.RESOLVED));
         eventMap.put(bundleEvent(BundleEvent.UNINSTALLED), bundleState(Bundle.UNINSTALLED));
-        eventMap.put(bundleEvent(BundleEvent.UNRESOLVED), bundleState(Bundle.UNINSTALLED));
     }
 
     @Override
@@ -353,6 +353,7 @@ public class OSGi450TestCase extends OSGiFrameworkTest {
     private JavaArchive getBundleArchive() {
         final JavaArchive archiveA = ShrinkWrap.create(JavaArchive.class, "jbosgi450-bundleA");
         archiveA.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

@@ -507,6 +507,25 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         bundleState.uninstallInternal(options);
     }
 
+    void unresolveBundle(UserBundleState<?> userBundle) {
+        LOGGER.tracef("Start unresolving bundle: %s", userBundle);
+
+        ModuleManager moduleManager = getFrameworkState().getModuleManager();
+        for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
+            UserBundleRevision userRev = (UserBundleRevision) brev;
+            if (userRev.isFragment() == false) {
+                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(brev);
+                moduleManager.removeModule(brev, identifier);
+            }
+            userRev.close();
+        }
+
+        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
+        eventsPlugin.fireBundleEvent(userBundle, BundleEvent.UNRESOLVED);
+
+        LOGGER.debugf("Unresolved bundle: %s", userBundle);
+    }
+
     void removeBundle(UserBundleState<?> userBundle, int options) {
         LOGGER.tracef("Start removing bundle: %s", userBundle);
 
@@ -518,19 +537,6 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         XEnvironment env = getFrameworkState().getEnvironment();
         for (XBundleRevision abr : userBundle.getAllBundleRevisions()) {
             env.uninstallResources(abr);
-        }
-
-        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
-        eventsPlugin.fireBundleEvent(userBundle, BundleEvent.UNRESOLVED);
-
-        ModuleManager moduleManager = getFrameworkState().getModuleManager();
-        for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
-            UserBundleRevision userRev = (UserBundleRevision) brev;
-            if (userRev.isFragment() == false) {
-                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(brev);
-                moduleManager.removeModule(brev, identifier);
-            }
-            userRev.close();
         }
 
         LOGGER.debugf("Removed bundle: %s", userBundle);

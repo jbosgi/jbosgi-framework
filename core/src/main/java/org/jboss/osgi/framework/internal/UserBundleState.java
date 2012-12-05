@@ -428,9 +428,6 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         // Remove the Bundle INSTALL service after we changed the state
         LOGGER.debugf("Remove service for: %s", this);
         getBundleManagerPlugin().setServiceMode(getServiceName(Bundle.INSTALLED), Mode.REMOVE);
-
-        // #4 A bundle event of type BundleEvent.UNINSTALLED is fired
-        fireBundleEvent(BundleEvent.UNINSTALLED);
     }
 
     void uninstallInternalNow(int options) {
@@ -451,11 +448,17 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             }
         }
 
+        // Check if the bundle has still active wires
+        boolean hasActiveWires = hasActiveWires();
+        if (hasActiveWires == false) {
+            // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
+            getBundleManagerPlugin().unresolveBundle(this);
+        }
+
         // #3 This bundle's state is set to UNINSTALLED
         changeState(Bundle.UNINSTALLED, 0);
 
         // Check if the bundle has still active wires
-        boolean hasActiveWires = hasActiveWires();
         if (hasActiveWires == false) {
             // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
             getBundleManagerPlugin().removeBundle(this, options);
@@ -469,6 +472,9 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
                 getBundleManagerPlugin().removeBundle(auxUser, options);
             }
         }
+
+        // #4 A bundle event of type BundleEvent.UNINSTALLED is fired
+        fireBundleEvent(BundleEvent.UNINSTALLED);
 
         LOGGER.infoBundleUninstalled(this);
     }
