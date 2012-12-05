@@ -35,6 +35,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.VersionRange;
 
@@ -124,14 +125,14 @@ public interface BundleManager extends Service<BundleManager> {
     /**
      * Install a bundle from the given deployment
      *
+     * @param bundle The bundle that
      * @param deployment The bundle deployment
      * @param serviceTarget The service target for the INSTALL service
      * @param listener An optional listener on the INSTALL service
      *
      * @return The name of the INSTALL service
      */
-    ServiceName installBundle(Deployment deployment, ServiceTarget serviceTarget, ServiceListener<XBundle> listener)
-            throws BundleException;
+    ServiceName installBundle(BundleContext context, Deployment deployment, ServiceTarget serviceTarget, ServiceListener<XBundle> listener) throws BundleException;
 
     /**
      * Start the given bundle

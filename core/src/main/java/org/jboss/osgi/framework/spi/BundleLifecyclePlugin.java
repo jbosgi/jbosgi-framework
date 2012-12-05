@@ -37,6 +37,7 @@ import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResolver;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.service.resolver.ResolutionException;
 
@@ -86,8 +87,8 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
         }
 
         @Override
-        public void install(Deployment dep) throws BundleException {
-            bundleManager.installBundle(dep, null, null);
+        public void install(BundleContext context, Deployment dep) throws BundleException {
+            bundleManager.installBundle(context, dep, null, null);
         }
 
         @Override

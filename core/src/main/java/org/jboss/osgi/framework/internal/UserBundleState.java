@@ -244,7 +244,8 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
 
     private void updateInternalNow(InputStream input) throws BundleException {
 
-        checkUniqunessPolicy(getSymbolicName(), getVersion(), CollisionHook.UPDATING);
+        // Check for symbolic name, version uniqueness
+        getBundleManager().checkUniqunessPolicy(getBundleContext(), getSymbolicName(), getVersion(), CollisionHook.UPDATING);
 
         boolean restart = false;
         if (isFragment() == false) {

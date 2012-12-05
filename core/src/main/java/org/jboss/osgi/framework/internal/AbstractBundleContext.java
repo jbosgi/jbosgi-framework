@@ -60,8 +60,6 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.framework.Version;
-import org.osgi.framework.hooks.bundle.CollisionHook;
 
 /**
  * The base of all {@link BundleContext} implementations.
@@ -209,24 +207,21 @@ abstract class AbstractBundleContext implements BundleContext {
         }
     }
 
+    @SuppressWarnings("unchecked")
     Bundle installBundle(Deployment dep) throws BundleException {
         checkValidBundleContext();
-
-        String symbolicName = dep.getSymbolicName();
-        Version version = Version.parseVersion(dep.getVersion());
-        getBundleState().checkUniqunessPolicy(symbolicName, version, CollisionHook.INSTALLING);
 
         FrameworkState frameworkState = getFrameworkState();
         BundleManager bundleManager = frameworkState.getBundleManager();
         CoreServices coreServices = frameworkState.getCoreServices();
         BundleLifecycle bundleLifecycle = coreServices.getBundleLifecycle();
-        bundleLifecycle.install(dep);
+        bundleLifecycle.install(this, dep);
 
         ServiceName serviceName = dep.getAttachment(ServiceName.class);
-        ServiceContainer serviceContainer = bundleManager.getServiceContainer();
+        assert serviceName != null : "Service name not attached to Deployment";
 
-        @SuppressWarnings("unchecked")
-        ServiceController<UserBundleState<?>> controller = (ServiceController<UserBundleState<?>>) serviceContainer.getService(serviceName);
+        ServiceContainer serviceContainer = bundleManager.getServiceContainer();
+        ServiceController<UserBundleState<?>> controller = (ServiceController<UserBundleState<?>>) serviceContainer.getRequiredService(serviceName);
         FutureServiceValue<UserBundleState<?>> future = new FutureServiceValue<UserBundleState<?>>(controller);
         try {
             return future.get(30, TimeUnit.SECONDS);

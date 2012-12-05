@@ -77,13 +77,16 @@ import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
 import org.osgi.framework.VersionRange;
+import org.osgi.framework.hooks.bundle.CollisionHook;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.startlevel.FrameworkStartLevel;
 import org.osgi.framework.wiring.FrameworkWiring;
@@ -424,7 +427,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     @Override
-    public ServiceName installBundle(Deployment dep, ServiceTarget installTarget, ServiceListener<XBundle> listener) throws BundleException {
+    public ServiceName installBundle(BundleContext context, Deployment dep, ServiceTarget installTarget, ServiceListener<XBundle> listener) throws BundleException {
         if (dep == null)
             throw MESSAGES.illegalArgumentNull("deployment");
 
@@ -439,46 +442,53 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         if (bundle != null) {
             LOGGER.debugf("Installing an already existing bundle: %s", dep);
             serviceName = getServiceName(bundle, Bundle.INSTALLED);
+            dep.addAttachment(ServiceName.class, serviceName);
             VFSUtils.safeClose(dep.getRoot());
-        } else {
-            try {
-                Long bundleId;
-                String symbolicName = dep.getSymbolicName();
-                XEnvironment env = injectedEnvironment.getValue();
-
-                // The storage state exists when we re-create the bundle from persistent storage
-                StorageState storageState = dep.getAttachment(StorageState.class);
-                if (storageState != null) {
-                    LOGGER.debugf("Found storage state: %s", storageState);
-                    bundleId = env.nextResourceIdentifier(storageState.getBundleId(), symbolicName);
-                } else {
-                    bundleId = env.nextResourceIdentifier(null, symbolicName);
-                }
-                dep.addAttachment(Long.class, bundleId);
-
-                // Check that we have valid metadata
-                OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
-                if (metadata == null) {
-                    DeploymentProvider plugin = getFrameworkState().getDeploymentProvider();
-                    metadata = plugin.createOSGiMetaData(dep);
-                }
-
-                // Create the bundle services
-                if (metadata.getFragmentHost() == null) {
-                    HostBundleInstalledService service = new HostBundleInstalledService(getFrameworkState(), dep);
-                    serviceName = service.install(installTarget, listener);
-                } else {
-                    FragmentBundleInstalledService service = new FragmentBundleInstalledService(getFrameworkState(), dep);
-                    serviceName = service.install(installTarget, listener);
-                }
-            } catch (RuntimeException rte) {
-                VFSUtils.safeClose(dep.getRoot());
-                throw rte;
-            } catch (BundleException ex) {
-                VFSUtils.safeClose(dep.getRoot());
-                throw ex;
-            }
+            return serviceName;
         }
+
+        // Check for symbolic name, version uniqueness
+        String symbolicName = dep.getSymbolicName();
+        Version version = Version.parseVersion(dep.getVersion());
+        checkUniqunessPolicy(context, symbolicName, version, CollisionHook.INSTALLING);
+
+        try {
+            Long bundleId;
+            XEnvironment env = injectedEnvironment.getValue();
+
+            // The storage state exists when we re-create the bundle from persistent storage
+            StorageState storageState = dep.getAttachment(StorageState.class);
+            if (storageState != null) {
+                LOGGER.debugf("Found storage state: %s", storageState);
+                bundleId = env.nextResourceIdentifier(storageState.getBundleId(), symbolicName);
+            } else {
+                bundleId = env.nextResourceIdentifier(null, symbolicName);
+            }
+            dep.addAttachment(Long.class, bundleId);
+
+            // Check that we have valid metadata
+            OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
+            if (metadata == null) {
+                DeploymentProvider plugin = getFrameworkState().getDeploymentProvider();
+                metadata = plugin.createOSGiMetaData(dep);
+            }
+
+            // Create the bundle services
+            if (metadata.getFragmentHost() == null) {
+                HostBundleInstalledService service = new HostBundleInstalledService(getFrameworkState(), dep);
+                serviceName = service.install(installTarget, listener);
+            } else {
+                FragmentBundleInstalledService service = new FragmentBundleInstalledService(getFrameworkState(), dep);
+                serviceName = service.install(installTarget, listener);
+            }
+        } catch (RuntimeException rte) {
+            VFSUtils.safeClose(dep.getRoot());
+            throw rte;
+        } catch (BundleException ex) {
+            VFSUtils.safeClose(dep.getRoot());
+            throw ex;
+        }
+
         dep.addAttachment(ServiceName.class, serviceName);
         return serviceName;
     }
@@ -505,6 +515,43 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     public void uninstallBundle(XBundle bundle, int options) throws BundleException {
         AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
         bundleState.uninstallInternal(options);
+    }
+
+    void checkUniqunessPolicy(BundleContext context, String symbolicName, Version version, int operationType) throws BundleException {
+
+        if (uniquenessPolicy == UniquenessPolicy.multiple || operationType != CollisionHook.INSTALLING)
+            return;
+
+        Set<Bundle> candidates = new HashSet<Bundle>();
+        if (symbolicName != null) {
+            VersionRange versionRange = null;
+            if (!Version.emptyVersion.equals(version)) {
+                versionRange = new VersionRange("[" + version + "," + version + "]");
+            }
+            for (XBundle aux : getBundles(symbolicName, versionRange)) {
+                if (aux.getState() != Bundle.UNINSTALLED) {
+                    candidates.add(aux);
+                }
+            }
+        }
+        if (candidates.isEmpty())
+            return;
+
+        if (uniquenessPolicy == UniquenessPolicy.managed) {
+            BundleContext syscontext = getFrameworkState().getSystemBundle().getBundleContext();
+            ServiceReference<CollisionHook> sref = syscontext.getServiceReference(CollisionHook.class);
+            if (sref != null) {
+                try {
+                    CollisionHook hook = syscontext.getService(sref);
+                    hook.filterCollisions(operationType, context.getBundle(), candidates);
+                } finally {
+                    syscontext.ungetService(sref);
+                }
+            }
+        }
+        if (!candidates.isEmpty()) {
+            throw new BundleException(MESSAGES.nameAndVersionAlreadyInstalled(symbolicName, version), BundleException.DUPLICATE_BUNDLE_ERROR);
+        }
     }
 
     void unresolveBundle(UserBundleState<?> userBundle) {

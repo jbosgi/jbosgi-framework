@@ -119,8 +119,8 @@ public final class ServiceManagerImpl implements ServiceManager {
         };
 
         long serviceId = getNextServiceId();
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
-        ServiceState serviceState = new ServiceStateImpl(this, bundleState, serviceId, classNames, valueProvider, properties);
+        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
+        ServiceState<?> serviceState = new ServiceStateImpl(this, bundleState, serviceId, classNames, valueProvider, properties);
         LOGGER.debugf("Register service: %s", serviceState);
 
         synchronized (serviceContainer) {

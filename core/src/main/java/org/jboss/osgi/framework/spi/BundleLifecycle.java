@@ -25,6 +25,7 @@ import java.io.InputStream;
 
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.resolver.XBundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.service.resolver.ResolutionException;
 
@@ -36,7 +37,7 @@ import org.osgi.service.resolver.ResolutionException;
  */
 public interface BundleLifecycle {
 
-    void install(Deployment dep) throws BundleException;
+    void install(BundleContext context, Deployment dep) throws BundleException;
 
     void resolve(XBundle bundle) throws ResolutionException;
 
