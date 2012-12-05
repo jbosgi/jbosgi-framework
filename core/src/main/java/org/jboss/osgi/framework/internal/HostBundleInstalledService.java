@@ -26,6 +26,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
 /**
@@ -36,8 +37,8 @@ import org.osgi.framework.BundleException;
  */
 final class HostBundleInstalledService extends UserBundleInstalledService<HostBundleState, HostBundleRevision> {
 
-    HostBundleInstalledService(FrameworkState frameworkState, Deployment dep) throws BundleException {
-        super(frameworkState, dep);
+    HostBundleInstalledService(FrameworkState frameworkState, BundleContext sourceContext, Deployment dep) throws BundleException {
+        super(frameworkState, sourceContext, dep);
     }
 
     @Override

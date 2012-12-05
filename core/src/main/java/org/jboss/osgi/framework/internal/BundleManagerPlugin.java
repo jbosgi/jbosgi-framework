@@ -475,10 +475,10 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
             // Create the bundle services
             if (metadata.getFragmentHost() == null) {
-                HostBundleInstalledService service = new HostBundleInstalledService(getFrameworkState(), dep);
+                HostBundleInstalledService service = new HostBundleInstalledService(getFrameworkState(), context, dep);
                 serviceName = service.install(installTarget, listener);
             } else {
-                FragmentBundleInstalledService service = new FragmentBundleInstalledService(getFrameworkState(), dep);
+                FragmentBundleInstalledService service = new FragmentBundleInstalledService(getFrameworkState(), context, dep);
                 serviceName = service.install(installTarget, listener);
             }
         } catch (RuntimeException rte) {

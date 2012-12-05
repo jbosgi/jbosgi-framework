@@ -25,9 +25,6 @@ import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceListener;
@@ -38,6 +35,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.framework.spi.ServiceTracker.SynchronousListenerServiceWrapper;
@@ -50,8 +48,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.hooks.bundle.CollisionHook;
 
 /**
  * Represents the INSTALLED state of a user bundle.
@@ -62,11 +58,13 @@ import org.osgi.framework.hooks.bundle.CollisionHook;
 abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extends UserBundleRevision> extends AbstractBundleService<B> {
 
     private final Deployment initialDeployment;
+    private final BundleContext sourceContext;
     private B bundleState;
 
-    UserBundleInstalledService(FrameworkState frameworkState, Deployment deployment) {
+    UserBundleInstalledService(FrameworkState frameworkState, BundleContext sourceContext, Deployment deployment) {
         super(frameworkState);
         this.initialDeployment = deployment;
+        this.sourceContext = sourceContext;
     }
 
     ServiceName install(ServiceTarget serviceTarget, ServiceListener<XBundle> listener) {
@@ -85,7 +83,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extend
     }
 
     @Override
-    public void start(StartContext context) throws StartException {
+    public void start(StartContext startContext) throws StartException {
         StorageState storageState = null;
         try {
             Deployment dep = initialDeployment;
@@ -94,14 +92,15 @@ abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extend
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
             R brev = createBundleRevision(dep, metadata, storageState);
             brev.addAttachment(Long.class, bundleId);
-            ServiceName serviceName = context.getController().getName().getParent();
-            bundleState = createBundleState(brev, serviceName, context.getChildTarget());
+            ServiceName serviceName = startContext.getController().getName().getParent();
+            bundleState = createBundleState(brev, serviceName, startContext.getChildTarget());
             dep.addAttachment(Bundle.class, bundleState);
             bundleState.initLazyActivation();
             validateBundle(bundleState, metadata);
             processNativeCode(bundleState, dep);
             installBundle(bundleState);
-            bundleState.fireBundleEvent(BundleEvent.INSTALLED);
+            FrameworkEvents events = getFrameworkState().getFrameworkEvents();
+            events.fireBundleEvent((XBundle) sourceContext.getBundle(), BundleEvent.INSTALLED);
         } catch (BundleException ex) {
             if (storageState != null) {
                 BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
@@ -180,13 +179,13 @@ abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extend
     // [TODO] Add singleton support this to XBundle
     private boolean isSingleton(XBundle userBundle) {
         if (userBundle instanceof UserBundleState) {
-            UserBundleState bundleState = (UserBundleState) userBundle;
+            UserBundleState<?> bundleState = (UserBundleState<?>) userBundle;
             return bundleState.isSingleton();
         }
         return false;
     }
 
-    private void validateBundle(UserBundleState userBundle, OSGiMetaData metadata) throws BundleException {
+    private void validateBundle(UserBundleState<?> userBundle, OSGiMetaData metadata) throws BundleException {
         if (metadata.getBundleManifestVersion() > 1) {
             new BundleValidatorR4().validateBundle(userBundle, metadata);
         } else {
@@ -195,7 +194,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extend
     }
 
     // Process the Bundle-NativeCode header if there is one
-    private void processNativeCode(UserBundleState userBundle, Deployment dep) {
+    private void processNativeCode(UserBundleState<?> userBundle, Deployment dep) {
         OSGiMetaData metadata = userBundle.getOSGiMetaData();
         if (metadata.getBundleNativeCode() != null) {
             FrameworkState frameworkState = userBundle.getFrameworkState();
