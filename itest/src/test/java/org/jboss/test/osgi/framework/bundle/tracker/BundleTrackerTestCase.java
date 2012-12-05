@@ -81,8 +81,8 @@ public class BundleTrackerTestCase extends OSGiFrameworkTest {
         BundleListener listener = new BundleListener() {
             @Override
             public void bundleChanged(BundleEvent event) {
-                bundleEvents.add(event);
                 synchronized (bundleEvents) {
+                    bundleEvents.add(event);
                     bundleEvents.notifyAll();
                 }
             }
@@ -118,8 +118,8 @@ public class BundleTrackerTestCase extends OSGiFrameworkTest {
         BundleListener listener = new BundleListener() {
             @Override
             public void bundleChanged(BundleEvent event) {
-                bundleEvents.add(event);
                 synchronized (bundleEvents) {
+                    bundleEvents.add(event);
                     bundleEvents.notifyAll();
                 }
                 throw new RuntimeException("Error for: " + event);
@@ -156,8 +156,8 @@ public class BundleTrackerTestCase extends OSGiFrameworkTest {
         BundleListener listener = new BundleListener() {
             @Override
             public void bundleChanged(BundleEvent event) {
-                bundleEvents.add(event);
                 synchronized (bundleEvents) {
+                    bundleEvents.add(event);
                     bundleEvents.notifyAll();
                 }
                 Bundle bundle = event.getBundle();
@@ -200,7 +200,10 @@ public class BundleTrackerTestCase extends OSGiFrameworkTest {
         BundleListener listener = new SynchronousBundleListener() {
             @Override
             public void bundleChanged(BundleEvent event) {
-                bundleEvents.add(event);
+                synchronized (bundleEvents) {
+                    bundleEvents.add(event);
+                    bundleEvents.notifyAll();
+                }
             }
         };
         context.addBundleListener(listener);
@@ -234,8 +237,8 @@ public class BundleTrackerTestCase extends OSGiFrameworkTest {
         BundleListener listener = new SynchronousBundleListener() {
             @Override
             public void bundleChanged(BundleEvent event) {
-                bundleEvents.add(event);
                 synchronized (bundleEvents) {
+                    bundleEvents.add(event);
                     bundleEvents.notifyAll();
                 }
                 throw new RuntimeException("Error for: " + event);
@@ -272,8 +275,8 @@ public class BundleTrackerTestCase extends OSGiFrameworkTest {
         BundleListener listener = new SynchronousBundleListener() {
             @Override
             public void bundleChanged(BundleEvent event) {
-                bundleEvents.add(event);
                 synchronized (bundleEvents) {
+                    bundleEvents.add(event);
                     bundleEvents.notifyAll();
                 }
                 String expState = eventMap.get(bundleEvent(event.getType()));
@@ -316,38 +319,39 @@ public class BundleTrackerTestCase extends OSGiFrameworkTest {
     }
 
     private void assertBundleEvent(int type) throws Exception {
-        BundleEvent event = (BundleEvent) waitForEvent(type);
-        assertNotNull("Event not null", event);
-        for (int i = 0; i < bundleEvents.size(); i++) {
-            BundleEvent aux = bundleEvents.get(i);
-            if (type == aux.getType()) {
-                bundleEvents.remove(aux);
-                event = aux;
-                break;
+        synchronized (bundleEvents) {
+            BundleEvent event = (BundleEvent) waitForEvent(type);
+            assertNotNull("Event not null", event);
+            for (int i = 0; i < bundleEvents.size(); i++) {
+                BundleEvent aux = bundleEvents.get(i);
+                if (type == aux.getType()) {
+                    bundleEvents.remove(aux);
+                    event = aux;
+                    break;
+                }
             }
+            if (event == null)
+                fail("Cannot find event " + bundleEvent(type));
         }
-        if (event == null)
-            fail("Cannot find event " + bundleEvent(type));
     }
 
     private EventObject waitForEvent(int type) throws InterruptedException {
-        // Timeout for event delivery: 3 sec
-        int timeout = 30;
-
-        EventObject eventFound = null;
-        while (eventFound == null && 0 < timeout) {
-            synchronized (bundleEvents) {
-                bundleEvents.wait(100);
+        synchronized (bundleEvents) {
+            // Timeout for event delivery: 3 sec
+            int timeout = 30;
+            EventObject eventFound = null;
+            while (eventFound == null && 0 < timeout) {
                 for (BundleEvent event : bundleEvents) {
                     if (type == event.getType()) {
                         eventFound = event;
                         break;
                     }
                 }
+                bundleEvents.wait(100);
+                timeout--;
             }
-            timeout--;
+            return eventFound;
         }
-        return eventFound;
     }
 
     private JavaArchive getBundleArchive() {
