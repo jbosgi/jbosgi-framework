@@ -35,22 +35,21 @@ import org.osgi.framework.ServiceRegistration;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-public interface ServiceState extends ServiceRegistration, ServiceReference {
+public interface ServiceState<S> extends ServiceRegistration<S>, ServiceReference<S> {
 
     long getServiceId();
 
-    Object getScopedValue(XBundle bundle);
+    S getScopedValue(XBundle bundle);
 
     void ungetScopedValue(XBundle bundle);
 
-    ServiceRegistration getRegistration();
+    ServiceRegistration<S> getRegistration();
 
     List<String> getClassNames();
 
     void unregisterInternal();
 
-    @SuppressWarnings("rawtypes")
-    Dictionary getPreviousProperties();
+    Dictionary<String, ?> getPreviousProperties();
 
     XBundle getServiceOwner();
 

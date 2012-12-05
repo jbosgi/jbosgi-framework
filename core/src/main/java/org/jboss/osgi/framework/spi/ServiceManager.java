@@ -32,7 +32,7 @@ public interface ServiceManager {
      * @param clazz The class name with which the service was registered.
      * @return A <code>ServiceReference</code> object, or <code>null</code>
      */
-    ServiceState getServiceReference(XBundle bundle, String clazz);
+    ServiceState<?> getServiceReference(XBundle bundle, String clazz);
 
     /**
      * Returns an array of <code>ServiceReference</code> objects. The returned array of <code>ServiceReference</code> objects
@@ -46,19 +46,19 @@ public interface ServiceManager {
      * @param filterStr The filter expression or <code>null</code> for all services.
      * @return A potentially empty list of <code>ServiceReference</code> objects.
      */
-    List<ServiceState> getServiceReferences(XBundle bundle, String clazz, String filterStr, boolean checkAssignable) throws InvalidSyntaxException;
+    List<ServiceState<?>> getServiceReferences(XBundle bundle, String clazz, String filterStr, boolean checkAssignable) throws InvalidSyntaxException;
 
     /**
      * Returns the service object referenced by the specified <code>ServiceReference</code> object.
      *
      * @return A service object for the service associated with <code>reference</code> or <code>null</code>
      */
-    Object getService(XBundle bundle, ServiceState serviceState);
+    <S> S getService(XBundle bundle, ServiceState<S> serviceState);
 
     /**
      * Unregister the given service.
      */
-    void unregisterService(ServiceState serviceState);
+    void unregisterService(ServiceState<?> serviceState);
 
     /**
      * Releases the service object referenced by the specified <code>ServiceReference</code> object. If the context bundle's use
@@ -68,9 +68,9 @@ public interface ServiceManager {
      * @return <code>false</code> if the context bundle's use count for the service is zero or if the service has been
      *         unregistered; <code>true</code> otherwise.
      */
-    boolean ungetService(XBundle bundle, ServiceState serviceState);
+    boolean ungetService(XBundle bundle, ServiceState<?> serviceState);
 
     void fireFrameworkEvent(XBundle bundle, int type, ServiceException ex);
 
-    void fireServiceEvent(XBundle bundle, int type, ServiceState serviceState);
+    void fireServiceEvent(XBundle bundle, int type, ServiceState<?> serviceState);
 }

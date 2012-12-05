@@ -61,7 +61,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 public final class ServiceManagerImpl implements ServiceManager {
 
     private final FrameworkEvents frameworkEvents;
-    private final Map<String, List<ServiceState>> serviceContainer = new HashMap<String, List<ServiceState>>();
+    private final Map<String, List<ServiceState<?>>> serviceContainer = new HashMap<String, List<ServiceState<?>>>();
     private final AtomicLong identityGenerator = new AtomicLong();
 
 
@@ -75,7 +75,7 @@ public final class ServiceManagerImpl implements ServiceManager {
     }
 
     @Override
-    public void fireServiceEvent(XBundle bundle, int type, ServiceState serviceState) {
+    public void fireServiceEvent(XBundle bundle, int type, ServiceState<?> serviceState) {
         frameworkEvents.fireServiceEvent(bundle, type, serviceState);
     }
 
@@ -125,11 +125,11 @@ public final class ServiceManagerImpl implements ServiceManager {
 
         synchronized (serviceContainer) {
             for (String className : classNames) {
-                List<ServiceState> serviceStates = serviceContainer.get(className);
+                List<ServiceState<?>> serviceStates = serviceContainer.get(className);
                 if (serviceStates != null) {
                     serviceStates.add(serviceState);
                 } else {
-                    serviceStates = new CopyOnWriteArrayList<ServiceState>();
+                    serviceStates = new CopyOnWriteArrayList<ServiceState<?>>();
                     serviceStates.add(serviceState);
                     serviceContainer.put(className, serviceStates);
                 }
@@ -157,11 +157,11 @@ public final class ServiceManagerImpl implements ServiceManager {
      * @return A <code>ServiceReference</code> object, or <code>null</code>
      */
     @Override
-    public ServiceState getServiceReference(XBundle bundle, String clazz) {
+    public ServiceState<?> getServiceReference(XBundle bundle, String clazz) {
         assert clazz != null : "Null clazz";
 
         boolean checkAssignable = (bundle.getBundleId() != 0);
-        List<ServiceState> result = getServiceReferencesInternal(bundle, clazz, NoFilter.INSTANCE, checkAssignable);
+        List<ServiceState<?>> result = getServiceReferencesInternal(bundle, clazz, NoFilter.INSTANCE, checkAssignable);
         result = processFindHooks(bundle, clazz, null, true, result);
         if (result.isEmpty())
             return null;
@@ -183,28 +183,28 @@ public final class ServiceManagerImpl implements ServiceManager {
      * @return A potentially empty list of <code>ServiceReference</code> objects.
      */
     @Override
-    public List<ServiceState> getServiceReferences(XBundle bundle, String clazz, String filterStr, boolean checkAssignable) throws InvalidSyntaxException {
+    public List<ServiceState<?>> getServiceReferences(XBundle bundle, String clazz, String filterStr, boolean checkAssignable) throws InvalidSyntaxException {
         Filter filter = NoFilter.INSTANCE;
         if (filterStr != null)
             filter = FrameworkUtil.createFilter(filterStr);
 
-        List<ServiceState> result = getServiceReferencesInternal(bundle, clazz, filter, checkAssignable);
+        List<ServiceState<?>> result = getServiceReferencesInternal(bundle, clazz, filter, checkAssignable);
         result = processFindHooks(bundle, clazz, filterStr, checkAssignable, result);
         return result;
     }
 
-    private List<ServiceState> getServiceReferencesInternal(final XBundle bundle, String className, Filter filter, boolean checkAssignable) {
+    private List<ServiceState<?>> getServiceReferencesInternal(final XBundle bundle, String className, Filter filter, boolean checkAssignable) {
         assert bundle != null : "Null bundleState";
         assert filter != null : "Null filter";
 
-        Set<ServiceState> initialSet = new HashSet<ServiceState>();
+        Set<ServiceState<?>> initialSet = new HashSet<ServiceState<?>>();
         if (className != null) {
-            List<ServiceState> list = serviceContainer.get(className);
+            List<ServiceState<?>> list = serviceContainer.get(className);
             if (list != null) {
                 initialSet.addAll(list);
             }
         } else {
-            for (List<ServiceState> list : serviceContainer.values()) {
+            for (List<ServiceState<?>> list : serviceContainer.values()) {
                 initialSet.addAll(list);
             }
         }
@@ -212,22 +212,22 @@ public final class ServiceManagerImpl implements ServiceManager {
         if (initialSet.isEmpty())
             return Collections.emptyList();
 
-        Set<ServiceState> resultset = new HashSet<ServiceState>();
-        for (ServiceState serviceState : initialSet) {
+        Set<ServiceState<?>> resultset = new HashSet<ServiceState<?>>();
+        for (ServiceState<?> serviceState : initialSet) {
             if (isMatchingService(bundle, serviceState, className, filter, checkAssignable)) {
                 resultset.add(serviceState);
             }
         }
 
         // Sort the result
-        List<ServiceState> resultList = new ArrayList<ServiceState>(resultset);
+        List<ServiceState<?>> resultList = new ArrayList<ServiceState<?>>(resultset);
         if (resultList.size() > 1)
             Collections.sort(resultList, ServiceReferenceComparator.getInstance());
 
         return Collections.unmodifiableList(resultList);
     }
 
-    private boolean isMatchingService(XBundle bundle, ServiceState serviceState, String clazzName, Filter filter, boolean checkAssignable) {
+    private boolean isMatchingService(XBundle bundle, ServiceState<?> serviceState, String clazzName, Filter filter, boolean checkAssignable) {
         if (serviceState.isUnregistered() || filter.match(serviceState) == false)
             return false;
         if (checkAssignable == false || clazzName == null)
@@ -242,17 +242,17 @@ public final class ServiceManagerImpl implements ServiceManager {
      * @return A service object for the service associated with <code>reference</code> or <code>null</code>
      */
     @Override
-    public Object getService(XBundle bundle, ServiceState serviceState) {
+    public <S> S getService(XBundle bundle, ServiceState<S> serviceState) {
         // If the service has been unregistered, null is returned.
         if (serviceState.isUnregistered())
             return null;
 
         // Add the given service ref to the list of used services
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
         bundleState.addServiceInUse(serviceState);
         serviceState.addUsingBundle(bundleState);
 
-        Object value = serviceState.getScopedValue(bundleState);
+        S value = serviceState.getScopedValue(bundleState);
 
         // If the factory returned an invalid value
         // restore the service usage counts
@@ -268,7 +268,7 @@ public final class ServiceManagerImpl implements ServiceManager {
      * Unregister the given service.
      */
     @Override
-    public void unregisterService(ServiceState serviceState) {
+    public void unregisterService(ServiceState<?> serviceState) {
         synchronized (serviceState) {
 
             if (serviceState.isUnregistered())
@@ -278,7 +278,7 @@ public final class ServiceManagerImpl implements ServiceManager {
                 for (String className : serviceState.getClassNames()) {
                     LOGGER.debugf("Unregister service: %s", className);
                     try {
-                        List<ServiceState> serviceStates = serviceContainer.get(className);
+                        List<ServiceState<?>> serviceStates = serviceContainer.get(className);
                         if (serviceStates != null) {
                             serviceStates.remove(serviceState);
                         }
@@ -301,7 +301,7 @@ public final class ServiceManagerImpl implements ServiceManager {
 
             // Remove from owner bundle
             if (serviceOwner instanceof AbstractBundleState) {
-                AbstractBundleState ownerState = AbstractBundleState.assertBundleState(serviceOwner);
+                AbstractBundleState<?> ownerState = AbstractBundleState.assertBundleState(serviceOwner);
                 ownerState.removeRegisteredService(serviceState);
             }
         }
@@ -316,8 +316,8 @@ public final class ServiceManagerImpl implements ServiceManager {
      *         unregistered; <code>true</code> otherwise.
      */
     @Override
-    public boolean ungetService(XBundle bundle, ServiceState serviceState) {
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+    public boolean ungetService(XBundle bundle, ServiceState<?> serviceState) {
+        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
         serviceState.ungetScopedValue(bundleState);
         int useCount = bundleState.removeServiceInUse(serviceState);
         if (useCount == 0)
@@ -332,9 +332,9 @@ public final class ServiceManagerImpl implements ServiceManager {
      * references and can optionally shrink the set of returned services. The order in which the find hooks are called is the
      * reverse compareTo ordering of their Service References.
      */
-    private List<ServiceState> processFindHooks(XBundle bundle, String clazz, String filterStr, boolean checkAssignable, List<ServiceState> serviceStates) {
+    private List<ServiceState<?>> processFindHooks(XBundle bundle, String clazz, String filterStr, boolean checkAssignable, List<ServiceState<?>> serviceStates) {
         BundleContext context = bundle.getBundleContext();
-        List<ServiceState> hookRefs = getServiceReferencesInternal(bundle, FindHook.class.getName(), NoFilter.INSTANCE, true);
+        List<ServiceState<?>> hookRefs = getServiceReferencesInternal(bundle, FindHook.class.getName(), NoFilter.INSTANCE, true);
         if (hookRefs.isEmpty())
             return serviceStates;
 
@@ -344,7 +344,7 @@ public final class ServiceManagerImpl implements ServiceManager {
 
         // The order in which the find hooks are called is the reverse compareTo ordering of
         // their ServiceReferences. That is, the service with the highest ranking number must be called first.
-        List<ServiceReference> sortedHookRefs = new ArrayList<ServiceReference>(hookRefs);
+        List<ServiceReference<?>> sortedHookRefs = new ArrayList<ServiceReference<?>>(hookRefs);
         Collections.reverse(sortedHookRefs);
 
         List<FindHook> hooks = new ArrayList<FindHook>();
@@ -352,7 +352,7 @@ public final class ServiceManagerImpl implements ServiceManager {
             hooks.add((FindHook) context.getService(hookRef));
 
         Collection<ServiceReference<?>> hookParam = new ArrayList<ServiceReference<?>>();
-        for (ServiceState aux : serviceStates)
+        for (ServiceState<?> aux : serviceStates)
             hookParam.add(aux.getReference());
 
         hookParam = new RemoveOnlyCollection<ServiceReference<?>>(hookParam);
@@ -364,9 +364,9 @@ public final class ServiceManagerImpl implements ServiceManager {
             }
         }
 
-        List<ServiceState> result = new ArrayList<ServiceState>();
+        List<ServiceState<?>> result = new ArrayList<ServiceState<?>>();
         for (ServiceReference<?> aux : hookParam) {
-            ServiceState serviceState = ServiceStateImpl.assertServiceState(aux);
+            ServiceState<?> serviceState = ServiceStateImpl.assertServiceState(aux);
             result.add(serviceState);
         }
 

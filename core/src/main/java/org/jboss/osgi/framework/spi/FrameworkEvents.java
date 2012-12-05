@@ -71,7 +71,7 @@ public interface FrameworkEvents {
 
     void fireFrameworkEvent(Bundle bundle, int type, Throwable th, FrameworkListener... listeners);
 
-    void fireServiceEvent(XBundle bundle, int type, ServiceState serviceState);
+    void fireServiceEvent(XBundle bundle, int type, ServiceState<?> serviceState);
 
     Collection<ListenerInfo> getServiceListenerInfos(XBundle bundle);
 

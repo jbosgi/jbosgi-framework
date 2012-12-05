@@ -71,12 +71,12 @@ import org.osgi.framework.hooks.bundle.CollisionHook;
  */
 abstract class AbstractBundleContext implements BundleContext {
 
-    private final AbstractBundleState bundleState;
+    private final AbstractBundleState<?> bundleState;
     private final FrameworkState frameworkState;
     private final BundleManager bundleManager;
     private boolean destroyed;
 
-    AbstractBundleContext(AbstractBundleState bundleState) {
+    AbstractBundleContext(AbstractBundleState<?> bundleState) {
         assert bundleState != null : "Null bundleState";
         this.bundleState = bundleState;
         this.frameworkState = bundleState.getFrameworkState();
@@ -96,7 +96,7 @@ abstract class AbstractBundleContext implements BundleContext {
         destroyed = true;
     }
 
-    AbstractBundleState getBundleState() {
+    AbstractBundleState<?> getBundleState() {
         return bundleState;
     }
 
@@ -344,7 +344,7 @@ abstract class AbstractBundleContext implements BundleContext {
         checkValidBundleContext();
         String[] classNames = new String[] { clazz.getName() };
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
-        ServiceState serviceState = serviceManager.registerService(bundleState, classNames, service, properties);
+        ServiceState<S> serviceState = serviceManager.registerService(bundleState, classNames, service, properties);
         return serviceState.getRegistration();
     }
 
@@ -354,7 +354,7 @@ abstract class AbstractBundleContext implements BundleContext {
             throw MESSAGES.illegalArgumentNull("className");
         checkValidBundleContext();
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
-        ServiceState serviceState = serviceManager.getServiceReference(bundleState, className);
+        ServiceState<?> serviceState = serviceManager.getServiceReference(bundleState, className);
         return (serviceState != null ? new ServiceReferenceWrapper(serviceState) : null);
     }
 
@@ -365,7 +365,7 @@ abstract class AbstractBundleContext implements BundleContext {
             throw MESSAGES.illegalArgumentNull("className");
         checkValidBundleContext();
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
-        ServiceState serviceState = serviceManager.getServiceReference(bundleState, clazz.getName());
+        ServiceState<?> serviceState = serviceManager.getServiceReference(bundleState, clazz.getName());
         return (serviceState != null ? new ServiceReferenceWrapper(serviceState) : null);
     }
 
@@ -373,12 +373,12 @@ abstract class AbstractBundleContext implements BundleContext {
     public ServiceReference<?>[] getServiceReferences(String className, String filter) throws InvalidSyntaxException {
         checkValidBundleContext();
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
-        List<ServiceState> srefs = serviceManager.getServiceReferences(bundleState, className, filter, true);
+        List<ServiceState<?>> srefs = serviceManager.getServiceReferences(bundleState, className, filter, true);
         if (srefs.isEmpty())
             return null;
 
         List<ServiceReference<?>> result = new ArrayList<ServiceReference<?>>();
-        for (ServiceState serviceState : srefs)
+        for (ServiceState<?> serviceState : srefs)
             result.add(serviceState.getReference());
 
         return result.toArray(new ServiceReference[result.size()]);
@@ -390,13 +390,13 @@ abstract class AbstractBundleContext implements BundleContext {
         checkValidBundleContext();
         String className = clazz != null ? clazz.getName() : null;
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
-        List<ServiceState> srefs = serviceManager.getServiceReferences(bundleState, className, filter, true);
+        List<ServiceState<?>> srefs = serviceManager.getServiceReferences(bundleState, className, filter, true);
         if (srefs.isEmpty())
             return null;
 
         List<ServiceReference<S>> result = new ArrayList<ServiceReference<S>>();
-        for (ServiceState serviceState : srefs)
-            result.add(serviceState.getReference());
+        for (ServiceState<?> serviceState : srefs)
+            result.add((ServiceReference<S>) serviceState.getReference());
 
         return Collections.unmodifiableList(result);
     }
@@ -405,12 +405,12 @@ abstract class AbstractBundleContext implements BundleContext {
     public ServiceReference<?>[] getAllServiceReferences(String className, String filter) throws InvalidSyntaxException {
         checkValidBundleContext();
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
-        List<ServiceState> srefs = serviceManager.getServiceReferences(bundleState, className, filter, false);
+        List<ServiceState<?>> srefs = serviceManager.getServiceReferences(bundleState, className, filter, false);
         if (srefs.isEmpty())
             return null;
 
         List<ServiceReference<?>> result = new ArrayList<ServiceReference<?>>();
-        for (ServiceState serviceState : srefs)
+        for (ServiceState<?> serviceState : srefs)
             result.add(serviceState.getReference());
 
         return result.toArray(new ServiceReference[result.size()]);
@@ -422,7 +422,7 @@ abstract class AbstractBundleContext implements BundleContext {
         if (sref == null)
             throw MESSAGES.illegalArgumentNull("sref");
         checkValidBundleContext();
-        ServiceState serviceState = ServiceStateImpl.assertServiceState(sref);
+        ServiceState<?> serviceState = ServiceStateImpl.assertServiceState(sref);
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         S service = (S) serviceManager.getService(bundleState, serviceState);
         return service;
@@ -433,7 +433,7 @@ abstract class AbstractBundleContext implements BundleContext {
         if (sref == null)
             throw MESSAGES.illegalArgumentNull("sref");
         checkValidBundleContext();
-        ServiceState serviceState = ServiceStateImpl.assertServiceState(sref);
+        ServiceState<?> serviceState = ServiceStateImpl.assertServiceState(sref);
         return getServiceManager().ungetService(bundleState, serviceState);
     }
 

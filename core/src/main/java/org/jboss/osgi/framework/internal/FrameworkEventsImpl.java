@@ -72,6 +72,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
+@SuppressWarnings("deprecation")
 final class FrameworkEventsImpl implements FrameworkEvents {
 
     private final BundleManagerPlugin bundleManager;
@@ -302,7 +303,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         if (bundleManager.isFrameworkCreated() == false)
             return Collections.emptyList();
 
-        ServiceReference[] srefs = null;
+        ServiceReference<?>[] srefs = null;
         SystemBundleState sysBundle = bundleManager.getSystemBundle();
         BundleContext sysContext = sysBundle.getBundleContext();
         try {
@@ -314,7 +315,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             return Collections.emptyList();
 
         List<ListenerHook> hooks = new ArrayList<ListenerHook>();
-        for (ServiceReference sref : srefs)
+        for (ServiceReference<?> sref : srefs)
             hooks.add((ListenerHook) sysContext.getService(sref));
 
         return Collections.unmodifiableList(hooks);
@@ -459,7 +460,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     }
 
     @Override
-    public void fireServiceEvent(final XBundle bundleState, int type, final ServiceState serviceState) {
+    public void fireServiceEvent(final XBundle bundleState, int type, final ServiceState<?> serviceState) {
 
         // Do nothing it the framework is not active
         if (bundleManager.isFrameworkCreated() == false)
@@ -495,7 +496,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         for (ServiceListenerRegistration listenerReg : listenerRegs) {
 
             // Service events must only be delivered to event listeners which can validly cast the event
-            if (listenerReg.isAllServiceListener() == false) {
+            if (!listenerReg.isAllServiceListener()) {
                 XBundle owner = listenerReg.getBundleState();
                 boolean assignableToOwner = true;
                 String[] clazzes = (String[]) serviceState.getProperty(Constants.OBJECTCLASS);
@@ -510,9 +511,10 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             }
 
             try {
+                ServiceListener listener = listenerReg.listener;
                 String filterstr = listenerReg.filter.toString();
-                if (listenerReg.filter.match(serviceState)) {
-                    listenerReg.listener.serviceChanged(event);
+                if (listenerReg.isAllServiceListener() || listenerReg.filter.match(serviceState)) {
+                    listener.serviceChanged(event);
                 }
 
                 // The MODIFIED_ENDMATCH event is synchronously delivered after the service properties have been modified.
@@ -522,7 +524,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
                 else if (filterstr != null && ServiceEvent.MODIFIED == event.getType()) {
                     if (listenerReg.filter.match(serviceState.getPreviousProperties())) {
                         event = new ServiceEventImpl(ServiceEvent.MODIFIED_ENDMATCH, serviceState);
-                        listenerReg.listener.serviceChanged(event);
+                        listener.serviceChanged(event);
                     }
                 }
             } catch (Throwable th) {
@@ -565,7 +567,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
 
     private List<EventHook> getEventHooks(BundleContext syscontext) {
         List<EventHook> hooks = new ArrayList<EventHook>();
-        ServiceReference[] srefs = null;
+        ServiceReference<?>[] srefs = null;
         try {
             srefs = syscontext.getServiceReferences(EventHook.class.getName(), null);
         } catch (InvalidSyntaxException e) {
@@ -574,10 +576,10 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         if (srefs != null) {
             // The calling order of the hooks is defined by the reversed compareTo ordering of their Service
             // Reference objects. That is, the service with the highest ranking number is called first.
-            List<ServiceReference> sortedRefs = new ArrayList<ServiceReference>(Arrays.asList(srefs));
+            List<ServiceReference<?>> sortedRefs = new ArrayList<ServiceReference<?>>(Arrays.asList(srefs));
             Collections.reverse(sortedRefs);
 
-            for (ServiceReference sref : sortedRefs)
+            for (ServiceReference<?> sref : sortedRefs)
                 hooks.add((EventHook) syscontext.getService(sref));
         }
         return hooks;
@@ -730,7 +732,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
 
         private static final long serialVersionUID = 62018288275708239L;
 
-        public ServiceEventImpl(int type, ServiceState serviceState) {
+        public ServiceEventImpl(int type, ServiceState<?> serviceState) {
             super(type, serviceState.getReference());
         }
 
