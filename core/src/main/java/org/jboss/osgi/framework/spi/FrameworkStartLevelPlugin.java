@@ -46,7 +46,7 @@ public class FrameworkStartLevelPlugin extends AbstractIntegrationService<Framew
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<FrameworkStartLevelSupport> builder) {
-        builder.addDependency(IntegrationService.START_LEVEL_SUPPORT, StartLevelSupport.class, injectedStartLevel);
+        builder.addDependency(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class, injectedStartLevel);
         builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, XBundle.class, injectedSystemBundle);
         builder.setInitialMode(Mode.ON_DEMAND);
     }

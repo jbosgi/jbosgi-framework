@@ -44,7 +44,7 @@ public class BundleStartLevelPlugin extends AbstractIntegrationService<BundleSta
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<BundleStartLevelSupport> builder) {
-        builder.addDependency(IntegrationService.START_LEVEL_SUPPORT, StartLevelSupport.class, injectedStartLevel);
+        builder.addDependency(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class, injectedStartLevel);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

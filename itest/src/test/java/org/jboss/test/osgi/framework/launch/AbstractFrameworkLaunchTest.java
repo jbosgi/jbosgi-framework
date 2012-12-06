@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.launch;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.test.osgi.framework.launch;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.launch;
 
 import java.io.File;
 import java.io.InputStream;
@@ -41,10 +41,8 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Assert;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
-import org.osgi.service.startlevel.StartLevel;
 
 /**
  * Abstract framework launch test
@@ -109,12 +107,6 @@ public abstract class AbstractFrameworkLaunchTest extends OSGiTest {
 
     protected BundleManager getBundleManager() {
         return framework.adapt(BundleManager.class);
-    }
-
-    protected StartLevel getStartLevel() throws BundleException {
-        BundleContext context = getBundleContext();
-        ServiceReference sref = context.getServiceReference(StartLevel.class.getName());
-        return (StartLevel) context.getService(sref);
     }
 
     protected File getBundleStorageDir() {

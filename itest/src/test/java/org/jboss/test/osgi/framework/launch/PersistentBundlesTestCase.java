@@ -39,6 +39,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
+import org.osgi.framework.startlevel.BundleStartLevel;
 
 /**
  * Test persistent bundles
@@ -171,7 +172,8 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
         Bundle bundle = syscontext.installBundle(archive.getName(), toInputStream(archive));
         assertBundleState(Bundle.INSTALLED, bundle.getState());
 
-        getStartLevel().setBundleStartLevel(bundle, 3);
+        BundleStartLevel startLevel = bundle.adapt(BundleStartLevel.class);
+        startLevel.setStartLevel(3);
 
         bundle.start();
         assertBundleState(Bundle.INSTALLED, bundle.getState());
@@ -188,7 +190,7 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
         bundle = syscontext.getBundle(bundle.getBundleId());
         Assert.assertNotNull("Bundle available", bundle);
 
-        Assert.assertEquals(3, getStartLevel().getBundleStartLevel(bundle));
+        Assert.assertEquals(3, startLevel.getStartLevel());
 
         assertBundleState(Bundle.INSTALLED, bundle.getState());
 

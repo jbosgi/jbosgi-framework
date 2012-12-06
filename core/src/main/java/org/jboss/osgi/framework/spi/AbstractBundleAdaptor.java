@@ -407,17 +407,17 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     }
 
     private int getStartLevel() {
-        StartLevelSupport startLevel = getPluginService(IntegrationService.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        StartLevelSupport startLevel = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
         return startLevel.getBundleStartLevel(this);
     }
 
     private void setPersistentlyStarted(boolean started) {
-        StartLevelSupport startLevel = getPluginService(IntegrationService.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        StartLevelSupport startLevel = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
         startLevel.setBundlePersistentlyStarted(this, started);
     }
 
     private boolean startLevelValidForStart() {
-        StartLevelSupport startLevel = getPluginService(IntegrationService.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        StartLevelSupport startLevel = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
         return getStartLevel() <= startLevel.getFrameworkStartLevel();
     }
 

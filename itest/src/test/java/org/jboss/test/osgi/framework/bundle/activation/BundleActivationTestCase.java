@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.bundle.activation;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.test.osgi.framework.bundle.activation;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.bundle.activation;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -50,7 +50,6 @@ import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.SynchronousBundleListener;
 import org.osgi.framework.startlevel.FrameworkStartLevel;
-import org.osgi.service.startlevel.StartLevel;
 
 /**
  * BundleActivationTestCase
@@ -84,7 +83,7 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
 
             assertBundleState(Bundle.ACTIVE, providerBundle.getState());
 
-            ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
+            ServiceReference<?> sref = context.getServiceReference(SimpleService.class.getName());
             assertNotNull("Service not null", sref);
 
             assertEquals(2, events.size());
@@ -109,7 +108,7 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
 
             assertBundleState(Bundle.ACTIVE, providerBundle.getState());
 
-            ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
+            ServiceReference<?> sref = context.getServiceReference(SimpleService.class.getName());
             assertNotNull("Service not null", sref);
         } finally {
             providerBundle.uninstall();
@@ -130,7 +129,7 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
 
             assertBundleState(Bundle.ACTIVE, providerBundle.getState());
 
-            ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
+            ServiceReference<?> sref = context.getServiceReference(SimpleService.class.getName());
             assertNotNull("Service not null", sref);
         } finally {
             providerBundle.uninstall();
@@ -151,7 +150,7 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
 
             assertBundleState(Bundle.RESOLVED, providerBundle.getState());
 
-            ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
+            ServiceReference<?> sref = context.getServiceReference(SimpleService.class.getName());
             assertNull("Service null", sref);
 
             serviceClass = providerBundle.loadClass(SimpleService.class.getName());
@@ -186,7 +185,7 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
                 assertBundleState(Bundle.ACTIVE, providerBundle.getState());
                 assertBundleState(Bundle.RESOLVED, consumerBundle.getState());
 
-                ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
+                ServiceReference<?> sref = context.getServiceReference(SimpleService.class.getName());
                 assertNotNull("Service not null", sref);
             } finally {
                 consumerBundle.uninstall();
@@ -277,6 +276,7 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "lazy-service-provider");
         archive.addClasses(SimpleActivator.class, SimpleService.class, BeanB.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());
@@ -295,6 +295,7 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "lazy-service-provider-include");
         archive.addClasses(SimpleActivator.class, SimpleService.class, BeanB.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());
@@ -313,6 +314,7 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "lazy-service-provider-exclude");
         archive.addClasses(SimpleActivator.class, SimpleService.class, BeanB.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());
@@ -331,6 +333,7 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "lazy-service-consumer");
         archive.addClasses(SimpleServiceImporter.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleSymbolicName(archive.getName());

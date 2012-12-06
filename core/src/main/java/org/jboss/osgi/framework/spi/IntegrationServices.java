@@ -25,6 +25,7 @@ import static org.jboss.osgi.framework.Services.JBOSGI_BASE_NAME;
 
 import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.osgi.framework.Services;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
@@ -107,6 +108,8 @@ public interface IntegrationServices {
 	ServiceName PERSISTENT_BUNDLES_COMPLETE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.COMPLETE);
 	/** The {@link ServiceManager} service name */
     ServiceName SERVICE_MANAGER = JBOSGI_BASE_NAME.append("ServiceManager");
+    /** The service name for the {@link StartLevelSupport} service */
+    ServiceName START_LEVEL_SUPPORT = Services.JBOSGI_BASE_NAME.append("StartLevelSupport");
 	/** The service name for the {@link SystemPaths} */
 	ServiceName SYSTEM_PATHS = JBOSGI_BASE_NAME.append("SystemPaths");
 	/** The service name for the {@link SystemServices} */
