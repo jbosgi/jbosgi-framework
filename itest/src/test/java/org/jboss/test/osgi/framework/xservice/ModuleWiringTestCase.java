@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.xservice;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,7 +19,11 @@ package org.jboss.test.osgi.framework.xservice;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.xservice;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -38,12 +41,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleReference;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
-import org.osgi.framework.Version;
+import org.osgi.framework.VersionRange;
 import org.osgi.framework.namespace.IdentityNamespace;
-import org.osgi.service.packageadmin.ExportedPackage;
-import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * Test Module integration.
@@ -51,20 +53,20 @@ import org.osgi.service.packageadmin.PackageAdmin;
  * @author Thomas.Diesler@jboss.com
  * @since 12-Jun-2012
  */
-public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
+public class ModuleWiringTestCase extends AbstractModuleIntegrationTest {
 
     Module module;
     XBundleRevision brev;
-    PackageAdmin packageAdmin;
 
+    @Override
     @Before
     public void setUp() throws Exception {
         super.setUp();
         module = loadModule(getModuleA());
         brev = installResource(module);
-        packageAdmin = getPackageAdmin();
     }
 
+    @Override
     @After
     public void tearDown() throws Exception {
         uninstallResource(brev);
@@ -75,46 +77,31 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
     public void testGetBundle() throws Exception {
         XBundle bundle = brev.getBundle();
         Class<?> clazz = bundle.loadClass(ModuleServiceX.class.getName());
-        Assert.assertEquals(bundle, packageAdmin.getBundle(clazz));
+        Assert.assertEquals(bundle, ((BundleReference)clazz.getClassLoader()).getBundle());
     }
 
     @Test
     public void testGetBundles() throws Exception {
-        Bundle[] bundles = packageAdmin.getBundles(null, null);
-        Assert.assertEquals(2, bundles.length);
-        Assert.assertEquals(getSystemContext().getBundle(), bundles[0]);
-        Assert.assertEquals(brev.getBundle(), bundles[1]);
+        List<XBundle> bundles = new ArrayList<XBundle>(getBundleManager().getBundles(null, null));
+        Assert.assertEquals(2, bundles.size());
+        Assert.assertEquals(getSystemContext().getBundle(), bundles.get(0));
+        Assert.assertEquals(brev.getBundle(), bundles.get(1));
 
-        bundles = packageAdmin.getBundles("moduleA", null);
-        Assert.assertEquals(1, bundles.length);
-        Assert.assertEquals(brev.getBundle(), bundles[0]);
+        bundles = new ArrayList<XBundle>(getBundleManager().getBundles("moduleA", null));
+        Assert.assertEquals(1, bundles.size());
+        Assert.assertEquals(brev.getBundle(), bundles.get(0));
 
-        bundles = packageAdmin.getBundles("moduleA", "[1.0,2.0)");
-        Assert.assertNull(bundles);
+        bundles = new ArrayList<XBundle>(getBundleManager().getBundles("moduleA", new VersionRange("[1.0,2.0)")));
+        Assert.assertTrue(bundles.isEmpty());
     }
 
     @Test
     public void testGetBundleType() throws Exception {
-        int types = packageAdmin.getBundleType(brev.getBundle());
-        Assert.assertEquals(0, types);
-
-        types = brev.getTypes();
+        int types = brev.getTypes();
         Assert.assertEquals(0, types);
 
         XCapability cap = (XCapability) brev.getCapabilities(IdentityNamespace.IDENTITY_NAMESPACE).get(0);
         Assert.assertEquals(IdentityNamespace.TYPE_UNKNOWN, cap.adapt(XIdentityCapability.class).getType());
-    }
-
-    @Test
-    public void testGetExportedPackages() throws Exception {
-        ExportedPackage[] exported = packageAdmin.getExportedPackages(brev.getBundle());
-        Assert.assertEquals(1, exported.length);
-        ExportedPackage exp = exported[0];
-        Assert.assertEquals(ModuleServiceX.class.getPackage().getName(), exp.getName());
-        Assert.assertEquals(brev.getBundle(), exp.getExportingBundle());
-        Assert.assertEquals(0, exp.getImportingBundles().length);
-        Assert.assertEquals(Version.emptyVersion, exp.getVersion());
-        Assert.assertFalse(exp.isRemovalPending());
     }
 
     @Test
@@ -133,14 +120,14 @@ public class ModulePackageAdminTestCase extends AbstractModuleIntegrationTest {
 
         try {
             // This should be a noop
-            packageAdmin.refreshPackages(new Bundle[] {brev.getBundle()});
+            refreshBundles(Arrays.asList((Bundle)brev.getBundle()));
             Assert.assertTrue("FrameworkEvent.PACKAGES_REFRESHED", latch.await(10, TimeUnit.SECONDS));
         } finally {
             getSystemContext().removeFrameworkListener(listener);
         }
 
         // This should be a noop
-        packageAdmin.resolveBundles(new Bundle[] {brev.getBundle()});
+        resolveBundles(Arrays.asList((Bundle)brev.getBundle()));
     }
 
     private JavaArchive getModuleA() {

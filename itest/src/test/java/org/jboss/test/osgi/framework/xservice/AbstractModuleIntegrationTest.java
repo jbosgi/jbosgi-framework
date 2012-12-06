@@ -82,8 +82,7 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         ModuleSpec moduleSpec = specBuilder.create();
 
         // Add the {@link ModuleSpec} to the {@link ModuleLoaderProvider}
-        XBundle sysbundle = (XBundle) getSystemContext().getBundle();
-        BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
+        BundleManager bundleManager = getBundleManager();
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
         ServiceController<?> service = serviceContainer.getRequiredService(IntegrationServices.FRAMEWORK_MODULE_LOADER);
         FrameworkModuleLoader moduleLoader = (FrameworkModuleLoader) service.getValue();
@@ -95,10 +94,12 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         return module;
     }
 
+    protected BundleManager getBundleManager() throws BundleException {
+        return getFramework().adapt(BundleManager.class);
+    }
+
     protected void removeModule(Module module) throws Exception {
-        // Remove the {@link Module} from the {@link ModuleLoaderProvider}
-        XBundle sysbundle = (XBundle) getSystemContext().getBundle();
-        BundleManager bundleManager = sysbundle.adapt(BundleManager.class);
+        BundleManager bundleManager = getBundleManager();
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
         ServiceController<?> service = serviceContainer.getRequiredService(IntegrationServices.FRAMEWORK_MODULE_LOADER);
         FrameworkModuleLoader moduleLoader = (FrameworkModuleLoader) service.getValue();

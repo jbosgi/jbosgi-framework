@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.launch;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.test.osgi.framework.launch;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.launch;
 
 import java.io.File;
 import java.io.InputStream;
@@ -40,7 +40,6 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.launch.Framework;
-import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * Test autoinstall bundles
@@ -70,8 +69,7 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
         Framework framework = newFramework(initprops);
         framework.start();
 
-        PackageAdmin pa = getPackageAdmin();
-        Bundle bundleB = pa.getBundles("bundleB", null)[0];
+        Bundle bundleB = getBundleManager().getBundles("bundleB", null).iterator().next();
         Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
         assertBundleState(Bundle.ACTIVE, bundleB.getState());
     }
@@ -89,12 +87,11 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
         Framework framework = newFramework(initprops);
         framework.start();
 
-        PackageAdmin pa = getPackageAdmin();
-        Bundle bundleA = pa.getBundles("bundleA", null)[0];
+        Bundle bundleA = getBundleManager().getBundles("bundleA", null).iterator().next();
         Assert.assertEquals(fileA.toURI().toString(), bundleA.getLocation());
         assertBundleState(Bundle.ACTIVE, bundleA.getState());
 
-        Bundle bundleB = pa.getBundles("bundleB", null)[0];
+        Bundle bundleB = getBundleManager().getBundles("bundleB", null).iterator().next();
         Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
         assertBundleState(Bundle.ACTIVE, bundleB.getState());
     }
@@ -129,8 +126,7 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
         Framework framework = newFramework(initprops);
         framework.start();
 
-        PackageAdmin pa = getPackageAdmin();
-        Bundle bundleB = pa.getBundles("bundleB", null)[0];
+        Bundle bundleB = getBundleManager().getBundles("bundleB", null).iterator().next();
         Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
         assertBundleState(Bundle.ACTIVE, bundleB.getState());
 
@@ -152,8 +148,7 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
         Framework framework = newFramework(initprops);
         framework.start();
 
-        PackageAdmin pa = getPackageAdmin();
-        Bundle bundleB = pa.getBundles("bundleB", null)[0];
+        Bundle bundleB = getBundleManager().getBundles("bundleB", null).iterator().next();
         Assert.assertEquals(fileB.toURI().toString(), bundleB.getLocation());
         assertBundleState(Bundle.ACTIVE, bundleB.getState());
 
@@ -181,10 +176,9 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
 
         framework.start();
 
-        pa = getPackageAdmin();
-        bundleB = pa.getBundles("bundleB", null)[0];
-        bundleC = pa.getBundles("bundleC", null)[0];
-        bundleD = pa.getBundles("bundleD", null)[0];
+        bundleB = getBundleManager().getBundles("bundleB", null).iterator().next();
+        bundleC = getBundleManager().getBundles("bundleC", null).iterator().next();
+        bundleD = getBundleManager().getBundles("bundleD", null).iterator().next();
 
         assertBundleState(Bundle.ACTIVE, bundleB.getState());
         assertBundleState(Bundle.INSTALLED, bundleC.getState());
@@ -195,6 +189,7 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA");
         archive.addClasses(BeanA.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -211,6 +206,7 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleB");
         archive.addClasses(BeanB.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -225,6 +221,7 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
     private static JavaArchive getBundleC() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleC");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -239,6 +236,7 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
     private static JavaArchive getBundleD() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleD");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

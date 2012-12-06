@@ -26,7 +26,6 @@ import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.launch.Framework;
-import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * The collection of public service names.
@@ -53,9 +52,6 @@ public interface Services {
 
     /** The service name for the started {@link Framework} */
     ServiceName FRAMEWORK_ACTIVE = JBOSGI_BASE_NAME.append("framework", "ACTIVE");
-
-    /** The service name for the {@link PackageAdmin} service */
-    ServiceName PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("PackageAdmin");
 
     /** The {@link XResolver} service name */
     ServiceName RESOLVER = JBOSGI_BASE_NAME.append("Resolver");

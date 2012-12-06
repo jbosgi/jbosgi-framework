@@ -47,13 +47,13 @@ import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.Bundle;
-import org.osgi.service.packageadmin.PackageAdmin;
+import org.osgi.framework.wiring.FrameworkWiring;
 import org.osgi.service.resolver.ResolutionException;
 
 public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-    private final InjectedValue<PackageAdmin> injectedPackageAdmin = new InjectedValue<PackageAdmin>();
+    private final InjectedValue<FrameworkWiring> injectedFrameworkWiring = new InjectedValue<FrameworkWiring>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private final InjectedValue<XBundle> injectedSystemBundle = new InjectedValue<XBundle>();
     private final InjectedValue<XResolver> injectedResolver = new InjectedValue<XResolver>();
@@ -67,8 +67,8 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
     @Override
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
         builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, XBundle.class, injectedSystemBundle);
+        builder.addDependency(IntegrationServices.FRAMEWORK_WIRING_PLUGIN, FrameworkWiring.class, injectedFrameworkWiring);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
-        builder.addDependency(Services.PACKAGE_ADMIN, PackageAdmin.class, injectedPackageAdmin);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
         builder.addDependency(Services.RESOLVER, XResolver.class, injectedResolver);
         builder.addDependencies(getPreviousService());
@@ -116,12 +116,15 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         }
 
         if (!resolvableServices.isEmpty()) {
-            
+
             // Leniently resolve the persistent bundles
             if (IntegrationServices.PERSISTENT_BUNDLES.isParentOf(getServiceName())) {
-                Bundle[] bundles = resolvableServices.values().toArray(new Bundle[resolvableServices.size()]);
-                PackageAdmin packageAdmin = injectedPackageAdmin.getValue();
-                packageAdmin.resolveBundles(bundles);
+                List<Bundle> mandatory = new ArrayList<Bundle>();
+                for (XBundle bundle : resolvableServices.values()) {
+                    mandatory.add(bundle);
+                }
+                FrameworkWiring frameworkWiring = injectedFrameworkWiring.getValue();
+                frameworkWiring.resolveBundles(mandatory);
             }
 
             // Remove the unresolved service from the tracker

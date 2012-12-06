@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.fragments.subA;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,18 +19,16 @@ package org.jboss.test.osgi.framework.fragments.subA;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.fragments.subA;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
-import org.osgi.service.packageadmin.PackageAdmin;
+import org.osgi.framework.BundleReference;
 
 public class SubBeanA {
 
     public Bundle getProvider(BundleContext context) {
-        ServiceReference sref = context.getServiceReference(PackageAdmin.class.getName());
-        PackageAdmin packageAdmin = (PackageAdmin) context.getService(sref);
-        Bundle provider = packageAdmin.getBundle(getClass());
+        Bundle provider = ((BundleReference)getClass().getClassLoader()).getBundle();
         return provider;
     }
 

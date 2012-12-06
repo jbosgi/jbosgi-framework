@@ -22,12 +22,9 @@ package org.jboss.test.osgi.framework.packageadmin;
  */
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
@@ -38,11 +35,9 @@ import org.jboss.test.osgi.framework.packageadmin.importA.ImportingA;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
-import org.osgi.service.packageadmin.ExportedPackage;
-import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
- * Test PackageAdmin service.
+ * Test complex update.
  *
  * @author thomas.diesler@jboss.com
  */
@@ -51,10 +46,6 @@ public class ComplexUpdateTestCase extends OSGiFrameworkTest {
     @Test
     @Ignore("Intermittent failures")
     public void testComplexUpdateScenario() throws Exception {
-        PackageAdmin pa = getPackageAdmin();
-
-        assertNull(pa.getExportedPackage(ExportA.class.getName()));
-        assertNull(pa.getExportedPackage(ExportB.class.getName()));
 
         Bundle bundleE = installBundle(assembleArchive("ExportA", "/bundles/package-admin/exportA", ExportA.class));
         Bundle bundleU = installBundle(assembleArchive("ExportU", "/bundles/package-admin/exporter", Exported.class));
@@ -64,16 +55,6 @@ public class ComplexUpdateTestCase extends OSGiFrameworkTest {
             bundleE.start();
             bundleU.start();
 
-            ExportedPackage[] eex = pa.getExportedPackages(bundleE);
-            assertEquals(1, eex.length);
-            assertEquals(ExportA.class.getPackage().getName(), eex[0].getName());
-            assertSame(bundleE, eex[0].getExportingBundle());
-
-            ExportedPackage[] iex = pa.getExportedPackages(bundleU);
-            assertEquals(1, iex.length);
-            assertEquals(Exported.class.getPackage().getName(), iex[0].getName());
-            assertSame(bundleU, iex[0].getExportingBundle());
-
             bundleE.update(toInputStream(assemblyE));
 
             // This bundle imports the old version of bundleE, should still be available!
@@ -81,25 +62,12 @@ public class ComplexUpdateTestCase extends OSGiFrameworkTest {
             try {
                 bundleI.start();
 
-                // PackageAdmin should report both the old and the new package as exported
-                List<String> exported = new ArrayList<String>();
-                for (ExportedPackage ex : pa.getExportedPackages(bundleE)) {
-                    exported.add(ex.getName());
-                }
-                assertTrue(exported.contains(ExportA.class.getPackage().getName()));
-                assertTrue(exported.contains(ExportB.class.getPackage().getName()));
-                assertEquals(2, exported.size());
-
-                refreshPackages(new Bundle[] { bundleE, bundleU, bundleI });
+                refreshBundles(Arrays.asList(bundleE, bundleU, bundleI));
 
                 assertEquals(Bundle.ACTIVE, bundleE.getState());
                 assertEquals(Bundle.ACTIVE, bundleU.getState());
                 assertTrue(Bundle.ACTIVE != bundleI.getState());
 
-                ExportedPackage[] eex2 = pa.getExportedPackages(bundleE);
-                assertEquals(1, eex2.length);
-                assertEquals(ExportB.class.getPackage().getName(), eex2[0].getName());
-                assertSame(bundleE, eex2[0].getExportingBundle());
             } finally {
                 bundleI.uninstall();
             }

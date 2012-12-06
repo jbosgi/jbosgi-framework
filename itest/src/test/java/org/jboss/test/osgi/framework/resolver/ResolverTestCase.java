@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.resolver;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,9 +19,12 @@ package org.jboss.test.osgi.framework.resolver;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.resolver;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Arrays;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
@@ -32,7 +34,6 @@ import org.jboss.test.osgi.framework.resolver.support.b.BC;
 import org.jboss.test.osgi.framework.resolver.support.c.C;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
-import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
  * Test the resolver integration.
@@ -105,8 +106,7 @@ public class ResolverTestCase extends OSGiFrameworkTest {
             Bundle bundleB = installBundle(assemblyB);
             try {
                 // Only resolve BundleB
-                PackageAdmin packageAdmin = getPackageAdmin();
-                boolean allResolved = packageAdmin.resolveBundles(new Bundle[] { bundleB });
+                boolean allResolved = resolveBundles(Arrays.asList(bundleB));
                 assertTrue("All resolved", allResolved);
 
                 // Verify bundle states
@@ -286,8 +286,7 @@ public class ResolverTestCase extends OSGiFrameworkTest {
         Bundle bundleA = installBundle(assemblyA);
         try {
             // Resolve the installed bundles
-            PackageAdmin packageAdmin = getPackageAdmin();
-            boolean allResolved = packageAdmin.resolveBundles(new Bundle[] { bundleA });
+            boolean allResolved = resolveBundles(Arrays.asList(bundleA));
             assertTrue("All resolved", allResolved);
 
             // Bundle-SymbolicName: simpleexport
@@ -473,8 +472,7 @@ public class ResolverTestCase extends OSGiFrameworkTest {
         Bundle bundleA = installBundle(assemblyA);
         try {
             // Resolve the installed bundles
-            PackageAdmin packageAdmin = getPackageAdmin();
-            boolean allResolved = packageAdmin.resolveBundles(null);
+            boolean allResolved = resolveBundles(null);
             assertTrue("All resolved", allResolved);
 
             // Verify bundle states
@@ -555,8 +553,7 @@ public class ResolverTestCase extends OSGiFrameworkTest {
         Bundle bundleA = installBundle(assemblyA);
         try {
             // Resolve the installed bundles
-            PackageAdmin packageAdmin = getPackageAdmin();
-            boolean allResolved = packageAdmin.resolveBundles(null);
+            boolean allResolved = resolveBundles(null);
             assertTrue("All resolved", allResolved);
 
             // Verify bundle states
@@ -602,8 +599,7 @@ public class ResolverTestCase extends OSGiFrameworkTest {
         Bundle bundleB = installBundle(assemblyB);
         try {
             // Resolve the installed bundles
-            PackageAdmin packageAdmin = getPackageAdmin();
-            boolean allResolved = packageAdmin.resolveBundles(null);
+            boolean allResolved = resolveBundles(null);
             assertTrue("All resolved", allResolved);
 
             // Verify bundle states
@@ -613,7 +609,7 @@ public class ResolverTestCase extends OSGiFrameworkTest {
             try {
                 Bundle bundleC = installBundle(assemblyC);
                 try {
-                    allResolved = packageAdmin.resolveBundles(null);
+                    allResolved = resolveBundles(null);
                     assertTrue("All resolved", allResolved);
 
                     // Verify bundle states
@@ -734,8 +730,7 @@ public class ResolverTestCase extends OSGiFrameworkTest {
             Bundle bundleB = installBundle(assemblyB);
             try {
                 // Resolve the installed bundles
-                PackageAdmin packageAdmin = getPackageAdmin();
-                boolean allResolved = packageAdmin.resolveBundles(null);
+                boolean allResolved = resolveBundles(null);
                 assertTrue("All resolved", allResolved);
 
                 // Verify bundle states
@@ -744,7 +739,7 @@ public class ResolverTestCase extends OSGiFrameworkTest {
 
                 Bundle bundleC = installBundle(assemblyC);
                 try {
-                    allResolved = packageAdmin.resolveBundles(null);
+                    allResolved = resolveBundles(null);
                     assertTrue("All resolved", allResolved);
 
                     // Verify bundle states
@@ -784,8 +779,7 @@ public class ResolverTestCase extends OSGiFrameworkTest {
             Bundle bundleB = installBundle(assemblyB);
             try {
                 // Resolve the installed bundles
-                PackageAdmin packageAdmin = getPackageAdmin();
-                boolean allResolved = packageAdmin.resolveBundles(null);
+                boolean allResolved = resolveBundles(null);
                 assertTrue("All resolved", allResolved);
 
                 // Verify bundle states
@@ -794,7 +788,7 @@ public class ResolverTestCase extends OSGiFrameworkTest {
 
                 Bundle bundleC = installBundle(assemblyC);
                 try {
-                    allResolved = packageAdmin.resolveBundles(null);
+                    allResolved = resolveBundles(null);
                     assertTrue("All resolved", allResolved);
 
                     // Verify bundle states
@@ -947,8 +941,7 @@ public class ResolverTestCase extends OSGiFrameworkTest {
         Bundle bundleA = installBundle(assemblyA);
         try {
             // Resolve the installed bundles
-            PackageAdmin packageAdmin = getPackageAdmin();
-            boolean allResolved = packageAdmin.resolveBundles(null);
+            boolean allResolved = resolveBundles(null);
             assertTrue("All resolved", allResolved);
 
             // Verify bundle states

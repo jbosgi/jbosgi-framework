@@ -30,6 +30,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
@@ -49,6 +50,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
+import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
  * BundleUpdateTestCase
@@ -133,8 +135,8 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
             assertLoadClass(bundleX, ObjectA.class.getName());
 
             assertNoFrameworkEvent();
-            getSystemContext().addFrameworkListener(this);
-            getPackageAdmin().refreshPackages(new Bundle[] { bundleA });
+            FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
+            frameworkWiring.refreshBundles(Arrays.asList(bundleA), this);
             assertFrameworkEvent(FrameworkEvent.ERROR, bundleX, BundleException.class);
             assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
 
@@ -149,7 +151,6 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
             int afterCount = systemContext.getBundles().length;
             assertEquals("Bundle count", beforeCount, afterCount);
         } finally {
-            getSystemContext().removeFrameworkListener(this);
             bundleX.uninstall();
             bundleA.uninstall();
         }
@@ -195,8 +196,8 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
             assertLoadClassFail(bundleX, ObjectA2.class.getName());
             assertSame(cls, bundleX.loadClass(ObjectX.class.getName()));
 
-            getSystemContext().addFrameworkListener(this);
-            getPackageAdmin().refreshPackages(new Bundle[] { bundleA });
+            FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
+            frameworkWiring.refreshBundles(Arrays.asList(bundleA), this);
             assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
 
             assertBundleState(Bundle.ACTIVE, bundleA.getState());
@@ -215,7 +216,6 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
             int afterCount = systemContext.getBundles().length;
             assertEquals("Bundle count", beforeCount, afterCount);
         } finally {
-            getSystemContext().removeFrameworkListener(this);
             bundleX.uninstall();
             bundleA.uninstall();
         }

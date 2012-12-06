@@ -28,11 +28,9 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
-import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.IntegrationServices;
-import org.jboss.osgi.framework.spi.PackageAdminSupport;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -46,7 +44,6 @@ final class CoreServices extends AbstractIntegrationService<CoreServices> {
     private final InjectedValue<FrameworkState> injectedFrameworkState = new InjectedValue<FrameworkState>();
     private final InjectedValue<BundleLifecycle> injectedBundleLifecycle = new InjectedValue<BundleLifecycle>();
     private final InjectedValue<LifecycleInterceptorService> injectedLifecycleInterceptor = new InjectedValue<LifecycleInterceptorService>();
-    private final InjectedValue<PackageAdminSupport> injectedPackageAdmin = new InjectedValue<PackageAdminSupport>();
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
 
     CoreServices() {
@@ -58,7 +55,6 @@ final class CoreServices extends AbstractIntegrationService<CoreServices> {
         builder.addDependency(IntegrationServices.BUNDLE_LIFECYCLE_PLUGIN, BundleLifecycle.class, injectedBundleLifecycle);
         builder.addDependency(IntegrationServices.FRAMEWORK_CREATE_INTERNAL, FrameworkState.class, injectedFrameworkState);
         builder.addDependency(IntegrationServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorService.class, injectedLifecycleInterceptor);
-        builder.addDependency(Services.PACKAGE_ADMIN, PackageAdminSupport.class, injectedPackageAdmin);
         builder.addDependency(IntegrationServices.SYSTEM_CONTEXT_INTERNAL, BundleContext.class, injectedSystemContext);
         builder.addDependencies(IntegrationServices.SYSTEM_SERVICES_PLUGIN, IntegrationServices.URL_HANDLER_PLUGIN);
         builder.setInitialMode(Mode.ON_DEMAND);
@@ -89,9 +85,4 @@ final class CoreServices extends AbstractIntegrationService<CoreServices> {
     LifecycleInterceptorService getLifecycleInterceptorService() {
         return injectedLifecycleInterceptor.getValue();
     }
-
-    PackageAdminSupport getPackageAdminSupport() {
-        return injectedPackageAdmin.getValue();
-    }
-
 }

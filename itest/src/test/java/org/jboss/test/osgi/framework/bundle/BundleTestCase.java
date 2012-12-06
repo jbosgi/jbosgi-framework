@@ -31,6 +31,7 @@ import static org.osgi.framework.Bundle.INSTALLED;
 import static org.osgi.framework.Bundle.RESOLVED;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.jar.Attributes;
@@ -54,6 +55,7 @@ import org.osgi.framework.BundleReference;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.Version;
+import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
  * BundleTest.
@@ -204,7 +206,8 @@ public class BundleTestCase extends OSGiFrameworkTest {
             Archive<?> assemblyB = assembleArchive("bundle20", "/bundles/singleton/singleton2");
             Bundle bundleB = installBundle(assemblyB);
             try {
-                boolean resolved = getPackageAdmin().resolveBundles(new Bundle[] { bundleA, bundleB });
+                FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
+                boolean resolved = frameworkWiring.resolveBundles(Arrays.asList(bundleA, bundleB ));
                 assertFalse("Not all Bundles resolved", resolved);
                 int stateA = bundleA.getState();
                 int stateB = bundleB.getState();

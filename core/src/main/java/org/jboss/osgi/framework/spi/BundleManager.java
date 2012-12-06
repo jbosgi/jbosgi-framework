@@ -67,7 +67,7 @@ public interface BundleManager extends Service<BundleManager> {
      *
      * @param symbolicName The bundle symbolic name
      * @param versionRange The optional bundle version range
-     * @return The bundles or an empty list if there is no bundle with that name and version
+     * @return The bundles or an empty set if there is no bundle with that name and version
      */
     Set<XBundle> getBundles(String symbolicName, VersionRange versionRange);
 

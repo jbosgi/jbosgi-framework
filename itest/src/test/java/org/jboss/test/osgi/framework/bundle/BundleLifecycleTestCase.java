@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.bundle;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,11 +19,14 @@ package org.jboss.test.osgi.framework.bundle;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.bundle;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+
+import java.util.Collections;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
@@ -40,7 +42,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.ServiceReference;
-import org.osgi.service.packageadmin.PackageAdmin;
+import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
  * Bundle lifecycle TestCase.
@@ -65,7 +67,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest {
             bundleA.start();
             assertBundleState(Bundle.ACTIVE, bundleA.getState());
 
-            ServiceReference sref = bundleA.getBundleContext().getServiceReference(LifecycleService.class.getName());
+            ServiceReference<?> sref = bundleA.getBundleContext().getServiceReference(LifecycleService.class.getName());
             assertNotNull("Service available", sref);
         } finally {
             bundleA.uninstall();
@@ -85,7 +87,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest {
 
             // BundleA not started - service not available
             BundleContext systemContext = getFramework().getBundleContext();
-            ServiceReference sref = systemContext.getServiceReference(LifecycleService.class.getName());
+            ServiceReference<?> sref = systemContext.getServiceReference(LifecycleService.class.getName());
             assertNull("Service not available", sref);
 
             Archive<?> assemblyB = assembleArchive("lifecycle-failstart", "/bundles/lifecycle/fail-on-start", FailOnStartActivator.class);
@@ -173,7 +175,7 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest {
     }
 
     /**
-     * Verifies that BundleB is still INSTALLED after a failure in PackageAdmin.resolve()
+     * Verifies that BundleB is still INSTALLED after a failed resolve
      */
     @Test
     public void testFailToResolve() throws Exception {
@@ -182,13 +184,9 @@ public class BundleLifecycleTestCase extends OSGiFrameworkTest {
         try {
             assertBundleState(Bundle.INSTALLED, bundleB.getState());
 
-            // Get the PackageAdmin service
-            BundleContext systemContext = getFramework().getBundleContext();
-            ServiceReference sref = systemContext.getServiceReference(PackageAdmin.class.getName());
-            PackageAdmin packageAdmin = (PackageAdmin) systemContext.getService(sref);
-
             // Attempt to explicitly resolve a bundle with missing dependency
-            boolean allResolved = packageAdmin.resolveBundles(new Bundle[] { bundleB });
+            FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
+            boolean allResolved = frameworkWiring.resolveBundles(Collections.singleton(bundleB));
             assertFalse("Resolve fails", allResolved);
 
             // Verify that the bundle is still in state INSTALLED

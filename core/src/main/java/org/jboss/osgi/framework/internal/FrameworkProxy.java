@@ -110,7 +110,7 @@ final class FrameworkProxy implements Framework {
      * - Be at start level 0.
      * - Have event handling enabled.
      * - Have reified Bundle objects for all installed bundles.
-     * - Have registered any framework services (e.g. PackageAdmin, ConditionalPermissionAdmin, StartLevel)
+     * - Have registered any framework services
      *
      * This Framework will not actually be started until start is called.
      *

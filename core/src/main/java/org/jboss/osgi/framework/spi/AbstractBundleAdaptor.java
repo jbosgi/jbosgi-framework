@@ -56,7 +56,10 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
+import org.osgi.framework.startlevel.BundleStartLevel;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleRevisions;
+import org.osgi.framework.wiring.BundleWiring;
 
 /**
  * An abstract implementation that adapts a {@link Module} to a {@link Bundle}
@@ -137,16 +140,60 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
         return module.getClassLoader().loadClass(name);
     }
 
+    /**
+     * Required by spec:
+     *
+     * {@link BundleContext} The Bundle Context for this bundle.
+     * {@link BundleRevision} The current Bundle Revision for this bundle.
+     * {@link BundleRevisions} All existing Bundle Revision objects for this bundle.
+     * {@link BundleStartLevel} The Bundle Start Level for this bundle.
+     * [TODO] {@link BundleWiring} The Bundle Wiring for the current Bundle Revision.
+     *
+     * Proprietary extensions:
+     *
+     * [TODO] {@link OSGiMetaData} The Bundle metadata.
+     * {@link Module} The Bundle's module.
+     * {@link BundleManager} The Bundle manager.
+     */
     @Override
     @SuppressWarnings("unchecked")
     public <T> T adapt(Class<T> type) {
         T result = null;
-        if (type == Module.class) {
+        if (type.isAssignableFrom(BundleContext.class)) {
+            result = (T) getBundleContext();
+        } else if (type.isAssignableFrom(BundleRevision.class)) {
+            result = (T) getBundleRevision();
+        } else if (type.isAssignableFrom(BundleRevisions.class)) {
+            result = (T) getBundleRevisions();
+        } else if (type.isAssignableFrom(BundleStartLevel.class)) {
+            result = (T) this;
+        } else if (type.isAssignableFrom(BundleManager.class)) {
+            result = (T) bundleManager;
+        } else if (type.isAssignableFrom(Module.class)) {
             result = (T) module;
-        } else if (type == BundleRevision.class) {
-            result = (T) brev;
         }
         return result;
+    }
+
+    BundleRevisions getBundleRevisions() {
+        final Bundle bundle = this;
+        return new BundleRevisions() {
+
+            @Override
+            public Bundle getBundle() {
+                return bundle;
+            }
+
+            @Override
+            public List<BundleRevision> getRevisions() {
+                return Collections.singletonList((BundleRevision) brev);
+            }
+
+            @Override
+            public String toString() {
+                return bundle + ": [" + brev + "]";
+            }
+        };
     }
 
     @Override

@@ -129,7 +129,7 @@ public class ModuleBundleTestCase extends AbstractModuleIntegrationTest {
     @Test
     @Ignore
     public void testStartLevel() throws Exception {
-        StartLevel startLevel = getStartLevel();
+        StartLevel startLevel = null;
         int orgStartLevel = startLevel.getStartLevel();
         int orgInitialStartlevel = startLevel.getInitialBundleStartLevel();
         try {

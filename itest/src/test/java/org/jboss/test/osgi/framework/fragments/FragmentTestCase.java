@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.fragments;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.test.osgi.framework.fragments;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.fragments;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -34,6 +34,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.security.ProtectionDomain;
+import java.util.Arrays;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
@@ -58,7 +59,7 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleException;
-import org.osgi.service.packageadmin.PackageAdmin;
+import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
  * Test Fragment functionality
@@ -143,29 +144,6 @@ public class FragmentTestCase extends OSGiFrameworkTest {
 
         // Load a private class from host
         assertLoadClass(hostA, SubBeanA.class.getName());
-
-        // PackageAdmin.getBundleType
-        PackageAdmin pa = getPackageAdmin();
-        assertEquals("Bundle type", 0, pa.getBundleType(hostA));
-        assertEquals("Bundle type", PackageAdmin.BUNDLE_TYPE_FRAGMENT, pa.getBundleType(fragA));
-
-        // PackageAdmin.getHosts
-        Bundle[] hosts = pa.getHosts(hostA);
-        assertNull("Not a fragment", hosts);
-
-        hosts = pa.getHosts(fragA);
-        assertNotNull("Hosts not null", hosts);
-        assertEquals("Hosts length", 1, hosts.length);
-        assertEquals("Hosts equals", hostA, hosts[0]);
-
-        // PackageAdmin.getFragments
-        Bundle[] fragments = pa.getFragments(fragA);
-        assertNull("Not a host", fragments);
-
-        fragments = pa.getFragments(hostA);
-        assertNotNull("Fragments not null", fragments);
-        assertEquals("Fragments length", 1, fragments.length);
-        assertEquals("Fragments equals", fragA, fragments[0]);
 
         hostA.uninstall();
         assertBundleState(Bundle.UNINSTALLED, hostA.getState());
@@ -285,7 +263,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         }
 
         // Refreshing HostA causes the FragA to get attached
-        refreshPackages(new Bundle[] { hostA });
+        refreshBundles(Arrays.asList(hostA));
 
         // Load class provided by the fragment
         assertLoadClass(hostA, FragBeanA.class.getName());
@@ -464,7 +442,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         // Load class provided by the fragment
         assertLoadClass(hostA, FragBeanA.class.getName());
 
-        refreshPackages(new Bundle[] { hostA });
+        refreshBundles(Arrays.asList(hostA));
 
         assertLoadClassFail(hostA, FragBeanA.class.getName());
 
@@ -524,12 +502,13 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostA");
         archive.addClasses(HostAActivator.class, SubBeanA.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleActivator(HostAActivator.class);
-                builder.addImportPackages(BundleActivator.class, Logger.class, PackageAdmin.class);
+                builder.addImportPackages(BundleActivator.class, Logger.class, FrameworkWiring.class);
                 return builder.openStream();
             }
         });
@@ -540,13 +519,14 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostB");
         archive.addClasses(HostBActivator.class, SubBeanA.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleActivator(HostBActivator.class);
                 builder.addExportPackages(SubBeanA.class);
-                builder.addImportPackages(BundleActivator.class, PackageAdmin.class);
+                builder.addImportPackages(BundleActivator.class, FrameworkWiring.class);
                 return builder.openStream();
             }
         });
@@ -557,6 +537,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostC");
         archive.addClasses(HostCActivator.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -573,6 +554,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostD");
         archive.addClasses(HostDInterface.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -589,6 +571,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostE");
         archive.addClasses(HostEInterface.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -605,6 +588,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostF");
         archive.addClasses(HostFInterface.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -621,6 +605,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         archive.addClasses(FragBeanA.class);
         archive.addAsResource(getResourceFile("fragments/fragA.txt"), "resource.txt");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -637,6 +622,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-fragB");
         archive.addClasses(FragBeanB.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -654,6 +640,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-fragC");
         archive.addClasses(FragBeanC.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -671,6 +658,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-fragD");
         archive.addClasses(FragDClass.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -689,6 +677,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         archive.addClasses(FragE1Class.class);
         archive.addAsResource(getResourceFile("fragments/fragE1.txt"), "resource.txt");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -706,6 +695,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         archive.addClasses(FragE2Class.class);
         archive.addAsResource(getResourceFile("fragments/fragE2.txt"), "resource.txt");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -721,6 +711,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
     private JavaArchive getFragmentG1() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-fragG1");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -735,6 +726,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
     private JavaArchive getFragmentG2() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-fragG2");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -749,6 +741,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
     private JavaArchive getFragmentG3() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-fragG3");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -763,6 +756,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
     private JavaArchive getFragmentG4() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-fragG4");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

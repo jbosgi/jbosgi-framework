@@ -32,22 +32,24 @@ import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleLifecyclePlugin;
+import org.jboss.osgi.framework.spi.BundleStartLevelPlugin;
 import org.jboss.osgi.framework.spi.BundleStoragePlugin;
 import org.jboss.osgi.framework.spi.DeploymentProviderPlugin;
 import org.jboss.osgi.framework.spi.EnvironmentPlugin;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoaderPlugin;
 import org.jboss.osgi.framework.spi.FrameworkModuleProviderPlugin;
+import org.jboss.osgi.framework.spi.FrameworkStartLevelPlugin;
+import org.jboss.osgi.framework.spi.FrameworkWiringPlugin;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LifecycleInterceptorPlugin;
 import org.jboss.osgi.framework.spi.LockManagerPlugin;
 import org.jboss.osgi.framework.spi.ModuleManagerPlugin;
 import org.jboss.osgi.framework.spi.NativeCodePlugin;
-import org.jboss.osgi.framework.spi.PackageAdminPlugin;
 import org.jboss.osgi.framework.spi.ResolverPlugin;
 import org.jboss.osgi.framework.spi.ServiceManagerPlugin;
-import org.jboss.osgi.framework.spi.StartLevelSupportPlugin;
 import org.jboss.osgi.framework.spi.StartLevelSupport;
+import org.jboss.osgi.framework.spi.StartLevelSupportPlugin;
 import org.jboss.osgi.framework.spi.SystemPathsPlugin;
 import org.jboss.osgi.framework.spi.SystemServicesPlugin;
 import org.osgi.framework.Bundle;
@@ -70,7 +72,6 @@ import org.osgi.framework.launch.Framework;
  *     +---{@link CoreServices}
  *     |   +---{@link BundleLifecyclePlugin}
  *     |   +---{@link LifecycleInterceptorPlugin}
- *     |   +---{@link PackageAdminPlugin}
  *     |   +---{@link StartLevelSupportPlugin
  *     |   +---{@link SystemServicesPlugin}
  *     |   +---{@link URLHandlerPlugin}

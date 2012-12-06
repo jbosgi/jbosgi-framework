@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.launch;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.test.osgi.framework.launch;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.launch;
 
 import java.io.InputStream;
 import java.util.Map;
@@ -37,9 +37,9 @@ import org.jboss.msc.service.ValueService;
 import org.jboss.msc.value.ImmediateValue;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.spi.FrameworkBuilderFactory;
 import org.jboss.osgi.framework.spi.FrameworkBuilder;
 import org.jboss.osgi.framework.spi.FrameworkBuilder.FrameworkPhase;
+import org.jboss.osgi.framework.spi.FrameworkBuilderFactory;
 import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
@@ -52,11 +52,8 @@ import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkEvent;
-import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.startlevel.FrameworkStartLevel;
-import org.osgi.service.packageadmin.PackageAdmin;
-import org.osgi.service.startlevel.StartLevel;
 
 /**
  * Test the {@link FrameworkBuilder}
@@ -84,13 +81,8 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
         assertServiceState(State.UP, Services.FRAMEWORK_INIT);
         Assert.assertNull(getService(Services.FRAMEWORK_ACTIVE));
 
-        BundleContext bundleContext = framework.getBundleContext();
         FrameworkStartLevel startLevel = framework.adapt(FrameworkStartLevel.class);
         Assert.assertEquals("Framework should be at Start Level 0 on init()", 0, startLevel.getStartLevel());
-
-        ServiceReference sref = bundleContext.getServiceReference(PackageAdmin.class.getName());
-        PackageAdmin packageAdmin = (PackageAdmin) bundleContext.getService(sref);
-        Assert.assertNotNull("The Package Admin service should be available", packageAdmin);
 
         // It should be possible to install a bundle into this framework, even though it's only inited...
         Bundle bundle = installBundle(getBundleA());
@@ -138,10 +130,6 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
         Assert.assertEquals("System bundle id", 0, bundles[0].getBundleId());
         Assert.assertEquals("System bundle name", Constants.FRAMEWORK_SYMBOLIC_NAME, bundles[0].getSymbolicName());
         Assert.assertEquals("System bundle location", Constants.FRAMEWORK_LOCATION, bundles[0].getLocation());
-
-        ServiceReference paRef = systemContext.getServiceReference(PackageAdmin.class.getName());
-        PackageAdmin packageAdmin = (PackageAdmin) systemContext.getService(paRef);
-        Assert.assertNotNull("PackageAdmin not null", packageAdmin);
 
         FrameworkStartLevel startLevel = framework.adapt(FrameworkStartLevel.class);
         Assert.assertEquals("Framework start level", 0, startLevel.getStartLevel());
@@ -207,6 +195,7 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
     private static JavaArchive getBundleA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

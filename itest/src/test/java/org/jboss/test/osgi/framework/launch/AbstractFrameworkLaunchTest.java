@@ -44,7 +44,6 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.launch.FrameworkFactory;
-import org.osgi.service.packageadmin.PackageAdmin;
 import org.osgi.service.startlevel.StartLevel;
 
 /**
@@ -110,12 +109,6 @@ public abstract class AbstractFrameworkLaunchTest extends OSGiTest {
 
     protected BundleManager getBundleManager() {
         return framework.adapt(BundleManager.class);
-    }
-
-    protected PackageAdmin getPackageAdmin() throws BundleException {
-        BundleContext context = getBundleContext();
-        ServiceReference sref = context.getServiceReference(PackageAdmin.class.getName());
-        return (PackageAdmin) context.getService(sref);
     }
 
     protected StartLevel getStartLevel() throws BundleException {
