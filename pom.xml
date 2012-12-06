@@ -36,7 +36,7 @@
     <artifactId>jbosgi-framework-parent</artifactId>
     <packaging>pom</packaging>
 
-    <version>3.0.0.Alpha4</version>
+    <version>3.0.0.Alpha5-SNAPSHOT</version>
 
     <!-- Source Control -->
     <scm>
