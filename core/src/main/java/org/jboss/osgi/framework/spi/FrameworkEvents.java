@@ -24,7 +24,6 @@ package org.jboss.osgi.framework.spi;
 import java.util.Collection;
 
 import org.jboss.osgi.resolver.XBundle;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.FrameworkEvent;
@@ -67,11 +66,11 @@ public interface FrameworkEvents {
 
     void removeAllServiceListeners();
 
-    void fireBundleEvent(XBundle bundle, int type);
+    void fireBundleEvent(XBundle origin, int type);
 
-    void fireFrameworkEvent(Bundle bundle, int type, Throwable th, FrameworkListener... listeners);
+    void fireFrameworkEvent(XBundle origin, int type, Throwable th, FrameworkListener... listeners);
 
-    void fireServiceEvent(XBundle bundle, int type, ServiceState<?> serviceState);
+    void fireServiceEvent(XBundle origin, int type, ServiceState<?> serviceState);
 
     Collection<ListenerInfo> getServiceListenerInfos(XBundle bundle);
 

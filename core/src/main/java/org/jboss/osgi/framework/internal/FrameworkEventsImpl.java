@@ -393,7 +393,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     }
 
     @Override
-    public void fireFrameworkEvent(final Bundle bundle, final int type, final Throwable th, final FrameworkListener... providedListeners) {
+    public void fireFrameworkEvent(final XBundle origin, final int type, final Throwable th, final FrameworkListener... providedListeners) {
 
         // Do nothing it the framework is not active
         if (bundleManager.isFrameworkCreated() == false)
@@ -412,7 +412,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             }
         }
 
-        final FrameworkEvent event = new FrameworkEventImpl(type, bundle, th);
+        final FrameworkEvent event = new FrameworkEventImpl(type, origin, th);
         final String typeName = ConstantsHelper.frameworkEvent(event.getType());
 
         switch (event.getType()) {
@@ -444,7 +444,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
                         // event listener generates an unchecked exception - except when the callback
                         // happens while delivering a FrameworkEvent.ERROR
                         if (type != FrameworkEvent.ERROR) {
-                            fireFrameworkEvent(bundle, FrameworkEvent.ERROR, ex);
+                            fireFrameworkEvent(origin, FrameworkEvent.ERROR, ex);
                         }
                     } catch (Throwable th) {
                         LOGGER.warnErrorWhileFiringEvent(th, typeName);

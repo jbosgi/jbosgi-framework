@@ -87,35 +87,37 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
     }
 
     private synchronized void setFrameworkStartLevelInternal(final int level, final boolean synchronous, final FrameworkListener... listeners) {
-    	
+
+        final XBundle sysbundle = bundleManager.getSystemBundle();
+
         // In case of equality just fire the event
         if (level == getFrameworkStartLevel()) {
-            Bundle sysbundle = bundleManager.getSystemBundle();
             events.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null, listeners);
             return;
         }
-        
+
         if (level > getFrameworkStartLevel()) {
             Runnable runner = new Runnable() {
                 @Override
                 public void run() {
                     LOGGER.infoIncreasingStartLevel(getFrameworkStartLevel(), level);
                     increaseFrameworkStartLevel(level);
-                    Bundle sysbundle = bundleManager.getSystemBundle();
                     events.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null, listeners);
                 }
             };
+
             executeTask(runner, synchronous);
+
         } else if (level < getFrameworkStartLevel()) {
             Runnable runner = new Runnable() {
                 @Override
                 public void run() {
                     LOGGER.infoDecreasingStartLevel(getFrameworkStartLevel(), level);
                     decreaseFrameworkStartLevel(level);
-                    Bundle sysbundle = bundleManager.getSystemBundle();
                     events.fireFrameworkEvent(sysbundle, FrameworkEvent.STARTLEVEL_CHANGED, null, listeners);
                 }
             };
+
             executeTask(runner, synchronous);
         }
     }

@@ -648,7 +648,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         }
     }
 
-    void fireFrameworkError(Bundle bundle, String context, Throwable t) {
+    void fireFrameworkError(XBundle bundle, String context, Throwable t) {
         FrameworkEvents plugin = getFrameworkState().getFrameworkEvents();
         if (t instanceof BundleException) {
             plugin.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, t);

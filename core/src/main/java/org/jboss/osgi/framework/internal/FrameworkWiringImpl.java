@@ -139,7 +139,7 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                 Collections.sort(stopList, startLevelComparator);
 
                 for (ListIterator<Bundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();) {
-                    Bundle hostBundle = it.previous();
+                    XBundle hostBundle = (XBundle) it.previous();
                     try {
                         hostBundle.stop(Bundle.STOP_TRANSIENT);
                     } catch (Exception th) {
@@ -153,23 +153,26 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                     refreshList.remove(userBundle);
                 }
 
-                for (Bundle userBundle : refreshList) {
-                    try {
-                        ((UserBundleState<?>) userBundle).refresh();
-                    } catch (Exception th) {
-                        events.fireFrameworkEvent(userBundle, FrameworkEvent.ERROR, th);
+                for (Bundle bundle : refreshList) {
+                    if (bundle instanceof UserBundleState) {
+                        UserBundleState<?> userBundle = (UserBundleState<?>) bundle;
+                        try {
+                            userBundle.refresh();
+                        } catch (Exception th) {
+                            events.fireFrameworkEvent(userBundle, FrameworkEvent.ERROR, th);
+                        }
                     }
                 }
 
-                for (Bundle hostBundle : stopList) {
+                for (Bundle bundle : stopList) {
                     try {
-                        hostBundle.start(Bundle.START_TRANSIENT);
+                        bundle.start(Bundle.START_TRANSIENT);
                     } catch (Exception th) {
-                        events.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
+                        events.fireFrameworkEvent((XBundle)bundle, FrameworkEvent.ERROR, th);
                     }
                 }
 
-                Bundle systemBundle = bundleManager.getSystemBundle();
+                XBundle systemBundle = bundleManager.getSystemBundle();
                 events.fireFrameworkEvent(systemBundle, FrameworkEvent.PACKAGES_REFRESHED, null, listeners);
             }
         };

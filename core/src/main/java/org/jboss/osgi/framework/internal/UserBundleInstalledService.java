@@ -99,6 +99,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extend
             validateBundle(bundleState, metadata);
             processNativeCode(bundleState, dep);
             installBundle(bundleState);
+            // For the event type INSTALLED, this is the bundle whose context was used to install the bundle
             FrameworkEvents events = getFrameworkState().getFrameworkEvents();
             events.fireBundleEvent((XBundle) sourceContext.getBundle(), BundleEvent.INSTALLED);
         } catch (BundleException ex) {
