@@ -37,6 +37,9 @@ import java.util.concurrent.ExecutorService;
 
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
+import org.jboss.osgi.framework.spi.FrameworkWiringLock;
+import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolver;
@@ -63,13 +66,15 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
     private final FrameworkEvents events;
     private final XEnvironment environment;
     private final XResolver resolver;
+    private final LockManager lockManager;
     private final ExecutorService executorService;
 
-    public FrameworkWiringImpl(BundleManager bundleManager, FrameworkEvents events, XEnvironment environment, XResolver resolver, ExecutorService executorService) {
+    public FrameworkWiringImpl(BundleManager bundleManager, FrameworkEvents events, XEnvironment environment, XResolver resolver, LockManager lockManager, ExecutorService executorService) {
         this.bundleManager = bundleManager;
         this.events = events;
         this.environment = environment;
         this.resolver = resolver;
+        this.lockManager = lockManager;
         this.executorService = executorService;
     }
 
@@ -82,20 +87,23 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
     public void refreshBundles(final Collection<Bundle> bundles, final FrameworkListener... listeners) {
 
         final Collection<Bundle> bundlesToRefresh = new ArrayList<Bundle>();
-        if (bundles == null) {
+        final Collection<Bundle> dependencyClosure = new ArrayList<Bundle>();
 
-            // 4.2 core spec 7.5.3.11 on null:
-            // all bundles updated or uninstalled since the last call to this method.
+        LockContext lockContext = null;
+        try {
+            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+            lockContext = lockManager.lockItems(LockManager.Method.REFRESH, wireLock);
 
-            // a bundle with more than 1 revision has been updated since the last refresh packages call
-            for (Bundle bundle : bundleManager.getBundles(null)) {
-                List<BundleRevision> revs = bundle.adapt(BundleRevisions.class).getRevisions();
-                if (bundle.getState() == Bundle.UNINSTALLED || revs.size() > 1) {
-                    bundlesToRefresh.add(bundle);
-                }
+            if (bundles == null) {
+                bundlesToRefresh.addAll(getRemovalPendingBundles());
+            } else {
+                bundlesToRefresh.addAll(bundles);
             }
-        } else {
-            bundlesToRefresh.addAll(bundles);
+
+            // Compute all depending bundles that need to be stopped and unresolved.
+            dependencyClosure.addAll(getDependencyClosure(bundlesToRefresh));
+        } finally {
+            lockManager.unlockItems(lockContext);
         }
 
         LOGGER.debugf("Refresh bundles %s", bundlesToRefresh);
@@ -117,8 +125,6 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                         refreshBundles.add(bundle);
                 }
 
-                // Compute all depending bundles that need to be stopped and unresolved.
-                Collection<Bundle> dependencyClosure = getDependencyClosure(bundlesToRefresh);
                 for (Bundle bundle : dependencyClosure) {
                     int state = bundle.getState();
                     if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
@@ -169,7 +175,8 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
         };
 
         if (!executorService.isShutdown()) {
-            executorService.execute(runner);
+            //executorService.execute(runner);
+            runner.run();
         }
     }
 
@@ -211,9 +218,12 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
     public Collection<Bundle> getRemovalPendingBundles() {
         Collection<Bundle> result = new HashSet<Bundle>();
         for (XBundle bundle : bundleManager.getBundles(null)) {
-            BundleWiring wiring = bundle.adapt(BundleWiring.class);
-            if (wiring != null && !wiring.isCurrent() && wiring.isInUse()) {
-                result.add(bundle);
+            BundleRevisions revisions = bundle.adapt(BundleRevisions.class);
+            for (BundleRevision brev : revisions.getRevisions()) {
+                BundleWiring wiring = brev.getWiring();
+                if (wiring != null && !wiring.isCurrent() && wiring.isInUse()) {
+                    result.add(bundle);
+                }
             }
         }
         return Collections.unmodifiableCollection(result);

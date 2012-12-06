@@ -349,7 +349,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
             Bundle bundle = entry.getKey().getBundle();
             if (bundle instanceof AbstractBundleState) {
-                AbstractBundleState bundleState = (AbstractBundleState)bundle;
+                AbstractBundleState<?> bundleState = (AbstractBundleState<?>)bundle;
 				bundleState.changeState(Bundle.RESOLVED, 0);
             }
         }
@@ -360,7 +360,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
             XBundleRevision brev = (XBundleRevision) entry.getKey();
             Bundle bundle = brev.getBundle();
             if (bundle instanceof AbstractBundleState) {
-                AbstractBundleState bundleState = (AbstractBundleState)bundle;
+                AbstractBundleState<?> bundleState = (AbstractBundleState<?>)bundle;
                 if (bundleManager.isFrameworkCreated()) {
                     bundleState.fireBundleEvent(BundleEvent.RESOLVED);
                 }

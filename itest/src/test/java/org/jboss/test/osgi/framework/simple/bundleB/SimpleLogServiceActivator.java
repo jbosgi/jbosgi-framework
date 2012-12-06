@@ -35,11 +35,12 @@ import org.osgi.util.tracker.ServiceTracker;
  */
 public class SimpleLogServiceActivator implements BundleActivator {
 
+    @Override
     public void start(BundleContext context) {
         final String symName = context.getBundle().getSymbolicName();
         addMessage(symName, "startBundleActivator");
 
-        ServiceReference sref = context.getServiceReference(LogService.class.getName());
+        ServiceReference<?> sref = context.getServiceReference(LogService.class.getName());
         if (sref != null) {
             LogService service = (LogService) context.getService(sref);
             String message = "getService: " + service.getClass().getName();
@@ -59,6 +60,7 @@ public class SimpleLogServiceActivator implements BundleActivator {
         tracker.open();
     }
 
+    @Override
     public void stop(BundleContext context) {
         String symName = context.getBundle().getSymbolicName();
         addMessage(symName, "stopBundleActivator");
@@ -67,6 +69,5 @@ public class SimpleLogServiceActivator implements BundleActivator {
     private void addMessage(String propName, String message) {
         String previous = System.getProperty(propName, ":");
         System.setProperty(propName, previous + message + ":");
-        // System.out.println(message);
     }
 }

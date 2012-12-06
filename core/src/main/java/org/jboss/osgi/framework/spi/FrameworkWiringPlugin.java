@@ -42,6 +42,7 @@ public class FrameworkWiringPlugin extends ExecutorServicePlugin<FrameworkWiring
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<FrameworkEvents> injectedFrameworkEvents = new InjectedValue<FrameworkEvents>();
+    private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private final InjectedValue<XResolver> injectedResolver = new InjectedValue<XResolver>();
 
@@ -53,8 +54,9 @@ public class FrameworkWiringPlugin extends ExecutorServicePlugin<FrameworkWiring
     protected void addServiceDependencies(ServiceBuilder<FrameworkWiring> builder) {
         super.addServiceDependencies(builder);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
-        builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, injectedFrameworkEvents);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
+        builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, injectedFrameworkEvents);
+        builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, injectedLockManager);
         builder.addDependency(Services.RESOLVER, XResolver.class, injectedResolver);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
@@ -65,6 +67,7 @@ public class FrameworkWiringPlugin extends ExecutorServicePlugin<FrameworkWiring
         FrameworkEvents events = injectedFrameworkEvents.getValue();
         XEnvironment env = injectedEnvironment.getValue();
         XResolver resolver = injectedResolver.getValue();
-        return new FrameworkWiringImpl(bundleManager, events, env, resolver, getExecutorService());
+        LockManager lockManager = injectedLockManager.getValue();
+        return new FrameworkWiringImpl(bundleManager, events, env, resolver, lockManager, getExecutorService());
     }
 }

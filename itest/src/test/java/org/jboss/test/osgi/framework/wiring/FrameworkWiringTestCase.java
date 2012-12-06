@@ -64,7 +64,84 @@ import org.osgi.framework.wiring.FrameworkWiring;
 public class FrameworkWiringTestCase extends OSGiFrameworkTest {
 
     @Test
-    public void testRefreshPackages() throws Exception {
+    public void testResolveBundles() throws Exception {
+        FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
+        Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", OptionalImport.class));
+        try {
+            assertBundleState(Bundle.INSTALLED, bundleE.getState());
+            assertBundleState(Bundle.INSTALLED, bundleI.getState());
+            assertTrue(frameworkWiring.resolveBundles(Collections.singleton(bundleE)));
+            assertBundleState(Bundle.RESOLVED, bundleE.getState());
+            assertBundleState(Bundle.INSTALLED, bundleI.getState());
+        } finally {
+            bundleI.uninstall();
+            bundleE.uninstall();
+        }
+    }
+
+    @Test
+    public void testResolveBundlesNull() throws Exception {
+        FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
+        Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", OptionalImport.class));
+        try {
+            assertBundleState(Bundle.INSTALLED, bundleE.getState());
+            assertBundleState(Bundle.INSTALLED, bundleI.getState());
+            assertTrue(frameworkWiring.resolveBundles(null));
+            assertBundleState(Bundle.RESOLVED, bundleE.getState());
+            assertBundleState(Bundle.RESOLVED, bundleI.getState());
+        } finally {
+            bundleI.uninstall();
+            bundleE.uninstall();
+        }
+    }
+
+    @Test
+    public void testCantResolveAllBundles() throws Exception {
+        FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
+        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", OptionalImport.class));
+        Bundle bundleR = installBundle(assembleArchive("requiring", "/bundles/package-admin/requiring"));
+        try {
+            assertBundleState(Bundle.INSTALLED, bundleI.getState());
+            assertBundleState(Bundle.INSTALLED, bundleR.getState());
+            assertFalse(frameworkWiring.resolveBundles(Arrays.asList(bundleR, bundleI)));
+            assertTrue(Bundle.RESOLVED == bundleI.getState() || Bundle.INSTALLED == bundleI.getState());
+            assertBundleState(Bundle.INSTALLED, bundleR.getState());
+        } finally {
+            bundleI.uninstall();
+            bundleR.uninstall();
+        }
+    }
+
+    @Test
+    public void testSimpleRefreshBundles() throws Exception {
+        Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+        Bundle bundleI = installBundle(assembleArchive("opt-importer", "/bundles/package-admin/opt-importer", OptionalImport.class));
+
+        bundleI.start();
+        assertLoadClass(bundleI, Exported.class.getName());
+        assertNotNull(getImportedFieldValue(bundleI));
+
+        bundleE.uninstall();
+        bundleI.uninstall();
+        refreshBundles(null);
+
+        Bundle bundleE1 = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
+        Assert.assertNotSame(bundleE, bundleE1);
+        Bundle bundleI1 = installBundle(assembleArchive("opt-importer", "/bundles/package-admin/opt-importer", OptionalImport.class));
+        Assert.assertNotSame(bundleI, bundleI1);
+
+        bundleI1.start();
+        assertLoadClass(bundleI1, Exported.class.getName());
+        assertNotNull(getImportedFieldValue(bundleI1));
+
+        bundleE1.uninstall();
+        bundleI1.uninstall();
+    }
+
+    @Test
+    public void testRefreshBundles() throws Exception {
         FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
         Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
         Bundle bundleI = installBundle(assembleArchive("opt-importer", "/bundles/package-admin/opt-importer", OptionalImport.class));
@@ -116,7 +193,7 @@ public class FrameworkWiringTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    public void testRefreshPackagesNull() throws Exception {
+    public void testRefreshBundlesNull() throws Exception {
         FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
         Archive<?> assemblyx = assembleArchive("bundlex", "/bundles/update/update-bundlex", ObjectX.class);
         Archive<?> assemblyy = assembleArchive("bundley", "/bundles/update/update-bundley", ObjectY.class);
@@ -147,6 +224,9 @@ public class FrameworkWiringTestCase extends OSGiFrameworkTest {
             Class<?> cls = bundleX.loadClass(ObjectX.class.getName());
 
             bundleA.update(toInputStream(assembly2));
+            Collection<Bundle> pending = frameworkWiring.getRemovalPendingBundles();
+            Assert.assertTrue("Removal pending BundleA", pending.contains(bundleA));
+
             assertBundleState(Bundle.ACTIVE, bundleA.getState());
             assertBundleState(Bundle.ACTIVE, bundleX.getState());
             assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());
@@ -161,7 +241,6 @@ public class FrameworkWiringTestCase extends OSGiFrameworkTest {
 
             final List<BundleEvent> bundleYEvents = new ArrayList<BundleEvent>();
             bl = new BundleListener() {
-
                 @Override
                 public void bundleChanged(BundleEvent event) {
                     if (event.getBundle().getSymbolicName().equals("update-bundley"))
@@ -198,7 +277,7 @@ public class FrameworkWiringTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    public void testRefreshPackagesNullUninstall() throws Exception {
+    public void testRefreshBundlesNullUninstall() throws Exception {
         FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
         Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
         Bundle bundleI = installBundle(assembleArchive("opt-importer", "/bundles/package-admin/opt-importer", OptionalImport.class));
@@ -223,57 +302,6 @@ public class FrameworkWiringTestCase extends OSGiFrameworkTest {
             bundleI.uninstall();
             if (bundleE.getState() != Bundle.UNINSTALLED)
                 bundleE.uninstall();
-        }
-    }
-
-    @Test
-    public void testResolveBundles() throws Exception {
-        FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
-        Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
-        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", OptionalImport.class));
-        try {
-            assertBundleState(Bundle.INSTALLED, bundleE.getState());
-            assertBundleState(Bundle.INSTALLED, bundleI.getState());
-            assertTrue(frameworkWiring.resolveBundles(Collections.singleton(bundleE)));
-            assertBundleState(Bundle.RESOLVED, bundleE.getState());
-            assertBundleState(Bundle.INSTALLED, bundleI.getState());
-        } finally {
-            bundleI.uninstall();
-            bundleE.uninstall();
-        }
-    }
-
-    @Test
-    public void testResolveBundlesNull() throws Exception {
-        FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
-        Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
-        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", OptionalImport.class));
-        try {
-            assertBundleState(Bundle.INSTALLED, bundleE.getState());
-            assertBundleState(Bundle.INSTALLED, bundleI.getState());
-            assertTrue(frameworkWiring.resolveBundles(null));
-            assertBundleState(Bundle.RESOLVED, bundleE.getState());
-            assertBundleState(Bundle.RESOLVED, bundleI.getState());
-        } finally {
-            bundleI.uninstall();
-            bundleE.uninstall();
-        }
-    }
-
-    @Test
-    public void testCantResolveAllBundles() throws Exception {
-        FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
-        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", OptionalImport.class));
-        Bundle bundleR = installBundle(assembleArchive("requiring", "/bundles/package-admin/requiring"));
-        try {
-            assertBundleState(Bundle.INSTALLED, bundleI.getState());
-            assertBundleState(Bundle.INSTALLED, bundleR.getState());
-            assertFalse(frameworkWiring.resolveBundles(Arrays.asList(bundleR, bundleI)));
-            assertTrue(Bundle.RESOLVED == bundleI.getState() || Bundle.INSTALLED == bundleI.getState());
-            assertBundleState(Bundle.INSTALLED, bundleR.getState());
-        } finally {
-            bundleI.uninstall();
-            bundleR.uninstall();
         }
     }
 

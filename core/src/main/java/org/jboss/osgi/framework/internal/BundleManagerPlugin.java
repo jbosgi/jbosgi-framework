@@ -564,7 +564,6 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
                 ModuleIdentifier identifier = moduleManager.getModuleIdentifier(brev);
                 moduleManager.removeModule(brev, identifier);
             }
-            userRev.close();
         }
 
         FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
@@ -582,8 +581,10 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         }
 
         XEnvironment env = getFrameworkState().getEnvironment();
-        for (XBundleRevision abr : userBundle.getAllBundleRevisions()) {
-            env.uninstallResources(abr);
+        for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
+            UserBundleRevision userRev = (UserBundleRevision) brev;
+            env.uninstallResources(brev);
+            userRev.close();
         }
 
         LOGGER.debugf("Removed bundle: %s", userBundle);

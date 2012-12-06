@@ -342,8 +342,6 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         final BundleEvent event = new BundleEventImpl(type, bundleState);
         final String typeName = ConstantsHelper.bundleEvent(event.getType());
 
-        //System.out.println(event);
-
         // Nobody is interested
         if (listeners.isEmpty())
             return;

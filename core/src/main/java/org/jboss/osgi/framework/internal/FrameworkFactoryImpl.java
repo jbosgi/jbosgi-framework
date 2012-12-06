@@ -46,8 +46,13 @@ public class FrameworkFactoryImpl implements FrameworkFactory {
         framework.start();
     }
 
+    @Override
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Framework newFramework(Map props) {
+
+        // [TODO] Remove this hack when doen with the craptastic TCK setup
+        System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+
         FrameworkBuilder builder = FrameworkBuilderFactory.create(props, Mode.ACTIVE);
         return builder.createFramework();
     }

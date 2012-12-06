@@ -22,6 +22,7 @@ package org.jboss.osgi.framework.internal;
  */
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.IOException;
 import java.net.URL;
@@ -49,6 +50,7 @@ final class RevisionContent implements EntriesProvider {
     private final VirtualFile virtualFile;
     private final String identity;
     private final int contentId;
+    private boolean closedMarker;
 
     RevisionContent(UserBundleRevision brev, OSGiMetaData metadata, long bundleId, int contentId, VirtualFile rootFile) {
         assert brev != null : "Null userRev";
@@ -79,7 +81,7 @@ final class RevisionContent implements EntriesProvider {
         Bundle bundle = bundleManager.getBundleById(bundleId);
         if (bundle == null)
             return null;
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
         BundleStateRevision bundleRev = bundleState.getBundleRevisionById(revisionId);
         if (bundleRev == null)
             return null;
@@ -102,11 +104,13 @@ final class RevisionContent implements EntriesProvider {
     }
 
     VirtualFile getVirtualFile() {
+        assertNotClosed();
         return virtualFile;
     }
 
     @Override
     public URL getEntry(String path) {
+        assertNotClosed();
         VirtualFile child;
         try {
             child = virtualFile.getChild(path);
@@ -119,6 +123,7 @@ final class RevisionContent implements EntriesProvider {
 
     @Override
     public Enumeration<URL> findEntries(String path, String pattern, boolean recurse) {
+        assertNotClosed();
         try {
             Enumeration<URL> urls = virtualFile.findEntries(path, pattern, recurse);
             return getBundleURLs(urls);
@@ -129,6 +134,7 @@ final class RevisionContent implements EntriesProvider {
 
     @Override
     public Enumeration<String> getEntryPaths(String path) {
+        assertNotClosed();
         try {
             Enumeration<String> entryPaths = virtualFile.getEntryPaths(path);
             if (entryPaths != null && entryPaths.hasMoreElements())
@@ -142,6 +148,13 @@ final class RevisionContent implements EntriesProvider {
 
     void close() {
         VFSUtils.safeClose(virtualFile);
+        closedMarker = true;
+    }
+
+    private void assertNotClosed() {
+        if (closedMarker) {
+            throw MESSAGES.illegalStateRevisionContentClosed(userRev, contentId);
+        }
     }
 
     private Enumeration<URL> getBundleURLs(Enumeration<URL> urls) throws IOException {
@@ -163,6 +176,7 @@ final class RevisionContent implements EntriesProvider {
     URL getBundleURL(final VirtualFile child) throws IOException {
         final String orgPath = child.getPathName();
         URLStreamHandler streamHandler = new URLStreamHandler() {
+            @Override
             protected URLConnection openConnection(URL url) throws IOException {
                 String path = url.getPath();
                 VirtualFile real = (orgPath.equals(path) ? child : virtualFile.getChild(path));

@@ -133,7 +133,7 @@ public interface FrameworkMessages {
     IllegalStateException illegalStateCannotFindNativeLibrary(String libpath);
 
     @Message(id = 11224, value = "Service unregistered: %s")
-    IllegalStateException illegalStateServiceUnregistered(ServiceState serviceState);
+    IllegalStateException illegalStateServiceUnregistered(ServiceState<?> serviceState);
 
     @Message(id = 11225, value = "Cannot create system bundle storage")
     IllegalStateException illegalStateCannotCreateSystemBundleStorage(@Cause Throwable cause);
@@ -308,4 +308,7 @@ public interface FrameworkMessages {
 
     @Message(id = 11282, value = "Cannot obtain lock in timely fashion: %s")
     LockException cannotObtainLockTimely(@Cause Throwable cause, LockContext context);
+
+    @Message(id = 11283, value = "Revision content already closed: %s - [%d]")
+    IllegalStateException illegalStateRevisionContentClosed(BundleRevision brev, int contentId);
 }
