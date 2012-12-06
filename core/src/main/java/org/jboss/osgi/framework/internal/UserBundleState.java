@@ -62,6 +62,7 @@ import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.hooks.bundle.CollisionHook;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
+import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 
 /**
@@ -176,9 +177,15 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
                 public List<BundleRevision> getRevisions() {
                     return Collections.unmodifiableList(bundleRevisions);
                 }
+
+                @Override
+                public String toString() {
+                    return bundle + ": " + revisions;
+                }
             };
         }
     }
+
     @Override
     void addBundleRevision(R rev) {
         synchronized (revisions) {
@@ -224,7 +231,16 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
 
     boolean hasActiveWires() {
         BundleWiring wiring = getBundleRevision().getWiring();
-        return wiring != null ? wiring.isInUse() : false;
+        if (wiring != null) {
+            for (BundleWire wire : wiring.getProvidedWires(null)) {
+                BundleRevision requirer = wire.getRequirer();
+                BundleWiring reqwiring = requirer.getWiring();
+                if (reqwiring.isInUse()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
@@ -452,7 +468,6 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         // Check if the bundle has still active wires
         boolean hasActiveWires = hasActiveWires();
         if (hasActiveWires == false) {
-            // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
             getBundleManagerPlugin().unresolveBundle(this);
         }
 

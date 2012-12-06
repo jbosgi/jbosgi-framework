@@ -46,6 +46,7 @@ import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.startlevel.BundleStartLevel;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
+import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.framework.wiring.FrameworkWiring;
 import org.osgi.service.resolver.ResolutionException;
@@ -63,7 +64,6 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
     private final XEnvironment environment;
     private final XResolver resolver;
     private final ExecutorService executorService;
-
 
     public FrameworkWiringImpl(BundleManager bundleManager, FrameworkEvents events, XEnvironment environment, XResolver resolver, ExecutorService executorService) {
         this.bundleManager = bundleManager;
@@ -143,13 +143,13 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
 
                 BundleManagerPlugin bundleManagerPlugin = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
                 for (Bundle userBundle : uninstallBundles) {
-                    bundleManagerPlugin.removeBundle((UserBundleState) userBundle, 0);
+                    bundleManagerPlugin.removeBundle((UserBundleState<?>) userBundle, 0);
                     refreshList.remove(userBundle);
                 }
 
                 for (Bundle userBundle : refreshList) {
                     try {
-                        ((UserBundleState) userBundle).refresh();
+                        ((UserBundleState<?>) userBundle).refresh();
                     } catch (Exception th) {
                         events.fireFrameworkEvent(userBundle, FrameworkEvent.ERROR, th);
                     }
@@ -210,9 +210,9 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
     @Override
     public Collection<Bundle> getRemovalPendingBundles() {
         Collection<Bundle> result = new HashSet<Bundle>();
-        for (XBundle bundle : bundleManager.getBundles()) {
+        for (XBundle bundle : bundleManager.getBundles(null)) {
             BundleWiring wiring = bundle.adapt(BundleWiring.class);
-            if (!wiring.isCurrent() || !wiring.isInUse()) {
+            if (wiring != null && !wiring.isCurrent() && wiring.isInUse()) {
                 result.add(bundle);
             }
         }
@@ -224,19 +224,27 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
         if (bundles == null)
             throw MESSAGES.illegalArgumentNull("bundles");
 
-        Collection<Bundle> result = new HashSet<Bundle>(bundles);
-        for (XBundle bundle : bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE)) {
-            if (bundle instanceof HostBundleState) {
-                HostBundleState hostBundle = HostBundleState.assertBundleState(bundle);
-                for (UserBundleState depBundle : hostBundle.getDependentBundles()) {
-                    if (bundles.contains(depBundle)) {
-                        result.add(hostBundle);
-                        break;
+        Set<Bundle> result = new HashSet<Bundle>();
+        for (Bundle bundle : bundles) {
+            transitiveDependencyClosure(bundle, result);
+        }
+        return Collections.unmodifiableCollection(result);
+    }
+
+    private void transitiveDependencyClosure(Bundle bundle, Set<Bundle> result) {
+        if (result.contains(bundle) == false) {
+            result.add(bundle);
+            BundleRevisions revisions = bundle.adapt(BundleRevisions.class);
+            for (BundleRevision brev : revisions.getRevisions()) {
+                BundleWiring wiring = brev.getWiring();
+                if (wiring != null) {
+                    for (BundleWire wire : wiring.getProvidedWires(null)) {
+                        Bundle requirer = wire.getRequirer().getBundle();
+                        transitiveDependencyClosure(requirer, result);
                     }
                 }
             }
         }
-        return Collections.unmodifiableCollection(result);
     }
 
     private static class BundleStartLevelComparator implements Comparator<Bundle> {

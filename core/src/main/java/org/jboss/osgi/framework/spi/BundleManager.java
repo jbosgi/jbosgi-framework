@@ -48,44 +48,6 @@ import org.osgi.framework.VersionRange;
 public interface BundleManager extends Service<BundleManager> {
 
     /**
-     * Get a bundle by id
-     *
-     * Note, this will get the bundle regadless of its state. i.e. The returned bundle may have been UNINSTALLED
-     *
-     * @param bundleId The identifier of the bundle
-     * @return The bundle or null if there is no bundle with that id
-     */
-    XBundle getBundleById(long bundleId);
-
-    /**
-     * Get a bundle by location
-     *
-     * @param location the location of the bundle
-     * @return the bundle or null if there is no bundle with that location
-     */
-    XBundle getBundleByLocation(String location);
-
-    /**
-     * Get the service name for the given bundle that corresponds to the given state. Supported states are
-     * {@link Bundle#INSTALLED}, {@link Bundle#RESOLVED}, {@link Bundle#ACTIVE}
-     *
-     * @param bundle The bundle
-     * @param state One of the supported states or 0 for the base service name.
-     * @return The service name or null if the bundle is not service based.
-     */
-    ServiceName getServiceName(XBundle bundle, int state);
-
-    /**
-     * Get the service name for the given bundle deployment that corresponds to the given state. Supported states are
-     * {@link Bundle#INSTALLED}, {@link Bundle#RESOLVED}, {@link Bundle#ACTIVE}
-     *
-     * @param dep The bundle deployment
-     * @param state One of the supported states or 0 for the base service name.
-     * @return The service name or null if the bundle is not service based.
-     */
-    ServiceName getServiceName(Deployment dep, int state);
-
-    /**
      * Get the set of bundles that are not in state {@link Bundle#UNINSTALLED}.
      */
     Set<XBundle> getBundles();
@@ -110,12 +72,50 @@ public interface BundleManager extends Service<BundleManager> {
     Set<XBundle> getBundles(String symbolicName, VersionRange versionRange);
 
     /**
+     * Get a bundle by id
+     *
+     * Note, this will get the bundle regadless of its state. i.e. The returned bundle may have been UNINSTALLED
+     *
+     * @param bundleId The identifier of the bundle
+     * @return The bundle or null if there is no bundle with that id
+     */
+    XBundle getBundleById(long bundleId);
+
+    /**
+     * Get a bundle by location
+     *
+     * @param location the location of the bundle
+     * @return the bundle or null if there is no bundle with that location
+     */
+    XBundle getBundleByLocation(String location);
+
+    /**
      * Get the system bundle
      *
      * @return the system bundle or null if the framework has not reached the {@link IntegrationServices#SYSTEM_BUNDLE_INTERNAL}
      *         state
      */
     XBundle getSystemBundle();
+
+    /**
+     * Get the service name for the given bundle that corresponds to the given state. Supported states are
+     * {@link Bundle#INSTALLED}, {@link Bundle#RESOLVED}, {@link Bundle#ACTIVE}
+     *
+     * @param bundle The bundle
+     * @param state One of the supported states or 0 for the base service name.
+     * @return The service name or null if the bundle is not service based.
+     */
+    ServiceName getServiceName(XBundle bundle, int state);
+
+    /**
+     * Get the service name for the given bundle deployment that corresponds to the given state. Supported states are
+     * {@link Bundle#INSTALLED}, {@link Bundle#RESOLVED}, {@link Bundle#ACTIVE}
+     *
+     * @param dep The bundle deployment
+     * @param state One of the supported states or 0 for the base service name.
+     * @return The service name or null if the bundle is not service based.
+     */
+    ServiceName getServiceName(Deployment dep, int state);
 
     /**
      * True the framework has reached the {@link Services#FRAMEWORK_ACTIVE} state

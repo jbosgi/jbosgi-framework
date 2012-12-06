@@ -1,4 +1,3 @@
-package org.jboss.test.osgi.framework.wiring;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.test.osgi.framework.wiring;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework.wiring;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -32,8 +32,11 @@ import static org.junit.Assert.assertTrue;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+
+import junit.framework.Assert;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
@@ -64,13 +67,36 @@ public class FrameworkWiringTestCase extends OSGiFrameworkTest {
     public void testRefreshPackages() throws Exception {
         FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
         Bundle bundleE = installBundle(assembleArchive("exporter", "/bundles/package-admin/exporter", Exported.class));
-        Bundle bundleI = installBundle(assembleArchive("opt-imporer", "/bundles/package-admin/opt-importer", OptionalImport.class));
+        Bundle bundleI = installBundle(assembleArchive("opt-importer", "/bundles/package-admin/opt-importer", OptionalImport.class));
         try {
+            Collection<Bundle> pending = frameworkWiring.getRemovalPendingBundles();
+            Assert.assertEquals(0, pending.size());
+            Collection<Bundle> closure = frameworkWiring.getDependencyClosure(Collections.singleton(bundleE));
+            Assert.assertEquals(1, closure.size());
+            Assert.assertTrue("Dependency closure contains BundleE", closure.contains(bundleE));
+            closure = frameworkWiring.getDependencyClosure(Collections.singleton(bundleI));
+            Assert.assertEquals(1, closure.size());
+            Assert.assertTrue("Dependency closure contains BundleI", closure.contains(bundleI));
+
             bundleI.start();
             assertLoadClass(bundleI, Exported.class.getName());
             assertNotNull(getImportedFieldValue(bundleI));
 
+            pending = frameworkWiring.getRemovalPendingBundles();
+            Assert.assertEquals(0, pending.size());
+            closure = frameworkWiring.getDependencyClosure(Collections.singleton(bundleE));
+            Assert.assertEquals(2, closure.size());
+            Assert.assertTrue("Dependency closure contains BundleE", closure.contains(bundleE));
+            Assert.assertTrue("Dependency closure contains BundleI", closure.contains(bundleI));
+            closure = frameworkWiring.getDependencyClosure(Collections.singleton(bundleI));
+            Assert.assertEquals(1, closure.size());
+            Assert.assertTrue("Dependency closure contains BundleI", closure.contains(bundleI));
+
             bundleE.uninstall();
+            pending = frameworkWiring.getRemovalPendingBundles();
+            Assert.assertEquals(1, pending.size());
+            Assert.assertTrue("Removal pending contains BundleE", pending.contains(bundleE));
+
             bundleI.stop();
             bundleI.start();
             assertLoadClass(bundleI, Exported.class.getName());

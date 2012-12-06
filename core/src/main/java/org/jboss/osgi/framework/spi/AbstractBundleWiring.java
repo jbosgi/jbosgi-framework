@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,13 +19,16 @@ package org.jboss.osgi.framework.spi;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.spi;
 
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
@@ -63,15 +65,29 @@ public class AbstractBundleWiring extends AbstractWiring implements BundleWiring
 
     @Override
     public boolean isCurrent() {
-        return true;
+        Bundle bundle = getBundle();
+        BundleRevision current = bundle.adapt(BundleRevision.class);
+        return bundle.getState() != Bundle.UNINSTALLED && current == getRevision();
     }
 
     @Override
     public boolean isInUse() {
-        for (Wire wire : getProvidedResourceWires(null)) {
-            BundleRevision requirer = (BundleRevision) wire.getRequirer();
-            if (requirer.getBundle().getState() != Bundle.UNINSTALLED)
-                return true;
+        return transistiveInUse(this, new HashSet<BundleWiring>());
+    }
+
+    private boolean transistiveInUse(BundleWiring wiring, Set<BundleWiring> visited) {
+        if (wiring.isCurrent()) {
+            return true;
+        }
+        if (visited.contains(wiring) == false) {
+            visited.add(wiring);
+            for (BundleWire wire : wiring.getProvidedWires(null)) {
+                BundleRevision requirer = wire.getRequirer();
+                BundleWiring reqwiring = requirer.getWiring();
+                if (transistiveInUse(reqwiring, visited)) {
+                    return true;
+                }
+            }
         }
         return false;
     }
