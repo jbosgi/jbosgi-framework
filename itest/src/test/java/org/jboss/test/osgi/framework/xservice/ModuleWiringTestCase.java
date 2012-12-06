@@ -21,9 +21,8 @@
  */
 package org.jboss.test.osgi.framework.xservice;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -41,7 +40,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleReference;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.VersionRange;
@@ -75,23 +73,22 @@ public class ModuleWiringTestCase extends AbstractModuleIntegrationTest {
 
     @Test
     public void testGetBundle() throws Exception {
-        XBundle bundle = brev.getBundle();
-        Class<?> clazz = bundle.loadClass(ModuleServiceX.class.getName());
-        Assert.assertEquals(bundle, ((BundleReference)clazz.getClassLoader()).getBundle());
+        Class<?> clazz = brev.getBundle().loadClass(ModuleServiceX.class.getName());
+        Assert.assertEquals(brev.getModuleClassLoader(), clazz.getClassLoader());
     }
 
     @Test
     public void testGetBundles() throws Exception {
-        List<XBundle> bundles = new ArrayList<XBundle>(getBundleManager().getBundles(null, null));
+        Set<XBundle> bundles = getBundleManager().getBundles(null, null);
         Assert.assertEquals(2, bundles.size());
-        Assert.assertEquals(getSystemContext().getBundle(), bundles.get(0));
-        Assert.assertEquals(brev.getBundle(), bundles.get(1));
+        Assert.assertTrue(bundles.contains(getSystemContext().getBundle()));
+        Assert.assertTrue(bundles.contains(brev.getBundle()));
 
-        bundles = new ArrayList<XBundle>(getBundleManager().getBundles("moduleA", null));
+        bundles = getBundleManager().getBundles("moduleA", null);
         Assert.assertEquals(1, bundles.size());
-        Assert.assertEquals(brev.getBundle(), bundles.get(0));
+        Assert.assertTrue(bundles.contains(brev.getBundle()));
 
-        bundles = new ArrayList<XBundle>(getBundleManager().getBundles("moduleA", new VersionRange("[1.0,2.0)")));
+        bundles = getBundleManager().getBundles("moduleA", new VersionRange("[1.0,2.0)"));
         Assert.assertTrue(bundles.isEmpty());
     }
 

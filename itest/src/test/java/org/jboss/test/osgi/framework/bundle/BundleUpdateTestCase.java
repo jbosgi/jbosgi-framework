@@ -137,7 +137,6 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
             assertNoFrameworkEvent();
             FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
             frameworkWiring.refreshBundles(Arrays.asList(bundleA), this);
-            assertFrameworkEvent(FrameworkEvent.ERROR, bundleX, BundleException.class);
             assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
 
             assertBundleState(Bundle.ACTIVE, bundleA.getState());
