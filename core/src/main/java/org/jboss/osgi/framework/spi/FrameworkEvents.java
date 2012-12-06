@@ -66,11 +66,13 @@ public interface FrameworkEvents {
 
     void removeAllServiceListeners();
 
-    void fireBundleEvent(XBundle origin, int type);
+    void fireBundleEvent(XBundle bundle, int type);
 
-    void fireFrameworkEvent(XBundle origin, int type, Throwable th, FrameworkListener... listeners);
+    void fireBundleEvent(XBundle origin, XBundle bundle, int type);
 
-    void fireServiceEvent(XBundle origin, int type, ServiceState<?> serviceState);
+    void fireFrameworkEvent(XBundle bundle, int type, Throwable th, FrameworkListener... listeners);
+
+    void fireServiceEvent(XBundle bundle, int type, ServiceState<?> serviceState);
 
     Collection<ListenerInfo> getServiceListenerInfos(XBundle bundle);
 

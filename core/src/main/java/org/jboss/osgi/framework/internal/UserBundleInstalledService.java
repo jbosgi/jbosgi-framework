@@ -100,8 +100,9 @@ abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extend
             processNativeCode(bundleState, dep);
             installBundle(bundleState);
             // For the event type INSTALLED, this is the bundle whose context was used to install the bundle
+            XBundle origin = (XBundle) sourceContext.getBundle();
             FrameworkEvents events = getFrameworkState().getFrameworkEvents();
-            events.fireBundleEvent((XBundle) sourceContext.getBundle(), BundleEvent.INSTALLED);
+            events.fireBundleEvent(origin, bundleState, BundleEvent.INSTALLED);
         } catch (BundleException ex) {
             if (storageState != null) {
                 BundleStorage storagePlugin = getFrameworkState().getBundleStorage();

@@ -60,7 +60,7 @@ public class BundleTrackerTestCase extends OSGiFrameworkTest {
     private final List<BundleEvent> bundleEvents = new CopyOnWriteArrayList<BundleEvent>();
     private final static Map<String, String> eventMap = new HashMap<String, String>();
     static {
-        eventMap.put(bundleEvent(BundleEvent.INSTALLED), bundleState(Bundle.ACTIVE));
+        eventMap.put(bundleEvent(BundleEvent.INSTALLED), bundleState(Bundle.INSTALLED));
         eventMap.put(bundleEvent(BundleEvent.RESOLVED), bundleState(Bundle.RESOLVED));
         eventMap.put(bundleEvent(BundleEvent.STARTED), bundleState(Bundle.ACTIVE));
         eventMap.put(bundleEvent(BundleEvent.STOPPED), bundleState(Bundle.RESOLVED));

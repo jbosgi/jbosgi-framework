@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.security.AccessControlContext;
 import java.security.AccessController;
@@ -322,7 +323,14 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     }
 
     @Override
-    public void fireBundleEvent(final XBundle bundleState, final int type) {
+    public void fireBundleEvent(final XBundle bundle, final int type) {
+        fireBundleEvent(null, bundle, type);
+    }
+
+    @Override
+    public void fireBundleEvent(final XBundle origin, final XBundle bundle, final int type) {
+        if (bundle == null)
+            throw MESSAGES.illegalArgumentNull("bundle");
 
         // Do nothing it the framework is not active
         if (bundleManager.isFrameworkCreated() == false)
@@ -339,7 +347,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         }
 
         // Expose the bundleState wrapper not the state itself
-        final BundleEvent event = new BundleEventImpl(type, bundleState);
+        final BundleEvent event = new BundleEventImpl(type, bundle, origin != null ? origin : bundle);
         final String typeName = ConstantsHelper.bundleEvent(event.getType());
 
         // Nobody is interested
@@ -363,7 +371,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
                     listener.bundleChanged(event);
                 }
             } catch (Throwable th) {
-                LOGGER.warnErrorWhileFiringBundleEvent(th, typeName, bundleState);
+                LOGGER.warnErrorWhileFiringBundleEvent(th, typeName, bundle);
             }
         }
 
@@ -380,7 +388,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
                                     listener.bundleChanged(event);
                                 }
                             } catch (Throwable th) {
-                                LOGGER.warnErrorWhileFiringBundleEvent(th, typeName, bundleState);
+                                LOGGER.warnErrorWhileFiringBundleEvent(th, typeName, bundle);
                             }
                         }
                     }
@@ -393,7 +401,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     }
 
     @Override
-    public void fireFrameworkEvent(final XBundle origin, final int type, final Throwable th, final FrameworkListener... providedListeners) {
+    public void fireFrameworkEvent(final XBundle bundle, final int type, final Throwable th, final FrameworkListener... providedListeners) {
 
         // Do nothing it the framework is not active
         if (bundleManager.isFrameworkCreated() == false)
@@ -412,7 +420,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             }
         }
 
-        final FrameworkEvent event = new FrameworkEventImpl(type, origin, th);
+        final FrameworkEvent event = new FrameworkEventImpl(type, bundle, th);
         final String typeName = ConstantsHelper.frameworkEvent(event.getType());
 
         switch (event.getType()) {
@@ -444,7 +452,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
                         // event listener generates an unchecked exception - except when the callback
                         // happens while delivering a FrameworkEvent.ERROR
                         if (type != FrameworkEvent.ERROR) {
-                            fireFrameworkEvent(origin, FrameworkEvent.ERROR, ex);
+                            fireFrameworkEvent(bundle, FrameworkEvent.ERROR, ex);
                         }
                     } catch (Throwable th) {
                         LOGGER.warnErrorWhileFiringEvent(th, typeName);
@@ -458,7 +466,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     }
 
     @Override
-    public void fireServiceEvent(final XBundle bundleState, int type, final ServiceState<?> serviceState) {
+    public void fireServiceEvent(final XBundle bundle, int type, final ServiceState<?> serviceState) {
 
         // Do nothing it the framework is not active
         if (bundleManager.isFrameworkCreated() == false)
@@ -716,8 +724,8 @@ final class FrameworkEventsImpl implements FrameworkEvents {
 
         private static final long serialVersionUID = -2705304702665185935L;
 
-        public BundleEventImpl(int type, Bundle bundle) {
-            super(type, bundle);
+        BundleEventImpl(int type, Bundle bundle, Bundle origin) {
+            super(type, bundle, origin);
         }
 
         @Override
