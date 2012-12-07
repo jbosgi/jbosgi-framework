@@ -104,14 +104,6 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         return getBundleRevision().getDeployment();
     }
 
-    RevisionContent getFirstContentRoot() {
-        return getBundleRevision().getRootContent();
-    }
-
-    List<RevisionContent> getContentRoots() {
-        return getBundleRevision().getContentList();
-    }
-
     @Override
     boolean isSingleton() {
         return getOSGiMetaData().isSingleton();
@@ -334,7 +326,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
                 URL updateURL = new URL(updateLocation);
                 rootFile = AbstractVFS.toVirtualFile(updateURL);
             } else {
-                rootFile = getFirstContentRoot().getVirtualFile();
+                rootFile = getDeployment().getRoot();
             }
         }
 

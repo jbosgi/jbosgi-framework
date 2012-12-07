@@ -207,7 +207,7 @@ public final class ModuleManagerImpl implements ModuleManager {
     private ModuleIdentifier createHostModule(final HostBundleRevision hostRev, final List<BundleWire> wires) {
 
         HostBundleState hostBundle = hostRev.getBundleState();
-        List<RevisionContent> contentRoots = hostBundle.getContentRoots();
+        List<RevisionContent> contentRoots = hostRev.getClassPathContent();
 
         final ModuleIdentifier identifier = getModuleIdentifier(hostRev);
         final ModuleSpec.Builder specBuilder = ModuleSpec.build(identifier);
@@ -247,7 +247,7 @@ public final class ModuleManagerImpl implements ModuleManager {
         // Process fragment local content and more resource roots
         Set<FragmentBundleRevision> fragRevs = hostRev.getAttachedFragments();
         for (FragmentBundleRevision fragRev : fragRevs) {
-            for (RevisionContent revContent : fragRev.getContentList()) {
+            for (RevisionContent revContent : fragRev.getClassPathContent()) {
                 ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
                 specBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resLoader));
                 allPaths.addAll(resLoader.getPaths());

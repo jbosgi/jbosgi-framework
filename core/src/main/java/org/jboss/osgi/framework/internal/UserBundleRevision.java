@@ -49,7 +49,7 @@ import org.osgi.framework.wiring.BundleRevision;
 abstract class UserBundleRevision extends BundleStateRevision {
 
     private final Deployment deployment;
-    private final List<RevisionContent> contentList;
+    private final List<RevisionContent> classPathContent;
     private final EntriesProvider entriesProvider;
 
     UserBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
@@ -57,12 +57,13 @@ abstract class UserBundleRevision extends BundleStateRevision {
         this.deployment = dep;
 
         if (dep.getRoot() != null) {
-            contentList = getBundleClassPath(dep.getRoot(), metadata, storageState);
-            entriesProvider = getRootContent();
+            List<RevisionContent> bundleClassPath = new ArrayList<RevisionContent>();
+            entriesProvider = getBundleClassPath(dep.getRoot(), metadata, storageState, bundleClassPath);
+            classPathContent = Collections.unmodifiableList(bundleClassPath);
         } else {
             Module module = dep.getAttachment(Module.class);
             entriesProvider = new ModuleEntriesProvider(module);
-            contentList = Collections.emptyList();
+            classPathContent = Collections.emptyList();
             addAttachment(Module.class, module);
         }
 
@@ -91,24 +92,14 @@ abstract class UserBundleRevision extends BundleStateRevision {
      * A user revision may have one or more associated content root files. Multiple content root files exist if there is a
      * Bundle-ClassPath header. No content root file may exist if bundle metadata was provided externally.
      *
-     * @return The first entry in the list of content root files or null
-     */
-    RevisionContent getRootContent() {
-        return contentList.size() > 0 ? contentList.get(0) : null;
-    }
-
-    /**
-     * A user revision may have one or more associated content root files. Multiple content root files exist if there is a
-     * Bundle-ClassPath header. No content root file may exist if bundle metadata was provided externally.
-     *
      * @return The list of content root files or an empty list
      */
-    List<RevisionContent> getContentList() {
-        return contentList;
+    List<RevisionContent> getClassPathContent() {
+        return classPathContent;
     }
 
     RevisionContent getContentById(int contentId) {
-        for (RevisionContent aux : contentList) {
+        for (RevisionContent aux : classPathContent) {
             if (aux.getContentId() == contentId) {
                 return aux;
             }
@@ -119,7 +110,7 @@ abstract class UserBundleRevision extends BundleStateRevision {
     @Override
     void close() {
         super.close();
-        for (RevisionContent aux : contentList) {
+        for (RevisionContent aux : classPathContent) {
             aux.close();
         }
     }
@@ -142,35 +133,35 @@ abstract class UserBundleRevision extends BundleStateRevision {
         return entriesProvider.findEntries(path, pattern, recurse);
     }
 
-    private List<RevisionContent> getBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata, StorageState storageState) {
+    private RevisionContent getBundleClassPath(VirtualFile rootFile, OSGiMetaData metadata, StorageState storageState, List<RevisionContent> bundleClassPath) {
         assert rootFile != null : "Null rootFile";
 
-        // Setup single root file list, if there is no Bundle-ClassPath
         long bundleId = storageState.getBundleId();
+        RevisionContent rootContent = new RevisionContent(this, metadata, bundleId, 0, rootFile);
+
+        // Setup single root file list, if there is no Bundle-ClassPath
         if (metadata.getBundleClassPath() == null) {
-            RevisionContent revContent = new RevisionContent(this, metadata, bundleId, 0, rootFile);
-            return Collections.singletonList(revContent);
+            bundleClassPath.add(rootContent);
+            return rootContent;
         }
 
         // Add the Bundle-ClassPath to the root virtual files
-        List<RevisionContent> rootList = new ArrayList<RevisionContent>();
         for (String path : metadata.getBundleClassPath()) {
             if (path.equals(".")) {
-                RevisionContent revContent = new RevisionContent(this, metadata, bundleId, rootList.size(), rootFile);
-                rootList.add(revContent);
+                bundleClassPath.add(rootContent);
             } else {
                 try {
                     VirtualFile child = rootFile.getChild(path);
                     if (child != null) {
                         VirtualFile anotherRoot = AbstractVFS.toVirtualFile(child.toURL());
-                        RevisionContent revContent = new RevisionContent(this, metadata, bundleId, rootList.size(), anotherRoot);
-                        rootList.add(revContent);
+                        RevisionContent revContent = new RevisionContent(this, metadata, bundleId, bundleClassPath.size(), anotherRoot);
+                        bundleClassPath.add(revContent);
                     }
                 } catch (IOException ex) {
                     LOGGER.errorCannotGetClassPathEntry(ex, path, this);
                 }
             }
         }
-        return Collections.unmodifiableList(rootList);
+        return rootContent;
     }
 }

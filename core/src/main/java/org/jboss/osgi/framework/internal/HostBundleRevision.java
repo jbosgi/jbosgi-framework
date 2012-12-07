@@ -173,7 +173,19 @@ final class HostBundleRevision extends UserBundleRevision {
         }
 
         // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
-        return getEntry(path);
+        for (RevisionContent revContent : getClassPathContent()) {
+            try {
+                VirtualFile child = revContent.getVirtualFile().getChild(path);
+                if (child != null) {
+                    return child.toURL();
+                }
+            } catch (IOException ex) {
+                LOGGER.errorCannotGetResources(ex, path, this);
+                return null;
+            }
+        }
+
+        return null;
     }
 
     @Override
@@ -188,22 +200,20 @@ final class HostBundleRevision extends UserBundleRevision {
         }
 
         // If this bundle cannot be resolved, then only this bundle must be searched for the specified resource
-        for (RevisionContent revContent : getContentList()) {
+        Vector<URL> vector = new Vector<URL>();
+        for (RevisionContent revContent : getClassPathContent()) {
             try {
                 VirtualFile child = revContent.getVirtualFile().getChild(path);
-                if (child == null)
-                    return null;
-
-                Vector<URL> vector = new Vector<URL>();
-                vector.add(child.toURL());
-                return vector.elements();
+                if (child != null) {
+                    vector.add(child.toURL());
+                }
             } catch (IOException ex) {
                 LOGGER.errorCannotGetResources(ex, path, this);
                 return null;
             }
         }
 
-        return null;
+        return vector.isEmpty() ? null : vector.elements();
     }
 
     @Override
