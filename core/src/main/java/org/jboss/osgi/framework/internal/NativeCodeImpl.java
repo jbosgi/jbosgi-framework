@@ -28,6 +28,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
@@ -179,12 +180,18 @@ public final class NativeCodeImpl implements NativeCode {
     }
 
     @SuppressWarnings({ "unchecked" })
-    private List<String> getCollection(Object value) {
+    private List<String> getCollection(Object value, boolean allowsplit) {
         if (value == null)
             return Collections.emptyList();
 
         if (value instanceof Collection)
             return new ArrayList<String>((Collection<String>) value);
+
+        if (value instanceof String && allowsplit) {
+            String valueString = (String) value;
+            String[] split = valueString.split(",\\s");
+            return Arrays.asList(split);
+        }
 
         return Collections.singletonList(value.toString());
     }
@@ -207,7 +214,7 @@ public final class NativeCodeImpl implements NativeCode {
             String fwOSName = systemContext.getProperty(Constants.FRAMEWORK_OS_NAME);
 
             boolean osmatch = false;
-            Collection<String> osNames = getCollection(osnameParam.getValue());
+            Collection<String> osNames = getCollection(osnameParam.getValue(), true);
             for (String osname : osNames) {
                 osmatch = (osname.equalsIgnoreCase(fwOSName) || osname.equalsIgnoreCase(osAlias.get(fwOSName)));
                 if (osmatch == true)
@@ -224,7 +231,7 @@ public final class NativeCodeImpl implements NativeCode {
             String fwProcessor = systemContext.getProperty(Constants.FRAMEWORK_PROCESSOR);
 
             boolean procmatch = false;
-            List<String> processors = getCollection(procParam.getValue());
+            List<String> processors = getCollection(procParam.getValue(), true);
             for (String proc : processors) {
                 procmatch = (proc.equals(fwProcessor) || proc.equals(processorAlias.get(fwProcessor)));
                 if (procmatch == true)
@@ -242,12 +249,11 @@ public final class NativeCodeImpl implements NativeCode {
             boolean versionMatch = false;
             Version currentVersion = Version.parseVersion(fwOSVersion);
 
-            for (String versionRange : getCollection(osversionParam.getValue())) {
-                VersionRange vr;
-                vr = new VersionRange(versionRange);
+            String versionRange = (String) osversionParam.getValue();
+            if (versionRange != null) {
+                VersionRange vr = new VersionRange(versionRange);
                 if (vr.includes(currentVersion)) {
                     versionMatch = true;
-                    break;
                 }
             }
 
@@ -260,7 +266,7 @@ public final class NativeCodeImpl implements NativeCode {
             String fwLanguage = systemContext.getProperty(Constants.FRAMEWORK_LANGUAGE);
 
             boolean languageMatch = false;
-            for (String language : getCollection(languageParam.getValue())) {
+            for (String language : getCollection(languageParam.getValue(), true)) {
                 if (language.equals(fwLanguage)) {
                     languageMatch = true;
                     break;
@@ -275,14 +281,13 @@ public final class NativeCodeImpl implements NativeCode {
         if (match && filterSelectionParam != null) {
             boolean filterMatch = false;
             Dictionary<String, Object> frameworkProps = new Hashtable<String, Object>(bundleManager.getProperties());
-            for (String filterSpec : getCollection(filterSelectionParam.getValue())) {
+            String filterSpec = (String) filterSelectionParam.getValue();
+            if (filterSpec != null) {
                 try {
                     Filter filter = FrameworkUtil.createFilter(filterSpec);
                     if (filter.match(frameworkProps)) {
                         filterMatch = true;
-                        break;
                     }
-
                 } catch (InvalidSyntaxException ex) {
                     throw MESSAGES.invalidFilterExpression(ex, filterSpec);
                 }
@@ -294,14 +299,14 @@ public final class NativeCodeImpl implements NativeCode {
         return match;
     }
 
-    static class BundleNativeLibraryProvider implements NativeLibraryProvider {
+    static class NativeLibraryProviderImpl implements NativeLibraryProvider {
         private final HostBundleState hostBundle;
         private final String libname;
         private final String libpath;
         private final URL libURL;
         private File libraryFile;
 
-        BundleNativeLibraryProvider(HostBundleRevision hostrev, String libname, String libpath) {
+        NativeLibraryProviderImpl(HostBundleRevision hostrev, String libname, String libpath) {
             this.hostBundle = hostrev.getBundleState();
             this.libpath = libpath;
             this.libname = libname;
@@ -370,7 +375,7 @@ public final class NativeCodeImpl implements NativeCode {
             }
         }
 
-        private File getUniqueLibraryFile(final UserBundleState userBundle, final String libpath) {
+        private File getUniqueLibraryFile(HostBundleState userBundle, String libpath) {
             BundleStorage storagePlugin = userBundle.getFrameworkState().getBundleStorage();
             return storagePlugin.getDataFile(userBundle.getBundleId(), libpath);
         }

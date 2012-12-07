@@ -495,13 +495,13 @@ public final class ModuleManagerImpl implements ModuleManager {
                 String libname = libfile.substring(0, libfile.lastIndexOf('.'));
 
                 // Add the library provider to the policy
-                NativeLibraryProvider libProvider = new NativeCodeImpl.BundleNativeLibraryProvider(hostrev, libname, libpath);
+                NativeLibraryProvider libProvider = new NativeCodeImpl.NativeLibraryProviderImpl(hostrev, libname, libpath);
                 nativeLoader.addNativeLibrary(libProvider);
 
                 // [TODO] why does the TCK use 'Native' to mean 'libNative' ?
                 if (libname.startsWith("lib")) {
                     libname = libname.substring(3);
-                    libProvider = new NativeCodeImpl.BundleNativeLibraryProvider(hostrev, libname, libpath);
+                    libProvider = new NativeCodeImpl.NativeLibraryProviderImpl(hostrev, libname, libpath);
                     nativeLoader.addNativeLibrary(libProvider);
                 }
             }
