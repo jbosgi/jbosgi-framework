@@ -65,7 +65,6 @@ public class ModuleInstallTestCase extends AbstractModuleIntegrationTest {
             Requirement req = reqs.iterator().next();
             String namespace = req.getNamespace();
             Assert.assertEquals(PackageNamespace.PACKAGE_NAMESPACE, namespace);
-            Assert.assertEquals(ModuleServiceX.class.getPackage().getName(), req.getAttributes().get(namespace));
         }
 
         Module moduleB = loadModule(getModuleB());
@@ -107,6 +106,7 @@ public class ModuleInstallTestCase extends AbstractModuleIntegrationTest {
     private JavaArchive getBundleA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "bundleA");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

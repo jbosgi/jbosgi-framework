@@ -46,14 +46,14 @@ import org.osgi.service.cm.ConfigurationAdmin;
 
 /**
  * Test imports with version range
- * 
+ *
  * enterprise
  *  Export-Package: org.osgi.service.cm;version=1.5
- * 
+ *
  * felix-configadmin
  *  Export-Package: org.osgi.service.cm;version=1.4
  *  Import-Package: org.osgi.service.cm;version=[1.4,1.5)
- * 
+ *
  * felix-scr
  *  Import-Package: org.osgi.service.cm;version=[1.2,2.0);resolution:=optional
  *
@@ -76,7 +76,7 @@ public class VersionRangeServiceVisibilityTestCase extends OSGiFrameworkTest {
             bundleB.start();
             bundleC.start();
 
-            // Verify that 'org.osgi.service.cm' wires to enterprise 
+            // Verify that 'org.osgi.service.cm' wires to enterprise
             BundleWiring wiring = ((XBundle)bundleC).getBundleRevision().getWiring();
             for (BundleWire wire : wiring.getRequiredWires(PackageNamespace.PACKAGE_NAMESPACE)) {
                 XPackageRequirement preq = (XPackageRequirement) wire.getRequirement();
@@ -85,12 +85,12 @@ public class VersionRangeServiceVisibilityTestCase extends OSGiFrameworkTest {
                     Assert.assertSame(bundleA, provider);
                 }
             }
-            
-            // Verify that felix-scr does not see the service provided by felix-configadmin 
+
+            // Verify that felix-scr does not see the service provided by felix-configadmin
             BundleContext contextC = bundleC.getBundleContext();
-            ServiceReference sref = contextC.getServiceReference(ConfigurationAdmin.class.getName());
+            ServiceReference<?> sref = contextC.getServiceReference(ConfigurationAdmin.class.getName());
             Assert.assertNull("ServiceReference null", sref);
-            
+
         } finally {
             bundleC.uninstall();
             bundleB.uninstall();
