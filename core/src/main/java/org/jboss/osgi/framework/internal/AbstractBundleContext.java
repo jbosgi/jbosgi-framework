@@ -21,6 +21,7 @@ package org.jboss.osgi.framework.internal;
  * #L%
  */
 
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.io.File;
@@ -67,14 +68,14 @@ import org.osgi.framework.ServiceRegistration;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-abstract class AbstractBundleContext implements BundleContext {
+abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implements BundleContext {
 
-    private final AbstractBundleState<?> bundleState;
+    private final T bundleState;
     private final FrameworkState frameworkState;
     private final BundleManager bundleManager;
     private boolean destroyed;
 
-    AbstractBundleContext(AbstractBundleState<?> bundleState) {
+    AbstractBundleContext(T bundleState) {
         assert bundleState != null : "Null bundleState";
         this.bundleState = bundleState;
         this.frameworkState = bundleState.getFrameworkState();
@@ -84,17 +85,17 @@ abstract class AbstractBundleContext implements BundleContext {
     /**
      * Assert that the given context is an instance of AbstractBundleContext
      */
-    static AbstractBundleContext assertBundleContext(BundleContext context) {
+    static AbstractBundleContext<?> assertBundleContext(BundleContext context) {
         assert context != null : "Null context";
         assert context instanceof AbstractBundleContext : "Not an AbstractBundleContext: " + context;
-        return (AbstractBundleContext) context;
+        return (AbstractBundleContext<?>) context;
     }
 
     void destroy() {
         destroyed = true;
     }
 
-    AbstractBundleState<?> getBundleState() {
+    T getBundleState() {
         return bundleState;
     }
 
@@ -214,15 +215,20 @@ abstract class AbstractBundleContext implements BundleContext {
         FrameworkState frameworkState = getFrameworkState();
         BundleManager bundleManager = frameworkState.getBundleManager();
         CoreServices coreServices = frameworkState.getCoreServices();
-        BundleLifecycle bundleLifecycle = coreServices.getBundleLifecycle();
-        bundleLifecycle.install(this, dep);
+        try {
+            BundleLifecycle bundleLifecycle = coreServices.getBundleLifecycle();
+            bundleLifecycle.install(this, dep);
+        } catch (BundleException ex) {
+            LOGGER.debugf(ex, "Cannot install bundle from deployment: %s", dep);
+            throw ex;
+        }
 
         ServiceName serviceName = dep.getAttachment(ServiceName.class);
         assert serviceName != null : "Service name not attached to Deployment";
 
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        ServiceController<UserBundleState<?>> controller = (ServiceController<UserBundleState<?>>) serviceContainer.getRequiredService(serviceName);
-        FutureServiceValue<UserBundleState<?>> future = new FutureServiceValue<UserBundleState<?>>(controller);
+        ServiceController<Bundle> controller = (ServiceController<Bundle>) serviceContainer.getService(serviceName);
+        FutureServiceValue<Bundle> future = new FutureServiceValue<Bundle>(controller);
         try {
             return future.get(30, TimeUnit.SECONDS);
         } catch (Exception ex) {

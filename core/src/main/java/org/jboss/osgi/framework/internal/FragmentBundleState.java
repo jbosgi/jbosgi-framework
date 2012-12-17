@@ -52,7 +52,7 @@ final class FragmentBundleState extends UserBundleState<FragmentBundleRevision> 
     }
 
     @Override
-    AbstractBundleContext createContextInternal() {
+    FragmentBundleContext createContextInternal() {
         return new FragmentBundleContext(this);
     }
 
