@@ -39,20 +39,20 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
-final class FragmentBundleState extends UserBundleState {
+final class FragmentBundleState extends UserBundleState<FragmentBundleRevision> {
 
     FragmentBundleState(FrameworkState frameworkState, FragmentBundleRevision brev, ServiceName serviceName, ServiceTarget serviceTarget) {
         super(frameworkState, brev, serviceName, serviceTarget);
     }
 
     static FragmentBundleState assertBundleState(Bundle bundle) {
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
         assert bundleState instanceof FragmentBundleState : "Not a FragmentBundleState: " + bundleState;
         return (FragmentBundleState) bundleState;
     }
 
     @Override
-    AbstractBundleContext createContextInternal() {
+    FragmentBundleContext createContextInternal() {
         return new FragmentBundleContext(this);
     }
 
@@ -68,7 +68,7 @@ final class FragmentBundleState extends UserBundleState {
 
     @Override
     public FragmentBundleRevision getBundleRevision() {
-        return (FragmentBundleRevision) super.getBundleRevision();
+        return super.getBundleRevision();
     }
 
     @Override

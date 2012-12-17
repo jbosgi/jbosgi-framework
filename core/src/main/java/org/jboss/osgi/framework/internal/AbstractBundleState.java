@@ -89,9 +89,9 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     private final LockSupport bundleLock = LockManager.Factory.addLockSupport(this);
     private final List<ServiceState> registeredServices = new CopyOnWriteArrayList<ServiceState>();
     private final ConcurrentHashMap<ServiceState, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState, AtomicInteger>();
+    private AbstractBundleContext<? extends AbstractBundleState<?>> bundleContext;
     private ResolutionException lastResolutionException;
     private R currentRevision;
-    private AbstractBundleContext bundleContext;
 
     AbstractBundleState(FrameworkState frameworkState, R brev, long bundleId) {
         assert frameworkState != null : "Null frameworkState";
@@ -148,7 +148,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         return symbolicName;
     }
 
-    abstract AbstractBundleContext createContextInternal();
+    abstract AbstractBundleContext<? extends AbstractBundleState<?>> createContextInternal();
 
     @Override
     @SuppressWarnings("unchecked")
@@ -484,11 +484,11 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         return getBundleRevision().findEntries(path, filePattern, recurse);
     }
 
-    AbstractBundleContext getBundleContextInternal() {
+    AbstractBundleContext<? extends AbstractBundleState<?>> getBundleContextInternal() {
         return bundleContext;
     }
 
-    AbstractBundleContext createBundleContext() {
+    AbstractBundleContext<? extends AbstractBundleState<?>> createBundleContext() {
         assert bundleContext == null : "BundleContext already available";
         return bundleContext = createContextInternal();
     }
@@ -522,16 +522,23 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     @Override
     public void start() throws BundleException {
-        assertStartConditions(0);
-        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
-        bundleLifecycle.start(this, 0);
+        startWithOptions(0);
     }
 
     @Override
     public void start(int options) throws BundleException {
+        startWithOptions(options);
+    }
+
+    private void startWithOptions(int options) throws BundleException {
         assertStartConditions(options);
-        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
-        bundleLifecycle.start(this, options);
+        try {
+            BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
+            bundleLifecycle.start(this, options);
+        } catch (BundleException ex) {
+            LOGGER.debugf(ex, "Cannot start bundle: %s", this);
+            throw ex;
+        }
     }
 
     void assertStartConditions(int options) throws BundleException {
@@ -542,32 +549,46 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     @Override
     public void stop() throws BundleException {
-        assertNotUninstalled();
-        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
-        bundleLifecycle.stop(this, 0);
+        stopWithOptions(0);
     }
 
     @Override
     public void stop(int options) throws BundleException {
+        stopWithOptions(options);
+    }
+
+    private void stopWithOptions(int options) throws BundleException {
         assertNotUninstalled();
-        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
-        bundleLifecycle.stop(this, options);
+        try {
+            BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
+            bundleLifecycle.stop(this, options);
+        } catch (BundleException ex) {
+            LOGGER.debugf(ex, "Cannot stop bundle: %s", this);
+            throw ex;
+        }
     }
 
     abstract void stopInternal(int options) throws BundleException;
 
     @Override
     public void update() throws BundleException {
-        assertNotUninstalled();
-        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
-        bundleLifecycle.update(this, null);
+        updateWithInputStream(null);
     }
 
     @Override
     public void update(InputStream input) throws BundleException {
+        updateWithInputStream(input);
+    }
+
+    private void updateWithInputStream(InputStream input) throws BundleException {
         assertNotUninstalled();
-        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
-        bundleLifecycle.update(this, input);
+        try {
+            BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
+            bundleLifecycle.update(this, input);
+        } catch (BundleException ex) {
+            LOGGER.debugf(ex, "Cannot update bundle: %s", this);
+            throw ex;
+        }
     }
 
     abstract void updateInternal(InputStream input) throws BundleException;
@@ -576,8 +597,13 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     public void uninstall() throws BundleException {
         // #1 If this bundle's state is UNINSTALLED then an IllegalStateException is thrown
         assertNotUninstalled();
-        BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
-        bundleLifecycle.uninstall(this, 0);
+        try {
+            BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
+            bundleLifecycle.uninstall(this, 0);
+        } catch (BundleException ex) {
+            LOGGER.debugf(ex, "Cannot uninstall bundle: %s", this);
+            throw ex;
+        }
     }
 
     abstract void uninstallInternal(int options) throws BundleException;
@@ -608,6 +634,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
                     }
                 }
             } catch (ResolutionException ex) {
+                LOGGER.debugf(ex, "Cannot resolve bundle: %s", this);
                 lastResolutionException = ex;
                 result = false;
                 if (fireEvent == true) {

@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -31,9 +31,9 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-abstract class UserBundleContext extends AbstractBundleContext {
+abstract class UserBundleContext<T extends UserBundleState<?>> extends AbstractBundleContext<T> {
 
-    UserBundleContext(UserBundleState userBundle) {
+    UserBundleContext(T userBundle) {
         super(userBundle);
     }
 }

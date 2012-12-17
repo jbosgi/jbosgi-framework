@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import org.osgi.framework.BundleContext;
 
@@ -29,7 +29,7 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-final class SystemBundleContext extends AbstractBundleContext {
+final class SystemBundleContext extends AbstractBundleContext<SystemBundleState> {
 
     SystemBundleContext(SystemBundleState bundle) {
         super(bundle);
@@ -37,6 +37,6 @@ final class SystemBundleContext extends AbstractBundleContext {
 
     @Override
     SystemBundleState getBundleState() {
-        return (SystemBundleState) super.getBundleState();
+        return super.getBundleState();
     }
 }
