@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,9 +19,14 @@ package org.jboss.osgi.framework.spi;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.spi;
+
+import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.StartContext;
+import org.jboss.msc.service.StartException;
 
 public class BootstrapBundlesComplete<T> extends BootstrapBundlesService<T> {
 
@@ -33,5 +37,12 @@ public class BootstrapBundlesComplete<T> extends BootstrapBundlesService<T> {
     @Override
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
         builder.addDependency(getPreviousService());
+    }
+
+    @Override
+    public void start(StartContext startContext) throws StartException {
+        super.start(startContext);
+
+        LOGGER.debugf("Complete %s bundles on behalf of %s", getBundleType(), getServiceName().getCanonicalName());
     }
 }

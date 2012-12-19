@@ -40,7 +40,7 @@ final class HostBundleResolvedService extends UserBundleResolvedService<HostBund
     static void addService(ServiceTarget serviceTarget, HostBundleState hostBundle, ServiceName moduleServiceName) {
         ServiceName serviceName = hostBundle.getServiceName(Bundle.RESOLVED);
         HostBundleResolvedService service = new HostBundleResolvedService(hostBundle);
-        LOGGER.debugf("Installing %s %s", service.getClass().getSimpleName(), serviceName);
+        LOGGER.tracef("Installing %s %s", service.getClass().getSimpleName(), serviceName);
         ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, new SynchronousListenerServiceWrapper<HostBundleState>(service));
         builder.addDependency(hostBundle.getServiceName(Bundle.INSTALLED));
         builder.addDependency(moduleServiceName);

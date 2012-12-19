@@ -66,6 +66,8 @@ public class BootstrapBundlesInstall<T> extends BootstrapBundlesService<T> {
 
     protected void installBootstrapBundles(final ServiceTarget serviceTarget, final List<Deployment> deployments) {
 
+        LOGGER.debugf("Install %s deployments %s on behalf of %s", getBundleType(), deployments, getServiceName().getCanonicalName());
+
         // Track the Bundle INSTALLED services
         ServiceTracker<XBundle> installTracker = new ServiceTracker<XBundle>(getServiceName().getCanonicalName()) {
 

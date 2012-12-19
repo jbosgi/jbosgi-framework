@@ -32,18 +32,28 @@ public abstract class BootstrapBundlesService<T> extends AbstractIntegrationServ
 
     private final ServiceName baseName;
     private final IntegrationServices.BootstrapPhase phase;
+    private final BundleType type;
     private ServiceListener<Object> listener;
+
+    enum BundleType {
+        bootstrap, persistent
+    }
 
     public BootstrapBundlesService(ServiceName baseName, IntegrationServices.BootstrapPhase phase) {
         super(IntegrationServices.BootstrapPhase.serviceName(baseName, phase));
         this.baseName = baseName;
         this.phase = phase;
+        this.type = IntegrationServices.BOOTSTRAP_BUNDLES.equals(baseName) ? BundleType.bootstrap : BundleType.persistent;
     }
 
     @Override
     public ServiceController<T> install(ServiceTarget serviceTarget, ServiceListener<Object> listener) {
         this.listener = listener;
         return super.install(serviceTarget, listener);
+    }
+
+    BundleType getBundleType() {
+        return type;
     }
 
     protected ServiceListener<Object> getServiceListener() {

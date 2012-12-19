@@ -55,7 +55,7 @@ public interface IntegrationServices {
     ServiceName SYSTEM_BUNDLE_INTERNAL = INTERNAL_BASE_NAME.append("SystemBundle");
     /** The service name for the system {@link BundleContext} */
     ServiceName SYSTEM_CONTEXT_INTERNAL = INTERNAL_BASE_NAME.append("SystemContext");
-    
+
 	/** The {@link BootstrapBundlesInstall} service for auto install bundles */
 	ServiceName BOOTSTRAP_BUNDLES = Services.JBOSGI_BASE_NAME.append("BootstrapBundles");
 	/** The {@link BootstrapBundlesActivate} service for auto install bundles */
@@ -108,24 +108,24 @@ public interface IntegrationServices {
     ServiceName URL_HANDLER_PLUGIN = Services.JBOSGI_BASE_NAME.append("URLHandler");
 
     public enum BootstrapPhase {
-    	
+
 	    INSTALL, RESOLVE, ACTIVATE, COMPLETE;
-	
+
 	    public BootstrapPhase previous() {
 	        final int ord = ordinal() - 1;
 	        final BootstrapPhase[] phases = BootstrapPhase.values();
 	        return ord < 0 ? null : phases[ord];
 	    }
-	
+
 	    public BootstrapPhase next() {
 	        final int ord = ordinal() + 1;
 	        final BootstrapPhase[] phases = BootstrapPhase.values();
 	        return ord == phases.length ? null : phases[ord];
 	    }
-	
+
 	    public static ServiceName serviceName(ServiceName baseName, BootstrapPhase phase) {
 	        return baseName.append(phase.toString());
 	    }
 	}
-    
+
 }

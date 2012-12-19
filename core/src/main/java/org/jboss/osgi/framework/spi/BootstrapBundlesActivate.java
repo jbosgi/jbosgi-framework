@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.spi;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.spi;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
@@ -57,6 +57,8 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
     @Override
     public void start(StartContext startContext) throws StartException {
         super.start(startContext);
+
+        LOGGER.debugf("Activate %s bundles on behalf of %s", getBundleType(), getServiceName().getCanonicalName());
 
         // Collect the resolved bundles
         ServiceContainer serviceRegistry = startContext.getController().getServiceContainer();

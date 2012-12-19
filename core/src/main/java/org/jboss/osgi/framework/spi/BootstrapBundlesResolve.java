@@ -80,6 +80,9 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
 
     @Override
     public void start(final StartContext context) throws StartException {
+        super.start(context);
+
+        LOGGER.debugf("Resolve %s bundles on behalf of %s", getBundleType(), getServiceName().getCanonicalName());
 
         ServiceContainer serviceRegistry = context.getController().getServiceContainer();
         int targetLevel = getBeginningStartLevel();
@@ -99,7 +102,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         }
 
         // Strictly resolve the bootstrap bundles
-        if (IntegrationServices.BOOTSTRAP_BUNDLES.isParentOf(getServiceName())) {
+        if (getBundleType() == BundleType.bootstrap) {
             XEnvironment env = injectedEnvironment.getValue();
             List<XBundleRevision> mandatory = new ArrayList<XBundleRevision>();
             mandatory.add(injectedSystemBundle.getValue().getBundleRevision());
@@ -116,7 +119,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         }
 
         if (!resolvableServices.isEmpty()) {
-            
+
             // Leniently resolve the persistent bundles
             if (IntegrationServices.PERSISTENT_BUNDLES.isParentOf(getServiceName())) {
                 Bundle[] bundles = resolvableServices.values().toArray(new Bundle[resolvableServices.size()]);
