@@ -90,11 +90,11 @@ final class FallbackLoader implements LocalLoader {
     }
 
     boolean setEnabled(boolean flag) {
+        lockFallbackLoader();
         try {
-            fallbackLoaderLock.lock();
             return enabled.getAndSet(flag);
         } finally {
-            fallbackLoaderLock.unlock();
+            unlockFallbackLoader();
         }
     }
 
@@ -138,8 +138,8 @@ final class FallbackLoader implements LocalLoader {
 
     @Override
     public List<Resource> loadResourceLocal(String resName) {
+        lockFallbackLoader();
         try {
-            fallbackLoaderLock.lock();
             if (resName.startsWith("/"))
                 resName = resName.substring(1);
 
@@ -159,7 +159,7 @@ final class FallbackLoader implements LocalLoader {
 
             return Collections.singletonList((Resource) new URLResource(resURL));
         } finally {
-            fallbackLoaderLock.unlock();
+            unlockFallbackLoader();
         }
     }
 
