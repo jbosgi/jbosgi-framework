@@ -47,6 +47,7 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.resolver.XIdentityCapability;
 import org.jboss.osgi.resolver.spi.AbstractElement;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -54,7 +55,9 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
+import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.resource.Capability;
 
 /**
  * An abstract implementation that adapts a {@link Module} to a {@link Bundle}
@@ -107,7 +110,15 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
 
     @Override
     public String getSymbolicName() {
-        return module.getIdentifier().getName();
+        String symbolicName = null;
+        List<Capability> icaps = brev.getCapabilities(IdentityNamespace.IDENTITY_NAMESPACE);
+        if (icaps.size() > 0) {
+            XIdentityCapability icap = (XIdentityCapability) icaps.get(0);
+            symbolicName = icap.getSymbolicName();
+        } else {
+            symbolicName = module.getIdentifier().getName();
+        }
+        return symbolicName;
     }
 
     @Override
@@ -122,12 +133,20 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
 
     @Override
     public Version getVersion() {
-        String slot = module.getIdentifier().getSlot();
-        try {
-            return Version.parseVersion(slot);
-        } catch (IllegalArgumentException ex) {
-            return Version.emptyVersion;
+        Version version = Version.emptyVersion;
+        List<Capability> icaps = brev.getCapabilities(IdentityNamespace.IDENTITY_NAMESPACE);
+        if (icaps.size() > 0) {
+            XIdentityCapability icap = (XIdentityCapability) icaps.get(0);
+            version = icap.getVersion();
+        } else {
+            String slot = module.getIdentifier().getSlot();
+            try {
+                version = Version.parseVersion(slot);
+            } catch (IllegalArgumentException ex) {
+                // ignore
+            }
         }
+        return version;
     }
 
     @Override
