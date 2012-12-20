@@ -74,8 +74,8 @@ abstract class UserBundleRevision extends BundleStateRevision {
         return (UserBundleRevision) brev;
     }
 
-    UserBundleState getBundleState() {
-        return (UserBundleState) getBundle();
+    UserBundleState<?> getBundleState() {
+        return (UserBundleState<?>) getBundle();
     }
 
     Deployment getDeployment() {
@@ -154,20 +154,21 @@ abstract class UserBundleRevision extends BundleStateRevision {
 
         // Add the Bundle-ClassPath to the root virtual files
         List<RevisionContent> rootList = new ArrayList<RevisionContent>();
-        for (String path : metadata.getBundleClassPath()) {
-            if (path.equals(".")) {
+        for (String part : metadata.getBundleClassPath()) {
+            String trimmed = part.trim();
+            if (trimmed.equals(".")) {
                 RevisionContent revContent = new RevisionContent(this, metadata, bundleId, rootList.size(), rootFile);
                 rootList.add(revContent);
             } else {
                 try {
-                    VirtualFile child = rootFile.getChild(path);
+                    VirtualFile child = rootFile.getChild(trimmed);
                     if (child != null) {
                         VirtualFile anotherRoot = AbstractVFS.toVirtualFile(child.toURL());
                         RevisionContent revContent = new RevisionContent(this, metadata, bundleId, rootList.size(), anotherRoot);
                         rootList.add(revContent);
                     }
                 } catch (IOException ex) {
-                    LOGGER.errorCannotGetClassPathEntry(ex, path, this);
+                    LOGGER.errorCannotGetClassPathEntry(ex, trimmed, this);
                 }
             }
         }
