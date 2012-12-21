@@ -52,12 +52,8 @@ public abstract class BootstrapBundlesService<T> extends AbstractIntegrationServ
         return super.install(serviceTarget, listener);
     }
 
-    BundleType getBundleType() {
+    public BundleType getBundleType() {
         return type;
-    }
-
-    protected ServiceListener<Object> getServiceListener() {
-        return listener;
     }
 
     public ServiceName getPreviousService() {
@@ -66,6 +62,10 @@ public abstract class BootstrapBundlesService<T> extends AbstractIntegrationServ
 
     public ServiceName getNextService() {
         return IntegrationServices.BootstrapPhase.serviceName(baseName, phase.next());
+    }
+
+    protected ServiceListener<Object> getServiceListener() {
+        return listener;
     }
 
     @Override

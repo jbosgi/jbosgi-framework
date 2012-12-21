@@ -303,6 +303,9 @@ final class FallbackLoader implements LocalLoader {
             return false;
 
         LOGGER.tracef("Attempt to find path dynamically [%s] in %s ...", resName, brev);
+        URL resURL = brev.getEntry(resName);
+        if (resURL == null)
+            return false;
 
         XPackageCapability candidateCap = getCandidateCapability(brev, pkgreq);
         return (candidateCap != null);
