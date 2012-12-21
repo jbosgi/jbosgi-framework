@@ -307,4 +307,7 @@ public interface FrameworkMessages {
 
     @Message(id = 11282, value = "Cannot obtain lock in timely fashion: %s")
     LockException cannotObtainLockTimely(@Cause Throwable cause, LockContext context);
+
+    @Message(id = 11283, value = "Revision content already closed: %s - [%d]")
+    IllegalStateException illegalStateRevisionContentClosed(BundleRevision brev, int contentId);
 }

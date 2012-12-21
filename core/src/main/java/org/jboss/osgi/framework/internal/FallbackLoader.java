@@ -60,8 +60,8 @@ import org.osgi.resource.Requirement;
  */
 final class FallbackLoader implements LocalLoader {
 
-    private final ReentrantLock fallbackLoaderLock = new ReentrantLock();
-    private final AtomicBoolean enabled = new AtomicBoolean(true);
+    private final ReentrantLock fallbackLock = new ReentrantLock();
+    private final AtomicBoolean fallbackEnabled = new AtomicBoolean(true);
     private final HostBundleState hostBundle;
     private final HostBundleRevision hostRev;
     private final Set<String> importedPaths;
@@ -84,18 +84,18 @@ final class FallbackLoader implements LocalLoader {
     boolean setEnabled(boolean flag) {
         lockFallbackLoader();
         try {
-            return enabled.getAndSet(flag);
+            return fallbackEnabled.getAndSet(flag);
         } finally {
             unlockFallbackLoader();
         }
     }
 
     void lockFallbackLoader() {
-        fallbackLoaderLock.lock();
+        fallbackLock.lock();
     }
 
     void unlockFallbackLoader() {
-        fallbackLoaderLock.unlock();
+        fallbackLock.unlock();
     }
 
     @Override
@@ -105,7 +105,7 @@ final class FallbackLoader implements LocalLoader {
             lockFallbackLoader();
 
             List<XPackageRequirement> matchingPatterns = findMatchingPatterns(className);
-            if (!enabled.get() || matchingPatterns.isEmpty())
+            if (!fallbackEnabled.get() || matchingPatterns.isEmpty())
                 return null;
 
             String pathName = className.replace('.', '/') + ".class";
@@ -140,7 +140,7 @@ final class FallbackLoader implements LocalLoader {
                 resName = resName.substring(1);
 
             List<XPackageRequirement> matchingPatterns = findMatchingPatterns(resName);
-            if (!enabled.get() || matchingPatterns.isEmpty())
+            if (!fallbackEnabled.get() || matchingPatterns.isEmpty())
                 return Collections.emptyList();
 
             brev = findRevisionDynamically(resName, matchingPatterns);
@@ -304,8 +304,9 @@ final class FallbackLoader implements LocalLoader {
 
         LOGGER.tracef("Attempt to find path dynamically [%s] in %s ...", resName, brev);
         URL resURL = brev.getEntry(resName);
-        if (resURL == null)
+        if (resURL == null) {
             return false;
+        }
 
         XPackageCapability candidateCap = getCandidateCapability(brev, pkgreq);
         return (candidateCap != null);

@@ -52,14 +52,13 @@ public final class LifecycleInterceptorServiceImpl extends AbstractLifecycleInte
         if (bundle == null)
             throw MESSAGES.illegalArgumentNull("bundle");
 
-        UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
+        UserBundleState<?> userBundle = UserBundleState.assertBundleState(bundle);
         Deployment dep = userBundle.getDeployment();
 
         InvocationContext inv = dep.getAttachment(InvocationContext.class);
         if (inv == null) {
             // TODO: support multiple roots defined in Bundle-ClassPath
-            RevisionContent revContent = userBundle.getFirstContentRoot();
-            VirtualFile rootFile = revContent != null ? revContent.getVirtualFile() : null;
+            VirtualFile rootFile = userBundle.getDeployment().getRoot();
             Attachments att = new AttachmentSupport(){};
             inv = new InvocationContextImpl(systemContext, userBundle, rootFile, att);
             dep.addAttachment(InvocationContext.class, inv);
