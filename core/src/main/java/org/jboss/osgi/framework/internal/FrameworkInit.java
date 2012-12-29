@@ -24,13 +24,17 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceListener;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.IntegrationServices;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
 
@@ -45,9 +49,11 @@ import org.osgi.framework.launch.Framework;
 public final class FrameworkInit extends AbstractFrameworkService {
 
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
+    private final Mode initialMode;
 
-    FrameworkInit() {
+    FrameworkInit(Mode initialMode) {
         super(IntegrationServices.FRAMEWORK_INIT_INTERNAL);
+        this.initialMode = initialMode;
     }
 
     @Override
@@ -65,19 +71,26 @@ public final class FrameworkInit extends AbstractFrameworkService {
         return injectedFramework.getValue();
     }
 
-    static class FrameworkInitialized extends AbstractIntegrationService<BundleContext> {
+    @Override
+    public ServiceController<FrameworkState> install(ServiceTarget serviceTarget, ServiceListener<Object> listener) {
+        ServiceController<FrameworkState> controller = super.install(serviceTarget, listener);
+        new FrameworkInitialized().install(serviceTarget, listener);
+        new SystemContextService().install(serviceTarget, listener);
+        new SystemBundleService().install(serviceTarget, listener);
+        return controller;
+    }
+
+    private class FrameworkInitialized extends AbstractIntegrationService<BundleContext> {
 
         private final InjectedValue<BundleContext> injectedBundleContext = new InjectedValue<BundleContext>();
-        private final Mode initialMode;
 
-        FrameworkInitialized(Mode initialMode) {
+        private FrameworkInitialized() {
             super(Services.FRAMEWORK_INIT);
-            this.initialMode = initialMode;
         }
 
         @Override
         protected void addServiceDependencies(ServiceBuilder<BundleContext> builder) {
-            builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedBundleContext);
+            builder.addDependency(IntegrationServices.SYSTEM_CONTEXT_INTERNAL, BundleContext.class, injectedBundleContext);
             builder.addDependency(IntegrationServices.FRAMEWORK_INIT_INTERNAL);
             builder.setInitialMode(initialMode);
         }
@@ -85,6 +98,47 @@ public final class FrameworkInit extends AbstractFrameworkService {
         @Override
         protected BundleContext createServiceValue(StartContext startContext) throws StartException {
             return injectedBundleContext.getValue();
+        }
+    }
+
+    private class SystemContextService extends AbstractIntegrationService<BundleContext> {
+
+        private final InjectedValue<BundleContext> injectedBundleContext = new InjectedValue<BundleContext>();
+
+        private SystemContextService() {
+            super(Services.SYSTEM_CONTEXT);
+        }
+
+        @Override
+        protected void addServiceDependencies(ServiceBuilder<BundleContext> builder) {
+            builder.addDependency(Services.FRAMEWORK_INIT, BundleContext.class, injectedBundleContext);
+            builder.setInitialMode(initialMode);
+        }
+
+        @Override
+        protected BundleContext createServiceValue(StartContext startContext) throws StartException {
+            return injectedBundleContext.getValue();
+        }
+    }
+
+
+    private class SystemBundleService extends AbstractIntegrationService<Bundle> {
+
+        private final InjectedValue<BundleContext> injectedBundleContext = new InjectedValue<BundleContext>();
+
+        private SystemBundleService() {
+            super(Services.SYSTEM_BUNDLE);
+        }
+
+        @Override
+        protected void addServiceDependencies(ServiceBuilder<Bundle> builder) {
+            builder.addDependency(Services.FRAMEWORK_INIT, BundleContext.class, injectedBundleContext);
+            builder.setInitialMode(initialMode);
+        }
+
+        @Override
+        protected Bundle createServiceValue(StartContext startContext) throws StartException {
+            return injectedBundleContext.getValue().getBundle();
         }
     }
 }

@@ -63,7 +63,9 @@ final class CoreServices extends AbstractIntegrationService<CoreServices> {
         builder.addDependency(Services.PACKAGE_ADMIN, PackageAdminSupport.class, injectedPackageAdmin);
         builder.addDependency(Services.START_LEVEL, StartLevelSupport.class, injectedStartLevel);
         builder.addDependency(IntegrationServices.SYSTEM_CONTEXT_INTERNAL, BundleContext.class, injectedSystemContext);
-        builder.addDependencies(IntegrationServices.SYSTEM_SERVICES_PLUGIN, IntegrationServices.URL_HANDLER_PLUGIN);
+        builder.addDependency(IntegrationServices.SYSTEM_SERVICES_PLUGIN);
+        builder.addDependency(IntegrationServices.URL_HANDLER_PLUGIN);
+        builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

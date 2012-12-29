@@ -36,11 +36,11 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 04-Apr-2011
  */
-final class SystemContext extends AbstractIntegrationService<BundleContext> {
+final class SystemContextPlugin extends AbstractIntegrationService<BundleContext> {
 
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
 
-    SystemContext() {
+    SystemContextPlugin() {
         super(IntegrationServices.SYSTEM_CONTEXT_INTERNAL);
     }
 

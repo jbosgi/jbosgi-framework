@@ -39,28 +39,34 @@ public interface Services {
 
     /** The prefix for all OSGi services */
     ServiceName JBOSGI_BASE_NAME = ServiceName.of(Constants.JBOSGI_PREFIX);
-    
+
     /** The {@link BundleManager} service name. */
     ServiceName BUNDLE_MANAGER = JBOSGI_BASE_NAME.append("BundleManager");
-    
+
     /** The {@link XEnvironment} service name */
     ServiceName ENVIRONMENT = JBOSGI_BASE_NAME.append("Environment");
-    
+
     /** The service name for the created {@link Framework} */
     ServiceName FRAMEWORK_CREATE = JBOSGI_BASE_NAME.append("framework", "CREATE");
-    
+
     /** The service name for the initialized {@link Framework} */
     ServiceName FRAMEWORK_INIT = JBOSGI_BASE_NAME.append("framework", "INIT");
-    
+
     /** The service name for the started {@link Framework} */
     ServiceName FRAMEWORK_ACTIVE = JBOSGI_BASE_NAME.append("framework", "ACTIVE");
-    
+
     /** The service name for the {@link PackageAdmin} service */
     ServiceName PACKAGE_ADMIN = JBOSGI_BASE_NAME.append("PackageAdmin");
-    
+
     /** The {@link XResolver} service name */
     ServiceName RESOLVER = JBOSGI_BASE_NAME.append("Resolver");
-    
+
     /** The service name for the {@link StartLevel} service */
     ServiceName START_LEVEL = JBOSGI_BASE_NAME.append("StartLevel");
+
+    /** The service name for the system {@link Bundle} */
+    ServiceName SYSTEM_BUNDLE = JBOSGI_BASE_NAME.append("SystemBundle");
+
+    /** The service name for the system {@link BundleContext} */
+    ServiceName SYSTEM_CONTEXT = JBOSGI_BASE_NAME.append("SystemContext");
 }

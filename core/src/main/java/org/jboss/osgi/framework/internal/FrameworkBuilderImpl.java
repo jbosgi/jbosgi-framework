@@ -173,8 +173,7 @@ public final class FrameworkBuilderImpl implements FrameworkBuilder {
         FrameworkState frameworkState = new FrameworkState(bundleManager);
 
         registerIntegrationService(FrameworkPhase.CREATE, bundleManager);
-        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkCreate(frameworkState));
-        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkCreate.FrameworkCreated(initialMode));
+        registerIntegrationService(FrameworkPhase.CREATE, new FrameworkCreate(frameworkState, initialMode));
         registerIntegrationService(FrameworkPhase.CREATE, new BundleLifecyclePlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new FrameworkModuleProviderPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new FrameworkModuleLoaderPlugin());
@@ -194,15 +193,13 @@ public final class FrameworkBuilderImpl implements FrameworkBuilder {
         registerIntegrationService(FrameworkPhase.CREATE, new ResolverPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new ServiceManagerPlugin());
         registerIntegrationService(FrameworkPhase.CREATE, new SystemBundlePlugin(frameworkState));
-        registerIntegrationService(FrameworkPhase.CREATE, new SystemContext());
+        registerIntegrationService(FrameworkPhase.CREATE, new SystemContextPlugin());
 
-        registerIntegrationService(FrameworkPhase.INIT, new FrameworkInit());
-        registerIntegrationService(FrameworkPhase.INIT, new FrameworkInit.FrameworkInitialized(initialMode));
+        registerIntegrationService(FrameworkPhase.INIT, new FrameworkInit(initialMode));
         registerIntegrationService(FrameworkPhase.INIT, new BootstrapBundlesInstallPlugin());
         registerIntegrationService(FrameworkPhase.INIT, new PersistentBundlesInstallPlugin());
 
-        registerIntegrationService(FrameworkPhase.ACTIVE, new FrameworkActive());
-        registerIntegrationService(FrameworkPhase.ACTIVE, new FrameworkActive.FrameworkActivated(initialMode));
+        registerIntegrationService(FrameworkPhase.ACTIVE, new FrameworkActive(initialMode));
 
         return bundleManager;
     }
