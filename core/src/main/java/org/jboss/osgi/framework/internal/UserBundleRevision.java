@@ -124,7 +124,13 @@ abstract class UserBundleRevision extends BundleStateRevision {
     @Override
     public URL getEntry(String path) {
         getBundleState().assertNotUninstalled();
-        return entriesProvider.getEntry(path);
+        for (RevisionContent revContent : getClassPathContent()) {
+            URL entry = revContent.getEntry(path);
+            if (entry != null) {
+                return entry;
+            }
+        }
+        return null;
     }
 
     @Override
