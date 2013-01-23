@@ -62,6 +62,7 @@ import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.SynchronousBundleListener;
+import org.osgi.framework.UnfilteredServiceListener;
 import org.osgi.framework.hooks.service.EventHook;
 import org.osgi.framework.hooks.service.ListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
@@ -484,7 +485,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             }
         }
 
-        // Expose the wrapper not the state itself
+        // Construct the ServiceEvent
         ServiceEvent event = new ServiceEventImpl(type, serviceState);
         String typeName = ConstantsHelper.serviceEvent(event.getType());
         LOGGER.tracef("Service %s: %s", typeName, serviceState);
@@ -519,7 +520,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             try {
                 ServiceListener listener = listenerReg.listener;
                 String filterstr = listenerReg.filter.toString();
-                if (listenerReg.isAllServiceListener() || listenerReg.filter.match(serviceState)) {
+                if (listenerReg.isAllServiceListener() || listener instanceof UnfilteredServiceListener || listenerReg.filter.match(serviceState)) {
                     listener.serviceChanged(event);
                 }
 

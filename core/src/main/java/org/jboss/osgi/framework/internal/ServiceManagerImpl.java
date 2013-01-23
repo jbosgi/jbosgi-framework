@@ -62,6 +62,7 @@ public final class ServiceManagerImpl implements ServiceManager {
 
     private final FrameworkEvents frameworkEvents;
     private final Map<String, List<ServiceState<?>>> serviceContainer = new HashMap<String, List<ServiceState<?>>>();
+    private final ThreadLocal<Bundle> getServiceRecursion = new ThreadLocal<Bundle>();
     private final AtomicLong identityGenerator = new AtomicLong();
 
 
@@ -247,20 +248,31 @@ public final class ServiceManagerImpl implements ServiceManager {
         if (serviceState.isUnregistered())
             return null;
 
-        // Add the given service ref to the list of used services
-        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
-        bundleState.addServiceInUse(serviceState);
-        serviceState.addUsingBundle(bundleState);
+        // If this method is called recursively for the same bundle
+        // then it must return null to break the recursion.
+        if (getServiceRecursion.get() == bundle)
+            return null;
 
-        S value = serviceState.getScopedValue(bundleState);
+        S value;
+        try {
+            getServiceRecursion.set(bundle);
 
-        // If the factory returned an invalid value
-        // restore the service usage counts
-        if (value == null) {
-            bundleState.removeServiceInUse(serviceState);
-            serviceState.removeUsingBundle(bundleState);
+            // Add the given service ref to the list of used services
+            AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
+            bundleState.addServiceInUse(serviceState);
+            serviceState.addUsingBundle(bundleState);
+
+            value = serviceState.getScopedValue(bundleState);
+
+            // If the factory returned an invalid value
+            // restore the service usage counts
+            if (value == null) {
+                bundleState.removeServiceInUse(serviceState);
+                serviceState.removeUsingBundle(bundleState);
+            }
+        } finally {
+            getServiceRecursion.remove();
         }
-
         return value;
     }
 
