@@ -149,7 +149,7 @@ public class AbstractBundleWiring extends AbstractWiring implements BundleWiring
         List<URL> result = new ArrayList<URL>();
         XBundleRevision brev = (XBundleRevision)getRevision();
         Enumeration<URL> entries = brev.findEntries(path, filePattern, options == FINDENTRIES_RECURSE);
-        while (entries.hasMoreElements()) {
+        while (entries != null && entries.hasMoreElements()) {
             result.add(entries.nextElement());
         }
         return Collections.unmodifiableList(result);

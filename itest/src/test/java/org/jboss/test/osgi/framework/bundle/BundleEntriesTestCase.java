@@ -246,7 +246,6 @@ public class BundleEntriesTestCase extends OSGiFrameworkTest {
         assertNull("Did not expect entry: " + actual + " for path: " + path, actual);
     }
 
-    @SuppressWarnings("unchecked")
     protected void assertEntries(Bundle bundle, String path, String filePattern, boolean recurse, String... entries) throws Exception {
         Set<URI> actual = new HashSet<URI>();
         Enumeration<URL> enumeration = bundle.findEntries(path, filePattern, recurse);
@@ -280,7 +279,6 @@ public class BundleEntriesTestCase extends OSGiFrameworkTest {
         assertEntryPaths(bundle, "/" + path, expected);
     }
 
-    @SuppressWarnings("unchecked")
     protected void assertEntryPaths(Bundle bundle, String path, Set<String> expected) throws Exception {
         Set<String> actual = new HashSet<String>();
         Enumeration<String> enumeration = bundle.getEntryPaths(path);
@@ -290,7 +288,6 @@ public class BundleEntriesTestCase extends OSGiFrameworkTest {
         assertEquals(expected, actual);
     }
 
-    @SuppressWarnings("unchecked")
     protected void assertNoEntryPaths(Bundle bundle, String path) throws Exception {
         Enumeration<String> enumeration = bundle.getEntryPaths(path);
         if (enumeration != null) {
