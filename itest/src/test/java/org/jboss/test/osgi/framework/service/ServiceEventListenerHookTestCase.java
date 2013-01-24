@@ -46,7 +46,7 @@ import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
  * @author thomas.diesler@jboss.com
  * @since 20-Mar-2010
  */
-public class ServiceEventHookTestCase extends OSGiFrameworkTest {
+public class ServiceEventListenerHookTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testEventHook() throws Exception {

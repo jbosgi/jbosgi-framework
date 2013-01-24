@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -64,6 +65,7 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.SynchronousBundleListener;
 import org.osgi.framework.UnfilteredServiceListener;
 import org.osgi.framework.hooks.service.EventHook;
+import org.osgi.framework.hooks.service.EventListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
 
@@ -263,7 +265,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
                     for (ListenerHook hook : getServiceListenerHooks()) {
                         try {
                             ListenerInfo info = slreg.getListenerInfo();
-                            ((ListenerInfoImpl)info).setRemoved(true);
+                            ((ListenerInfoImpl) info).setRemoved(true);
                             hook.removed(Collections.singleton(info));
                         } catch (RuntimeException ex) {
                             LOGGER.errorProcessingServiceListenerHook(ex, hook);
@@ -360,7 +362,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
 
         // Synchronous listeners first
         Iterator<BundleListener> iterator = listeners.iterator();
-        while(iterator.hasNext()) {
+        while (iterator.hasNext()) {
             BundleListener listener = iterator.next();
             try {
                 if (listener instanceof SynchronousBundleListener) {
@@ -474,15 +476,26 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             return;
 
         // Get a snapshot of the current listeners
-        List<ServiceListenerRegistration> listenerRegs = new ArrayList<ServiceListenerRegistration>();
+        Map<BundleContext, Collection<ListenerInfo>> listeners;
         synchronized (serviceListeners) {
+            listeners = new HashMap<BundleContext, Collection<ListenerInfo>>();
             for (Entry<XBundle, List<ServiceListenerRegistration>> entry : serviceListeners.entrySet()) {
                 for (ServiceListenerRegistration listener : entry.getValue()) {
                     BundleContext context = listener.getBundleContext();
-                    if (context != null)
-                        listenerRegs.add(listener);
+                    if (context != null) {
+                        Collection<ListenerInfo> infos = listeners.get(context);
+                        if (infos == null) {
+                            infos = new ArrayList<ListenerInfo>();
+                            listeners.put(context, infos);
+                        }
+                        infos.add(listener.getListenerInfo());
+                    }
                 }
             }
+            for (Map.Entry<BundleContext, Collection<ListenerInfo>> entry : listeners.entrySet()) {
+                listeners.put(entry.getKey(), new RemoveOnlyCollection<ListenerInfo>(entry.getValue()));
+            }
+            listeners = new RemoveOnlyMap<BundleContext, Collection<ListenerInfo>>(listeners);
         }
 
         // Construct the ServiceEvent
@@ -493,62 +506,92 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         // Call the registered event hooks
         SystemBundleState sysBundle = bundleManager.getSystemBundle();
         BundleContext sysContext = sysBundle.getBundleContext();
-        listenerRegs = processEventHooks(sysContext, listenerRegs, event);
+
+        processEventHooks(sysContext, listeners, event);
+        processEventListenerHooks(sysContext, listeners, event);
 
         // Nobody is interested
-        if (listenerRegs.isEmpty())
+        if (listeners.isEmpty())
             return;
 
         // Call the listeners. All service events are synchronously delivered
-        for (ServiceListenerRegistration listenerReg : listenerRegs) {
-
-            // Service events must only be delivered to event listeners which can validly cast the event
-            if (!listenerReg.isAllServiceListener()) {
-                XBundle owner = listenerReg.getBundleState();
-                boolean assignableToOwner = true;
-                String[] clazzes = (String[]) serviceState.getProperty(Constants.OBJECTCLASS);
-                for (String clazz : clazzes) {
-                    if (serviceState.isAssignableTo(owner, clazz) == false) {
-                        assignableToOwner = false;
-                        break;
+        for (Map.Entry<BundleContext, Collection<ListenerInfo>> entry : listeners.entrySet()) {
+            for (ListenerInfo info : entry.getValue()) {
+                ServiceListenerRegistration listenerReg = ((ListenerInfoImpl)info).getRegistration();
+                // Service events must only be delivered to event listeners which can validly cast the event
+                if (!listenerReg.isAllServiceListener()) {
+                    XBundle owner = (XBundle) info.getBundleContext().getBundle();
+                    boolean assignableToOwner = true;
+                    String[] clazzes = (String[]) serviceState.getProperty(Constants.OBJECTCLASS);
+                    for (String clazz : clazzes) {
+                        if (serviceState.isAssignableTo(owner, clazz) == false) {
+                            assignableToOwner = false;
+                            break;
+                        }
                     }
-                }
-                if (assignableToOwner == false)
-                    continue;
-            }
-
-            try {
-                ServiceListener listener = listenerReg.listener;
-                String filterstr = listenerReg.filter.toString();
-                if (listenerReg.isAllServiceListener() || listener instanceof UnfilteredServiceListener || listenerReg.filter.match(serviceState)) {
-                    listener.serviceChanged(event);
+                    if (assignableToOwner == false)
+                        continue;
                 }
 
-                // The MODIFIED_ENDMATCH event is synchronously delivered after the service properties have been modified.
-                // This event is only delivered to listeners which were added with a non-null filter where
-                // the filter matched the service properties prior to the modification but the filter does
-                // not match the modified service properties.
-                else if (filterstr != null && ServiceEvent.MODIFIED == event.getType()) {
-                    if (listenerReg.filter.match(serviceState.getPreviousProperties())) {
-                        event = new ServiceEventImpl(ServiceEvent.MODIFIED_ENDMATCH, serviceState);
+                try {
+                    String filterstr = info.getFilter();
+                    ServiceListener listener = listenerReg.getListener();
+                    if (listenerReg.isAllServiceListener() || listener instanceof UnfilteredServiceListener || listenerReg.filter.match(serviceState)) {
                         listener.serviceChanged(event);
                     }
+
+                    // The MODIFIED_ENDMATCH event is synchronously delivered after the service properties have been modified.
+                    // This event is only delivered to listeners which were added with a non-null filter where
+                    // the filter matched the service properties prior to the modification but the filter does
+                    // not match the modified service properties.
+                    else if (filterstr != null && ServiceEvent.MODIFIED == event.getType()) {
+                        if (listenerReg.filter.match(serviceState.getPreviousProperties())) {
+                            event = new ServiceEventImpl(ServiceEvent.MODIFIED_ENDMATCH, serviceState);
+                            listener.serviceChanged(event);
+                        }
+                    }
+                } catch (Throwable th) {
+                    LOGGER.warnErrorWhileFiringServiceEvent(th, typeName, serviceState);
                 }
-            } catch (Throwable th) {
-                LOGGER.warnErrorWhileFiringServiceEvent(th, typeName, serviceState);
             }
         }
     }
 
-    private List<ServiceListenerRegistration> processEventHooks(BundleContext syscontext, List<ServiceListenerRegistration> listeners, final ServiceEvent event) {
-        // Collect the BundleContexts
-        Collection<BundleContext> contexts = new HashSet<BundleContext>();
-        for (ServiceListenerRegistration listener : listeners) {
-            BundleContext context = listener.getBundleContext();
-            if (context != null)
-                contexts.add(context);
+    private void processEventListenerHooks(BundleContext syscontext, Map<BundleContext, Collection<ListenerInfo>> listeners, ServiceEvent event) {
+        // Call the registered event listener hooks
+        for (EventListenerHook hook : getEventListenerHooks(syscontext)) {
+            try {
+                hook.event(event, listeners);
+            } catch (Exception ex) {
+                LOGGER.warnErrorWhileCallingEventListenerHook(ex, hook);
+            }
         }
-        contexts = new RemoveOnlyCollection<BundleContext>(contexts);
+    }
+
+    private List<EventListenerHook> getEventListenerHooks(BundleContext syscontext) {
+
+        List<EventListenerHook> hooks = new ArrayList<EventListenerHook>();
+        Collection<ServiceReference<EventListenerHook>> srefs = null;
+        try {
+            srefs = syscontext.getServiceReferences(EventListenerHook.class, null);
+        } catch (InvalidSyntaxException e) {
+            // ignore
+        }
+
+        // The calling order of the hooks is defined by the reversed compareTo ordering of their Service
+        // Reference objects. That is, the service with the highest ranking number is called first.
+        List<ServiceReference<EventListenerHook>> sortedRefs = new ArrayList<ServiceReference<EventListenerHook>>(srefs);
+        Collections.reverse(sortedRefs);
+
+        for (ServiceReference<EventListenerHook> sref : sortedRefs)
+            hooks.add(syscontext.getService(sref));
+
+        return hooks;
+    }
+
+    private void processEventHooks(BundleContext syscontext, Map<BundleContext, Collection<ListenerInfo>> listeners, final ServiceEvent event) {
+
+        Collection<BundleContext> contexts = new RemoveOnlyCollection<BundleContext>(listeners.keySet());
 
         // Call the registered event hooks
         List<EventHook> eventHooks = getEventHooks(syscontext);
@@ -562,14 +605,13 @@ final class FrameworkEventsImpl implements FrameworkEvents {
 
         // Remove the listeners that have been filtered by the EventHooks
         if (contexts.size() != listeners.size()) {
-            Iterator<ServiceListenerRegistration> it = listeners.iterator();
+            Iterator<BundleContext> it = listeners.keySet().iterator();
             while (it.hasNext()) {
-                ServiceListenerRegistration slreg = it.next();
-                if (contexts.contains(slreg.getBundleContext()) == false)
+                BundleContext context = it.next();
+                if (!contexts.contains(context))
                     it.remove();
             }
         }
-        return listeners;
     }
 
     private List<EventHook> getEventHooks(BundleContext syscontext) {
@@ -597,10 +639,10 @@ final class FrameworkEventsImpl implements FrameworkEvents {
      */
     static class ServiceListenerRegistration {
 
-        private XBundle bundleState;
-        private ServiceListener listener;
-        private Filter filter;
-        private ListenerInfo info;
+        private final XBundle bundleState;
+        private final ServiceListener listener;
+        private final Filter filter;
+        private final ListenerInfo info;
 
         // Any access control context
         AccessControlContext accessControlContext;
@@ -623,6 +665,10 @@ final class FrameworkEventsImpl implements FrameworkEvents {
 
         BundleContext getBundleContext() {
             return bundleState.getBundleContext();
+        }
+
+        ServiceListener getListener() {
+            return listener;
         }
 
         ListenerInfo getListenerInfo() {
@@ -657,25 +703,21 @@ final class FrameworkEventsImpl implements FrameworkEvents {
 
     static class ListenerInfoImpl implements ListenerInfo {
 
-        private BundleContext context;
-        private ServiceListener listener;
-        private String filter;
+        private final ServiceListenerRegistration registration;
         private boolean removed;
 
-        ListenerInfoImpl(final ServiceListenerRegistration slreg) {
-            this.context = slreg.bundleState.getBundleContext();
-            this.listener = slreg.listener;
-            this.filter = slreg.filter.toString();
+        ListenerInfoImpl(final ServiceListenerRegistration registration) {
+            this.registration = registration;
         }
 
         @Override
         public BundleContext getBundleContext() {
-            return context;
+            return registration.getBundleContext();
         }
 
         @Override
         public String getFilter() {
-            return filter;
+            return registration.filter.toString();
         }
 
         @Override
@@ -683,7 +725,11 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             return removed;
         }
 
-        public void setRemoved(boolean removed) {
+        ServiceListenerRegistration getRegistration() {
+            return registration;
+        }
+
+        void setRemoved(boolean removed) {
             this.removed = removed;
         }
 
@@ -695,15 +741,14 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         @Override
         public boolean equals(Object obj) {
             // Two ListenerInfos are equals if they refer to the same listener for a given addition and removal life cycle.
-            // If the same listener is added again, it must have a different ListenerInfo which is not equal to this
-            // ListenerInfo.
+            // If the same listener is added again, it must have a different ListenerInfo which is not equal to this ListenerInfo.
             return super.equals(obj);
         }
 
         @Override
         public String toString() {
-            String className = listener.getClass().getName();
-            return "ListenerInfo[" + context + "," + className + "," + removed + "]";
+            String className = registration.listener.getClass().getName();
+            return "ListenerInfo[" + getBundleContext() + "," + className + "," + removed + "]";
         }
     }
 

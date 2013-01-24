@@ -24,28 +24,48 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * A Collection that does not allow add operations.
+ * A Map that does not allow put operations.
  *
  * @author thomas.diesler@jboss.com
- * @since 21-Mar-2010
+ * @since 23-Jan-2013
  */
-@SuppressWarnings("rawtypes")
-public class RemoveOnlyCollection<T> implements Collection<T> {
+public class RemoveOnlyMap<K,V> implements Map<K,V> {
 
-    Collection<T> delegate;
+    Map<K,V> delegate;
 
-    public RemoveOnlyCollection(Collection<T> delegate) {
+    public RemoveOnlyMap(Map<K,V> delegate) {
         if (delegate == null)
             throw MESSAGES.illegalArgumentNull("delegate");
         this.delegate = delegate;
     }
 
     @Override
-    public int size() {
-        return delegate.size();
+    public void clear() {
+        delegate.clear();
+    }
+
+    @Override
+    public boolean containsKey(Object arg0) {
+        return delegate.containsKey(arg0);
+    }
+
+    @Override
+    public boolean containsValue(Object arg0) {
+        return delegate.containsValue(arg0);
+    }
+
+    @Override
+    public Set<Map.Entry<K, V>> entrySet() {
+        return delegate.entrySet();
+    }
+
+    @Override
+    public V get(Object arg0) {
+        return delegate.get(arg0);
     }
 
     @Override
@@ -54,59 +74,33 @@ public class RemoveOnlyCollection<T> implements Collection<T> {
     }
 
     @Override
-    public boolean contains(Object o) {
-        return delegate.contains(o);
+    public Set<K> keySet() {
+        return delegate.keySet();
     }
 
     @Override
-    public Iterator<T> iterator() {
-        return delegate.iterator();
-    }
-
-    @Override
-    public Object[] toArray() {
-        return delegate.toArray();
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public Object[] toArray(Object[] a) {
-        return delegate.toArray(a);
-    }
-
-    @Override
-    public boolean add(Object e) {
+    public V put(K arg0, V arg1) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean remove(Object o) {
-        return delegate.remove(o);
-    }
-
-    @Override
-    public boolean containsAll(Collection c) {
-        return delegate.containsAll(c);
-    }
-
-    @Override
-    public boolean addAll(Collection c) {
+    public void putAll(Map<? extends K, ? extends V> arg0) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean removeAll(Collection c) {
-        return delegate.removeAll(c);
+    public V remove(Object arg0) {
+        return delegate.remove(arg0);
     }
 
     @Override
-    public boolean retainAll(Collection c) {
-        return delegate.removeAll(c);
+    public int size() {
+        return delegate.size();
     }
 
     @Override
-    public void clear() {
-        delegate.clear();
+    public Collection<V> values() {
+        return delegate.values();
     }
 
     @Override

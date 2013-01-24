@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework;
 
 import static org.jboss.logging.Logger.Level.ERROR;
 import static org.jboss.logging.Logger.Level.INFO;
@@ -37,6 +37,7 @@ import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.hooks.service.EventHook;
+import org.osgi.framework.hooks.service.EventListenerHook;
 import org.osgi.framework.hooks.service.FindHook;
 import org.osgi.framework.hooks.service.ListenerHook;
 import org.osgi.framework.wiring.BundleRevision;
@@ -48,6 +49,7 @@ import org.osgi.framework.wiring.BundleRevision;
  *
  * @author Thomas.Diesler@jboss.com
  */
+@SuppressWarnings("deprecation")
 @MessageLogger(projectCode = "JBOSGI")
 public interface FrameworkLogger extends BasicLogger {
 
@@ -127,7 +129,7 @@ public interface FrameworkLogger extends BasicLogger {
 
     @LogMessage(level = WARN)
     @Message(id = 11018, value = "Error while firing service event %s for: %s")
-    void warnErrorWhileFiringServiceEvent(@Cause Throwable cause, String eventType, ServiceReference sref);
+    void warnErrorWhileFiringServiceEvent(@Cause Throwable cause, String eventType, ServiceReference<?> sref);
 
     @LogMessage(level = WARN)
     @Message(id = 11019, value = "Error while calling event hook: %s")
@@ -204,4 +206,9 @@ public interface FrameworkLogger extends BasicLogger {
     @LogMessage(level = ERROR)
     @Message(id = 11037, value = "Cannot install initial bundle: %s")
     void errorStateCannotInstallInitialBundle(@Cause Throwable cause, String source);
+
+    @LogMessage(level = WARN)
+    @Message(id = 11038, value = "Error while calling event listener hook: %s")
+    void warnErrorWhileCallingEventListenerHook(@Cause Throwable cause, EventListenerHook hook);
+
 }

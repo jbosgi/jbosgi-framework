@@ -392,8 +392,6 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
         String className = clazz != null ? clazz.getName() : null;
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         List<ServiceState<?>> srefs = serviceManager.getServiceReferences(bundleState, className, filter, true);
-        if (srefs.isEmpty())
-            return null;
 
         List<ServiceReference<S>> result = new ArrayList<ServiceReference<S>>();
         for (ServiceState<?> serviceState : srefs)
