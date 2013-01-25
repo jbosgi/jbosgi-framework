@@ -36,7 +36,7 @@
     <parent>
         <groupId>org.jboss.osgi.framework</groupId>
         <artifactId>jbosgi-framework-parent</artifactId>
-        <version>2.1.0.CR12</version>
+        <version>2.1.0.CR13-SNAPSHOT</version>
     </parent>
 
     <name>JBossOSGi Framework iTest</name>
