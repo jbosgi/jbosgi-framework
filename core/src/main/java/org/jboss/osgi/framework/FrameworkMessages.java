@@ -21,6 +21,8 @@ package org.jboss.osgi.framework;
  * #L%
  */
 
+import static org.jboss.logging.Logger.Level.INFO;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -31,6 +33,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.jboss.logging.Messages;
 import org.jboss.logging.annotations.Cause;
+import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageBundle;
 import org.jboss.modules.ModuleIdentifier;
@@ -310,4 +313,7 @@ public interface FrameworkMessages {
 
     @Message(id = 11283, value = "Revision content already closed: %s - [%d]")
     IllegalStateException illegalStateRevisionContentClosed(BundleRevision brev, int contentId);
+
+    @Message(id = 11284, value = "Bundle start level [%d] not valid for framework start level [%d] while starting: %s")
+    String bundleStartLevelNotValid(int bundleLevel, int frameworkLevel, Bundle bundle);
 }

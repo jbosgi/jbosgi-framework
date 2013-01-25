@@ -38,4 +38,6 @@ public interface StartLevelSupport extends StartLevel {
     void decreaseStartLevel(int level);
 
     void increaseStartLevel(int level);
+
+    boolean isChangingStartLevel();
 }

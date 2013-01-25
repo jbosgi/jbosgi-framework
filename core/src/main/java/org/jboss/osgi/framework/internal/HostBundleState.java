@@ -30,17 +30,18 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.jboss.logging.Logger.Level;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
+import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.LockManager.Method;
-import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.framework.spi.StartLevelSupport;
@@ -211,16 +212,19 @@ final class HostBundleState extends UserBundleState<HostBundleRevision> {
         if (getState() == ACTIVE)
             return;
 
+        // #3 Set this bundle's autostart setting
+        persistAutoStartSettings(options);
+
         // If the Framework's current start level is less than this bundle's start level
         if (startLevelValidForStart() == false) {
-            LOGGER.debugf("Start level [%d] not valid for: %s", getBundleStartLevel(), this);
+            StartLevelSupport plugin = getCoreServices().getStartLevelSupport();
+            int frameworkState = getBundleManager().getSystemBundle().getState();
+            Level level = (plugin.isChangingStartLevel() || frameworkState != Bundle.ACTIVE) ? Level.DEBUG : Level.INFO;
+            LOGGER.log(level, MESSAGES.bundleStartLevelNotValid(getBundleStartLevel(), plugin.getStartLevel(), this));
             return;
         }
 
         LOGGER.debugf("Starting bundle: %s", this);
-
-        // #3 Set this bundle's autostart setting
-        persistAutoStartSettings(options);
 
         // #4 If this bundle's state is not RESOLVED, an attempt is made to resolve this bundle.
         // If the Framework cannot resolve this bundle, a BundleException is thrown.
