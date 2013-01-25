@@ -55,6 +55,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleManager;
@@ -78,7 +79,6 @@ import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
 import org.osgi.resource.Resource;
@@ -150,10 +150,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             setProperty(Constants.FRAMEWORK_OS_VERSION, OSGi_FRAMEWORK_OS_VERSION);
         if (getProperty(Constants.FRAMEWORK_PROCESSOR) == null)
             setProperty(Constants.FRAMEWORK_PROCESSOR, OSGi_FRAMEWORK_PROCESSOR);
-        if (getProperty(Constants.FRAMEWORK_VENDOR) == null)
-            setProperty(Constants.FRAMEWORK_VENDOR, OSGi_FRAMEWORK_VENDOR);
-        if (getProperty(Constants.FRAMEWORK_VERSION) == null)
-            setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
+
+        setProperty(Constants.FRAMEWORK_VENDOR, OSGi_FRAMEWORK_VENDOR);
+        setProperty(Constants.FRAMEWORK_VERSION, OSGi_FRAMEWORK_VERSION);
 
         boolean allowContainerShutdown = frameworkBuilder.getServiceContainer() == null;
         shutdownContainer = new ShutdownContainer(serviceContainer, allowContainerShutdown);
@@ -634,7 +633,6 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
                 OSGi_FRAMEWORK_OS_VERSION = getOSVersionInOSGiFormat();
                 OSGi_FRAMEWORK_PROCESSOR = SecurityActions.getSystemProperty("os.arch", null);
 
-                SecurityActions.setSystemProperty("org.osgi.vendor.framework", org.jboss.osgi.framework.Constants.FRAMEWORK_SYMBOLIC_NAME);
                 return null;
             }
         });

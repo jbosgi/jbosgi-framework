@@ -135,14 +135,14 @@ public class FrameworkBuilderTestCase extends AbstractFrameworkLaunchTest {
             Bundle systemBundle = systemContext.getBundle();
             Assert.assertNotNull("Bundle not null", systemBundle);
             Assert.assertEquals("System bundle id", 0, systemBundle.getBundleId());
-            Assert.assertEquals("System bundle name", Constants.FRAMEWORK_SYMBOLIC_NAME, systemBundle.getSymbolicName());
-            Assert.assertEquals("System bundle location", Constants.FRAMEWORK_LOCATION, systemBundle.getLocation());
+            Assert.assertEquals("System bundle name", Constants.JBOSGI_FRAMEWORK_SYMBOLIC_NAME, systemBundle.getSymbolicName());
+            Assert.assertEquals("System bundle location", Constants.JBOSGI_FRAMEWORK_LOCATION, systemBundle.getLocation());
 
             Bundle[] bundles = systemContext.getBundles();
             Assert.assertEquals("System bundle available", 1, bundles.length);
             Assert.assertEquals("System bundle id", 0, bundles[0].getBundleId());
-            Assert.assertEquals("System bundle name", Constants.FRAMEWORK_SYMBOLIC_NAME, bundles[0].getSymbolicName());
-            Assert.assertEquals("System bundle location", Constants.FRAMEWORK_LOCATION, bundles[0].getLocation());
+            Assert.assertEquals("System bundle name", Constants.JBOSGI_FRAMEWORK_SYMBOLIC_NAME, bundles[0].getSymbolicName());
+            Assert.assertEquals("System bundle location", Constants.JBOSGI_FRAMEWORK_LOCATION, bundles[0].getLocation());
 
             ServiceReference paRef = systemContext.getServiceReference(PackageAdmin.class.getName());
             PackageAdmin packageAdmin = (PackageAdmin) systemContext.getService(paRef);

@@ -33,11 +33,11 @@ public interface Constants extends org.osgi.framework.Constants {
     String JBOSGI_PREFIX = "jbosgi";
 
     /** The framework symbolic */
-    String FRAMEWORK_SYMBOLIC_NAME = "org.jboss.osgi.framework";
-    
+    String JBOSGI_FRAMEWORK_SYMBOLIC_NAME = "org.jboss.osgi.framework";
+
     /** The framework location */
-    String FRAMEWORK_LOCATION = "org.jboss.osgi.framework";
-    
+    String JBOSGI_FRAMEWORK_LOCATION = "org.jboss.osgi.framework";
+
     /** The number of threads available for MSC services */
     String PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS = "org.jboss.osgi.framework.bootstrap.maxThreads";
 
@@ -46,4 +46,10 @@ public interface Constants extends org.osgi.framework.Constants {
 
     /** A list of URLs to bundles that get installed and started on framework startup */
     String PROPERTY_AUTO_START_URLS = "org.jboss.osgi.auto.start";
+
+    @Deprecated
+    String FRAMEWORK_SYMBOLIC_NAME = JBOSGI_FRAMEWORK_SYMBOLIC_NAME;
+
+    @Deprecated
+    String FRAMEWORK_LOCATION = JBOSGI_FRAMEWORK_LOCATION;
 }
