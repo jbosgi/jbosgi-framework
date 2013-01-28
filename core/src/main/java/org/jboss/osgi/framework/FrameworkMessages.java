@@ -43,6 +43,7 @@ import org.jboss.osgi.metadata.ParameterizedAttribute;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
 import org.osgi.framework.wiring.BundleRevision;
@@ -311,4 +312,7 @@ public interface FrameworkMessages {
 
     @Message(id = 11283, value = "Revision content already closed: %s - [%d]")
     IllegalStateException illegalStateRevisionContentClosed(BundleRevision brev, int contentId);
+
+    @Message(id = 11284, value = "Cannot find bundle with location '%s' in context: %s")
+    String cannotFindLocationBundleInContext(String location, BundleContext bundle);
 }

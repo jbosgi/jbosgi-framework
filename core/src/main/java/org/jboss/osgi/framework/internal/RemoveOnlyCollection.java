@@ -23,6 +23,8 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -36,6 +38,12 @@ import java.util.Iterator;
 public class RemoveOnlyCollection<T> implements Collection<T> {
 
     Collection<T> delegate;
+
+    public RemoveOnlyCollection(T... elements) {
+        if (elements == null)
+            throw MESSAGES.illegalArgumentNull("elements");
+        this.delegate = new ArrayList<T>(Arrays.asList(elements));
+    }
 
     public RemoveOnlyCollection(Collection<T> delegate) {
         if (delegate == null)

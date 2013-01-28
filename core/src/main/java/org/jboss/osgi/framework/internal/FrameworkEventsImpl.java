@@ -616,16 +616,16 @@ final class FrameworkEventsImpl implements FrameworkEvents {
 
     private List<EventHook> getEventHooks(BundleContext syscontext) {
         List<EventHook> hooks = new ArrayList<EventHook>();
-        ServiceReference<?>[] srefs = null;
+        Collection<ServiceReference<EventHook>> srefs = null;
         try {
-            srefs = syscontext.getServiceReferences(EventHook.class.getName(), null);
+            srefs = syscontext.getServiceReferences(EventHook.class, null);
         } catch (InvalidSyntaxException e) {
             // ignore
         }
-        if (srefs != null) {
+        if (srefs != null && !srefs.isEmpty()) {
             // The calling order of the hooks is defined by the reversed compareTo ordering of their Service
             // Reference objects. That is, the service with the highest ranking number is called first.
-            List<ServiceReference<?>> sortedRefs = new ArrayList<ServiceReference<?>>(Arrays.asList(srefs));
+            List<ServiceReference<?>> sortedRefs = new ArrayList<ServiceReference<?>>(srefs);
             Collections.reverse(sortedRefs);
 
             for (ServiceReference<?> sref : sortedRefs)

@@ -38,7 +38,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.hooks.service.EventHook;
 import org.osgi.framework.hooks.service.EventListenerHook;
-import org.osgi.framework.hooks.service.FindHook;
 import org.osgi.framework.hooks.service.ListenerHook;
 import org.osgi.framework.wiring.BundleRevision;
 
@@ -137,7 +136,7 @@ public interface FrameworkLogger extends BasicLogger {
 
     @LogMessage(level = WARN)
     @Message(id = 11020, value = "Error while calling find hook: %s")
-    void warnErrorWhileCallingFindHook(@Cause Throwable cause, FindHook hook);
+    void warnErrorWhileCallingFindHook(@Cause Throwable cause, org.osgi.framework.hooks.service.FindHook hook);
 
     @LogMessage(level = ERROR)
     @Message(id = 11021, value = "Cannot acquire %s lock on: %s")
@@ -211,4 +210,7 @@ public interface FrameworkLogger extends BasicLogger {
     @Message(id = 11038, value = "Error while calling event listener hook: %s")
     void warnErrorWhileCallingEventListenerHook(@Cause Throwable cause, EventListenerHook hook);
 
+    @LogMessage(level = WARN)
+    @Message(id = 11039, value = "Error while calling bundle find hook: %s")
+    void warnErrorWhileCallingBundleFindHook(@Cause Throwable cause, org.osgi.framework.hooks.bundle.FindHook hook);
 }

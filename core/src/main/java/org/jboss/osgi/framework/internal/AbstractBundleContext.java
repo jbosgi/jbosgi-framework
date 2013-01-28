@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -61,6 +62,7 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.hooks.bundle.FindHook;
 
 /**
  * The base of all {@link BundleContext} implementations.
@@ -159,6 +161,19 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
     private Bundle installBundleInternal(String location, InputStream input) throws BundleException {
         checkValidBundleContext();
 
+        // When an existing bundle is already installed at a given location, the find method is called to determine if the
+        // context performing the install operation is able to find the bundle. If the context cannot find the existing bundle
+        // then the install operation must fail with a BundleException.REJECTED_BY_HOOK exception
+        Bundle bundle = getBundle(location);
+        if (bundle != null) {
+            Collection<Bundle> hookBundles = new RemoveOnlyCollection<Bundle>(bundle);
+            callFindHooks(hookBundles);
+            if (hookBundles.isEmpty()) {
+                String message = MESSAGES.cannotFindLocationBundleInContext(location, this);
+                throw new BundleException(message, BundleException.REJECTED_BY_HOOK);
+            }
+        }
+
         Deployment dep;
         VirtualFile rootFile = null;
         FrameworkState frameworkState = getFrameworkState();
@@ -243,7 +258,13 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
     @Override
     public Bundle getBundle(long id) {
         checkValidBundleContext();
-        return getBundleManager().getBundleById(id);
+        Bundle result = getBundleManager().getBundleById(id);
+
+        // Call the {@link FindHook}
+        Collection<Bundle> hookBundles = new RemoveOnlyCollection<Bundle>(result);
+        callFindHooks(hookBundles);
+
+        return hookBundles.isEmpty() ? null : result;
     }
 
     @Override
@@ -252,7 +273,34 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
         List<Bundle> result = new ArrayList<Bundle>();
         for (Bundle bundle : getBundleManager().getBundles())
             result.add(bundle);
-        return result.toArray(new Bundle[result.size()]);
+
+        // Call the {@link FindHook}
+        Collection<Bundle> hookBundles = new RemoveOnlyCollection<Bundle>(result);
+        callFindHooks(hookBundles);
+
+        return result.toArray(new Bundle[hookBundles.size()]);
+    }
+
+    private void callFindHooks(Collection<Bundle> bundles) {
+        Collection<ServiceReference<FindHook>> srefs = null;
+        try {
+            srefs = getServiceReferences(FindHook.class, null);
+        } catch (InvalidSyntaxException ex) {
+            // ignore
+        }
+        if (srefs != null && !srefs.isEmpty()) {
+            // Hooks are always called in service ranking order
+            List<ServiceReference<FindHook>> sortedRefs = new ArrayList<ServiceReference<FindHook>>(srefs);
+            Collections.reverse(sortedRefs);
+            for (ServiceReference<FindHook> sref : sortedRefs) {
+                FindHook hook = getService(sref);
+                try {
+                    hook.find(this, bundles);
+                } catch (Exception ex) {
+                    LOGGER.warnErrorWhileCallingBundleFindHook(ex, hook);
+                }
+            }
+        }
     }
 
     @Override
