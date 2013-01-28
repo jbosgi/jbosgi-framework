@@ -213,4 +213,8 @@ public interface FrameworkLogger extends BasicLogger {
     @LogMessage(level = WARN)
     @Message(id = 11039, value = "Error while calling bundle find hook: %s")
     void warnErrorWhileCallingBundleFindHook(@Cause Throwable cause, org.osgi.framework.hooks.bundle.FindHook hook);
+
+    @LogMessage(level = WARN)
+    @Message(id = 11040, value = "Error while calling bundle event hook: %s")
+    void warnErrorWhileCallingBundleEventHook(@Cause Throwable cause, org.osgi.framework.hooks.bundle.EventHook hook);
 }

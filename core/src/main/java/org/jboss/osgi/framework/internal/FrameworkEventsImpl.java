@@ -38,7 +38,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 
 import org.jboss.osgi.framework.spi.BundleManager;
@@ -64,7 +63,7 @@ import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.SynchronousBundleListener;
 import org.osgi.framework.UnfilteredServiceListener;
-import org.osgi.framework.hooks.service.EventHook;
+import org.osgi.framework.hooks.bundle.EventHook;
 import org.osgi.framework.hooks.service.EventListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook.ListenerInfo;
@@ -84,7 +83,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     private final LockManager lockManager;
 
     /** The bundleState listeners */
-    private final Map<XBundle, List<BundleListener>> bundleListeners = new ConcurrentHashMap<XBundle, List<BundleListener>>();
+    private final Map<XBundle, List<BundleListenerRegistration>> bundleListeners = new ConcurrentHashMap<XBundle, List<BundleListenerRegistration>>();
     /** The framework listeners */
     private final Map<XBundle, List<FrameworkListener>> frameworkListeners = new ConcurrentHashMap<XBundle, List<FrameworkListener>>();
     /** The service listeners */
@@ -120,26 +119,36 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     public void addBundleListener(final XBundle bundle, final BundleListener listener) {
         assert listener != null : "Null listener";
         synchronized (bundleListeners) {
-            List<BundleListener> listeners = bundleListeners.get(bundle);
-            if (listeners == null) {
-                listeners = new CopyOnWriteArrayList<BundleListener>();
-                bundleListeners.put(bundle, listeners);
+            List<BundleListenerRegistration> registrations = bundleListeners.get(bundle);
+            if (registrations == null) {
+                registrations = new ArrayList<BundleListenerRegistration>();
+                bundleListeners.put(bundle, registrations);
             }
-            if (listeners.contains(listener) == false)
-                listeners.add(listener);
+            BundleListenerRegistration registration = new BundleListenerRegistration(bundle, listener);
+            if (registrations.contains(registration) == false) {
+                registrations.add(registration);
+            }
         }
     }
 
     @Override
-    public void removeBundleListener(final XBundle bundleState, final BundleListener listener) {
+    public void removeBundleListener(final XBundle bundle, final BundleListener listener) {
         assert listener != null : "Null listener";
         synchronized (bundleListeners) {
-            List<BundleListener> listeners = bundleListeners.get(bundleState);
-            if (listeners != null) {
-                if (listeners.size() > 1)
-                    listeners.remove(listener);
-                else
-                    removeBundleListeners(bundleState);
+            List<BundleListenerRegistration> registrations = bundleListeners.get(bundle);
+            if (registrations != null) {
+                if (registrations.size() > 1) {
+                    Iterator<BundleListenerRegistration> iterator = registrations.iterator();
+                    while(iterator.hasNext()) {
+                        BundleListenerRegistration registration = iterator.next();
+                        if (registration.getListener() == listener) {
+                            iterator.remove();
+                            break;
+                        }
+                    }
+                } else {
+                    removeBundleListeners(bundle);
+                }
             }
         }
     }
@@ -164,7 +173,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         synchronized (frameworkListeners) {
             List<FrameworkListener> listeners = frameworkListeners.get(bundleState);
             if (listeners == null) {
-                listeners = new CopyOnWriteArrayList<FrameworkListener>();
+                listeners = new ArrayList<FrameworkListener>();
                 frameworkListeners.put(bundleState, listeners);
             }
             if (listeners.contains(listener) == false)
@@ -206,7 +215,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         synchronized (serviceListeners) {
             List<ServiceListenerRegistration> listeners = serviceListeners.get(bundleState);
             if (listeners == null) {
-                listeners = new CopyOnWriteArrayList<ServiceListenerRegistration>();
+                listeners = new ArrayList<ServiceListenerRegistration>();
                 serviceListeners.put(bundleState, listeners);
             }
 
@@ -308,10 +317,10 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             return Collections.emptyList();
 
         ServiceReference<?>[] srefs = null;
-        SystemBundleState sysBundle = bundleManager.getSystemBundle();
-        BundleContext sysContext = sysBundle.getBundleContext();
+        SystemBundleState sysbundle = bundleManager.getSystemBundle();
+        BundleContext syscontext = sysbundle.getBundleContext();
         try {
-            srefs = sysContext.getServiceReferences(ListenerHook.class.getName(), null);
+            srefs = syscontext.getServiceReferences(ListenerHook.class.getName(), null);
         } catch (InvalidSyntaxException e) {
             // ignore
         }
@@ -320,7 +329,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
 
         List<ListenerHook> hooks = new ArrayList<ListenerHook>();
         for (ServiceReference<?> sref : srefs)
-            hooks.add((ListenerHook) sysContext.getService(sref));
+            hooks.add((ListenerHook) syscontext.getService(sref));
 
         return Collections.unmodifiableList(hooks);
     }
@@ -340,11 +349,11 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             return;
 
         // Get a snapshot of the current listeners
-        final List<BundleListener> listeners = new ArrayList<BundleListener>();
+        final List<BundleListenerRegistration> registrations = new ArrayList<BundleListenerRegistration>();
         synchronized (bundleListeners) {
-            for (Entry<XBundle, List<BundleListener>> entry : bundleListeners.entrySet()) {
-                for (BundleListener listener : entry.getValue()) {
-                    listeners.add(listener);
+            for (Entry<XBundle, List<BundleListenerRegistration>> entry : bundleListeners.entrySet()) {
+                for (BundleListenerRegistration blreg : entry.getValue()) {
+                    registrations.add(blreg);
                 }
             }
         }
@@ -353,17 +362,37 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         final BundleEvent event = new BundleEventImpl(type, bundle, origin != null ? origin : bundle);
         final String typeName = ConstantsHelper.bundleEvent(event.getType());
 
+        // Call the bundle {@link EventHook}
+        Collection<BundleContext> contexts = new ArrayList<BundleContext>();
+        for (XBundle aux : bundleListeners.keySet()) {
+            contexts.add(aux.getBundleContext());
+        }
+        SystemBundleState sysbundle = bundleManager.getSystemBundle();
+        BundleContext syscontext = sysbundle.getBundleContext();
+        contexts = new RemoveOnlyCollection<BundleContext>(contexts);
+        callBundleEventHooks(syscontext, contexts, event);
+
+        // Remove the filtered {@link BundleListener} registrations
+        Iterator<BundleListenerRegistration> iterator = registrations.iterator();
+        while(iterator.hasNext()) {
+            BundleListenerRegistration blreg = iterator.next();
+            if (!contexts.contains(blreg.getBundleContext())) {
+                iterator.remove();
+            }
+        }
+
         // Nobody is interested
-        if (listeners.isEmpty())
+        if (registrations.isEmpty())
             return;
 
         // Sanity check that we are not holding a lock
         LockContext currentLock = lockManager.getCurrentLockContext();
 
         // Synchronous listeners first
-        Iterator<BundleListener> iterator = listeners.iterator();
+        iterator = registrations.iterator();
         while (iterator.hasNext()) {
-            BundleListener listener = iterator.next();
+            BundleListenerRegistration blreg = iterator.next();
+            BundleListener listener = blreg.listener;
             try {
                 if (listener instanceof SynchronousBundleListener) {
                     if (currentLock != null) {
@@ -378,14 +407,15 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             }
         }
 
-        if (!listeners.isEmpty()) {
+        if (!registrations.isEmpty()) {
             Runnable runner = new Runnable() {
                 @Override
                 public void run() {
                     // BundleListeners are called with a BundleEvent object when a bundleState has been
                     // installed, resolved, started, stopped, updated, unresolved, or uninstalled
                     if (asyncBundleEvents.contains(type)) {
-                        for (BundleListener listener : listeners) {
+                        for (BundleListenerRegistration blreg : registrations) {
+                            BundleListener listener = blreg.listener;
                             try {
                                 if (!(listener instanceof SynchronousBundleListener)) {
                                     listener.bundleChanged(event);
@@ -401,6 +431,38 @@ final class FrameworkEventsImpl implements FrameworkEvents {
                 executorService.execute(runner);
             }
         }
+    }
+
+    private void callBundleEventHooks(BundleContext syscontext, Collection<BundleContext> contexts, BundleEvent event) {
+        // Call the registered event listener hooks
+        for (EventHook hook : getBundleEventHooks(syscontext)) {
+            try {
+                hook.event(event, contexts);
+            } catch (Exception ex) {
+                LOGGER.warnErrorWhileCallingBundleEventHook(ex, hook);
+            }
+        }
+    }
+
+    private List<EventHook> getBundleEventHooks(BundleContext syscontext) {
+
+        List<EventHook> hooks = new ArrayList<EventHook>();
+        Collection<ServiceReference<EventHook>> srefs = null;
+        try {
+            srefs = syscontext.getServiceReferences(EventHook.class, null);
+        } catch (InvalidSyntaxException e) {
+            // ignore
+        }
+
+        // The calling order of the hooks is defined by the reversed compareTo ordering of their Service
+        // Reference objects. That is, the service with the highest ranking number is called first.
+        List<ServiceReference<EventHook>> sorted = new ArrayList<ServiceReference<EventHook>>(srefs);
+        Collections.reverse(sorted);
+
+        for (ServiceReference<EventHook> sref : sorted)
+            hooks.add(syscontext.getService(sref));
+
+        return hooks;
     }
 
     @Override
@@ -504,11 +566,10 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         LOGGER.tracef("Service %s: %s", typeName, serviceState);
 
         // Call the registered event hooks
-        SystemBundleState sysBundle = bundleManager.getSystemBundle();
-        BundleContext sysContext = sysBundle.getBundleContext();
-
-        processEventHooks(sysContext, listeners, event);
-        processEventListenerHooks(sysContext, listeners, event);
+        SystemBundleState sysbundle = bundleManager.getSystemBundle();
+        BundleContext syscontext = sysbundle.getBundleContext();
+        callServiceEventHooks(syscontext, listeners, event);
+        callServieEventListenerHooks(syscontext, listeners, event);
 
         // Nobody is interested
         if (listeners.isEmpty())
@@ -517,7 +578,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         // Call the listeners. All service events are synchronously delivered
         for (Map.Entry<BundleContext, Collection<ListenerInfo>> entry : listeners.entrySet()) {
             for (ListenerInfo info : entry.getValue()) {
-                ServiceListenerRegistration listenerReg = ((ListenerInfoImpl)info).getRegistration();
+                ServiceListenerRegistration listenerReg = ((ListenerInfoImpl) info).getRegistration();
                 // Service events must only be delivered to event listeners which can validly cast the event
                 if (!listenerReg.isAllServiceListener()) {
                     XBundle owner = (XBundle) info.getBundleContext().getBundle();
@@ -557,9 +618,9 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         }
     }
 
-    private void processEventListenerHooks(BundleContext syscontext, Map<BundleContext, Collection<ListenerInfo>> listeners, ServiceEvent event) {
+    private void callServieEventListenerHooks(BundleContext syscontext, Map<BundleContext, Collection<ListenerInfo>> listeners, ServiceEvent event) {
         // Call the registered event listener hooks
-        for (EventListenerHook hook : getEventListenerHooks(syscontext)) {
+        for (EventListenerHook hook : getServiceEventListenerHooks(syscontext)) {
             try {
                 hook.event(event, listeners);
             } catch (Exception ex) {
@@ -568,7 +629,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         }
     }
 
-    private List<EventListenerHook> getEventListenerHooks(BundleContext syscontext) {
+    private List<EventListenerHook> getServiceEventListenerHooks(BundleContext syscontext) {
 
         List<EventListenerHook> hooks = new ArrayList<EventListenerHook>();
         Collection<ServiceReference<EventListenerHook>> srefs = null;
@@ -589,13 +650,13 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         return hooks;
     }
 
-    private void processEventHooks(BundleContext syscontext, Map<BundleContext, Collection<ListenerInfo>> listeners, final ServiceEvent event) {
+    private void callServiceEventHooks(BundleContext syscontext, Map<BundleContext, Collection<ListenerInfo>> listeners, final ServiceEvent event) {
 
         Collection<BundleContext> contexts = new RemoveOnlyCollection<BundleContext>(listeners.keySet());
 
         // Call the registered event hooks
-        List<EventHook> eventHooks = getEventHooks(syscontext);
-        for (EventHook hook : eventHooks) {
+        List<org.osgi.framework.hooks.service.EventHook> eventHooks = getServiceEventHooks(syscontext);
+        for (org.osgi.framework.hooks.service.EventHook hook : eventHooks) {
             try {
                 hook.event(event, contexts);
             } catch (Exception ex) {
@@ -614,22 +675,22 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         }
     }
 
-    private List<EventHook> getEventHooks(BundleContext syscontext) {
-        List<EventHook> hooks = new ArrayList<EventHook>();
-        Collection<ServiceReference<EventHook>> srefs = null;
+    private List<org.osgi.framework.hooks.service.EventHook> getServiceEventHooks(BundleContext syscontext) {
+        List<org.osgi.framework.hooks.service.EventHook> hooks = new ArrayList<org.osgi.framework.hooks.service.EventHook>();
+        Collection<ServiceReference<org.osgi.framework.hooks.service.EventHook>> srefs = null;
         try {
-            srefs = syscontext.getServiceReferences(EventHook.class, null);
+            srefs = syscontext.getServiceReferences(org.osgi.framework.hooks.service.EventHook.class, null);
         } catch (InvalidSyntaxException e) {
             // ignore
         }
         if (srefs != null && !srefs.isEmpty()) {
             // The calling order of the hooks is defined by the reversed compareTo ordering of their Service
             // Reference objects. That is, the service with the highest ranking number is called first.
-            List<ServiceReference<?>> sortedRefs = new ArrayList<ServiceReference<?>>(srefs);
-            Collections.reverse(sortedRefs);
+            List<ServiceReference<org.osgi.framework.hooks.service.EventHook>> sorted = new ArrayList<ServiceReference<org.osgi.framework.hooks.service.EventHook>>(srefs);
+            Collections.reverse(sorted);
 
-            for (ServiceReference<?> sref : sortedRefs)
-                hooks.add((EventHook) syscontext.getService(sref));
+            for (ServiceReference<org.osgi.framework.hooks.service.EventHook> sref : sorted)
+                hooks.add(syscontext.getService(sref));
         }
         return hooks;
     }
@@ -639,7 +700,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
      */
     static class ServiceListenerRegistration {
 
-        private final XBundle bundleState;
+        private final XBundle bundle;
         private final ServiceListener listener;
         private final Filter filter;
         private final ListenerInfo info;
@@ -647,11 +708,11 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         // Any access control context
         AccessControlContext accessControlContext;
 
-        ServiceListenerRegistration(final XBundle bundleState, final ServiceListener listener, final Filter filter) {
-            assert bundleState != null : "Null bundleState";
+        ServiceListenerRegistration(final XBundle bundle, final ServiceListener listener, final Filter filter) {
+            assert bundle != null : "Null bundle";
             assert listener != null : "Null listener";
             assert filter != null : "Null filter";
-            this.bundleState = bundleState;
+            this.bundle = bundle;
             this.listener = listener;
             this.filter = filter;
             this.info = new ListenerInfoImpl(this);
@@ -659,12 +720,12 @@ final class FrameworkEventsImpl implements FrameworkEvents {
                 accessControlContext = AccessController.getContext();
         }
 
-        XBundle getBundleState() {
-            return bundleState;
+        XBundle getBundle() {
+            return bundle;
         }
 
         BundleContext getBundleContext() {
-            return bundleState.getBundleContext();
+            return bundle.getBundleContext();
         }
 
         ServiceListener getListener() {
@@ -697,7 +758,50 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         @Override
         public String toString() {
             String className = listener.getClass().getName();
-            return "ServiceListener[" + bundleState + "," + className + "," + filter + "]";
+            return "ServiceListener[" + bundle + "," + className + "," + filter + "]";
+        }
+    }
+
+    static class BundleListenerRegistration {
+        private final BundleListener listener;
+        private final XBundle bundle;
+
+        BundleListenerRegistration(XBundle bundle, BundleListener listener) {
+            this.listener = listener;
+            this.bundle = bundle;
+        }
+
+        BundleListener getListener() {
+            return listener;
+        }
+
+        XBundle getBundle() {
+            return bundle;
+        }
+
+        BundleContext getBundleContext() {
+            return bundle.getBundleContext();
+        }
+
+        @Override
+        public int hashCode() {
+            return listener.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj instanceof BundleListenerRegistration == false)
+                return false;
+
+            // Only the BundleListener instance determins equality
+            BundleListenerRegistration other = (BundleListenerRegistration) obj;
+            return other.listener.equals(listener);
+        }
+
+        @Override
+        public String toString() {
+            String className = listener.getClass().getName();
+            return "BundleListener[" + bundle + "," + className + "]";
         }
     }
 
