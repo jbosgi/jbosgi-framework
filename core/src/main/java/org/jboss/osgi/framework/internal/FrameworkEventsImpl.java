@@ -717,7 +717,8 @@ final class FrameworkEventsImpl implements FrameworkEvents {
 
         @Override
         public String getFilter() {
-            return registration.filter.toString();
+            Filter filter = registration.filter;
+            return filter != NoFilter.INSTANCE ? filter.toString() : null;
         }
 
         @Override
