@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.jboss.logging.Logger.Level;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
@@ -211,16 +212,19 @@ final class HostBundleState extends UserBundleState<HostBundleRevision> {
         if (getState() == ACTIVE)
             return;
 
+        // #3 Set this bundle's autostart setting
+        persistAutoStartSettings(options);
+
         // If the Framework's current start level is less than this bundle's start level
         if (startLevelValidForStart() == false) {
-            LOGGER.debugf("Start level [%d] not valid for: %s", getBundleStartLevel(), this);
+            StartLevelSupport plugin = getFrameworkState().getStartLevelSupport();
+            int frameworkState = getBundleManager().getSystemBundle().getState();
+            Level level = (plugin.isFrameworkStartLevelChanging() || frameworkState != Bundle.ACTIVE) ? Level.DEBUG : Level.INFO;
+            LOGGER.log(level, MESSAGES.bundleStartLevelNotValid(getBundleStartLevel(), plugin.getFrameworkStartLevel(), this));
             return;
         }
 
         LOGGER.debugf("Starting bundle: %s", this);
-
-        // #3 Set this bundle's autostart setting
-        persistAutoStartSettings(options);
 
         // #4 If this bundle's state is not RESOLVED, an attempt is made to resolve this bundle.
         // If the Framework cannot resolve this bundle, a BundleException is thrown.

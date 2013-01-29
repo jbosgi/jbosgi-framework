@@ -44,6 +44,8 @@ public interface StartLevelSupport {
 
     void increaseFrameworkStartLevel(int level);
 
+    boolean isFrameworkStartLevelChanging();
+    
     int getBundleStartLevel(XBundle bundle);
 
     void setBundleStartLevel(XBundle bundle, int level);

@@ -58,6 +58,7 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
     private final AtomicBoolean immediateExecution;
     private AtomicInteger initialBundleStartLevel = new AtomicInteger(1);
     private AtomicInteger startLevel = new AtomicInteger(0);
+    private AtomicBoolean changingStartLevel = new AtomicBoolean();
 
     public StartLevelSupportImpl(BundleManager bundleManager, FrameworkEvents frameworkEvents, ExecutorService executorService, AtomicBoolean immediateExecution) {
         this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
@@ -79,6 +80,11 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
     @Override
     public synchronized void setFrameworkStartLevel(final int level, FrameworkListener... listeners) {
         setFrameworkStartLevelInternal(level, immediateExecution.get(), listeners);
+    }
+
+    @Override
+    public boolean isFrameworkStartLevelChanging() {
+        return changingStartLevel.get();
     }
 
     @Override
@@ -130,48 +136,8 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
     @Override
     public synchronized void increaseFrameworkStartLevel(int level) {
 
-        // Sort the bundles after their bundle id
-        List<XBundle> bundles = new ArrayList<XBundle>(bundleManager.getBundles());
-        Comparator<XBundle> comparator = new Comparator<XBundle>() {
-            @Override
-            public int compare(XBundle b1, XBundle b2) {
-                return (int) (b1.getBundleId() - b2.getBundleId());
-            }
-        };
-        Collections.sort(bundles, comparator);
-
-        while (startLevel.get() < level) {
-            startLevel.incrementAndGet();
-            LOGGER.infoStartingBundlesForStartLevel(startLevel.get());
-            for (XBundle bundle : bundles) {
-                if (bundle.getBundleId() == 0 || bundle.isFragment())
-                    continue;
-
-                BundleStartLevelState state = getBundleStartLevelState(bundle);
-                if (state.getLevel() == startLevel.get() && state.isStarted()) {
-                    try {
-                        int opts = Bundle.START_TRANSIENT;
-                        if (isBundleActivationPolicyUsed(bundle)) {
-                            opts |= Bundle.START_ACTIVATION_POLICY;
-                        }
-                        bundle.start(opts);
-                    } catch (Throwable e) {
-                        events.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, e);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Decreases the Start Level of the Framework in the current thread.
-     *
-     * @param level the target Start Level to which the Framework should move.
-     */
-    @Override
-    public synchronized void decreaseFrameworkStartLevel(int level) {
-        while (startLevel.get() > level) {
-            LOGGER.infoStoppingBundlesForStartLevel(level);
+        try {
+            changingStartLevel.set(true);
 
             // Sort the bundles after their bundle id
             List<XBundle> bundles = new ArrayList<XBundle>(bundleManager.getBundles());
@@ -182,32 +148,88 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
                 }
             };
             Collections.sort(bundles, comparator);
-            Collections.reverse(bundles);
 
-            for (XBundle bundle : bundles) {
-                if (bundle.getBundleId() == 0 || bundle.isFragment())
-                    continue;
+            while (startLevel.get() < level) {
+                startLevel.incrementAndGet();
+                LOGGER.infoStartingBundlesForStartLevel(startLevel.get());
+                for (XBundle bundle : bundles) {
+                    if (bundle.getBundleId() == 0 || bundle.isFragment())
+                        continue;
 
-                BundleStartLevelState state = getBundleStartLevelState(bundle);
-                if (state.getLevel() == startLevel.get()) {
-                    try {
-                        bundle.stop(Bundle.STOP_TRANSIENT);
-                    } catch (Throwable e) {
-                        events.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, e);
+                    BundleStartLevelState state = getBundleStartLevelState(bundle);
+                    if (state.getLevel() == startLevel.get() && state.isStarted()) {
+                        try {
+                            int opts = Bundle.START_TRANSIENT;
+                            if (isBundleActivationPolicyUsed(bundle)) {
+                                opts |= Bundle.START_ACTIVATION_POLICY;
+                            }
+                            bundle.start(opts);
+                        } catch (Throwable e) {
+                            events.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, e);
+                        }
                     }
                 }
             }
-            startLevel.decrementAndGet();
+        } finally {
+            changingStartLevel.set(false);
+        }
+    }
+
+    /**
+     * Decreases the Start Level of the Framework in the current thread.
+     *
+     * @param level the target Start Level to which the Framework should move.
+     */
+    @Override
+    public synchronized void decreaseFrameworkStartLevel(int level) {
+        try {
+            changingStartLevel.set(true);
+
+            while (startLevel.get() > level) {
+                LOGGER.infoStoppingBundlesForStartLevel(level);
+
+                // Sort the bundles after their bundle id
+                List<XBundle> bundles = new ArrayList<XBundle>(bundleManager.getBundles());
+                Comparator<XBundle> comparator = new Comparator<XBundle>() {
+                    @Override
+                    public int compare(XBundle b1, XBundle b2) {
+                        return (int) (b1.getBundleId() - b2.getBundleId());
+                    }
+                };
+                Collections.sort(bundles, comparator);
+                Collections.reverse(bundles);
+
+                for (XBundle bundle : bundles) {
+                    if (bundle.getBundleId() == 0 || bundle.isFragment())
+                        continue;
+
+                    BundleStartLevelState state = getBundleStartLevelState(bundle);
+                    if (state.getLevel() == startLevel.get()) {
+                        try {
+                            bundle.stop(Bundle.STOP_TRANSIENT);
+                        } catch (Throwable e) {
+                            events.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, e);
+                        }
+                    }
+                }
+                startLevel.decrementAndGet();
+            }
+        } finally {
+            changingStartLevel.set(false);
         }
     }
 
     @Override
     public int getBundleStartLevel(XBundle bundle) {
+        if (bundle == null)
+            throw MESSAGES.illegalArgumentNull("bundle");
         return getBundleStartLevelState(bundle).getLevel();
     }
 
     @Override
-    public void setBundleStartLevel(final XBundle bundle, final int level) {
+    public void setBundleStartLevel(XBundle bundle, int level) {
+        if (bundle == null)
+            throw MESSAGES.illegalArgumentNull("bundle");
         if (bundle.getBundleId() == 0)
             throw MESSAGES.illegalArgumentStartLevelOnSystemBundles();
 
@@ -271,11 +293,15 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
 
     @Override
     public boolean isBundlePersistentlyStarted(Bundle bundle) {
+        if (bundle == null)
+            throw MESSAGES.illegalArgumentNull("bundle");
         return getBundleStartLevelState(bundle).isStarted();
     }
 
     @Override
     public void setBundlePersistentlyStarted(XBundle bundle, boolean started) {
+        if (bundle == null)
+            throw MESSAGES.illegalArgumentNull("bundle");
         getBundleStartLevelState(bundle).setStarted(started);
     }
 

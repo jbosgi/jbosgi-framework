@@ -315,4 +315,7 @@ public interface FrameworkMessages {
 
     @Message(id = 11284, value = "Cannot find bundle with location '%s' in context: %s")
     String cannotFindLocationBundleInContext(String location, BundleContext bundle);
+    
+    @Message(id = 11285, value = "Bundle start level [%d] not valid for framework start level [%d] while starting: %s")
+    String bundleStartLevelNotValid(int bundleLevel, int frameworkLevel, Bundle bundle);
 }

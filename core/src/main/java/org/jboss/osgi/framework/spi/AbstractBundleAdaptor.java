@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.logging.Logger.Level;
 import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
@@ -226,6 +227,9 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
             if (getState() == Bundle.ACTIVE)
                 return;
 
+            // Set this bundle's autostart setting
+            setPersistentlyStarted(true);
+
             // If the Framework's current start level is less than this bundle's start level
             if (startLevelValidForStart() == false) {
 
@@ -234,8 +238,10 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
                 if ((options & START_TRANSIENT) != 0)
                     throw MESSAGES.cannotStartBundleDueToStartLevel();
 
-                LOGGER.debugf("Start level [%d] not valid for: %s", getStartLevel(), this);
-                setPersistentlyStarted(true);
+                int frameworkState = bundleManager.getSystemBundle().getState();
+                StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+                Level level = (plugin.isFrameworkStartLevelChanging() || frameworkState != Bundle.ACTIVE) ? Level.DEBUG : Level.INFO;
+                LOGGER.log(level, MESSAGES.bundleStartLevelNotValid(getStartLevel(), plugin.getFrameworkStartLevel(), this));
                 return;
             }
 
