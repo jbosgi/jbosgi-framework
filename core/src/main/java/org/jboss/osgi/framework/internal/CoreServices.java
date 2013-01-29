@@ -28,6 +28,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.IntegrationServices;
@@ -56,7 +57,9 @@ final class CoreServices extends AbstractIntegrationService<CoreServices> {
         builder.addDependency(IntegrationServices.FRAMEWORK_CREATE_INTERNAL, FrameworkState.class, injectedFrameworkState);
         builder.addDependency(IntegrationServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorService.class, injectedLifecycleInterceptor);
         builder.addDependency(IntegrationServices.SYSTEM_CONTEXT_INTERNAL, BundleContext.class, injectedSystemContext);
-        builder.addDependencies(IntegrationServices.SYSTEM_SERVICES_PLUGIN, IntegrationServices.URL_HANDLER_PLUGIN);
+        builder.addDependency(IntegrationServices.SYSTEM_SERVICES_PLUGIN);
+        builder.addDependency(IntegrationServices.URL_HANDLER_PLUGIN);
+        builder.addDependency(Services.FRAMEWORK_CREATE);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

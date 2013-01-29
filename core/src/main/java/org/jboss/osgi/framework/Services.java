@@ -55,4 +55,10 @@ public interface Services {
 
     /** The {@link XResolver} service name */
     ServiceName RESOLVER = JBOSGI_BASE_NAME.append("Resolver");
+
+    /** The service name for the system {@link Bundle} */
+    ServiceName SYSTEM_BUNDLE = JBOSGI_BASE_NAME.append("SystemBundle");
+
+    /** The service name for the system {@link BundleContext} */
+    ServiceName SYSTEM_CONTEXT = JBOSGI_BASE_NAME.append("SystemContext");
 }

@@ -24,7 +24,10 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceListener;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
@@ -87,7 +90,7 @@ import org.osgi.framework.launch.Framework;
  *                 +---{@link BundleStartLevelPlugin}
  *                     +---{@link StartLevelSupportPlugin}
  *                         +---{@link FrameworkEventsPlugin}
- *                             +---{@link SystemContext}
+ *                             +---{@link SystemContextPlugin}
  *                                 +---{@link SystemBundle}
  *                                     +---{@link BundleStoragePlugin}
  *                                     +---{@link SystemPathsPlugin}
@@ -108,15 +111,18 @@ public final class FrameworkActive extends AbstractFrameworkService {
 
     private final InjectedValue<BundleManagerPlugin> injectedBundleManager = new InjectedValue<BundleManagerPlugin>();
     private final InjectedValue<FrameworkState> injectedFramework = new InjectedValue<FrameworkState>();
+    private final Mode initialMode;
 
-    FrameworkActive() {
+    FrameworkActive(Mode initialMode) {
         super(IntegrationServices.FRAMEWORK_ACTIVE_INTERNAL);
+        this.initialMode = initialMode;
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<FrameworkState> builder) {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManagerPlugin.class, injectedBundleManager);
         builder.addDependency(IntegrationServices.FRAMEWORK_INIT_INTERNAL, FrameworkState.class, injectedFramework);
+        builder.addDependency(Services.FRAMEWORK_INIT);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
@@ -159,6 +165,13 @@ public final class FrameworkActive extends AbstractFrameworkService {
     }
 
     @Override
+    public ServiceController<FrameworkState> install(ServiceTarget serviceTarget, ServiceListener<Object> listener) {
+        ServiceController<FrameworkState> controller = super.install(serviceTarget, listener);
+        new FrameworkActivated().install(serviceTarget, listener);
+        return controller;
+    }
+
+    @Override
     public void stop(StopContext context) {
         BundleManagerPlugin bundleManager = injectedBundleManager.getValue();
         bundleManager.injectedFrameworkActive.uninject();
@@ -177,19 +190,17 @@ public final class FrameworkActive extends AbstractFrameworkService {
         return 1;
     }
 
-    static class FrameworkActivated extends AbstractIntegrationService<BundleContext> {
+    private class FrameworkActivated extends AbstractIntegrationService<BundleContext> {
 
         private final InjectedValue<BundleContext> injectedBundleContext = new InjectedValue<BundleContext>();
-        private final Mode initialMode;
 
-        FrameworkActivated(Mode initialMode) {
+        private FrameworkActivated() {
             super(Services.FRAMEWORK_ACTIVE);
-            this.initialMode = initialMode;
         }
 
         @Override
         protected void addServiceDependencies(ServiceBuilder<BundleContext> builder) {
-            builder.addDependency(Services.FRAMEWORK_INIT, BundleContext.class, injectedBundleContext);
+            builder.addDependency(IntegrationServices.SYSTEM_CONTEXT_INTERNAL, BundleContext.class, injectedBundleContext);
             builder.addDependency(IntegrationServices.FRAMEWORK_ACTIVE_INTERNAL);
             builder.setInitialMode(initialMode);
         }
