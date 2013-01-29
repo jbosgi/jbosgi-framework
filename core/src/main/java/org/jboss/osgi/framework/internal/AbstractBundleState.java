@@ -89,7 +89,6 @@ import org.osgi.service.resolver.ResolutionException;
 abstract class AbstractBundleState<R extends BundleStateRevision> extends AbstractElement implements XBundle, LockableItem, BundleStartLevel {
 
     private final long bundleId;
-    private final String symbolicName;
     private final FrameworkState frameworkState;
     private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
     private final LockSupport bundleLock = LockManager.Factory.addLockSupport(this);
@@ -110,7 +109,6 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
             symbolicName = symbolicName.substring(0, symbolicName.indexOf(';'));
 
         this.bundleId = bundleId;
-        this.symbolicName = symbolicName;
         this.frameworkState = frameworkState;
 
         // Link the bundle revision to this state
@@ -152,7 +150,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     @Override
     public String getSymbolicName() {
-        return symbolicName;
+        return getBundleRevision().getSymbolicName();
     }
 
     abstract AbstractBundleContext<? extends AbstractBundleState<?>> createContextInternal();

@@ -59,6 +59,7 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.Version;
 import org.osgi.framework.hooks.bundle.CollisionHook;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
@@ -252,9 +253,6 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
 
     private void updateInternalNow(InputStream input) throws BundleException {
 
-        // Check for symbolic name, version uniqueness
-        getBundleManager().checkUniqunessPolicy(getBundleContext(), getSymbolicName(), getVersion(), CollisionHook.UPDATING);
-
         boolean restart = false;
         if (isFragment() == false) {
             int state = getState();
@@ -341,6 +339,12 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
             dep.addAttachment(OSGiMetaData.class, metadata);
             dep.addAttachment(Bundle.class, this);
+
+            // Check for symbolic name, version uniqueness
+            String symbolicName = metadata.getBundleSymbolicName();
+            Version bundleVersion = metadata.getBundleVersion();
+            getBundleManager().checkUniqunessPolicy(this, symbolicName, bundleVersion, CollisionHook.UPDATING);
+
             R updateRevision = createUpdateRevision(dep, metadata, storageState);
             addBundleRevision(updateRevision);
             XEnvironment env = getFrameworkState().getEnvironment();

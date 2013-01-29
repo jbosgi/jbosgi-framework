@@ -83,6 +83,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
 import org.osgi.framework.VersionRange;
@@ -238,6 +239,11 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public SystemBundleState getSystemBundle() {
         return injectedSystemBundle.getOptionalValue();
+    }
+
+    BundleContext getSystemContext() {
+        SystemBundleState sysbundle = injectedSystemBundle.getOptionalValue();
+        return sysbundle != null ? sysbundle.getBundleContext() : null;
     }
 
     FrameworkStartLevel getFrameworkStartLevel() {
@@ -427,7 +433,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     @Override
-    public ServiceName installBundle(BundleContext context, Deployment dep, ServiceTarget installTarget, ServiceListener<XBundle> listener) throws BundleException {
+    public ServiceName installBundle(BundleContext targetContext, Deployment dep, ServiceTarget installTarget, ServiceListener<XBundle> listener) throws BundleException {
         if (dep == null)
             throw MESSAGES.illegalArgumentNull("deployment");
 
@@ -450,7 +456,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         // Check for symbolic name, version uniqueness
         String symbolicName = dep.getSymbolicName();
         Version version = Version.parseVersion(dep.getVersion());
-        checkUniqunessPolicy(context, symbolicName, version, CollisionHook.INSTALLING);
+        checkUniqunessPolicy(targetContext.getBundle(), symbolicName, version, CollisionHook.INSTALLING);
 
         try {
             Long bundleId;
@@ -475,10 +481,10 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
             // Create the bundle services
             if (metadata.getFragmentHost() == null) {
-                HostBundleInstalledService service = new HostBundleInstalledService(getFrameworkState(), context, dep);
+                HostBundleInstalledService service = new HostBundleInstalledService(getFrameworkState(), targetContext, dep);
                 serviceName = service.install(installTarget, listener);
             } else {
-                FragmentBundleInstalledService service = new FragmentBundleInstalledService(getFrameworkState(), context, dep);
+                FragmentBundleInstalledService service = new FragmentBundleInstalledService(getFrameworkState(), targetContext, dep);
                 serviceName = service.install(installTarget, listener);
             }
         } catch (RuntimeException rte) {
@@ -517,9 +523,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         bundleState.uninstallInternal(options);
     }
 
-    void checkUniqunessPolicy(BundleContext context, String symbolicName, Version version, int operationType) throws BundleException {
+    void checkUniqunessPolicy(Bundle targetBundle, String symbolicName, Version version, int operationType) throws BundleException {
 
-        if (uniquenessPolicy == UniquenessPolicy.multiple || operationType != CollisionHook.INSTALLING)
+        if (uniquenessPolicy == UniquenessPolicy.multiple)
             return;
 
         Set<Bundle> candidates = new HashSet<Bundle>();
@@ -529,7 +535,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
                 versionRange = new VersionRange("[" + version + "," + version + "]");
             }
             for (XBundle aux : getBundles(symbolicName, versionRange)) {
-                if (aux.getState() != Bundle.UNINSTALLED) {
+                if (aux != targetBundle && aux.getState() != Bundle.UNINSTALLED) {
                     candidates.add(aux);
                 }
             }
@@ -539,14 +545,15 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
         if (uniquenessPolicy == UniquenessPolicy.managed) {
             BundleContext syscontext = getFrameworkState().getSystemBundle().getBundleContext();
-            ServiceReference<CollisionHook> sref = syscontext.getServiceReference(CollisionHook.class);
-            if (sref != null) {
-                try {
-                    CollisionHook hook = syscontext.getService(sref);
-                    hook.filterCollisions(operationType, context.getBundle(), candidates);
-                } finally {
-                    syscontext.ungetService(sref);
-                }
+            Collection<ServiceReference<CollisionHook>> srefs = null;
+            try {
+                srefs = syscontext.getServiceReferences(CollisionHook.class, null);
+            } catch (InvalidSyntaxException ex) {
+                // ignore
+            }
+            for (ServiceReference<CollisionHook> sref : srefs) {
+                CollisionHook hook = syscontext.getService(sref);
+                hook.filterCollisions(operationType, targetBundle, candidates);
             }
         }
         if (!candidates.isEmpty()) {

@@ -478,7 +478,7 @@ final class HostBundleState extends UserBundleState<HostBundleRevision> {
     private void removeServicesAndListeners(HostBundleState hostState) {
         // Any services registered by this bundle must be unregistered.
         // Any services used by this bundle must be released.
-        for (ServiceState serviceState : hostState.getRegisteredServicesInternal()) {
+        for (ServiceState<?> serviceState : hostState.getRegisteredServicesInternal()) {
             serviceState.unregisterInternal();
         }
 
