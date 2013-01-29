@@ -53,12 +53,12 @@ public class SystemBundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testSymbolicName() throws Exception {
-        assertEquals(Constants.FRAMEWORK_SYMBOLIC_NAME, getFramework().getSymbolicName());
+        assertEquals(Constants.JBOSGI_FRAMEWORK_SYMBOLIC_NAME, getFramework().getSymbolicName());
     }
 
     @Test
     public void testLocation() throws Exception {
-        assertEquals(Constants.FRAMEWORK_LOCATION, getFramework().getLocation());
+        assertEquals(Constants.JBOSGI_FRAMEWORK_LOCATION, getFramework().getLocation());
     }
 
     @Test

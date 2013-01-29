@@ -90,12 +90,12 @@ final class SystemBundleState extends AbstractBundleState<SystemBundleRevision> 
 
     @Override
     public String getSymbolicName() {
-        return Constants.FRAMEWORK_SYMBOLIC_NAME;
+        return Constants.JBOSGI_FRAMEWORK_SYMBOLIC_NAME;
     }
 
     @Override
     public String getLocation() {
-        return Constants.FRAMEWORK_LOCATION;
+        return Constants.JBOSGI_FRAMEWORK_LOCATION;
     }
 
     @Override
