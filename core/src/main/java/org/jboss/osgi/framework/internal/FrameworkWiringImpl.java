@@ -52,7 +52,6 @@ import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.framework.wiring.FrameworkWiring;
-import org.osgi.service.resolver.ResolutionException;
 
 /**
  * An implementation of the {@link FrameworkWiringSupport} service.
@@ -210,7 +209,7 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                     break;
                 }
             }
-        } catch (ResolutionException ex) {
+        } catch (Exception ex) {
             LOGGER.debugf(ex, "Cannot resolve: " + resolvableRevisions);
             result = false;
         }

@@ -125,7 +125,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         hookregs = new ResolverHookRegistrations(syscontext, bundleManager.getBundles(Bundle.INSTALLED));
         if (hookregs.hasResolverHooks()) {
             try {
-                hookregs.begin(syscontext, mandatory, optional);
+                hookregs.begin(mandatory, optional);
                 hookregs.filterResolvable();
             } catch (RuntimeException ex) {
                 hookregs.end();

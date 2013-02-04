@@ -228,7 +228,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             for (BundleWire wire : wiring.getProvidedWires(null)) {
                 BundleRevision requirer = wire.getRequirer();
                 BundleWiring reqwiring = requirer.getWiring();
-                if (reqwiring.isInUse()) {
+                if (reqwiring != null && reqwiring.isInUse()) {
                     return true;
                 }
             }
