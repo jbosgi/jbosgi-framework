@@ -46,6 +46,8 @@ import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.spi.RemoveOnlyCollection;
+import org.jboss.osgi.resolver.spi.RemoveOnlyMap;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.AllServiceListener;
 import org.osgi.framework.Bundle;

@@ -212,7 +212,7 @@ public interface FrameworkMessages {
     BundleException cannotStartBundleDueToStartLevel();
 
     @Message(id = 11250, value = "Cannot resolve bundle: %s")
-    BundleException cannotResolveBundle(@Cause Throwable cause, Bundle bundle);
+    String cannotResolveBundle(Bundle bundle);
 
     @Message(id = 11251, value = "Unsupported execution environment %s we have: %s")
     BundleException unsupportedExecutionEnvironment(List<String> required, List<String> available);
@@ -315,7 +315,10 @@ public interface FrameworkMessages {
 
     @Message(id = 11284, value = "Cannot find bundle with location '%s' in context: %s")
     String cannotFindLocationBundleInContext(String location, BundleContext bundle);
-    
+
     @Message(id = 11285, value = "Bundle start level [%d] not valid for framework start level [%d] while starting: %s")
     String bundleStartLevelNotValid(int bundleLevel, int frameworkLevel, Bundle bundle);
+
+    @Message(id = 11286, value = "Resolver Hooks are not allowed to start another resolve operation")
+    IllegalStateException illegalStateResolverHookCannotTriggerResolveOperation();
 }

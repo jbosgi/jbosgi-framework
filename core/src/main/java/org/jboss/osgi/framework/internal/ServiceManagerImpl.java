@@ -39,6 +39,7 @@ import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.ServiceManager;
 import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.spi.RemoveOnlyCollection;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Filter;

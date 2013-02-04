@@ -62,6 +62,7 @@ import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.spi.AbstractElement;
+import org.jboss.osgi.resolver.spi.ResolverHookException;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -95,7 +96,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     private final List<ServiceState<?>> registeredServices = new CopyOnWriteArrayList<ServiceState<?>>();
     private final ConcurrentHashMap<ServiceState<?>, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState<?>, AtomicInteger>();
     private AbstractBundleContext<? extends AbstractBundleState<?>> bundleContext;
-    private ResolutionException lastResolutionException;
+    private Exception lastResolverException;
     private String canonicalName;
     private R currentRevision;
 
@@ -698,20 +699,27 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
                     }
                 }
             } catch (ResolutionException ex) {
-                LOGGER.debugf(ex, "Cannot resolve bundle: %s", this);
-                lastResolutionException = ex;
                 result = false;
-                if (fireEvent == true) {
-                    FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
-                    eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, new BundleException(ex.getMessage(), ex));
-                }
+                handleResolverException(fireEvent, BundleException.RESOLVE_ERROR, ex);
+            } catch (ResolverHookException ex) {
+                result = false;
+                handleResolverException(fireEvent, BundleException.REJECTED_BY_HOOK, ex);
             }
         }
         return result;
     }
 
-    ResolutionException getLastResolutionException() {
-        return lastResolutionException;
+    private void handleResolverException(boolean fireEvent, int type, Exception ex) {
+        LOGGER.debugf(ex, "Cannot resolve bundle: %s", this);
+        lastResolverException = ex;
+        if (fireEvent == true) {
+            FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
+            eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, new BundleException(ex.getMessage(), type, ex));
+        }
+    }
+
+    Exception getLastResolverException() {
+        return lastResolverException;
     }
 
     @Override

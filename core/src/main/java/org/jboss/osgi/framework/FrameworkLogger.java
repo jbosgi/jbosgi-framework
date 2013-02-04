@@ -36,6 +36,7 @@ import org.jboss.logging.annotations.MessageLogger;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.hooks.resolver.ResolverHook;
 import org.osgi.framework.hooks.service.EventHook;
 import org.osgi.framework.hooks.service.EventListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook;
@@ -217,4 +218,8 @@ public interface FrameworkLogger extends BasicLogger {
     @LogMessage(level = WARN)
     @Message(id = 11040, value = "Error while calling bundle event hook: %s")
     void warnErrorWhileCallingBundleEventHook(@Cause Throwable cause, org.osgi.framework.hooks.bundle.EventHook hook);
+
+    @LogMessage(level = WARN)
+    @Message(id = 11041, value = "Error while calling resolver hook method '%s': %s")
+    void warnErrorWhileCallingResolverHookMethod(@Cause Throwable cause, String method, ResolverHook hook);
 }

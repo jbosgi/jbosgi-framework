@@ -37,17 +37,18 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
+import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.LockManager.Method;
-import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.spi.ResolverHookException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -57,7 +58,6 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.resource.Wire;
-import org.osgi.service.resolver.ResolutionException;
 
 /**
  * Represents the INSTALLED state of a host bundle.
@@ -229,8 +229,9 @@ final class HostBundleState extends UserBundleState<HostBundleRevision> {
         // #4 If this bundle's state is not RESOLVED, an attempt is made to resolve this bundle.
         // If the Framework cannot resolve this bundle, a BundleException is thrown.
         if (ensureResolved(true) == false) {
-            ResolutionException resex = getLastResolutionException();
-            throw MESSAGES.cannotResolveBundle(resex, this);
+            Exception resex = getLastResolverException();
+            int type = (resex instanceof ResolverHookException ? BundleException.REJECTED_BY_HOOK : BundleException.RESOLVE_ERROR);
+            throw new BundleException(MESSAGES.cannotResolveBundle(this), type, resex);
         }
 
         // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE

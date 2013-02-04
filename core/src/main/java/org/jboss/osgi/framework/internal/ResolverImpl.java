@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,7 +62,9 @@ import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.felix.StatelessResolver;
+import org.jboss.osgi.resolver.spi.ResolverHookRegistrations;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.namespace.HostNamespace;
@@ -93,8 +96,8 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
     private final XEnvironment environment;
     private final LockManager lockManager;
 
-    public ResolverImpl(BundleManager bundleManager, NativeCode nativeCode, ModuleManager moduleManager, FrameworkModuleLoader moduleLoader,
-            XEnvironment environment, LockManager lockManager) {
+    public ResolverImpl(BundleManager bundleManager, NativeCode nativeCode, ModuleManager moduleManager, FrameworkModuleLoader moduleLoader, XEnvironment environment,
+            LockManager lockManager) {
         this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
         this.nativeCode = nativeCode;
         this.moduleManager = moduleManager;
@@ -109,7 +112,46 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         Collection<Resource> optres = new HashSet<Resource>(optional != null ? optional : Collections.<Resource> emptySet());
         appendOptionalFragments(mandatory, optres);
         appendOptionalHostBundles(mandatory, optres);
-        return super.createResolveContext(environment, manres, optres);
+
+        XResolveContext rescontext;
+
+        // Resolver Hooks also must not be allowed to start another resolve operation, for example by starting a bundle or resolving bundles.
+        // The framework must detect this and throw an Illegal State Exception.
+        ResolverHookRegistrations hookregs = ResolverHookRegistrations.getResolverHookRegistrations();
+        if (hookregs != null)
+            MESSAGES.illegalStateResolverHookCannotTriggerResolveOperation();
+
+        BundleContext syscontext = bundleManager.getSystemContext();
+        hookregs = new ResolverHookRegistrations(syscontext, bundleManager.getBundles(Bundle.INSTALLED));
+        if (hookregs.hasResolverHooks()) {
+            try {
+                hookregs.begin(syscontext, mandatory, optional);
+                hookregs.filterResolvable();
+            } catch (RuntimeException ex) {
+                hookregs.end();
+                throw ex;
+            }
+            rescontext = super.createResolveContext(environment, getFilteredResources(hookregs, manres), getFilteredResources(hookregs, optres));
+        } else {
+            rescontext = super.createResolveContext(environment, manres, optres);
+        }
+
+        return rescontext;
+    }
+
+    private Collection<? extends Resource> getFilteredResources(ResolverHookRegistrations hookregs, Collection<? extends Resource> resources) {
+        Collection<Resource> filtered = null;
+        if (resources != null) {
+            filtered = new ArrayList<Resource>(resources);
+            Iterator<Resource> iterator = filtered.iterator();
+            while (iterator.hasNext()) {
+                Resource res = iterator.next();
+                if (!hookregs.hasResource(res)) {
+                    iterator.remove();
+                }
+            }
+        }
+        return filtered;
     }
 
     @Override
@@ -118,7 +160,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         try {
             FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
             lockContext = lockManager.lockItems(Method.RESOLVE, wireLock);
-            return super.resolve(resolveContext);
+            return resolveInternal(resolveContext);
         } finally {
             lockManager.unlockItems(lockContext);
         }
@@ -134,7 +176,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         try {
             FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
             lockContext = lockManager.lockItems(Method.RESOLVE, wireLock);
-            wiremap = super.resolve(resolveContext);
+            wiremap = resolveInternal(resolveContext);
             wirings = applyResolverResults(wiremap);
         } finally {
             lockManager.unlockItems(lockContext);
@@ -143,6 +185,18 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         // Send the {@link BundleEvent.RESOLVED} event outside the lock
         sendBundleResolvedEvents(wiremap);
         return wirings;
+    }
+
+    private Map<Resource, List<Wire>> resolveInternal(ResolveContext resolveContext) throws ResolutionException {
+        try {
+            Map<Resource, List<Wire>> wiremap = super.resolve(resolveContext);
+            return wiremap;
+        } finally {
+            ResolverHookRegistrations hookregs = ResolverHookRegistrations.getResolverHookRegistrations();
+            if (hookregs != null) {
+                hookregs.end();
+            }
+        }
     }
 
     private void appendOptionalFragments(Collection<? extends Resource> mandatory, Collection<Resource> optional) {
@@ -349,8 +403,8 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
             Bundle bundle = entry.getKey().getBundle();
             if (bundle instanceof AbstractBundleState) {
-                AbstractBundleState<?> bundleState = (AbstractBundleState<?>)bundle;
-				bundleState.changeState(Bundle.RESOLVED, 0);
+                AbstractBundleState<?> bundleState = (AbstractBundleState<?>) bundle;
+                bundleState.changeState(Bundle.RESOLVED, 0);
             }
         }
     }
@@ -360,7 +414,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
             XBundleRevision brev = (XBundleRevision) entry.getKey();
             Bundle bundle = brev.getBundle();
             if (bundle instanceof AbstractBundleState) {
-                AbstractBundleState<?> bundleState = (AbstractBundleState<?>)bundle;
+                AbstractBundleState<?> bundleState = (AbstractBundleState<?>) bundle;
                 if (bundleManager.isFrameworkCreated()) {
                     bundleState.fireBundleEvent(BundleEvent.RESOLVED);
                 }
