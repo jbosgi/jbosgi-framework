@@ -42,15 +42,20 @@ import org.jboss.osgi.framework.spi.SystemPaths;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
+import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XRequirement;
+import org.jboss.osgi.resolver.XResolveContext;
+import org.jboss.osgi.resolver.XResolver;
+import org.jboss.osgi.resolver.spi.ResolverHookException;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
+import org.osgi.service.resolver.ResolutionException;
 
 /**
  * A fallback loader that takes care of dynamic class/resource loads.
@@ -259,8 +264,20 @@ final class FallbackLoader implements LocalLoader {
                 for (XBundle bundle : resolved) {
                     XBundleRevision brev = bundle.getBundleRevision();
                     if (bundle.getBundleId() > 0 && !brev.isFragment()) {
-                        if (isValidCandidate(resName, pkgreq, brev))
-                            return brev;
+                        if (isValidCandidate(resName, pkgreq, brev)) {
+                            // Make sure the resolver hooks have a say about this
+                            try {
+                                XEnvironment env = frameworkState.getEnvironment();
+                                XResolver resolver = frameworkState.getResolverPlugin();
+                                XResolveContext context = resolver.createResolveContext(env, Collections.singleton(hostRev), null);
+                                resolver.resolve(context);
+                                return brev;
+                            } catch (ResolutionException ex) {
+                                LOGGER.debugf(ex, "Unexpected resolver error for dynamic resource load");
+                            } catch (ResolverHookException ex) {
+                                LOGGER.debugf("Resource access for '%s' in %s rejected by resolver hook", resName, brev);
+                            }
+                        }
                     }
                 }
             }
