@@ -300,7 +300,7 @@ final class HostBundleState extends UserBundleState<HostBundleRevision> {
                 if (th instanceof BundleException)
                     throw (BundleException) th;
 
-                throw MESSAGES.cannotStartBundle(th, this);
+                throw new BundleException(MESSAGES.cannotStartBundle(this), BundleException.ACTIVATOR_ERROR, th);
             }
         }
 

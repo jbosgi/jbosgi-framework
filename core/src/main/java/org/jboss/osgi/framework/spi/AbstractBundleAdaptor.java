@@ -269,7 +269,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
 
         } catch (Throwable th) {
             bundleState.set(Bundle.RESOLVED);
-            throw MESSAGES.cannotStartBundle(th, this);
+            throw new BundleException(MESSAGES.cannotStartBundle(this), th);
         } finally {
             lockManager.unlockItems(lockContext);
         }

@@ -224,7 +224,7 @@ public interface FrameworkMessages {
     BundleException invalidBundleActivator(String className);
 
     @Message(id = 11254, value = "Cannot start bundle: %s")
-    BundleException cannotStartBundle(@Cause Throwable cause, Bundle bundle);
+    String cannotStartBundle(Bundle bundle);
 
     @Message(id = 11255, value = "Bundle was uninstalled during activator start: %s")
     BundleException uninstalledDuringActivatorStart(Bundle bundle);
