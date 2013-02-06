@@ -124,19 +124,22 @@ public final class LockManagerImpl implements LockManager {
     @Override
     public synchronized void unlockItems(LockContext context) {
 
-        // Unlock all items
-        for (LockableItem item : context.getItems()) {
-            LockSupportImpl support = (LockSupportImpl) item.getLockSupport();
-            support.unlock();
-        }
+        if (context != null) {
 
-        LOGGER.debugf("LockManager unlocked: %s", context);
+            // Unlock all items
+            for (LockableItem item : context.getItems()) {
+                LockSupportImpl support = (LockSupportImpl) item.getLockSupport();
+                support.unlock();
+            }
 
-        // Pop the current context stack
-        Stack<LockContext> contextStack = lockContextAssociation.get();
-        contextStack.pop();
-        if (contextStack.isEmpty()) {
-            lockContextAssociation.remove();
+            LOGGER.debugf("LockManager unlocked: %s", context);
+
+            // Pop the current context stack
+            Stack<LockContext> contextStack = lockContextAssociation.get();
+            contextStack.pop();
+            if (contextStack.isEmpty()) {
+                lockContextAssociation.remove();
+            }
         }
 
         // Notify all waiting threads
@@ -190,6 +193,7 @@ public final class LockManagerImpl implements LockManager {
             return false;
         }
 
+        @Override
         public String toString() {
             return "(" + method + ") " + items;
         }

@@ -318,7 +318,4 @@ public interface FrameworkMessages {
 
     @Message(id = 11285, value = "Bundle start level [%d] not valid for framework start level [%d] while starting: %s")
     String bundleStartLevelNotValid(int bundleLevel, int frameworkLevel, Bundle bundle);
-
-    @Message(id = 11286, value = "Resolver Hooks are not allowed to start another resolve operation")
-    IllegalStateException illegalStateResolverHookCannotTriggerResolveOperation();
 }

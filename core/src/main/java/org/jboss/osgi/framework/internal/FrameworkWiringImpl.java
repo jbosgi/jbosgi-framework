@@ -43,6 +43,7 @@ import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolver;
+import org.jboss.osgi.resolver.spi.ResolverHookException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
@@ -52,6 +53,7 @@ import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.framework.wiring.FrameworkWiring;
+import org.osgi.service.resolver.ResolutionException;
 
 /**
  * An implementation of the {@link FrameworkWiringSupport} service.
@@ -209,7 +211,10 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                     break;
                 }
             }
-        } catch (Exception ex) {
+        } catch (ResolutionException ex) {
+            LOGGER.debugf(ex, "Cannot resolve: " + resolvableRevisions);
+            result = false;
+        } catch (ResolverHookException ex) {
             LOGGER.debugf(ex, "Cannot resolve: " + resolvableRevisions);
             result = false;
         }

@@ -22,7 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
-import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.resolver.ResolverMessages.MESSAGES;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -112,31 +112,59 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         Collection<Resource> optres = new HashSet<Resource>(optional != null ? optional : Collections.<Resource> emptySet());
         appendOptionalFragments(mandatory, optres);
         appendOptionalHostBundles(mandatory, optres);
+        return super.createResolveContext(environment, manres, optres);
+    }
 
-        XResolveContext rescontext;
+    @Override
+    public synchronized Map<Resource, List<Wire>> resolve(ResolveContext resolveContext) throws ResolutionException {
+        return resolveInternal(resolveContext, false);
+    }
+
+    @Override
+    public synchronized Map<Resource, List<Wire>> resolveAndApply(XResolveContext resolveContext) throws ResolutionException {
+        return resolveInternal(resolveContext, true);
+    }
+
+    private Map<Resource, List<Wire>> resolveInternal(ResolveContext resolveContext, boolean applyResults) throws ResolutionException {
 
         // Resolver Hooks also must not be allowed to start another resolve operation, for example by starting a bundle or resolving bundles.
         // The framework must detect this and throw an Illegal State Exception.
-        ResolverHookRegistrations hookregs = ResolverHookRegistrations.getResolverHookRegistrations();
-        if (hookregs != null)
-            MESSAGES.illegalStateResolverHookCannotTriggerResolveOperation();
+        if (ResolverHookRegistrations.getResolverHookRegistrations() != null)
+            throw MESSAGES.illegalStateResolverHookCannotTriggerResolveOperation();
 
         BundleContext syscontext = bundleManager.getSystemContext();
-        hookregs = new ResolverHookRegistrations(syscontext, bundleManager.getBundles(Bundle.INSTALLED));
-        if (hookregs.hasResolverHooks()) {
-            try {
-                hookregs.begin(mandatory, optional);
+        ResolverHookRegistrations hookregs = new ResolverHookRegistrations(syscontext, bundleManager.getBundles(Bundle.INSTALLED));
+        try {
+            // Recreate the {@link ResolveContext} with filtered resources
+            if (hookregs.hasResolverHooks()) {
+                Collection<Resource> manres = resolveContext.getMandatoryResources();
+                Collection<Resource> optres = resolveContext.getOptionalResources();
+                hookregs.begin(manres, optres);
                 hookregs.filterResolvable();
-            } catch (RuntimeException ex) {
-                hookregs.end();
-                throw ex;
+                resolveContext = super.createResolveContext(environment, getFilteredResources(hookregs, manres), getFilteredResources(hookregs, optres));
             }
-            rescontext = super.createResolveContext(environment, getFilteredResources(hookregs, manres), getFilteredResources(hookregs, optres));
-        } else {
-            rescontext = super.createResolveContext(environment, manres, optres);
-        }
 
-        return rescontext;
+            Map<Resource, List<Wire>> wiremap;
+
+            LockContext lockContext = null;
+            try {
+                FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+                lockContext = lockManager.lockItems(Method.RESOLVE, wireLock);
+                wiremap = super.resolve(resolveContext);
+                if (applyResults) {
+                    applyResolverResults(wiremap);
+                }
+            } finally {
+                lockManager.unlockItems(lockContext);
+            }
+
+            // Send the {@link BundleEvent.RESOLVED} event outside the lock
+            sendBundleResolvedEvents(wiremap);
+
+            return wiremap;
+        } finally {
+            hookregs.end();
+        }
     }
 
     private Collection<? extends Resource> getFilteredResources(ResolverHookRegistrations hookregs, Collection<? extends Resource> resources) {
@@ -152,51 +180,6 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
             }
         }
         return filtered;
-    }
-
-    @Override
-    public synchronized Map<Resource, List<Wire>> resolve(ResolveContext resolveContext) throws ResolutionException {
-        LockContext lockContext = null;
-        try {
-            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-            lockContext = lockManager.lockItems(Method.RESOLVE, wireLock);
-            return resolveInternal(resolveContext);
-        } finally {
-            lockManager.unlockItems(lockContext);
-        }
-    }
-
-    @Override
-    public synchronized Map<Resource, Wiring> resolveAndApply(XResolveContext resolveContext) throws ResolutionException {
-
-        Map<Resource, List<Wire>> wiremap;
-        Map<Resource, Wiring> wirings;
-
-        LockContext lockContext = null;
-        try {
-            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-            lockContext = lockManager.lockItems(Method.RESOLVE, wireLock);
-            wiremap = resolveInternal(resolveContext);
-            wirings = applyResolverResults(wiremap);
-        } finally {
-            lockManager.unlockItems(lockContext);
-        }
-
-        // Send the {@link BundleEvent.RESOLVED} event outside the lock
-        sendBundleResolvedEvents(wiremap);
-        return wirings;
-    }
-
-    private Map<Resource, List<Wire>> resolveInternal(ResolveContext resolveContext) throws ResolutionException {
-        try {
-            Map<Resource, List<Wire>> wiremap = super.resolve(resolveContext);
-            return wiremap;
-        } finally {
-            ResolverHookRegistrations hookregs = ResolverHookRegistrations.getResolverHookRegistrations();
-            if (hookregs != null) {
-                hookregs.end();
-            }
-        }
     }
 
     private void appendOptionalFragments(Collection<? extends Resource> mandatory, Collection<Resource> optional) {

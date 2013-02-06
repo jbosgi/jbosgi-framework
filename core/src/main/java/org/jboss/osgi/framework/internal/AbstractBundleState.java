@@ -62,7 +62,6 @@ import org.jboss.osgi.metadata.CaseInsensitiveDictionary;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.spi.AbstractElement;
-import org.jboss.osgi.resolver.spi.ResolverHookException;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -701,7 +700,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
             } catch (ResolutionException ex) {
                 result = false;
                 handleResolverException(fireEvent, BundleException.RESOLVE_ERROR, ex);
-            } catch (ResolverHookException ex) {
+            } catch (RuntimeException ex) {
                 result = false;
                 handleResolverException(fireEvent, BundleException.REJECTED_BY_HOOK, ex);
             }
