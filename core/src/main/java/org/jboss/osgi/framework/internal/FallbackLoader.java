@@ -25,8 +25,10 @@ import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,20 +44,20 @@ import org.jboss.osgi.framework.spi.SystemPaths;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;
-import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XRequirement;
-import org.jboss.osgi.resolver.XResolveContext;
-import org.jboss.osgi.resolver.XResolver;
-import org.jboss.osgi.resolver.spi.ResolverHookException;
+import org.jboss.osgi.resolver.spi.RemoveOnlyCollection;
+import org.jboss.osgi.resolver.spi.ResolverHookRegistrations;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.namespace.PackageNamespace;
+import org.osgi.framework.wiring.BundleCapability;
+import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
-import org.osgi.service.resolver.ResolutionException;
 
 /**
  * A fallback loader that takes care of dynamic class/resource loads.
@@ -264,25 +266,51 @@ final class FallbackLoader implements LocalLoader {
                 for (XBundle bundle : resolved) {
                     XBundleRevision brev = bundle.getBundleRevision();
                     if (bundle.getBundleId() > 0 && !brev.isFragment()) {
-                        if (isValidCandidate(resName, pkgreq, brev)) {
-                            // Make sure the resolver hooks have a say about this
-                            try {
-                                XEnvironment env = frameworkState.getEnvironment();
-                                XResolver resolver = frameworkState.getResolverPlugin();
-                                XResolveContext context = resolver.createResolveContext(env, Collections.singleton(hostRev), null);
-                                resolver.resolve(context);
-                                return brev;
-                            } catch (ResolutionException ex) {
-                                LOGGER.debugf(ex, "Unexpected resolver error for dynamic resource load");
-                            } catch (ResolverHookException ex) {
-                                LOGGER.debugf("Resource access for '%s' in %s rejected by resolver hook", resName, brev);
-                            }
+                        XPackageCapability bcap = isValidCandidate(resName, pkgreq, brev);
+                        if (bcap != null && filterMatches(pkgreq, bcap)) {
+                            return brev;
                         }
                     }
                 }
             }
         }
         return null;
+    }
+
+    private boolean filterMatches(XPackageRequirement req, XPackageCapability cap) {
+
+        // Cannot filter invalid types
+        if (!(req instanceof BundleRequirement) || !(cap instanceof BundleCapability))
+            return true;
+
+        boolean callHookLifecycle = false;
+        ResolverHookRegistrations hookregs = ResolverHookRegistrations.getResolverHookRegistrations();
+        if (hookregs == null) {
+            BundleContext syscontext = bundleManager.getSystemBundle().getBundleContext();
+            hookregs = new ResolverHookRegistrations(syscontext, null);
+            callHookLifecycle = true;
+        }
+
+        // Nothing to filter
+        if (hookregs.hasResolverHooks() == false)
+            return true;
+
+        Collection<BundleCapability> bcaps = new HashSet<BundleCapability>();
+        bcaps.add((BundleCapability) cap);
+        bcaps = new RemoveOnlyCollection<BundleCapability>(bcaps);
+
+        if (callHookLifecycle) {
+            try {
+                hookregs.begin(Collections.singleton(hostRev), null);
+                hookregs.filterMatches((BundleRequirement) req, bcaps);
+            } finally {
+                hookregs.end();
+            }
+        } else {
+            hookregs.filterMatches((BundleRequirement) req, bcaps);
+        }
+
+        return bcaps.contains(cap);
     }
 
     private XBundleRevision findInUnresolvedRevisions(String resName, List<XPackageRequirement> matchingPatterns) {
@@ -313,20 +341,19 @@ final class FallbackLoader implements LocalLoader {
         return systemPaths.getSystemPaths().contains(pathName) ? brev : null;
     }
 
-    private boolean isValidCandidate(String resName, XPackageRequirement pkgreq, XBundleRevision brev) {
+    private XPackageCapability isValidCandidate(String resName, XPackageRequirement pkgreq, XBundleRevision brev) {
 
         // Skip dynamic loads from this module
         if (brev == hostRev)
-            return false;
+            return null;
 
         LOGGER.tracef("Attempt to find path dynamically [%s] in %s ...", resName, brev);
         URL resURL = brev.getEntry(resName);
         if (resURL == null) {
-            return false;
+            return null;
         }
 
-        XPackageCapability candidateCap = getCandidateCapability(brev, pkgreq);
-        return (candidateCap != null);
+        return getCandidateCapability(brev, pkgreq);
     }
 
     private XPackageCapability getCandidateCapability(BundleRevision brev, XPackageRequirement packageReq) {
