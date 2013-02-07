@@ -61,12 +61,15 @@ import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResource;
+import org.jboss.osgi.resolver.XResourceCapability;
 import org.jboss.osgi.resolver.felix.StatelessResolver;
 import org.jboss.osgi.resolver.spi.ResolverHookRegistrations;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.Constants;
+import org.osgi.framework.namespace.BundleNamespace;
 import org.osgi.framework.namespace.HostNamespace;
 import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.framework.namespace.PackageNamespace;
@@ -108,7 +111,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
 
     @Override
     public XResolveContext createResolveContext(XEnvironment environment, Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) {
-        Collection<Resource> manres = filterSingletons(mandatory);
+        Collection<Resource> manres = new HashSet<Resource>(mandatory != null ? mandatory : Collections.<Resource> emptySet());
         Collection<Resource> optres = new HashSet<Resource>(optional != null ? optional : Collections.<Resource> emptySet());
         appendOptionalFragments(mandatory, optres);
         appendOptionalHostBundles(mandatory, optres);
@@ -133,15 +136,38 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
             throw MESSAGES.illegalStateResolverHookCannotTriggerResolveOperation();
 
         BundleContext syscontext = bundleManager.getSystemContext();
+        Collection<Resource> manres = resolveContext.getMandatoryResources();
+        Collection<Resource> optres = resolveContext.getOptionalResources();
         ResolverHookRegistrations hookregs = new ResolverHookRegistrations(syscontext, bundleManager.getBundles(Bundle.INSTALLED));
         try {
             // Recreate the {@link ResolveContext} with filtered resources
             if (hookregs.hasResolverHooks()) {
-                Collection<Resource> manres = resolveContext.getMandatoryResources();
-                Collection<Resource> optres = resolveContext.getOptionalResources();
                 hookregs.begin(manres, optres);
                 hookregs.filterResolvable();
+                hookregs.filterSingletonCollisions(new ResolverHookRegistrations.SingletonLocator() {
+                    @Override
+                    public Collection<BundleCapability> findCollisionCandidates(BundleCapability viewpoint) {
+                        Collection<BundleCapability> result = new HashSet<BundleCapability>();
+                        if (viewpoint instanceof XResourceCapability) {
+                            String symbolicName = ((XResourceCapability) viewpoint).getSymbolicName();
+                            for (XBundle bundle : bundleManager.getBundles(symbolicName, null)) {
+                                XBundleRevision xres = bundle.getBundleRevision();
+                                List<BundleCapability> bcaps = xres.getDeclaredCapabilities(BundleNamespace.BUNDLE_NAMESPACE);
+                                if (bcaps.size() == 1) {
+                                    BundleCapability bcap = bcaps.get(0);
+                                    String spec = bcap.getDirectives().get(Constants.SINGLETON_DIRECTIVE);
+                                    if (bcap != viewpoint && Boolean.parseBoolean(spec)) {
+                                        result.add(bcap);
+                                    }
+                                }
+                            }
+                        }
+                        return result;
+                    }
+                });
                 resolveContext = super.createResolveContext(environment, getFilteredResources(hookregs, manres), getFilteredResources(hookregs, optres));
+            } else {
+                resolveContext = super.createResolveContext(environment, filterSingletons(manres), optres);
             }
 
             Map<Resource, List<Wire>> wiremap;

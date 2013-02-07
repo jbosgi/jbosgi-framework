@@ -1,4 +1,5 @@
 package org.jboss.test.osgi.framework.bundle;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -32,12 +33,19 @@ import static org.osgi.framework.Bundle.RESOLVED;
 
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Dictionary;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.jar.Attributes;
 
 import org.jboss.osgi.metadata.ManifestBuilder;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
+import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.resolver.XResourceCapability;
+import org.jboss.osgi.resolver.spi.AbstractResolverHook;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -55,6 +63,11 @@ import org.osgi.framework.BundleReference;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.Version;
+import org.osgi.framework.hooks.resolver.ResolverHook;
+import org.osgi.framework.hooks.resolver.ResolverHookFactory;
+import org.osgi.framework.namespace.BundleNamespace;
+import org.osgi.framework.wiring.BundleCapability;
+import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
@@ -207,11 +220,58 @@ public class BundleTestCase extends OSGiFrameworkTest {
             Bundle bundleB = installBundle(assemblyB);
             try {
                 FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
-                boolean resolved = frameworkWiring.resolveBundles(Arrays.asList(bundleA, bundleB ));
+                boolean resolved = frameworkWiring.resolveBundles(Arrays.asList(bundleA, bundleB));
                 assertFalse("Not all Bundles resolved", resolved);
                 int stateA = bundleA.getState();
                 int stateB = bundleB.getState();
                 assertTrue("One Bundle resolved", stateA == INSTALLED && stateB == RESOLVED || stateA == RESOLVED && stateB == INSTALLED);
+            } finally {
+                bundleB.uninstall();
+            }
+        } finally {
+            bundleA.uninstall();
+        }
+    }
+
+    @Test
+    public void testResolverHookSingleton() throws Exception {
+        final Map<BundleCapability, Collection<BundleCapability>> singletons = new HashMap<BundleCapability, Collection<BundleCapability>>();
+        ResolverHookFactory factory = new ResolverHookFactory() {
+            @Override
+            public ResolverHook begin(Collection<BundleRevision> triggers) {
+                return new AbstractResolverHook() {
+                    @Override
+                    public void filterSingletonCollisions(BundleCapability cap, Collection<BundleCapability> candidates) {
+                        singletons.put(cap, new HashSet<BundleCapability>(candidates));
+                        Version version = ((XResourceCapability) cap).getVersion();
+                        if (Version.parseVersion("1.0.0").equals(version)) {
+                            candidates.clear();
+                        }
+                    }
+                };
+            }
+        };
+        getSystemContext().registerService(ResolverHookFactory.class, factory, null);
+
+        Archive<?> assemblyA = assembleArchive("bundle10", "/bundles/singleton/singleton1");
+        Bundle bundleA = installBundle(assemblyA);
+        try {
+            Archive<?> assemblyB = assembleArchive("bundle20", "/bundles/singleton/singleton2");
+            Bundle bundleB = installBundle(assemblyB);
+            try {
+                FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
+                boolean resolved = frameworkWiring.resolveBundles(Arrays.asList(bundleA, bundleB));
+                XBundleRevision brevA = (XBundleRevision) bundleA.adapt(BundleRevision.class);
+                XBundleRevision brevB = (XBundleRevision) bundleB.adapt(BundleRevision.class);
+                BundleCapability bcapA = brevA.getDeclaredCapabilities(BundleNamespace.BUNDLE_NAMESPACE).get(0);
+                BundleCapability bcapB = brevB.getDeclaredCapabilities(BundleNamespace.BUNDLE_NAMESPACE).get(0);
+                assertEquals("One possible collision", 1, singletons.get(bcapA).size());
+                assertEquals(bcapB, singletons.get(bcapA).iterator().next());
+                assertEquals("One possible collision", 1, singletons.get(bcapB).size());
+                assertEquals(bcapA, singletons.get(bcapB).iterator().next());
+                assertFalse("Not all Bundles resolved", resolved);
+                assertBundleState(RESOLVED, bundleA.getState());
+                assertBundleState(INSTALLED, bundleB.getState());
             } finally {
                 bundleB.uninstall();
             }

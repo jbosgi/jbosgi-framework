@@ -107,9 +107,9 @@ public interface FrameworkLogger extends BasicLogger {
     @Message(id = 11012, value = "Stopping bundles for start level: %d")
     void infoStoppingBundlesForStartLevel(int level);
 
-    @LogMessage(level = INFO)
-    @Message(id = 11013, value = "No resolvable singleton bundle: %s")
-    void infoNoResolvableSingleton(Bundle bundle);
+    //@LogMessage(level = INFO)
+    //@Message(id = 11013, value = "No resolvable singleton bundle: %s")
+    //void infoNoResolvableSingleton(Bundle bundle);
 
     @LogMessage(level = WARN)
     @Message(id = 11014, value = "Cannot process metadata from properties: %s")

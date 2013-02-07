@@ -155,36 +155,11 @@ abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extend
 
     private void installBundle(UserBundleState<?> userBundle) throws BundleException {
 
-        // [TODO] Add singleton support this to XBundle
-        // it is not ok to simple not add it to the Environment
-        boolean addToEnvironment = true;
-        if (userBundle.isSingleton()) {
-            String symbolicName = userBundle.getSymbolicName();
-            for (XBundle aux : getBundleManager().getBundles(symbolicName, null)) {
-                if (aux != userBundle && isSingleton(aux)) {
-                    LOGGER.infoNoResolvableSingleton(userBundle);
-                    addToEnvironment = false;
-                    break;
-                }
-            }
-        }
-
-        if (addToEnvironment) {
-            XEnvironment env = getFrameworkState().getEnvironment();
-            env.installResources(userBundle.getBundleRevision());
-        }
+        XEnvironment env = getFrameworkState().getEnvironment();
+        env.installResources(userBundle.getBundleRevision());
 
         userBundle.changeState(Bundle.INSTALLED, 0);
         LOGGER.infoBundleInstalled(userBundle);
-    }
-
-    // [TODO] Add singleton support this to XBundle
-    private boolean isSingleton(XBundle userBundle) {
-        if (userBundle instanceof UserBundleState) {
-            UserBundleState<?> bundleState = (UserBundleState<?>) userBundle;
-            return bundleState.isSingleton();
-        }
-        return false;
     }
 
     private void validateBundle(UserBundleState<?> userBundle, OSGiMetaData metadata) throws BundleException {
