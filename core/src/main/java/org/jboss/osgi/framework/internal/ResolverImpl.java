@@ -69,7 +69,6 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
-import org.osgi.framework.namespace.BundleNamespace;
 import org.osgi.framework.namespace.HostNamespace;
 import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.framework.namespace.PackageNamespace;
@@ -152,7 +151,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
                             String symbolicName = ((XResourceCapability) viewpoint).getSymbolicName();
                             for (XBundle bundle : bundleManager.getBundles(symbolicName, null)) {
                                 XBundleRevision xres = bundle.getBundleRevision();
-                                List<BundleCapability> bcaps = xres.getDeclaredCapabilities(BundleNamespace.BUNDLE_NAMESPACE);
+                                List<BundleCapability> bcaps = xres.getDeclaredCapabilities(viewpoint.getNamespace());
                                 if (bcaps.size() == 1) {
                                     BundleCapability bcap = bcaps.get(0);
                                     String spec = bcap.getDirectives().get(Constants.SINGLETON_DIRECTIVE);
