@@ -318,4 +318,7 @@ public interface FrameworkMessages {
 
     @Message(id = 11285, value = "Bundle start level [%d] not valid for framework start level [%d] while starting: %s")
     String bundleStartLevelNotValid(int bundleLevel, int frameworkLevel, Bundle bundle);
+
+    @Message(id = 11286, value = "Byte code weaving already complete for: %s")
+    IllegalStateException illegalStateWeavingAlreadyComplete(String className);
 }

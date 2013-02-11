@@ -40,6 +40,7 @@ import org.osgi.framework.hooks.resolver.ResolverHook;
 import org.osgi.framework.hooks.service.EventHook;
 import org.osgi.framework.hooks.service.EventListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook;
+import org.osgi.framework.hooks.weaving.WeavingHook;
 import org.osgi.framework.wiring.BundleRevision;
 
 /**
@@ -222,4 +223,8 @@ public interface FrameworkLogger extends BasicLogger {
     @LogMessage(level = WARN)
     @Message(id = 11041, value = "Error while calling resolver hook method '%s': %s")
     void warnErrorWhileCallingResolverHookMethod(@Cause Throwable cause, String method, ResolverHook hook);
+
+    @LogMessage(level = WARN)
+    @Message(id = 11042, value = "Error while calling weaving hook: %s")
+    void warnErrorWhileCallingWeavingHook(@Cause Throwable cause, WeavingHook hook);
 }
