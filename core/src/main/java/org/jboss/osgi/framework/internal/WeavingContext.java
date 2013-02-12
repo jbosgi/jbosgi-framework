@@ -92,7 +92,7 @@ class WeavingContext {
     }
 
     List<WeavingHook> getWeavingHooks() {
-        return Collections.unmodifiableList(weavingHooks);
+        return weavingHooks;
     }
 
     synchronized ContextClass createContextClass(String className, Class<?> redefinedClass, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
