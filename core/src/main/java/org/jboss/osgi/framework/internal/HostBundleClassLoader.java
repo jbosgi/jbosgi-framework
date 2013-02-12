@@ -25,6 +25,7 @@ import org.jboss.modules.ClassSpec;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleClassLoaderFactory;
 import org.jboss.modules.filter.PathFilter;
+import org.jboss.osgi.framework.internal.WeavingContext.ContextClass;
 import org.jboss.osgi.framework.spi.BundleReferenceClassLoader;
 
 /**
@@ -43,6 +44,17 @@ final class HostBundleClassLoader extends BundleReferenceClassLoader<HostBundleS
     }
 
     @Override
+    public Class<?> loadClassLocal(String className, boolean resolve) throws ClassNotFoundException {
+        WeavingContext weavingContext = WeavingContext.create(getBundleState());
+        try {
+            return super.loadClassLocal(className, resolve);
+        } finally {
+            weavingContext.close();
+        }
+    }
+
+
+    @Override
     protected void preDefine(ClassSpec classSpec, String className) {
         if (getBundleState().awaitLazyActivation()) {
             String path = className.substring(0, className.lastIndexOf('.')).replace('.', '/');
@@ -54,6 +66,15 @@ final class HostBundleClassLoader extends BundleReferenceClassLoader<HostBundleS
 
     @Override
     protected void postDefine(ClassSpec classSpec, Class<?> definedClass) {
+        WeavingContext weavingContext = WeavingContext.getCurrentWeavingContext();
+        if (weavingContext != null) {
+            ContextClass wovenClass = weavingContext.getContextClass(definedClass.getName());
+            if (wovenClass != null) {
+                wovenClass.setProtectionDomain(definedClass.getProtectionDomain());
+                wovenClass.setDefinedClass(definedClass);
+                wovenClass.setWeavingComplete();
+            }
+        }
         if (getBundleState().awaitLazyActivation()) {
             String path = definedClass.getPackage().getName().replace('.', '/');
             if (lazyFilter.accept(path)) {

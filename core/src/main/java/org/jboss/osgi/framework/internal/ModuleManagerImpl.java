@@ -294,7 +294,7 @@ public final class ModuleManagerImpl implements ModuleManager {
 
         PathFilter lazyActivationFilter = getLazyPackagesFilter(hostBundle);
         specBuilder.setModuleClassLoaderFactory(new HostBundleClassLoader.Factory(hostBundle, lazyActivationFilter));
-        specBuilder.setClassFileTransformer(new WeavingHookTransformer(hostBundle));
+        specBuilder.setClassFileTransformer(new WeavingHookProcessor());
         specBuilder.setFallbackLoader(new FallbackLoader(hostRev, importedPaths));
 
         ModuleSpecBuilderContext context = new ModuleSpecBuilderContext() {

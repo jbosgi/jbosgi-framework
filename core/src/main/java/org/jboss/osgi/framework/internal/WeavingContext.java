@@ -21,56 +21,58 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
-import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
-import org.osgi.framework.hooks.weaving.WeavingException;
 import org.osgi.framework.hooks.weaving.WeavingHook;
 import org.osgi.framework.hooks.weaving.WovenClass;
 import org.osgi.framework.wiring.BundleWiring;
 
 /**
- * A {@link ClassFileTransformer} that delegates to the registered {@link WeavingHook}.
+ * A context for the processing of registered {@link WeavingHook}s.
  *
  * @author thomas.diesler@jboss.com
  * @since 11-Feb-2013
  */
-final class WeavingHookTransformer implements ClassFileTransformer {
+class WeavingContext {
+
+    private static ThreadLocal<WeavingContext> association = new ThreadLocal<WeavingContext>();
 
     private final HostBundleState hostState;
-    private final BundleManagerPlugin bundleManager;
-    private ThreadLocal<List<WeavingHook>> reentrantHooks;
+    private final List<WeavingHook> weavingHooks;
+    private final FallbackLoader fallbackLoader;
+    private Map<String, ContextClass> wovenClasses = new HashMap<String, ContextClass>();
 
-    WeavingHookTransformer(HostBundleState hostState) {
-        this.hostState = hostState;
-        this.bundleManager = hostState.getBundleManager();
-        this.reentrantHooks = new ThreadLocal<List<WeavingHook>>();
+    static WeavingContext getCurrentWeavingContext() {
+        return association.get();
     }
 
-    @Override
-    public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
+    static WeavingContext create(HostBundleState hostState) {
+        WeavingContext context = new WeavingContext(hostState);
+        association.set(context);
+        return context;
+    }
 
-        List<WeavingHook> hooks = reentrantHooks.get();
-        if (hooks != null) {
-            WovenClassImpl wovenClass = new WovenClassImpl(hostState, className, classBeingRedefined, protectionDomain, classfileBuffer);
-            return callWeavingHooks(wovenClass, hooks);
-        }
+    private WeavingContext(HostBundleState hostState) {
+        this.hostState = hostState;
+        this.fallbackLoader = hostState.getBundleRevision().getFallbackLoader();
+
+        BundleManagerPlugin bundleManager = hostState.getBundleManager();
+        BundleContext syscontext = bundleManager.getSystemContext();
 
         // Find the registered {@link WeavingHook}
         Collection<ServiceReference<WeavingHook>> srefs = null;
-        BundleContext syscontext = bundleManager.getSystemContext();
         try {
             srefs = syscontext.getServiceReferences(WeavingHook.class, null);
         } catch (InvalidSyntaxException e) {
@@ -79,61 +81,47 @@ final class WeavingHookTransformer implements ClassFileTransformer {
 
         // Weaving Hook services that are lower in ranking will weave any of the changes of higher ranking Weaving Hook services.
         List<ServiceReference<WeavingHook>> sorted = new ArrayList<ServiceReference<WeavingHook>>(srefs);
-        Collections.sort(sorted);
+        Collections.reverse(sorted);
 
         // Get the hook instances and associate them with the current thread
-        hooks = new ArrayList<WeavingHook>();
+        weavingHooks = new ArrayList<WeavingHook>();
         for (ServiceReference<WeavingHook> sref : sorted) {
             WeavingHook hook = syscontext.getService(sref);
-            hooks.add(hook);
-        }
-
-        reentrantHooks.set(hooks);
-        try {
-            WovenClassImpl wovenClass = new WovenClassImpl(hostState, className, classBeingRedefined, protectionDomain, classfileBuffer);
-            return callWeavingHooks(wovenClass, hooks);
-        } finally {
-            reentrantHooks.remove();
+            weavingHooks.add(hook);
         }
     }
 
-    private byte[] callWeavingHooks(WovenClassImpl wovenClass, List<WeavingHook> hooks) {
-        for(Iterator<WeavingHook> iterator = hooks.iterator(); iterator.hasNext();) {
-            WeavingHook hook = iterator.next();
-            try {
-                hook.weave(wovenClass);
-            } catch (WeavingException ex) {
-                LOGGER.warnErrorWhileCallingWeavingHook(ex, hook);
-                // This method can throw a WeavingException to deliberately fail the class load
-                // without being blacklisted by the framework.
-                throw ex;
-            } catch (RuntimeException rte) {
-                LOGGER.warnErrorWhileCallingWeavingHook(rte, hook);
-                iterator.remove();
-                throw rte;
-            }
-        }
-        wovenClass.setWeavingComplete();
-        return wovenClass.getBytes();
+    List<WeavingHook> getWeavingHooks() {
+        return Collections.unmodifiableList(weavingHooks);
     }
 
-    static class WovenClassImpl implements WovenClass {
+    synchronized ContextClass createContextClass(String className, Class<?> redefinedClass, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
+        ContextClass contextClass = new ContextClass(className, redefinedClass, protectionDomain, classfileBuffer);
+        wovenClasses.put(contextClass.getClassName(), contextClass);
+        return contextClass;
+    }
 
-        private final HostBundleState hostState;
+    synchronized ContextClass getContextClass(String className) {
+        return wovenClasses.get(className);
+    }
+
+    void close() {
+        association.remove();
+    }
+
+    class ContextClass implements WovenClass {
+
         private final String className;
-        private final Class<?> redefinedClass;
-        private final ProtectionDomain protectionDomain;
-        private List<String> dynamicImports;
+        private Class<?> redefinedClass;
+        private ProtectionDomain protectionDomain;
         private boolean weavingComplete;
         private byte[] classfileBuffer;
 
-        WovenClassImpl(HostBundleState hostState, String className, Class<?> redefinedClass, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
-            this.hostState = hostState;
+        ContextClass(String className, Class<?> redefinedClass, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
             this.className = className.replace('/', '.');
             this.redefinedClass = redefinedClass;
             this.protectionDomain = protectionDomain;
             this.classfileBuffer = classfileBuffer;
-            this.dynamicImports = new ArrayList<String>();
         }
 
         @Override
@@ -149,7 +137,8 @@ final class WeavingHookTransformer implements ClassFileTransformer {
 
         @Override
         public List<String> getDynamicImports() {
-            return dynamicImports;
+            List<String> imports = fallbackLoader.getWeavingImports();
+            return weavingComplete ? Collections.unmodifiableList(imports) : imports;
         }
 
         @Override
@@ -159,7 +148,6 @@ final class WeavingHookTransformer implements ClassFileTransformer {
 
         void setWeavingComplete() {
             assertWeavingNotComplete();
-            dynamicImports = Collections.unmodifiableList(dynamicImports);
             classfileBuffer = Arrays.copyOf(classfileBuffer, classfileBuffer.length);
             weavingComplete = true;
         }
@@ -174,9 +162,19 @@ final class WeavingHookTransformer implements ClassFileTransformer {
             return protectionDomain;
         }
 
+        void setProtectionDomain(ProtectionDomain protectionDomain) {
+            assertWeavingNotComplete();
+            this.protectionDomain = protectionDomain;
+        }
+
         @Override
         public Class<?> getDefinedClass() {
             return redefinedClass;
+        }
+
+        void setDefinedClass(Class<?> definedClass) {
+            assertWeavingNotComplete();
+            this.redefinedClass = definedClass;
         }
 
         @Override
