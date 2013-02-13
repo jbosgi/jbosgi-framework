@@ -24,7 +24,6 @@ package org.jboss.osgi.framework.internal;
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 import java.util.Iterator;
-import java.util.List;
 
 import org.jboss.osgi.framework.internal.WeavingContext.ContextClass;
 import org.jboss.osgi.framework.internal.WeavingContext.HookRegistration;
@@ -53,13 +52,12 @@ final class WeavingHookProcessor implements ClassFileTransformer {
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
 
         WeavingContext context = WeavingContext.getCurrentWeavingContext();
-        List<HookRegistration> weavingHooks = context.getWeavingHooks();
-        if (weavingHooks.isEmpty()) {
+        if (context == null || context.getWeavingHooks().isEmpty()) {
             return classfileBuffer;
         }
 
         ContextClass wovenClass = context.createContextClass(className, classBeingRedefined, protectionDomain, classfileBuffer);
-        for (Iterator<HookRegistration> iterator = weavingHooks.iterator(); iterator.hasNext();) {
+        for (Iterator<HookRegistration> iterator = context.getWeavingHooks().iterator(); iterator.hasNext();) {
             HookRegistration hookreg = iterator.next();
             WeavingHook hook = hookreg.hook;
             try {

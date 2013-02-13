@@ -346,7 +346,10 @@ public final class ServiceManagerImpl implements ServiceManager {
      * reverse compareTo ordering of their Service References.
      */
     private List<ServiceState<?>> processFindHooks(XBundle bundle, String clazz, String filterStr, boolean checkAssignable, List<ServiceState<?>> serviceStates) {
-        BundleContext context = bundle.getBundleContext();
+
+        if (serviceStates.isEmpty())
+            return serviceStates;
+
         List<ServiceState<?>> hookRefs = getServiceReferencesInternal(bundle, FindHook.class.getName(), NoFilter.INSTANCE, true);
         if (hookRefs.isEmpty())
             return serviceStates;
@@ -361,6 +364,7 @@ public final class ServiceManagerImpl implements ServiceManager {
         Collections.reverse(sortedHookRefs);
 
         List<FindHook> hooks = new ArrayList<FindHook>();
+        BundleContext context = bundle.getBundleContext();
         for (ServiceReference<?> hookRef : sortedHookRefs)
             hooks.add((FindHook) context.getService(hookRef));
 
