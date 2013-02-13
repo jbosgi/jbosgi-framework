@@ -120,7 +120,7 @@ class WeavingContext {
     }
 
     synchronized ContextClass getContextClass(String className) {
-        return wovenClasses.get(className);
+        return wovenClasses.get(className.replace('/', '.'));
     }
 
     void close() {
@@ -141,7 +141,7 @@ class WeavingContext {
         private final String className;
         private Class<?> redefinedClass;
         private ProtectionDomain protectionDomain;
-        private boolean weavingComplete;
+        private boolean complete;
         private byte[] classfileBuffer;
 
         ContextClass(String className, Class<?> redefinedClass, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
@@ -158,25 +158,26 @@ class WeavingContext {
 
         @Override
         public void setBytes(byte[] newBytes) {
-            assertWeavingNotComplete();
+            assertNotComplete();
             this.classfileBuffer = newBytes;
         }
 
         @Override
         public List<String> getDynamicImports() {
             List<String> imports = fallbackLoader.getWeavingImports();
-            return weavingComplete ? Collections.unmodifiableList(imports) : imports;
+            return complete ? Collections.unmodifiableList(imports) : imports;
         }
 
         @Override
         public boolean isWeavingComplete() {
-            return weavingComplete;
+            return complete;
         }
 
-        void setComplete() {
-            assertWeavingNotComplete();
-            classfileBuffer = Arrays.copyOf(classfileBuffer, classfileBuffer.length);
-            weavingComplete = true;
+        void markComplete() {
+            if (complete == false) {
+                classfileBuffer = Arrays.copyOf(classfileBuffer, classfileBuffer.length);
+                complete = true;
+            }
         }
 
         @Override
@@ -190,7 +191,7 @@ class WeavingContext {
         }
 
         void setProtectionDomain(ProtectionDomain protectionDomain) {
-            assertWeavingNotComplete();
+            assertNotComplete();
             this.protectionDomain = protectionDomain;
         }
 
@@ -200,7 +201,7 @@ class WeavingContext {
         }
 
         void setDefinedClass(Class<?> definedClass) {
-            assertWeavingNotComplete();
+            assertNotComplete();
             this.redefinedClass = definedClass;
         }
 
@@ -209,8 +210,8 @@ class WeavingContext {
             return hostState.adapt(BundleWiring.class);
         }
 
-        private void assertWeavingNotComplete() {
-            if (weavingComplete)
+        private void assertNotComplete() {
+            if (complete)
                 throw MESSAGES.illegalStateWeavingAlreadyComplete(className);
         }
     }

@@ -71,7 +71,7 @@ final class WeavingHookProcessor implements ClassFileTransformer {
                     context.blacklist(hookreg.sref);
                     iterator.remove();
                 }
-                wovenClass.setComplete();
+                wovenClass.markComplete();
                 BundleReferenceClassLoader<?> bref = (BundleReferenceClassLoader<?>) hook.getClass().getClassLoader();
                 frameworkEvents.fireFrameworkEvent(bref.getBundleState(), FrameworkEvent.ERROR, rte, (FrameworkListener[]) null);
                 throw rte;

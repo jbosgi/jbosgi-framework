@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.internal;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -45,14 +46,19 @@ final class HostBundleClassLoader extends BundleReferenceClassLoader<HostBundleS
 
     @Override
     public Class<?> loadClassLocal(String className, boolean resolve) throws ClassNotFoundException {
-        WeavingContext weavingContext = WeavingContext.create(getBundleState());
+        WeavingContext context = WeavingContext.create(getBundleState());
         try {
             return super.loadClassLocal(className, resolve);
+        } catch (ClassFormatError cfe) {
+            ContextClass wovenClass = context.getContextClass(className);
+            if (wovenClass != null) {
+                wovenClass.markComplete();
+            }
+            throw cfe;
         } finally {
-            weavingContext.close();
+            context.close();
         }
     }
-
 
     @Override
     protected void preDefine(ClassSpec classSpec, String className) {
@@ -72,7 +78,7 @@ final class HostBundleClassLoader extends BundleReferenceClassLoader<HostBundleS
             if (wovenClass != null) {
                 wovenClass.setProtectionDomain(definedClass.getProtectionDomain());
                 wovenClass.setDefinedClass(definedClass);
-                wovenClass.setComplete();
+                wovenClass.markComplete();
             }
         }
         if (getBundleState().awaitLazyActivation()) {
