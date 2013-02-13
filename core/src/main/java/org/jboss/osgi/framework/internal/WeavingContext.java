@@ -29,8 +29,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
@@ -47,10 +50,11 @@ import org.osgi.framework.wiring.BundleWiring;
  */
 class WeavingContext {
 
-    private static ThreadLocal<WeavingContext> association = new ThreadLocal<WeavingContext>();
+    private static final ThreadLocal<WeavingContext> association = new ThreadLocal<WeavingContext>();
+    private static final Set<ServiceReference<WeavingHook>> blacklist = new HashSet<ServiceReference<WeavingHook>>();
 
     private final HostBundleState hostState;
-    private final List<WeavingHook> weavingHooks;
+    private final List<HookRegistration> weavingHooks;
     private final FallbackLoader fallbackLoader;
     private Map<String, ContextClass> wovenClasses = new HashMap<String, ContextClass>();
 
@@ -71,6 +75,14 @@ class WeavingContext {
         BundleManagerPlugin bundleManager = hostState.getBundleManager();
         BundleContext syscontext = bundleManager.getSystemContext();
 
+        // Cleanup the blacklist
+        for (Iterator<ServiceReference<WeavingHook>> iterator = blacklist.iterator(); iterator.hasNext();) {
+            ServiceReference<WeavingHook> sref = iterator.next();
+            if (syscontext.getService(sref) == null) {
+                iterator.remove();
+            }
+        }
+
         // Find the registered {@link WeavingHook}
         Collection<ServiceReference<WeavingHook>> srefs = null;
         try {
@@ -84,15 +96,21 @@ class WeavingContext {
         Collections.reverse(sorted);
 
         // Get the hook instances and associate them with the current thread
-        weavingHooks = new ArrayList<WeavingHook>();
+        weavingHooks = new ArrayList<HookRegistration>();
         for (ServiceReference<WeavingHook> sref : sorted) {
-            WeavingHook hook = syscontext.getService(sref);
-            weavingHooks.add(hook);
+            if (blacklist.contains(sref) == false) {
+                WeavingHook hook = syscontext.getService(sref);
+                weavingHooks.add(new HookRegistration(sref, hook));
+            }
         }
     }
 
-    List<WeavingHook> getWeavingHooks() {
+    List<HookRegistration> getWeavingHooks() {
         return weavingHooks;
+    }
+
+    void blacklist(ServiceReference<WeavingHook> sref) {
+        blacklist.add(sref);
     }
 
     synchronized ContextClass createContextClass(String className, Class<?> redefinedClass, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
@@ -107,6 +125,15 @@ class WeavingContext {
 
     void close() {
         association.remove();
+    }
+
+    static class HookRegistration {
+        final WeavingHook hook;
+        final ServiceReference<WeavingHook> sref;
+        HookRegistration(ServiceReference<WeavingHook> sref, WeavingHook hook) {
+            this.sref = sref;
+            this.hook = hook;
+        }
     }
 
     class ContextClass implements WovenClass {
@@ -146,7 +173,7 @@ class WeavingContext {
             return weavingComplete;
         }
 
-        void setWeavingComplete() {
+        void setComplete() {
             assertWeavingNotComplete();
             classfileBuffer = Arrays.copyOf(classfileBuffer, classfileBuffer.length);
             weavingComplete = true;

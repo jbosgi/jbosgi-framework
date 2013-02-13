@@ -54,7 +54,7 @@
         <version.jboss.logging>3.1.2.GA</version.jboss.logging>
         <version.jboss.logmanager>1.4.0.Beta1</version.jboss.logmanager>
         <version.jboss.logging.processor>1.1.0.Beta1</version.jboss.logging.processor>
-        <version.jboss.modules>1.2.0.CR1</version.jboss.modules>
+        <version.jboss.modules>1.2.0.CR2-SNAPSHOT</version.jboss.modules>
         <version.jboss.msc>1.0.4.GA</version.jboss.msc>
         <version.jboss.osgi.deployment>2.0.0.Alpha3</version.jboss.osgi.deployment>
         <version.jboss.osgi.metadata>3.0.0.Alpha5-SNAPSHOT</version.jboss.osgi.metadata>

@@ -31,7 +31,6 @@ import org.jboss.osgi.framework.spi.ExecutorServicePlugin;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.FrameworkEvent;
@@ -48,7 +47,6 @@ import org.osgi.framework.ServiceListener;
  */
 final class FrameworkEventsPlugin extends ExecutorServicePlugin<FrameworkEvents> {
 
-    private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
     private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
 
     FrameworkEventsPlugin() {
@@ -58,7 +56,6 @@ final class FrameworkEventsPlugin extends ExecutorServicePlugin<FrameworkEvents>
     @Override
     protected void addServiceDependencies(ServiceBuilder<FrameworkEvents> builder) {
         super.addServiceDependencies(builder);
-        builder.addDependency(IntegrationServices.SYSTEM_CONTEXT_INTERNAL, BundleContext.class, injectedSystemContext);
         builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }

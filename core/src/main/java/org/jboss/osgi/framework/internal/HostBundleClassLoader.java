@@ -72,7 +72,7 @@ final class HostBundleClassLoader extends BundleReferenceClassLoader<HostBundleS
             if (wovenClass != null) {
                 wovenClass.setProtectionDomain(definedClass.getProtectionDomain());
                 wovenClass.setDefinedClass(definedClass);
-                wovenClass.setWeavingComplete();
+                wovenClass.setComplete();
             }
         }
         if (getBundleState().awaitLazyActivation()) {

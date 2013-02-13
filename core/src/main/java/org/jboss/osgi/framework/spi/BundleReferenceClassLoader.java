@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.spi;
 
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleClassLoaderFactory;
+import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
 
@@ -32,7 +33,7 @@ import org.osgi.framework.BundleReference;
  * @author thomas.diesler@jboss.com
  * @since 16-Dec-2010
  */
-public class BundleReferenceClassLoader<T extends Bundle> extends ModuleClassLoader implements BundleReference {
+public class BundleReferenceClassLoader<T extends XBundle> extends ModuleClassLoader implements BundleReference {
 
     private final T bundle;
 
@@ -51,7 +52,7 @@ public class BundleReferenceClassLoader<T extends Bundle> extends ModuleClassLoa
         return bundle;
     }
 
-    public static class Factory<T extends Bundle> implements ModuleClassLoaderFactory {
+    public static class Factory<T extends XBundle> implements ModuleClassLoaderFactory {
 
         private T bundle;
 

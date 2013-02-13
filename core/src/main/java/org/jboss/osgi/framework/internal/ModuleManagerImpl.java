@@ -51,6 +51,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoader.ModuleSpecBuilderContext;
+import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.NativeLibraryProvider;
@@ -86,12 +87,14 @@ public final class ModuleManagerImpl implements ModuleManager {
 
     private final XEnvironment environment;
     private final SystemPaths systemPaths;
+    private final FrameworkEvents frameworkEvents;
     private final FrameworkModuleLoader moduleLoader;
     private final FrameworkModuleProvider moduleProvider;
 
-    public ModuleManagerImpl(XEnvironment env, SystemPaths syspaths, FrameworkModuleProvider moduleProvider, FrameworkModuleLoader moduleLoader) {
+    public ModuleManagerImpl(XEnvironment env, SystemPaths syspaths, FrameworkEvents frameworkEvents, FrameworkModuleProvider moduleProvider, FrameworkModuleLoader moduleLoader) {
         this.environment = env;
         this.systemPaths = syspaths;
+        this.frameworkEvents = frameworkEvents;
         this.moduleProvider = moduleProvider;
         this.moduleLoader = moduleLoader;
     }
@@ -294,7 +297,7 @@ public final class ModuleManagerImpl implements ModuleManager {
 
         PathFilter lazyActivationFilter = getLazyPackagesFilter(hostBundle);
         specBuilder.setModuleClassLoaderFactory(new HostBundleClassLoader.Factory(hostBundle, lazyActivationFilter));
-        specBuilder.setClassFileTransformer(new WeavingHookProcessor());
+        specBuilder.setClassFileTransformer(new WeavingHookProcessor(frameworkEvents));
         specBuilder.setFallbackLoader(new FallbackLoader(hostRev, importedPaths));
 
         ModuleSpecBuilderContext context = new ModuleSpecBuilderContext() {

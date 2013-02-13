@@ -40,6 +40,7 @@ public class ModuleManagerPlugin extends AbstractIntegrationService<ModuleManage
 
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private final InjectedValue<SystemPaths> injectedSystemPaths = new InjectedValue<SystemPaths>();
+    private final InjectedValue<FrameworkEvents> injectedFrameworkEvents = new InjectedValue<FrameworkEvents>();
     private final InjectedValue<FrameworkModuleProvider> injectedFrameworkModule = new InjectedValue<FrameworkModuleProvider>();
     private final InjectedValue<FrameworkModuleLoader> injectedModuleLoader = new InjectedValue<FrameworkModuleLoader>();
 
@@ -50,6 +51,7 @@ public class ModuleManagerPlugin extends AbstractIntegrationService<ModuleManage
     @Override
     protected void addServiceDependencies(ServiceBuilder<ModuleManager> builder) {
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
+        builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, injectedFrameworkEvents);
         builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_LOADER, FrameworkModuleLoader.class, injectedModuleLoader);
         builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, injectedFrameworkModule);
         builder.addDependency(IntegrationServices.SYSTEM_PATHS, SystemPaths.class, injectedSystemPaths);
@@ -61,7 +63,8 @@ public class ModuleManagerPlugin extends AbstractIntegrationService<ModuleManage
         FrameworkModuleProvider moduleProvider = injectedFrameworkModule.getValue();
         XEnvironment env = injectedEnvironment.getValue();
         SystemPaths syspaths = injectedSystemPaths.getValue();
+        FrameworkEvents frameworkEvents = injectedFrameworkEvents.getValue();
         FrameworkModuleLoader moduleLoader = injectedModuleLoader.getValue();
-        return new ModuleManagerImpl(env, syspaths, moduleProvider, moduleLoader);
+        return new ModuleManagerImpl(env, syspaths, frameworkEvents, moduleProvider, moduleLoader);
     }
 }

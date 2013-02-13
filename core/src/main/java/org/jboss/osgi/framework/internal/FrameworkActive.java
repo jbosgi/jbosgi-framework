@@ -89,19 +89,17 @@ import org.osgi.framework.launch.Framework;
  *                 +---{@link FrameworkStartLevelPlugin}
  *                 +---{@link BundleStartLevelPlugin}
  *                     +---{@link StartLevelSupportPlugin}
- *                         +---{@link FrameworkEventsPlugin}
- *                             +---{@link SystemContextPlugin}
- *                                 +---{@link SystemBundle}
- *                                     +---{@link BundleStoragePlugin}
- *                                     +---{@link SystemPathsPlugin}
- *                                     +---{@link ModuleManagerPlugin}
- *                                         +---{@link FrameworkModuleLoaderPlugin}
- *                                         +---{@link FrameworkModuleProviderPlugin}
- *                                             +---{@link BundleManagerPlugin}
- *                                                 +---{@link EnvironmentPlugin}
- *                                                     +---{@link LockManagerPlugin}
- *
- *
+ *                         +---{@link SystemContextPlugin}
+ *                             +---{@link SystemBundle}
+ *                                 +---{@link BundleStoragePlugin}
+ *                                 +---{@link SystemPathsPlugin}
+ *                                 +---{@link ModuleManagerPlugin}
+ *                                     +---{@link FrameworkEventsPlugin}
+ *                                     +---{@link FrameworkModuleLoaderPlugin}
+ *                                     +---{@link FrameworkModuleProviderPlugin}
+ *                                         +---{@link BundleManagerPlugin}
+ *                                             +---{@link EnvironmentPlugin}
+ *                                                  +---{@link LockManagerPlugin}
  * </code>
  *
  * @author thomas.diesler@jboss.com

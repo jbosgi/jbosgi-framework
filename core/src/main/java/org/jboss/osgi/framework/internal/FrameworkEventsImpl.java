@@ -27,7 +27,6 @@ import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -478,7 +477,11 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         final ArrayList<FrameworkListener> listeners = new ArrayList<FrameworkListener>();
         synchronized (frameworkListeners) {
             if (providedListeners != null) {
-                listeners.addAll(Arrays.asList(providedListeners));
+                for (FrameworkListener listener : providedListeners) {
+                    if (listener != null) {
+                        listeners.add(listener);
+                    }
+                }
             }
             for (Entry<XBundle, List<FrameworkListener>> entry : frameworkListeners.entrySet()) {
                 for (FrameworkListener listener : entry.getValue()) {

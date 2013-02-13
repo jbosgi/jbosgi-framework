@@ -21,14 +21,17 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
-
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
 import java.util.Iterator;
 import java.util.List;
 
 import org.jboss.osgi.framework.internal.WeavingContext.ContextClass;
+import org.jboss.osgi.framework.internal.WeavingContext.HookRegistration;
+import org.jboss.osgi.framework.spi.BundleReferenceClassLoader;
+import org.jboss.osgi.framework.spi.FrameworkEvents;
+import org.osgi.framework.FrameworkEvent;
+import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.hooks.weaving.WeavingException;
 import org.osgi.framework.hooks.weaving.WeavingHook;
 
@@ -40,28 +43,37 @@ import org.osgi.framework.hooks.weaving.WeavingHook;
  */
 final class WeavingHookProcessor implements ClassFileTransformer {
 
+    private final FrameworkEvents frameworkEvents;
+
+    WeavingHookProcessor(FrameworkEvents frameworkEvents) {
+        this.frameworkEvents = frameworkEvents;
+    }
+
     @Override
     public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer) {
 
         WeavingContext context = WeavingContext.getCurrentWeavingContext();
-        List<WeavingHook> weavingHooks = context.getWeavingHooks();
+        List<HookRegistration> weavingHooks = context.getWeavingHooks();
         if (weavingHooks.isEmpty()) {
             return classfileBuffer;
         }
 
         ContextClass wovenClass = context.createContextClass(className, classBeingRedefined, protectionDomain, classfileBuffer);
-        for (Iterator<WeavingHook> iterator = weavingHooks.iterator(); iterator.hasNext();) {
-            WeavingHook hook = iterator.next();
+        for (Iterator<HookRegistration> iterator = weavingHooks.iterator(); iterator.hasNext();) {
+            HookRegistration hookreg = iterator.next();
+            WeavingHook hook = hookreg.hook;
             try {
                 hook.weave(wovenClass);
-            } catch (WeavingException ex) {
-                LOGGER.warnErrorWhileCallingWeavingHook(ex, hook);
+            } catch (RuntimeException rte) {
                 // This method can throw a WeavingException to deliberately fail the class load
                 // without being blacklisted by the framework.
-                throw ex;
-            } catch (RuntimeException rte) {
-                LOGGER.warnErrorWhileCallingWeavingHook(rte, hook);
-                iterator.remove();
+                if (!(rte instanceof WeavingException)) {
+                    context.blacklist(hookreg.sref);
+                    iterator.remove();
+                }
+                wovenClass.setComplete();
+                BundleReferenceClassLoader<?> bref = (BundleReferenceClassLoader<?>) hook.getClass().getClassLoader();
+                frameworkEvents.fireFrameworkEvent(bref.getBundleState(), FrameworkEvent.ERROR, rte, (FrameworkListener[]) null);
                 throw rte;
             }
         }
