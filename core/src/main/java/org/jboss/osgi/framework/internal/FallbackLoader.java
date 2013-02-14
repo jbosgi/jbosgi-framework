@@ -27,6 +27,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -271,19 +272,38 @@ final class FallbackLoader implements LocalLoader {
             for (Bundle bundle : resolved)
                 LOGGER.tracef("   %s", bundle);
         }
-        if (!resolved.isEmpty()) {
-            for (XPackageRequirement pkgreq : matchingPatterns) {
-                for (XBundle bundle : resolved) {
-                    XBundleRevision brev = bundle.getBundleRevision();
-                    if (bundle.getBundleId() > 0 && !brev.isFragment()) {
-                        XPackageCapability bcap = isValidCandidate(resName, pkgreq, brev);
-                        if (bcap != null && filterMatches(pkgreq, bcap)) {
-                            return brev;
-                        }
+        if (resolved.isEmpty())
+            return null;
+
+        for (XPackageRequirement pkgreq : matchingPatterns) {
+            List<XBundleRevision> matchingRevisions = new ArrayList<XBundleRevision>();
+            for (XBundle bundle : resolved) {
+                XBundleRevision brev = bundle.getBundleRevision();
+                if (bundle.getBundleId() > 0 && !brev.isFragment() && !matchingRevisions.contains(brev)) {
+                    XPackageCapability bcap = isValidCandidate(resName, pkgreq, brev);
+                    if (bcap != null && filterMatches(pkgreq, bcap)) {
+                        matchingRevisions.add(brev);
                     }
                 }
             }
+            if (matchingRevisions.size() > 0) {
+                if (matchingRevisions.size() > 1) {
+                    // Sort multiple revision candidates - highest version first
+                    Collections.sort(matchingRevisions, new Comparator<XBundleRevision>() {
+                        @Override
+                        public int compare(XBundleRevision brevA, XBundleRevision brevB) {
+                            if (brevA.getSymbolicName().equals(brevB.getSymbolicName())) {
+                                return brevB.getVersion().compareTo(brevA.getVersion());
+                            } else {
+                                return (int) (brevB.getBundle().getBundleId() - brevA.getBundle().getBundleId());
+                            }
+                        }
+                    });
+                }
+                return matchingRevisions.get(0);
+            }
         }
+
         return null;
     }
 
@@ -428,7 +448,7 @@ final class FallbackLoader implements LocalLoader {
         XResource res = resbuilder.loadFrom(metadata).getResource();
 
         // Extract the dynamic package requirements
-        for(Requirement req : res.getRequirements(PackageNamespace.PACKAGE_NAMESPACE)) {
+        for (Requirement req : res.getRequirements(PackageNamespace.PACKAGE_NAMESPACE)) {
             imports.add((XPackageRequirement) req);
         }
     }
