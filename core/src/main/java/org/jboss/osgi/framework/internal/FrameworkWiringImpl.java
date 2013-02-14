@@ -260,6 +260,12 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                         transitiveDependencyClosure(requirer, result);
                     }
                 }
+                if (brev instanceof FragmentBundleRevision) {
+                    FragmentBundleRevision frev = (FragmentBundleRevision) brev;
+                    for (HostBundleRevision hrev : frev.getAttachedHosts()) {
+                        transitiveDependencyClosure(hrev.getBundle(), result);
+                    }
+                }
             }
         }
     }
