@@ -54,7 +54,7 @@ import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.XResourceBuilder;
 import org.jboss.osgi.resolver.XResourceBuilderFactory;
 import org.jboss.osgi.resolver.spi.RemoveOnlyCollection;
-import org.jboss.osgi.resolver.spi.ResolverHookRegistrations;
+import org.jboss.osgi.resolver.spi.ResolverHookProcessor;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -314,10 +314,10 @@ final class FallbackLoader implements LocalLoader {
             return true;
 
         boolean callHookLifecycle = false;
-        ResolverHookRegistrations hookregs = ResolverHookRegistrations.getResolverHookRegistrations();
+        ResolverHookProcessor hookregs = ResolverHookProcessor.getCurrentProcessor();
         if (hookregs == null) {
             BundleContext syscontext = bundleManager.getSystemBundle().getBundleContext();
-            hookregs = new ResolverHookRegistrations(syscontext, null);
+            hookregs = new ResolverHookProcessor(syscontext, null);
             callHookLifecycle = true;
         }
 

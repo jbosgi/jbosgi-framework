@@ -57,7 +57,7 @@ public interface LockManager {
 
     <T extends LockableItem> T getItemForType(Class<T> type);
 
-    LockContext getCurrentLockContext();
+    LockContext getCurrentContext();
 
     LockContext lockItems(Method method, LockableItem... items);
 

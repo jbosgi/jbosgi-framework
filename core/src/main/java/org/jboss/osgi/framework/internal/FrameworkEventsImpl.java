@@ -387,7 +387,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             return;
 
         // Sanity check that we are not holding a lock
-        LockContext currentLock = lockManager.getCurrentLockContext();
+        LockContext currentLock = lockManager.getCurrentContext();
 
         // Synchronous listeners first
         iterator = registrations.iterator();

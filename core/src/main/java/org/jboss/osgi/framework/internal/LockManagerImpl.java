@@ -74,7 +74,7 @@ public final class LockManagerImpl implements LockManager {
     }
 
     @Override
-    public LockContext getCurrentLockContext() {
+    public LockContext getCurrentContext() {
         Stack<LockContext> stack = lockContextAssociation.get();
         return stack != null ? stack.peek() : null;
     }

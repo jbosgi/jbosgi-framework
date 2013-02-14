@@ -63,7 +63,7 @@ import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.XResourceCapability;
 import org.jboss.osgi.resolver.felix.StatelessResolver;
-import org.jboss.osgi.resolver.spi.ResolverHookRegistrations;
+import org.jboss.osgi.resolver.spi.ResolverHookProcessor;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
@@ -131,19 +131,19 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
 
         // Resolver Hooks also must not be allowed to start another resolve operation, for example by starting a bundle or resolving bundles.
         // The framework must detect this and throw an Illegal State Exception.
-        if (ResolverHookRegistrations.getResolverHookRegistrations() != null)
+        if (ResolverHookProcessor.getCurrentProcessor() != null)
             throw MESSAGES.illegalStateResolverHookCannotTriggerResolveOperation();
 
         BundleContext syscontext = bundleManager.getSystemContext();
         Collection<Resource> manres = resolveContext.getMandatoryResources();
         Collection<Resource> optres = resolveContext.getOptionalResources();
-        ResolverHookRegistrations hookregs = new ResolverHookRegistrations(syscontext, bundleManager.getBundles(Bundle.INSTALLED));
+        ResolverHookProcessor hookregs = new ResolverHookProcessor(syscontext, bundleManager.getBundles(Bundle.INSTALLED));
         try {
             // Recreate the {@link ResolveContext} with filtered resources
             if (hookregs.hasResolverHooks()) {
                 hookregs.begin(manres, optres);
                 hookregs.filterResolvable();
-                hookregs.filterSingletonCollisions(new ResolverHookRegistrations.SingletonLocator() {
+                hookregs.filterSingletonCollisions(new ResolverHookProcessor.SingletonLocator() {
                     @Override
                     public Collection<BundleCapability> findCollisionCandidates(BundleCapability viewpoint) {
                         Collection<BundleCapability> result = new HashSet<BundleCapability>();
@@ -192,7 +192,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         }
     }
 
-    private Collection<? extends Resource> getFilteredResources(ResolverHookRegistrations hookregs, Collection<? extends Resource> resources) {
+    private Collection<? extends Resource> getFilteredResources(ResolverHookProcessor hookregs, Collection<? extends Resource> resources) {
         Collection<Resource> filtered = null;
         if (resources != null) {
             filtered = new ArrayList<Resource>(resources);

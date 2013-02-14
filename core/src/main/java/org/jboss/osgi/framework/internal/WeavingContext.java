@@ -50,7 +50,7 @@ import org.osgi.framework.wiring.BundleWiring;
  */
 class WeavingContext {
 
-    private static final ThreadLocal<WeavingContext> association = new ThreadLocal<WeavingContext>();
+    private static final ThreadLocal<WeavingContext> contextAssociation = new ThreadLocal<WeavingContext>();
     private static final Set<ServiceReference<WeavingHook>> blacklist = new HashSet<ServiceReference<WeavingHook>>();
 
     private final HostBundleState hostState;
@@ -58,13 +58,13 @@ class WeavingContext {
     private final FallbackLoader fallbackLoader;
     private Map<String, ContextClass> wovenClasses = new HashMap<String, ContextClass>();
 
-    static WeavingContext getCurrentWeavingContext() {
-        return association.get();
+    static WeavingContext getCurrentContext() {
+        return contextAssociation.get();
     }
 
     static WeavingContext create(HostBundleState hostState) {
         WeavingContext context = new WeavingContext(hostState);
-        association.set(context);
+        contextAssociation.set(context);
         return context;
     }
 
@@ -124,7 +124,7 @@ class WeavingContext {
     }
 
     void close() {
-        association.remove();
+        contextAssociation.remove();
     }
 
     static class HookRegistration {

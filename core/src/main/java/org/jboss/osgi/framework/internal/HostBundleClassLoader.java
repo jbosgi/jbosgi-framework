@@ -72,7 +72,7 @@ final class HostBundleClassLoader extends BundleReferenceClassLoader<HostBundleS
 
     @Override
     protected void postDefine(ClassSpec classSpec, Class<?> definedClass) {
-        WeavingContext weavingContext = WeavingContext.getCurrentWeavingContext();
+        WeavingContext weavingContext = WeavingContext.getCurrentContext();
         if (weavingContext != null) {
             ContextClass wovenClass = weavingContext.getContextClass(definedClass.getName());
             if (wovenClass != null) {

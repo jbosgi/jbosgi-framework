@@ -35,15 +35,11 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Dictionary;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.Map;
 import java.util.jar.Attributes;
 
 import org.jboss.osgi.metadata.ManifestBuilder;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
-import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XResourceCapability;
 import org.jboss.osgi.resolver.spi.AbstractResolverHook;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
@@ -65,7 +61,6 @@ import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.Version;
 import org.osgi.framework.hooks.resolver.ResolverHook;
 import org.osgi.framework.hooks.resolver.ResolverHookFactory;
-import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.FrameworkWiring;
@@ -235,14 +230,12 @@ public class BundleTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testResolverHookSingleton() throws Exception {
-        final Map<BundleCapability, Collection<BundleCapability>> singletons = new HashMap<BundleCapability, Collection<BundleCapability>>();
         ResolverHookFactory factory = new ResolverHookFactory() {
             @Override
             public ResolverHook begin(Collection<BundleRevision> triggers) {
                 return new AbstractResolverHook() {
                     @Override
                     public void filterSingletonCollisions(BundleCapability cap, Collection<BundleCapability> candidates) {
-                        singletons.put(cap, new HashSet<BundleCapability>(candidates));
                         Version version = ((XResourceCapability) cap).getVersion();
                         if (Version.parseVersion("1.0.0").equals(version)) {
                             candidates.clear();
@@ -261,14 +254,6 @@ public class BundleTestCase extends OSGiFrameworkTest {
             try {
                 FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
                 boolean resolved = frameworkWiring.resolveBundles(Arrays.asList(bundleA, bundleB));
-                XBundleRevision brevA = (XBundleRevision) bundleA.adapt(BundleRevision.class);
-                XBundleRevision brevB = (XBundleRevision) bundleB.adapt(BundleRevision.class);
-                BundleCapability bcapA = brevA.getDeclaredCapabilities(IdentityNamespace.IDENTITY_NAMESPACE).get(0);
-                BundleCapability bcapB = brevB.getDeclaredCapabilities(IdentityNamespace.IDENTITY_NAMESPACE).get(0);
-                assertEquals("One possible collision", 1, singletons.get(bcapA).size());
-                assertEquals(bcapB, singletons.get(bcapA).iterator().next());
-                assertEquals("One possible collision", 1, singletons.get(bcapB).size());
-                assertEquals(bcapA, singletons.get(bcapB).iterator().next());
                 assertFalse("Not all Bundles resolved", resolved);
                 assertBundleState(RESOLVED, bundleA.getState());
                 assertBundleState(INSTALLED, bundleB.getState());
