@@ -21,18 +21,30 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
+
 import java.lang.instrument.ClassFileTransformer;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import org.jboss.osgi.framework.internal.WeavingContext.ContextClass;
 import org.jboss.osgi.framework.internal.WeavingContext.HookRegistration;
 import org.jboss.osgi.framework.spi.BundleReferenceClassLoader;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
+import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
+import org.jboss.osgi.resolver.XPackageRequirement;
+import org.jboss.osgi.resolver.XResource;
+import org.jboss.osgi.resolver.XResourceBuilder;
+import org.jboss.osgi.resolver.XResourceBuilderFactory;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.hooks.weaving.WeavingException;
 import org.osgi.framework.hooks.weaving.WeavingHook;
+import org.osgi.framework.namespace.PackageNamespace;
+import org.osgi.resource.Requirement;
 
 /**
  * A {@link ClassFileTransformer} that delegates to the registered {@link WeavingHook}.
@@ -43,9 +55,13 @@ import org.osgi.framework.hooks.weaving.WeavingHook;
 final class WeavingHookProcessor implements ClassFileTransformer {
 
     private final FrameworkEvents frameworkEvents;
+    private final HostBundleRevision hostRev;
 
-    WeavingHookProcessor(FrameworkEvents frameworkEvents) {
+    private List<String> processedImports = new ArrayList<String>();
+
+    WeavingHookProcessor(HostBundleRevision hostRev, FrameworkEvents frameworkEvents) {
         this.frameworkEvents = frameworkEvents;
+        this.hostRev = hostRev;
     }
 
     @Override
@@ -76,6 +92,42 @@ final class WeavingHookProcessor implements ClassFileTransformer {
             }
         }
 
+        addDynamicWeavingImports(wovenClass);
+
         return wovenClass.getBytes();
+    }
+
+    private void addDynamicWeavingImports(ContextClass wovenClass) {
+
+        // Get the list of unprocessed imports
+        List<String> unprocessedImports = new ArrayList<String>();
+        for (String importSpec : wovenClass.getDynamicImports()) {
+            if (!processedImports.contains(importSpec)) {
+                unprocessedImports.add(importSpec);
+                processedImports.add(importSpec);
+            }
+        }
+
+        // Build the dynamic weaving package requirements
+        for (String importSpec : unprocessedImports) {
+            try {
+                OSGiMetaDataBuilder mdbuilder = OSGiMetaDataBuilder.createBuilder(hostRev.getSymbolicName(), hostRev.getVersion());
+                mdbuilder.addDynamicImportPackages(importSpec);
+                OSGiMetaData metadata = mdbuilder.getOSGiMetaData();
+
+                XResourceBuilder resbuilder = XResourceBuilderFactory.create();
+                XResource res = resbuilder.loadFrom(metadata).getResource();
+
+                // Extract the dynamic package requirements
+                for (Requirement req : res.getRequirements(PackageNamespace.PACKAGE_NAMESPACE)) {
+                    FallbackLoader fallbackLoader = hostRev.getFallbackLoader();
+                    fallbackLoader.addDynamicWeavingImport((XPackageRequirement) req);
+                }
+            } catch(RuntimeException rte) {
+                // The dynamic imports must have a valid syntax,
+                // otherwise an Illegal Argument Exception must be thrown.
+                throw MESSAGES.illegalArgumentDynamicWeavingImport(rte, importSpec);
+            }
+        }
     }
 }

@@ -55,7 +55,7 @@ class WeavingContext {
 
     private final HostBundleState hostState;
     private final List<HookRegistration> weavingHooks;
-    private final FallbackLoader fallbackLoader;
+    private final List<String> weavingImports = new ArrayList<String>();
     private Map<String, ContextClass> wovenClasses = new HashMap<String, ContextClass>();
 
     static WeavingContext getCurrentContext() {
@@ -70,7 +70,6 @@ class WeavingContext {
 
     private WeavingContext(HostBundleState hostState) {
         this.hostState = hostState;
-        this.fallbackLoader = hostState.getBundleRevision().getFallbackLoader();
 
         BundleManagerPlugin bundleManager = hostState.getBundleManager();
         BundleContext syscontext = bundleManager.getSystemContext();
@@ -164,8 +163,7 @@ class WeavingContext {
 
         @Override
         public List<String> getDynamicImports() {
-            List<String> imports = fallbackLoader.getWeavingImports();
-            return complete ? Collections.unmodifiableList(imports) : imports;
+            return complete ? Collections.unmodifiableList(weavingImports) : weavingImports;
         }
 
         @Override
