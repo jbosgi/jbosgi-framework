@@ -51,6 +51,7 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.resolver.spi.AbstractBundleWiring;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -63,7 +64,6 @@ import org.osgi.framework.Version;
 import org.osgi.framework.hooks.bundle.CollisionHook;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
-import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 
 /**
@@ -156,7 +156,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         synchronized (revisions) {
             final Bundle bundle = this;
             final List<BundleRevision> bundleRevisions = new ArrayList<BundleRevision>(revisions.size());
-            for(XBundleRevision rev : revisions) {
+            for (XBundleRevision rev : revisions) {
                 bundleRevisions.add(rev);
             }
             return new BundleRevisions() {
@@ -220,20 +220,6 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             }
             return null;
         }
-    }
-
-    boolean hasActiveWires() {
-        BundleWiring wiring = getBundleRevision().getWiring();
-        if (wiring != null) {
-            for (BundleWire wire : wiring.getProvidedWires(null)) {
-                BundleRevision requirer = wire.getRequirer();
-                BundleWiring reqwiring = requirer.getWiring();
-                if (reqwiring != null && reqwiring.isInUse()) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     @Override
@@ -462,8 +448,8 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         }
 
         // Check if the bundle has still active wires
-        boolean hasActiveWires = hasActiveWires();
-        if (hasActiveWires == false) {
+        boolean activeWires = hasActiveWiresWhileUninstalling();
+        if (activeWires == false) {
             getBundleManagerPlugin().unresolveBundle(this);
         }
 
@@ -471,7 +457,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         changeState(Bundle.UNINSTALLED, 0);
 
         // Check if the bundle has still active wires
-        if (hasActiveWires == false) {
+        if (activeWires == false) {
             // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
             getBundleManagerPlugin().removeBundle(this, options);
         }
@@ -480,7 +466,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         Set<XBundle> uninstalled = getBundleManager().getBundles(Bundle.UNINSTALLED);
         for (Bundle auxState : uninstalled) {
             UserBundleState<?> auxUser = UserBundleState.assertBundleState(auxState);
-            if (auxUser.hasActiveWires() == false) {
+            if (auxUser.hasActiveWiresWhileUninstalling() == false) {
                 getBundleManagerPlugin().removeBundle(auxUser, options);
             }
         }
@@ -489,5 +475,10 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         fireBundleEvent(BundleEvent.UNINSTALLED);
 
         LOGGER.infoBundleUninstalled(this);
+    }
+
+    private boolean hasActiveWiresWhileUninstalling() {
+        BundleWiring wiring = adapt(BundleWiring.class);
+        return wiring != null ? ((AbstractBundleWiring) wiring).isInUseForUninstall() : false;
     }
 }

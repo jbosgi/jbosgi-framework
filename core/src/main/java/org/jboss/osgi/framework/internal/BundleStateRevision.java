@@ -42,7 +42,6 @@ import org.jboss.osgi.resolver.spi.AbstractBundleRevision;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
-import org.osgi.resource.Wiring;
 
 /**
  * An abstract bundle revision.
@@ -145,8 +144,8 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
     }
 
     synchronized void refreshRevisionInternal() {
-        removeAttachment(Wiring.class);
         removeAttachment(Module.class);
+        removeResourceWiring();
         moduleClassLoader = null;
     }
 

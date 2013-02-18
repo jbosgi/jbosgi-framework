@@ -25,8 +25,8 @@ import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
-import org.jboss.osgi.framework.spi.AbstractBundleWiring;
 import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
@@ -36,7 +36,10 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
+import org.jboss.osgi.resolver.spi.AbstractBundleWire;
+import org.jboss.osgi.resolver.spi.AbstractBundleWiring;
 import org.jboss.osgi.resolver.spi.AbstractEnvironment;
+import org.osgi.resource.Resource;
 import org.osgi.resource.Wire;
 import org.osgi.resource.Wiring;
 
@@ -95,6 +98,24 @@ public final class EnvironmentImpl extends AbstractEnvironment implements XEnvir
     public Wiring createWiring(XResource res, List<Wire> required, List<Wire> provided) {
         XBundleRevision brev = (XBundleRevision) res;
         return new AbstractBundleWiring(brev, required, provided);
+    }
+
+    @Override
+    public synchronized Map<Resource, Wiring> updateWiring(Map<Resource, List<Wire>> wiremap) {
+        Map<Resource, Wiring> result = super.updateWiring(wiremap);
+        for (Wiring wiring : result.values()) {
+            for (Wire wire : wiring.getProvidedResourceWires(null)) {
+                AbstractBundleWire bwire = (AbstractBundleWire) wire;
+                bwire.setProviderWiring(bwire.getProvider().getWiring());
+                bwire.setRequirerWiring(bwire.getRequirer().getWiring());
+            }
+            for (Wire wire : wiring.getRequiredResourceWires(null)) {
+                AbstractBundleWire bwire = (AbstractBundleWire) wire;
+                bwire.setProviderWiring(bwire.getProvider().getWiring());
+                bwire.setRequirerWiring(bwire.getRequirer().getWiring());
+            }
+        }
+        return result;
     }
 
     private LockableItem[] getLockableItems(LockableItem item, XResource... resources) {

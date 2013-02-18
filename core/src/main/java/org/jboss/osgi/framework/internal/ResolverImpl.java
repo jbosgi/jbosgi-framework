@@ -63,6 +63,7 @@ import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.XResourceCapability;
 import org.jboss.osgi.resolver.felix.StatelessResolver;
+import org.jboss.osgi.resolver.spi.AbstractBundleWire;
 import org.jboss.osgi.resolver.spi.ResolverHookProcessor;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -320,7 +321,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         Map<Resource, Wiring> wirings = environment.updateWiring(wiremap);
         for (Entry<Resource, Wiring> entry : wirings.entrySet()) {
             XBundleRevision res = (XBundleRevision) entry.getKey();
-            res.addAttachment(Wiring.class, entry.getValue());
+            res.setResourceWiring(entry.getValue());
         }
 
         // Change the bundle state to RESOLVED

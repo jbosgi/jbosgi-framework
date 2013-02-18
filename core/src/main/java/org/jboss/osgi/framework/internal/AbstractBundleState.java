@@ -462,7 +462,9 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         return getBundleWiring() != null;
     }
 
-    BundleWiring getBundleWiring() {
+    private BundleWiring getBundleWiring() {
+        // An uninstalled with in use wirings can still not be adapted to {@ BundleWiring}
+        // return !isUninstalled() ? getBundleRevision().getWiring() : null;
         return getBundleRevision().getWiring();
     }
 

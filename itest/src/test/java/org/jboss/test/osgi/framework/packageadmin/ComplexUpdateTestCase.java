@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
@@ -62,7 +63,7 @@ public class ComplexUpdateTestCase extends OSGiFrameworkTest {
             try {
                 bundleI.start();
 
-                refreshBundles(Arrays.asList(bundleE, bundleU, bundleI));
+                refreshBundles(Arrays.asList(bundleE, bundleU, bundleI), 10, TimeUnit.SECONDS);
 
                 assertEquals(Bundle.ACTIVE, bundleE.getState());
                 assertEquals(Bundle.ACTIVE, bundleU.getState());

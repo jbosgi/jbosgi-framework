@@ -117,7 +117,7 @@ public class ModuleWiringTestCase extends AbstractModuleIntegrationTest {
 
         try {
             // This should be a noop
-            refreshBundles(Arrays.asList((Bundle)brev.getBundle()));
+            refreshBundles(Arrays.asList((Bundle)brev.getBundle()), 0, null);
             Assert.assertTrue("FrameworkEvent.PACKAGES_REFRESHED", latch.await(10, TimeUnit.SECONDS));
         } finally {
             getSystemContext().removeFrameworkListener(listener);

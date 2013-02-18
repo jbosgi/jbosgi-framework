@@ -41,6 +41,7 @@ import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.spi.ResolverHookException;
@@ -70,7 +71,8 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
     private final LockManager lockManager;
     private final ExecutorService executorService;
 
-    public FrameworkWiringImpl(BundleManager bundleManager, FrameworkEvents events, XEnvironment environment, XResolver resolver, LockManager lockManager, ExecutorService executorService) {
+    public FrameworkWiringImpl(BundleManager bundleManager, FrameworkEvents events, XEnvironment environment, XResolver resolver, LockManager lockManager,
+            ExecutorService executorService) {
         this.bundleManager = bundleManager;
         this.events = events;
         this.environment = environment;
@@ -114,9 +116,9 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
             @Override
             public void run() {
 
-                Set<Bundle> stopBundles = new HashSet<Bundle>();
-                Set<Bundle> refreshBundles = new HashSet<Bundle>();
-                Set<Bundle> uninstallBundles = new HashSet<Bundle>();
+                Set<XBundle> stopBundles = new HashSet<XBundle>();
+                Set<XBundle> refreshBundles = new HashSet<XBundle>();
+                Set<XBundle> uninstallBundles = new HashSet<XBundle>();
 
                 for (Bundle auxBundle : bundlesToRefresh) {
                     XBundle bundle = (XBundle) auxBundle;
@@ -129,7 +131,7 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                 for (Bundle bundle : dependencyClosure) {
                     int state = bundle.getState();
                     if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
-                        stopBundles.add(bundle);
+                        stopBundles.add((XBundle) bundle);
                     }
                 }
 
@@ -149,19 +151,29 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                 }
 
                 BundleManagerPlugin bundleManagerPlugin = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
-                for (Bundle userBundle : uninstallBundles) {
-                    bundleManagerPlugin.removeBundle((UserBundleState<?>) userBundle, 0);
-                    refreshList.remove(userBundle);
+                for (XBundle bundle : uninstallBundles) {
+                    if (bundle instanceof UserBundleState) {
+                        bundleManagerPlugin.removeBundle((UserBundleState<?>) bundle, 0);
+                    } else {
+                        XBundleRevision current = bundle.getBundleRevision();
+                        for (XBundleRevision brev : bundle.getAllBundleRevisions()) {
+                            if (brev != current) {
+                                environment.uninstallResources(brev);
+                            }
+                        }
+                    }
+                    refreshList.remove(bundle);
                 }
 
                 for (Bundle bundle : refreshList) {
-                    if (bundle instanceof UserBundleState) {
-                        UserBundleState<?> userBundle = (UserBundleState<?>) bundle;
-                        try {
-                            userBundle.refresh();
-                        } catch (Exception th) {
-                            events.fireFrameworkEvent(userBundle, FrameworkEvent.ERROR, th);
+                    try {
+                        if (bundle instanceof UserBundleState) {
+                            ((UserBundleState<?>) bundle).refresh();
+                        } else {
+                            // nothing to do for adapted modules
                         }
+                    } catch (Exception th) {
+                        events.fireFrameworkEvent((XBundle)bundle, FrameworkEvent.ERROR, th);
                     }
                 }
 
@@ -169,7 +181,7 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                     try {
                         bundle.start(Bundle.START_TRANSIENT);
                     } catch (Exception th) {
-                        events.fireFrameworkEvent((XBundle)bundle, FrameworkEvent.ERROR, th);
+                        events.fireFrameworkEvent((XBundle) bundle, FrameworkEvent.ERROR, th);
                     }
                 }
 
@@ -254,11 +266,12 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
             BundleRevisions revisions = bundle.adapt(BundleRevisions.class);
             for (BundleRevision brev : revisions.getRevisions()) {
                 BundleWiring wiring = brev.getWiring();
-                if (wiring != null) {
-                    for (BundleWire wire : wiring.getProvidedWires(null)) {
-                        Bundle requirer = wire.getRequirer().getBundle();
-                        transitiveDependencyClosure(requirer, result);
-                    }
+                if (wiring == null || !wiring.isInUse()) {
+                    continue;
+                }
+                for (BundleWire wire : wiring.getProvidedWires(null)) {
+                    Bundle requirer = wire.getRequirer().getBundle();
+                    transitiveDependencyClosure(requirer, result);
                 }
                 if (brev instanceof FragmentBundleRevision) {
                     FragmentBundleRevision frev = (FragmentBundleRevision) brev;
