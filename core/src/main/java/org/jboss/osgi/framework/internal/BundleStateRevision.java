@@ -145,7 +145,7 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
 
     synchronized void refreshRevisionInternal() {
         removeAttachment(Module.class);
-        removeResourceWiring();
+        getWirings().removeCurrent();
         moduleClassLoader = null;
     }
 

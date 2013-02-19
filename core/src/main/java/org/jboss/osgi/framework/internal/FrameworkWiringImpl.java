@@ -44,16 +44,19 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolver;
+import org.jboss.osgi.resolver.spi.AbstractBundleWire;
 import org.jboss.osgi.resolver.spi.ResolverHookException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
+import org.osgi.framework.namespace.HostNamespace;
 import org.osgi.framework.startlevel.BundleStartLevel;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
-import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.framework.wiring.FrameworkWiring;
+import org.osgi.resource.Wire;
+import org.osgi.resource.Wiring;
 import org.osgi.service.resolver.ResolutionException;
 
 /**
@@ -110,6 +113,7 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
         }
 
         LOGGER.debugf("Refresh bundles %s", bundlesToRefresh);
+        LOGGER.debugf("Dependency closure %s", dependencyClosure);
 
         Runnable runner = new Runnable() {
 
@@ -173,7 +177,7 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                             // nothing to do for adapted modules
                         }
                     } catch (Exception th) {
-                        events.fireFrameworkEvent((XBundle)bundle, FrameworkEvent.ERROR, th);
+                        events.fireFrameworkEvent((XBundle) bundle, FrameworkEvent.ERROR, th);
                     }
                 }
 
@@ -233,15 +237,24 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
         return result;
     }
 
+    /* Returns the bundles that have non-current, in use bundle wirings.
+     *
+     * This is typically the bundles which have been updated or uninstalled since the last call to refreshBundles
+     */
     @Override
     public Collection<Bundle> getRemovalPendingBundles() {
         Collection<Bundle> result = new HashSet<Bundle>();
         for (XBundle bundle : bundleManager.getBundles(null)) {
-            BundleRevisions revisions = bundle.adapt(BundleRevisions.class);
-            for (BundleRevision brev : revisions.getRevisions()) {
-                BundleWiring wiring = brev.getWiring();
-                if (wiring != null && !wiring.isCurrent() && wiring.isInUse()) {
-                    result.add(bundle);
+            if (bundle.getBundleId() != 0) {
+                BundleRevisions revisions = bundle.adapt(BundleRevisions.class);
+                for (BundleRevision rev : revisions.getRevisions()) {
+                    XBundleRevision brev = (XBundleRevision) rev;
+                    for (Wiring wiring : brev.getWirings().getNonCurrent()) {
+                        BundleWiring bwiring = (BundleWiring) wiring;
+                        if (bwiring.isInUse()) {
+                            result.add(bundle);
+                        }
+                    }
                 }
             }
         }
@@ -253,38 +266,45 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
         if (bundles == null)
             throw MESSAGES.illegalArgumentNull("bundles");
 
-        Set<Bundle> result = new HashSet<Bundle>();
+        Set<Bundle> closure = new HashSet<Bundle>();
         for (Bundle bundle : bundles) {
-            transitiveDependencyClosure(bundle, result);
+            transitiveDependencyClosure((XBundle) bundle, closure);
         }
-        return Collections.unmodifiableCollection(result);
+        return Collections.unmodifiableCollection(closure);
     }
 
-    private void transitiveDependencyClosure(Bundle bundle, Set<Bundle> result) {
-        if (result.contains(bundle) == false) {
-            result.add(bundle);
-            BundleRevisions revisions = bundle.adapt(BundleRevisions.class);
-            for (BundleRevision brev : revisions.getRevisions()) {
-                BundleWiring wiring = brev.getWiring();
-                if (wiring == null || !wiring.isInUse()) {
-                    continue;
+    private void transitiveDependencyClosure(XBundle bundle, Set<Bundle> closure) {
+        if (closure.contains(bundle) == false) {
+            closure.add(bundle);
+
+            for (XBundleRevision brev : bundle.getAllBundleRevisions()) {
+                Wiring current = brev.getWirings().getCurrent();
+                if (current != null) {
+                    transitiveDependencyClosure(brev, current, closure);
                 }
-                for (BundleWire wire : wiring.getProvidedWires(null)) {
-                    Bundle requirer = wire.getRequirer().getBundle();
-                    transitiveDependencyClosure(requirer, result);
-                }
-                if (brev instanceof FragmentBundleRevision) {
-                    FragmentBundleRevision frev = (FragmentBundleRevision) brev;
-                    for (HostBundleRevision hrev : frev.getAttachedHosts()) {
-                        transitiveDependencyClosure(hrev.getBundle(), result);
-                    }
+                for (Wiring wiring : brev.getWirings().getNonCurrent()) {
+                    transitiveDependencyClosure(brev, wiring, closure);
                 }
             }
         }
     }
 
-    private static class BundleStartLevelComparator implements Comparator<Bundle> {
+    private void transitiveDependencyClosure(XBundleRevision brev, Wiring wiring, Set<Bundle> closure) {
+        if (brev instanceof FragmentBundleRevision) {
+            for (Wire wire : wiring.getRequiredResourceWires(HostNamespace.HOST_NAMESPACE)) {
+                AbstractBundleWire bwire = (AbstractBundleWire) wire;
+                Bundle provider = bwire.getProviderWiring(false).getBundle();
+                transitiveDependencyClosure((XBundle) provider, closure);
+            }
+        } else {
+            for (Wire wire : wiring.getProvidedResourceWires(null)) {
+                XBundleRevision requirer = (XBundleRevision) wire.getRequirer();
+                transitiveDependencyClosure(requirer.getBundle(), closure);
+            }
+        }
+    }
 
+    private static class BundleStartLevelComparator implements Comparator<Bundle> {
         @Override
         public int compare(Bundle o1, Bundle o2) {
             int sl1 = o1.adapt(BundleStartLevel.class).getStartLevel();

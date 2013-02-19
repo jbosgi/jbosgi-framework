@@ -65,6 +65,7 @@ import org.osgi.framework.hooks.bundle.CollisionHook;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.BundleWiring;
+import org.osgi.resource.Wiring;
 
 /**
  * This is the internal implementation of a Bundle based on a user {@link Deployment}.
@@ -255,11 +256,16 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         removeResolvedService();
         changeState(Bundle.INSTALLED, BundleEvent.UNRESOLVED);
 
+        R brev = getBundleRevision();
         try {
             // If the Framework is unable to install the updated version of this bundle, the original
             // version of this bundle must be restored and a BundleException must be thrown after
             // completion of the remaining steps.
             createUpdateRevision(input);
+
+            // Remove the {@link BundleWiring} from the old {@link BundleRevision}
+            brev.getWirings().removeCurrent();
+
         } catch (BundleException ex) {
             if (restart)
                 startInternal(Bundle.START_TRANSIENT);
@@ -450,24 +456,47 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         // Check if the bundle has still active wires
         boolean activeWires = hasActiveWiresWhileUninstalling();
         if (activeWires == false) {
-            getBundleManagerPlugin().unresolveBundle(this);
+            LOGGER.tracef("Unresolving bundle: %s", this);
+            ModuleManager moduleManager = getFrameworkState().getModuleManager();
+            for (XBundleRevision brev : getAllBundleRevisions()) {
+                UserBundleRevision userRev = (UserBundleRevision) brev;
+                if (userRev.isFragment() == false) {
+                    ModuleIdentifier identifier = moduleManager.getModuleIdentifier(brev);
+                    moduleManager.removeModule(brev, identifier);
+                }
+            }
         }
+
+        // Remove the current {@link BundleWiring} and fire the UNRESOLVED event
+        getBundleRevision().getWirings().removeCurrent();
+        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
+        eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
 
         // #3 This bundle's state is set to UNINSTALLED
         changeState(Bundle.UNINSTALLED, 0);
 
-        // Check if the bundle has still active wires
+        // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
         if (activeWires == false) {
-            // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
             getBundleManagerPlugin().removeBundle(this, options);
         }
 
-        // Remove other uninstalled bundles that now also have no active wires any more
+        // Remove other uninstalled bundles that now also are not in use any more
         Set<XBundle> uninstalled = getBundleManager().getBundles(Bundle.UNINSTALLED);
-        for (Bundle auxState : uninstalled) {
-            UserBundleState<?> auxUser = UserBundleState.assertBundleState(auxState);
-            if (auxUser.hasActiveWiresWhileUninstalling() == false) {
-                getBundleManagerPlugin().removeBundle(auxUser, options);
+        for (XBundle auxState : uninstalled) {
+            if (auxState != this) {
+                boolean bundleInUse = false;
+                XBundleRevision brev = auxState.getBundleRevision();
+                for (Wiring wiring : brev.getWirings().getNonCurrent()) {
+                    BundleWiring bwiring = (BundleWiring) wiring;
+                    if (bwiring.isInUse()) {
+                        bundleInUse = true;
+                        break;
+                    }
+                }
+                if (bundleInUse == false) {
+                    UserBundleState<?> auxUser = UserBundleState.assertBundleState(auxState);
+                    getBundleManagerPlugin().removeBundle(auxUser, options);
+                }
             }
         }
 
@@ -478,7 +507,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
     }
 
     private boolean hasActiveWiresWhileUninstalling() {
-        BundleWiring wiring = adapt(BundleWiring.class);
+        BundleWiring wiring = getBundleWiring();
         return wiring != null ? ((AbstractBundleWiring) wiring).isInUseForUninstall() : false;
     }
 }

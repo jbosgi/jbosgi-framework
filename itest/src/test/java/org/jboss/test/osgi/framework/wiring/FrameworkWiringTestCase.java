@@ -225,6 +225,7 @@ public class FrameworkWiringTestCase extends OSGiFrameworkTest {
 
             bundleA.update(toInputStream(assembly2));
             Collection<Bundle> pending = frameworkWiring.getRemovalPendingBundles();
+            Assert.assertEquals("One bundle pending", 1, pending.size());
             Assert.assertTrue("Removal pending BundleA", pending.contains(bundleA));
 
             assertBundleState(Bundle.ACTIVE, bundleA.getState());

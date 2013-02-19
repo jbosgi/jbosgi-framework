@@ -153,7 +153,7 @@ public class BundleTrackerTestCase extends OSGiFrameworkTest {
     public void testBundleListenerAccess() throws Exception {
 
         BundleContext context = getFramework().getBundleContext();
-        BundleListener listener = new BundleListener() {
+        BundleListener listener = new SynchronousBundleListener() {
             @Override
             public void bundleChanged(BundleEvent event) {
                 synchronized (bundleEvents) {

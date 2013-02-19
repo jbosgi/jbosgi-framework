@@ -41,7 +41,7 @@ import org.osgi.framework.BundleException;
  */
 final class FragmentBundleState extends UserBundleState<FragmentBundleRevision> {
 
-    FragmentBundleState(FrameworkState frameworkState,FragmentBundleRevision brev, ServiceName serviceName, ServiceTarget serviceTarget) {
+    FragmentBundleState(FrameworkState frameworkState, FragmentBundleRevision brev, ServiceName serviceName, ServiceTarget serviceTarget) {
         super(frameworkState, brev, serviceName, serviceTarget);
     }
 

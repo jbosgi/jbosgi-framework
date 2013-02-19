@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -35,6 +36,7 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.security.ProtectionDomain;
 import java.util.Arrays;
+import java.util.Collection;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
@@ -59,6 +61,7 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
@@ -145,12 +148,93 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         // Load a private class from host
         assertLoadClass(hostA, SubBeanA.class.getName());
 
+        FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
+        Collection<Bundle> removalPending = frameworkWiring.getRemovalPendingBundles();
+        assertEquals("No removal pending bundles", 0, removalPending.size());
+
+        BundleWiring hostWiring = hostA.adapt(BundleWiring.class);
+        assertTrue("Host wiring is current", hostWiring.isCurrent());
+        assertTrue("Host wiring in use", hostWiring.isInUse());
+
+        BundleWiring fragWiring = fragA.adapt(BundleWiring.class);
+        assertTrue("Fragment wiring is current", fragWiring.isCurrent());
+        assertTrue("Fragment wiring in use", fragWiring.isInUse());
+
         hostA.uninstall();
         assertBundleState(Bundle.UNINSTALLED, hostA.getState());
         assertBundleState(Bundle.RESOLVED, fragA.getState());
 
+        removalPending = frameworkWiring.getRemovalPendingBundles();
+        assertEquals("One removal pending bundle", 1, removalPending.size());
+        assertTrue("Host is removal pending", removalPending.contains(hostA));
+
+        hostWiring = hostA.adapt(BundleWiring.class);
+        assertNull("Host wiring null", hostWiring);
+
+        fragWiring = fragA.adapt(BundleWiring.class);
+        assertTrue("Fragment wiring is current", fragWiring.isCurrent());
+        assertTrue("Fragment wiring in use", fragWiring.isInUse());
+
         fragA.uninstall();
         assertBundleState(Bundle.UNINSTALLED, fragA.getState());
+
+        removalPending = frameworkWiring.getRemovalPendingBundles();
+        assertEquals("No removal pending bundles", 0, removalPending.size());
+
+        fragWiring = fragA.adapt(BundleWiring.class);
+        assertNull("Fragment wiring null", fragWiring);
+    }
+
+    @Test
+    public void testAttachedFragmentUninstall() throws Exception {
+        Bundle hostD = installBundle(getHostD());
+        assertBundleState(Bundle.INSTALLED, hostD.getState());
+
+        Bundle hostG = installBundle(getHostG());
+        assertBundleState(Bundle.INSTALLED, hostG.getState());
+
+        Bundle fragD = installBundle(getFragmentD());
+        assertBundleState(Bundle.INSTALLED, fragD.getState());
+
+        FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
+        frameworkWiring.resolveBundles(Arrays.asList(hostD, hostG));
+
+        assertBundleState(Bundle.RESOLVED, hostD.getState());
+        assertBundleState(Bundle.RESOLVED, hostG.getState());
+        assertBundleState(Bundle.RESOLVED, fragD.getState());
+
+        Collection<Bundle> removalPending = frameworkWiring.getRemovalPendingBundles();
+        assertEquals("No removal pending bundles", 0, removalPending.size());
+
+        BundleWiring hostWiring = hostD.adapt(BundleWiring.class);
+        assertTrue("Host wiring is current", hostWiring.isCurrent());
+        assertTrue("Host wiring in use", hostWiring.isInUse());
+
+        hostD.uninstall();
+        assertFalse("Host wiring not current", hostWiring.isCurrent());
+        assertTrue("Host wiring in use", hostWiring.isInUse());
+
+        removalPending = frameworkWiring.getRemovalPendingBundles();
+        assertEquals("One removal pending bundle", 1, removalPending.size());
+        assertTrue("Host is removal pending", removalPending.contains(hostD));
+
+        BundleWiring fragWiring = fragD.adapt(BundleWiring.class);
+        assertTrue("Fragment wiring is current", fragWiring.isCurrent());
+        assertTrue("Fragment wiring in use", fragWiring.isInUse());
+
+        fragD.uninstall();
+        assertFalse("Fragment wiring not current", fragWiring.isCurrent());
+        assertTrue("Fragment wiring in use", fragWiring.isInUse());
+
+        removalPending = frameworkWiring.getRemovalPendingBundles();
+        assertEquals("Two removal pending bundle", 2, removalPending.size());
+        assertTrue("Host is removal pending", removalPending.contains(hostD));
+        assertTrue("Fragment is removal pending", removalPending.contains(fragD));
+
+        hostG.uninstall();
+
+        removalPending = frameworkWiring.getRemovalPendingBundles();
+        assertEquals("No removal pending bundles", 0, removalPending.size());
     }
 
     @Test
@@ -594,6 +678,21 @@ public class FragmentTestCase extends OSGiFrameworkTest {
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addExportPackages(HostFInterface.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getHostG() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostG");
+        archive.setManifest(new Asset() {
+            @Override
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addImportPackages(HostDInterface.class);
                 return builder.openStream();
             }
         });

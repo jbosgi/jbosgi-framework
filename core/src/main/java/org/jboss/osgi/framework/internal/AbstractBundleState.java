@@ -177,13 +177,15 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         if (type.isAssignableFrom(BundleContext.class)) {
             result = (T) getBundleContext();
         } else if (type.isAssignableFrom(BundleRevision.class)) {
-            result = (T) getBundleRevision();
+            // After an uninstall the adapt method will always return null for BundleRevision
+            result = !isUninstalled() ? (T) getBundleRevision() : null;
         } else if (type.isAssignableFrom(BundleRevisions.class)) {
             result = (T) getBundleRevisions();
         } else if (type.isAssignableFrom(BundleStartLevel.class)) {
             result = (T) this;
         } else if (type.isAssignableFrom(BundleWiring.class)) {
-            result = (T) getBundleWiring();
+            // After an uninstall the adapt method will always return null for BundleWiring
+            result = !isUninstalled() ? (T) getBundleWiring() : null;
         } else if (type.isAssignableFrom(OSGiMetaData.class)) {
             result = (T) getOSGiMetaData();
         } else if (type.isAssignableFrom(StorageState.class)) {
@@ -462,9 +464,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         return getBundleWiring() != null;
     }
 
-    private BundleWiring getBundleWiring() {
-        // An uninstalled with in use wirings can still not be adapted to {@ BundleWiring}
-        // return !isUninstalled() ? getBundleRevision().getWiring() : null;
+    BundleWiring getBundleWiring() {
         return getBundleRevision().getWiring();
     }
 
@@ -735,13 +735,13 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     @Override
     public String getCanonicalName() {
-    	if (canonicalName == null) {
+        if (canonicalName == null) {
             OSGiMetaData metadata = getOSGiMetaData();
             String name = metadata.getBundleSymbolicName();
             name = name != null ? name : metadata.getBundleName();
             canonicalName = name + ":" + metadata.getBundleVersion();
-    	}
-    	return canonicalName;
+        }
+        return canonicalName;
     }
 
     @Override

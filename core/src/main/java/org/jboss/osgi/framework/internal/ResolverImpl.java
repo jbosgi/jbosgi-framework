@@ -264,11 +264,13 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
     private Collection<XResource> findAttachableFragments(Collection<? extends Capability> hostcaps) {
         Set<XResource> result = new HashSet<XResource>();
         for (XResource res : environment.getResources(IdentityNamespace.TYPE_FRAGMENT)) {
-            Requirement req = res.getRequirements(HostNamespace.HOST_NAMESPACE).get(0);
-            XRequirement xreq = (XRequirement) req;
-            for (Capability cap : hostcaps) {
-                if (xreq.matches(cap)) {
-                    result.add(res);
+            XBundleRevision brev = (XBundleRevision) res;
+            if (brev.getBundle().getState() != Bundle.UNINSTALLED) {
+                XRequirement xreq = (XRequirement) res.getRequirements(HostNamespace.HOST_NAMESPACE).get(0);
+                for (Capability cap : hostcaps) {
+                    if (xreq.matches(cap)) {
+                        result.add(res);
+                    }
                 }
             }
         }
@@ -321,7 +323,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         Map<Resource, Wiring> wirings = environment.updateWiring(wiremap);
         for (Entry<Resource, Wiring> entry : wirings.entrySet()) {
             XBundleRevision res = (XBundleRevision) entry.getKey();
-            res.setResourceWiring(entry.getValue());
+            res.getWirings().setCurrent(entry.getValue());
         }
 
         // Change the bundle state to RESOLVED
