@@ -138,14 +138,12 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
     }
 
     void refreshRevision() throws BundleException {
-        XEnvironment env = getFrameworkState().getEnvironment();
-        env.refreshResources(this);
         refreshRevisionInternal();
     }
 
     synchronized void refreshRevisionInternal() {
         removeAttachment(Module.class);
-        getWirings().removeCurrent();
+        getWirings().refresh();
         moduleClassLoader = null;
     }
 

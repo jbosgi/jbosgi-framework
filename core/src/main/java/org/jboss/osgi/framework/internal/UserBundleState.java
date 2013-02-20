@@ -264,7 +264,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             createUpdateRevision(input);
 
             // Remove the {@link BundleWiring} from the old {@link BundleRevision}
-            brev.getWirings().removeCurrent();
+            brev.getWirings().unresolve();
 
         } catch (BundleException ex) {
             if (restart)
@@ -383,6 +383,8 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             }
 
             if (brev instanceof HostBundleRevision) {
+
+                // Cleanup stale fragment revisions
                 HostBundleRevision hostRev = (HostBundleRevision) brev;
                 for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
                     if (fragRev != fragRev.getBundle().getBundleRevision()) {
@@ -391,6 +393,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
                     }
                 }
 
+                // Remove the {@link Module} and the associated ClassLoader
                 ModuleIdentifier identifier = brev.getModuleIdentifier();
                 moduleManager.removeModule(brev, identifier);
             }
@@ -468,7 +471,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         }
 
         // Remove the current {@link BundleWiring} and fire the UNRESOLVED event
-        getBundleRevision().getWirings().removeCurrent();
+        getBundleRevision().getWirings().unresolve();
         FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
         eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
 
@@ -486,8 +489,9 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             if (auxState != this) {
                 boolean bundleInUse = false;
                 XBundleRevision brev = auxState.getBundleRevision();
-                for (Wiring wiring : brev.getWirings().getNonCurrent()) {
-                    BundleWiring bwiring = (BundleWiring) wiring;
+                Wiring unresolved = brev.getWirings().getUnresolved();
+                if (unresolved != null) {
+                    BundleWiring bwiring = (BundleWiring) unresolved;
                     if (bwiring.isInUse()) {
                         bundleInUse = true;
                         break;

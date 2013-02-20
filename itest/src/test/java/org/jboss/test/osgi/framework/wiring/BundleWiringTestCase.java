@@ -1,4 +1,5 @@
 package org.jboss.test.osgi.framework.wiring;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -29,17 +30,17 @@ import java.util.List;
 
 import junit.framework.Assert;
 
-import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
+import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.Version;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleWiring;
-import org.osgi.resource.Capability;
 
 /**
  * Test {@link BundleWiring} API
@@ -48,6 +49,35 @@ import org.osgi.resource.Capability;
  * @since 28-Jun-2012
  */
 public class BundleWiringTestCase extends OSGiFrameworkTest {
+
+    @Test
+    public void testBundleLifecycle() throws Exception {
+        Bundle hostA = installBundle(getHostA());
+        assertEquals("hostA", hostA.getSymbolicName());
+        assertEquals(Version.parseVersion("1.0.0"), hostA.getVersion());
+        assertBundleState(Bundle.INSTALLED, hostA.getState());
+
+        BundleWiring wiring = hostA.adapt(BundleWiring.class);
+        Assert.assertNull("BundleWiring null", wiring);
+
+        hostA.start();
+        assertBundleState(Bundle.ACTIVE, hostA.getState());
+
+        wiring = hostA.adapt(BundleWiring.class);
+        Assert.assertNotNull("BundleWiring not null", wiring);
+
+        hostA.stop();
+        assertBundleState(Bundle.RESOLVED, hostA.getState());
+
+        wiring = hostA.adapt(BundleWiring.class);
+        Assert.assertNotNull("BundleWiring not null", wiring);
+
+        hostA.uninstall();
+        assertBundleState(Bundle.UNINSTALLED, hostA.getState());
+
+        wiring = hostA.adapt(BundleWiring.class);
+        Assert.assertNull("BundleWiring null", wiring);
+    }
 
     @Test
     public void testExportedPackageFromFragment() throws Exception {
@@ -77,6 +107,7 @@ public class BundleWiringTestCase extends OSGiFrameworkTest {
                 final OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
                 return builder.openStream();
             }
         });

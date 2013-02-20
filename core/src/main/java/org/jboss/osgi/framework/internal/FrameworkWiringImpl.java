@@ -249,8 +249,9 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                 BundleRevisions revisions = bundle.adapt(BundleRevisions.class);
                 for (BundleRevision rev : revisions.getRevisions()) {
                     XBundleRevision brev = (XBundleRevision) rev;
-                    for (Wiring wiring : brev.getWirings().getNonCurrent()) {
-                        BundleWiring bwiring = (BundleWiring) wiring;
+                    Wiring unresolved = brev.getWirings().getUnresolved();
+                    if (unresolved != null) {
+                        BundleWiring bwiring = (BundleWiring) unresolved;
                         if (bwiring.isInUse()) {
                             result.add(bundle);
                         }
@@ -282,8 +283,9 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                 if (current != null) {
                     transitiveDependencyClosure(brev, current, closure);
                 }
-                for (Wiring wiring : brev.getWirings().getNonCurrent()) {
-                    transitiveDependencyClosure(brev, wiring, closure);
+                Wiring unresolved = brev.getWirings().getUnresolved();
+                if (unresolved != null) {
+                    transitiveDependencyClosure(brev, unresolved, closure);
                 }
             }
         }
