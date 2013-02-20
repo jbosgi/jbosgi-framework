@@ -98,17 +98,17 @@ public final class LockManagerImpl implements LockManager {
             if (now >= start + unit.toMillis(timeout))
                 throw MESSAGES.cannotObtainLockTimely(new TimeoutException(), context);
 
-            LOGGER.debugf("LockManager lock: %s waiting ...", context);
+            LOGGER.tracef("LockManager lock: %s waiting ...", context);
 
             try {
                 wait(unit.toMillis(timeout));
-                LOGGER.debugf("LockManager continue ...");
+                LOGGER.tracef("LockManager continue ...");
             } catch (InterruptedException ex) {
                 throw MESSAGES.cannotObtainLockTimely(ex, context);
             }
         }
 
-        LOGGER.debugf("LockManager locked: %s", context);
+        LOGGER.tracef("LockManager locked: %s", context);
 
         // Push the current lock context to the stack
         Stack<LockContext> contextStack = lockContextAssociation.get();
@@ -132,7 +132,7 @@ public final class LockManagerImpl implements LockManager {
                 support.unlock();
             }
 
-            LOGGER.debugf("LockManager unlocked: %s", context);
+            LOGGER.tracef("LockManager unlocked: %s", context);
 
             // Pop the current context stack
             Stack<LockContext> contextStack = lockContextAssociation.get();

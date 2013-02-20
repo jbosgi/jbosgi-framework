@@ -37,6 +37,7 @@ import java.net.URL;
 import java.security.ProtectionDomain;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
@@ -235,6 +236,40 @@ public class FragmentTestCase extends OSGiFrameworkTest {
 
         removalPending = frameworkWiring.getRemovalPendingBundles();
         assertEquals("No removal pending bundles", 0, removalPending.size());
+    }
+
+    @Test
+    public void testUpdateHostWithAttachedFragment() throws Exception {
+        Bundle hostA = installBundle(getHostA());
+        Bundle fragA = installBundle(getFragmentA());
+
+        URL resourceURL = hostA.getResource("resource.txt");
+        assertEquals("bundle", resourceURL.getProtocol());
+        assertEquals("/resource.txt", resourceURL.getPath());
+
+        BufferedReader br = new BufferedReader(new InputStreamReader(resourceURL.openStream()));
+        assertEquals("fragA", br.readLine());
+
+        hostA.update(toInputStream(getHostA()));
+        resourceURL = hostA.getResource("resource.txt");
+        assertEquals("bundle", resourceURL.getProtocol());
+        assertEquals("/resource.txt", resourceURL.getPath());
+
+        br = new BufferedReader(new InputStreamReader(resourceURL.openStream()));
+        assertEquals("fragA", br.readLine());
+
+        refreshBundles(Collections.singleton(hostA));
+        resolveBundles(Collections.singleton(hostA));
+
+        resourceURL = hostA.getResource("resource.txt");
+        assertEquals("bundle", resourceURL.getProtocol());
+        assertEquals("/resource.txt", resourceURL.getPath());
+
+        br = new BufferedReader(new InputStreamReader(resourceURL.openStream()));
+        assertEquals("fragA", br.readLine());
+
+        hostA.uninstall();
+        fragA.uninstall();
     }
 
     @Test

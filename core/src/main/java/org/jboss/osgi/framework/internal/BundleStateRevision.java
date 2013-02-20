@@ -35,7 +35,6 @@ import org.jboss.osgi.resolver.ResourceBuilderException;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XBundleRevisionBuilderFactory;
-import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResourceBuilder;
 import org.jboss.osgi.resolver.XResourceBuilderFactory;
 import org.jboss.osgi.resolver.spi.AbstractBundleRevision;
@@ -137,13 +136,7 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
         return moduleClassLoader;
     }
 
-    void refreshRevision() throws BundleException {
-        refreshRevisionInternal();
-    }
-
-    synchronized void refreshRevisionInternal() {
-        removeAttachment(Module.class);
-        getWirings().refresh();
+    synchronized void resetModuleClassLoader() {
         moduleClassLoader = null;
     }
 

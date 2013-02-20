@@ -107,6 +107,8 @@ abstract class UserBundleRevision extends BundleStateRevision {
         return null;
     }
 
+    abstract void refreshRevision() throws BundleException;
+
     @Override
     void close() {
         super.close();

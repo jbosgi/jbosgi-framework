@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
 
+import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
@@ -78,9 +79,11 @@ final class HostBundleRevision extends UserBundleRevision {
     }
 
     @Override
-    void refreshRevisionInternal() {
-        super.refreshRevisionInternal();
+    void refreshRevision() {
         attachedFragments = null;
+        removeAttachment(Module.class);
+        resetModuleClassLoader();
+        getWirings().refresh();
     }
 
     void createResolvedService(ServiceTarget serviceTarget) {

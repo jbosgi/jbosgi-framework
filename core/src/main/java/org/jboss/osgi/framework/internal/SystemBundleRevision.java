@@ -53,11 +53,6 @@ final class SystemBundleRevision extends BundleStateRevision {
     }
 
     @Override
-    void refreshRevisionInternal() {
-        assert false : "Cannot refresh the system bundle revision";
-    }
-
-    @Override
     public Enumeration<String> getEntryPaths(String path) {
         // [Bug-1472] Clarify the semantic of resource API when called on the system bundle
         // https://www.osgi.org/members/bugzilla/show_bug.cgi?id=1472

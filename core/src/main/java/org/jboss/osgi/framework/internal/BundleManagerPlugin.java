@@ -45,7 +45,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
@@ -68,7 +67,6 @@ import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkStartLevelSupport;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
-import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
@@ -79,7 +77,6 @@ import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
@@ -612,7 +609,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     void setServiceMode(ServiceController<?> controller, Mode mode) {
-        LOGGER.debugf("Set mode %s on service: %s", mode, controller.getName());
+        LOGGER.tracef("Set mode %s on service: %s", mode, controller.getName());
         try {
             controller.setMode(mode);
         } catch (IllegalArgumentException rte) {

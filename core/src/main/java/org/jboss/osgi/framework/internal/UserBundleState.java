@@ -33,6 +33,7 @@ import java.util.Dictionary;
 import java.util.List;
 import java.util.Set;
 
+import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;

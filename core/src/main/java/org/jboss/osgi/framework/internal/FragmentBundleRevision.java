@@ -29,6 +29,7 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.jboss.modules.Module;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.FrameworkMessages;
 import org.jboss.osgi.framework.spi.StorageState;
@@ -59,8 +60,9 @@ final class FragmentBundleRevision extends UserBundleRevision {
     }
 
     @Override
-    void refreshRevisionInternal() {
+    void refreshRevision() {
         attachedHosts = null;
+        getWirings().refresh();
     }
 
     Set<HostBundleRevision> getAttachedHosts() {
