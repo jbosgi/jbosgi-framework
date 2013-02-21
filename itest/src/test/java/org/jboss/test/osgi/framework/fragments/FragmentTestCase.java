@@ -22,11 +22,11 @@
 package org.jboss.test.osgi.framework.fragments;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -64,6 +64,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.namespace.HostNamespace;
+import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.framework.wiring.FrameworkWiring;
@@ -274,6 +275,13 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         assertSame(fragWiring, fragWiring2);
 
         verifyBundleWiring(hostA, hostWiring2, fragA, fragWiring2, 2);
+
+        BundleRevisions revisions = hostA.adapt(BundleRevisions.class);
+        assertEquals(2, revisions.getRevisions().size());
+        assertEquals(hostWiring2.getResource(), revisions.getRevisions().get(0));
+        assertEquals(hostWiring.getResource(), revisions.getRevisions().get(1));
+        assertEquals(hostWiring2, revisions.getRevisions().get(0).getWiring());
+        assertEquals(hostWiring, revisions.getRevisions().get(1).getWiring());
 
         refreshBundles(Collections.singleton(hostA));
         resolveBundles(Collections.singleton(hostA));
