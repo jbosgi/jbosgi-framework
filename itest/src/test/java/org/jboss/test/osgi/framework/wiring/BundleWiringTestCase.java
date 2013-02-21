@@ -51,7 +51,7 @@ import org.osgi.framework.wiring.BundleWiring;
 public class BundleWiringTestCase extends OSGiFrameworkTest {
 
     @Test
-    public void testBundleLifecycle() throws Exception {
+    public void testSimpleBundleWiring() throws Exception {
         Bundle hostA = installBundle(getHostA());
         assertEquals("hostA", hostA.getSymbolicName());
         assertEquals(Version.parseVersion("1.0.0"), hostA.getVersion());

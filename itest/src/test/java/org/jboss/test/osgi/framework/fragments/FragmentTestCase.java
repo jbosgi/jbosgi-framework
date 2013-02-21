@@ -38,6 +38,7 @@ import java.security.ProtectionDomain;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import org.jboss.logging.Logger;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
@@ -62,6 +63,8 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleException;
+import org.osgi.framework.namespace.HostNamespace;
+import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.framework.wiring.FrameworkWiring;
 
@@ -250,13 +253,27 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         BufferedReader br = new BufferedReader(new InputStreamReader(resourceURL.openStream()));
         assertEquals("fragA", br.readLine());
 
+        BundleWiring hostWiring = hostA.adapt(BundleWiring.class);
+        BundleWiring fragWiring = fragA.adapt(BundleWiring.class);
+
+        verifyBundleWiring(hostA, hostWiring, fragA, fragWiring, 1);
+
         hostA.update(toInputStream(getHostA()));
+
         resourceURL = hostA.getResource("resource.txt");
         assertEquals("bundle", resourceURL.getProtocol());
         assertEquals("/resource.txt", resourceURL.getPath());
 
         br = new BufferedReader(new InputStreamReader(resourceURL.openStream()));
         assertEquals("fragA", br.readLine());
+
+        BundleWiring hostWiring2 = hostA.adapt(BundleWiring.class);
+        BundleWiring fragWiring2 = fragA.adapt(BundleWiring.class);
+
+        assertNotSame(hostWiring, hostWiring2);
+        assertSame(fragWiring, fragWiring2);
+
+        verifyBundleWiring(hostA, hostWiring2, fragA, fragWiring2, 2);
 
         refreshBundles(Collections.singleton(hostA));
         resolveBundles(Collections.singleton(hostA));
@@ -270,6 +287,28 @@ public class FragmentTestCase extends OSGiFrameworkTest {
 
         hostA.uninstall();
         fragA.uninstall();
+    }
+
+    private void verifyBundleWiring(Bundle hostA, BundleWiring hostWiring, Bundle fragA, BundleWiring fragWiring, int fragWireCount) {
+        assertNotNull("Host BundleWiring not null", hostWiring);
+        assertEquals(hostA, hostWiring.getBundle());
+        List<BundleWire> hostWires = hostWiring.getProvidedWires(HostNamespace.HOST_NAMESPACE);
+        assertEquals("One provided host wire", 1, hostWires.size());
+        BundleWire hostWire = hostWires.get(0);
+        assertEquals(hostA, hostWire.getProvider().getBundle());
+        assertEquals(fragA, hostWire.getRequirer().getBundle());
+        assertEquals(hostWiring, hostWire.getProviderWiring());
+        assertEquals(fragWiring, hostWire.getRequirerWiring());
+
+        assertNotNull("Fragment BundleWiring not null", fragWiring);
+        assertEquals(fragA, fragWiring.getBundle());
+        List<BundleWire> fragWires = fragWiring.getRequiredWires(HostNamespace.HOST_NAMESPACE);
+        assertEquals("required host wires", fragWireCount, fragWires.size());
+        BundleWire fragWire = fragWires.get(fragWireCount - 1);
+        assertEquals(hostA, fragWire.getProvider().getBundle());
+        assertEquals(fragA, fragWire.getRequirer().getBundle());
+        assertEquals(hostWiring, fragWire.getProviderWiring());
+        assertEquals(fragWiring, fragWire.getRequirerWiring());
     }
 
     @Test
@@ -539,7 +578,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-	public void testFragmentUpdate() throws Exception {
+    public void testFragmentUpdate() throws Exception {
 
         Bundle hostA = installBundle(getHostA());
         assertBundleState(Bundle.INSTALLED, hostA.getState());
@@ -554,8 +593,8 @@ public class FragmentTestCase extends OSGiFrameworkTest {
 
         // Tests that when an attached fragment bundle is updated, the content of
         // the previous fragment remains attached to the host bundle. The new
-   	    // content of the updated fragment must not be allowed to attach to the host
-   	    // bundle until the Framework is restarted or the host bundle is refreshed.
+        // content of the updated fragment must not be allowed to attach to the host
+        // bundle until the Framework is restarted or the host bundle is refreshed.
         fragA.update(toInputStream(getFragmentB()));
 
         // Load class provided by the fragment
@@ -567,10 +606,10 @@ public class FragmentTestCase extends OSGiFrameworkTest {
 
         hostA.uninstall();
         fragA.uninstall();
-	}
+    }
 
     @Test
-	public void testFragmentAttachOrder() throws Exception {
+    public void testFragmentAttachOrder() throws Exception {
 
         Bundle fragE1 = installBundle(getFragmentE1());
         Bundle fragE2 = installBundle(getFragmentE2());
@@ -597,7 +636,7 @@ public class FragmentTestCase extends OSGiFrameworkTest {
         hostE.uninstall();
         fragE2.uninstall();
         fragE1.uninstall();
-	}
+    }
 
     @Test
     public void testFragmentBundleContext() throws Exception {
