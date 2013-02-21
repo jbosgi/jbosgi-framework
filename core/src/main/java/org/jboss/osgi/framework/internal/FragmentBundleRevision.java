@@ -62,7 +62,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
     @Override
     void refreshRevision() {
         attachedHosts = null;
-        getWirings().refresh();
+        getWiringSupport().refresh();
     }
 
     Set<HostBundleRevision> getAttachedHosts() {

@@ -323,7 +323,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         Map<Resource, Wiring> wirings = environment.updateWiring(wiremap);
         for (Entry<Resource, Wiring> entry : wirings.entrySet()) {
             XBundleRevision res = (XBundleRevision) entry.getKey();
-            res.getWirings().setCurrent(entry.getValue());
+            res.getWiringSupport().setWiring(entry.getValue());
         }
 
         // Change the bundle state to RESOLVED

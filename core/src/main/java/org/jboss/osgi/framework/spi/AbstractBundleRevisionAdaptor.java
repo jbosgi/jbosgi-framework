@@ -63,7 +63,7 @@ public class AbstractBundleRevisionAdaptor extends AbstractBundleRevision implem
 
     protected BundleWiring createWiring() {
         BundleWiring wiring = new AbstractBundleWiring(this, null, null);
-        getWirings().setCurrent(wiring);
+        getWiringSupport().setWiring(wiring);
         return wiring;
     }
 

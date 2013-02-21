@@ -44,6 +44,7 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolver;
+import org.jboss.osgi.resolver.XWiringSupport;
 import org.jboss.osgi.resolver.spi.AbstractBundleWire;
 import org.jboss.osgi.resolver.spi.ResolverHookException;
 import org.osgi.framework.Bundle;
@@ -249,10 +250,10 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                 BundleRevisions revisions = bundle.adapt(BundleRevisions.class);
                 for (BundleRevision rev : revisions.getRevisions()) {
                     XBundleRevision brev = (XBundleRevision) rev;
-                    Wiring unresolved = brev.getWirings().getUnresolved();
-                    if (unresolved != null) {
-                        BundleWiring bwiring = (BundleWiring) unresolved;
-                        if (bwiring.isInUse()) {
+                    XWiringSupport wiringSupport = brev.getWiringSupport();
+                    if (!wiringSupport.isEffective()) {
+                        BundleWiring bwiring = (BundleWiring) wiringSupport.getWiring(false);
+                        if (bwiring != null && bwiring.isInUse()) {
                             result.add(bundle);
                         }
                     }
@@ -279,13 +280,9 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
             closure.add(bundle);
 
             for (XBundleRevision brev : bundle.getAllBundleRevisions()) {
-                Wiring current = brev.getWirings().getCurrent();
-                if (current != null) {
-                    transitiveDependencyClosure(brev, current, closure);
-                }
-                Wiring unresolved = brev.getWirings().getUnresolved();
-                if (unresolved != null) {
-                    transitiveDependencyClosure(brev, unresolved, closure);
+                Wiring wiring = brev.getWiringSupport().getWiring(false);
+                if (wiring != null) {
+                    transitiveDependencyClosure(brev, wiring, closure);
                 }
             }
         }

@@ -33,7 +33,6 @@ import java.util.Dictionary;
 import java.util.List;
 import java.util.Set;
 
-import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
@@ -52,6 +51,7 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.resolver.XWiringSupport;
 import org.jboss.osgi.resolver.spi.AbstractBundleWiring;
 import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.vfs.AbstractVFS;
@@ -66,7 +66,6 @@ import org.osgi.framework.hooks.bundle.CollisionHook;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.BundleWiring;
-import org.osgi.resource.Wiring;
 
 /**
  * This is the internal implementation of a Bundle based on a user {@link Deployment}.
@@ -264,8 +263,8 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             // completion of the remaining steps.
             createUpdateRevision(input);
 
-            // Remove the {@link BundleWiring} from the old {@link BundleRevision}
-            brev.getWirings().unresolve();
+            // Make the {@link BundleWiring} for the old {@link BundleRevision} uneffective
+            brev.getWiringSupport().makeUneffective();
 
         } catch (BundleException ex) {
             if (restart)
@@ -471,8 +470,8 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             }
         }
 
-        // Remove the current {@link BundleWiring} and fire the UNRESOLVED event
-        getBundleRevision().getWirings().unresolve();
+        // Make the current {@link BundleWiring} uneffective and fire the UNRESOLVED event
+        getBundleRevision().getWiringSupport().makeUneffective();
         FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
         eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
 
@@ -490,10 +489,10 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             if (auxState != this) {
                 boolean bundleInUse = false;
                 XBundleRevision brev = auxState.getBundleRevision();
-                Wiring unresolved = brev.getWirings().getUnresolved();
-                if (unresolved != null) {
-                    BundleWiring bwiring = (BundleWiring) unresolved;
-                    if (bwiring.isInUse()) {
+                XWiringSupport wiringSupport = brev.getWiringSupport();
+                if (!wiringSupport.isEffective()) {
+                    BundleWiring bwiring = (BundleWiring) wiringSupport.getWiring(false);
+                    if (bwiring != null && bwiring.isInUse()) {
                         bundleInUse = true;
                         break;
                     }

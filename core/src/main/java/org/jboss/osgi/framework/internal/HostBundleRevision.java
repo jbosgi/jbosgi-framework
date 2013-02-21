@@ -83,7 +83,7 @@ final class HostBundleRevision extends UserBundleRevision {
         attachedFragments = null;
         removeAttachment(Module.class);
         resetModuleClassLoader();
-        getWirings().refresh();
+        getWiringSupport().refresh();
     }
 
     void createResolvedService(ServiceTarget serviceTarget) {
