@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 import static org.osgi.framework.Constants.SYSTEM_BUNDLE_LOCATION;
+import static org.osgi.framework.namespace.ExecutionEnvironmentNamespace.EXECUTION_ENVIRONMENT_NAMESPACE;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,6 +46,7 @@ import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.framework.spi.SystemPaths;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
+import org.jboss.osgi.metadata.spi.ElementParser;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -82,7 +84,7 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
         StorageState storageState = null;
         BundleManagerPlugin bundleManager = frameworkState.getBundleManagerPlugin();
         try {
-            OSGiMetaData metadata = createMetaData();
+            OSGiMetaData metadata = createMetaData(bundleManager);
             storageState = createStorageState();
             SystemBundleRevision brev = new SystemBundleRevision(frameworkState, metadata, storageState);
             bundleState = new SystemBundleState(frameworkState, brev);
@@ -115,7 +117,7 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
         }
     }
 
-    private OSGiMetaData createMetaData() {
+    private OSGiMetaData createMetaData(BundleManagerPlugin bundleManager) {
 
         // Initialize the OSGiMetaData
         OSGiMetaDataBuilder builder = OSGiMetaDataBuilder.createBuilder(Constants.SYSTEM_BUNDLE_SYMBOLICNAME, Version.emptyVersion);
@@ -128,6 +130,51 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
         for (String packageSpec : exportedPackages) {
             builder.addExportPackages(packageSpec);
         }
+
+        // Register capabilities for the OSGi/Minimim execution environments the Framework is known to be backward compatible with
+        String capspec = EXECUTION_ENVIRONMENT_NAMESPACE + ";" + EXECUTION_ENVIRONMENT_NAMESPACE + "=\"OSGi/Minimum\";version:List<Version>=\"";
+        String versions = "";
+        if (Java.isCompatible(Java.VERSION_1_1)) {
+            versions += ",1.1";
+        }
+        if (Java.isCompatible(Java.VERSION_1_2)) {
+            versions += ",1.2";
+        }
+        capspec += versions.substring(1) + "\"";
+        builder.addProvidedCapabilities(capspec);
+
+        // Register capabilities for the JavaSE execution environments the Framework is known to be backward compatible with
+        capspec = EXECUTION_ENVIRONMENT_NAMESPACE + ";" + EXECUTION_ENVIRONMENT_NAMESPACE + "=\"JavaSE\";version:List<Version>=\"";
+        versions = "";
+        if (Java.isCompatible(Java.VERSION_1_3)) {
+            versions += ",1.3";
+        }
+        if (Java.isCompatible(Java.VERSION_1_4)) {
+            versions += ",1.4";
+        }
+        if (Java.isCompatible(Java.VERSION_1_5)) {
+            versions += ",1.5";
+        }
+        if (Java.isCompatible(Java.VERSION_1_6)) {
+            versions += ",1.6";
+        }
+        capspec += versions.substring(1) + "\"";
+        builder.addProvidedCapabilities(capspec);
+
+        // Add framework system capabilities
+        String syscaps = (String) bundleManager.getProperty(Constants.FRAMEWORK_SYSTEMCAPABILITIES);
+        if (syscaps != null) {
+            List<String> pieces = ElementParser.parseDelimitedString(syscaps, ',');
+            builder.addProvidedCapabilities(pieces.toArray(new String[pieces.size()]));
+        }
+
+        // Add extra framework system capabilities
+        syscaps = (String) bundleManager.getProperty(Constants.FRAMEWORK_SYSTEMCAPABILITIES_EXTRA);
+        if (syscaps != null) {
+            List<String> pieces = ElementParser.parseDelimitedString(syscaps, ',');
+            builder.addProvidedCapabilities(pieces.toArray(new String[pieces.size()]));
+        }
+
         return builder.getOSGiMetaData();
     }
 
