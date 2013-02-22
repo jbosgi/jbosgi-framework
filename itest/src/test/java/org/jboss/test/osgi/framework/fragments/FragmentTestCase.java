@@ -273,6 +273,8 @@ public class FragmentTestCase extends OSGiFrameworkTest {
 
         assertNotSame(hostWiring, hostWiring2);
         assertSame(fragWiring, fragWiring2);
+        assertFalse(hostWiring.isCurrent());
+        assertTrue(hostWiring2.isCurrent());
 
         verifyBundleWiring(hostA, hostWiring2, fragA, fragWiring2, 2);
 

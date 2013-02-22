@@ -156,10 +156,6 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
     BundleRevisions getBundleRevisions() {
         synchronized (revisions) {
             final Bundle bundle = this;
-            final List<BundleRevision> bundleRevisions = new ArrayList<BundleRevision>(revisions.size());
-            for (XBundleRevision rev : revisions) {
-                bundleRevisions.add(rev);
-            }
             return new BundleRevisions() {
 
                 @Override
@@ -169,6 +165,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
 
                 @Override
                 public List<BundleRevision> getRevisions() {
+                    List<BundleRevision> bundleRevisions = new ArrayList<BundleRevision>(revisions);
                     return Collections.unmodifiableList(bundleRevisions);
                 }
 
