@@ -27,7 +27,10 @@ import static org.osgi.framework.namespace.ExecutionEnvironmentNamespace.EXECUTI
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
@@ -117,6 +120,7 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
         }
     }
 
+    @SuppressWarnings("deprecation")
     private OSGiMetaData createMetaData(BundleManagerPlugin bundleManager) {
 
         // Initialize the OSGiMetaData
@@ -131,38 +135,70 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
             builder.addExportPackages(packageSpec);
         }
 
-        // Register capabilities for the OSGi/Minimim execution environments the Framework is known to be backward compatible with
-        String capspec = EXECUTION_ENVIRONMENT_NAMESPACE + ";" + EXECUTION_ENVIRONMENT_NAMESPACE + "=\"OSGi/Minimum\";version:List<Version>=\"";
-        String versions = "";
-        if (Java.isCompatible(Java.VERSION_1_1)) {
-            versions += ",1.1";
-        }
-        if (Java.isCompatible(Java.VERSION_1_2)) {
-            versions += ",1.2";
-        }
-        capspec += versions.substring(1) + "\"";
-        builder.addProvidedCapabilities(capspec);
+        // Add framework system capabilities
+        String syscaps = (String) bundleManager.getProperty(Constants.FRAMEWORK_EXECUTIONENVIRONMENT);
+        if (syscaps != null) {
+            Map<String, List<String>> nameversion = new LinkedHashMap<String, List<String>>();
+            for (String piece : ElementParser.parseDelimitedString(syscaps, ',')) {
+                StringBuffer namepart = new StringBuffer();
+                StringBuffer versionpart = new StringBuffer();
+                OSGiMetaDataBuilder.convertExecutionEnvironmentHeader(piece, namepart, versionpart);
+                List<String> versions = nameversion.get(namepart.toString());
+                if (versions == null) {
+                    versions = new ArrayList<String>();
+                    nameversion.put(namepart.toString(), versions);
+                }
+                if (versionpart.length() > 0) {
+                    versions.add(versionpart.toString());
+                }
+            }
+            for (Entry<String, List<String>> entry : nameversion.entrySet()) {
+                String namepart = entry.getKey();
+                List<String> versions = entry.getValue();
+                String capspec = EXECUTION_ENVIRONMENT_NAMESPACE + ";" + EXECUTION_ENVIRONMENT_NAMESPACE + "=\"" + namepart + "\"";
+                if (versions.size() > 0) {
+                    String vlist = "";
+                    for (String version : versions) {
+                        vlist += "," + version;
+                    }
+                    capspec += ";version" + (versions.size() > 1 ? ":List<Version>=\"" : "=\"") + vlist.substring(1) + "\"";
+                }
+                builder.addProvidedCapabilities(capspec);
+            }
+        } else {
+            // Register capabilities for the OSGi/Minimim execution environments the Framework is known to be backward compatible with
+            String capspec = EXECUTION_ENVIRONMENT_NAMESPACE + ";" + EXECUTION_ENVIRONMENT_NAMESPACE + "=\"OSGi/Minimum\";version:List<Version>=\"";
+            String vlist = "";
+            if (Java.isCompatible(Java.VERSION_1_1)) {
+                vlist += ",1.1";
+            }
+            if (Java.isCompatible(Java.VERSION_1_2)) {
+                vlist += ",1.2";
+            }
+            capspec += vlist.substring(1) + "\"";
+            builder.addProvidedCapabilities(capspec);
 
-        // Register capabilities for the JavaSE execution environments the Framework is known to be backward compatible with
-        capspec = EXECUTION_ENVIRONMENT_NAMESPACE + ";" + EXECUTION_ENVIRONMENT_NAMESPACE + "=\"JavaSE\";version:List<Version>=\"";
-        versions = "";
-        if (Java.isCompatible(Java.VERSION_1_3)) {
-            versions += ",1.3";
+            // Register capabilities for the JavaSE execution environments the Framework is known to be backward compatible with
+            capspec = EXECUTION_ENVIRONMENT_NAMESPACE + ";" + EXECUTION_ENVIRONMENT_NAMESPACE + "=\"JavaSE\";version:List<Version>=\"";
+            vlist = "";
+            if (Java.isCompatible(Java.VERSION_1_3)) {
+                vlist += ",1.3";
+            }
+            if (Java.isCompatible(Java.VERSION_1_4)) {
+                vlist += ",1.4";
+            }
+            if (Java.isCompatible(Java.VERSION_1_5)) {
+                vlist += ",1.5";
+            }
+            if (Java.isCompatible(Java.VERSION_1_6)) {
+                vlist += ",1.6";
+            }
+            capspec += vlist.substring(1) + "\"";
+            builder.addProvidedCapabilities(capspec);
         }
-        if (Java.isCompatible(Java.VERSION_1_4)) {
-            versions += ",1.4";
-        }
-        if (Java.isCompatible(Java.VERSION_1_5)) {
-            versions += ",1.5";
-        }
-        if (Java.isCompatible(Java.VERSION_1_6)) {
-            versions += ",1.6";
-        }
-        capspec += versions.substring(1) + "\"";
-        builder.addProvidedCapabilities(capspec);
 
         // Add framework system capabilities
-        String syscaps = (String) bundleManager.getProperty(Constants.FRAMEWORK_SYSTEMCAPABILITIES);
+        syscaps = (String) bundleManager.getProperty(Constants.FRAMEWORK_SYSTEMCAPABILITIES);
         if (syscaps != null) {
             List<String> pieces = ElementParser.parseDelimitedString(syscaps, ',');
             builder.addProvidedCapabilities(pieces.toArray(new String[pieces.size()]));

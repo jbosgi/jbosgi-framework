@@ -33,7 +33,6 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
 
 /**
  * [JBOSGI-477] Unsupported execution environment OSGi/Minimum-1.1
@@ -54,7 +53,7 @@ public class OSGi477TestCase extends OSGiFrameworkTest {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archiveA.getName());
-                builder.addManifestHeader(Constants.BUNDLE_REQUIREDEXECUTIONENVIRONMENT, "OSGi/Minimum-1.1");
+                builder.addRequiredExecutionEnvironment("OSGi/Minimum-1.1");
                 return builder.openStream();
             }
         });
@@ -77,7 +76,7 @@ public class OSGi477TestCase extends OSGiFrameworkTest {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archiveA.getName());
-                builder.addManifestHeader(Constants.BUNDLE_REQUIREDEXECUTIONENVIRONMENT, "JavaSE-1.6");
+                builder.addRequiredExecutionEnvironment("JavaSE-1.6");
                 return builder.openStream();
             }
         });
@@ -100,7 +99,7 @@ public class OSGi477TestCase extends OSGiFrameworkTest {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archiveA.getName());
-                builder.addManifestHeader(Constants.BUNDLE_REQUIREDEXECUTIONENVIRONMENT, "Bugus");
+                builder.addRequiredExecutionEnvironment("Bugus");
                 return builder.openStream();
             }
         });
