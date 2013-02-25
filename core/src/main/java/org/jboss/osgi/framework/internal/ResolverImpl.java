@@ -34,7 +34,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.msc.service.ServiceContainer;
@@ -113,8 +112,9 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
     public XResolveContext createResolveContext(XEnvironment environment, Collection<? extends Resource> mandatory, Collection<? extends Resource> optional) {
         Collection<Resource> manres = new HashSet<Resource>(mandatory != null ? mandatory : Collections.<Resource> emptySet());
         Collection<Resource> optres = new HashSet<Resource>(optional != null ? optional : Collections.<Resource> emptySet());
-        appendOptionalFragments(mandatory, optres);
-        appendOptionalHostBundles(mandatory, optres);
+        removeUninstalled(manres, optres);
+        appendOptionalFragments(manres, optres);
+        appendOptionalHostBundles(manres, optres);
         return super.createResolveContext(environment, manres, optres);
     }
 
@@ -136,8 +136,8 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
             throw MESSAGES.illegalStateResolverHookCannotTriggerResolveOperation();
 
         BundleContext syscontext = bundleManager.getSystemContext();
-        Collection<Resource> manres = resolveContext.getMandatoryResources();
-        Collection<Resource> optres = resolveContext.getOptionalResources();
+        Collection<Resource> manres = new HashSet<Resource>(resolveContext.getMandatoryResources());
+        Collection<Resource> optres = new HashSet<Resource>(resolveContext.getOptionalResources());
         ResolverHookProcessor hookregs = new ResolverHookProcessor(syscontext, bundleManager.getBundles(Bundle.INSTALLED));
         try {
             // Recreate the {@link ResolveContext} with filtered resources
@@ -167,7 +167,8 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
                 });
                 resolveContext = super.createResolveContext(environment, getFilteredResources(hookregs, manres), getFilteredResources(hookregs, optres));
             } else {
-                resolveContext = super.createResolveContext(environment, filterSingletons(manres), optres);
+                filterSingletons(manres, optres);
+                resolveContext = super.createResolveContext(environment, manres, optres);
             }
 
             Map<Resource, List<Wire>> wiremap;
@@ -208,23 +209,52 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         return filtered;
     }
 
-    private void appendOptionalFragments(Collection<? extends Resource> mandatory, Collection<Resource> optional) {
-        Collection<Capability> hostcaps = getHostCapabilities(mandatory);
-        if (hostcaps.isEmpty() == false) {
-            optional.addAll(findAttachableFragments(hostcaps));
+    private void removeUninstalled(Collection<Resource> manres, Collection<Resource> optres) {
+        for (Resource res : getCombinedResources(manres, optres)) {
+            XBundleRevision brev = (XBundleRevision) res;
+            if (brev.getBundle().getState() == Bundle.UNINSTALLED) {
+                manres.remove(brev);
+                optres.remove(brev);
+            }
+        }
+    }
+
+    private void appendOptionalFragments(Collection<? extends Resource> manres, Collection<Resource> optres) {
+        Collection<Capability> hostcaps = new HashSet<Capability>();
+        HashSet<Resource> combined = getCombinedResources(manres, optres);
+        for (Resource res : combined) {
+            for (Capability hostcap : res.getCapabilities(HostNamespace.HOST_NAMESPACE)) {
+                hostcaps.add(hostcap);
+            }
+        }
+        HashSet<Resource> fragments = new HashSet<Resource>();
+        for (XResource res : environment.getResources(IdentityNamespace.TYPE_FRAGMENT)) {
+            XBundleRevision brev = (XBundleRevision) res;
+            if (brev.getBundle().getState() != Bundle.UNINSTALLED) {
+                XRequirement xreq = (XRequirement) res.getRequirements(HostNamespace.HOST_NAMESPACE).get(0);
+                for (Capability cap : hostcaps) {
+                    if (xreq.matches(cap) && !combined.contains(brev)) {
+                        fragments.add(brev);
+                    }
+                }
+            }
+        }
+        if (fragments.isEmpty() == false) {
+            LOGGER.debugf("Adding attachable fragments: %s", fragments);
+            optres.addAll(fragments);
         }
     }
 
     // Append the set of all unresolved resources if there is at least one optional package requirement
-    private void appendOptionalHostBundles(Collection<? extends Resource> mandatory, Collection<Resource> optional) {
-        for (Resource res : mandatory) {
+    private void appendOptionalHostBundles(Collection<? extends Resource> manres, Collection<Resource> optres) {
+        for (Resource res : getCombinedResources(manres, optres)) {
             for (Requirement req : res.getRequirements(PackageNamespace.PACKAGE_NAMESPACE)) {
                 XPackageRequirement preq = (XPackageRequirement) req;
                 if (preq.isOptional()) {
                     for (XBundle bundle : bundleManager.getBundles(Bundle.INSTALLED)) {
                         XResource auxrev = bundle.getBundleRevision();
-                        if (!bundle.isFragment() && !mandatory.contains(auxrev)) {
-                            optional.add(auxrev);
+                        if (!bundle.isFragment() && !manres.contains(auxrev)) {
+                            optres.add(auxrev);
                         }
                     }
                     return;
@@ -233,51 +263,26 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         }
     }
 
-    private Collection<Capability> getHostCapabilities(Collection<? extends Resource> resources) {
-        Collection<Capability> result = new HashSet<Capability>();
-        for (Resource res : resources) {
-            List<Capability> caps = res.getCapabilities(HostNamespace.HOST_NAMESPACE);
-            if (caps.size() == 1)
-                result.add(caps.get(0));
-        }
-        return result;
+    private HashSet<Resource> getCombinedResources(Collection<? extends Resource> manres, Collection<Resource> optres) {
+        HashSet<Resource> combined = new HashSet<Resource>(manres);
+        combined.addAll(optres);
+        return combined;
     }
 
-    private Collection<Resource> filterSingletons(Collection<? extends Resource> resources) {
+    private void filterSingletons(Collection<? extends Resource> manres, Collection<Resource> optres) {
         Map<String, Resource> singletons = new HashMap<String, Resource>();
-        List<Resource> result = new ArrayList<Resource>(resources);
-        Iterator<Resource> iterator = result.iterator();
-        while (iterator.hasNext()) {
-            XResource xres = (XResource) iterator.next();
+        for (Resource res : getCombinedResources(manres, optres)) {
+            XResource xres = (XResource) res;
             XIdentityCapability icap = xres.getIdentityCapability();
             if (icap.isSingleton()) {
                 if (singletons.get(icap.getSymbolicName()) != null) {
-                    iterator.remove();
+                    manres.remove(res);
+                    optres.remove(res);
                 } else {
                     singletons.put(icap.getSymbolicName(), xres);
                 }
             }
         }
-        return Collections.unmodifiableList(result);
-    }
-
-    private Collection<XResource> findAttachableFragments(Collection<? extends Capability> hostcaps) {
-        Set<XResource> result = new HashSet<XResource>();
-        for (XResource res : environment.getResources(IdentityNamespace.TYPE_FRAGMENT)) {
-            XBundleRevision brev = (XBundleRevision) res;
-            if (brev.getBundle().getState() != Bundle.UNINSTALLED) {
-                XRequirement xreq = (XRequirement) res.getRequirements(HostNamespace.HOST_NAMESPACE).get(0);
-                for (Capability cap : hostcaps) {
-                    if (xreq.matches(cap)) {
-                        result.add(res);
-                    }
-                }
-            }
-        }
-        if (result.isEmpty() == false) {
-            LOGGER.debugf("Adding attachable fragments: %s", result);
-        }
-        return result;
     }
 
     private Map<Resource, Wiring> applyResolverResults(Map<Resource, List<Wire>> wiremap) throws ResolutionException {

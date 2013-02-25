@@ -106,7 +106,7 @@ public class FrameworkWiringTestCase extends OSGiFrameworkTest {
             assertBundleState(Bundle.INSTALLED, bundleI.getState());
             assertBundleState(Bundle.INSTALLED, bundleR.getState());
             assertFalse(frameworkWiring.resolveBundles(Arrays.asList(bundleR, bundleI)));
-            assertTrue(Bundle.RESOLVED == bundleI.getState() || Bundle.INSTALLED == bundleI.getState());
+            assertTrue(Bundle.RESOLVED == bundleI.getState());
             assertBundleState(Bundle.INSTALLED, bundleR.getState());
         } finally {
             bundleI.uninstall();

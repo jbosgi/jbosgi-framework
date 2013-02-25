@@ -215,8 +215,7 @@ public class BundleTestCase extends OSGiFrameworkTest {
             Bundle bundleB = installBundle(assemblyB);
             try {
                 FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
-                boolean resolved = frameworkWiring.resolveBundles(Arrays.asList(bundleA, bundleB));
-                assertFalse("Not all Bundles resolved", resolved);
+                assertFalse("Not all Bundles resolved", frameworkWiring.resolveBundles(Arrays.asList(bundleA, bundleB)));
                 int stateA = bundleA.getState();
                 int stateB = bundleB.getState();
                 assertTrue("One Bundle resolved", stateA == INSTALLED && stateB == RESOLVED || stateA == RESOLVED && stateB == INSTALLED);

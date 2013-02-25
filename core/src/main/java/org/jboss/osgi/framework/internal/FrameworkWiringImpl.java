@@ -221,7 +221,7 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
 
         boolean result = true;
         try {
-            resolver.resolveAndApply(resolver.createResolveContext(environment, resolvableRevisions, null));
+            resolver.resolveAndApply(resolver.createResolveContext(environment, null, resolvableRevisions));
             for (BundleRevision aux : resolvableRevisions) {
                 if (aux.getWiring() == null) {
                     result = false;
