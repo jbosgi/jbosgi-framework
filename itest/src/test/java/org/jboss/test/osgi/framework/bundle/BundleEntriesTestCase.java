@@ -1,4 +1,5 @@
 package org.jboss.test.osgi.framework.bundle;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -24,6 +25,7 @@ package org.jboss.test.osgi.framework.bundle;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.net.URI;
@@ -37,6 +39,7 @@ import java.util.Set;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.wiring.BundleWiring;
 
 /**
  * BundleEntriesTest.
@@ -68,10 +71,20 @@ public class BundleEntriesTestCase extends OSGiFrameworkTest {
     public void testFindEntriesNoPath() throws Exception {
         Bundle bundle = installBundle(assembleArchive("entries-simple", "/bundles/entries/entries-simple"));
         try {
-            bundle.findEntries(null, "root.xml", false);
-            fail("Should not be here!");
-        } catch (IllegalArgumentException t) {
-            // expected
+            try {
+                bundle.findEntries(null, "root.xml", false);
+                fail("Should not be here!");
+            } catch (IllegalArgumentException t) {
+                // expected
+            }
+            assertTrue(resolveBundles(Collections.singleton(bundle)));
+            BundleWiring wiring = bundle.adapt(BundleWiring.class);
+            try {
+                wiring.findEntries(null, "root.xml", 0);
+                fail("Should not be here!");
+            } catch (IllegalArgumentException t) {
+                // expected
+            }
         } finally {
             bundle.uninstall();
         }
@@ -135,11 +148,8 @@ public class BundleEntriesTestCase extends OSGiFrameworkTest {
             assertEntry(bundle, "org/jboss/test/osgi/bundle/entries");
             assertEntries(bundle, "", "org/jboss/test/osgi/bundle/entries", false);
             assertEntries(bundle, "", "org/jboss/test/osgi/bundle/entries", true);
-            assertEntryPaths("org/jboss/test/osgi/bundle/entries", bundle,
-                    "org/jboss/test/osgi/bundle/entries/notxml.suffix",
-                    "org/jboss/test/osgi/bundle/entries/entry1.xml",
-                    "org/jboss/test/osgi/bundle/entries/entry2.xml",
-                    "org/jboss/test/osgi/bundle/entries/sub/");
+            assertEntryPaths("org/jboss/test/osgi/bundle/entries", bundle, "org/jboss/test/osgi/bundle/entries/notxml.suffix",
+                    "org/jboss/test/osgi/bundle/entries/entry1.xml", "org/jboss/test/osgi/bundle/entries/entry2.xml", "org/jboss/test/osgi/bundle/entries/sub/");
 
             assertNoEntry(bundle, "org/jboss/test/osgi/bundle/DoesNotExist");
             assertNoEntries(bundle, "org/jboss/test/osgi/bundle", "DoesNotExist", false);
@@ -155,21 +165,19 @@ public class BundleEntriesTestCase extends OSGiFrameworkTest {
             assertEntries(bundle, "org/jboss/test/osgi/bundle/entries", "entry1.xml", false, "org/jboss/test/osgi/bundle/entries/entry1.xml");
             assertEntries(bundle, "org/jboss/test/osgi/bundle/entries", "entry1.xml", true, "org/jboss/test/osgi/bundle/entries/entry1.xml",
                     "org/jboss/test/osgi/bundle/entries/sub/entry1.xml");
-            assertNoEntryPaths(bundle,
-                    "org/jboss/test/osgi/bundle/entries/entry1.xml");
+            assertNoEntryPaths(bundle, "org/jboss/test/osgi/bundle/entries/entry1.xml");
 
             assertEntry(bundle, "org/jboss/test/osgi/bundle/entries/entry2.xml");
             assertEntries(bundle, "org/jboss/test/osgi/bundle/entries", "entry2.xml", false, "org/jboss/test/osgi/bundle/entries/entry2.xml");
             assertEntries(bundle, "org/jboss/test/osgi/bundle/entries", "entry2.xml", true, "org/jboss/test/osgi/bundle/entries/entry2.xml",
                     "org/jboss/test/osgi/bundle/entries/sub/entry2.xml");
-            assertNoEntryPaths(bundle,
-                    "org/jboss/test/osgi/bundle/entries/entry2.xml");
+            assertNoEntryPaths(bundle, "org/jboss/test/osgi/bundle/entries/entry2.xml");
 
             assertEntry(bundle, "org/jboss/test/osgi/bundle/entries/sub");
             assertEntries(bundle, "", "org/jboss/test/osgi/bundle/entries/sub", false);
             assertEntries(bundle, "", "org/jboss/test/osgi/bundle/entries/sub", true);
-            assertEntryPaths("org/jboss/test/osgi/bundle/entries/sub", bundle,
-                    "org/jboss/test/osgi/bundle/entries/sub/entry1.xml", "org/jboss/test/osgi/bundle/entries/sub/entry2.xml");
+            assertEntryPaths("org/jboss/test/osgi/bundle/entries/sub", bundle, "org/jboss/test/osgi/bundle/entries/sub/entry1.xml",
+                    "org/jboss/test/osgi/bundle/entries/sub/entry2.xml");
 
             assertNoEntry(bundle, "org/jboss/test/osgi/bundle/DoesNotExist/sub");
             assertNoEntries(bundle, "org/jboss/test/osgi/bundle/sub", "DoesNotExist", false);
@@ -187,20 +195,18 @@ public class BundleEntriesTestCase extends OSGiFrameworkTest {
             assertNoEntryPaths(bundle, "org/jboss/test/osgi/bundle/entries/sub/entry2.xml");
 
             assertEntries(bundle, "", "*", false, "root.xml", "root-no-suffix", "entry1.xml", "META-INF/", "org/");
-            assertEntries(bundle, "", "*", true, "root.xml", "root-no-suffix", "entry1.xml", "META-INF/", "META-INF/MANIFEST.MF",
-                    "org/", "org/jboss/", "org/jboss/test/", "org/jboss/test/osgi/", "org/jboss/test/osgi/bundle/",
-                    "org/jboss/test/osgi/bundle/entries/", "org/jboss/test/osgi/bundle/entries/notxml.suffix",
-                    "org/jboss/test/osgi/bundle/entries/sub/",
-                    "org/jboss/test/osgi/bundle/entries/entry1.xml", "org/jboss/test/osgi/bundle/entries/sub/entry1.xml",
-                    "org/jboss/test/osgi/bundle/entries/entry2.xml", "org/jboss/test/osgi/bundle/entries/sub/entry2.xml");
+            assertEntries(bundle, "", "*", true, "root.xml", "root-no-suffix", "entry1.xml", "META-INF/", "META-INF/MANIFEST.MF", "org/", "org/jboss/",
+                    "org/jboss/test/", "org/jboss/test/osgi/", "org/jboss/test/osgi/bundle/", "org/jboss/test/osgi/bundle/entries/",
+                    "org/jboss/test/osgi/bundle/entries/notxml.suffix", "org/jboss/test/osgi/bundle/entries/sub/", "org/jboss/test/osgi/bundle/entries/entry1.xml",
+                    "org/jboss/test/osgi/bundle/entries/sub/entry1.xml", "org/jboss/test/osgi/bundle/entries/entry2.xml",
+                    "org/jboss/test/osgi/bundle/entries/sub/entry2.xml");
 
             assertEntries(bundle, "", null, false, "root.xml", "root-no-suffix", "entry1.xml", "META-INF/", "org/");
-            assertEntries(bundle, "", null, true, "root.xml", "root-no-suffix", "entry1.xml", "META-INF/", "META-INF/MANIFEST.MF",
-                    "org/", "org/jboss/", "org/jboss/test/", "org/jboss/test/osgi/", "org/jboss/test/osgi/bundle/",
-                    "org/jboss/test/osgi/bundle/entries/", "org/jboss/test/osgi/bundle/entries/notxml.suffix",
-                    "org/jboss/test/osgi/bundle/entries/sub/",
-                    "org/jboss/test/osgi/bundle/entries/entry1.xml", "org/jboss/test/osgi/bundle/entries/sub/entry1.xml",
-                    "org/jboss/test/osgi/bundle/entries/entry2.xml", "org/jboss/test/osgi/bundle/entries/sub/entry2.xml");
+            assertEntries(bundle, "", null, true, "root.xml", "root-no-suffix", "entry1.xml", "META-INF/", "META-INF/MANIFEST.MF", "org/", "org/jboss/",
+                    "org/jboss/test/", "org/jboss/test/osgi/", "org/jboss/test/osgi/bundle/", "org/jboss/test/osgi/bundle/entries/",
+                    "org/jboss/test/osgi/bundle/entries/notxml.suffix", "org/jboss/test/osgi/bundle/entries/sub/", "org/jboss/test/osgi/bundle/entries/entry1.xml",
+                    "org/jboss/test/osgi/bundle/entries/sub/entry1.xml", "org/jboss/test/osgi/bundle/entries/entry2.xml",
+                    "org/jboss/test/osgi/bundle/entries/sub/entry2.xml");
 
             assertEntries(bundle, "", "root*", false, "root-no-suffix", "root.xml");
             assertEntries(bundle, "", "root*", true, "root-no-suffix", "root.xml");

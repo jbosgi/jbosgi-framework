@@ -26,6 +26,9 @@ import static org.junit.Assert.assertEquals;
 import static org.osgi.framework.namespace.PackageNamespace.PACKAGE_NAMESPACE;
 
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import junit.framework.Assert;
@@ -36,6 +39,7 @@ import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.Asset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.jboss.test.osgi.framework.bundle.support.a.ObjectA;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;
@@ -99,6 +103,36 @@ public class BundleWiringTestCase extends OSGiFrameworkTest {
         Assert.assertEquals(wiring.getRequirements(null), wiring.getResourceRequirements(null));
     }
 
+    @Test
+    public void testListResources() throws Exception {
+        Bundle hostB = installBundle(getHostB());
+        resolveBundles(Collections.singleton(hostB));
+        BundleWiring wiring = hostB.adapt(BundleWiring.class);
+        try {
+            wiring.listResources(null, "ObjectA.class", 0);
+            Assert.fail("IllegalArgumentException expected");
+        } catch (IllegalArgumentException ex) {
+            // expected
+        }
+        Collection<String> resources = wiring.listResources("/", "ObjectA.class", BundleWiring.LISTRESOURCES_LOCAL);
+        Assert.assertEquals(1, resources.size());
+        String expected = "/" + ObjectA.class.getName().replace('.', '/') + ".class";
+        Assert.assertEquals(expected, resources.iterator().next());
+    }
+
+    @Test
+    public void testListResourcesRecursive() throws Exception {
+        Bundle hostB = installBundle(getHostB());
+        Bundle hostC = installBundle(getHostC());
+        resolveBundles(Arrays.asList(hostB, hostC));
+
+        BundleWiring wiring = hostC.adapt(BundleWiring.class);
+        Collection<String> resources = wiring.listResources("/", "ObjectA.class", BundleWiring.LISTRESOURCES_RECURSE);
+        Assert.assertEquals(1, resources.size());
+        String expected = "/" + ObjectA.class.getName().replace('.', '/') + ".class";
+        Assert.assertEquals(expected, resources.iterator().next());
+    }
+
     private JavaArchive getHostA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "hostA");
         archive.setManifest(new Asset() {
@@ -108,6 +142,39 @@ public class BundleWiringTestCase extends OSGiFrameworkTest {
                 builder.addBundleManifestVersion(2);
                 builder.addBundleSymbolicName(archive.getName());
                 builder.addBundleVersion("1.0.0");
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getHostB() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "hostB");
+        archive.addClasses(ObjectA.class);
+        archive.setManifest(new Asset() {
+            @Override
+            public InputStream openStream() {
+                final OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addExportPackages(ObjectA.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getHostC() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "hostC");
+        archive.setManifest(new Asset() {
+            @Override
+            public InputStream openStream() {
+                final OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleVersion("1.0.0");
+                builder.addImportPackages(ObjectA.class);
                 return builder.openStream();
             }
         });
