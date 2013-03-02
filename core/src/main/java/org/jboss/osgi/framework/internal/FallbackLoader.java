@@ -48,6 +48,8 @@ import org.jboss.osgi.resolver.XCapability;
 import org.jboss.osgi.resolver.XPackageCapability;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XRequirement;
+import org.jboss.osgi.resolver.XWiring;
+import org.jboss.osgi.resolver.spi.AbstractBundleWire;
 import org.jboss.osgi.resolver.spi.RemoveOnlyCollection;
 import org.jboss.osgi.resolver.spi.ResolverHookProcessor;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -57,6 +59,7 @@ import org.osgi.framework.namespace.PackageNamespace;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
 import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Requirement;
 
@@ -117,7 +120,7 @@ final class FallbackLoader implements LocalLoader {
 
     @Override
     public Class<?> loadClassLocal(String className, boolean resolve) {
-        XBundleRevision brev = null;
+        DynamicLoadContext context = new DynamicLoadContext(className.replace('.', '/') + ".class");
         try {
             lockFallbackLoader();
 
@@ -125,21 +128,32 @@ final class FallbackLoader implements LocalLoader {
             if (!fallbackEnabled.get() || matchingPatterns.isEmpty())
                 return null;
 
-            String pathName = className.replace('.', '/') + ".class";
-            brev = findRevisionDynamically(pathName, matchingPatterns);
+            findRevisionDynamically(context, matchingPatterns);
         } finally {
             unlockFallbackLoader();
         }
+
+        Class<?> result = null;
+        XBundleRevision brev = context.targetRevision;
         if (brev != null) {
             try {
                 ModuleClassLoader moduleClassLoader = brev.getModuleClassLoader();
-                return moduleClassLoader.loadClass(className);
+                result = moduleClassLoader.loadClass(className);
             } catch (ClassNotFoundException ex) {
                 LOGGER.tracef("Cannot load class [%s] from module: %s", className, brev);
                 return null;
             }
+            if (context.capability != null && context.requirement != null) {
+                BundleCapability bcap = (BundleCapability)context.capability;
+                BundleRequirement breq = (BundleRequirement)context.requirement;
+                AbstractBundleWire wire = new AbstractBundleWire(bcap, breq, brev, hostRev);
+                XWiring requirerWiring = (XWiring) hostBundle.adapt(BundleWiring.class);
+                XWiring providerWiring = (XWiring) brev.getBundle().adapt(BundleWiring.class);
+                requirerWiring.addRequiredWire(wire);
+                providerWiring.addRequiredWire(wire);
+            }
         }
-        return null;
+        return result;
     }
 
     @Override
@@ -149,7 +163,7 @@ final class FallbackLoader implements LocalLoader {
 
     @Override
     public List<Resource> loadResourceLocal(String resName) {
-        XBundleRevision brev = null;
+        DynamicLoadContext context = new DynamicLoadContext(resName);
         try {
             lockFallbackLoader();
 
@@ -160,7 +174,8 @@ final class FallbackLoader implements LocalLoader {
             if (!fallbackEnabled.get() || matchingPatterns.isEmpty())
                 return Collections.emptyList();
 
-            brev = findRevisionDynamically(resName, matchingPatterns);
+            findRevisionDynamically(context, matchingPatterns);
+            XBundleRevision brev = context.targetRevision;
             if (brev == null)
                 return Collections.emptyList();
 
@@ -176,14 +191,15 @@ final class FallbackLoader implements LocalLoader {
         }
     }
 
-    private XBundleRevision findRevisionDynamically(String resName, List<XPackageRequirement> matchingPatterns) {
-        int idx = resName.lastIndexOf('/');
+    private void findRevisionDynamically(DynamicLoadContext context, List<XPackageRequirement> matchingPatterns) {
+        String pathName = context.resName;
+        int idx = pathName.lastIndexOf('/');
         if (idx < 0)
-            return null;
+            return;
 
-        String path = resName.substring(0, idx);
+        String path = pathName.substring(0, idx);
         if (importedPaths.contains(path))
-            return null;
+            return;
 
         if (dynamicLoadAttempts == null)
             dynamicLoadAttempts = new ThreadLocal<Map<String, AtomicInteger>>();
@@ -197,33 +213,28 @@ final class FallbackLoader implements LocalLoader {
                 removeThreadLocalMapping = true;
             }
 
-            AtomicInteger recursiveDepth = mapping.get(resName);
+            AtomicInteger recursiveDepth = mapping.get(pathName);
             if (recursiveDepth == null)
-                mapping.put(resName, recursiveDepth = new AtomicInteger());
+                mapping.put(pathName, recursiveDepth = new AtomicInteger());
 
             if (recursiveDepth.incrementAndGet() == 1) {
-                XBundleRevision brev = findInResolvedRevisions(resName, matchingPatterns);
-                if (brev != null && brev != hostRev)
-                    return brev;
-
-                brev = findInUnresolvedRevisions(resName, matchingPatterns);
-                if (brev != null && brev != hostRev)
-                    return brev;
-
-                brev = findInSystemRevision(resName, matchingPatterns);
-                if (brev != null && brev != hostRev)
-                    return brev;
+                findInResolvedRevisions(context, matchingPatterns);
+                if (context.targetRevision == null) {
+                    findInUnresolvedRevisions(context, matchingPatterns);
+                    if (context.targetRevision == null) {
+                        findInSystemRevision(context, matchingPatterns);
+                    }
+                }
             }
         } finally {
             if (removeThreadLocalMapping == true) {
                 dynamicLoadAttempts.remove();
             } else {
-                AtomicInteger recursiveDepth = mapping.get(resName);
+                AtomicInteger recursiveDepth = mapping.get(pathName);
                 if (recursiveDepth.decrementAndGet() == 0)
-                    mapping.remove(resName);
+                    mapping.remove(pathName);
             }
         }
-        return null;
     }
 
     private List<XPackageRequirement> findMatchingPatterns(String resName) {
@@ -263,7 +274,7 @@ final class FallbackLoader implements LocalLoader {
         return foundMatch;
     }
 
-    private XBundleRevision findInResolvedRevisions(String resName, List<XPackageRequirement> matchingPatterns) {
+    private void findInResolvedRevisions(DynamicLoadContext context, List<XPackageRequirement> matchingPatterns) {
         LOGGER.tracef("Attempt to find path dynamically in resolved modules ...");
         Set<XBundle> resolved = bundleManager.getBundles(Bundle.RESOLVED | Bundle.ACTIVE);
         LOGGER.tracef("Resolved modules: %d", resolved.size());
@@ -272,19 +283,22 @@ final class FallbackLoader implements LocalLoader {
                 LOGGER.tracef("   %s", bundle);
         }
         if (resolved.isEmpty())
-            return null;
+            return;
 
         for (XPackageRequirement pkgreq : matchingPatterns) {
-            List<XBundleRevision> matchingRevisions = new ArrayList<XBundleRevision>();
+            Map<XBundleRevision, XPackageCapability> matches = new HashMap<XBundleRevision, XPackageCapability>();
             for (XBundle bundle : resolved) {
-                XBundleRevision brev = bundle.getBundleRevision();
-                if (bundle.getBundleId() > 0 && !brev.isFragment() && !matchingRevisions.contains(brev)) {
-                    XPackageCapability bcap = isValidCandidate(resName, pkgreq, brev);
-                    if (bcap != null && filterMatches(pkgreq, bcap)) {
-                        matchingRevisions.add(brev);
+                if (bundle != hostBundle) {
+                    XBundleRevision brev = bundle.getBundleRevision();
+                    if (bundle.getBundleId() > 0 && !brev.isFragment() && matches.get(brev) == null) {
+                        XPackageCapability bcap = getCapabilityCandidate(context, pkgreq, brev);
+                        if (bcap != null) {
+                            matches.put(brev, bcap);
+                        }
                     }
                 }
             }
+            List<XBundleRevision> matchingRevisions = new ArrayList<XBundleRevision>(matches.keySet());
             if (matchingRevisions.size() > 0) {
                 if (matchingRevisions.size() > 1) {
                     // Sort multiple revision candidates - highest version first
@@ -299,11 +313,13 @@ final class FallbackLoader implements LocalLoader {
                         }
                     });
                 }
-                return matchingRevisions.get(0);
+                XBundleRevision brev = matchingRevisions.get(0);
+                context.capability = matches.get(brev);
+                context.targetRevision = brev;
+                context.requirement = pkgreq;
+                return;
             }
         }
-
-        return null;
     }
 
     private boolean filterMatches(XPackageRequirement req, XPackageCapability cap) {
@@ -342,7 +358,7 @@ final class FallbackLoader implements LocalLoader {
         return bcaps.contains(cap);
     }
 
-    private XBundleRevision findInUnresolvedRevisions(String resName, List<XPackageRequirement> matchingPatterns) {
+    private void findInUnresolvedRevisions(DynamicLoadContext context, List<XPackageRequirement> matchingPatterns) {
         LOGGER.tracef("Attempt to find path dynamically in unresolved modules ...");
         Set<XBundle> unresolved = bundleManager.getBundles(Bundle.INSTALLED);
         LOGGER.tracef("Unresolved modules: %d", unresolved.size());
@@ -358,31 +374,34 @@ final class FallbackLoader implements LocalLoader {
             LOGGER.tracef("Attempt to resolve: %s", bundle);
             AbstractBundleState.assertBundleState(bundle).ensureResolved(false);
         }
-        return findInResolvedRevisions(resName, matchingPatterns);
+        findInResolvedRevisions(context, matchingPatterns);
     }
 
-    private XBundleRevision findInSystemRevision(String resName, List<XPackageRequirement> matchingPatterns) {
+    private void findInSystemRevision(DynamicLoadContext context, List<XPackageRequirement> matchingPatterns) {
         LOGGER.tracef("Attempt to find path dynamically in framework module ...");
+        String resName = context.resName;
         int lastIndex = resName.lastIndexOf('/');
         String pathName = lastIndex > 0 ? resName.substring(0, lastIndex) : resName;
         SystemPaths systemPaths = frameworkState.getSystemPathsPlugin();
-        SystemBundleRevision brev = frameworkState.getSystemBundle().getBundleRevision();
-        return systemPaths.getSystemPaths().contains(pathName) ? brev : null;
+        if (systemPaths.getSystemPaths().contains(pathName)) {
+            context.targetRevision = frameworkState.getSystemBundle().getBundleRevision();
+        }
     }
 
-    private XPackageCapability isValidCandidate(String resName, XPackageRequirement pkgreq, XBundleRevision brev) {
+    private XPackageCapability getCapabilityCandidate(DynamicLoadContext context, XPackageRequirement pkgreq, XBundleRevision brev) {
 
         // Skip dynamic loads from this module
         if (brev == hostRev)
             return null;
 
-        LOGGER.tracef("Attempt to find path dynamically [%s] in %s ...", resName, brev);
-        URL resURL = brev.getEntry(resName);
+        LOGGER.tracef("Attempt to find path dynamically [%s] in %s ...", context.resName, brev);
+        URL resURL = brev.getEntry(context.resName);
         if (resURL == null) {
             return null;
         }
 
-        return getCandidateCapability(brev, pkgreq);
+        XPackageCapability cap = getCandidateCapability(brev, pkgreq);
+        return (cap != null && filterMatches(pkgreq, cap) ? cap : null);
     }
 
     private XPackageCapability getCandidateCapability(BundleRevision brev, XPackageRequirement packageReq) {
@@ -429,5 +448,17 @@ final class FallbackLoader implements LocalLoader {
             result.addAll(weavingImports);
 
         return result;
+    }
+
+    class DynamicLoadContext {
+
+        final String resName;
+        XBundleRevision targetRevision;
+        XPackageRequirement requirement;
+        XPackageCapability capability;
+
+        DynamicLoadContext(String resName) {
+            this.resName = resName;
+        }
     }
 }
