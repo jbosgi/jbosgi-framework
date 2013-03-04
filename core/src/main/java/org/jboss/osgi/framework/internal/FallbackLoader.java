@@ -150,7 +150,7 @@ final class FallbackLoader implements LocalLoader {
                 XWiring requirerWiring = (XWiring) hostBundle.adapt(BundleWiring.class);
                 XWiring providerWiring = (XWiring) brev.getBundle().adapt(BundleWiring.class);
                 requirerWiring.addRequiredWire(wire);
-                providerWiring.addRequiredWire(wire);
+                providerWiring.addProvidedWire(wire);
             }
         }
         return result;
@@ -394,24 +394,41 @@ final class FallbackLoader implements LocalLoader {
         if (brev == hostRev)
             return null;
 
-        LOGGER.tracef("Attempt to find path dynamically [%s] in %s ...", context.resName, brev);
-        URL resURL = brev.getEntry(context.resName);
+        String resName = context.resName;
+        LOGGER.tracef("Attempt to find path dynamically [%s] in %s ...", resName, brev);
+        URL resURL = brev.getEntry(resName);
         if (resURL == null) {
             return null;
         }
 
-        XPackageCapability cap = getCandidateCapability(brev, pkgreq);
+        XPackageCapability cap = getCandidateCapability(brev, pkgreq, resName);
         return (cap != null && filterMatches(pkgreq, cap) ? cap : null);
     }
 
-    private XPackageCapability getCandidateCapability(BundleRevision brev, XPackageRequirement packageReq) {
-        for (XPackageCapability packageCap : getPackageCapabilities(brev)) {
-            if (packageReq.matches(packageCap)) {
-                LOGGER.tracef("Matching package capability: %s", packageCap);
-                return packageCap;
+    private XPackageCapability getCandidateCapability(BundleRevision brev, XPackageRequirement preq, String resName) {
+        int bestIndex = 0;
+        XPackageCapability result = null;
+        boolean wildcardreq = preq.getPackageName().endsWith("*");
+        for (XPackageCapability pcap : getPackageCapabilities(brev)) {
+            if (preq.matches(pcap)) {
+                LOGGER.tracef("Matching package capability: %s", pcap);
+                if (wildcardreq) {
+                    String capName = pcap.getPackageName().replace('.', '/');
+                    for (int index = 0; index < Math.min(capName.length(), resName.length()); index++) {
+                        char chcap = capName.charAt(index);
+                        char chres = resName.charAt(index);
+                        if (chcap == chres && index > bestIndex) {
+                            bestIndex = index;
+                            result = pcap;
+                        }
+                    }
+                } else {
+                    result = pcap;
+                    break;
+                }
             }
         }
-        return null;
+        return result;
     }
 
     private String getPatternPath(final String pattern) {

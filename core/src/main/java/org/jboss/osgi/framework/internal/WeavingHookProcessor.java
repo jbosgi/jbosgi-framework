@@ -35,10 +35,10 @@ import org.jboss.osgi.framework.spi.BundleReferenceClassLoader;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
+import org.jboss.osgi.resolver.XBundleRevisionBuilderFactory;
 import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.XResourceBuilder;
-import org.jboss.osgi.resolver.XResourceBuilderFactory;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.hooks.weaving.WeavingException;
@@ -115,7 +115,7 @@ final class WeavingHookProcessor implements ClassFileTransformer {
                 mdbuilder.addDynamicImportPackages(importSpec);
                 OSGiMetaData metadata = mdbuilder.getOSGiMetaData();
 
-                XResourceBuilder resbuilder = XResourceBuilderFactory.create();
+                XResourceBuilder resbuilder = XBundleRevisionBuilderFactory.create();
                 XResource res = resbuilder.loadFrom(metadata).getResource();
 
                 // Extract the dynamic package requirements
