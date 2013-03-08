@@ -45,6 +45,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockSupport;
+import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
@@ -71,7 +72,7 @@ import org.osgi.resource.Capability;
  * @author thomas.diesler@jboss.com
  * @since 30-May-2012
  */
-public class AbstractBundleAdaptor extends AbstractElement implements XBundle, LockManager.LockableItem {
+public class AbstractBundleAdaptor extends AbstractElement implements XBundle, LockableItem, BundleStartLevel {
 
     private final AtomicInteger bundleState = new AtomicInteger(Bundle.RESOLVED);
     private final LockSupport bundleLock = LockManager.Factory.addLockSupport(this);
@@ -96,6 +97,11 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
         this.brev = brev;
 
         this.lastModified = System.currentTimeMillis();
+    }
+
+    @Override
+    public Bundle getBundle() {
+        return this;
     }
 
     @Override
@@ -431,23 +437,42 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
         return Collections.singletonList(brev);
     }
 
-    private int getStartLevel() {
-        StartLevelSupport startLevel = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
-        return startLevel.getBundleStartLevel(this);
-    }
-
-    private void setPersistentlyStarted(boolean started) {
-        StartLevelSupport startLevel = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
-        startLevel.setBundlePersistentlyStarted(this, started);
-    }
-
-    private boolean startLevelValidForStart() {
-        StartLevelSupport startLevel = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
-        return getStartLevel() <= startLevel.getFrameworkStartLevel();
+    @Override
+    public int getStartLevel() {
+        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        return plugin.getBundleStartLevel(this);
     }
 
     @Override
-    public LockManager.LockSupport getLockSupport() {
+    public void setStartLevel(int level) {
+        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        plugin.setBundleStartLevel(this, level);
+    }
+
+    @Override
+    public boolean isPersistentlyStarted() {
+        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        return plugin.isBundlePersistentlyStarted(this);
+    }
+
+    @Override
+    public boolean isActivationPolicyUsed() {
+        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        return plugin.isBundleActivationPolicyUsed(this);
+    }
+
+    private void setPersistentlyStarted(boolean started) {
+        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        plugin.setBundlePersistentlyStarted(this, started);
+    }
+
+    private boolean startLevelValidForStart() {
+        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        return plugin.getBundleStartLevel(this) <= plugin.getFrameworkStartLevel();
+    }
+
+    @Override
+    public LockSupport getLockSupport() {
         return bundleLock;
     }
 

@@ -430,6 +430,8 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public ServiceName installBundle(BundleContext targetContext, Deployment dep, ServiceTarget installTarget, ServiceListener<XBundle> listener) throws BundleException {
+        if (targetContext == null)
+            throw MESSAGES.illegalArgumentNull("targetContext");
         if (dep == null)
             throw MESSAGES.illegalArgumentNull("deployment");
 
