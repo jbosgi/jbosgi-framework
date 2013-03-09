@@ -332,7 +332,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             // Check for symbolic name, version uniqueness
             String symbolicName = metadata.getBundleSymbolicName();
             Version bundleVersion = metadata.getBundleVersion();
-            getBundleManager().checkUniqunessPolicy(this, symbolicName, bundleVersion, CollisionHook.UPDATING);
+            getBundleManagerPlugin().checkUniqunessPolicy(this, symbolicName, bundleVersion, CollisionHook.UPDATING);
 
             R updateRevision = createUpdateRevision(dep, metadata, storageState);
             addBundleRevision(updateRevision);
@@ -456,15 +456,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         // Check if the bundle has still active wires
         boolean activeWires = hasActiveWiresWhileUninstalling();
         if (activeWires == false) {
-            LOGGER.tracef("Unresolving bundle: %s", this);
-            ModuleManager moduleManager = getFrameworkState().getModuleManager();
-            for (XBundleRevision brev : getAllBundleRevisions()) {
-                UserBundleRevision userRev = (UserBundleRevision) brev;
-                if (userRev.isFragment() == false) {
-                    ModuleIdentifier identifier = moduleManager.getModuleIdentifier(brev);
-                    moduleManager.removeModule(brev, identifier);
-                }
-            }
+            getBundleManagerPlugin().unresolveBundle(this);
         }
 
         // Make the current {@link BundleWiring} uneffective and fire the UNRESOLVED event
@@ -496,6 +488,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
                 }
                 if (bundleInUse == false) {
                     UserBundleState<?> auxUser = UserBundleState.assertBundleState(auxState);
+                    getBundleManagerPlugin().unresolveBundle(auxUser);
                     getBundleManagerPlugin().removeBundle(auxUser, options);
                 }
             }

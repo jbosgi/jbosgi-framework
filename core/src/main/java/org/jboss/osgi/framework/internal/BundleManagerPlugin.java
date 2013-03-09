@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
@@ -67,6 +68,7 @@ import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkStartLevelSupport;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
@@ -556,6 +558,18 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         }
         if (!candidates.isEmpty()) {
             throw new BundleException(MESSAGES.nameAndVersionAlreadyInstalled(symbolicName, version), BundleException.DUPLICATE_BUNDLE_ERROR);
+        }
+    }
+
+    void unresolveBundle(UserBundleState<?> userBundle) {
+        LOGGER.tracef("Unresolving bundle: %s", userBundle);
+        ModuleManager moduleManager = getFrameworkState().getModuleManager();
+        for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
+            UserBundleRevision userRev = (UserBundleRevision) brev;
+            if (userRev.isFragment() == false) {
+                ModuleIdentifier identifier = moduleManager.getModuleIdentifier(brev);
+                moduleManager.removeModule(brev, identifier);
+            }
         }
     }
 

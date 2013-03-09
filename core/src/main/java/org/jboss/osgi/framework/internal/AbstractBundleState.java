@@ -125,7 +125,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         return frameworkState;
     }
 
-    BundleManagerPlugin getBundleManager() {
+    BundleManager getBundleManager() {
         return frameworkState.getBundleManager();
     }
 
