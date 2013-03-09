@@ -38,7 +38,6 @@ import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.NativeCode;
-import org.jboss.osgi.framework.spi.ServiceTracker.SynchronousListenerServiceWrapper;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
@@ -70,7 +69,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extend
     ServiceName install(ServiceTarget serviceTarget, ServiceListener<XBundle> listener) {
         ServiceName serviceName = getBundleManager().getServiceName(initialDeployment, Bundle.INSTALLED);
         LOGGER.debugf("Installing %s %s", getClass().getSimpleName(), serviceName);
-        ServiceBuilder<B> builder = serviceTarget.addService(serviceName, new SynchronousListenerServiceWrapper<B>(this));
+        ServiceBuilder<B> builder = serviceTarget.addService(serviceName, this);
         addServiceDependencies(builder);
         if (listener != null) {
             builder.addListener(listener);

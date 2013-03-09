@@ -27,7 +27,6 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.framework.spi.ServiceTracker.SynchronousListenerServiceWrapper;
 import org.osgi.framework.Bundle;
 
 /**
@@ -42,7 +41,7 @@ final class HostBundleActiveService extends UserBundleActiveService<HostBundleSt
         ServiceName serviceName = hostBundle.getServiceName(Bundle.ACTIVE);
         HostBundleActiveService service = new HostBundleActiveService(hostBundle);
         LOGGER.debugf("Installing %s %s", service.getClass().getSimpleName(), serviceName);
-        ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, new SynchronousListenerServiceWrapper<HostBundleState>(service));
+        ServiceBuilder<HostBundleState> builder = serviceTarget.addService(serviceName, service);
         builder.addDependency(hostBundle.getServiceName(Bundle.RESOLVED));
         builder.setInitialMode(Mode.NEVER);
         builder.install();
