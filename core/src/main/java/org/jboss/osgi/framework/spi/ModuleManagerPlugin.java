@@ -45,16 +45,16 @@ public class ModuleManagerPlugin extends AbstractIntegrationService<ModuleManage
     private final InjectedValue<FrameworkModuleLoader> injectedModuleLoader = new InjectedValue<FrameworkModuleLoader>();
 
     public ModuleManagerPlugin() {
-        super(IntegrationServices.MODULE_MANGER);
+        super(IntegrationServices.MODULE_MANGER_PLUGIN);
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<ModuleManager> builder) {
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
-        builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, injectedFrameworkEvents);
-        builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_LOADER, FrameworkModuleLoader.class, injectedModuleLoader);
-        builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, injectedFrameworkModule);
-        builder.addDependency(IntegrationServices.SYSTEM_PATHS, SystemPaths.class, injectedSystemPaths);
+        builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEvents.class, injectedFrameworkEvents);
+        builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_LOADER_PLUGIN, FrameworkModuleLoader.class, injectedModuleLoader);
+        builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_PLUGIN, FrameworkModuleProvider.class, injectedFrameworkModule);
+        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PLUGIN, SystemPaths.class, injectedSystemPaths);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

@@ -57,6 +57,8 @@ final class CoreServices extends AbstractIntegrationService<CoreServices> {
         builder.addDependency(IntegrationServices.FRAMEWORK_CREATE_INTERNAL, FrameworkState.class, injectedFrameworkState);
         builder.addDependency(IntegrationServices.LIFECYCLE_INTERCEPTOR_PLUGIN, LifecycleInterceptorService.class, injectedLifecycleInterceptor);
         builder.addDependency(IntegrationServices.SYSTEM_CONTEXT_INTERNAL, BundleContext.class, injectedSystemContext);
+        builder.addDependency(IntegrationServices.DEPRECATED_PACKAGE_ADMIN_PLUGIN);
+        builder.addDependency(IntegrationServices.DEPRECATED_START_LEVEL_PLUGIN);
         builder.addDependency(IntegrationServices.SYSTEM_SERVICES_PLUGIN);
         builder.addDependency(IntegrationServices.URL_HANDLER_PLUGIN);
         builder.addDependency(Services.FRAMEWORK_CREATE);

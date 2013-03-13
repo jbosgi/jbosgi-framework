@@ -50,13 +50,13 @@ final class FrameworkEventsPlugin extends ExecutorServicePlugin<FrameworkEvents>
     private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
 
     FrameworkEventsPlugin() {
-        super(IntegrationServices.FRAMEWORK_EVENTS, "Framework Events Thread");
+        super(IntegrationServices.FRAMEWORK_EVENTS_PLUGIN, "Framework Events Thread");
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<FrameworkEvents> builder) {
         super.addServiceDependencies(builder);
-        builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, injectedLockManager);
+        builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

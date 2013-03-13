@@ -225,7 +225,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     @Override
     public void start(int options) throws BundleException {
         LockContext lockContext = null;
-        LockManager lockManager = getPluginService(IntegrationServices.LOCK_MANAGER, LockManager.class);
+        LockManager lockManager = getPluginService(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class);
         try {
             lockContext = lockManager.lockItems(Method.START, this);
 
@@ -245,7 +245,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
                     throw MESSAGES.cannotStartBundleDueToStartLevel();
 
                 int frameworkState = bundleManager.getSystemBundle().getState();
-                StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+                StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
                 Level level = (plugin.isFrameworkStartLevelChanging() || frameworkState != Bundle.ACTIVE) ? Level.DEBUG : Level.INFO;
                 LOGGER.log(level, MESSAGES.bundleStartLevelNotValid(getStartLevel(), plugin.getFrameworkStartLevel(), this));
                 return;
@@ -290,7 +290,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     public void stop(int options) throws BundleException {
 
         LockContext lockContext = null;
-        LockManager lockManager = getPluginService(IntegrationServices.LOCK_MANAGER, LockManager.class);
+        LockManager lockManager = getPluginService(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class);
         try {
             lockContext = lockManager.lockItems(Method.STOP, this);
 
@@ -333,7 +333,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     @Override
     public void uninstall() throws BundleException {
         LockContext lockContext = null;
-        LockManager lockManager = getPluginService(IntegrationServices.LOCK_MANAGER, LockManager.class);
+        LockManager lockManager = getPluginService(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class);
         try {
             FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
             lockContext = lockManager.lockItems(Method.RESOLVE, wireLock, this);
@@ -342,7 +342,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
             XEnvironment env = getPluginService(Services.ENVIRONMENT, XEnvironment.class);
             env.uninstallResources(getBundleRevision());
             // Remove from the module loader
-            FrameworkModuleLoader provider = getPluginService(IntegrationServices.FRAMEWORK_MODULE_LOADER, FrameworkModuleLoader.class);
+            FrameworkModuleLoader provider = getPluginService(IntegrationServices.FRAMEWORK_MODULE_LOADER_PLUGIN, FrameworkModuleLoader.class);
             provider.removeModule(brev);
             bundleState.set(Bundle.UNINSTALLED);
         } finally {
@@ -439,35 +439,35 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
 
     @Override
     public int getStartLevel() {
-        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
         return plugin.getBundleStartLevel(this);
     }
 
     @Override
     public void setStartLevel(int level) {
-        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
         plugin.setBundleStartLevel(this, level);
     }
 
     @Override
     public boolean isPersistentlyStarted() {
-        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
         return plugin.isBundlePersistentlyStarted(this);
     }
 
     @Override
     public boolean isActivationPolicyUsed() {
-        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
         return plugin.isBundleActivationPolicyUsed(this);
     }
 
     private void setPersistentlyStarted(boolean started) {
-        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
         plugin.setBundlePersistentlyStarted(this, started);
     }
 
     private boolean startLevelValidForStart() {
-        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class);
+        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
         return plugin.getBundleStartLevel(this) <= plugin.getFrameworkStartLevel();
     }
 

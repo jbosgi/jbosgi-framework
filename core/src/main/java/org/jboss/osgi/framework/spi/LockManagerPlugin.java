@@ -35,7 +35,7 @@ import org.jboss.osgi.framework.internal.LockManagerImpl;
 public class LockManagerPlugin extends AbstractIntegrationService<LockManager> {
 
     public LockManagerPlugin() {
-        super(IntegrationServices.LOCK_MANAGER);
+        super(IntegrationServices.LOCK_MANAGER_PLUGIN);
     }
 
     @Override

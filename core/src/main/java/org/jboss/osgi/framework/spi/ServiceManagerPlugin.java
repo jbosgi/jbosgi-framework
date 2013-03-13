@@ -42,14 +42,14 @@ public class ServiceManagerPlugin extends AbstractIntegrationService<ServiceMana
     private final InjectedValue<ModuleManager> injectedModuleManager = new InjectedValue<ModuleManager>();
 
     public ServiceManagerPlugin() {
-        super(IntegrationServices.SERVICE_MANAGER);
+        super(IntegrationServices.SERVICE_MANAGER_PLUGIN);
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<ServiceManager> builder) {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
-        builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, injectedFrameworkEvents);
-        builder.addDependency(IntegrationServices.MODULE_MANGER, ModuleManager.class, injectedModuleManager);
+        builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEvents.class, injectedFrameworkEvents);
+        builder.addDependency(IntegrationServices.MODULE_MANGER_PLUGIN, ModuleManager.class, injectedModuleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

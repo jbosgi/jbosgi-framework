@@ -194,7 +194,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     protected void addServiceDependencies(ServiceBuilder<BundleManager> builder) {
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
-        builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, injectedLockManager);
+        builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

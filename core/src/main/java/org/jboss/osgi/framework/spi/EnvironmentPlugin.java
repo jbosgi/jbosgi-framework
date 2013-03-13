@@ -45,7 +45,7 @@ public class EnvironmentPlugin extends AbstractIntegrationService<XEnvironment> 
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<XEnvironment> builder) {
-        builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, injectedLockManager);
+        builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

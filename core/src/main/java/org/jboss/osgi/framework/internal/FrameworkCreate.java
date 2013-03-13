@@ -77,14 +77,14 @@ public final class FrameworkCreate extends AbstractFrameworkService {
     protected void addServiceDependencies(ServiceBuilder<FrameworkState> builder) {
         builder.addDependency(IntegrationServices.BUNDLE_START_LEVEL_PLUGIN, BundleStartLevelSupport.class, frameworkState.injectedBundleStartLevel);
         builder.addDependency(IntegrationServices.DEPLOYMENT_PROVIDER_PLUGIN, DeploymentProvider.class, frameworkState.injectedDeploymentProvider);
-        builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, frameworkState.injectedFrameworkEvents);
-        builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_LOADER, FrameworkModuleLoader.class, frameworkState.injectedModuleLoader);
+        builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEvents.class, frameworkState.injectedFrameworkEvents);
+        builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_LOADER_PLUGIN, FrameworkModuleLoader.class, frameworkState.injectedModuleLoader);
         builder.addDependency(IntegrationServices.FRAMEWORK_START_LEVEL_PLUGIN, FrameworkStartLevelSupport.class, frameworkState.injectedFrameworkStartLevel);
         builder.addDependency(IntegrationServices.FRAMEWORK_WIRING_PLUGIN, FrameworkWiring.class, frameworkState.injectedFrameworkWiring);
         builder.addDependency(IntegrationServices.NATIVE_CODE_PLUGIN, NativeCode.class, frameworkState.injectedNativeCode);
         builder.addDependency(Services.RESOLVER, XResolver.class, frameworkState.injectedResolverPlugin);
-        builder.addDependency(IntegrationServices.SERVICE_MANAGER, ServiceManager.class, frameworkState.injectedServiceManager);
-        builder.addDependency(IntegrationServices.START_LEVEL_SUPPORT, StartLevelSupport.class, frameworkState.injectedStartLevel);
+        builder.addDependency(IntegrationServices.SERVICE_MANAGER_PLUGIN, ServiceManager.class, frameworkState.injectedServiceManager);
+        builder.addDependency(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class, frameworkState.injectedStartLevel);
         builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, SystemBundleState.class, frameworkState.injectedSystemBundle);
         builder.setInitialMode(Mode.ON_DEMAND);
     }

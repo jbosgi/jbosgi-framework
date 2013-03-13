@@ -37,7 +37,7 @@ import org.jboss.osgi.framework.internal.FrameworkModuleLoaderImpl;
 public class FrameworkModuleLoaderPlugin extends AbstractIntegrationService<FrameworkModuleLoader> {
 
     public FrameworkModuleLoaderPlugin() {
-        super(IntegrationServices.FRAMEWORK_MODULE_LOADER);
+        super(IntegrationServices.FRAMEWORK_MODULE_LOADER_PLUGIN);
     }
 
     @Override

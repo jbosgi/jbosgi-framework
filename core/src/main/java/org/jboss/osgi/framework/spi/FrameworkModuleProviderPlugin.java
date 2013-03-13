@@ -40,14 +40,14 @@ public class FrameworkModuleProviderPlugin extends AbstractIntegrationService<Fr
     private final InjectedValue<SystemPaths> injectedSystemPaths = new InjectedValue<SystemPaths>();
 
     public FrameworkModuleProviderPlugin() {
-        super(IntegrationServices.FRAMEWORK_MODULE_PROVIDER);
+        super(IntegrationServices.FRAMEWORK_MODULE_PLUGIN);
     }
 
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<FrameworkModuleProvider> builder) {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
-        builder.addDependency(IntegrationServices.SYSTEM_PATHS, SystemPaths.class, injectedSystemPaths);
+        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PLUGIN, SystemPaths.class, injectedSystemPaths);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

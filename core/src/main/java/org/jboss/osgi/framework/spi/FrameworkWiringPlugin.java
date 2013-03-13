@@ -55,8 +55,8 @@ public class FrameworkWiringPlugin extends ExecutorServicePlugin<FrameworkWiring
         super.addServiceDependencies(builder);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
-        builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, injectedFrameworkEvents);
-        builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, injectedLockManager);
+        builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEvents.class, injectedFrameworkEvents);
+        builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.addDependency(Services.RESOLVER, XResolver.class, injectedResolver);
         builder.setInitialMode(Mode.ON_DEMAND);
     }

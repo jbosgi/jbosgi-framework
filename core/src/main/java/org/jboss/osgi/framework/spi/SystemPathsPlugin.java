@@ -38,7 +38,7 @@ public class SystemPathsPlugin extends AbstractIntegrationService<SystemPaths> {
     private final FrameworkBuilder frameworkBuilder;
 
     public SystemPathsPlugin(FrameworkBuilder frameworkBuilder) {
-        super(IntegrationServices.SYSTEM_PATHS);
+        super(IntegrationServices.SYSTEM_PATHS_PLUGIN);
         this.frameworkBuilder = frameworkBuilder;
     }
 

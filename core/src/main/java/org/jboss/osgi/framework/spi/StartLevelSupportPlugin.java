@@ -41,13 +41,13 @@ public class StartLevelSupportPlugin extends ExecutorServicePlugin<StartLevelSup
     private final InjectedValue<FrameworkEvents> injectedFrameworkEvents = new InjectedValue<FrameworkEvents>();
 
     public StartLevelSupportPlugin() {
-        super(IntegrationServices.START_LEVEL_SUPPORT, "StartLevel Thread");
+        super(IntegrationServices.START_LEVEL_PLUGIN, "StartLevel Thread");
     }
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<StartLevelSupport> builder) {
         super.addServiceDependencies(builder);
-        builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS, FrameworkEvents.class, injectedFrameworkEvents);
+        builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEvents.class, injectedFrameworkEvents);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

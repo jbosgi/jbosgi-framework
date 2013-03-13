@@ -73,15 +73,19 @@ public interface IntegrationServices {
     /** The {@link BundleStartLevelPlugin} service name */
     ServiceName BUNDLE_START_LEVEL_PLUGIN = JBOSGI_BASE_NAME.append("BundleStartLevel");
 	/** The {@link BundleStorage} plugin service name */
-	ServiceName BUNDLE_STORAGE = JBOSGI_BASE_NAME.append("BundleStorage");
+	ServiceName BUNDLE_STORAGE_PLUGIN = JBOSGI_BASE_NAME.append("BundleStorage");
     /** The {@link DeploymentProvider} service name */
     ServiceName DEPLOYMENT_PROVIDER_PLUGIN = JBOSGI_BASE_NAME.append("DeploymentProvider");
+    /** The {@link PackageAdmin} service name */
+    ServiceName DEPRECATED_PACKAGE_ADMIN_PLUGIN = JBOSGI_BASE_NAME.append("PackageAdmin");
+    /** The service name for the {@link StartLevel} service */
+    ServiceName DEPRECATED_START_LEVEL_PLUGIN = Services.JBOSGI_BASE_NAME.append("StartLevel");
 	/** The {@link CoreServices} service name. */
     ServiceName FRAMEWORK_CORE_SERVICES = JBOSGI_BASE_NAME.append("CoreServices");
     /** The {@link FrameworkEvents} service name */
-    ServiceName FRAMEWORK_EVENTS = JBOSGI_BASE_NAME.append("FrameworkEvents");
+    ServiceName FRAMEWORK_EVENTS_PLUGIN = JBOSGI_BASE_NAME.append("FrameworkEvents");
 	/** The service name for the {@link FrameworkModuleProvider} */
-	ServiceName FRAMEWORK_MODULE_PROVIDER = JBOSGI_BASE_NAME.append("FrameworkModule");
+	ServiceName FRAMEWORK_MODULE_PLUGIN = JBOSGI_BASE_NAME.append("FrameworkModule");
     /** The {@link FrameworkStartLevelSupport} service name */
     ServiceName FRAMEWORK_START_LEVEL_PLUGIN = JBOSGI_BASE_NAME.append("FrameworkStartLevel");
     /** The {@link FrameworkWiringPlugin} service name */
@@ -89,11 +93,11 @@ public interface IntegrationServices {
 	/** The {@link LifecycleInterceptorPlugin} service name */
     ServiceName LIFECYCLE_INTERCEPTOR_PLUGIN = JBOSGI_BASE_NAME.append("LifecycleInterceptor");
 	/** The {@link LockManager} service name */
-	ServiceName LOCK_MANAGER = JBOSGI_BASE_NAME.append("LockManager");
+	ServiceName LOCK_MANAGER_PLUGIN = JBOSGI_BASE_NAME.append("LockManager");
 	/** The service name for the {@link FrameworkModuleLoader} */
-	ServiceName FRAMEWORK_MODULE_LOADER = JBOSGI_BASE_NAME.append("ModuleLoader");
+	ServiceName FRAMEWORK_MODULE_LOADER_PLUGIN = JBOSGI_BASE_NAME.append("ModuleLoader");
     /** The {@link ModuleManager} service name */
-    ServiceName MODULE_MANGER = JBOSGI_BASE_NAME.append("ModuleManager");
+    ServiceName MODULE_MANGER_PLUGIN = JBOSGI_BASE_NAME.append("ModuleManager");
     /** The {@link NativeCode} service name */
     ServiceName NATIVE_CODE_PLUGIN = JBOSGI_BASE_NAME.append("NativeCode");
 	/** The {@link BootstrapBundlesInstall} service for persistent bundles */
@@ -107,11 +111,11 @@ public interface IntegrationServices {
 	/** The {@link BootstrapBundlesComplete} service for persistent bundles */
 	ServiceName PERSISTENT_BUNDLES_COMPLETE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.COMPLETE);
 	/** The {@link ServiceManager} service name */
-    ServiceName SERVICE_MANAGER = JBOSGI_BASE_NAME.append("ServiceManager");
+    ServiceName SERVICE_MANAGER_PLUGIN = JBOSGI_BASE_NAME.append("ServiceManager");
     /** The service name for the {@link StartLevelSupport} service */
-    ServiceName START_LEVEL_SUPPORT = Services.JBOSGI_BASE_NAME.append("StartLevelSupport");
+    ServiceName START_LEVEL_PLUGIN = Services.JBOSGI_BASE_NAME.append("StartLevelSupport");
 	/** The service name for the {@link SystemPaths} */
-	ServiceName SYSTEM_PATHS = JBOSGI_BASE_NAME.append("SystemPaths");
+	ServiceName SYSTEM_PATHS_PLUGIN = JBOSGI_BASE_NAME.append("SystemPaths");
 	/** The service name for the {@link SystemServices} */
 	ServiceName SYSTEM_SERVICES_PLUGIN = JBOSGI_BASE_NAME.append("SystemServices");
     /** The {@link URLHandlerSupport} service name */

@@ -74,11 +74,11 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
     @Override
     protected void addServiceDependencies(ServiceBuilder<SystemBundleState> builder) {
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, frameworkState.injectedEnvironment);
-        builder.addDependency(IntegrationServices.BUNDLE_STORAGE, BundleStorage.class, frameworkState.injectedBundleStorage);
-        builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_PROVIDER, FrameworkModuleProvider.class, frameworkState.injectedModuleProvider);
-        builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, frameworkState.injectedLockManager);
-        builder.addDependency(IntegrationServices.MODULE_MANGER, ModuleManager.class, frameworkState.injectedModuleManager);
-        builder.addDependency(IntegrationServices.SYSTEM_PATHS, SystemPaths.class, frameworkState.injectedSystemPaths);
+        builder.addDependency(IntegrationServices.BUNDLE_STORAGE_PLUGIN, BundleStorage.class, frameworkState.injectedBundleStorage);
+        builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_PLUGIN, FrameworkModuleProvider.class, frameworkState.injectedModuleProvider);
+        builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, frameworkState.injectedLockManager);
+        builder.addDependency(IntegrationServices.MODULE_MANGER_PLUGIN, ModuleManager.class, frameworkState.injectedModuleManager);
+        builder.addDependency(IntegrationServices.SYSTEM_PATHS_PLUGIN, SystemPaths.class, frameworkState.injectedSystemPaths);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

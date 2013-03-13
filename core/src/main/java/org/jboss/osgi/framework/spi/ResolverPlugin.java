@@ -55,9 +55,9 @@ public class ResolverPlugin extends AbstractIntegrationService<XResolver> {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
         builder.addDependency(IntegrationServices.NATIVE_CODE_PLUGIN, NativeCode.class, injectedNativeCode);
-        builder.addDependency(IntegrationServices.MODULE_MANGER, ModuleManager.class, injectedModuleManager);
-        builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_LOADER, FrameworkModuleLoader.class, injectedModuleLoader);
-        builder.addDependency(IntegrationServices.LOCK_MANAGER, LockManager.class, injectedLockManager);
+        builder.addDependency(IntegrationServices.MODULE_MANGER_PLUGIN, ModuleManager.class, injectedModuleManager);
+        builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_LOADER_PLUGIN, FrameworkModuleLoader.class, injectedModuleLoader);
+        builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

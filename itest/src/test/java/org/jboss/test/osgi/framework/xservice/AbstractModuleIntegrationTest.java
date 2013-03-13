@@ -84,7 +84,7 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         // Add the {@link ModuleSpec} to the {@link ModuleLoaderProvider}
         BundleManager bundleManager = getBundleManager();
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        ServiceController<?> service = serviceContainer.getRequiredService(IntegrationServices.FRAMEWORK_MODULE_LOADER);
+        ServiceController<?> service = serviceContainer.getRequiredService(IntegrationServices.FRAMEWORK_MODULE_LOADER_PLUGIN);
         FrameworkModuleLoader moduleLoader = (FrameworkModuleLoader) service.getValue();
         moduleLoader.addModuleSpec(Mockito.mock(XBundleRevision.class), moduleSpec);
 
@@ -101,7 +101,7 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
     protected void removeModule(Module module) throws Exception {
         BundleManager bundleManager = getBundleManager();
         ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        ServiceController<?> service = serviceContainer.getRequiredService(IntegrationServices.FRAMEWORK_MODULE_LOADER);
+        ServiceController<?> service = serviceContainer.getRequiredService(IntegrationServices.FRAMEWORK_MODULE_LOADER_PLUGIN);
         FrameworkModuleLoader moduleLoader = (FrameworkModuleLoader) service.getValue();
         XBundleRevision brev = Mockito.mock(XBundleRevision.class);
         Mockito.when(brev.getModuleIdentifier()).thenReturn(module.getIdentifier());

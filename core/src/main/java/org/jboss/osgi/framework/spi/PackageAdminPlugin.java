@@ -21,53 +21,57 @@
  */
 package org.jboss.osgi.framework.spi;
 
-import java.io.IOException;
-
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.internal.BundleStorageImpl;
+import org.jboss.osgi.framework.internal.PackageAdminImpl;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.packageadmin.PackageAdmin;
 
 /**
- * A simple implementation of a BundleStorage
+ * A plugin for the deprecated {@link PackageAdmin} service.
  *
  * @author thomas.diesler@jboss.com
- * @since 18-Aug-2009
+ * @since 13-Mar-2013
  */
-public class BundleStoragePlugin extends AbstractIntegrationService<BundleStorage> {
+@SuppressWarnings("deprecation")
+public class PackageAdminPlugin extends AbstractIntegrationService<PackageAdmin> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
-    private final boolean firstInit;
+    private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
+    private ServiceRegistration<PackageAdmin> registration;
 
-    public BundleStoragePlugin(boolean firstInit) {
-        super(IntegrationServices.BUNDLE_STORAGE_PLUGIN);
-        this.firstInit = firstInit;
+    public PackageAdminPlugin() {
+        super(IntegrationServices.DEPRECATED_PACKAGE_ADMIN_PLUGIN);
     }
 
     @Override
-    protected void addServiceDependencies(ServiceBuilder<BundleStorage> builder) {
+    protected void addServiceDependencies(ServiceBuilder<PackageAdmin> builder) {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
+        builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedSystemContext);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override
     public void start(StartContext startContext) throws StartException {
         super.start(startContext);
-        try {
-            BundleStorage bundleStorage = getValue();
-            BundleManager bundleManager = injectedBundleManager.getValue();
-            bundleStorage.initialize(bundleManager.getProperties(), firstInit);
-        } catch (IOException ex) {
-            throw new StartException(ex);
-        }
+        BundleContext systemContext = injectedSystemContext.getValue();
+        registration = systemContext.registerService(PackageAdmin.class, getValue(), null);
     }
 
     @Override
-    protected BundleStorage createServiceValue(StartContext startContext) throws StartException {
+    protected PackageAdmin createServiceValue(StartContext startContext) throws StartException {
         BundleManager bundleManager = injectedBundleManager.getValue();
-        return new BundleStorageImpl(bundleManager);
+        return new PackageAdminImpl(bundleManager);
+    }
+
+    @Override
+    public void stop(StopContext context) {
+        registration.unregister();
     }
 }
