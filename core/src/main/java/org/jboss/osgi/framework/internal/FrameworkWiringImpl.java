@@ -43,6 +43,7 @@ import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XWiringSupport;
 import org.jboss.osgi.resolver.spi.AbstractBundleWire;
@@ -221,18 +222,19 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
 
         boolean result = true;
         try {
-            resolver.resolveAndApply(resolver.createResolveContext(environment, null, resolvableRevisions));
+            XResolveContext context = resolver.createResolveContext(environment, null, resolvableRevisions);
+            resolver.resolveAndApply(context);
             for (BundleRevision aux : resolvableRevisions) {
                 if (aux.getWiring() == null) {
+                    LOGGER.debugf("Cannot resolve: %s", aux);
                     result = false;
-                    break;
                 }
             }
         } catch (ResolutionException ex) {
-            LOGGER.debugf(ex, "Cannot resolve: " + resolvableRevisions);
+            LOGGER.debugf(ex, "Cannot resolve: %s", resolvableRevisions);
             result = false;
         } catch (ResolverHookException ex) {
-            LOGGER.debugf(ex, "Cannot resolve: " + resolvableRevisions);
+            LOGGER.debugf(ex, "Cannot resolve: %s", resolvableRevisions);
             result = false;
         }
         return result;

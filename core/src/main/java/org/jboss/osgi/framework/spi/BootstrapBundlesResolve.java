@@ -119,12 +119,12 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
 
             // Leniently resolve the persistent bundles
             if (IntegrationServices.PERSISTENT_BUNDLES.isParentOf(getServiceName())) {
-                List<Bundle> mandatory = new ArrayList<Bundle>();
+                List<Bundle> bundles = new ArrayList<Bundle>();
                 for (XBundle bundle : resolvableServices.values()) {
-                    mandatory.add(bundle);
+                    bundles.add(bundle);
                 }
                 FrameworkWiring frameworkWiring = injectedFrameworkWiring.getValue();
-                frameworkWiring.resolveBundles(mandatory);
+                frameworkWiring.resolveBundles(bundles);
             }
 
             // Remove the unresolved service from the tracker
