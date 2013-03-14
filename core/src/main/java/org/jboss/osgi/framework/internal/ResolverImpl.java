@@ -61,8 +61,8 @@ import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResolver;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.XResourceCapability;
-import org.jboss.osgi.resolver.felix.StatelessResolver;
 import org.jboss.osgi.resolver.spi.AbstractBundleWire;
+import org.jboss.osgi.resolver.spi.ResolverFactory;
 import org.jboss.osgi.resolver.spi.ResolverHookProcessor;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -89,8 +89,9 @@ import org.osgi.service.resolver.ResolveContext;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-public final class ResolverImpl extends StatelessResolver implements XResolver {
+public final class ResolverImpl implements XResolver {
 
+    private final XResolver delegate = ResolverFactory.createResolver();
     private final BundleManagerPlugin bundleManager;
     private final NativeCode nativeCode;
     private final ModuleManager moduleManager;
@@ -106,6 +107,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         this.moduleLoader = moduleLoader;
         this.environment = environment;
         this.lockManager = lockManager;
+
     }
 
     @Override
@@ -115,7 +117,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
         removeUninstalled(manres, optres);
         appendOptionalFragments(manres, optres);
         appendOptionalHostBundles(manres, optres);
-        return super.createResolveContext(environment, manres, optres);
+        return delegate.createResolveContext(environment, manres, optres);
     }
 
     @Override
@@ -165,10 +167,10 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
                         return result;
                     }
                 });
-                resolveContext = super.createResolveContext(environment, getFilteredResources(hookregs, manres), getFilteredResources(hookregs, optres));
+                resolveContext = delegate.createResolveContext(environment, getFilteredResources(hookregs, manres), getFilteredResources(hookregs, optres));
             } else {
                 filterSingletons(manres, optres);
-                resolveContext = super.createResolveContext(environment, manres, optres);
+                resolveContext = delegate.createResolveContext(environment, manres, optres);
             }
 
             Map<Resource, List<Wire>> wiremap;
@@ -177,7 +179,7 @@ public final class ResolverImpl extends StatelessResolver implements XResolver {
             try {
                 FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
                 lockContext = lockManager.lockItems(Method.RESOLVE, wireLock);
-                wiremap = super.resolve(resolveContext);
+                wiremap = delegate.resolve(resolveContext);
                 if (applyResults) {
                     applyResolverResults(wiremap);
                 }

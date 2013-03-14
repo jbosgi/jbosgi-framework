@@ -24,9 +24,9 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.deployment.interceptor.AbstractInvocationContext;
 import org.jboss.osgi.deployment.interceptor.AbstractLifecycleInterceptorService;
 import org.jboss.osgi.deployment.interceptor.InvocationContext;
-import org.jboss.osgi.deployment.internal.InvocationContextImpl;
 import org.jboss.osgi.spi.AttachmentSupport;
 import org.jboss.osgi.spi.Attachments;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -60,7 +60,7 @@ public final class LifecycleInterceptorServiceImpl extends AbstractLifecycleInte
             // TODO: support multiple roots defined in Bundle-ClassPath
             VirtualFile rootFile = userBundle.getDeployment().getRoot();
             Attachments att = new AttachmentSupport(){};
-            inv = new InvocationContextImpl(systemContext, userBundle, rootFile, att);
+            inv = new AbstractInvocationContext(systemContext, userBundle, rootFile, att);
             dep.addAttachment(InvocationContext.class, inv);
         }
         return inv;
