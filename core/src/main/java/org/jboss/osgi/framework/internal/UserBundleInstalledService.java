@@ -27,6 +27,9 @@ import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 import java.io.IOException;
 
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceController.Substate;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
@@ -34,6 +37,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.IntegrationServices;
@@ -115,7 +119,11 @@ abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extend
     public void stop(StopContext context) {
         if (getBundleState().getState() != Bundle.UNINSTALLED) {
             try {
-                getBundleManager().uninstallBundle(getBundleState(), Bundle.STOP_TRANSIENT);
+                BundleManagerPlugin bundleManager = getBundleManager();
+                ServiceContainer serviceContainer = bundleManager.getServiceContainer();
+                ServiceController<?> controller = serviceContainer.getRequiredService(Services.BUNDLE_MANAGER);
+                boolean stopping = bundleManager.getManagerState() == Bundle.STOPPING || controller.getSubstate() == Substate.STOP_REQUESTED;
+                bundleManager.uninstallBundle(getBundleState(), stopping ? Bundle.STOP_TRANSIENT : 0);
             } catch (BundleException ex) {
                 throw new IllegalStateException(ex);
             }

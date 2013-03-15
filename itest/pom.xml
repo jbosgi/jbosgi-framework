@@ -198,42 +198,6 @@
         </profile>
 
         <!--
-          Name: felix
-          Descr: Setup for Felix framework integration testing
-        -->
-        <profile>
-            <id>felix</id>
-            <activation>
-                <property>
-                    <name>framework</name>
-                    <value>felix</value>
-                </property>
-            </activation>
-            <properties>
-                <jboss.osgi.framework.properties>jboss-osgi-felix.properties</jboss.osgi.framework.properties>
-            </properties>
-            <dependencies>
-                <dependency>
-                    <groupId>org.jboss.osgi.felix</groupId>
-                    <artifactId>jboss-osgi-felix</artifactId>
-                    <scope>provided</scope>
-                </dependency>
-            </dependencies>
-            <build>
-            	<plugins>
-					<plugin>
-						<artifactId>maven-surefire-plugin</artifactId>
-						<configuration>
-							<systemPropertyVariables>
-								<org.jboss.osgi.spi.framework.OSGiBootstrapProvider>org.jboss.osgi.felix.FelixBootstrapProvider</org.jboss.osgi.spi.framework.OSGiBootstrapProvider>
-							</systemPropertyVariables>
-						</configuration>
-					</plugin>
-            	</plugins>
-            </build>
-        </profile>
-
-        <!--
           Name: jboss
           Descr: Setup for MSC Framework integration testing
         -->

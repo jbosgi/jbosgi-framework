@@ -59,10 +59,11 @@ import org.jboss.osgi.resolver.XPackageRequirement;
 import org.jboss.osgi.resolver.XRequirement;
 import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResolver;
+import org.jboss.osgi.resolver.XResolverFactory;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.XResourceCapability;
 import org.jboss.osgi.resolver.spi.AbstractBundleWire;
-import org.jboss.osgi.resolver.spi.ResolverFactory;
+import org.jboss.osgi.resolver.spi.XResolverFactoryLocator;
 import org.jboss.osgi.resolver.spi.ResolverHookProcessor;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -91,23 +92,23 @@ import org.osgi.service.resolver.ResolveContext;
  */
 public final class ResolverImpl implements XResolver {
 
-    private final XResolver delegate = ResolverFactory.createResolver();
     private final BundleManagerPlugin bundleManager;
     private final NativeCode nativeCode;
     private final ModuleManager moduleManager;
     private final FrameworkModuleLoader moduleLoader;
     private final XEnvironment environment;
     private final LockManager lockManager;
+    private final XResolver delegate;
 
-    public ResolverImpl(BundleManager bundleManager, NativeCode nativeCode, ModuleManager moduleManager, FrameworkModuleLoader moduleLoader, XEnvironment environment,
-            LockManager lockManager) {
+    public ResolverImpl(BundleManager bundleManager, NativeCode nativeCode, ModuleManager moduleManager, FrameworkModuleLoader moduleLoader, XEnvironment environment, LockManager lockManager) {
         this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
         this.nativeCode = nativeCode;
         this.moduleManager = moduleManager;
         this.moduleLoader = moduleLoader;
         this.environment = environment;
         this.lockManager = lockManager;
-
+        XResolverFactory resolverFactory = XResolverFactoryLocator.getResolverFactory();
+        this.delegate = resolverFactory.createResolver();
     }
 
     @Override
