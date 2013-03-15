@@ -21,9 +21,6 @@ package org.jboss.test.osgi.framework.bundle.support.b;
  * #L%
  */
 
-/**
- * @author <a href="david@redhat.com">David Bosschaert</a>
- */
 public class ObjectB {
 
 }

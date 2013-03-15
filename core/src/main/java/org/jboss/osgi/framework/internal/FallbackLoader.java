@@ -42,6 +42,7 @@ import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.Resource;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.SystemPaths;
+import org.jboss.osgi.framework.spi.URLResource;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XCapability;

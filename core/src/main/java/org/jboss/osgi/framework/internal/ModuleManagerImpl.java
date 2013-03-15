@@ -209,6 +209,8 @@ public final class ModuleManagerImpl implements ModuleManager {
      */
     private ModuleIdentifier createHostModule(final HostBundleRevision hostRev, final List<BundleWire> wires) {
 
+        LOGGER.tracef("createHostModule for: %s", hostRev);
+
         UserBundleState hostBundle = hostRev.getBundleState();
         List<RevisionContent> contentRoots = hostRev.getClassPathContent();
 
@@ -228,12 +230,9 @@ public final class ModuleManagerImpl implements ModuleManager {
         // For every {@link XWire} add a dependency on the exporter
         processModuleWireList(wires, specHolderMap);
 
-        // Process fragment wires
-        Set<String> allPaths = new HashSet<String>();
-
         // Add the holder values to dependencies
         for (ModuleDependencyHolder holder : specHolderMap.values()) {
-            moduleDependencies.put(holder.getIdentifier(), holder.create());
+            moduleDependencies.put(holder.getIdentifier(), holder.create(hostRev));
         }
 
         // Add the module dependencies to the builder
@@ -242,18 +241,16 @@ public final class ModuleManagerImpl implements ModuleManager {
 
         // Add resource roots the local bundle content
         for (RevisionContent revContent : contentRoots) {
-            ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
+            ResourceLoader resLoader = new RevisionContentResourceLoader(hostRev, revContent);
             specBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resLoader));
-            allPaths.addAll(resLoader.getPaths());
         }
 
         // Process fragment local content and more resource roots
         Set<FragmentBundleRevision> fragRevs = hostRev.getAttachedFragments();
         for (FragmentBundleRevision fragRev : fragRevs) {
             for (RevisionContent revContent : fragRev.getClassPathContent()) {
-                ResourceLoader resLoader = new RevisionContentResourceLoader(revContent);
+                ResourceLoader resLoader = new RevisionContentResourceLoader(hostRev, revContent);
                 specBuilder.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resLoader));
-                allPaths.addAll(resLoader.getPaths());
             }
         }
 
@@ -287,9 +284,8 @@ public final class ModuleManagerImpl implements ModuleManager {
                 return cefPath.accept(className);
             }
         };
-        LOGGER.tracef("createLocalDependencySpec: [if=%s,ef=%s,rif=%s,ref=%s,cf=%s]", importFilter, exportFilter, resImportFilter, resExportFilter, cefPath);
-        DependencySpec localDep = DependencySpec.createLocalDependencySpec(importFilter, exportFilter, resImportFilter, resExportFilter, classImportFilter,
-                classExportFilter);
+        LOGGER.tracef("createLocalDependencySpec for %s: [if=%s,ef=%s,rif=%s,ref=%s,cf=%s]", hostRev, importFilter, exportFilter, resImportFilter, resExportFilter, cefPath);
+        DependencySpec localDep = DependencySpec.createLocalDependencySpec(importFilter, exportFilter, resImportFilter, resExportFilter, classImportFilter, classExportFilter);
         specBuilder.addDependency(localDep);
 
         // Native - Hack
@@ -403,10 +399,10 @@ public final class ModuleManagerImpl implements ModuleManager {
         }
     }
 
-    private PathFilter getExportClassFilter(XResource resModule) {
+    private PathFilter getExportClassFilter(XBundleRevision hostRev) {
         PathFilter includeFilter = null;
         PathFilter excludeFilter = null;
-        for (Capability auxcap : resModule.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
+        for (Capability auxcap : hostRev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
             XCapability xcap = (XCapability) auxcap;
             XPackageCapability packcap = xcap.adapt(XPackageCapability.class);
             String includeDirective = packcap.getDirective(Constants.INCLUDE_DIRECTIVE);
@@ -590,16 +586,23 @@ public final class ModuleManagerImpl implements ModuleManager {
             this.optional = optional;
         }
 
-        DependencySpec create() {
+        DependencySpec create(XBundleRevision hostRev) {
             if (exportFilter == null) {
-                exportFilter = PathFilters.rejectAll();
+                Set<String> exportedPaths = new HashSet<String>();
+                for (Capability auxcap : hostRev.getCapabilities(PackageNamespace.PACKAGE_NAMESPACE)) {
+                    XCapability xcap = (XCapability) auxcap;
+                    XPackageCapability packcap = xcap.adapt(XPackageCapability.class);
+                    String path = packcap.getPackageName().replace('.', '/');
+                    exportedPaths.add(path);
+                }
+                exportFilter = PathFilters.in(exportedPaths);
             }
             if (importFilter == null) {
                 importFilter = (importPaths != null ? PathFilters.in(importPaths) : PathFilters.acceptAll());
             }
             Module frameworkModule = getFrameworkModule();
-            ModuleLoader depLoader = (frameworkModule.getIdentifier().equals(identifier) ? frameworkModule.getModuleLoader() : moduleLoader
-                    .getModuleLoader());
+            boolean isFrameworkModule = frameworkModule.getIdentifier().equals(identifier);
+            ModuleLoader depLoader = (isFrameworkModule ? frameworkModule.getModuleLoader() : moduleLoader.getModuleLoader());
             LOGGER.tracef("createModuleDependencySpec: [id=%s,if=%s,ef=%s,loader=%s,optional=%s]", identifier, importFilter, exportFilter, depLoader, optional);
             return DependencySpec.createModuleDependencySpec(importFilter, exportFilter, depLoader, identifier, optional);
         }

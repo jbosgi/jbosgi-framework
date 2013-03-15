@@ -37,9 +37,8 @@ import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.jboss.test.osgi.modules.a.CircularityError;
-import org.jboss.test.osgi.modules.b.CircularityActivator;
-import org.jboss.test.osgi.modules.b.CircularityErrorDep;
+import org.jboss.test.osgi.modules.a.A;
+import org.jboss.test.osgi.modules.a.ModuleActivatorA;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -60,22 +59,19 @@ import static org.junit.Assert.assertNotNull;
  * @author Thomas.Diesler@jboss.com
  * @since 20-Dec-2010
  */
-public class MOD65ComplexTestCase extends ModulesTestBase {
+public class CircularClassLoadSimpleTestCase extends ModulesTestBase {
 
     private VirtualFile virtualFileA;
-    private VirtualFile virtualFileB;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
         virtualFileA = toVirtualFile(getModuleA());
-        virtualFileB = toVirtualFile(getModuleB());
     }
 
     @After
     public void tearDown() throws Exception {
         VFSUtils.safeClose(virtualFileA);
-        VFSUtils.safeClose(virtualFileB);
     }
 
     @Test
@@ -83,38 +79,30 @@ public class MOD65ComplexTestCase extends ModulesTestBase {
         JavaArchive archiveA = getModuleA();
         ModuleIdentifier identifierA = ModuleIdentifier.create(archiveA.getName());
 
-        JavaArchive archiveB = getModuleB();
-        ModuleIdentifier identifierB = ModuleIdentifier.create(archiveB.getName());
-
         Set<String> sysPaths = Collections.singleton("org/jboss/modules");
         PathFilter sysImports = PathFilters.is("org/jboss/modules");
         PathFilter sysExports = PathFilters.rejectAll();
-
-        ModuleSpec.Builder specBuilderB = ModuleSpec.build(identifierB);
-        VirtualFileResourceLoader resourceLoaderB = new VirtualFileResourceLoader(virtualFileB);
-        specBuilderB.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderB));
-        specBuilderB.addDependency(DependencySpec.createLocalDependencySpec());
-        specBuilderB.addDependency(DependencySpec.createSystemDependencySpec(sysImports, sysExports, sysPaths));
-        Set<String> lazyPaths = Collections.singleton(getPathForClassName(CircularityErrorDep.class.getName()));
-        specBuilderB.setModuleClassLoaderFactory(new PostDefineModuleClassLoader.Factory(lazyPaths));
-        addModuleSpec(specBuilderB.create());
 
         ModuleSpec.Builder specBuilderA = ModuleSpec.build(identifierA);
         VirtualFileResourceLoader resourceLoaderA = new VirtualFileResourceLoader(virtualFileA);
         specBuilderA.addResourceRoot(ResourceLoaderSpec.createResourceLoaderSpec(resourceLoaderA));
         specBuilderA.addDependency(DependencySpec.createLocalDependencySpec());
-        specBuilderA.addDependency(DependencySpec.createModuleDependencySpec(identifierB));
+        specBuilderA.addDependency(DependencySpec.createSystemDependencySpec(sysImports, sysExports, sysPaths));
+        Set<String> lazyPaths = Collections.singleton(getPathForClassName(A.class.getName()));
+        specBuilderA.setModuleClassLoaderFactory(new PostDefineModuleClassLoader.Factory(lazyPaths));
         addModuleSpec(specBuilderA.create());
 
+
         List<ModuleIdentifier> activated = new ArrayList<ModuleIdentifier>();
-        Class<?> clazz = loadClassLazily(identifierA, CircularityError.class.getName(), activated);
+        Class<?> clazz = loadClassLazily(identifierA, A.class.getName(), activated);
         assertNotNull("Class not null", clazz);
         assertEquals("One module activated", 1, activated.size());
-        assertEquals("ModuleB activated", identifierB, activated.get(0));
+        assertEquals("ModuleB activated", identifierA, activated.get(0));
     }
 
     Class<?> loadClassLazily(ModuleIdentifier moduleId, String className, List<ModuleIdentifier> activated) throws Exception {
-        Class<?> loadedClass = getModuleLoader().loadModule(moduleId).getClassLoader().loadClass(className, true);
+        ModuleClassLoader classLoader = getModuleLoader().loadModule(moduleId).getClassLoader();
+        Class<?> loadedClass = classLoader.loadClass(className, true);
         Stack<ModuleIdentifier> stack = LazyActivationStack.getLazyActivationStack();
         while (stack.isEmpty() == false) {
             ModuleIdentifier auxid = stack.pop();
@@ -176,15 +164,10 @@ public class MOD65ComplexTestCase extends ModulesTestBase {
 
     private JavaArchive getModuleA() {
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleA");
-        archive.addClasses(CircularityError.class);
-        return archive;
-    }
-
-    private JavaArchive getModuleB() {
-        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "moduleB");
-        archive.addClasses(CircularityErrorDep.class, CircularityActivator.class, ModuleActivator.class);
-        File resourceFile = OSGiTestHelper.getResourceFile("modules/moduleB/META-INF/services/" + ModuleActivator.class.getName());
+        archive.addClasses(A.class, ModuleActivatorA.class, ModuleActivator.class);
+        File resourceFile = OSGiTestHelper.getResourceFile("modules/moduleA/META-INF/services/" + ModuleActivator.class.getName());
         archive.addAsManifestResource(resourceFile, "services/" + ModuleActivator.class.getName());
         return archive;
     }
+
 }

@@ -439,7 +439,7 @@ public class ModulesTestCase extends ModulesTestBase {
 
         @Override
         public List<Resource> loadResourceLocal(String name) {
-            return null;
+            return Collections.emptyList();
         }
     }
 

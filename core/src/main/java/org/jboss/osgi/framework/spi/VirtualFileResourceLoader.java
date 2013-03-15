@@ -1,4 +1,5 @@
 package org.jboss.osgi.framework.spi;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -30,15 +31,18 @@ import java.io.InputStream;
 import java.net.URL;
 import java.security.CodeSigner;
 import java.security.CodeSource;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 import org.jboss.modules.ClassSpec;
+import org.jboss.modules.IterableResourceLoader;
 import org.jboss.modules.PackageSpec;
 import org.jboss.modules.Resource;
 import org.jboss.modules.ResourceLoader;
@@ -52,7 +56,7 @@ import org.jboss.osgi.vfs.VirtualFile;
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @since 29-Jun-2010
  */
-public final class VirtualFileResourceLoader implements ResourceLoader {
+public final class VirtualFileResourceLoader implements IterableResourceLoader {
 
     private final VirtualFile virtualFile;
     private final Set<String> localPaths;
@@ -124,7 +128,7 @@ public final class VirtualFileResourceLoader implements ResourceLoader {
             if (child == null)
                 return null;
 
-            return new VirtualResource(child);
+            return new VirtualFileResource(child);
         } catch (IOException ex) {
             return null;
         }
@@ -138,6 +142,36 @@ public final class VirtualFileResourceLoader implements ResourceLoader {
     @Override
     public Collection<String> getPaths() {
         return localPaths;
+    }
+
+    @Override
+    public Iterator<Resource> iterateResources(String startPath, boolean recurse) {
+        List<Resource> result = new ArrayList<Resource>();
+        List<VirtualFile> entryPaths;
+        try {
+            if (recurse) {
+                entryPaths = virtualFile.getChildrenRecursively();
+            } else {
+                VirtualFile parent = virtualFile.getChild(startPath);
+                if (parent != null) {
+                    entryPaths = parent.getChildren();
+                } else {
+                    entryPaths = Collections.emptyList();
+                }
+            }
+        } catch (IOException ex) {
+            throw new IllegalStateException(ex);
+        }
+        for (VirtualFile entry: entryPaths) {
+            try {
+                if (entry.isFile()) {
+                    result.add(new VirtualFileResource(entry));
+                }
+            } catch (IOException ex) {
+                throw MESSAGES.illegalArgumentCannotObtainPaths(ex, virtualFile);
+            }
+        }
+        return result.iterator();
     }
 
     private Set<String> getLocalPaths() {
@@ -156,10 +190,10 @@ public final class VirtualFileResourceLoader implements ResourceLoader {
                 }
             }
         } catch (IOException ex) {
-            throw MESSAGES.illegalArgumentCannotObtainPaths(ex,  virtualFile);
+            throw MESSAGES.illegalArgumentCannotObtainPaths(ex, virtualFile);
         }
         if (result.size() == 0)
-            throw MESSAGES.illegalArgumentCannotObtainPaths(null,  virtualFile);
+            throw MESSAGES.illegalArgumentCannotObtainPaths(null, virtualFile);
 
         return Collections.unmodifiableSet(result);
     }
@@ -174,18 +208,20 @@ public final class VirtualFileResourceLoader implements ResourceLoader {
         }
     }
 
-    static class VirtualResource implements Resource {
+    class VirtualFileResource implements Resource {
 
-        VirtualFile child;
+        final VirtualFile child;
 
-        VirtualResource(VirtualFile child) {
+        VirtualFileResource(VirtualFile child) {
             assert child != null : "Null child";
             this.child = child;
         }
 
         @Override
         public String getName() {
-            return child.getName();
+            String rootName = virtualFile.getPathName();
+            String pathName = child.getPathName();
+            return pathName.substring(rootName.length() + 1);
         }
 
         @Override
@@ -208,4 +244,3 @@ public final class VirtualFileResourceLoader implements ResourceLoader {
         }
     }
 }
-

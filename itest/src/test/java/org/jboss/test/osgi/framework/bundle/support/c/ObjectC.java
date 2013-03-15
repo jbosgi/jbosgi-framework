@@ -1,4 +1,4 @@
-package org.jboss.test.osgi.framework.bundle.support.a;
+package org.jboss.test.osgi.framework.bundle.support.c;
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,10 +21,6 @@ package org.jboss.test.osgi.framework.bundle.support.a;
  * #L%
  */
 
-public class ObjectA2 {
+public class ObjectC {
 
-    @Override
-    public String toString() {
-        return "ObjectA2";
-    }
 }

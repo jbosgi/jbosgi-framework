@@ -1,4 +1,4 @@
-package org.jboss.osgi.framework.internal;
+package org.jboss.osgi.framework.spi;
 /*
  * #%L
  * JBossOSGi Framework
@@ -33,11 +33,11 @@ import org.jboss.modules.Resource;
  * @author thomas.diesler@jboss.com
  * @since 13-Jan-2011
  */
-final class URLResource implements Resource {
+public final class URLResource implements Resource {
 
     private final URL url;
 
-    URLResource(final URL url) {
+    public URLResource(final URL url) {
         this.url = url;
     }
 

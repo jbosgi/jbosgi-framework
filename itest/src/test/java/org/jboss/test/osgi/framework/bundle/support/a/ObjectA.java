@@ -21,9 +21,6 @@ package org.jboss.test.osgi.framework.bundle.support.a;
  * #L%
  */
 
-/**
- * @author <a href="david@redhat.com">David Bosschaert</a>
- */
 public class ObjectA {
 
     @Override

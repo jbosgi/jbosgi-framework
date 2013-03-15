@@ -222,6 +222,6 @@ final class RevisionContent implements EntriesProvider {
 
     @Override
     public String toString() {
-        return "[id=" + identity + ",vfile=" + virtualFile + "]";
+        return "[rev=" + userRev + ",id=" + identity + ",vfile=" + virtualFile + "]";
     }
 }
