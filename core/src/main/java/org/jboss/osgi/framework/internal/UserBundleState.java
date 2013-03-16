@@ -416,8 +416,6 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
 
     @Override
     void uninstallInternal(int options) {
-        headersOnUninstall = getHeaders(null);
-
         LockContext lockContext = null;
         LockManager lockManager = getFrameworkState().getLockManager();
         try {
@@ -440,6 +438,8 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         int state = getState();
         if (state == Bundle.UNINSTALLED)
             return;
+
+        headersOnUninstall = getHeaders(null);
 
         // #2 If the bundle's state is ACTIVE, STARTING or STOPPING, the bundle is stopped
         if (isFragment() == false) {
