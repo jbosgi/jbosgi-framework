@@ -52,26 +52,20 @@ public class BundleServicesTestCase extends AbstractFrameworkTest {
     public void testBundleLifecycle() throws Exception {
 
         Bundle bundle = installBundle(getTestArchive());
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
 
         ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
-
-        ServiceController<?> controller = serviceContainer.getService(bundleState.getServiceName(Bundle.INSTALLED));
+        ServiceController<?> controller = serviceContainer.getService(bundleState.getServiceName());
         assertServiceState(controller, State.UP);
 
         URL url = bundle.getResource(JarFile.MANIFEST_NAME);
         assertNotNull("URL not null", url);
 
-        controller = serviceContainer.getService(bundleState.getServiceName(Bundle.RESOLVED));
-        assertServiceState(controller, State.UP);
-
         bundle.start();
-        controller = serviceContainer.getService(bundleState.getServiceName(Bundle.ACTIVE));
         assertServiceState(controller, State.UP);
 
         bundle.stop();
-        controller = serviceContainer.getService(bundleState.getServiceName(Bundle.ACTIVE));
-        assertServiceState(controller, State.DOWN);
+        assertServiceState(controller, State.UP);
 
         bundle.uninstall();
         assertBundleState(Bundle.UNINSTALLED, bundle.getState());

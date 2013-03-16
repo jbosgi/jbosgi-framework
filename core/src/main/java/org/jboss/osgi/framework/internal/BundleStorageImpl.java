@@ -112,6 +112,7 @@ public final class BundleStorageImpl implements BundleStorage {
 
     @Override
     public void deleteStorageState(StorageState storageState) {
+        LOGGER.debugf("Deleting storage state: %s", storageState);
         VFSUtils.safeClose(storageState.getRootFile());
         deleteRecursive(storageState.getStorageDir());
         synchronized (storageStates) {

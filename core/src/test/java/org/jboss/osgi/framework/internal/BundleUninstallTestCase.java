@@ -37,8 +37,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.osgi.framework.Bundle.INSTALLED;
-import static org.osgi.framework.Bundle.RESOLVED;
 import static org.osgi.framework.Bundle.UNINSTALLED;
 
 /**
@@ -55,15 +53,10 @@ public class BundleUninstallTestCase extends AbstractFrameworkTest {
         List<ServiceName> initialNames = getServiceNameDelta(null);
 
         Bundle bundle = installBundle(getTestArchive());
-        AbstractBundleState bundleState = AbstractBundleState.assertBundleState(bundle);
+        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
 
         List<ServiceName> additionalNames = getServiceNameDelta(initialNames);
-        assertTrue("Contains INSTALLED", additionalNames.contains(bundleState.getServiceName(INSTALLED)));
-
-        bundle.start();
-        additionalNames = getServiceNameDelta(initialNames);
-        assertTrue("Contains RESOLVED", additionalNames.contains(bundleState.getServiceName(RESOLVED)));
-        assertTrue("Contains ACTIVE", additionalNames.contains(bundleState.getServiceName(Bundle.ACTIVE)));
+        assertTrue("Contains INSTALLED", additionalNames.contains(bundleState.getServiceName()));
 
         bundle.uninstall();
         assertBundleState(UNINSTALLED, bundle.getState());

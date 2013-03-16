@@ -24,10 +24,9 @@ package org.jboss.osgi.framework.spi;
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
@@ -85,7 +84,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         int targetLevel = getBeginningStartLevel();
 
         // Track the resolved services
-        final Map<ServiceName, XBundle> resolvableServices = new HashMap<ServiceName, XBundle>();
+        final Set<XBundle> resolvableBundles = new HashSet<XBundle>();
 
         // Collect the set of resolvable bundles
         for (ServiceName installedName : installedServices) {
@@ -93,8 +92,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
             Deployment dep = bundle.adapt(Deployment.class);
             int bundleLevel = dep.getStartLevel() != null ? dep.getStartLevel() : 1;
             if (dep.isAutoStart() && !bundle.isFragment() && bundleLevel <= targetLevel) {
-                ServiceName resolvedName = getBundleManager().getServiceName(bundle, Bundle.RESOLVED);
-                resolvableServices.put(resolvedName, bundle);
+                resolvableBundles.add(bundle);
             }
         }
 
@@ -103,7 +101,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
             XEnvironment env = injectedEnvironment.getValue();
             List<XBundleRevision> mandatory = new ArrayList<XBundleRevision>();
             mandatory.add(injectedSystemBundle.getValue().getBundleRevision());
-            for (XBundle bundle : resolvableServices.values()) {
+            for (XBundle bundle : resolvableBundles) {
                 mandatory.add(bundle.getBundleRevision());
             }
             XResolver resolver = injectedResolver.getValue();
@@ -115,12 +113,12 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
             }
         }
 
-        if (!resolvableServices.isEmpty()) {
+        if (!resolvableBundles.isEmpty()) {
 
             // Leniently resolve the persistent bundles
             if (IntegrationServices.PERSISTENT_BUNDLES.isParentOf(getServiceName())) {
                 List<Bundle> bundles = new ArrayList<Bundle>();
-                for (XBundle bundle : resolvableServices.values()) {
+                for (XBundle bundle : resolvableBundles) {
                     bundles.add(bundle);
                 }
                 FrameworkWiring frameworkWiring = injectedFrameworkWiring.getValue();
@@ -128,14 +126,16 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
             }
 
             // Remove the unresolved service from the tracker
-            for (ServiceName serviceName : new HashSet<ServiceName>(resolvableServices.keySet())) {
-                if (!resolvableServices.get(serviceName).isResolved()) {
-                    resolvableServices.remove(serviceName);
+            Iterator<XBundle> iterator = resolvableBundles.iterator();
+            while(iterator.hasNext()) {
+                XBundle bundle = iterator.next();
+                if (!bundle.isResolved()) {
+                    iterator.remove();
                 }
             }
         }
 
-        installActivateService(context.getChildTarget(), resolvableServices.keySet());
+        installActivateService(context.getChildTarget(), resolvableBundles);
     }
 
     @SuppressWarnings("unchecked")
@@ -155,8 +155,8 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         return 1;
     }
 
-    protected ServiceController<T> installActivateService(ServiceTarget serviceTarget, Set<ServiceName> resolvedServices) {
-        return new BootstrapBundlesActivate<T>(getServiceName().getParent(), resolvedServices).install(serviceTarget, getServiceListener());
+    protected ServiceController<T> installActivateService(ServiceTarget serviceTarget, Set<XBundle> resolvedBundles) {
+        return new BootstrapBundlesActivate<T>(getServiceName().getParent(), resolvedBundles).install(serviceTarget, getServiceListener());
     }
 
 }

@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger.Level;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -313,9 +312,6 @@ final class HostBundleState extends UserBundleState<HostBundleRevision> {
         // #11 A bundle event of type BundleEvent.STARTED is fired
         changeState(Bundle.ACTIVE);
 
-        // Activate the service that represents bundle state ACTIVE
-        getBundleManagerPlugin().setServiceMode(getServiceName(Bundle.ACTIVE), Mode.ACTIVE);
-
         LOGGER.infoBundleStarted(this);
     }
 
@@ -398,9 +394,6 @@ final class HostBundleState extends UserBundleState<HostBundleRevision> {
         // #12 This bundle's state is set to RESOLVED
         // #13 A bundle event of type BundleEvent.STOPPED is fired
         changeState(Bundle.RESOLVED, BundleEvent.STOPPED);
-
-        // Deactivate the service that represents bundle state ACTIVE
-        getBundleManagerPlugin().setServiceMode(getServiceName(Bundle.ACTIVE), Mode.NEVER);
 
         if (rethrow != null) {
             throw MESSAGES.cannotStopBundle(rethrow, this);

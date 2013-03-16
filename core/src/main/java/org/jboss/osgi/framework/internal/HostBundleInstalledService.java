@@ -48,8 +48,6 @@ final class HostBundleInstalledService extends UserBundleInstalledService<HostBu
 
     @Override
     HostBundleState createBundleState(HostBundleRevision revision, ServiceName serviceName, ServiceTarget serviceTarget) {
-        HostBundleState hostState = new HostBundleState(getFrameworkState(), revision, serviceName, serviceTarget);
-        HostBundleActiveService.addService(hostState.getServiceTarget(), hostState);
-        return hostState;
+        return new HostBundleState(getFrameworkState(), revision, serviceName, serviceTarget);
     }
 }

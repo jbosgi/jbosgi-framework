@@ -447,7 +447,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         XBundle bundle = getBundleByLocation(dep.getLocation());
         if (bundle != null) {
             LOGGER.debugf("Installing an already existing bundle: %s", dep);
-            serviceName = getServiceName(bundle, Bundle.INSTALLED);
+            serviceName = getServiceName(bundle);
             dep.addAttachment(ServiceName.class, serviceName);
             VFSUtils.safeClose(dep.getRoot());
             return serviceName;
@@ -592,47 +592,24 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     @Override
-    public ServiceName getServiceName(XBundle bundle, int state) {
+    public ServiceName getServiceName(XBundle bundle) {
         ServiceName result = null;
         if (bundle instanceof AbstractBundleState) {
             AbstractBundleState<?> bundleState = (AbstractBundleState<?>) bundle;
-            result = bundleState.getServiceName(state);
+            result = bundleState.getServiceName();
         }
         return result;
     }
 
-    @Override
-    public ServiceName getServiceName(Deployment dep, int state) {
+    ServiceName getServiceName(Deployment dep) {
         // Currently the bundleId is needed for uniqueness because of
         // [MSC-97] Cannot re-install service with same name
         Long bundleId = dep.getAttachment(Long.class);
         String bsname = dep.getSymbolicName();
         String version = dep.getVersion();
         ServiceName serviceName = ServiceName.of(BUNDLE_BASE_NAME, "" + bsname, "" + version, "bid" + bundleId);
-        if (state == Bundle.INSTALLED || state == Bundle.RESOLVED || state == Bundle.ACTIVE) {
-            serviceName = serviceName.append(ConstantsHelper.bundleState(state));
-        }
+        serviceName = serviceName.append(ConstantsHelper.bundleState(Bundle.INSTALLED));
         return serviceName;
-    }
-
-    void setServiceMode(ServiceName serviceName, Mode mode) {
-        ServiceController<?> controller = serviceContainer.getService(serviceName);
-        if (controller == null) {
-            LOGGER.debugf("Cannot set mode %s on non-existing service: %s", mode, serviceName);
-        } else {
-            setServiceMode(controller, mode);
-        }
-    }
-
-    void setServiceMode(ServiceController<?> controller, Mode mode) {
-        LOGGER.tracef("Set mode %s on service: %s", mode, controller.getName());
-        try {
-            controller.setMode(mode);
-        } catch (IllegalArgumentException rte) {
-            // [MSC-105] Cannot determine whether container is shutting down
-            if (rte.getMessage().equals("Container is shutting down") == false)
-                throw rte;
-        }
     }
 
     @Override

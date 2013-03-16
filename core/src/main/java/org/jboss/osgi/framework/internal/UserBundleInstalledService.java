@@ -61,17 +61,17 @@ import org.osgi.framework.BundleException;
 abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extends UserBundleRevision> extends AbstractBundleService<B> {
 
     private final Deployment initialDeployment;
-    private final BundleContext sourceContext;
+    private final BundleContext targetContext;
     private B bundleState;
 
-    UserBundleInstalledService(FrameworkState frameworkState, BundleContext sourceContext, Deployment deployment) {
+    UserBundleInstalledService(FrameworkState frameworkState, BundleContext targetContext, Deployment deployment) {
         super(frameworkState);
         this.initialDeployment = deployment;
-        this.sourceContext = sourceContext;
+        this.targetContext = targetContext;
     }
 
     ServiceName install(ServiceTarget serviceTarget, ServiceListener<XBundle> listener) {
-        ServiceName serviceName = getBundleManager().getServiceName(initialDeployment, Bundle.INSTALLED);
+        ServiceName serviceName = getBundleManager().getServiceName(initialDeployment);
         LOGGER.debugf("Installing %s %s", getClass().getSimpleName(), serviceName);
         ServiceBuilder<B> builder = serviceTarget.addService(serviceName, this);
         addServiceDependencies(builder);
@@ -95,7 +95,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extend
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
             R brev = createBundleRevision(dep, metadata, storageState);
             brev.addAttachment(Long.class, bundleId);
-            ServiceName serviceName = startContext.getController().getName().getParent();
+            ServiceName serviceName = startContext.getController().getName();
             bundleState = createBundleState(brev, serviceName, startContext.getChildTarget());
             dep.addAttachment(Bundle.class, bundleState);
             bundleState.initLazyActivation();
@@ -103,7 +103,7 @@ abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extend
             processNativeCode(bundleState, dep);
             installBundle(bundleState);
             // For the event type INSTALLED, this is the bundle whose context was used to install the bundle
-            XBundle origin = (XBundle) sourceContext.getBundle();
+            XBundle origin = (XBundle) targetContext.getBundle();
             FrameworkEvents events = getFrameworkState().getFrameworkEvents();
             events.fireBundleEvent(origin, bundleState, BundleEvent.INSTALLED);
         } catch (BundleException ex) {
@@ -122,7 +122,9 @@ abstract class UserBundleInstalledService<B extends UserBundleState<R>, R extend
                 BundleManagerPlugin bundleManager = getBundleManager();
                 ServiceContainer serviceContainer = bundleManager.getServiceContainer();
                 ServiceController<?> controller = serviceContainer.getRequiredService(Services.BUNDLE_MANAGER);
-                boolean stopping = bundleManager.getManagerState() == Bundle.STOPPING || controller.getSubstate() == Substate.STOP_REQUESTED;
+                int managerState = bundleManager.getManagerState();
+                Substate substate = controller.getSubstate();
+                boolean stopping = managerState == Bundle.STOPPING || managerState == Bundle.RESOLVED || substate == Substate.STOP_REQUESTED;
                 bundleManager.uninstallBundle(getBundleState(), stopping ? Bundle.STOP_TRANSIENT : 0);
             } catch (BundleException ex) {
                 throw new IllegalStateException(ex);

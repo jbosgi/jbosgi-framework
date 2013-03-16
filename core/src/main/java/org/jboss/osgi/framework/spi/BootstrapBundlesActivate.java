@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
@@ -42,11 +41,11 @@ import org.osgi.framework.BundleException;
 
 public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
 
-    private final Set<ServiceName> resolvedServices;
+    private final Set<XBundle> resolvedBundles;
 
-    public BootstrapBundlesActivate(ServiceName baseName, Set<ServiceName> resolvedServices) {
+    public BootstrapBundlesActivate(ServiceName baseName, Set<XBundle> resolvedBundles) {
         super(baseName, IntegrationServices.BootstrapPhase.ACTIVATE);
-        this.resolvedServices = resolvedServices;
+        this.resolvedBundles = resolvedBundles;
     }
 
     @Override
@@ -58,18 +57,11 @@ public class BootstrapBundlesActivate<T> extends BootstrapBundlesService<T> {
     public void start(StartContext startContext) throws StartException {
         super.start(startContext);
 
-        // Collect the resolved bundles
-        ServiceContainer serviceRegistry = startContext.getController().getServiceContainer();
-        List<XBundle> bundles = new ArrayList<XBundle>();
-        for (ServiceName serviceName : resolvedServices) {
-            ServiceController<?> controller = serviceRegistry.getRequiredService(serviceName);
-            bundles.add((XBundle) controller.getValue());
-        }
-
         // Sort the bundles by Id
-        Collections.sort(bundles, new Comparator<Bundle>(){
+        List<XBundle> bundles = new ArrayList<XBundle>(resolvedBundles);
+        Collections.sort(bundles, new Comparator<XBundle>(){
             @Override
-            public int compare(Bundle o1, Bundle o2) {
+            public int compare(XBundle o1, XBundle o2) {
                 return (int) (o1.getBundleId() - o2.getBundleId());
             }
         });

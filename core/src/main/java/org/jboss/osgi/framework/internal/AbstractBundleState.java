@@ -153,7 +153,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         return getBundleRevision().getSymbolicName();
     }
 
-    abstract AbstractBundleContext<? extends AbstractBundleState<?>> createContextInternal();
+    abstract AbstractBundleContext<?> createContextInternal();
 
     /**
      * Required by spec:
@@ -210,7 +210,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     abstract R getBundleRevisionById(int revisionId);
 
-    abstract ServiceName getServiceName(int state);
+    abstract ServiceName getServiceName();
 
     abstract boolean isSingleton();
 

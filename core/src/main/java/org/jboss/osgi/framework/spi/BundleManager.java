@@ -98,24 +98,12 @@ public interface BundleManager extends Service<BundleManager> {
     XBundle getSystemBundle();
 
     /**
-     * Get the service name for the given bundle that corresponds to the given state. Supported states are
-     * {@link Bundle#INSTALLED}, {@link Bundle#RESOLVED}, {@link Bundle#ACTIVE}
+     * Get the service name for the given bundle.
      *
      * @param bundle The bundle
-     * @param state One of the supported states or 0 for the base service name.
      * @return The service name or null if the bundle is not service based.
      */
-    ServiceName getServiceName(XBundle bundle, int state);
-
-    /**
-     * Get the service name for the given bundle deployment that corresponds to the given state. Supported states are
-     * {@link Bundle#INSTALLED}, {@link Bundle#RESOLVED}, {@link Bundle#ACTIVE}
-     *
-     * @param dep The bundle deployment
-     * @param state One of the supported states or 0 for the base service name.
-     * @return The service name or null if the bundle is not service based.
-     */
-    ServiceName getServiceName(Deployment dep, int state);
+    ServiceName getServiceName(XBundle bundle);
 
     /**
      * True the framework has reached the {@link Services#FRAMEWORK_ACTIVE} state

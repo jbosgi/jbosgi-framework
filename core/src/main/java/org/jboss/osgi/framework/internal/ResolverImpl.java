@@ -34,17 +34,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
-
-import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceController.State;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
 import org.jboss.osgi.framework.spi.FrameworkWiringLock;
-import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.Method;
@@ -324,9 +317,6 @@ public final class ResolverImpl implements XResolver {
         // For every resolved host bundle create a {@link Module} service
         createModuleServices(brevmap);
 
-        // For every resolved host bundle create a Bundle.RESOLVED service
-        createBundleServices(brevmap);
-
         // Construct and apply the resource wiring map
         Map<Resource, Wiring> wirings = environment.updateWiring(wiremap);
         for (Entry<Resource, Wiring> entry : wirings.entrySet()) {
@@ -389,31 +379,6 @@ public final class ResolverImpl implements XResolver {
             XBundle bundle = brev.getBundle();
             if (bundle != null && bundle.getBundleId() != 0 && !brev.isFragment()) {
                 moduleLoader.createModuleService(brev, wires);
-            }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void createBundleServices(Map<BundleRevision, List<BundleWire>> wiremap) {
-        for (Map.Entry<BundleRevision, List<BundleWire>> entry : wiremap.entrySet()) {
-            XBundleRevision brev = (XBundleRevision) entry.getKey();
-            XBundle bundle = brev.getBundle();
-            if (bundle != null && bundle.getBundleId() != 0 && !brev.isFragment()) {
-                HostBundleRevision hostRev = HostBundleRevision.assertHostRevision(brev);
-                HostBundleState hostState = hostRev.getBundleState();
-                BundleManager bundleManager = hostState.adapt(BundleManager.class);
-                ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-                ServiceName serviceName = hostState.getServiceName(Bundle.RESOLVED);
-                ServiceController<HostBundleState> controller = (ServiceController<HostBundleState>) serviceContainer.getService(serviceName);
-                if (controller != null) {
-                    FutureServiceValue<HostBundleState> future = new FutureServiceValue<HostBundleState>(controller, State.REMOVED);
-                    try {
-                        future.get(10, TimeUnit.SECONDS);
-                    } catch (Exception ex) {
-                        // ignore
-                    }
-                }
-                hostRev.createResolvedService(hostState.getServiceTarget());
             }
         }
     }

@@ -84,7 +84,7 @@ final class SystemBundleState extends AbstractBundleState<SystemBundleRevision> 
     }
 
     @Override
-    ServiceName getServiceName(int state) {
+    ServiceName getServiceName() {
         return IntegrationServices.SYSTEM_BUNDLE_INTERNAL;
     }
 
@@ -104,7 +104,7 @@ final class SystemBundleState extends AbstractBundleState<SystemBundleRevision> 
     }
 
     @Override
-    AbstractBundleContext createContextInternal() {
+    SystemBundleContext createContextInternal() {
         return new SystemBundleContext(this);
     }
 

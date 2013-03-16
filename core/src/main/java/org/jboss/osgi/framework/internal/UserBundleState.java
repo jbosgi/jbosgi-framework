@@ -34,7 +34,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.jboss.modules.ModuleIdentifier;
+import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
@@ -53,7 +55,6 @@ import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XWiringSupport;
 import org.jboss.osgi.resolver.spi.AbstractBundleWiring;
-import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -142,14 +143,8 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
     }
 
     @Override
-    ServiceName getServiceName(int state) {
-        if (state == 0) {
-            return serviceName;
-        } else if (state == Bundle.INSTALLED || state == Bundle.RESOLVED || state == Bundle.ACTIVE) {
-            return serviceName.append(ConstantsHelper.bundleState(state));
-        } else {
-            return null;
-        }
+    ServiceName getServiceName() {
+        return serviceName;
     }
 
     @Override
@@ -250,7 +245,6 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             }
         }
 
-        removeResolvedService();
         changeState(Bundle.INSTALLED, BundleEvent.UNRESOLVED);
 
         R brev = getBundleRevision();
@@ -396,8 +390,6 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             }
         }
 
-        removeResolvedService();
-
         clearOldRevisions();
 
         FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
@@ -407,11 +399,6 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         currentRev.refreshRevision();
 
         changeState(Bundle.INSTALLED);
-    }
-
-    void removeResolvedService() {
-        ServiceName resolvedName = getServiceName(RESOLVED);
-        getBundleManagerPlugin().setServiceMode(resolvedName, Mode.REMOVE);
     }
 
     @Override
@@ -430,7 +417,25 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
 
         // Remove the Bundle INSTALL service after we changed the state
         LOGGER.debugf("Remove service for: %s", this);
-        getBundleManagerPlugin().setServiceMode(getServiceName(Bundle.INSTALLED), Mode.REMOVE);
+        removeBundleInstalledService();
+    }
+
+    private void removeBundleInstalledService() {
+        ServiceName serviceName = getServiceName();
+        ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
+        ServiceController<?> controller = serviceContainer.getService(serviceName);
+        if (controller == null) {
+            LOGGER.debugf("Cannot set mode %s on non-existing service: %s", Mode.REMOVE, serviceName);
+        } else {
+            LOGGER.tracef("Set mode %s on service: %s", Mode.REMOVE, controller.getName());
+            try {
+                controller.setMode(Mode.REMOVE);
+            } catch (IllegalArgumentException rte) {
+                // [MSC-105] Cannot determine whether container is shutting down
+                if (rte.getMessage().equals("Container is shutting down") == false)
+                    throw rte;
+            }
+        }
     }
 
     void uninstallInternalNow(int options) {

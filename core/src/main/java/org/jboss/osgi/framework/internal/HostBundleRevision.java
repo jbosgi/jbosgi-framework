@@ -37,12 +37,7 @@ import java.util.Vector;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
-import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -84,14 +79,6 @@ final class HostBundleRevision extends UserBundleRevision {
         removeAttachment(Module.class);
         resetModuleClassLoader();
         getWiringSupport().refresh();
-    }
-
-    void createResolvedService(ServiceTarget serviceTarget) {
-        ModuleManager moduleManager = getFrameworkState().getModuleManager();
-        FrameworkModuleLoader moduleLoader = getFrameworkState().getFrameworkModuleLoader();
-        ModuleIdentifier identifier = moduleManager.getModuleIdentifier(this);
-        ServiceName moduleServiceName = moduleLoader.getModuleServiceName(identifier);
-        HostBundleResolvedService.addService(serviceTarget, getBundleState(), moduleServiceName);
     }
 
     void attachFragment(FragmentBundleRevision fragRev) {
