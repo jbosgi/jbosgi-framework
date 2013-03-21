@@ -202,7 +202,7 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
      */
     @Override
     public URLStreamHandler createURLStreamHandler(String protocol) {
-        List<ServiceReference> refList = streamHandlerDelegate.getStreamHandlers(protocol);
+        List<ServiceReference<URLStreamHandler>> refList = streamHandlerDelegate.getStreamHandlers(protocol);
         if (refList == null || refList.isEmpty())
             return null;
 
@@ -217,11 +217,11 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
      */
     @Override
     public ContentHandler createContentHandler(String mimetype) {
-        List<ServiceReference> refList = contentHandlerDelegate.getContentHandlers(mimetype);
+        List<ServiceReference<ContentHandler>> refList = contentHandlerDelegate.getContentHandlers(mimetype);
         if (refList == null || refList.isEmpty())
             return null;
 
-        ServiceReference ref = refList.get(0);
+        ServiceReference<ContentHandler> ref = refList.get(0);
         Object service = ref.getBundle().getBundleContext().getService(ref);
         if (service instanceof ContentHandler)
             return (ContentHandler) service;
@@ -252,10 +252,10 @@ final class URLHandlerSupportImpl implements URLHandlerSupport {
 
         // This list is maintained in the ServiceTracker that tracks the URLStreamHandlerService
         // This proxy should always use to top element (if it contains any elements).
-        private final List<ServiceReference> serviceReferences;
+        private final List<ServiceReference<URLStreamHandler>> serviceReferences;
         private final String protocol;
 
-        public URLStreamHandlerProxy(String protocol, List<ServiceReference> refList) {
+        public URLStreamHandlerProxy(String protocol, List<ServiceReference<URLStreamHandler>> refList) {
             this.protocol = protocol;
             this.serviceReferences = refList;
         }

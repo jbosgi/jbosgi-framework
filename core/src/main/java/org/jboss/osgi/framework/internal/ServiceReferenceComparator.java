@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import java.util.Comparator;
 
@@ -36,11 +36,11 @@ import org.osgi.framework.ServiceReference;
  * @author thomas.diesler@jboss.com
  * @since 26-Jul-2010
  */
-final class ServiceReferenceComparator implements Comparator<ServiceReference> {
+final class ServiceReferenceComparator implements Comparator<ServiceReference<?>> {
 
-    private static final Comparator<ServiceReference> INSTANCE = new ServiceReferenceComparator();
+    private static final Comparator<ServiceReference<?>> INSTANCE = new ServiceReferenceComparator();
 
-    static Comparator<ServiceReference> getInstance() {
+    static Comparator<ServiceReference<?>> getInstance() {
         return INSTANCE;
     }
 
@@ -49,9 +49,9 @@ final class ServiceReferenceComparator implements Comparator<ServiceReference> {
     }
 
     @Override
-    public int compare(ServiceReference ref1, ServiceReference ref2) {
-        ServiceState s1 = ServiceStateImpl.assertServiceState((ServiceReference) ref1);
-        ServiceState s2 = ServiceStateImpl.assertServiceState((ServiceReference) ref2);
+    public int compare(ServiceReference<?> ref1, ServiceReference<?> ref2) {
+        ServiceState<?> s1 = ServiceStateImpl.assertServiceState(ref1);
+        ServiceState<?> s2 = ServiceStateImpl.assertServiceState(ref2);
 
         // If this ServiceReference and the specified ServiceReference have the same service id they are equal
         if (s1.getServiceId() == s2.getServiceId())

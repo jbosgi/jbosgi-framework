@@ -63,8 +63,8 @@ public interface ServiceState<S> extends ServiceRegistration<S>, ServiceReferenc
 
     boolean isUnregistered();
 
-    interface ValueProvider {
+    interface ValueProvider<S> {
         boolean isFactoryValue();
-        Object getValue();
+        S getValue();
     }
 }

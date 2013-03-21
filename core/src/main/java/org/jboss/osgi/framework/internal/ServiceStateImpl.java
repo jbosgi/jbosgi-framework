@@ -61,24 +61,24 @@ import org.osgi.framework.ServiceRegistration;
  * @since 29-Jun-2010
  */
 @SuppressWarnings("rawtypes")
-final class ServiceStateImpl implements ServiceState {
+final class ServiceStateImpl<S> implements ServiceState<S> {
 
     private final ServiceManager serviceManager;
     private final XBundle ownerBundle;
     private final String[] classNames;
     private final long serviceId;
-    private final ValueProvider valueProvider;
-    private final ServiceReference reference;
-    private ServiceRegistration registration;
+    private final ValueProvider<S> valueProvider;
+    private final ServiceReference<S> reference;
+    private ServiceRegistration<S> registration;
     private Set<XBundle> usingBundles;
-    private Map<Long, ServiceFactoryHolder> factoryValues;
+    private Map<Long, ServiceFactoryHolder<S>> factoryValues;
 
     // The properties
     private CaseInsensitiveDictionary prevProperties;
     private CaseInsensitiveDictionary currProperties;
 
     @SuppressWarnings("unchecked")
-    ServiceStateImpl(ServiceManager serviceManager, XBundle owner, long serviceId, String[] classNames, ValueProvider valueProvider, Dictionary properties) {
+    ServiceStateImpl(ServiceManager serviceManager, XBundle owner, long serviceId, String[] classNames, ValueProvider<S> valueProvider, Dictionary properties) {
         assert serviceManager != null : "Null serviceManager";
         assert owner != null : "Null owner";
         assert classNames != null && classNames.length > 0 : "Null clazzes";
@@ -119,22 +119,22 @@ final class ServiceStateImpl implements ServiceState {
     }
 
     @Override
-    public Object getScopedValue(XBundle bundle) {
+    public S getScopedValue(XBundle bundle) {
 
         // For non-factory services, return the value
         if (valueProvider.isFactoryValue() == false)
             return valueProvider.getValue();
 
         // Get the ServiceFactory value
-        Object result = null;
+        S result = null;
         try {
             if (factoryValues == null)
-                factoryValues = new HashMap<Long, ServiceFactoryHolder>();
+                factoryValues = new HashMap<Long, ServiceFactoryHolder<S>>();
 
-            ServiceFactoryHolder factoryHolder = getFactoryHolder(bundle);
+            ServiceFactoryHolder<S> factoryHolder = getFactoryHolder(bundle);
             if (factoryHolder == null) {
                 ServiceFactory factory = (ServiceFactory) valueProvider.getValue();
-                factoryHolder = new ServiceFactoryHolder(bundle, factory);
+                factoryHolder = new ServiceFactoryHolder<S>(bundle, factory);
                 factoryValues.put(bundle.getBundleId(), factoryHolder);
             }
 
@@ -170,12 +170,12 @@ final class ServiceStateImpl implements ServiceState {
         }
     }
 
-    private ServiceFactoryHolder getFactoryHolder(XBundle bundle) {
+    private ServiceFactoryHolder<S> getFactoryHolder(XBundle bundle) {
         return factoryValues != null ? factoryValues.get(bundle.getBundleId()) : null;
     }
 
     @Override
-    public ServiceRegistration getRegistration() {
+    public ServiceRegistration<S> getRegistration() {
         return registration;
     }
 
@@ -185,7 +185,7 @@ final class ServiceStateImpl implements ServiceState {
     }
 
     @Override
-    public ServiceReference getReference() {
+    public ServiceReference<S> getReference() {
         assertNotUnregistered();
         return reference;
     }
@@ -242,7 +242,8 @@ final class ServiceStateImpl implements ServiceState {
     }
 
     @Override
-    public Dictionary getPreviousProperties() {
+    @SuppressWarnings("unchecked")
+    public Dictionary<String, ?> getPreviousProperties() {
         return prevProperties;
     }
 
@@ -382,7 +383,7 @@ final class ServiceStateImpl implements ServiceState {
         if (sref instanceof ServiceReference == false)
             throw MESSAGES.illegalArgumentInvalidServiceRef(sref);
 
-        Comparator<ServiceReference> comparator = ServiceReferenceComparator.getInstance();
+        Comparator<ServiceReference<?>> comparator = ServiceReferenceComparator.getInstance();
         return comparator.compare(this, (ServiceReference) sref);
     }
 
@@ -447,12 +448,12 @@ final class ServiceStateImpl implements ServiceState {
         return "ServiceState" + props;
     }
 
-    class ServiceFactoryHolder {
+    class ServiceFactoryHolder<T> {
 
         ServiceFactory factory;
         XBundle bundle;
         AtomicInteger useCount;
-        Object value;
+        T value;
 
         ServiceFactoryHolder(XBundle bundle, ServiceFactory factory) {
             this.bundle = bundle;
@@ -460,12 +461,13 @@ final class ServiceStateImpl implements ServiceState {
             this.useCount = new AtomicInteger();
         }
 
-        Object getService() {
+        @SuppressWarnings("unchecked")
+        T getService() {
             // Multiple calls to getService() return the same value
             if (useCount.get() == 0) {
                 // The Framework must not allow this method to be concurrently called for the same bundle
                 synchronized (bundle) {
-                    Object retValue = factory.getService(bundle, getRegistration());
+                    T retValue = (T) factory.getService(bundle, getRegistration());
                     if (retValue == null)
                         return null;
 
@@ -482,6 +484,7 @@ final class ServiceStateImpl implements ServiceState {
             return value;
         }
 
+        @SuppressWarnings("unchecked")
         void ungetService() {
             if (useCount.get() == 0)
                 return;

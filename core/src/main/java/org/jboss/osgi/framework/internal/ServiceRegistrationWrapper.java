@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import java.util.Dictionary;
 
@@ -32,23 +32,22 @@ import org.osgi.framework.ServiceRegistration;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-final class ServiceRegistrationWrapper implements ServiceRegistration {
+final class ServiceRegistrationWrapper<T> implements ServiceRegistration<T> {
 
-    private ServiceStateImpl delegate;
+    private ServiceStateImpl<T> delegate;
 
-    ServiceRegistrationWrapper(ServiceStateImpl serviceState) {
+    ServiceRegistrationWrapper(ServiceStateImpl<T> serviceState) {
         assert serviceState != null : "Null serviceState";
         this.delegate = serviceState;
     }
 
     @Override
-    public ServiceReference getReference() {
+    public ServiceReference<T> getReference() {
         return delegate.getReference();
     }
 
     @Override
-    @SuppressWarnings("rawtypes")
-    public void setProperties(Dictionary properties) {
+    public void setProperties(Dictionary<String, ?> properties) {
         delegate.setProperties(properties);
     }
 
@@ -68,7 +67,7 @@ final class ServiceRegistrationWrapper implements ServiceRegistration {
             return false;
         if (obj == this)
             return true;
-        ServiceRegistrationWrapper other = (ServiceRegistrationWrapper) obj;
+        ServiceRegistrationWrapper<?> other = (ServiceRegistrationWrapper<?>) obj;
         return delegate.equals(other.delegate);
     }
 

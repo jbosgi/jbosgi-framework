@@ -108,7 +108,7 @@ public final class ServiceManagerImpl implements ServiceManager {
             listenerInfos = frameworkEvents.getServiceListenerInfos(null);
         }
 
-        ServiceState.ValueProvider valueProvider = new ServiceState.ValueProvider() {
+        ServiceState.ValueProvider<Object> valueProvider = new ServiceState.ValueProvider<Object>() {
             @Override
             public boolean isFactoryValue() {
                 return serviceValue instanceof ServiceFactory;
@@ -122,7 +122,7 @@ public final class ServiceManagerImpl implements ServiceManager {
 
         long serviceId = getNextServiceId();
         AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
-        ServiceState<?> serviceState = new ServiceStateImpl(this, bundleState, serviceId, classNames, valueProvider, properties);
+        ServiceState<?> serviceState = new ServiceStateImpl<Object>(this, bundleState, serviceId, classNames, valueProvider, properties);
         LOGGER.debugf("Register service: %s", serviceState);
 
         synchronized (serviceContainer) {

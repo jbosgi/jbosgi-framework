@@ -31,39 +31,45 @@ import org.osgi.framework.ServiceReference;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-final class ServiceReferenceWrapper implements ServiceReference {
+final class ServiceReferenceWrapper<T> implements ServiceReference<T> {
 
-    private ServiceState delegate;
+    private ServiceState<T> delegate;
 
-    ServiceReferenceWrapper(ServiceState serviceState) {
+    ServiceReferenceWrapper(ServiceState<T> serviceState) {
         assert serviceState != null : "Null serviceState";
         this.delegate = serviceState;
     }
 
-    ServiceState getServiceState() {
+    ServiceState<T> getServiceState() {
         return delegate;
     }
 
+    @Override
     public Object getProperty(String key) {
         return delegate.getProperty(key);
     }
 
+    @Override
     public String[] getPropertyKeys() {
         return delegate.getPropertyKeys();
     }
 
+    @Override
     public Bundle getBundle() {
         return delegate.getBundle();
     }
 
+    @Override
     public Bundle[] getUsingBundles() {
         return delegate.getUsingBundles();
     }
 
+    @Override
     public boolean isAssignableTo(Bundle bundle, String className) {
         return delegate.isAssignableTo(bundle, className);
     }
 
+    @Override
     public int compareTo(Object reference) {
         return delegate.compareTo(reference);
     }
@@ -79,7 +85,7 @@ final class ServiceReferenceWrapper implements ServiceReference {
             return false;
         if (obj == this)
             return true;
-        ServiceReferenceWrapper other = (ServiceReferenceWrapper) obj;
+        ServiceReferenceWrapper<?> other = (ServiceReferenceWrapper<?>) obj;
         return delegate.equals(other.delegate);
     }
 

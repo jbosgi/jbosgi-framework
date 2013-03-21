@@ -42,7 +42,7 @@ import org.osgi.framework.ServiceRegistration;
 public class LifecycleInterceptorPlugin extends AbstractIntegrationService<LifecycleInterceptorService> {
 
     private final InjectedValue<BundleContext> injectedSystemContext = new InjectedValue<BundleContext>();
-    private ServiceRegistration registration;
+    private ServiceRegistration<LifecycleInterceptorService> registration;
 
     public LifecycleInterceptorPlugin() {
         super(IntegrationServices.LIFECYCLE_INTERCEPTOR_PLUGIN);
@@ -58,7 +58,7 @@ public class LifecycleInterceptorPlugin extends AbstractIntegrationService<Lifec
     public void start(StartContext startContext) throws StartException {
         super.start(startContext);
         BundleContext systemContext = injectedSystemContext.getValue();
-        registration = systemContext.registerService(LifecycleInterceptorService.class.getName(), getValue(), null);
+        registration = systemContext.registerService(LifecycleInterceptorService.class, getValue(), null);
         getValue().start(systemContext);
     }
 

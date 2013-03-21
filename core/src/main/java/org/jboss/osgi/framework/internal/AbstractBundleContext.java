@@ -399,6 +399,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
     }
 
     @Override
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public ServiceReference<?> getServiceReference(String className) {
         if (className == null)
             throw MESSAGES.illegalArgumentNull("className");
@@ -409,7 +410,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public <S> ServiceReference<S> getServiceReference(Class<S> clazz) {
         if (clazz == null)
             throw MESSAGES.illegalArgumentNull("className");

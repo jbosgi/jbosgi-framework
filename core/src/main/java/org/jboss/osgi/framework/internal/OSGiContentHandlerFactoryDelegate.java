@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,16 +19,17 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import java.net.ContentHandler;
 import java.net.ContentHandlerFactory;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Map;
 
 import org.osgi.framework.ServiceReference;
 
@@ -45,33 +45,34 @@ import org.osgi.framework.ServiceReference;
 final class OSGiContentHandlerFactoryDelegate implements ContentHandlerFactory {
 
     private ContentHandlerFactory delegate;
-    private ConcurrentMap<String, List<ServiceReference>> contentHandlers = new ConcurrentHashMap<String, List<ServiceReference>>();
+    private Map<String, List<ServiceReference<ContentHandler>>> contentHandlers = new HashMap<String, List<ServiceReference<ContentHandler>>>();
 
     void setDelegateFactory(OSGiContentHandlerFactory factory) {
         delegate = factory;
     }
 
-    void addHandler(String mimeType, ServiceReference reference) {
+    void addHandler(String mimeType, ServiceReference<ContentHandler> reference) {
         synchronized (contentHandlers) {
-            contentHandlers.putIfAbsent(mimeType, new ArrayList<ServiceReference>());
-            List<ServiceReference> list = contentHandlers.get(mimeType);
-            synchronized (list) {
-                list.add(reference);
-                Collections.sort(list, Collections.reverseOrder(ServiceReferenceComparator.getInstance()));
+            List<ServiceReference<ContentHandler>> list = contentHandlers.get(mimeType);
+            if (list == null) {
+                list = new ArrayList<ServiceReference<ContentHandler>>();
+                contentHandlers.put(mimeType, list);
             }
+            list.add(reference);
+            Collections.sort(list, Collections.reverseOrder(ServiceReferenceComparator.getInstance()));
         }
     }
 
-    List<ServiceReference> getContentHandlers(String mimetype) {
+    List<ServiceReference<ContentHandler>> getContentHandlers(String mimetype) {
         synchronized (contentHandlers) {
             return contentHandlers.get(mimetype);
         }
     }
 
-    void removeHandler(ServiceReference reference) {
+    void removeHandler(ServiceReference<ContentHandler> reference) {
         synchronized (contentHandlers) {
-            for (List<ServiceReference> list : contentHandlers.values()) {
-                for (Iterator<ServiceReference> it = list.iterator(); it.hasNext();) {
+            for (List<ServiceReference<ContentHandler>> list : contentHandlers.values()) {
+                for (Iterator<ServiceReference<ContentHandler>> it = list.iterator(); it.hasNext();) {
                     if (it.next().equals(reference)) {
                         it.remove();
                         break;
@@ -83,7 +84,7 @@ final class OSGiContentHandlerFactoryDelegate implements ContentHandlerFactory {
 
     void clearHandlers() {
         synchronized (contentHandlers) {
-            for (List<ServiceReference> list : contentHandlers.values()) {
+            for (List<ServiceReference<ContentHandler>> list : contentHandlers.values()) {
                 list.clear();
             }
         }

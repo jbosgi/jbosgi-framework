@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,16 +19,17 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import java.net.URL;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Map;
 
 import org.osgi.framework.ServiceReference;
 
@@ -43,33 +43,34 @@ import org.osgi.framework.ServiceReference;
 final class OSGiStreamHandlerFactoryDelegate implements URLStreamHandlerFactory {
 
     private URLStreamHandlerFactory delegate;
-    private ConcurrentMap<String, List<ServiceReference>> streamHandlers = new ConcurrentHashMap<String, List<ServiceReference>>();
+    private Map<String, List<ServiceReference<URLStreamHandler>>> streamHandlers = new HashMap<String, List<ServiceReference<URLStreamHandler>>>();
 
     void setDelegateFactory(URLStreamHandlerFactory factory) {
         delegate = factory;
     }
 
-    void addHandler(String protocol, ServiceReference reference) {
+    void addHandler(String protocol, ServiceReference<URLStreamHandler> reference) {
         synchronized (streamHandlers) {
-            streamHandlers.putIfAbsent(protocol, new ArrayList<ServiceReference>());
-            List<ServiceReference> list = streamHandlers.get(protocol);
-            synchronized (list) {
-                list.add(reference);
-                Collections.sort(list, Collections.reverseOrder(ServiceReferenceComparator.getInstance()));
+            List<ServiceReference<URLStreamHandler>> list = streamHandlers.get(protocol);
+            if (list == null) {
+                list = new ArrayList<ServiceReference<URLStreamHandler>>();
+                streamHandlers.put(protocol, list);
             }
+            list.add(reference);
+            Collections.sort(list, Collections.reverseOrder(ServiceReferenceComparator.getInstance()));
         }
     }
 
-    List<ServiceReference> getStreamHandlers(String protocol) {
+    List<ServiceReference<URLStreamHandler>> getStreamHandlers(String protocol) {
         synchronized (streamHandlers) {
             return streamHandlers.get(protocol);
         }
     }
 
-    void removeHandler(ServiceReference reference) {
+    void removeHandler(ServiceReference<URLStreamHandler> reference) {
         synchronized (streamHandlers) {
-            for (List<ServiceReference> list : streamHandlers.values()) {
-                for (Iterator<ServiceReference> it = list.iterator(); it.hasNext();) {
+            for (List<ServiceReference<URLStreamHandler>> list : streamHandlers.values()) {
+                for (Iterator<ServiceReference<URLStreamHandler>> it = list.iterator(); it.hasNext();) {
                     if (it.next().equals(reference)) {
                         it.remove();
                         break;
@@ -81,7 +82,7 @@ final class OSGiStreamHandlerFactoryDelegate implements URLStreamHandlerFactory 
 
     void clearHandlers() {
         synchronized (streamHandlers) {
-            for (List<ServiceReference> list : streamHandlers.values()) {
+            for (List<ServiceReference<URLStreamHandler>> list : streamHandlers.values()) {
                 list.clear();
             }
         }

@@ -40,7 +40,6 @@ import org.osgi.framework.hooks.resolver.ResolverHook;
 import org.osgi.framework.hooks.service.EventHook;
 import org.osgi.framework.hooks.service.EventListenerHook;
 import org.osgi.framework.hooks.service.ListenerHook;
-import org.osgi.framework.hooks.weaving.WeavingHook;
 import org.osgi.framework.wiring.BundleRevision;
 
 /**
