@@ -33,12 +33,12 @@ import java.util.Stack;
  */
 final class LazyActivationTracker {
 
-    private final static ThreadLocal<Stack<HostBundleState>> stackAssociation = new ThreadLocal<Stack<HostBundleState>>();
-    private final static ThreadLocal<HostBundleState> initiatorAssociation = new ThreadLocal<HostBundleState>();
+    private final static ThreadLocal<Stack<UserBundleState>> stackAssociation = new ThreadLocal<Stack<UserBundleState>>();
+    private final static ThreadLocal<UserBundleState> initiatorAssociation = new ThreadLocal<UserBundleState>();
 
-    static void startTracking(HostBundleState hostBundle, String className) {
-        LOGGER.tracef("startTracking %s from: %s", className, hostBundle);
-        initiatorAssociation.set(hostBundle);
+    static void startTracking(UserBundleState userBundle, String className) {
+        LOGGER.tracef("startTracking %s from: %s", className, userBundle);
+        initiatorAssociation.set(userBundle);
     }
 
     static void processLoadedClass(Class<?> loadedClass) {
@@ -47,49 +47,49 @@ final class LazyActivationTracker {
         processActivationStack();
     }
 
-    static void preDefineClass(HostBundleState hostBundle, String className) {
-        LOGGER.tracef("preDefineClass %s from: %s", className, hostBundle);
-        addDefinedClass(hostBundle, className);
+    static void preDefineClass(UserBundleState userBundle, String className) {
+        LOGGER.tracef("preDefineClass %s from: %s", className, userBundle);
+        addDefinedClass(userBundle, className);
     }
 
-    static void postDefineClass(HostBundleState hostBundle, Class<?> definedClass) {
-        LOGGER.tracef("postDefineClass %s from: %s", definedClass.getName(), hostBundle);
+    static void postDefineClass(UserBundleState userBundle, Class<?> definedClass) {
+        LOGGER.tracef("postDefineClass %s from: %s", definedClass.getName(), userBundle);
         if (initiatorAssociation.get() == null) {
             processActivationStack();
         }
     }
 
-    static void stopTracking(HostBundleState hostBundle, String className) {
-        LOGGER.tracef("stopTracking %s from: %s", className, hostBundle);
+    static void stopTracking(UserBundleState userBundle, String className) {
+        LOGGER.tracef("stopTracking %s from: %s", className, userBundle);
         initiatorAssociation.remove();
         stackAssociation.remove();
     }
 
-    private static void addDefinedClass(HostBundleState hostBundle, String className) {
-        if (hostBundle.awaitLazyActivation() && hostBundle.isAlreadyStarting() == false) {
-            Stack<HostBundleState> stack = stackAssociation.get();
+    private static void addDefinedClass(UserBundleState userBundle, String className) {
+        if (userBundle.awaitLazyActivation() && userBundle.isAlreadyStarting() == false) {
+            Stack<UserBundleState> stack = stackAssociation.get();
             if (stack == null) {
-                stack = new Stack<HostBundleState>();
+                stack = new Stack<UserBundleState>();
                 stackAssociation.set(stack);
             }
-            if (stack.contains(hostBundle) == false) {
-                LOGGER.tracef("addDefinedClass %s from: %s", className, hostBundle);
-                stack.push(hostBundle);
+            if (stack.contains(userBundle) == false) {
+                LOGGER.tracef("addDefinedClass %s from: %s", className, userBundle);
+                stack.push(userBundle);
             }
         }
     }
 
     private static void processActivationStack() {
-        Stack<HostBundleState> stack = stackAssociation.get();
+        Stack<UserBundleState> stack = stackAssociation.get();
         if (stack != null) {
             LOGGER.tracef("processActivationStack: %s", stack);
             while (stack.isEmpty() == false) {
-                HostBundleState hostBundle = stack.pop();
-                if (hostBundle.awaitLazyActivation()) {
+                UserBundleState userBundle = stack.pop();
+                if (userBundle.awaitLazyActivation()) {
                     try {
-                        hostBundle.activateLazily();
+                        userBundle.activateLazily();
                     } catch (Throwable th) {
-                        LOGGER.errorCannotActivateBundleLazily(th, hostBundle);
+                        LOGGER.errorCannotActivateBundleLazily(th, userBundle);
                     }
                 }
             }

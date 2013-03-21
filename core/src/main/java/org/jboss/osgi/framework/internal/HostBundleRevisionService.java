@@ -45,9 +45,4 @@ final class HostBundleRevisionService extends UserBundleRevisionService<HostBund
     HostBundleRevision createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException {
         return new HostBundleRevision(getFrameworkState(), deployment, metadata, storageState, serviceName, serviceTarget);
     }
-
-    @Override
-    HostBundleState createBundleState(HostBundleRevision revision) {
-        return new HostBundleState(getFrameworkState(), revision);
-    }
 }

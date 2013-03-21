@@ -31,9 +31,9 @@ import org.osgi.framework.BundleContext;
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-abstract class UserBundleContext<T extends UserBundleState<?>> extends AbstractBundleContext<T> {
+class UserBundleContext extends AbstractBundleContext<UserBundleState> {
 
-    UserBundleContext(T userBundle) {
+    UserBundleContext(UserBundleState userBundle) {
         super(userBundle);
     }
 }

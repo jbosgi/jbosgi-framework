@@ -53,7 +53,7 @@ class WeavingContext {
     private static final ThreadLocal<WeavingContext> contextAssociation = new ThreadLocal<WeavingContext>();
     private static final Set<ServiceReference<WeavingHook>> blacklist = new HashSet<ServiceReference<WeavingHook>>();
 
-    private final HostBundleState hostState;
+    private final UserBundleState hostState;
     private final List<HookRegistration> weavingHooks;
     private final List<String> weavingImports = new ArrayList<String>();
     private Map<String, ContextClass> wovenClasses = new HashMap<String, ContextClass>();
@@ -62,13 +62,13 @@ class WeavingContext {
         return contextAssociation.get();
     }
 
-    static WeavingContext create(HostBundleState hostState) {
+    static WeavingContext create(UserBundleState hostState) {
         WeavingContext context = new WeavingContext(hostState);
         contextAssociation.set(context);
         return context;
     }
 
-    private WeavingContext(HostBundleState hostState) {
+    private WeavingContext(UserBundleState hostState) {
         this.hostState = hostState;
 
         BundleManagerPlugin bundleManager = hostState.getBundleManagerPlugin();

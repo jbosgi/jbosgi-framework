@@ -209,7 +209,7 @@ public final class ModuleManagerImpl implements ModuleManager {
      */
     private ModuleIdentifier createHostModule(final HostBundleRevision hostRev, final List<BundleWire> wires) {
 
-        HostBundleState hostBundle = hostRev.getBundleState();
+        UserBundleState hostBundle = hostRev.getBundleState();
         List<RevisionContent> contentRoots = hostRev.getClassPathContent();
 
         final ModuleIdentifier identifier = getModuleIdentifier(hostRev);
@@ -447,7 +447,7 @@ public final class ModuleManagerImpl implements ModuleManager {
     /**
      * Get a path filter for packages that trigger bundle activation for a host bundle with lazy ActivationPolicy
      */
-    private PathFilter getLazyPackagesFilter(HostBundleState hostBundle) {
+    private PathFilter getLazyPackagesFilter(UserBundleState hostBundle) {
 
         // By default all packages are loaded lazily
         PathFilter result = PathFilters.acceptAll();

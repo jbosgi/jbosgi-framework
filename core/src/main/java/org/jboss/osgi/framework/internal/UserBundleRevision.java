@@ -84,8 +84,8 @@ abstract class UserBundleRevision extends BundleStateRevision {
         return (UserBundleRevision) brev;
     }
 
-    UserBundleState<?> getBundleState() {
-        return (UserBundleState<?>) getBundle();
+    UserBundleState getBundleState() {
+        return (UserBundleState) getBundle();
     }
 
     Deployment getDeployment() {

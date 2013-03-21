@@ -52,7 +52,7 @@ public final class LifecycleInterceptorServiceImpl extends AbstractLifecycleInte
         if (bundle == null)
             throw MESSAGES.illegalArgumentNull("bundle");
 
-        UserBundleState<?> userBundle = UserBundleState.assertBundleState(bundle);
+        UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
         Deployment dep = userBundle.getDeployment();
 
         InvocationContext inv = dep.getAttachment(InvocationContext.class);

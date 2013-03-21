@@ -594,7 +594,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         startWithOptions(options);
     }
 
-    private void startWithOptions(int options) throws BundleException {
+    void startWithOptions(int options) throws BundleException {
         assertStartConditions(options);
         try {
             BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
@@ -621,7 +621,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         stopWithOptions(options);
     }
 
-    private void stopWithOptions(int options) throws BundleException {
+    void stopWithOptions(int options) throws BundleException {
         assertNotUninstalled();
         try {
             BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();

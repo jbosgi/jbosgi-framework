@@ -300,7 +300,7 @@ public final class NativeCodeImpl implements NativeCode {
     }
 
     static class NativeLibraryProviderImpl implements NativeLibraryProvider {
-        private final HostBundleState hostBundle;
+        private final UserBundleState hostBundle;
         private final String libname;
         private final String libpath;
         private final URL libURL;
@@ -375,7 +375,7 @@ public final class NativeCodeImpl implements NativeCode {
             }
         }
 
-        private File getUniqueLibraryFile(HostBundleState userBundle, String libpath) {
+        private File getUniqueLibraryFile(UserBundleState userBundle, String libpath) {
             BundleStorage storagePlugin = userBundle.getFrameworkState().getBundleStorage();
             return storagePlugin.getDataFile(userBundle.getBundleId(), libpath);
         }

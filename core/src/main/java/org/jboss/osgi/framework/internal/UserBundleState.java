@@ -28,33 +28,44 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Dictionary;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.jboss.logging.Logger.Level;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.ServiceState;
+import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
+import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
+import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XWiringSupport;
 import org.jboss.osgi.resolver.spi.AbstractBundleWiring;
+import org.jboss.osgi.resolver.spi.ResolverHookException;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
@@ -65,6 +76,7 @@ import org.osgi.framework.hooks.bundle.CollisionHook;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.BundleWiring;
+import org.osgi.resource.Wire;
 
 /**
  * This is the internal implementation of a Bundle based on a user {@link Deployment}.
@@ -72,14 +84,17 @@ import org.osgi.framework.wiring.BundleWiring;
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
-abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBundleState<R> {
+class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
+    private final AtomicBoolean alreadyStarting = new AtomicBoolean();
+    private final AtomicBoolean awaitLazyActivation = new AtomicBoolean();
     private final AtomicInteger revisionIndex = new AtomicInteger();
-    private final List<R> revisions = new ArrayList<R>();
+    private final List<UserBundleRevision> revisions = new ArrayList<UserBundleRevision>();
 
     private Dictionary<String, String> headersOnUninstall;
+    private BundleActivator bundleActivator;
 
-    UserBundleState(FrameworkState frameworkState, R brev) {
+    UserBundleState(FrameworkState frameworkState, UserBundleRevision brev) {
         super(frameworkState, brev, brev.getStorageState().getBundleId());
         addBundleRevision(brev);
     }
@@ -87,10 +102,10 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
     /**
      * Assert that the given bundle is an instance of {@link UserBundleState}
      */
-    static UserBundleState<?> assertBundleState(Bundle bundle) {
+    static UserBundleState assertBundleState(Bundle bundle) {
         bundle = AbstractBundleState.assertBundleState(bundle);
         assert bundle instanceof UserBundleState : "Not an UserBundleState: " + bundle;
-        return (UserBundleState<?>) bundle;
+        return (UserBundleState) bundle;
     }
 
     @Override
@@ -107,7 +122,47 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         return getOSGiMetaData().isSingleton();
     }
 
-    abstract void initLazyActivation();
+    void initLazyActivation() {
+        if (!isFragment()) {
+            awaitLazyActivation.set(isActivationLazy());
+        }
+    }
+
+    boolean isActivationLazy() {
+        ActivationPolicyMetaData activationPolicy = getActivationPolicy();
+        String policyType = (activationPolicy != null ? activationPolicy.getType() : null);
+        return Constants.ACTIVATION_LAZY.equals(policyType);
+    }
+
+    ActivationPolicyMetaData getActivationPolicy() {
+        return getOSGiMetaData().getBundleActivationPolicy();
+    }
+
+    boolean awaitLazyActivation() {
+        return awaitLazyActivation.get();
+    }
+
+    void activateLazily() throws BundleException {
+        if (awaitLazyActivation.getAndSet(false)) {
+            if (startLevelValidForStart() == true) {
+                int options = START_TRANSIENT;
+                if (isBundleActivationPolicyUsed()) {
+                    options |= START_ACTIVATION_POLICY;
+                }
+                LOGGER.debugf("Lazy activation of: %s", this);
+                startInternal(options);
+            }
+        }
+    }
+
+    void setBundleActivationPolicyUsed(boolean usePolicy) {
+        StorageState storageState = getStorageState();
+        storageState.setBundleActivationPolicyUsed(usePolicy);
+    }
+
+    boolean isAlreadyStarting() {
+        return alreadyStarting.get();
+    }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -157,11 +212,16 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
     }
 
     @Override
-    void addBundleRevision(R rev) {
+    void addBundleRevision(UserBundleRevision brev) {
         synchronized (revisions) {
-            super.addBundleRevision(rev);
+            super.addBundleRevision(brev);
+            if (!isFragment()) {
+                ModuleManager moduleManager = getFrameworkState().getModuleManager();
+                ModuleIdentifier moduleIdentifier = moduleManager.getModuleIdentifier(brev);
+                brev.addAttachment(ModuleIdentifier.class, moduleIdentifier);
+            }
             revisionIndex.incrementAndGet();
-            revisions.add(0, rev);
+            revisions.add(0, brev);
         }
     }
 
@@ -179,20 +239,18 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
 
     void clearOldRevisions() {
         synchronized (revisions) {
-            R rev = getBundleRevision();
+            UserBundleRevision rev = getBundleRevision();
             revisions.clear();
             revisions.add(rev);
         }
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    R getBundleRevisionById(int revisionId) {
+    UserBundleRevision getBundleRevisionById(int revisionId) {
         synchronized (revisions) {
-            for (XBundleRevision rev : revisions) {
-                R stateRev = (R) rev;
-                if (stateRev.getRevisionId() == revisionId) {
-                    return stateRev;
+            for (UserBundleRevision rev : revisions) {
+                if (rev.getRevisionId() == revisionId) {
+                    return rev;
                 }
             }
             return null;
@@ -232,7 +290,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
 
         changeState(Bundle.INSTALLED, BundleEvent.UNRESOLVED);
 
-        R brev = getBundleRevision();
+        UserBundleRevision brev = getBundleRevision();
         try {
             // If the Framework is unable to install the updated version of this bundle, the original
             // version of this bundle must be restored and a BundleException must be thrown after
@@ -348,7 +406,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
 
         // Remove the revisions from the environment
         ModuleManager moduleManager = getFrameworkState().getModuleManager();
-        R currentRev = getBundleRevision();
+        UserBundleRevision currentRev = getBundleRevision();
         for (XBundleRevision brev : getAllBundleRevisions()) {
 
             UserBundleRevision userRev = UserBundleRevision.assertBundleRevision(brev);
@@ -376,6 +434,8 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         }
 
         clearOldRevisions();
+        awaitLazyActivation.set(false);
+        revisionIndex.set(1);
 
         FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
         eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
@@ -455,7 +515,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
                     }
                 }
                 if (bundleInUse == false) {
-                    UserBundleState<?> auxUser = UserBundleState.assertBundleState(auxState);
+                    UserBundleState auxUser = UserBundleState.assertBundleState(auxState);
                     getBundleManagerPlugin().unresolveBundle(auxUser);
                     getBundleManagerPlugin().removeBundle(auxUser, options);
                 }
@@ -466,6 +526,346 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         fireBundleEvent(BundleEvent.UNINSTALLED);
 
         LOGGER.infoBundleUninstalled(this);
+    }
+
+    @Override
+    public boolean isFragment() {
+        return getBundleRevision().isFragment();
+    }
+
+    @Override
+    UserBundleContext createContextInternal() {
+        return new UserBundleContext(this);
+    }
+
+    @Override
+    void startWithOptions(int options) throws BundleException {
+        if (isFragment())
+            throw MESSAGES.cannotStartFragment();
+        else
+            super.startWithOptions(options);
+    }
+
+    @Override
+    void startInternal(int options) throws BundleException {
+
+        // #1 If this bundle is in the process of being activated or deactivated
+        // then this method must wait for activation or deactivation to complete before continuing.
+        // If this does not occur in a reasonable time, a BundleException is thrown
+        LockContext lockContext = null;
+        LockManager lockManager = getFrameworkState().getLockManager();
+        try {
+            lockContext = lockManager.lockItems(Method.START, this);
+
+            // We got the permit, now start
+            try {
+                alreadyStarting.set(true);
+                startInternalNow(options);
+            } finally {
+                alreadyStarting.set(false);
+            }
+
+        } finally {
+            lockManager.unlockItems(lockContext);
+        }
+    }
+
+    private void startInternalNow(int options) throws BundleException {
+
+        // #2 If this bundle's state is ACTIVE then this method returns immediately.
+        if (getState() == ACTIVE)
+            return;
+
+        // #3 Set this bundle's autostart setting
+        persistAutoStartSettings(options);
+
+        // If the Framework's current start level is less than this bundle's start level
+        if (startLevelValidForStart() == false) {
+            StartLevelSupport plugin = getFrameworkState().getStartLevelSupport();
+            int frameworkState = getBundleManager().getSystemBundle().getState();
+            Level level = (plugin.isFrameworkStartLevelChanging() || frameworkState != Bundle.ACTIVE) ? Level.DEBUG : Level.INFO;
+            LOGGER.log(level, MESSAGES.bundleStartLevelNotValid(getBundleStartLevel(), plugin.getFrameworkStartLevel(), this));
+            return;
+        }
+
+        LOGGER.debugf("Starting bundle: %s", this);
+
+        // #4 If this bundle's state is not RESOLVED, an attempt is made to resolve this bundle.
+        // If the Framework cannot resolve this bundle, a BundleException is thrown.
+        if (ensureResolved(true) == false) {
+            Exception resex = getLastResolverException();
+            int type = (resex instanceof ResolverHookException ? BundleException.REJECTED_BY_HOOK : BundleException.RESOLVE_ERROR);
+            throw new BundleException(MESSAGES.cannotResolveBundle(this), type, resex);
+        }
+
+        // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
+        if (getBundleContextInternal() == null)
+            createBundleContext();
+
+        // #5 If the START_ACTIVATION_POLICY option is set and this bundle's declared activation policy is lazy
+        boolean useActivationPolicy = (options & START_ACTIVATION_POLICY) != 0;
+        if (awaitLazyActivation.get() == true && useActivationPolicy == true) {
+
+            // #5.1 If this bundle's state is STARTING then this method returns immediately.
+            if (getState() == STARTING)
+                return;
+
+            // #5.2 This bundle's state is set to STARTING.
+            // #5.3 A bundle event of type BundleEvent.LAZY_ACTIVATION is fired
+            changeState(STARTING, BundleEvent.LAZY_ACTIVATION);
+            return;
+        }
+
+        // #6 This bundle's state is set to STARTING.
+        // #7 A bundle event of type BundleEvent.STARTING is fired.
+        try {
+            changeState(Bundle.STARTING);
+        } catch (LifecycleInterceptorException ex) {
+            throw MESSAGES.cannotTransitionToStarting(ex, this);
+        }
+
+        // #8 The BundleActivator.start(BundleContext) method of this bundle is called
+        String className = getOSGiMetaData().getBundleActivator();
+        if (className != null) {
+            try {
+                bundleActivator = getDeployment().getAttachment(BundleActivator.class);
+                if (bundleActivator == null) {
+                    Object result = loadClass(className).newInstance();
+                    if (result instanceof BundleActivator) {
+                        bundleActivator = (BundleActivator) result;
+                    } else {
+                        throw MESSAGES.invalidBundleActivator(className);
+                    }
+                }
+                if (bundleActivator != null) {
+                    bundleActivator.start(getBundleContext());
+                }
+            }
+
+            // If the BundleActivator is invalid or throws an exception then
+            catch (Throwable th) {
+                // #8.1 This bundle's state is set to STOPPING
+                // #8.2 A bundle event of type BundleEvent.STOPPING is fired
+                changeState(Bundle.STOPPING);
+
+                // #8.3 Any services registered by this bundle must be unregistered.
+                // #8.4 Any services used by this bundle must be released.
+                // #8.5 Any listeners registered by this bundle must be removed.
+                removeServicesAndListeners();
+
+                // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
+                destroyBundleContext();
+
+                // #8.6 This bundle's state is set to RESOLVED
+                // #8.7 A bundle event of type BundleEvent.STOPPED is fired
+                changeState(Bundle.RESOLVED);
+
+                // #8.8 A BundleException is then thrown
+                if (th instanceof BundleException)
+                    throw (BundleException) th;
+
+                throw new BundleException(MESSAGES.cannotStartBundle(this), BundleException.ACTIVATOR_ERROR, th);
+            }
+        }
+
+        // #9 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while
+        // the BundleActivator.start method was running, a BundleException is thrown
+        if (getState() == Bundle.UNINSTALLED)
+            throw MESSAGES.uninstalledDuringActivatorStart(this);
+
+        // #10 This bundle's state is set to ACTIVE.
+        // #11 A bundle event of type BundleEvent.STARTED is fired
+        changeState(Bundle.ACTIVE);
+
+        LOGGER.infoBundleStarted(this);
+    }
+
+    @Override
+    void stopWithOptions(int options) throws BundleException {
+        if (isFragment())
+            throw MESSAGES.cannotStopFragment();
+        else
+            super.stopWithOptions(options);
+    }
+
+    @Override
+    void stopInternal(int options) throws BundleException {
+
+        // #2 If this bundle is in the process of being activated or deactivated
+        // then this method must wait for activation or deactivation to complete before continuing.
+        // If this does not occur in a reasonable time, a BundleException is thrown to indicate this bundle was unable to be
+        // stopped
+        LockContext lockContext = null;
+        LockManager lockManager = getFrameworkState().getLockManager();
+        try {
+            lockContext = lockManager.lockItems(Method.STOP, this);
+
+            // We got the permit, now stop
+            stopInternalNow(options);
+
+        } finally {
+            lockManager.unlockItems(lockContext);
+        }
+    }
+
+    Set<UserBundleState> getDependentBundles() {
+        Set<UserBundleState> result = new HashSet<UserBundleState>();
+        if (isResolved() == true) {
+            BundleWiring wiring = getBundleRevision().getWiring();
+            List<Wire> wires = wiring.getRequiredResourceWires(null);
+            for (Wire wire : wires) {
+                BundleRevision brev = (BundleRevision) wire.getProvider();
+                Bundle bundle = brev.getBundle();
+                if (bundle instanceof UserBundleState)
+                    result.add((UserBundleState) bundle);
+            }
+        }
+        return result;
+    }
+
+    private void stopInternalNow(int options) throws BundleException {
+
+        int priorState = getState();
+
+        LockContext lockContext = null;
+        LockManager lockManager = getFrameworkState().getLockManager();
+        try {
+            LockManager.LockableItem[] lockItems = new LockableItem[] { this };
+            lockContext = lockManager.lockItems(Method.STOP, lockItems);
+
+            // #3 If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to Stopped.
+            // When the Framework is restarted and this bundle's autostart setting is Stopped, this bundle must not be
+            // automatically started.
+            if ((options & Bundle.STOP_TRANSIENT) == 0) {
+                setPersistentlyStarted(false);
+                setBundleActivationPolicyUsed(false);
+            }
+
+            // #4 If this bundle's state is not STARTING or ACTIVE then this method returns immediately
+            if (priorState != Bundle.STARTING && priorState != Bundle.ACTIVE)
+                return;
+
+            // #5 This bundle's state is set to STOPPING
+            // #6 A bundle event of type BundleEvent.STOPPING is fired
+            changeState(Bundle.STOPPING);
+        } finally {
+            lockManager.unlockItems(lockContext);
+        }
+
+        // #7 If this bundle's state was ACTIVE prior to setting the state to STOPPING,
+        // the BundleActivator.stop(org.osgi.framework.BundleContext) method of this bundle's BundleActivator,
+        // if one is specified, is called. If that method throws an exception, this method must continue to stop
+        // this bundle and a BundleException must be thrown after completion of the remaining steps.
+        Throwable rethrow = null;
+        if (priorState == Bundle.ACTIVE) {
+            if (bundleActivator != null) {
+                try {
+                    bundleActivator.stop(getBundleContext());
+                } catch (Throwable t) {
+                    rethrow = t;
+                }
+            }
+        }
+
+        // #8 Any services registered by this bundle must be unregistered.
+        // #9 Any services used by this bundle must be released.
+        // #10 Any listeners registered by this bundle must be removed.
+        removeServicesAndListeners();
+
+        // #11 If this bundle's state is UNINSTALLED, because this bundle was uninstalled while the
+        // BundleActivator.stop method was running, a BundleException must be thrown
+        if (getState() == Bundle.UNINSTALLED)
+            throw MESSAGES.uninstalledDuringActivatorStop(this);
+
+        // The BundleContext object is valid during STARTING, STOPPING, and ACTIVE
+        destroyBundleContext();
+
+        // #12 This bundle's state is set to RESOLVED
+        // #13 A bundle event of type BundleEvent.STOPPED is fired
+        changeState(Bundle.RESOLVED, BundleEvent.STOPPED);
+
+        if (rethrow != null) {
+            throw MESSAGES.cannotStopBundle(rethrow, this);
+        } else {
+            LOGGER.infoBundleStopped(this);
+        }
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    void assertStartConditions(int options) throws BundleException {
+        super.assertStartConditions(options);
+
+        // The service platform may run this bundle if any of the execution environments named in the
+        // Bundle-RequiredExecutionEnvironment header matches one of the execution environments it implements.
+        List<String> requiredEnvs = getOSGiMetaData().getRequiredExecutionEnvironment();
+        if (requiredEnvs != null) {
+            boolean foundSupportedEnv = false;
+            String frameworkEnvProp = (String) getBundleManager().getProperty(Constants.FRAMEWORK_EXECUTIONENVIRONMENT);
+            List<String> availableEnvs = Arrays.asList(frameworkEnvProp.split("[,\\s]+"));
+            for (String aux : requiredEnvs) {
+                if (availableEnvs.contains(aux)) {
+                    foundSupportedEnv = true;
+                    break;
+                }
+            }
+            if (foundSupportedEnv == false)
+                throw MESSAGES.unsupportedExecutionEnvironment(requiredEnvs, availableEnvs);
+        }
+
+        // If the Framework's current start level is less than this bundle's start level
+        if (startLevelValidForStart() == false) {
+            // If the START_TRANSIENT option is set, then a BundleException is thrown
+            // indicating this bundle cannot be started due to the Framework's current start level
+            if ((options & START_TRANSIENT) != 0)
+                throw MESSAGES.cannotStartBundleDueToStartLevel();
+
+            // Set this bundle's autostart setting
+            persistAutoStartSettings(options);
+        }
+    }
+
+    private void persistAutoStartSettings(int options) {
+        // The Framework must set this bundle's persistent autostart setting to
+        // Started with declared activation if the START_ACTIVATION_POLICY option is set or
+        // Started with eager activation if not set.
+        if ((options & START_TRANSIENT) == 0) {
+            setPersistentlyStarted(true);
+            boolean activationPolicyUsed = (options & START_ACTIVATION_POLICY) != 0;
+            setBundleActivationPolicyUsed(activationPolicyUsed);
+        }
+    }
+
+    private int getBundleStartLevel() {
+        StartLevelSupport startLevelPlugin = getFrameworkState().getStartLevelSupport();
+        return startLevelPlugin.getBundleStartLevel(this);
+    }
+
+    void setPersistentlyStarted(boolean started) {
+        StartLevelSupport startLevelPlugin = getFrameworkState().getStartLevelSupport();
+        startLevelPlugin.setBundlePersistentlyStarted(this, started);
+    }
+
+    private boolean startLevelValidForStart() {
+        StartLevelSupport startLevelPlugin = getFrameworkState().getStartLevelSupport();
+        return startLevelPlugin.getBundleStartLevel(this) <= startLevelPlugin.getFrameworkStartLevel();
+    }
+
+    private boolean isBundleActivationPolicyUsed() {
+        StorageState storageState = getStorageState();
+        return storageState.isBundleActivationPolicyUsed();
+    }
+
+    private void removeServicesAndListeners() {
+        // Any services registered by this bundle must be unregistered.
+        // Any services used by this bundle must be released.
+        for (ServiceState<?> serviceState : getRegisteredServicesInternal()) {
+            serviceState.unregisterInternal();
+        }
+
+        // Any listeners registered by this bundle must be removed
+        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
+        eventsPlugin.removeBundleListeners(this);
     }
 
     private boolean hasActiveWiresWhileUninstalling() {

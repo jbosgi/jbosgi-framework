@@ -45,9 +45,4 @@ final class FragmentBundleRevisionService extends UserBundleRevisionService<Frag
     FragmentBundleRevision createBundleRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException {
         return new FragmentBundleRevision(getFrameworkState(), dep, metadata, storageState, serviceName, serviceTarget);
     }
-
-    @Override
-    FragmentBundleState createBundleState(FragmentBundleRevision revision) {
-        return new FragmentBundleState(getFrameworkState(), revision);
-    }
 }

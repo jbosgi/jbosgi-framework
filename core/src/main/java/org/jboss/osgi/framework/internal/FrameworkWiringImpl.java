@@ -126,21 +126,23 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                 Set<XBundle> refreshBundles = new HashSet<XBundle>();
                 Set<XBundle> uninstallBundles = new HashSet<XBundle>();
 
-                for (Bundle auxBundle : dependencyClosure) {
+                for (Bundle auxBundle : bundlesToRefresh) {
                     XBundle bundle = (XBundle) auxBundle;
-                    if (bundle.getState() == Bundle.UNINSTALLED) {
+                    if (bundle.getState() == Bundle.UNINSTALLED)
                         uninstallBundles.add(bundle);
-                    } else if (bundle.isResolved() == true) {
+                    else if (bundle.isResolved() == true)
                         refreshBundles.add(bundle);
-                    }
+                }
+
+                for (Bundle bundle : dependencyClosure) {
                     int state = bundle.getState();
                     if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
-                        stopBundles.add(bundle);
+                        stopBundles.add((XBundle) bundle);
                     }
                 }
 
                 List<Bundle> stopList = new ArrayList<Bundle>(stopBundles);
-                List<Bundle> refreshList = new ArrayList<Bundle>(refreshBundles);
+                List<Bundle> refreshList = new ArrayList<Bundle>(dependencyClosure);
 
                 BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator();
                 Collections.sort(stopList, startLevelComparator);
@@ -157,7 +159,7 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                 BundleManagerPlugin bundleManagerPlugin = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
                 for (XBundle bundle : uninstallBundles) {
                     if (bundle instanceof UserBundleState) {
-                        bundleManagerPlugin.removeBundle((UserBundleState<?>) bundle, 0);
+                        bundleManagerPlugin.removeBundle((UserBundleState) bundle, 0);
                     } else {
                         XBundleRevision current = bundle.getBundleRevision();
                         for (XBundleRevision brev : bundle.getAllBundleRevisions()) {
@@ -166,12 +168,13 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                             }
                         }
                     }
+                    refreshList.remove(bundle);
                 }
 
                 for (Bundle bundle : refreshList) {
                     try {
                         if (bundle instanceof UserBundleState) {
-                            ((UserBundleState<?>) bundle).refresh();
+                            ((UserBundleState) bundle).refresh();
                         } else {
                             // nothing to do for adapted modules
                         }
@@ -307,7 +310,7 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
         public int compare(Bundle o1, Bundle o2) {
             int sl1 = o1.adapt(BundleStartLevel.class).getStartLevel();
             int sl2 = o2.adapt(BundleStartLevel.class).getStartLevel();
-            return sl1 < sl2 ? -1 : (sl1 == sl2 ? 0 : 1);
+            return sl1 - sl2 != 0 ? sl1 - sl2 : (int)(o1.getBundleId() - o2.getBundleId());
         }
     }
 }

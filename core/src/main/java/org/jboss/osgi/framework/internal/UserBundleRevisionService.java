@@ -99,7 +99,6 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public void start(StartContext startContext) throws StartException {
         StorageState storageState = null;
         try {
@@ -142,8 +141,8 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
 
     @Override
     public void stop(StopContext context) {
-        XBundle bundle = getBundleRevision().getBundle();
-        if (bundle.getState() != Bundle.UNINSTALLED) {
+        XBundle bundle = bundleRevision.getBundle();
+        if (bundle.getBundleRevision() == bundleRevision && bundle.getState() != Bundle.UNINSTALLED) {
             try {
                 BundleManagerPlugin bundleManager = getBundleManager();
                 ServiceContainer serviceContainer = bundleManager.getServiceContainer();
@@ -160,7 +159,9 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
 
     abstract R createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException;
 
-    abstract XBundle createBundleState(R revision) throws BundleException;
+    UserBundleState createBundleState(UserBundleRevision revision) {
+        return new UserBundleState(getFrameworkState(), revision);
+    }
 
     private StorageState createStorageState(Deployment dep, RevisionIdentifier revIdentifier) throws BundleException {
         // The storage state exists when we re-create the bundle from persistent storage

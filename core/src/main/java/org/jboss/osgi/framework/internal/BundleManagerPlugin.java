@@ -565,7 +565,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         }
     }
 
-    void unresolveBundle(UserBundleState<?> userBundle) {
+    void unresolveBundle(UserBundleState userBundle) {
         LOGGER.tracef("Unresolving bundle: %s", userBundle);
         ModuleManager moduleManager = getFrameworkState().getModuleManager();
         for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
@@ -577,7 +577,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         }
     }
 
-    void removeBundle(UserBundleState<?> userBundle, int options) {
+    void removeBundle(UserBundleState userBundle, int options) {
         LOGGER.tracef("Start removing bundle: %s", userBundle);
 
         if ((options & Bundle.STOP_TRANSIENT) == 0) {

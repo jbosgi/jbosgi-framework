@@ -1,4 +1,5 @@
 package org.jboss.test.osgi.framework.bundle;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -53,7 +54,6 @@ import org.jboss.test.osgi.framework.bundle.update.stopexc.BundleStopExActivator
 import org.jboss.test.osgi.framework.fragments.fragA.FragBeanA;
 import org.jboss.test.osgi.framework.fragments.hostA.HostAActivator;
 import org.jboss.test.osgi.framework.fragments.subA.SubBeanA;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
@@ -333,7 +333,6 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
     }
 
     @Test
-    @Ignore
     public void testUpdateHostToFragment() throws Exception {
         Bundle bundleA = installBundle(getHostA());
         try {
@@ -345,7 +344,7 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
             assertEquals(0, brev.getTypes());
 
             bundleA.update(toInputStream(getFragmentA()));
-            assertSame(brevs, bundleA.adapt(BundleRevisions.class));
+            brevs = bundleA.adapt(BundleRevisions.class);
             Assert.assertNotSame(brev, brevs.getRevisions().get(0));
             brev = brevs.getRevisions().get(0);
             assertEquals(BundleRevision.TYPE_FRAGMENT, brev.getTypes());

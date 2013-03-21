@@ -35,11 +35,11 @@ import org.jboss.osgi.framework.spi.BundleReferenceClassLoader;
  * @author thomas.diesler@jboss.com
  * @since 16-Dec-2010
  */
-final class HostBundleClassLoader extends BundleReferenceClassLoader<HostBundleState> {
+final class HostBundleClassLoader extends BundleReferenceClassLoader<UserBundleState> {
 
     private final PathFilter lazyFilter;
 
-    private HostBundleClassLoader(Configuration configuration, HostBundleState bundleState, PathFilter lazyFilter) {
+    private HostBundleClassLoader(Configuration configuration, UserBundleState bundleState, PathFilter lazyFilter) {
         super(configuration, bundleState);
         this.lazyFilter = lazyFilter;
     }
@@ -91,10 +91,10 @@ final class HostBundleClassLoader extends BundleReferenceClassLoader<HostBundleS
 
     static class Factory implements ModuleClassLoaderFactory {
 
-        private HostBundleState bundleState;
+        private UserBundleState bundleState;
         private PathFilter lazyFilter;
 
-        public Factory(HostBundleState bundleState, PathFilter lazyFilter) {
+        public Factory(UserBundleState bundleState, PathFilter lazyFilter) {
             this.bundleState = bundleState;
             this.lazyFilter = lazyFilter;
         }

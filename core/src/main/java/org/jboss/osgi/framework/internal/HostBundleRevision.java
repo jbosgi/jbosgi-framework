@@ -50,7 +50,7 @@ import org.osgi.framework.wiring.BundleRevision;
 /**
  * A {@link HostBundleRevision} is responsible for the classloading and resource loading of a bundle.
  *
- * Every time a bundle is updated a new {@link HostBundleRevision} is created and referenced from the {@link HostBundleState}.
+ * Every time a bundle is updated a new {@link HostBundleRevision} is created and referenced from the {@link UserBundleState}.
  *
  * @author thomas.diesler@jboss.com
  * @author <a href="david@redhat.com">David Bosschaert</a>
@@ -71,8 +71,8 @@ final class HostBundleRevision extends UserBundleRevision {
     }
 
     @Override
-    HostBundleState getBundleState() {
-        return (HostBundleState) getBundle();
+    UserBundleState getBundleState() {
+        return (UserBundleState) getBundle();
     }
 
     @Override
@@ -116,6 +116,17 @@ final class HostBundleRevision extends UserBundleRevision {
 
     @Override
     Class<?> loadClass(String className) throws ClassNotFoundException {
+        LazyActivationTracker.startTracking(getBundleState(), className);
+        try {
+            Class<?> loadedClass = loadClassInternal(className);
+            LazyActivationTracker.processLoadedClass(loadedClass);
+            return loadedClass;
+        } finally {
+            LazyActivationTracker.stopTracking(getBundleState(), className);
+        }
+    }
+
+    private Class<?> loadClassInternal(String className) throws ClassNotFoundException {
 
         // If this bundle's state is INSTALLED, this method must attempt to resolve this bundle
         if (getBundleState().ensureResolved(true) == false)

@@ -352,7 +352,7 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
             if (bundle.getBundleId() > 0) {
                 XBundle bundleState = (XBundle) bundle;
                 level = !bundleState.isFragment() ? getInitialBundleStartLevel() : 0;
-                if (bundle instanceof HostBundleState) {
+                if (bundle instanceof UserBundleState) {
                     XBundleRevision brev = bundleState.getBundleRevision();
                     StorageState storageState = ((HostBundleRevision) brev).getStorageState();
                     level = storageState.getStartLevel();
@@ -366,7 +366,7 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
 
         void setLevel(int level) {
             this.level = level;
-            if (bundle instanceof HostBundleState) {
+            if (bundle instanceof UserBundleState) {
                 XBundleRevision brev = ((XBundle)bundle).getBundleRevision();
                 StorageState storageState = ((HostBundleRevision) brev).getStorageState();
                 storageState.setStartLevel(level);
@@ -379,7 +379,7 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
 
         void setStarted(boolean started) {
             this.started = started;
-            if (bundle instanceof HostBundleState) {
+            if (bundle instanceof UserBundleState) {
                 XBundleRevision brev = ((XBundle)bundle).getBundleRevision();
                 StorageState storageState = ((HostBundleRevision) brev).getStorageState();
                 storageState.setPersistentlyStarted(started);
