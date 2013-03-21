@@ -21,17 +21,19 @@
  */
 package org.jboss.osgi.framework.internal;
 
+
+import org.jboss.osgi.deployment.deployer.Deployment;
 import org.osgi.framework.BundleContext;
 
 /**
- * A fragment {@link BundleContext}.
+ * A {@link BundleContext} backed up by a {@link Deployment}.
  *
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-final class FragmentBundleContext extends UserBundleContext<FragmentBundleState> {
+class FragmentBundleContext extends UserBundleContext<FragmentBundleState> {
 
-    FragmentBundleContext(FragmentBundleState fragmentBundle) {
-        super(fragmentBundle);
+    FragmentBundleContext(FragmentBundleState userBundle) {
+        super(userBundle);
     }
 }

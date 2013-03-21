@@ -31,6 +31,11 @@ import java.util.Enumeration;
 import java.util.List;
 
 import org.jboss.modules.Module;
+import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceTarget;
+import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -49,11 +54,15 @@ import org.osgi.framework.wiring.BundleRevision;
 abstract class UserBundleRevision extends BundleStateRevision {
 
     private final Deployment deployment;
+    private final ServiceTarget serviceTarget;
+    private final ServiceName serviceName;
     private final List<RevisionContent> classPathContent;
     private final EntriesProvider entriesProvider;
 
-    UserBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
+    UserBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException {
         super(frameworkState, metadata, storageState);
+        this.serviceTarget = serviceTarget;
+        this.serviceName = serviceName;
         this.deployment = dep;
 
         if (dep.getRoot() != null) {
@@ -83,6 +92,14 @@ abstract class UserBundleRevision extends BundleStateRevision {
         return deployment;
     }
 
+    ServiceName getServiceName() {
+        return serviceName;
+    }
+
+    ServiceTarget getServiceTarget() {
+        return serviceTarget;
+    }
+
     @Override
     String getLocation() {
         return deployment.getLocation();
@@ -108,6 +125,25 @@ abstract class UserBundleRevision extends BundleStateRevision {
     }
 
     abstract void refreshRevision() throws BundleException;
+
+    void removeBundleRevisionService() {
+        LOGGER.debugf("Remove service for: %s", this);
+        ServiceName serviceName = getServiceName();
+        ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
+        ServiceController<?> controller = serviceContainer.getService(serviceName);
+        if (controller == null) {
+            LOGGER.debugf("Cannot set mode %s on non-existing service: %s", Mode.REMOVE, serviceName);
+        } else {
+            LOGGER.tracef("Set mode %s on service: %s", Mode.REMOVE, controller.getName());
+            try {
+                controller.setMode(Mode.REMOVE);
+            } catch (IllegalArgumentException rte) {
+                // [MSC-105] Cannot determine whether container is shutting down
+                if (rte.getMessage().equals("Container is shutting down") == false)
+                    throw rte;
+            }
+        }
+    }
 
     @Override
     void close() {

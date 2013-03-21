@@ -72,7 +72,7 @@ public final class EnvironmentImpl extends AbstractEnvironment implements XEnvir
         LockContext lockContext = null;
         try {
             FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-            lockContext = lockManager.lockItems(Method.INSTALL, getLockableItems(wireLock, resources));
+            lockContext = lockManager.lockItems(Method.INSTALL, getLockableItems(wireLock));
             super.installResources(resources);
         } finally {
             lockManager.unlockItems(lockContext);

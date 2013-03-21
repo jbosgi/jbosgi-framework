@@ -28,18 +28,19 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
+import org.jboss.osgi.resolver.XBundleRevision;
 
 /**
- * Represents a state of a bundle.
+ * Service associated with an {@link XBundleRevision}
  *
  * @author thomas.diesler@jboss.com
- * @since 04-Apr-2011
+ * @since 21-Mar-2013
  */
-abstract class AbstractBundleService<T extends AbstractBundleState<?>> implements Service<T> {
+abstract class AbstractBundleRevisionService<T extends XBundleRevision> implements Service<T> {
 
     private final FrameworkState frameworkState;
 
-    AbstractBundleService(FrameworkState frameworkState) {
+    AbstractBundleRevisionService(FrameworkState frameworkState) {
         this.frameworkState = frameworkState;
     }
 
@@ -65,8 +66,8 @@ abstract class AbstractBundleService<T extends AbstractBundleState<?>> implement
 
     @Override
     public T getValue() {
-        return getBundleState();
+        return getBundleRevision();
     }
 
-    abstract T getBundleState();
+    abstract T getBundleRevision();
 }

@@ -32,14 +32,11 @@ import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
@@ -58,6 +55,7 @@ import org.jboss.osgi.resolver.spi.AbstractBundleWiring;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -76,16 +74,13 @@ import org.osgi.framework.wiring.BundleWiring;
  */
 abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBundleState<R> {
 
+    private final AtomicInteger revisionIndex = new AtomicInteger();
     private final List<R> revisions = new ArrayList<R>();
-    private final ServiceTarget serviceTarget;
-    private final ServiceName serviceName;
 
     private Dictionary<String, String> headersOnUninstall;
 
-    UserBundleState(FrameworkState frameworkState, R brev, ServiceName serviceName, ServiceTarget serviceTarget) {
+    UserBundleState(FrameworkState frameworkState, R brev) {
         super(frameworkState, brev, brev.getStorageState().getBundleId());
-        this.serviceTarget = serviceTarget;
-        this.serviceName = serviceName;
         addBundleRevision(brev);
     }
 
@@ -112,13 +107,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
         return getOSGiMetaData().isSingleton();
     }
 
-    ServiceTarget getServiceTarget() {
-        return serviceTarget;
-    }
-
     abstract void initLazyActivation();
-
-    abstract R createUpdateRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -140,11 +129,6 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             return headersOnUninstall;
 
         return super.getHeaders(locale);
-    }
-
-    @Override
-    ServiceName getServiceName() {
-        return serviceName;
     }
 
     @Override
@@ -176,13 +160,13 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
     void addBundleRevision(R rev) {
         synchronized (revisions) {
             super.addBundleRevision(rev);
+            revisionIndex.incrementAndGet();
             revisions.add(0, rev);
         }
     }
 
-    @Override
-    public R getBundleRevision() {
-        return super.getBundleRevision();
+    int getRevisionIndex() {
+        return revisionIndex.get();
     }
 
     @Override
@@ -231,6 +215,7 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
     }
 
     private void updateInternalNow(InputStream input) throws BundleException {
+        LOGGER.debugf("Updating bundle: %s", this);
 
         boolean restart = false;
         if (isFragment() == false) {
@@ -322,16 +307,16 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
             dep.addAttachment(OSGiMetaData.class, metadata);
             dep.addAttachment(Bundle.class, this);
+            dep.setBundleUpdate(true);
 
             // Check for symbolic name, version uniqueness
             String symbolicName = metadata.getBundleSymbolicName();
             Version bundleVersion = metadata.getBundleVersion();
             getBundleManagerPlugin().checkUniqunessPolicy(this, symbolicName, bundleVersion, CollisionHook.UPDATING);
 
-            R updateRevision = createUpdateRevision(dep, metadata, storageState);
-            addBundleRevision(updateRevision);
-            XEnvironment env = getFrameworkState().getEnvironment();
-            env.installResources(updateRevision);
+            BundleLifecycle bundleLifecycle = getFrameworkState().getCoreServices().getBundleLifecycle();
+            BundleContext syscontext = getFrameworkState().getSystemBundle().getBundleContext();
+            bundleLifecycle.installBundleRevision(syscontext, dep).getValue();
         } catch (BundleException ex) {
             storagePlugin.deleteStorageState(storageState);
             throw ex;
@@ -413,28 +398,6 @@ abstract class UserBundleState<R extends UserBundleRevision> extends AbstractBun
             uninstallInternalNow(options);
         } finally {
             lockManager.unlockItems(lockContext);
-        }
-
-        // Remove the Bundle INSTALL service after we changed the state
-        LOGGER.debugf("Remove service for: %s", this);
-        removeBundleInstalledService();
-    }
-
-    private void removeBundleInstalledService() {
-        ServiceName serviceName = getServiceName();
-        ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
-        ServiceController<?> controller = serviceContainer.getService(serviceName);
-        if (controller == null) {
-            LOGGER.debugf("Cannot set mode %s on non-existing service: %s", Mode.REMOVE, serviceName);
-        } else {
-            LOGGER.tracef("Set mode %s on service: %s", Mode.REMOVE, controller.getName());
-            try {
-                controller.setMode(Mode.REMOVE);
-            } catch (IllegalArgumentException rte) {
-                // [MSC-105] Cannot determine whether container is shutting down
-                if (rte.getMessage().equals("Container is shutting down") == false)
-                    throw rte;
-            }
         }
     }
 

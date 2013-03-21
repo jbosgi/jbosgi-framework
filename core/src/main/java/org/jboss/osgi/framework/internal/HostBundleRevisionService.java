@@ -35,19 +35,19 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 06-Apr-2011
  */
-final class HostBundleInstalledService extends UserBundleInstalledService<HostBundleState, HostBundleRevision> {
+final class HostBundleRevisionService extends UserBundleRevisionService<HostBundleRevision> {
 
-    HostBundleInstalledService(FrameworkState frameworkState, BundleContext sourceContext, Deployment dep) throws BundleException {
+    HostBundleRevisionService(FrameworkState frameworkState, BundleContext sourceContext, Deployment dep) throws BundleException {
         super(frameworkState, sourceContext, dep);
     }
 
     @Override
-    HostBundleRevision createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState) throws BundleException {
-        return new HostBundleRevision(getFrameworkState(), deployment, metadata, storageState);
+    HostBundleRevision createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException {
+        return new HostBundleRevision(getFrameworkState(), deployment, metadata, storageState, serviceName, serviceTarget);
     }
 
     @Override
-    HostBundleState createBundleState(HostBundleRevision revision, ServiceName serviceName, ServiceTarget serviceTarget) {
-        return new HostBundleState(getFrameworkState(), revision, serviceName, serviceTarget);
+    HostBundleState createBundleState(HostBundleRevision revision) {
+        return new HostBundleState(getFrameworkState(), revision);
     }
 }

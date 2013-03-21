@@ -32,9 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger.Level;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.LockManager;
@@ -46,7 +43,6 @@ import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
-import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.spi.ResolverHookException;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -70,8 +66,8 @@ final class HostBundleState extends UserBundleState<HostBundleRevision> {
     private final AtomicBoolean awaitLazyActivation = new AtomicBoolean();
     BundleActivator bundleActivator;
 
-    HostBundleState(FrameworkState frameworkState, HostBundleRevision brev, ServiceName serviceName, ServiceTarget serviceTarget) {
-        super(frameworkState, brev, serviceName, serviceTarget);
+    HostBundleState(FrameworkState frameworkState, HostBundleRevision brev) {
+        super(frameworkState, brev);
     }
 
     static HostBundleState assertBundleState(Bundle bundle) {
@@ -123,11 +119,6 @@ final class HostBundleState extends UserBundleState<HostBundleRevision> {
     @Override
     HostBundleContext createContextInternal() {
         return new HostBundleContext(this);
-    }
-
-    @Override
-    HostBundleRevision createUpdateRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
-        return new HostBundleRevision(getFrameworkState(), dep, metadata, storageState);
     }
 
     boolean isActivationLazy() {

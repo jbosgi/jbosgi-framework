@@ -82,12 +82,13 @@ public class StorageState {
             rootFile = AbstractVFS.toVirtualFile(revFile.toURI());
         }
         StorageState storageState = new StorageState(storageDir, rootFile, props);
-        LOGGER.debugf("Created storage state: %s", storageState);
+        LOGGER.debugf("Restored storage state: %s", storageState);
         return storageState;
     }
 
     public static StorageState createStorageState(File storageDir, VirtualFile rootFile, Properties props) throws IOException {
         StorageState storageState = new StorageState(storageDir, rootFile, props);
+        LOGGER.debugf("Created storage state: %s", storageState);
         if (rootFile != null) {
             String bundleId = props.getProperty(StorageState.PROPERTY_BUNDLE_ID);
             String revision = props.getProperty(StorageState.PROPERTY_BUNDLE_REV);

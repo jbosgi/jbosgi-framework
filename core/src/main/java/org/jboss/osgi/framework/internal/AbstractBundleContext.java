@@ -34,20 +34,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
-import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.jboss.osgi.framework.spi.ServiceManager;
 import org.jboss.osgi.framework.spi.ServiceState;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.spi.RemoveOnlyCollection;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VFSUtils;
@@ -224,36 +220,19 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
         }
     }
 
-    @SuppressWarnings("unchecked")
-    Bundle installBundle(Deployment dep) throws BundleException {
+    private Bundle installBundle(Deployment dep) throws BundleException {
         checkValidBundleContext();
-
-        FrameworkState frameworkState = getFrameworkState();
-        BundleManager bundleManager = frameworkState.getBundleManager();
-        CoreServices coreServices = frameworkState.getCoreServices();
+        ServiceController<? extends XBundleRevision> controller;
         try {
+            CoreServices coreServices = getFrameworkState().getCoreServices();
             BundleLifecycle bundleLifecycle = coreServices.getBundleLifecycle();
-            bundleLifecycle.install(this, dep);
+            controller = bundleLifecycle.installBundleRevision(this, dep);
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot install bundle from deployment: %s", dep);
             throw ex;
         }
-
-        ServiceName serviceName = dep.getAttachment(ServiceName.class);
-        assert serviceName != null : "Service name not attached to Deployment";
-
-        ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        ServiceController<Bundle> controller = (ServiceController<Bundle>) serviceContainer.getService(serviceName);
-        FutureServiceValue<Bundle> future = new FutureServiceValue<Bundle>(controller);
-        try {
-            return future.get(30, TimeUnit.SECONDS);
-        } catch (Exception ex) {
-            Throwable cause = ex.getCause();
-            if (cause instanceof BundleException) {
-                throw (BundleException) cause;
-            }
-            throw MESSAGES.cannotInstallBundleFromDeployment(ex, dep);
-        }
+        XBundleRevision brev = controller.getValue();
+        return brev.getBundle();
     }
 
     @Override

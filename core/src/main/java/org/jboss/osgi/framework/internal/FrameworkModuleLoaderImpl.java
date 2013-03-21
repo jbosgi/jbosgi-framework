@@ -180,7 +180,7 @@ public final class FrameworkModuleLoaderImpl extends ModuleLoader implements Fra
         try {
             Module module = loadModule(identifier);
             ValueService<Module> service = new ValueService<Module>(new ImmediateValue<Module>(module));
-            ServiceTarget serviceTarget = UserBundleState.assertBundleState(brev.getBundle()).getServiceTarget();
+            ServiceTarget serviceTarget = UserBundleRevision.assertBundleRevision(brev).getServiceTarget();
             ServiceBuilder<Module> builder = serviceTarget.addService(moduleServiceName, service);
             builder.setInitialMode(Mode.ON_DEMAND);
             builder.install();

@@ -28,6 +28,7 @@ import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.framework.FrameworkMessages;
+import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -87,6 +88,10 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
 
     FrameworkState getFrameworkState() {
         return frameworkState;
+    }
+
+    BundleManager getBundleManager() {
+        return frameworkState.getBundleManager();
     }
 
     String getCanonicalName() {

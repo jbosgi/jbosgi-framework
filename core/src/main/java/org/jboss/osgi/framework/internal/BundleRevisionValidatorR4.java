@@ -36,7 +36,7 @@ import java.util.Set;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.PackageAttribute;
 import org.jboss.osgi.metadata.ParameterizedAttribute;
-import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 
@@ -46,89 +46,89 @@ import org.osgi.framework.Constants;
  * @author thomas.diesler@jboss.com
  * @version $Revision: 1.1 $
  */
-final class BundleValidatorR4 implements BundleValidator {
+final class BundleRevisionValidatorR4 implements BundleRevisionValidator {
 
     @Override
     @SuppressWarnings("deprecation")
-    public void validateBundle(XBundle userBundle, OSGiMetaData osgiMetaData) throws BundleException {
+    public void validateBundleRevision(XBundleRevision brev, OSGiMetaData metadata) throws BundleException {
 
         // Missing Bundle-SymbolicName
-        final String symbolicName = osgiMetaData.getBundleSymbolicName();
+        final String symbolicName = metadata.getBundleSymbolicName();
         if (symbolicName == null)
-            throw MESSAGES.missingBundleSymbolicName(userBundle);
+            throw MESSAGES.missingBundleSymbolicName(brev);
 
         // Bundle-ManifestVersion value not equal to 2, unless the Framework specifically
         // recognizes the semantics of a later release.
-        int manifestVersion = osgiMetaData.getBundleManifestVersion();
+        int manifestVersion = metadata.getBundleManifestVersion();
         if (manifestVersion > 2)
-            throw MESSAGES.unsupportedBundleManifestVersion(manifestVersion, userBundle);
+            throw MESSAGES.unsupportedBundleManifestVersion(manifestVersion, brev);
 
         // Multiple imports of a given package.
         // Specification-version and version specified together (for the same package(s)) but with different values
-        List<PackageAttribute> importPackages = osgiMetaData.getImportPackages();
+        List<PackageAttribute> importPackages = metadata.getImportPackages();
         if (importPackages != null) {
             Set<String> packages = new HashSet<String>();
             for (PackageAttribute packageAttribute : importPackages) {
                 String packageName = packageAttribute.getAttribute();
                 if (packages.contains(packageName))
-                    throw MESSAGES.duplicatePackageImport(packageName, userBundle);
+                    throw MESSAGES.duplicatePackageImport(packageName, brev);
                 packages.add(packageName);
 
                 if (packageName.startsWith("java."))
-                    throw MESSAGES.notAllowdToImportJavaPackage(userBundle);
+                    throw MESSAGES.notAllowdToImportJavaPackage(brev);
 
                 String version = packageAttribute.getAttributeValue(VERSION_ATTRIBUTE, String.class);
                 String specificationVersion = packageAttribute.getAttributeValue(PACKAGE_SPECIFICATION_VERSION, String.class);
                 if (version != null && specificationVersion != null && version.equals(specificationVersion) == false)
-                    throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, userBundle);
+                    throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, brev);
             }
         }
 
         // Export or import of java.*.
         // Specification-version and version specified together (for the same package(s)) but with different values
         // The export statement must not specify an explicit bundle symbolic name nor bundle version
-        List<PackageAttribute> exportPackages = osgiMetaData.getExportPackages();
+        List<PackageAttribute> exportPackages = metadata.getExportPackages();
         if (exportPackages != null) {
             for (PackageAttribute packageAttr : exportPackages) {
                 String packageName = packageAttr.getAttribute();
                 if (packageName.startsWith("java."))
-                    throw MESSAGES.notAllowdToExportJavaPackage(userBundle);
+                    throw MESSAGES.notAllowdToExportJavaPackage(brev);
 
                 String versionAttr = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
                 String specificationAttr = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
                 if (versionAttr != null && specificationAttr != null && versionAttr.equals(specificationAttr) == false)
-                    throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, userBundle);
+                    throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, brev);
 
                 String symbolicNameAttr = packageAttr.getAttributeValue(Constants.BUNDLE_SYMBOLICNAME_ATTRIBUTE, String.class);
                 if (symbolicNameAttr != null)
-                    throw MESSAGES.packageCannotSpecifyBundleSymbolicName(packageName, userBundle);
+                    throw MESSAGES.packageCannotSpecifyBundleSymbolicName(packageName, brev);
 
                 String bundleVersionAttr = packageAttr.getAttributeValue(Constants.BUNDLE_VERSION_ATTRIBUTE, String.class);
                 if (bundleVersionAttr != null)
-                    throw MESSAGES.packageCannotSpecifyBundleVersion(packageName, userBundle);
+                    throw MESSAGES.packageCannotSpecifyBundleVersion(packageName, brev);
             }
         }
 
         // A bundle with a dynamic imported package having different values for version and specification-version attributes must fail to install
-        List<PackageAttribute> dynamicImports = osgiMetaData.getDynamicImports();
+        List<PackageAttribute> dynamicImports = metadata.getDynamicImports();
         if (dynamicImports != null) {
             for (PackageAttribute packageAttr : dynamicImports) {
                 String packageName = packageAttr.getAttribute();
                 String versionAttr = packageAttr.getAttributeValue(Constants.VERSION_ATTRIBUTE, String.class);
                 String specificationAttr = packageAttr.getAttributeValue(Constants.PACKAGE_SPECIFICATION_VERSION, String.class);
                 if (versionAttr != null && specificationAttr != null && versionAttr.equals(specificationAttr) == false)
-                    throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, userBundle);
+                    throw MESSAGES.packageVersionAndSpecificationVersionMissmatch(packageName, brev);
             }
         }
 
         // Verify Fragment-Host header
-        if (userBundle.isFragment()) {
-            ParameterizedAttribute hostAttr = osgiMetaData.getFragmentHost();
+        if (brev.isFragment()) {
+            ParameterizedAttribute hostAttr = metadata.getFragmentHost();
             String fragmentHost = hostAttr.getAttribute();
             String extension = hostAttr.getDirectiveValue(EXTENSION_DIRECTIVE, String.class);
             if (extension != null) {
                 if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(fragmentHost) == false)
-                    throw MESSAGES.invalidFragmentHostForExtensionFragment(userBundle);
+                    throw MESSAGES.invalidFragmentHostForExtensionFragment(brev);
 
                 if (EXTENSION_BOOTCLASSPATH.equals(extension))
                     throw MESSAGES.unsupportedBootClasspathExtension();

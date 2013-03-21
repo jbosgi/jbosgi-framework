@@ -28,12 +28,14 @@ import java.util.concurrent.ExecutorService;
 
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceContainer;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -98,12 +100,12 @@ public interface BundleManager extends Service<BundleManager> {
     XBundle getSystemBundle();
 
     /**
-     * Get the service name for the given bundle.
+     * Get the service name for the given bundle revision.
      *
-     * @param bundle The bundle
-     * @return The service name or null if the bundle is not service based.
+     * @param bundle The bundle revision
+     * @return The service name or null if the revision is not service based.
      */
-    ServiceName getServiceName(XBundle bundle);
+    ServiceName getServiceName(XBundleRevision bundle);
 
     /**
      * True the framework has reached the {@link Services#FRAMEWORK_ACTIVE} state
@@ -111,16 +113,16 @@ public interface BundleManager extends Service<BundleManager> {
     boolean isFrameworkActive();
 
     /**
-     * Install a bundle from the given deployment
+     * Install a {@link XBundleRevision} from the given deployment
      *
-     * @param bundle The bundle that
+     * @param context The context that is used to install the revision
      * @param deployment The bundle deployment
      * @param serviceTarget The service target for the INSTALL service
      * @param listener An optional listener on the INSTALL service
      *
-     * @return The name of the INSTALL service
+     * @return The INSTALL service
      */
-    ServiceName installBundle(BundleContext context, Deployment deployment, ServiceTarget serviceTarget, ServiceListener<XBundle> listener) throws BundleException;
+    ServiceController<? extends XBundleRevision> installBundleRevision(BundleContext context, Deployment deployment, ServiceTarget serviceTarget, ServiceListener<XBundleRevision> listener) throws BundleException;
 
     /**
      * Start the given bundle

@@ -32,8 +32,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 
+import junit.framework.Assert;
+
+import org.jboss.logging.Logger;
+import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.Asset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.test.osgi.framework.bundle.support.a.ObjectA;
 import org.jboss.test.osgi.framework.bundle.support.a.ObjectA2;
 import org.jboss.test.osgi.framework.bundle.support.b.ObjectB;
@@ -43,13 +50,20 @@ import org.jboss.test.osgi.framework.bundle.update.a.ClassA;
 import org.jboss.test.osgi.framework.bundle.update.b.ClassB;
 import org.jboss.test.osgi.framework.bundle.update.startexc.BundleStartExActivator;
 import org.jboss.test.osgi.framework.bundle.update.stopexc.BundleStopExActivator;
+import org.jboss.test.osgi.framework.fragments.fragA.FragBeanA;
+import org.jboss.test.osgi.framework.fragments.hostA.HostAActivator;
+import org.jboss.test.osgi.framework.fragments.subA.SubBeanA;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
@@ -161,21 +175,21 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
         Archive<?> assembly1 = assembleArchive("bundle1", new String[] { "/bundles/update/update-bundle1", "/bundles/update/classes1" });
         Archive<?> assembly2 = assembleArchive("bundle2", new String[] { "/bundles/update/update-bundle102", "/bundles/update/classes2" });
 
-        Bundle bundleA = installBundle(assembly1);
+        Bundle bundle1 = installBundle(assembly1);
         Bundle bundleX = installBundle(assemblyx);
         try {
             BundleContext systemContext = getFramework().getBundleContext();
             int beforeCount = systemContext.getBundles().length;
 
-            bundleA.start();
+            bundle1.start();
             bundleX.start();
 
-            assertBundleState(Bundle.ACTIVE, bundleA.getState());
+            assertBundleState(Bundle.ACTIVE, bundle1.getState());
             assertBundleState(Bundle.ACTIVE, bundleX.getState());
-            assertEquals(Version.parseVersion("1.0.0"), bundleA.getVersion());
-            assertEquals("update-bundle1", bundleA.getSymbolicName());
-            assertLoadClass(bundleA, ObjectA.class.getName());
-            assertLoadClassFail(bundleA, ObjectA2.class.getName());
+            assertEquals(Version.parseVersion("1.0.0"), bundle1.getVersion());
+            assertEquals("update-bundle1", bundle1.getSymbolicName());
+            assertLoadClass(bundle1, ObjectA.class.getName());
+            assertLoadClassFail(bundle1, ObjectA2.class.getName());
             assertLoadClass(bundleX, ObjectA.class.getName());
             assertLoadClassFail(bundleX, ObjectA2.class.getName());
 
@@ -183,27 +197,27 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
             Object x1 = cls.newInstance();
             assertEquals("ObjectX contains reference: ObjectA", x1.toString());
 
-            bundleA.update(toInputStream(assembly2));
-            assertBundleState(Bundle.ACTIVE, bundleA.getState());
+            bundle1.update(toInputStream(assembly2));
+            assertBundleState(Bundle.ACTIVE, bundle1.getState());
             assertBundleState(Bundle.ACTIVE, bundleX.getState());
-            assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());
+            assertEquals(Version.parseVersion("1.0.2"), bundle1.getVersion());
             // Bundle A should see the new version of the packages
-            assertLoadClass(bundleA, ObjectA2.class.getName());
-            assertLoadClassFail(bundleA, ObjectA.class.getName());
+            assertLoadClass(bundle1, ObjectA2.class.getName());
+            assertLoadClassFail(bundle1, ObjectA.class.getName());
             // Bundle X should still see the old packages of bundle A
             assertLoadClass(bundleX, ObjectA.class.getName());
             assertLoadClassFail(bundleX, ObjectA2.class.getName());
             assertSame(cls, bundleX.loadClass(ObjectX.class.getName()));
 
             FrameworkWiring frameworkWiring = getFramework().adapt(FrameworkWiring.class);
-            frameworkWiring.refreshBundles(Arrays.asList(bundleA), this);
+            frameworkWiring.refreshBundles(Arrays.asList(bundle1), this);
             assertFrameworkEvent(FrameworkEvent.PACKAGES_REFRESHED, getSystemContext().getBundle(0), null);
 
-            assertBundleState(Bundle.ACTIVE, bundleA.getState());
+            assertBundleState(Bundle.ACTIVE, bundle1.getState());
             assertBundleState(Bundle.ACTIVE, bundleX.getState());
-            assertEquals(Version.parseVersion("1.0.2"), bundleA.getVersion());
-            assertLoadClass(bundleA, ObjectA2.class.getName());
-            assertLoadClassFail(bundleA, ObjectA.class.getName());
+            assertEquals(Version.parseVersion("1.0.2"), bundle1.getVersion());
+            assertLoadClass(bundle1, ObjectA2.class.getName());
+            assertLoadClassFail(bundle1, ObjectA.class.getName());
             assertLoadClass(bundleX, ObjectA2.class.getName());
             assertLoadClassFail(bundleX, ObjectA.class.getName());
 
@@ -216,7 +230,7 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
             assertEquals("Bundle count", beforeCount, afterCount);
         } finally {
             bundleX.uninstall();
-            bundleA.uninstall();
+            bundle1.uninstall();
         }
     }
 
@@ -317,4 +331,62 @@ public class BundleUpdateTestCase extends OSGiFrameworkTest {
             bundle1.uninstall();
         }
     }
+
+    @Test
+    @Ignore
+    public void testUpdateHostToFragment() throws Exception {
+        Bundle bundleA = installBundle(getHostA());
+        try {
+            bundleA.start();
+            assertBundleState(Bundle.ACTIVE, bundleA.getState());
+            BundleRevisions brevs = bundleA.adapt(BundleRevisions.class);
+            assertEquals(1, brevs.getRevisions().size());
+            BundleRevision brev = brevs.getRevisions().get(0);
+            assertEquals(0, brev.getTypes());
+
+            bundleA.update(toInputStream(getFragmentA()));
+            assertSame(brevs, bundleA.adapt(BundleRevisions.class));
+            Assert.assertNotSame(brev, brevs.getRevisions().get(0));
+            brev = brevs.getRevisions().get(0);
+            assertEquals(BundleRevision.TYPE_FRAGMENT, brev.getTypes());
+        } finally {
+            bundleA.uninstall();
+        }
+    }
+
+    private JavaArchive getHostA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-hostA");
+        archive.addClasses(HostAActivator.class, SubBeanA.class);
+        archive.setManifest(new Asset() {
+            @Override
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addBundleActivator(HostAActivator.class);
+                builder.addImportPackages(BundleActivator.class, Logger.class, FrameworkWiring.class);
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
+    private JavaArchive getFragmentA() {
+        final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-fragA");
+        archive.addClasses(FragBeanA.class);
+        archive.addAsResource(getResourceFile("fragments/fragA.txt"), "resource.txt");
+        archive.setManifest(new Asset() {
+            @Override
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archive.getName());
+                builder.addExportPackages(FragBeanA.class);
+                builder.addFragmentHost("simple-hostA");
+                return builder.openStream();
+            }
+        });
+        return archive;
+    }
+
 }

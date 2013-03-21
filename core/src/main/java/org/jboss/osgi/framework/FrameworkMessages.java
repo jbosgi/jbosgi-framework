@@ -40,6 +40,7 @@ import org.jboss.osgi.framework.spi.LockException;
 import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.metadata.ParameterizedAttribute;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
@@ -154,38 +155,38 @@ public interface FrameworkMessages {
     @Message(id = 11230, value = "Cannot obtain virtual file for: %s")
     BundleException cannotObtainVirtualFileForLocation(@Cause Throwable cause, String location);
 
-    @Message(id = 11231, value = "Cannot install bundle from: %s")
-    BundleException cannotInstallBundleFromDeployment(@Cause Throwable cause, Deployment dep);
+    @Message(id = 11231, value = "Cannot install bundle revision from: %s")
+    BundleException cannotInstallBundleRevisionFromDeployment(@Cause Throwable cause, Deployment dep);
 
     @Message(id = 11232, value = "Unsupported bundle manifest version %d in: %s")
-    BundleException unsupportedBundleManifestVersion(int version, Bundle bundle);
+    BundleException unsupportedBundleManifestVersion(int version, XBundleRevision brev);
 
     @Message(id = 11233, value = "Missing Bundle-SymbolicName in: %s")
-    BundleException missingBundleSymbolicName(Bundle bundle);
+    BundleException missingBundleSymbolicName(XBundleRevision brev);
 
     @Message(id = 11234, value = "Duplicate import of package '%s' in: %s")
-    BundleException duplicatePackageImport(String packageName, Bundle bundle);
+    BundleException duplicatePackageImport(String packageName, XBundleRevision brev);
 
     @Message(id = 11235, value = "Not allowed to import java.* in: %s")
-    BundleException notAllowdToImportJavaPackage(Bundle bundle);
+    BundleException notAllowdToImportJavaPackage(XBundleRevision brev);
 
     @Message(id = 11236, value = "Not allowed to export java.* in: %s")
-    BundleException notAllowdToExportJavaPackage(Bundle bundle);
+    BundleException notAllowdToExportJavaPackage(XBundleRevision brev);
 
     @Message(id = 11237, value = "Version and specification version for package '%s' missmatch in: %s")
-    BundleException packageVersionAndSpecificationVersionMissmatch(String packageName, Bundle bundle);
+    BundleException packageVersionAndSpecificationVersionMissmatch(String packageName, XBundleRevision brev);
 
     @Message(id = 11238, value = "Package '%s' cannot specify explicit bundle-symbolicname in: %s")
-    BundleException packageCannotSpecifyBundleSymbolicName(String packageName, Bundle bundle);
+    BundleException packageCannotSpecifyBundleSymbolicName(String packageName, XBundleRevision brev);
 
     @Message(id = 11239, value = "Package '%s' cannot specify explicit bundle-version in: %s")
-    BundleException packageCannotSpecifyBundleVersion(String packageName, Bundle bundle);
+    BundleException packageCannotSpecifyBundleVersion(String packageName, XBundleRevision brev);
 
     @Message(id = 11240, value = "Bundle name and version already installed: [%s:%s]")
     String nameAndVersionAlreadyInstalled(String symbolicName, Version version);
 
     @Message(id = 11241, value = "Invalid Fragment-Host for extension fragment: %s")
-    BundleException invalidFragmentHostForExtensionFragment(Bundle bundle);
+    BundleException invalidFragmentHostForExtensionFragment(XBundleRevision brev);
 
     @Message(id = 11242, value = "Invalid number format: %s")
     BundleException invalidNumberFormat(@Cause Throwable cause, String message);

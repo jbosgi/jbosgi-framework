@@ -22,17 +22,18 @@
 package org.jboss.osgi.framework.internal;
 
 
+import org.jboss.osgi.deployment.deployer.Deployment;
 import org.osgi.framework.BundleContext;
 
 /**
- * A host {@link BundleContext}.
+ * A {@link BundleContext} backed up by a {@link Deployment}.
  *
  * @author thomas.diesler@jboss.com
  * @since 29-Jun-2010
  */
-final class HostBundleContext extends UserBundleContext<HostBundleState> {
+class HostBundleContext extends UserBundleContext<HostBundleState> {
 
-    HostBundleContext(HostBundleState hostBundle) {
-        super(hostBundle);
+    HostBundleContext(HostBundleState userBundle) {
+        super(userBundle);
     }
 }

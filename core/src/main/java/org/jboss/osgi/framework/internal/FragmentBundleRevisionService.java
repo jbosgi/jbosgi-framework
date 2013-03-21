@@ -30,24 +30,24 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
 /**
- * Represents the INSTALLED state of a fragment bundle.
+ * Represents the INSTALLED state of a fragment revision.
  *
  * @author thomas.diesler@jboss.com
  * @since 12-Aug-2010
  */
-final class FragmentBundleInstalledService extends UserBundleInstalledService<FragmentBundleState, FragmentBundleRevision> {
+final class FragmentBundleRevisionService extends UserBundleRevisionService<FragmentBundleRevision> {
 
-    FragmentBundleInstalledService(FrameworkState frameworkState, BundleContext sourceContext, Deployment dep) throws BundleException {
+    FragmentBundleRevisionService(FrameworkState frameworkState, BundleContext sourceContext, Deployment dep) throws BundleException {
         super(frameworkState, sourceContext, dep);
     }
 
     @Override
-    FragmentBundleRevision createBundleRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState) throws BundleException {
-        return new FragmentBundleRevision(getFrameworkState(), dep, metadata, storageState);
+    FragmentBundleRevision createBundleRevision(Deployment dep, OSGiMetaData metadata, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException {
+        return new FragmentBundleRevision(getFrameworkState(), dep, metadata, storageState, serviceName, serviceTarget);
     }
 
     @Override
-    FragmentBundleState createBundleState(FragmentBundleRevision revision, ServiceName serviceName, ServiceTarget serviceTarget) {
-        return new FragmentBundleState(getFrameworkState(), revision, serviceName, serviceTarget);
+    FragmentBundleState createBundleState(FragmentBundleRevision revision) {
+        return new FragmentBundleState(getFrameworkState(), revision);
     }
 }

@@ -28,10 +28,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
-import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -81,11 +79,6 @@ final class SystemBundleState extends AbstractBundleState<SystemBundleRevision> 
     @Override
     public List<XBundleRevision> getAllBundleRevisions() {
         return Collections.singletonList((XBundleRevision) systemRevision);
-    }
-
-    @Override
-    ServiceName getServiceName() {
-        return IntegrationServices.SYSTEM_BUNDLE_INTERNAL;
     }
 
     @Override

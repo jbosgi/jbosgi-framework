@@ -21,12 +21,16 @@
  */
 package org.jboss.osgi.framework.spi;
 
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
+
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
@@ -87,8 +91,20 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
         }
 
         @Override
-        public void install(BundleContext context, Deployment dep) throws BundleException {
-            bundleManager.installBundle(context, dep, null, null);
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        public ServiceController<? extends XBundleRevision> installBundleRevision(BundleContext context, Deployment dep) throws BundleException {
+            ServiceController<? extends XBundleRevision> controller = bundleManager.installBundleRevision(context, dep, null, null);
+            FutureServiceValue<?> future = new FutureServiceValue(controller);
+            try {
+                future.get(30, TimeUnit.SECONDS);
+            } catch (Exception ex) {
+                Throwable cause = ex.getCause();
+                if (cause instanceof BundleException) {
+                    throw (BundleException) cause;
+                }
+                throw MESSAGES.cannotInstallBundleRevisionFromDeployment(ex, dep);
+            }
+            return controller;
         }
 
         @Override

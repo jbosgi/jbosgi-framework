@@ -126,23 +126,21 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                 Set<XBundle> refreshBundles = new HashSet<XBundle>();
                 Set<XBundle> uninstallBundles = new HashSet<XBundle>();
 
-                for (Bundle auxBundle : bundlesToRefresh) {
+                for (Bundle auxBundle : dependencyClosure) {
                     XBundle bundle = (XBundle) auxBundle;
-                    if (bundle.getState() == Bundle.UNINSTALLED)
+                    if (bundle.getState() == Bundle.UNINSTALLED) {
                         uninstallBundles.add(bundle);
-                    else if (bundle.isResolved() == true)
+                    } else if (bundle.isResolved() == true) {
                         refreshBundles.add(bundle);
-                }
-
-                for (Bundle bundle : dependencyClosure) {
+                    }
                     int state = bundle.getState();
                     if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
-                        stopBundles.add((XBundle) bundle);
+                        stopBundles.add(bundle);
                     }
                 }
 
                 List<Bundle> stopList = new ArrayList<Bundle>(stopBundles);
-                List<Bundle> refreshList = new ArrayList<Bundle>(dependencyClosure);
+                List<Bundle> refreshList = new ArrayList<Bundle>(refreshBundles);
 
                 BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator();
                 Collections.sort(stopList, startLevelComparator);
@@ -168,7 +166,6 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                             }
                         }
                     }
-                    refreshList.remove(bundle);
                 }
 
                 for (Bundle bundle : refreshList) {

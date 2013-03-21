@@ -54,9 +54,10 @@ public class BundleUninstallTestCase extends AbstractFrameworkTest {
 
         Bundle bundle = installBundle(getTestArchive());
         AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
+        UserBundleRevision userRev = UserBundleRevision.assertBundleRevision(bundleState.getBundleRevision());
 
         List<ServiceName> additionalNames = getServiceNameDelta(initialNames);
-        assertTrue("Contains INSTALLED", additionalNames.contains(bundleState.getServiceName()));
+        assertTrue("Contains INSTALLED", additionalNames.contains(userRev.getServiceName()));
 
         bundle.uninstall();
         assertBundleState(UNINSTALLED, bundle.getState());
@@ -84,6 +85,7 @@ public class BundleUninstallTestCase extends AbstractFrameworkTest {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple-bundle");
         archive.addClasses(SimpleService.class, SimpleActivator.class);
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

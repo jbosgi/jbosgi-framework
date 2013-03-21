@@ -23,11 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
-import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.service.ServiceTarget;
-import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.spi.StorageState;
-import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
@@ -41,8 +36,8 @@ import org.osgi.framework.BundleException;
  */
 final class FragmentBundleState extends UserBundleState<FragmentBundleRevision> {
 
-    FragmentBundleState(FrameworkState frameworkState, FragmentBundleRevision brev, ServiceName serviceName, ServiceTarget serviceTarget) {
-        super(frameworkState, brev, serviceName, serviceTarget);
+    FragmentBundleState(FrameworkState frameworkState, FragmentBundleRevision brev) {
+        super(frameworkState, brev);
     }
 
     static FragmentBundleState assertBundleState(Bundle bundle) {
@@ -59,11 +54,6 @@ final class FragmentBundleState extends UserBundleState<FragmentBundleRevision> 
     @Override
     void initLazyActivation() {
         // do nothing
-    }
-
-    @Override
-    FragmentBundleRevision createUpdateRevision(Deployment deployment, OSGiMetaData metaData, StorageState storageState) throws BundleException {
-        return new FragmentBundleRevision(getFrameworkState(), deployment, metaData, storageState);
     }
 
     @Override

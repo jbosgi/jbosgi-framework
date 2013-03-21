@@ -36,7 +36,7 @@ import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
@@ -73,14 +73,14 @@ public class BootstrapBundlesInstall<T> extends BootstrapBundlesService<T> {
     protected void installBootstrapBundles(final ServiceTarget serviceTarget, final List<Deployment> deployments) {
 
         // Track the Bundle INSTALLED services
-        ServiceTracker<XBundle> installTracker = new ServiceTracker<XBundle>(getServiceName().getCanonicalName()) {
+        ServiceTracker<XBundleRevision> installTracker = new ServiceTracker<XBundleRevision>(getServiceName().getCanonicalName()) {
 
             Set<ServiceName> installedServices = new HashSet<ServiceName>();
 
             @Override
-            protected boolean trackService(ServiceController<? extends XBundle> controller) {
+            protected boolean trackService(ServiceController<? extends XBundleRevision> controller) {
                 ServiceName serviceName = controller.getName();
-                return BUNDLE_BASE_NAME.isParentOf(serviceName) && serviceName.getSimpleName().equals("INSTALLED");
+                return BUNDLE_BASE_NAME.isParentOf(serviceName);
             }
 
             @Override
@@ -89,7 +89,7 @@ public class BootstrapBundlesInstall<T> extends BootstrapBundlesService<T> {
             }
 
             @Override
-            protected void serviceStarted(ServiceController<? extends XBundle> controller) {
+            protected void serviceStarted(ServiceController<? extends XBundleRevision> controller) {
                 synchronized (installedServices) {
                     installedServices.add(controller.getName());
                 }
@@ -104,7 +104,7 @@ public class BootstrapBundlesInstall<T> extends BootstrapBundlesService<T> {
         // Install the auto install bundles
         for (Deployment dep : deployments) {
             try {
-                getBundleManager().installBundle(getBundleContext(), dep, serviceTarget, installTracker);
+                getBundleManager().installBundleRevision(getBundleContext(), dep, serviceTarget, installTracker);
             } catch (BundleException ex) {
                 LOGGER.errorStateCannotInstallInitialBundle(ex, dep.getLocation());
             }

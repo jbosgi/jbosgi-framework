@@ -21,20 +21,24 @@
  */
 package org.jboss.osgi.framework.internal;
 
+import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
+
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.BundleException;
 
 /**
- * A bundle validator.
+ * A bundle validator for OSGi R3.
  *
  * @author thomas.diesler@jboss.com
  * @since 19-Dec-2009
  */
-interface BundleValidator {
+final class BundleRevisionValidatorR3 implements BundleRevisionValidator {
 
-    /**
-     * Validate the bundle
-     */
-    void validateBundle(XBundle userBundle, OSGiMetaData osgiMetaData) throws BundleException;
+    @Override
+    public void validateBundleRevision(XBundleRevision brev, OSGiMetaData metadata) throws BundleException {
+        int manifestVersion = metadata.getBundleManifestVersion();
+        if (manifestVersion != 1)
+            throw MESSAGES.unsupportedBundleManifestVersion(manifestVersion, brev);
+    }
 }

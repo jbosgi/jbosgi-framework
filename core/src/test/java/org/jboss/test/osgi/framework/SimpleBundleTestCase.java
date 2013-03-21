@@ -61,7 +61,7 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest {
         BundleContext context = bundle.getBundleContext();
         assertNotNull("BundleContext not null", context);
 
-        ServiceReference sref = context.getServiceReference(SimpleService.class.getName());
+        ServiceReference<SimpleService> sref = context.getServiceReference(SimpleService.class);
         assertNotNull("ServiceReference not null", sref);
 
         Object service = context.getService(sref);
@@ -70,7 +70,7 @@ public class SimpleBundleTestCase extends OSGiFrameworkTest {
         bundle.stop();
         assertBundleState(Bundle.RESOLVED, bundle.getState());
 
-        sref = getSystemContext().getServiceReference(SimpleService.class.getName());
+        sref = getSystemContext().getServiceReference(SimpleService.class);
         assertNull("ServiceReference null", sref);
 
         bundle.uninstall();

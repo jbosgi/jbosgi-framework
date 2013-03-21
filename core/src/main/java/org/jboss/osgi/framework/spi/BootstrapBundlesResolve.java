@@ -88,11 +88,11 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
 
         // Collect the set of resolvable bundles
         for (ServiceName installedName : installedServices) {
-            XBundle bundle = getServiceController(serviceRegistry, installedName).getValue();
-            Deployment dep = bundle.adapt(Deployment.class);
+            XBundleRevision brev = getServiceController(serviceRegistry, installedName).getValue();
+            Deployment dep = brev.getAttachment(Deployment.class);
             int bundleLevel = dep.getStartLevel() != null ? dep.getStartLevel() : 1;
-            if (dep.isAutoStart() && !bundle.isFragment() && bundleLevel <= targetLevel) {
-                resolvableBundles.add(bundle);
+            if (dep.isAutoStart() && !brev.isFragment() && bundleLevel <= targetLevel) {
+                resolvableBundles.add(brev.getBundle());
             }
         }
 
@@ -139,8 +139,8 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
     }
 
     @SuppressWarnings("unchecked")
-    private ServiceController<XBundle> getServiceController(ServiceContainer serviceRegistry, ServiceName serviceName) {
-        return (ServiceController<XBundle>) serviceRegistry.getRequiredService(serviceName);
+    private ServiceController<XBundleRevision> getServiceController(ServiceContainer serviceRegistry, ServiceName serviceName) {
+        return (ServiceController<XBundleRevision>) serviceRegistry.getRequiredService(serviceName);
     }
 
     private int getBeginningStartLevel() {

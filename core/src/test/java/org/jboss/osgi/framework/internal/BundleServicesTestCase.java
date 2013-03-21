@@ -53,9 +53,10 @@ public class BundleServicesTestCase extends AbstractFrameworkTest {
 
         Bundle bundle = installBundle(getTestArchive());
         AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
+        UserBundleRevision userRev = UserBundleRevision.assertBundleRevision(bundleState.getBundleRevision());
 
         ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
-        ServiceController<?> controller = serviceContainer.getService(bundleState.getServiceName());
+        ServiceController<?> controller = serviceContainer.getService(userRev.getServiceName());
         assertServiceState(controller, State.UP);
 
         URL url = bundle.getResource(JarFile.MANIFEST_NAME);

@@ -47,7 +47,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
@@ -94,6 +93,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     private final LockSupport bundleLock = LockManager.Factory.addLockSupport(this);
     private final List<ServiceState<?>> registeredServices = new CopyOnWriteArrayList<ServiceState<?>>();
     private final ConcurrentHashMap<ServiceState<?>, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState<?>, AtomicInteger>();
+
     private AbstractBundleContext<? extends AbstractBundleState<?>> bundleContext;
     private Exception lastResolverException;
     private String canonicalName;
@@ -209,8 +209,6 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     }
 
     abstract R getBundleRevisionById(int revisionId);
-
-    abstract ServiceName getServiceName();
 
     abstract boolean isSingleton();
 

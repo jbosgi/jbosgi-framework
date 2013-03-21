@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
-import static org.jboss.osgi.framework.spi.IntegrationServices.BUNDLE_BASE_NAME;
 
 import java.io.InputStream;
 import java.security.AccessController;
@@ -44,6 +43,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
@@ -75,7 +75,6 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
-import org.jboss.osgi.spi.ConstantsHelper;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -147,6 +146,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     private final Map<String, Object> properties = new HashMap<String, Object>();
     private final AtomicInteger managerState = new AtomicInteger(Bundle.INSTALLED);
     private final AtomicBoolean managerStopped = new AtomicBoolean();
+    private final AtomicLong bundleIndex = new AtomicLong();
     private final ServiceContainer serviceContainer;
     private final UniquenessPolicy uniquenessPolicy;
     private Framework framework;
@@ -431,33 +431,37 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     @Override
-    public ServiceName installBundle(BundleContext targetContext, Deployment dep, ServiceTarget installTarget, ServiceListener<XBundle> listener) throws BundleException {
+    @SuppressWarnings("unchecked")
+    public ServiceController<? extends XBundleRevision> installBundleRevision(BundleContext targetContext, Deployment dep, ServiceTarget serviceTarget, ServiceListener<XBundleRevision> listener) throws BundleException {
         if (targetContext == null)
             throw MESSAGES.illegalArgumentNull("targetContext");
         if (dep == null)
             throw MESSAGES.illegalArgumentNull("deployment");
 
-        if (installTarget == null)
-            installTarget = getServiceTarget();
+        if (serviceTarget == null)
+            serviceTarget = getServiceTarget();
 
-        ServiceName serviceName;
+        String symbolicName = dep.getSymbolicName();
+        Version version = Version.parseVersion(dep.getVersion());
 
         // If a bundle containing the same location identifier is already installed,
         // the Bundle object for that bundle is returned.
-        XBundle bundle = getBundleByLocation(dep.getLocation());
-        if (bundle != null) {
-            LOGGER.debugf("Installing an already existing bundle: %s", dep);
-            serviceName = getServiceName(bundle);
-            dep.addAttachment(ServiceName.class, serviceName);
-            VFSUtils.safeClose(dep.getRoot());
-            return serviceName;
+        boolean isBundleUpdate = dep.isBundleUpdate();
+        if (isBundleUpdate == false) {
+            XBundle bundle = getBundleByLocation(dep.getLocation());
+            if (bundle != null) {
+                LOGGER.debugf("Installing an already existing bundle: %s", dep);
+                ServiceName serviceName = getServiceName(bundle.getBundleRevision());
+                dep.addAttachment(ServiceName.class, serviceName);
+                VFSUtils.safeClose(dep.getRoot());
+                return (ServiceController<XBundleRevision>) serviceContainer.getRequiredService(serviceName);
+            }
+
+            // Check for symbolic name, version uniqueness
+            checkUniqunessPolicy(targetContext.getBundle(), symbolicName, version, CollisionHook.INSTALLING);
         }
 
-        // Check for symbolic name, version uniqueness
-        String symbolicName = dep.getSymbolicName();
-        Version version = Version.parseVersion(dep.getVersion());
-        checkUniqunessPolicy(targetContext.getBundle(), symbolicName, version, CollisionHook.INSTALLING);
-
+        ServiceController<? extends XBundleRevision> controller;
         try {
             Long bundleId;
             XEnvironment env = injectedEnvironment.getValue();
@@ -465,12 +469,12 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             // The storage state exists when we re-create the bundle from persistent storage
             StorageState storageState = dep.getAttachment(StorageState.class);
             if (storageState != null) {
-                LOGGER.debugf("Found storage state: %s", storageState);
-                bundleId = env.nextResourceIdentifier(storageState.getBundleId(), symbolicName);
+                bundleId = new Long(storageState.getBundleId());
             } else {
-                bundleId = env.nextResourceIdentifier(null, symbolicName);
+                bundleId = bundleIndex.incrementAndGet();
             }
-            dep.addAttachment(Long.class, bundleId);
+            RevisionIdentifier revIdentifier = new RevisionIdentifier(bundleId, env.nextResourceIdentifier(null, ""));
+            dep.addAttachment(RevisionIdentifier.class, revIdentifier);
 
             // Check that we have valid metadata
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
@@ -481,11 +485,11 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
             // Create the bundle services
             if (metadata.getFragmentHost() == null) {
-                HostBundleInstalledService service = new HostBundleInstalledService(getFrameworkState(), targetContext, dep);
-                serviceName = service.install(installTarget, listener);
+                HostBundleRevisionService service = new HostBundleRevisionService(getFrameworkState(), targetContext, dep);
+                controller = service.install(serviceTarget, listener);
             } else {
-                FragmentBundleInstalledService service = new FragmentBundleInstalledService(getFrameworkState(), targetContext, dep);
-                serviceName = service.install(installTarget, listener);
+                FragmentBundleRevisionService service = new FragmentBundleRevisionService(getFrameworkState(), targetContext, dep);
+                controller = service.install(serviceTarget, listener);
             }
         } catch (RuntimeException rte) {
             VFSUtils.safeClose(dep.getRoot());
@@ -495,8 +499,8 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             throw ex;
         }
 
-        dep.addAttachment(ServiceName.class, serviceName);
-        return serviceName;
+        dep.addAttachment(ServiceName.class, controller.getName());
+        return controller;
     }
 
     @Override
@@ -584,6 +588,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         XEnvironment env = getFrameworkState().getEnvironment();
         for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
             UserBundleRevision userRev = (UserBundleRevision) brev;
+            userRev.removeBundleRevisionService();
             env.uninstallResources(brev);
             userRev.close();
         }
@@ -592,24 +597,13 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     @Override
-    public ServiceName getServiceName(XBundle bundle) {
+    public ServiceName getServiceName(XBundleRevision brev) {
         ServiceName result = null;
-        if (bundle instanceof AbstractBundleState) {
-            AbstractBundleState<?> bundleState = (AbstractBundleState<?>) bundle;
-            result = bundleState.getServiceName();
+        if (brev instanceof UserBundleRevision) {
+            UserBundleRevision userRev = (UserBundleRevision) brev;
+            result = userRev.getServiceName();
         }
         return result;
-    }
-
-    ServiceName getServiceName(Deployment dep) {
-        // Currently the bundleId is needed for uniqueness because of
-        // [MSC-97] Cannot re-install service with same name
-        Long bundleId = dep.getAttachment(Long.class);
-        String bsname = dep.getSymbolicName();
-        String version = dep.getVersion();
-        ServiceName serviceName = ServiceName.of(BUNDLE_BASE_NAME, "" + bsname, "" + version, "bid" + bundleId);
-        serviceName = serviceName.append(ConstantsHelper.bundleState(Bundle.INSTALLED));
-        return serviceName;
     }
 
     @Override
