@@ -470,6 +470,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             StorageState storageState = dep.getAttachment(StorageState.class);
             if (storageState != null) {
                 bundleId = new Long(storageState.getBundleId());
+                bundleIndex.addAndGet(Math.max(0, bundleId - bundleIndex.get()));
             } else {
                 bundleId = bundleIndex.incrementAndGet();
             }

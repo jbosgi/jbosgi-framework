@@ -91,7 +91,6 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
     private final AtomicInteger revisionIndex = new AtomicInteger();
     private final List<UserBundleRevision> revisions = new ArrayList<UserBundleRevision>();
 
-    private Dictionary<String, String> headersOnUninstall;
     private BundleActivator bundleActivator;
 
     UserBundleState(FrameworkState frameworkState, UserBundleRevision brev) {
@@ -180,6 +179,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
     public Dictionary<String, String> getHeaders(String locale) {
         // This method must continue to return Manifest header information while this bundle is in the UNINSTALLED state,
         // however the header values must only be available in the raw and default locale values
+        Dictionary<String, String> headersOnUninstall = getBundleRevision().getHeadersOnUninstall();
         if (headersOnUninstall != null)
             return headersOnUninstall;
 
@@ -467,7 +467,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         if (state == Bundle.UNINSTALLED)
             return;
 
-        headersOnUninstall = getHeaders(null);
+        getBundleRevision().setHeadersOnUninstall(getHeaders(null));
 
         // #2 If the bundle's state is ACTIVE, STARTING or STOPPING, the bundle is stopped
         if (isFragment() == false) {

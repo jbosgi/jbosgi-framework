@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import java.net.URL;
+import java.util.Dictionary;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
@@ -57,6 +58,7 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
     private final StorageState storageState;
 
     private ModuleClassLoader moduleClassLoader;
+    private Dictionary<String, String> headersOnUninstall;
 
     BundleStateRevision(FrameworkState frameworkState, OSGiMetaData metadata, StorageState storageState) throws BundleException {
         assert frameworkState != null : "Null frameworkState";
@@ -108,6 +110,14 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
 
     StorageState getStorageState() {
         return storageState;
+    }
+
+    Dictionary<String, String> getHeadersOnUninstall() {
+        return headersOnUninstall;
+    }
+
+    void setHeadersOnUninstall(Dictionary<String, String> headers) {
+        this.headersOnUninstall = headers;
     }
 
     abstract String getLocation();
