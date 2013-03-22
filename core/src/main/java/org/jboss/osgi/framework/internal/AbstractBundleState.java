@@ -96,7 +96,6 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     private AbstractBundleContext<? extends AbstractBundleState<?>> bundleContext;
     private Exception lastResolverException;
-    private String canonicalName;
     private R currentRevision;
 
     AbstractBundleState(FrameworkState frameworkState, R brev, long bundleId) {
@@ -733,13 +732,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     @Override
     public String getCanonicalName() {
-        if (canonicalName == null) {
-            OSGiMetaData metadata = getOSGiMetaData();
-            String name = metadata.getBundleSymbolicName();
-            name = name != null ? name : metadata.getBundleName();
-            canonicalName = name + ":" + metadata.getBundleVersion();
-        }
-        return canonicalName;
+        return getBundleRevision().getCanonicalName();
     }
 
     @Override

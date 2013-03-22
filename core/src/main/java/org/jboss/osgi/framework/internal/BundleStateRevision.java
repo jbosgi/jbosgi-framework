@@ -59,6 +59,7 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
 
     private ModuleClassLoader moduleClassLoader;
     private Dictionary<String, String> headersOnUninstall;
+    private String canonicalName;
 
     BundleStateRevision(FrameworkState frameworkState, OSGiMetaData metadata, StorageState storageState) throws BundleException {
         assert frameworkState != null : "Null frameworkState";
@@ -96,8 +97,14 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
         return frameworkState.getBundleManager();
     }
 
-    String getCanonicalName() {
-        return getSymbolicName() + ":" + getVersion();
+    @Override
+    public String getCanonicalName() {
+        if (canonicalName == null) {
+            String name = metadata.getBundleSymbolicName();
+            name = name != null ? name : metadata.getBundleName();
+            canonicalName = name + ":" + metadata.getBundleVersion();
+        }
+        return canonicalName;
     }
 
     int getRevisionId() {
