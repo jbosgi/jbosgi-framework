@@ -92,11 +92,12 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
 
         @Override
         @SuppressWarnings({ "unchecked", "rawtypes" })
-        public ServiceController<? extends XBundleRevision> installBundleRevision(BundleContext context, Deployment dep) throws BundleException {
-            ServiceController<? extends XBundleRevision> controller = bundleManager.installBundleRevision(context, dep, null, null);
-            FutureServiceValue<?> future = new FutureServiceValue(controller);
+        public ServiceController<? extends XBundleRevision> createBundleRevision(BundleContext context, Deployment dep) throws BundleException {
+            ServiceController<? extends XBundleRevision> controller = bundleManager.createBundleRevision(context, dep, null, null);
+            FutureServiceValue<XBundleRevision> future = new FutureServiceValue(controller);
             try {
                 future.get(30, TimeUnit.SECONDS);
+                return controller;
             } catch (Exception ex) {
                 Throwable cause = ex.getCause();
                 if (cause instanceof BundleException) {
@@ -104,7 +105,6 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
                 }
                 throw MESSAGES.cannotInstallBundleRevisionFromDeployment(ex, dep);
             }
-            return controller;
         }
 
         @Override

@@ -341,7 +341,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     }
 
     @Override
-    public void fireBundleEvent(final XBundle origin, final XBundle bundle, final int type) {
+    public void fireBundleEvent(final BundleContext context, final XBundle bundle, final int type) {
         if (bundle == null)
             throw MESSAGES.illegalArgumentNull("bundle");
 
@@ -360,7 +360,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         }
 
         // Expose the bundleState wrapper not the state itself
-        final BundleEvent event = new BundleEventImpl(type, bundle, origin != null ? origin : bundle);
+        final BundleEvent event = new BundleEventImpl(type, bundle, context != null ? context.getBundle() : bundle);
         final String typeName = ConstantsHelper.bundleEvent(event.getType());
 
         // Call the bundle {@link EventHook}

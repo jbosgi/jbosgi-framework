@@ -34,7 +34,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
-import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
@@ -222,17 +221,14 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     private Bundle installBundle(Deployment dep) throws BundleException {
         checkValidBundleContext();
-        ServiceController<? extends XBundleRevision> controller;
         try {
-            CoreServices coreServices = getFrameworkState().getCoreServices();
-            BundleLifecycle bundleLifecycle = coreServices.getBundleLifecycle();
-            controller = bundleLifecycle.installBundleRevision(this, dep);
+            BundleLifecycle bundleLifecycle = getFrameworkState().getCoreServices().getBundleLifecycle();
+            XBundleRevision brev = bundleLifecycle.createBundleRevision(this, dep).getValue();
+            return brev.getBundle();
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot install bundle from deployment: %s", dep);
             throw ex;
         }
-        XBundleRevision brev = controller.getValue();
-        return brev.getBundle();
     }
 
     @Override

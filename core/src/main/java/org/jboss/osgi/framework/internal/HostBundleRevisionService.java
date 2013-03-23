@@ -37,8 +37,8 @@ import org.osgi.framework.BundleException;
  */
 final class HostBundleRevisionService extends UserBundleRevisionService<HostBundleRevision> {
 
-    HostBundleRevisionService(FrameworkState frameworkState, BundleContext sourceContext, Deployment dep) throws BundleException {
-        super(frameworkState, sourceContext, dep);
+    HostBundleRevisionService(FrameworkState frameworkState, BundleContext targetContext, Deployment dep) throws BundleException {
+        super(frameworkState, targetContext, dep);
     }
 
     @Override

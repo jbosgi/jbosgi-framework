@@ -22,7 +22,6 @@
 package org.jboss.osgi.framework.spi;
 
 import org.jboss.osgi.resolver.XBundle;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkListener;
 
 /**
@@ -45,7 +44,7 @@ public interface StartLevelSupport {
     void increaseFrameworkStartLevel(int level);
 
     boolean isFrameworkStartLevelChanging();
-    
+
     int getBundleStartLevel(XBundle bundle);
 
     void setBundleStartLevel(XBundle bundle, int level);
@@ -54,8 +53,8 @@ public interface StartLevelSupport {
 
     void setInitialBundleStartLevel(int startlevel);
 
-    boolean isBundlePersistentlyStarted(Bundle bundle);
+    boolean isBundlePersistentlyStarted(XBundle bundle);
 
     void setBundlePersistentlyStarted(XBundle bundle, boolean started);
 
-    boolean isBundleActivationPolicyUsed(Bundle bundle);}
+    boolean isBundleActivationPolicyUsed(XBundle bundle);}

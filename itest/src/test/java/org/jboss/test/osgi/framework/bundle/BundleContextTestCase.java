@@ -199,6 +199,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
         JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "empty-manifest");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 ManifestBuilder builder = ManifestBuilder.newInstance();
                 return builder.openStream();
@@ -222,6 +223,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "valid-execution-env");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -247,6 +249,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "invalid-execution-env");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -277,6 +280,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
 
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "null-symbolic-name");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleName(archive.getName());
@@ -566,8 +570,8 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
         assertNoServiceEvent();
 
         BundleContext bundleContext = bundle.getBundleContext();
-        ServiceRegistration registration = bundleContext.registerService(BundleContext.class.getName(), bundleContext, properties);
-        ServiceReference reference = registration.getReference();
+        ServiceRegistration<BundleContext> registration = bundleContext.registerService(BundleContext.class, bundleContext, properties);
+        ServiceReference<BundleContext> reference = registration.getReference();
 
         if (events)
             assertServiceEvent(ServiceEvent.REGISTERED, reference);
@@ -586,7 +590,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
         else
             assertNoServiceEvent();
 
-        registration = bundleContext.registerService(BundleContext.class.getName(), bundleContext, properties);
+        registration = bundleContext.registerService(BundleContext.class, bundleContext, properties);
         reference = registration.getReference();
         if (events)
             assertServiceEvent(ServiceEvent.REGISTERED, reference);
@@ -616,6 +620,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
     private JavaArchive getBundleArchiveA() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple1");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);
@@ -630,6 +635,7 @@ public class BundleContextTestCase extends OSGiFrameworkTest {
     private JavaArchive getBundleArchiveB() {
         final JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "simple2");
         archive.setManifest(new Asset() {
+            @Override
             public InputStream openStream() {
                 OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
                 builder.addBundleManifestVersion(2);

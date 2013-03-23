@@ -37,7 +37,6 @@ import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.resolver.XBundle;
-import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
@@ -292,7 +291,7 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
     }
 
     @Override
-    public boolean isBundlePersistentlyStarted(Bundle bundle) {
+    public boolean isBundlePersistentlyStarted(XBundle bundle) {
         if (bundle == null)
             throw MESSAGES.illegalArgumentNull("bundle");
         return getBundleStartLevelState(bundle).isStarted();
@@ -306,7 +305,7 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
     }
 
     @Override
-    public boolean isBundleActivationPolicyUsed(Bundle bundle) {
+    public boolean isBundleActivationPolicyUsed(XBundle bundle) {
         boolean result = false;
         if (bundle instanceof AbstractBundleState) {
             AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
@@ -316,18 +315,14 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
         return result;
     }
 
-    private BundleStartLevelState getBundleStartLevelState(Bundle bundle) {
+    private BundleStartLevelState getBundleStartLevelState(XBundle bundle) {
         if (bundle instanceof Framework)
             return new BundleStartLevelState(bundle);
 
-        BundleStartLevelState state = null;
-        if (bundle instanceof XBundle) {
-            XBundle bundleState = (XBundle) bundle;
-            state = bundleState.getAttachment(BundleStartLevelState.class);
-            if (state == null) {
-                state = new BundleStartLevelState(bundle);
-                bundleState.addAttachment(BundleStartLevelState.class, state);
-            }
+        BundleStartLevelState state = bundle.getAttachment(BundleStartLevelState.class);
+        if (state == null) {
+            state = new BundleStartLevelState(bundle);
+            bundle.addAttachment(BundleStartLevelState.class, state);
         }
         return state;
     }
@@ -343,20 +338,16 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
     }
 
     class BundleStartLevelState {
-        final Bundle bundle;
+        final XBundle bundle;
         boolean started;
         int level;
 
-        public BundleStartLevelState(Bundle bundle) {
+        public BundleStartLevelState(XBundle bundle) {
             this.bundle = bundle;
-            if (bundle.getBundleId() > 0) {
-                XBundle bundleState = (XBundle) bundle;
-                level = !bundleState.isFragment() ? getInitialBundleStartLevel() : 0;
-                if (bundle instanceof UserBundleState) {
-                    XBundleRevision brev = bundleState.getBundleRevision();
-                    StorageState storageState = ((HostBundleRevision) brev).getStorageState();
-                    level = storageState.getStartLevel();
-                }
+            if (bundle instanceof UserBundleState) {
+                UserBundleState userBundle = (UserBundleState)bundle;
+                StorageState storageState = userBundle.getStorageState();
+                level = storageState != null ? storageState.getStartLevel() : getInitialBundleStartLevel();
             }
         }
 
@@ -367,8 +358,8 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
         void setLevel(int level) {
             this.level = level;
             if (bundle instanceof UserBundleState) {
-                XBundleRevision brev = ((XBundle)bundle).getBundleRevision();
-                StorageState storageState = ((HostBundleRevision) brev).getStorageState();
+                UserBundleState userBundle = (UserBundleState)bundle;
+                StorageState storageState = userBundle.getStorageState();
                 storageState.setStartLevel(level);
             }
         }
@@ -380,8 +371,8 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
         void setStarted(boolean started) {
             this.started = started;
             if (bundle instanceof UserBundleState) {
-                XBundleRevision brev = ((XBundle)bundle).getBundleRevision();
-                StorageState storageState = ((HostBundleRevision) brev).getStorageState();
+                UserBundleState userBundle = (UserBundleState)bundle;
+                StorageState storageState = userBundle.getStorageState();
                 storageState.setPersistentlyStarted(started);
             }
         }

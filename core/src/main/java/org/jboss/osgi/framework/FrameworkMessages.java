@@ -236,8 +236,8 @@ public interface FrameworkMessages {
     @Message(id = 11257, value = "Cannot stop bundle: %s")
     BundleException cannotStopBundle(@Cause Throwable cause, Bundle bundle);
 
-    //@Message(id = 11258, value = "Cannot acquire start/stop lock for: %s")
-    //BundleException cannotAcquireStartStopLock(Bundle bundle);
+    @Message(id = 11258, value = "Cannot update bundle: %s")
+    BundleException cannotUpdateBundle(@Cause Throwable cause, Bundle bundle);
 
     @Message(id = 11259, value = "Cannot find Bundle-NativeCode header for: %s")
     BundleException cannotFindNativeCodeHeader(BundleRevision brev);
@@ -271,12 +271,6 @@ public interface FrameworkMessages {
 
     //@Message(id = 11269, value = "Cannot load class '%s' from bundle revision: %s")
     //ClassNotFoundException cannotLoadClassFromBundleRevision(@Cause Throwable cause, String className, BundleRevision brev);
-
-    //@Message(id = 11270, value = "Cannot obtain web.xml from: %s")
-    //LifecycleInterceptorException cannotObtainWebXML(URL rootURL);
-
-    //@Message(id = 11271, value = "Cannot obtain web.xml")
-    //LifecycleInterceptorException cannotObtainWebXML(@Cause Throwable cause);
 
     @Message(id = 11272, value = "Timeout getting: %s")
     TimeoutException timeoutGettingService(String serviceName);

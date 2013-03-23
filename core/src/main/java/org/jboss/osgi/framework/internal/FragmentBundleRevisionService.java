@@ -37,8 +37,8 @@ import org.osgi.framework.BundleException;
  */
 final class FragmentBundleRevisionService extends UserBundleRevisionService<FragmentBundleRevision> {
 
-    FragmentBundleRevisionService(FrameworkState frameworkState, BundleContext sourceContext, Deployment dep) throws BundleException {
-        super(frameworkState, sourceContext, dep);
+    FragmentBundleRevisionService(FrameworkState frameworkState, BundleContext targetContext, Deployment dep) throws BundleException {
+        super(frameworkState, targetContext, dep);
     }
 
     @Override

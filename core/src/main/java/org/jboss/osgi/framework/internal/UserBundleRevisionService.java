@@ -23,9 +23,8 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
-import static org.jboss.osgi.framework.spi.IntegrationServices.BUNDLE_BASE_NAME;
-
 import java.io.IOException;
+
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
@@ -70,22 +69,10 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
         super(frameworkState);
         this.deployment = deployment;
         this.targetContext = targetContext;
-
-        int revindex = 0;
-        if (deployment.isBundleUpdate()) {
-            UserBundleState userBundle = UserBundleState.assertBundleState(deployment.getAttachment(Bundle.class));
-            revindex = userBundle.getRevisionIndex();
-        }
-        RevisionIdentifier revIdentifier = deployment.getAttachment(RevisionIdentifier.class);
-        Long bundleId = revIdentifier.getBundleIndex();
-        String bsname = deployment.getSymbolicName();
-        String version = deployment.getVersion();
-        String revisionid = "bid" + bundleId + "rev" + revindex;
-        serviceName = ServiceName.of(BUNDLE_BASE_NAME, "" + bsname, "" + version, revisionid);
+        this.serviceName = getBundleManager().getServiceName(deployment);
     }
 
     ServiceController<R> install(ServiceTarget serviceTarget, ServiceListener<XBundleRevision> listener) {
-        LOGGER.debugf("Installing %s %s", getClass().getSimpleName(), serviceName);
         ServiceBuilder<R> builder = serviceTarget.addService(serviceName, this);
         addServiceDependencies(builder);
         if (listener != null) {
@@ -100,6 +87,7 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
 
     @Override
     public void start(StartContext startContext) throws StartException {
+        LOGGER.debugf("Creating %s %s", getClass().getSimpleName(), serviceName);
         StorageState storageState = null;
         try {
             Deployment dep = deployment;
@@ -116,20 +104,19 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
             if (bundle == null) {
                 bundle = createBundleState(bundleRevision);
                 UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
+                userBundle.addBundleRevision(bundleRevision);
                 dep.addAttachment(Bundle.class, userBundle);
                 userBundle.initLazyActivation();
+                installBundleRevision(bundleRevision);
                 userBundle.changeState(Bundle.INSTALLED, 0);
-                LOGGER.infoBundleInstalled(userBundle);
-                // For the event type INSTALLED, this is the bundle whose context was used to install the bundle
-                XBundle origin = (XBundle) targetContext.getBundle();
+                LOGGER.infoBundleInstalled(bundle);
                 FrameworkEvents events = getFrameworkState().getFrameworkEvents();
-                events.fireBundleEvent(origin, bundle, BundleEvent.INSTALLED);
+                events.fireBundleEvent(targetContext, bundle, BundleEvent.INSTALLED);
             } else {
                 UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
                 userBundle.addBundleRevision(bundleRevision);
+                installBundleRevision(bundleRevision);
             }
-            bundleRevision.addAttachment(Bundle.class, bundle);
-            installBundleRevision(bundleRevision);
         } catch (BundleException ex) {
             if (storageState != null) {
                 BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
@@ -184,9 +171,9 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
         return storageState;
     }
 
-    private void installBundleRevision(R bundleRevision) throws BundleException {
+    private void installBundleRevision(R bundleRev) throws BundleException {
         XEnvironment env = getFrameworkState().getEnvironment();
-        env.installResources(bundleRevision);
+        env.installResources(bundleRev);
     }
 
     private void validateBundleRevision(R bundleRevision, OSGiMetaData metadata) throws BundleException {

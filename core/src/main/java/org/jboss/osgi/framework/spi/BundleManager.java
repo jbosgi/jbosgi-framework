@@ -102,10 +102,18 @@ public interface BundleManager extends Service<BundleManager> {
     /**
      * Get the service name for the given bundle revision.
      *
-     * @param bundle The bundle revision
+     * @param bundleRevision The bundle revision
      * @return The service name or null if the revision is not service based.
      */
-    ServiceName getServiceName(XBundleRevision bundle);
+    ServiceName getServiceName(XBundleRevision bundleRevision);
+
+    /**
+     * Get the service name for the given bundle deployment.
+     *
+     * @param deployment The bundle deployment
+     * @return The service name or null.
+     */
+    ServiceName getServiceName(Deployment deployment);
 
     /**
      * True the framework has reached the {@link Services#FRAMEWORK_ACTIVE} state
@@ -122,7 +130,7 @@ public interface BundleManager extends Service<BundleManager> {
      *
      * @return The INSTALL service
      */
-    ServiceController<? extends XBundleRevision> installBundleRevision(BundleContext context, Deployment deployment, ServiceTarget serviceTarget, ServiceListener<XBundleRevision> listener) throws BundleException;
+    ServiceController<? extends XBundleRevision> createBundleRevision(BundleContext context, Deployment deployment, ServiceTarget serviceTarget, ServiceListener<XBundleRevision> listener) throws BundleException;
 
     /**
      * Start the given bundle

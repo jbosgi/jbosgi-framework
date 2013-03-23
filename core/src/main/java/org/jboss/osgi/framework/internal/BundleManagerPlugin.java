@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.spi.IntegrationServices.BUNDLE_BASE_NAME;
 
 import java.io.InputStream;
 import java.security.AccessController;
@@ -432,7 +433,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     @SuppressWarnings("unchecked")
-    public ServiceController<? extends XBundleRevision> installBundleRevision(BundleContext targetContext, Deployment dep, ServiceTarget serviceTarget, ServiceListener<XBundleRevision> listener) throws BundleException {
+    public ServiceController<? extends XBundleRevision> createBundleRevision(BundleContext targetContext, Deployment dep, ServiceTarget serviceTarget, ServiceListener<XBundleRevision> listener) throws BundleException {
         if (targetContext == null)
             throw MESSAGES.illegalArgumentNull("targetContext");
         if (dep == null)
@@ -463,19 +464,13 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
         ServiceController<? extends XBundleRevision> controller;
         try {
-            Long bundleId;
-            XEnvironment env = injectedEnvironment.getValue();
 
-            // The storage state exists when we re-create the bundle from persistent storage
-            StorageState storageState = dep.getAttachment(StorageState.class);
-            if (storageState != null) {
-                bundleId = new Long(storageState.getBundleId());
-                bundleIndex.addAndGet(Math.max(0, bundleId - bundleIndex.get()));
-            } else {
-                bundleId = bundleIndex.incrementAndGet();
+            // Create the revision identifier
+            RevisionIdentifier revIdentifier = dep.getAttachment(RevisionIdentifier.class);
+            if (revIdentifier == null) {
+                revIdentifier = createRevisionIdentifier(symbolicName, dep.getAttachment(StorageState.class));
+                dep.addAttachment(RevisionIdentifier.class, revIdentifier);
             }
-            RevisionIdentifier revIdentifier = new RevisionIdentifier(bundleId, env.nextResourceIdentifier(null, ""));
-            dep.addAttachment(RevisionIdentifier.class, revIdentifier);
 
             // Check that we have valid metadata
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
@@ -502,6 +497,21 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
         dep.addAttachment(ServiceName.class, controller.getName());
         return controller;
+    }
+
+    RevisionIdentifier createRevisionIdentifier(String symbolicName, StorageState storageState) {
+        Long bundleId;
+        XEnvironment env = injectedEnvironment.getValue();
+
+        // The storage state exists when we re-create the bundle from persistent storage
+        if (storageState != null) {
+            bundleId = new Long(storageState.getBundleId());
+            bundleIndex.addAndGet(Math.max(0, bundleId - bundleIndex.get()));
+        } else {
+            bundleId = bundleIndex.incrementAndGet();
+        }
+
+        return new RevisionIdentifier(bundleId, env.nextResourceIdentifier(null, symbolicName));
     }
 
     @Override
@@ -605,6 +615,26 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             result = userRev.getServiceName();
         }
         return result;
+    }
+
+    @Override
+    public ServiceName getServiceName(Deployment dep) {
+        ServiceName serviceName = dep.getAttachment(ServiceName.class);
+        if (serviceName == null) {
+            int revindex = 0;
+            if (dep.isBundleUpdate()) {
+                UserBundleState userBundle = UserBundleState.assertBundleState(dep.getAttachment(Bundle.class));
+                revindex = userBundle.getRevisionIndex();
+            }
+            RevisionIdentifier revIdentifier = dep.getAttachment(RevisionIdentifier.class);
+            Long bundleId = revIdentifier.getBundleIndex();
+            String bsname = dep.getSymbolicName();
+            String version = dep.getVersion();
+            String revid = "bid" + bundleId + "rev" + revindex;
+            serviceName = ServiceName.of(BUNDLE_BASE_NAME, "" + bsname, "" + version, revid);
+            dep.addAttachment(ServiceName.class, serviceName);
+        }
+        return serviceName;
     }
 
     @Override

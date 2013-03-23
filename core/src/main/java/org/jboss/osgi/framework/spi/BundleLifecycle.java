@@ -39,7 +39,7 @@ import org.osgi.service.resolver.ResolutionException;
  */
 public interface BundleLifecycle {
 
-    ServiceController<? extends XBundleRevision> installBundleRevision(BundleContext context, Deployment dep) throws BundleException;
+    ServiceController<? extends XBundleRevision> createBundleRevision(BundleContext context, Deployment dep) throws BundleException;
 
     void resolve(XBundle bundle) throws ResolutionException;
 
@@ -50,4 +50,5 @@ public interface BundleLifecycle {
     void update(XBundle bundle, InputStream input) throws BundleException;
 
     void uninstall(XBundle bundle, int options) throws BundleException;
+
 }

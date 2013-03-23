@@ -24,6 +24,7 @@ package org.jboss.osgi.framework.spi;
 import java.util.Collection;
 
 import org.jboss.osgi.resolver.XBundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.FrameworkEvent;
@@ -68,7 +69,7 @@ public interface FrameworkEvents {
 
     void fireBundleEvent(XBundle bundle, int type);
 
-    void fireBundleEvent(XBundle origin, XBundle bundle, int type);
+    void fireBundleEvent(BundleContext context, XBundle bundle, int type);
 
     void fireFrameworkEvent(XBundle bundle, int type, Throwable th, FrameworkListener... listeners);
 

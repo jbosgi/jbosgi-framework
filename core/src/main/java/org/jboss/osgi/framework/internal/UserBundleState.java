@@ -95,7 +95,6 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
     UserBundleState(FrameworkState frameworkState, UserBundleRevision brev) {
         super(frameworkState, brev, brev.getStorageState().getBundleId());
-        addBundleRevision(brev);
     }
 
     /**
@@ -259,30 +258,16 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
     @Override
     void updateInternal(InputStream input) throws BundleException {
-        LockContext lockContext = null;
-        LockManager lockManager = getFrameworkState().getLockManager();
-        try {
-            lockContext = lockManager.lockItems(Method.UPDATE, this);
-
-            // We got the permit, now update
-            updateInternalNow(input);
-
-        } finally {
-            lockManager.unlockItems(lockContext);
-        }
-    }
-
-    private void updateInternalNow(InputStream input) throws BundleException {
         LOGGER.debugf("Updating bundle: %s", this);
+        BundleLifecycle bundleLifecycle = getFrameworkState().getCoreServices().getBundleLifecycle();
 
         boolean restart = false;
         if (isFragment() == false) {
             int state = getState();
             if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING) {
-                // If this bundle's state is ACTIVE, STARTING or STOPPING, this bundle is stopped as described in the
-                // Bundle.stop method.
+                // If this bundle's state is ACTIVE, STARTING or STOPPING, this bundle is stopped
                 // If Bundle.stop throws an exception, the exception is rethrown terminating the update.
-                stopInternal(Bundle.STOP_TRANSIENT);
+                bundleLifecycle.stop(this, Bundle.STOP_TRANSIENT);
                 if (state != Bundle.STOPPING)
                     restart = true;
             }
@@ -290,37 +275,44 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
         changeState(Bundle.INSTALLED, BundleEvent.UNRESOLVED);
 
-        UserBundleRevision brev = getBundleRevision();
+        // If the Framework is unable to install the updated version of this bundle, the original
+        // version of this bundle must be restored and a BundleException must be thrown after
+        // completion of the remaining steps.
+        UserBundleRevision currentRev = getBundleRevision();
         try {
-            // If the Framework is unable to install the updated version of this bundle, the original
-            // version of this bundle must be restored and a BundleException must be thrown after
-            // completion of the remaining steps.
-            createUpdateRevision(input);
+            LockContext lockContext = null;
+            LockManager lockManager = getFrameworkState().getLockManager();
+            try {
+                // Lock for update
+                lockContext = lockManager.lockItems(Method.UPDATE, this);
 
-            // Make the {@link BundleWiring} for the old {@link BundleRevision} uneffective
-            brev.getWiringSupport().makeUneffective();
+                // Create the update revision
+                createUpdateRevision(input);
 
+                // Make the {@link BundleWiring} for the old {@link BundleRevision} uneffective
+                currentRev.getWiringSupport().makeUneffective();
+            } finally {
+                lockManager.unlockItems(lockContext);
+            }
         } catch (BundleException ex) {
             if (restart)
-                startInternal(Bundle.START_TRANSIENT);
+                bundleLifecycle.start(this, Bundle.START_TRANSIENT);
             throw ex;
         } catch (Exception ex) {
-            BundleException be = new BundleException("Problem updating bundle");
-            be.initCause(ex);
+            BundleException be = MESSAGES.cannotUpdateBundle(ex, this);
             if (restart)
-                startInternal(Bundle.START_TRANSIENT);
+                bundleLifecycle.start(this, Bundle.START_TRANSIENT);
             throw be;
         }
 
         FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
         eventsPlugin.fireBundleEvent(this, BundleEvent.UPDATED);
+
         if (restart) {
-            // If this bundle's state was originally ACTIVE or STARTING, the updated bundle is started as described in the
-            // Bundle.start method.
-            // If Bundle.start throws an exception, a Framework event of type FrameworkEvent.ERROR is fired containing the
-            // exception
+            // If this bundle's state was originally ACTIVE or STARTING, the updated bundle is started
+            // If Bundle.start throws an exception, a Framework event of type FrameworkEvent.ERROR is fired
             try {
-                startInternal(Bundle.START_TRANSIENT);
+                bundleLifecycle.start(this, Bundle.START_TRANSIENT);
             } catch (BundleException e) {
                 eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, e);
             }
@@ -337,15 +329,16 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
      *              the same location as where the bundle was initially installed.
      * @throws Exception If the bundle cannot be read, or if the update attempt to change the BSN.
      */
-    private void createUpdateRevision(InputStream input) throws Exception {
-        VirtualFile rootFile = null;
+    private UserBundleRevision createUpdateRevision(InputStream input) throws IOException, BundleException {
+
+        String updateLocation = getOSGiMetaData().getHeader(Constants.BUNDLE_UPDATELOCATION);
 
         // If the specified InputStream is null, the Framework must create the InputStream from
         // which to read the updated bundle by interpreting, in an implementation dependent manner,
         // this bundle's Bundle-UpdateLocation Manifest header, if present, or this bundle's
         // original location.
+        VirtualFile rootFile = null;
         if (input == null) {
-            String updateLocation = getOSGiMetaData().getHeader(Constants.BUNDLE_UPDATELOCATION);
             if (updateLocation != null) {
                 URL updateURL = new URL(updateLocation);
                 rootFile = AbstractVFS.toVirtualFile(updateURL);
@@ -359,29 +352,31 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
         BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
         StorageState storageState = createStorageState(storagePlugin, getLocation(), rootFile);
-        try {
-            DeploymentProvider deploymentPlugin = getFrameworkState().getDeploymentProvider();
-            Deployment dep = deploymentPlugin.createDeployment(storageState);
-            OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
-            dep.addAttachment(OSGiMetaData.class, metadata);
-            dep.addAttachment(Bundle.class, this);
-            dep.setBundleUpdate(true);
+        DeploymentProvider deploymentPlugin = getFrameworkState().getDeploymentProvider();
+        Deployment dep = deploymentPlugin.createDeployment(storageState);
+        OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
+        dep.addAttachment(OSGiMetaData.class, metadata);
+        dep.addAttachment(Bundle.class, this);
+        dep.setBundleUpdate(true);
+        dep.setAutoStart(false);
 
-            // Check for symbolic name, version uniqueness
-            String symbolicName = metadata.getBundleSymbolicName();
-            Version bundleVersion = metadata.getBundleVersion();
-            getBundleManagerPlugin().checkUniqunessPolicy(this, symbolicName, bundleVersion, CollisionHook.UPDATING);
+        // Check for symbolic name, version uniqueness
+        String symbolicName = metadata.getBundleSymbolicName();
+        Version bundleVersion = metadata.getBundleVersion();
+        BundleManagerPlugin bundleManager = getBundleManagerPlugin();
+        bundleManager.checkUniqunessPolicy(this, symbolicName, bundleVersion, CollisionHook.UPDATING);
 
-            BundleLifecycle bundleLifecycle = getFrameworkState().getCoreServices().getBundleLifecycle();
-            BundleContext syscontext = getFrameworkState().getSystemBundle().getBundleContext();
-            bundleLifecycle.installBundleRevision(syscontext, dep).getValue();
-        } catch (BundleException ex) {
-            storagePlugin.deleteStorageState(storageState);
-            throw ex;
-        } catch (RuntimeException ex) {
-            storagePlugin.deleteStorageState(storageState);
-            throw ex;
-        }
+        RevisionIdentifier revIdentifier = bundleManager.createRevisionIdentifier(symbolicName, storageState);
+        dep.addAttachment(RevisionIdentifier.class, revIdentifier);
+
+        // Attach a the update location
+        if (updateLocation != null)
+            dep.addAttachment(Constants.BUNDLE_UPDATELOCATION, updateLocation, String.class);
+
+        BundleContext syscontext = getFrameworkState().getSystemBundle().getBundleContext();
+        BundleLifecycle bundleLifecycle = getFrameworkState().getCoreServices().getBundleLifecycle();
+        XBundleRevision brev = bundleLifecycle.createBundleRevision(syscontext, dep).getValue();
+        return UserBundleRevision.assertBundleRevision(brev);
     }
 
     private StorageState createStorageState(BundleStorage storagePlugin, String location, VirtualFile rootFile) throws BundleException {
