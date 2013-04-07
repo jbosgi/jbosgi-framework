@@ -21,13 +21,13 @@
  */
 package org.jboss.osgi.framework.spi;
 
-import org.jboss.osgi.framework.spi.LockManager.LockSupport;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
  * A lock for the framework wiring.
- * 
- * There is a gurantee that the framework wiring is not changed 
+ *
+ * There is a gurantee that the framework wiring is not changed
  * by another thread while the owner thread holds this lock.
  *
  * @author thomas.diesler@jboss.com
@@ -35,11 +35,11 @@ import org.jboss.osgi.framework.spi.LockManager.LockSupport;
  */
 public final class FrameworkWiringLock implements LockManager.LockableItem {
 
-    private final LockSupport lockSupport = LockManager.Factory.addLockSupport(this);
-    
+    private final ReentrantLock wiringLock = new ReentrantLock();
+
     @Override
-    public LockManager.LockSupport getLockSupport() {
-        return lockSupport;
+    public ReentrantLock getReentrantLock() {
+        return wiringLock;
     }
 
     @Override

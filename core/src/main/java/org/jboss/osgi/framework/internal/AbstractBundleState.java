@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
@@ -52,8 +53,6 @@ import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleStartLevelSupport;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
-import org.jboss.osgi.framework.spi.LockManager;
-import org.jboss.osgi.framework.spi.LockManager.LockSupport;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.framework.spi.StorageState;
@@ -89,8 +88,8 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     private final long bundleId;
     private final FrameworkState frameworkState;
+    private final ReentrantLock bundleLock = new ReentrantLock();
     private final AtomicInteger bundleState = new AtomicInteger(UNINSTALLED);
-    private final LockSupport bundleLock = LockManager.Factory.addLockSupport(this);
     private final List<ServiceState<?>> registeredServices = new CopyOnWriteArrayList<ServiceState<?>>();
     private final ConcurrentHashMap<ServiceState<?>, AtomicInteger> usedServices = new ConcurrentHashMap<ServiceState<?>, AtomicInteger>();
 
@@ -729,7 +728,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     }
 
     @Override
-    public LockSupport getLockSupport() {
+    public ReentrantLock getReentrantLock() {
         return bundleLock;
     }
 

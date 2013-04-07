@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReentrantLock;
 
 import junit.framework.Assert;
 
@@ -34,7 +35,6 @@ import org.jboss.osgi.framework.internal.LockManagerImpl;
 import org.jboss.osgi.framework.spi.LockException;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
-import org.jboss.osgi.framework.spi.LockManager.LockSupport;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.junit.After;
@@ -154,7 +154,7 @@ public class LockManagerTestCase {
     }
 
     class TestItem implements LockableItem {
-        final LockSupport itemLock = LockManager.Factory.addLockSupport(this);
+        final ReentrantLock itemLock = new ReentrantLock();
         final String name;
 
         TestItem(String name) {
@@ -188,7 +188,7 @@ public class LockManagerTestCase {
         }
 
         @Override
-        public LockManager.LockSupport getLockSupport() {
+        public ReentrantLock getReentrantLock() {
             return itemLock;
         }
 

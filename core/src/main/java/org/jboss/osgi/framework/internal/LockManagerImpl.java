@@ -128,8 +128,8 @@ public final class LockManagerImpl implements LockManager {
 
             // Unlock all items
             for (LockableItem item : context.getItems()) {
-                LockSupportImpl support = (LockSupportImpl) item.getLockSupport();
-                support.unlock();
+                ReentrantLock lock = item.getReentrantLock();
+                lock.unlock();
             }
 
             LOGGER.tracef("LockManager unlocked: %s", context);
@@ -171,8 +171,8 @@ public final class LockManagerImpl implements LockManager {
             // Try to lock all items
             int index = -1;
             for (LockableItem item : items) {
-                LockSupportImpl support = (LockSupportImpl) item.getLockSupport();
-                if (!support.tryLock(method)) {
+                ReentrantLock lock = item.getReentrantLock();
+                if (!lock.tryLock()) {
                     break;
                 }
                 index++;
@@ -186,8 +186,8 @@ public final class LockManagerImpl implements LockManager {
             // Unlock the locked items
             for (; index >= 0; index--) {
                 LockableItem item = items.get(index);
-                LockSupportImpl support = (LockSupportImpl) item.getLockSupport();
-                support.unlock();
+                ReentrantLock lock = item.getReentrantLock();
+                lock.unlock();
             }
 
             return false;
@@ -196,22 +196,6 @@ public final class LockManagerImpl implements LockManager {
         @Override
         public String toString() {
             return "(" + method + ") " + items;
-        }
-    }
-
-    public static class LockSupportImpl implements LockSupport {
-
-        private final ReentrantLock lock = new ReentrantLock();
-
-        public LockSupportImpl(LockableItem item) {
-        }
-
-        boolean tryLock(Method method) {
-            return lock.tryLock();
-        }
-
-        void unlock() {
-            lock.unlock();
         }
     }
 }

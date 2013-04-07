@@ -36,6 +36,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.logging.Logger.Level;
 import org.jboss.modules.Module;
@@ -44,7 +45,6 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
-import org.jboss.osgi.framework.spi.LockManager.LockSupport;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -75,7 +75,7 @@ import org.osgi.resource.Capability;
 public class AbstractBundleAdaptor extends AbstractElement implements XBundle, LockableItem, BundleStartLevel {
 
     private final AtomicInteger bundleState = new AtomicInteger(Bundle.RESOLVED);
-    private final LockSupport bundleLock = LockManager.Factory.addLockSupport(this);
+    private final ReentrantLock bundleLock = new ReentrantLock();
     private final BundleManager bundleManager;
     private final BundleContext context;
     private final XBundleRevision brev;
@@ -472,7 +472,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     }
 
     @Override
-    public LockSupport getLockSupport() {
+    public ReentrantLock getReentrantLock() {
         return bundleLock;
     }
 
