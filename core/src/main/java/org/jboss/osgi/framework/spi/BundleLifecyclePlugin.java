@@ -36,6 +36,9 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
+import org.jboss.osgi.framework.spi.LockManager.LockContext;
+import org.jboss.osgi.framework.spi.LockManager.LockableItem;
+import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -56,6 +59,7 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private final InjectedValue<XResolver> injectedResolver = new InjectedValue<XResolver>();
+    private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
 
     public BundleLifecyclePlugin() {
         super(IntegrationServices.BUNDLE_LIFECYCLE_PLUGIN);
@@ -63,6 +67,7 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<BundleLifecycle> builder) {
+        builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, injectedEnvironment);
         builder.addDependency(Services.RESOLVER, XResolver.class, injectedResolver);
@@ -75,7 +80,8 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
         BundleManager bundleManager = injectedBundleManager.getValue();
         XResolver resolver = injectedResolver.getValue();
         XEnvironment environment = injectedEnvironment.getValue();
-        return new BundleLifecycleImpl(bundleManager, environment, resolver);
+        LockManager lockManager = injectedLockManager.getValue();
+        return new BundleLifecycleImpl(bundleManager, environment, resolver, lockManager);
     }
 
     static class BundleLifecycleImpl implements BundleLifecycle {
@@ -83,11 +89,13 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
         private final BundleManager bundleManager;
         private final XEnvironment environment;
         private final XResolver resolver;
+        private final LockManager lockManager;
 
-        BundleLifecycleImpl(BundleManager bundleManager, XEnvironment environment, XResolver resolver) {
+        BundleLifecycleImpl(BundleManager bundleManager, XEnvironment environment, XResolver resolver, LockManager lockManager) {
             this.bundleManager = bundleManager;
             this.environment = environment;
             this.resolver = resolver;
+            this.lockManager = lockManager;
         }
 
         @Override
@@ -132,6 +140,16 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
         @Override
         public void uninstall(XBundle bundle, int options) throws BundleException {
             bundleManager.uninstallBundle(bundle, options);
+        }
+
+        @Override
+        public LockContext lockBundle(Method method, XBundle bundle, LockableItem[] items) {
+            return lockManager.lockItems(method, items);
+        }
+
+        @Override
+        public void unlockBundle(XBundle bundle, LockContext context) {
+            lockManager.unlockItems(context);
         }
     }
 }

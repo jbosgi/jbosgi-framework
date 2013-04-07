@@ -61,14 +61,18 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
+import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkBuilder;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkStartLevelSupport;
+import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.LockManager.Method;
+import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -91,6 +95,7 @@ import org.osgi.framework.launch.Framework;
 import org.osgi.framework.startlevel.FrameworkStartLevel;
 import org.osgi.framework.wiring.FrameworkWiring;
 import org.osgi.resource.Resource;
+import org.jboss.osgi.framework.spi.LockManager.LockContext;
 
 /**
  * The BundleManager is the central managing entity for OSGi bundles.
@@ -516,26 +521,64 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public void startBundle(XBundle bundle, int options) throws BundleException {
-        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
-        bundleState.startInternal(options);
+        BundleLifecycle bundleLifecycle = getBundleLifecycle();
+        LockableItem[] items = new LockableItem[] { (LockableItem) bundle };
+        LockContext lockContext = null;
+        try {
+            lockContext = bundleLifecycle.lockBundle(Method.START, bundle, items);
+            AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
+            bundleState.startInternal(options);
+        } finally {
+            bundleLifecycle.unlockBundle(bundle, lockContext);
+        }
     }
 
     @Override
     public void stopBundle(XBundle bundle, int options) throws BundleException {
-        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
-        bundleState.stopInternal(options);
+        BundleLifecycle bundleLifecycle = getBundleLifecycle();
+        LockableItem[] items = new LockableItem[] { (LockableItem) bundle };
+        LockContext lockContext = null;
+        try {
+            lockContext = bundleLifecycle.lockBundle(Method.STOP, bundle, items);
+            AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
+            bundleState.stopInternal(options);
+        } finally {
+            bundleLifecycle.unlockBundle(bundle, lockContext);
+        }
     }
 
     @Override
     public void updateBundle(XBundle bundle, InputStream input) throws BundleException {
-        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
-        bundleState.updateInternal(input);
+        BundleLifecycle bundleLifecycle = getBundleLifecycle();
+        LockableItem[] items = new LockableItem[] { (LockableItem) bundle };
+        LockContext lockContext = null;
+        try {
+            lockContext = bundleLifecycle.lockBundle(Method.UPDATE, bundle, items);
+            AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
+            bundleState.updateInternal(input);
+        } finally {
+            bundleLifecycle.unlockBundle(bundle, lockContext);
+        }
     }
 
     @Override
     public void uninstallBundle(XBundle bundle, int options) throws BundleException {
-        AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
-        bundleState.uninstallInternal(options);
+        BundleLifecycle bundleLifecycle = getBundleLifecycle();
+        LockManager lockManager = getFrameworkState().getLockManager();
+        LockableItem wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+        LockableItem[] items = new LockableItem[] { (LockableItem) bundle, wireLock };
+        LockContext lockContext = null;
+        try {
+            lockContext = bundleLifecycle.lockBundle(Method.UNINSTALL, bundle, items);
+            AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
+            bundleState.uninstallInternal(options);
+        } finally {
+            bundleLifecycle.unlockBundle(bundle, lockContext);
+        }
+    }
+
+    private BundleLifecycle getBundleLifecycle() {
+        return getFrameworkState().getCoreServices().getBundleLifecycle();
     }
 
     void checkUniqunessPolicy(Bundle targetBundle, String symbolicName, Version version, int operationType) throws BundleException {

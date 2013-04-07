@@ -605,6 +605,8 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     }
 
     void assertStartConditions(int options) throws BundleException {
+        if (isFragment())
+            throw MESSAGES.cannotStartFragment();
         assertNotUninstalled();
     }
 
@@ -621,7 +623,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     }
 
     void stopWithOptions(int options) throws BundleException {
-        assertNotUninstalled();
+        assertStopConditions();
         try {
             BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
             bundleLifecycle.stop(this, options);
@@ -629,6 +631,12 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
             LOGGER.debugf(ex, "Cannot stop bundle: %s", this);
             throw ex;
         }
+    }
+
+    void assertStopConditions() throws BundleException {
+        if (isFragment())
+            throw MESSAGES.cannotStopFragment();
+        assertNotUninstalled();
     }
 
     abstract void stopInternal(int options) throws BundleException;

@@ -45,13 +45,8 @@ import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
-import org.jboss.osgi.framework.spi.FrameworkWiringLock;
-import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.framework.spi.StartLevelSupport;
-import org.jboss.osgi.framework.spi.LockManager.LockContext;
-import org.jboss.osgi.framework.spi.LockManager.LockableItem;
-import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
@@ -148,7 +143,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
                     options |= START_ACTIVATION_POLICY;
                 }
                 LOGGER.debugf("Lazy activation of: %s", this);
-                startInternal(options);
+                getBundleManagerPlugin().startBundle(this, options);
             }
         }
     }
@@ -258,6 +253,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
     @Override
     void updateInternal(InputStream input) throws BundleException {
+
         LOGGER.debugf("Updating bundle: %s", this);
         BundleLifecycle bundleLifecycle = getFrameworkState().getCoreServices().getBundleLifecycle();
 
@@ -280,20 +276,11 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         // completion of the remaining steps.
         UserBundleRevision currentRev = getBundleRevision();
         try {
-            LockContext lockContext = null;
-            LockManager lockManager = getFrameworkState().getLockManager();
-            try {
-                // Lock for update
-                lockContext = lockManager.lockItems(Method.UPDATE, this);
+            // Create the update revision
+            createUpdateRevision(input);
 
-                // Create the update revision
-                createUpdateRevision(input);
-
-                // Make the {@link BundleWiring} for the old {@link BundleRevision} uneffective
-                currentRev.getWiringSupport().makeUneffective();
-            } finally {
-                lockManager.unlockItems(lockContext);
-            }
+            // Make the {@link BundleWiring} for the old {@link BundleRevision} uneffective
+            currentRev.getWiringSupport().makeUneffective();
         } catch (BundleException ex) {
             if (restart)
                 bundleLifecycle.start(this, Bundle.START_TRANSIENT);
@@ -443,20 +430,6 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
     @Override
     void uninstallInternal(int options) {
-        LockContext lockContext = null;
-        LockManager lockManager = getFrameworkState().getLockManager();
-        try {
-            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-            lockContext = lockManager.lockItems(Method.UNINSTALL, wireLock, this);
-
-            // We got the permit, now uninstall
-            uninstallInternalNow(options);
-        } finally {
-            lockManager.unlockItems(lockContext);
-        }
-    }
-
-    void uninstallInternalNow(int options) {
 
         int state = getState();
         if (state == Bundle.UNINSTALLED)
@@ -534,34 +507,18 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
     }
 
     @Override
-    void startWithOptions(int options) throws BundleException {
-        if (isFragment())
-            throw MESSAGES.cannotStartFragment();
-        else
-            super.startWithOptions(options);
-    }
-
-    @Override
     void startInternal(int options) throws BundleException {
 
         // #1 If this bundle is in the process of being activated or deactivated
         // then this method must wait for activation or deactivation to complete before continuing.
         // If this does not occur in a reasonable time, a BundleException is thrown
-        LockContext lockContext = null;
-        LockManager lockManager = getFrameworkState().getLockManager();
+
+        // We got the permit, now start
         try {
-            lockContext = lockManager.lockItems(Method.START, this);
-
-            // We got the permit, now start
-            try {
-                alreadyStarting.set(true);
-                startInternalNow(options);
-            } finally {
-                alreadyStarting.set(false);
-            }
-
+            alreadyStarting.set(true);
+            startInternalNow(options);
         } finally {
-            lockManager.unlockItems(lockContext);
+            alreadyStarting.set(false);
         }
     }
 
@@ -676,76 +633,36 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
     }
 
     @Override
-    void stopWithOptions(int options) throws BundleException {
-        if (isFragment())
-            throw MESSAGES.cannotStopFragment();
-        else
-            super.stopWithOptions(options);
-    }
-
-    @Override
     void stopInternal(int options) throws BundleException {
 
         // #2 If this bundle is in the process of being activated or deactivated
         // then this method must wait for activation or deactivation to complete before continuing.
         // If this does not occur in a reasonable time, a BundleException is thrown to indicate this bundle was unable to be
         // stopped
-        LockContext lockContext = null;
-        LockManager lockManager = getFrameworkState().getLockManager();
-        try {
-            lockContext = lockManager.lockItems(Method.STOP, this);
 
-            // We got the permit, now stop
-            stopInternalNow(options);
-
-        } finally {
-            lockManager.unlockItems(lockContext);
-        }
-    }
-
-    Set<UserBundleState> getDependentBundles() {
-        Set<UserBundleState> result = new HashSet<UserBundleState>();
-        if (isResolved() == true) {
-            BundleWiring wiring = getBundleRevision().getWiring();
-            List<Wire> wires = wiring.getRequiredResourceWires(null);
-            for (Wire wire : wires) {
-                BundleRevision brev = (BundleRevision) wire.getProvider();
-                Bundle bundle = brev.getBundle();
-                if (bundle instanceof UserBundleState)
-                    result.add((UserBundleState) bundle);
-            }
-        }
-        return result;
+        // We got the permit, now stop
+        stopInternalNow(options);
     }
 
     private void stopInternalNow(int options) throws BundleException {
 
         int priorState = getState();
 
-        LockContext lockContext = null;
-        LockManager lockManager = getFrameworkState().getLockManager();
-        try {
-            LockManager.LockableItem[] lockItems = new LockableItem[] { this };
-            lockContext = lockManager.lockItems(Method.STOP, lockItems);
-
-            // #3 If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to Stopped.
-            // When the Framework is restarted and this bundle's autostart setting is Stopped, this bundle must not be
-            // automatically started.
-            if ((options & Bundle.STOP_TRANSIENT) == 0) {
-                setPersistentlyStarted(false);
-                setBundleActivationPolicyUsed(false);
-            }
-
-            // #4 If this bundle's state is not STARTING or ACTIVE then this method returns immediately
-            if (priorState != Bundle.STARTING && priorState != Bundle.ACTIVE)
-                return;
-
-            // #5 This bundle's state is set to STOPPING
-            // #6 A bundle event of type BundleEvent.STOPPING is fired
-            changeState(Bundle.STOPPING);
-        } finally {
-            lockManager.unlockItems(lockContext);
+        // #3 If the STOP_TRANSIENT option is not set then then set this bundle's persistent autostart setting to Stopped.
+        // When the Framework is restarted and this bundle's autostart setting is Stopped, this bundle must not be
+        // automatically started.
+        if ((options & Bundle.STOP_TRANSIENT) == 0) {
+            setPersistentlyStarted(false);
+            setBundleActivationPolicyUsed(false);
         }
+
+        // #4 If this bundle's state is not STARTING or ACTIVE then this method returns immediately
+        if (priorState != Bundle.STARTING && priorState != Bundle.ACTIVE)
+            return;
+
+        // #5 This bundle's state is set to STOPPING
+        // #6 A bundle event of type BundleEvent.STOPPING is fired
+        changeState(Bundle.STOPPING);
 
         // #7 If this bundle's state was ACTIVE prior to setting the state to STOPPING,
         // the BundleActivator.stop(org.osgi.framework.BundleContext) method of this bundle's BundleActivator,
@@ -784,6 +701,21 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         } else {
             LOGGER.infoBundleStopped(this);
         }
+    }
+
+    Set<UserBundleState> getDependentBundles() {
+        Set<UserBundleState> result = new HashSet<UserBundleState>();
+        if (isResolved() == true) {
+            BundleWiring wiring = getBundleRevision().getWiring();
+            List<Wire> wires = wiring.getRequiredResourceWires(null);
+            for (Wire wire : wires) {
+                BundleRevision brev = (BundleRevision) wire.getProvider();
+                Bundle bundle = brev.getBundle();
+                if (bundle instanceof UserBundleState)
+                    result.add((UserBundleState) bundle);
+            }
+        }
+        return result;
     }
 
     @Override
