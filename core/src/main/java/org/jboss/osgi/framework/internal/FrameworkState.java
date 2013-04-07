@@ -80,10 +80,6 @@ final class FrameworkState {
         return bundleManager;
     }
 
-    BundleManagerPlugin getBundleManagerPlugin() {
-        return BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
-    }
-
     BundleStartLevelSupport getBundleStartLevel() {
         return injectedBundleStartLevel.getValue();
     }

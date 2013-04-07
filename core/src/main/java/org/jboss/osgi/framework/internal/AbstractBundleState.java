@@ -123,13 +123,8 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         return frameworkState;
     }
 
-    BundleManager getBundleManager() {
+    BundleManagerPlugin getBundleManager() {
         return frameworkState.getBundleManager();
-    }
-
-    BundleManagerPlugin getBundleManagerPlugin() {
-        BundleManager bundleManager = frameworkState.getBundleManager();
-        return BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
     }
 
     CoreServices getCoreServices() {
@@ -250,7 +245,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         LOGGER.tracef("changeState: %s -> %s", this, ConstantsHelper.bundleState(state));
 
         // Invoke the lifecycle interceptors
-        boolean frameworkActive = getBundleManagerPlugin().isFrameworkCreated();
+        boolean frameworkActive = getBundleManager().isFrameworkCreated();
         if (frameworkActive && getBundleId() > 0) {
             LifecycleInterceptorService plugin = getCoreServices().getLifecycleInterceptorService();
             plugin.handleStateChange(state, this);

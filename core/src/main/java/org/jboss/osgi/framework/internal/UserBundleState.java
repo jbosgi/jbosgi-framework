@@ -143,7 +143,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
                     options |= START_ACTIVATION_POLICY;
                 }
                 LOGGER.debugf("Lazy activation of: %s", this);
-                getBundleManagerPlugin().startBundle(this, options);
+                getBundleManager().startBundle(this, options);
             }
         }
     }
@@ -350,7 +350,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         // Check for symbolic name, version uniqueness
         String symbolicName = metadata.getBundleSymbolicName();
         Version bundleVersion = metadata.getBundleVersion();
-        BundleManagerPlugin bundleManager = getBundleManagerPlugin();
+        BundleManagerPlugin bundleManager = getBundleManager();
         bundleManager.checkUniqunessPolicy(this, symbolicName, bundleVersion, CollisionHook.UPDATING);
 
         RevisionIdentifier revIdentifier = bundleManager.createRevisionIdentifier(symbolicName, storageState);
@@ -444,7 +444,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
                     stopInternal(options);
                 } catch (Exception ex) {
                     // If Bundle.stop throws an exception, a Framework event of type FrameworkEvent.ERROR is fired
-                    getBundleManagerPlugin().fireFrameworkError(this, "stopping bundle: " + this, ex);
+                    getBundleManager().fireFrameworkError(this, "stopping bundle: " + this, ex);
                 }
             }
         }
@@ -452,7 +452,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         // Check if the bundle has still active wires
         boolean activeWires = hasActiveWiresWhileUninstalling();
         if (activeWires == false) {
-            getBundleManagerPlugin().unresolveBundle(this);
+            getBundleManager().unresolveBundle(this);
         }
 
         // Make the current {@link BundleWiring} uneffective and fire the UNRESOLVED event
@@ -465,7 +465,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
         // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
         if (activeWires == false) {
-            getBundleManagerPlugin().removeBundle(this, options);
+            getBundleManager().removeBundle(this, options);
         }
 
         // Remove other uninstalled bundles that now also are not in use any more
@@ -484,8 +484,8 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
                 }
                 if (bundleInUse == false) {
                     UserBundleState auxUser = UserBundleState.assertBundleState(auxState);
-                    getBundleManagerPlugin().unresolveBundle(auxUser);
-                    getBundleManagerPlugin().removeBundle(auxUser, options);
+                    getBundleManager().unresolveBundle(auxUser);
+                    getBundleManager().removeBundle(auxUser, options);
                 }
             }
         }

@@ -120,7 +120,7 @@ public final class NativeCodeImpl implements NativeCode {
     private final BundleManagerPlugin bundleManager;
 
     public NativeCodeImpl(BundleManager bundleManager) {
-        this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
+        this.bundleManager = (BundleManagerPlugin) bundleManager;
     }
 
     @Override

@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
-import org.jboss.osgi.framework.spi.BundleManager;
 
 /**
  * The base of all framework services.
@@ -37,14 +36,8 @@ abstract class AbstractFrameworkService extends AbstractIntegrationService<Frame
         super(serviceName);
     }
 
-    BundleManager getBundleManager() {
-        FrameworkState frameworkState = getValue();
-        return frameworkState.getBundleManager();
-    }
-
-    BundleManagerPlugin getBundleManagerPlugin() {
-        BundleManager bundleManager = getBundleManager();
-        return BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
+    BundleManagerPlugin getBundleManager() {
+        return getValue().getBundleManager();
     }
 
 }

@@ -71,7 +71,7 @@ class WeavingContext {
     private WeavingContext(UserBundleState hostState) {
         this.hostState = hostState;
 
-        BundleManagerPlugin bundleManager = hostState.getBundleManagerPlugin();
+        BundleManagerPlugin bundleManager = hostState.getBundleManager();
         BundleContext syscontext = bundleManager.getSystemContext();
 
         // Cleanup the blacklist

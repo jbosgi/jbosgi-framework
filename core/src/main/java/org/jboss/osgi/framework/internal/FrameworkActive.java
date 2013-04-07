@@ -143,7 +143,7 @@ public final class FrameworkActive extends AbstractFrameworkService {
     protected FrameworkState createServiceValue(StartContext startContext) throws StartException {
         // This Framework's state is set to ACTIVE
         FrameworkState frameworkState = injectedFramework.getValue();
-        BundleManagerPlugin bundleManager = frameworkState.getBundleManagerPlugin();
+        BundleManagerPlugin bundleManager = frameworkState.getBundleManager();
         SystemBundleState systemBundle = frameworkState.getSystemBundle();
         systemBundle.changeState(Bundle.ACTIVE);
 

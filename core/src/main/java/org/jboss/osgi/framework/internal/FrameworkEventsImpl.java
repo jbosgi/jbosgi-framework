@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
-import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
@@ -95,8 +94,8 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     /** The set of events that are logged at INFO level */
     private Set<String> infoEvents = new HashSet<String>();
 
-    FrameworkEventsImpl(BundleManager bundleManager, ExecutorService executorService, LockManager lockManager) {
-        this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
+    FrameworkEventsImpl(BundleManagerPlugin bundleManager, ExecutorService executorService, LockManager lockManager) {
+        this.bundleManager = bundleManager;
         this.executorService = executorService;
         this.lockManager = lockManager;
         asyncBundleEvents.add(new Integer(BundleEvent.INSTALLED));

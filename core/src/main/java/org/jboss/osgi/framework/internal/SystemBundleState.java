@@ -115,7 +115,7 @@ final class SystemBundleState extends AbstractBundleState<SystemBundleRevision> 
     public <T> T adapt(Class<T> type) {
         T result = super.adapt(type);
         if (result == null) {
-            result = getBundleManagerPlugin().adapt(type);
+            result = getBundleManager().adapt(type);
         }
         return result;
     }
@@ -144,7 +144,7 @@ final class SystemBundleState extends AbstractBundleState<SystemBundleRevision> 
     @Override
     void stopInternal(int options) throws BundleException {
         // Returns immediately and shuts down the Framework on another thread
-        getBundleManagerPlugin().shutdownManager(false);
+        getBundleManager().shutdownManager(false);
     }
 
     @Override

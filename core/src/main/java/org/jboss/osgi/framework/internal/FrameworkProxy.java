@@ -37,7 +37,6 @@ import java.util.Map;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.FrameworkBuilder;
 import org.jboss.osgi.framework.spi.FrameworkBuilder.FrameworkPhase;
 import org.jboss.osgi.framework.spi.ServiceTracker;
@@ -135,8 +134,7 @@ final class FrameworkProxy implements Framework {
             if (serviceTarget == null)
                 serviceTarget = serviceContainer.subTarget();
 
-            BundleManager auxBundleManager = frameworkBuilder.createFrameworkServices(serviceContainer, firstInit);
-            bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(auxBundleManager);
+            bundleManager = (BundleManagerPlugin) frameworkBuilder.createFrameworkServices(serviceContainer, firstInit);
             bundleManager.setManagerState(Bundle.STARTING);
 
             ServiceTracker<Object> serviceTracker = new ServiceTracker<Object>("Framework.init");

@@ -36,7 +36,6 @@ import java.util.Dictionary;
 import java.util.List;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
-import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
@@ -70,7 +69,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     private final T bundleState;
     private final FrameworkState frameworkState;
-    private final BundleManager bundleManager;
+    private final BundleManagerPlugin bundleManager;
     private boolean destroyed;
 
     AbstractBundleContext(T bundleState) {
@@ -97,12 +96,8 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
         return bundleState;
     }
 
-    BundleManager getBundleManager() {
+    BundleManagerPlugin getBundleManager() {
         return bundleManager;
-    }
-
-    BundleManagerPlugin getBundleManagerPlugin() {
-        return BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
     }
 
     FrameworkState getFrameworkState() {
@@ -112,7 +107,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
     @Override
     public String getProperty(String key) {
         checkValidBundleContext();
-        getBundleManagerPlugin().assertFrameworkCreated();
+        getBundleManager().assertFrameworkCreated();
         Object value = getBundleManager().getProperty(key);
         return (value instanceof String ? (String) value : null);
     }

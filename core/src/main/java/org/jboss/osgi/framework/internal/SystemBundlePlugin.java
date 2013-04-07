@@ -85,7 +85,7 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
     @Override
     protected SystemBundleState createServiceValue(StartContext startContext) throws StartException {
         StorageState storageState = null;
-        BundleManagerPlugin bundleManager = frameworkState.getBundleManagerPlugin();
+        BundleManagerPlugin bundleManager = frameworkState.getBundleManager();
         try {
             OSGiMetaData metadata = createMetaData(bundleManager);
             storageState = createStorageState();
@@ -107,7 +107,7 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
 
     @Override
     public void stop(StopContext context) {
-        BundleManagerPlugin bundleManager = frameworkState.getBundleManagerPlugin();
+        BundleManagerPlugin bundleManager = frameworkState.getBundleManager();
         bundleManager.injectedSystemBundle.uninject();
     }
 

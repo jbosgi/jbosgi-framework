@@ -92,7 +92,7 @@ public final class FrameworkCreate extends AbstractFrameworkService {
     @Override
     public void start(StartContext startContext) throws StartException {
         super.start(startContext);
-        getBundleManagerPlugin().injectedFramework.inject(frameworkState);
+        getBundleManager().injectedFramework.inject(frameworkState);
     }
 
     @Override
@@ -102,7 +102,7 @@ public final class FrameworkCreate extends AbstractFrameworkService {
 
     @Override
     public void stop(StopContext context) {
-        getBundleManagerPlugin().injectedFramework.uninject();
+        getBundleManager().injectedFramework.uninject();
     }
 
     private class FrameworkCreated extends AbstractIntegrationService<BundleContext> {

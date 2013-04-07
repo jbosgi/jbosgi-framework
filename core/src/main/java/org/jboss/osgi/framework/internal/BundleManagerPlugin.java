@@ -220,12 +220,6 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         return this;
     }
 
-    static BundleManagerPlugin assertBundleManagerPlugin(BundleManager bundleManager) {
-        assert bundleManager != null : "Null bundleManager";
-        assert bundleManager instanceof BundleManagerPlugin : "Not an BundleManagerPlugin: " + bundleManager;
-        return (BundleManagerPlugin) bundleManager;
-    }
-
     FrameworkBuilder getFrameworkBuilder() {
         return frameworkBuilder;
     }

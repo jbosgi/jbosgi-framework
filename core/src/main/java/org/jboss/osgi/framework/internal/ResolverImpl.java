@@ -94,7 +94,7 @@ public final class ResolverImpl implements XResolver {
     private final XResolver delegate;
 
     public ResolverImpl(BundleManager bundleManager, NativeCode nativeCode, ModuleManager moduleManager, FrameworkModuleLoader moduleLoader, XEnvironment environment, LockManager lockManager) {
-        this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
+        this.bundleManager = (BundleManagerPlugin) bundleManager;
         this.nativeCode = nativeCode;
         this.moduleManager = moduleManager;
         this.moduleLoader = moduleLoader;

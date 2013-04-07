@@ -60,7 +60,7 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
     private AtomicBoolean changingStartLevel = new AtomicBoolean();
 
     public StartLevelSupportImpl(BundleManager bundleManager, FrameworkEvents frameworkEvents, ExecutorService executorService, AtomicBoolean immediateExecution) {
-        this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
+        this.bundleManager = (BundleManagerPlugin) bundleManager;
         this.events = frameworkEvents;
         this.executorService = executorService;
         this.immediateExecution = immediateExecution;

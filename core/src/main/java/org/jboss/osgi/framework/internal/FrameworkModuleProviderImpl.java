@@ -56,7 +56,7 @@ public class FrameworkModuleProviderImpl implements FrameworkModuleProvider {
     private Module frameworkModule;
 
     public FrameworkModuleProviderImpl(BundleManager bundleManager, SystemPaths systemPaths) {
-        this.bundleManager = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
+        this.bundleManager = (BundleManagerPlugin) bundleManager;
         this.systemPaths = systemPaths;
     }
 

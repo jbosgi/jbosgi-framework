@@ -69,16 +69,15 @@ import org.osgi.service.resolver.ResolutionException;
  */
 public final class FrameworkWiringImpl implements FrameworkWiring {
 
-    private final BundleManager bundleManager;
+    private final BundleManagerPlugin bundleManager;
     private final FrameworkEvents events;
     private final XEnvironment environment;
     private final XResolver resolver;
     private final LockManager lockManager;
     private final ExecutorService executorService;
 
-    public FrameworkWiringImpl(BundleManager bundleManager, FrameworkEvents events, XEnvironment environment, XResolver resolver, LockManager lockManager,
-            ExecutorService executorService) {
-        this.bundleManager = bundleManager;
+    public FrameworkWiringImpl(BundleManager bundleManager, FrameworkEvents events, XEnvironment environment, XResolver resolver, LockManager lockManager, ExecutorService executorService) {
+        this.bundleManager = (BundleManagerPlugin) bundleManager;
         this.events = events;
         this.environment = environment;
         this.resolver = resolver;
@@ -156,10 +155,9 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                     }
                 }
 
-                BundleManagerPlugin bundleManagerPlugin = BundleManagerPlugin.assertBundleManagerPlugin(bundleManager);
                 for (XBundle bundle : uninstallBundles) {
                     if (bundle instanceof UserBundleState) {
-                        bundleManagerPlugin.removeBundle((UserBundleState) bundle, 0);
+                        bundleManager.removeBundle((UserBundleState) bundle, 0);
                     } else {
                         XBundleRevision current = bundle.getBundleRevision();
                         for (XBundleRevision brev : bundle.getAllBundleRevisions()) {

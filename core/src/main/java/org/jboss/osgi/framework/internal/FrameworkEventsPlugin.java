@@ -63,7 +63,7 @@ final class FrameworkEventsPlugin extends ExecutorServicePlugin<FrameworkEvents>
     @Override
     protected FrameworkEvents createServiceValue(StartContext startContext) throws StartException {
         LockManager lockManager = injectedLockManager.getValue();
-        return new FrameworkEventsImpl(getBundleManager(), getExecutorService(), lockManager);
+        return new FrameworkEventsImpl((BundleManagerPlugin) getBundleManager(), getExecutorService(), lockManager);
     }
 
     @Override
