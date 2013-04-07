@@ -58,7 +58,7 @@
         <version.jboss.msc>1.1.1.Final</version.jboss.msc>
         <version.jboss.osgi.deployment>2.0.0.CR2</version.jboss.osgi.deployment>
         <version.jboss.osgi.metadata>3.0.0.Alpha5</version.jboss.osgi.metadata>
-        <version.jboss.osgi.resolver>4.0.0.CR6</version.jboss.osgi.resolver>
+        <version.jboss.osgi.resolver>4.0.0.CR8-SNAPSHOT</version.jboss.osgi.resolver>
         <version.jboss.osgi.spi>4.0.0.Alpha2</version.jboss.osgi.spi>
         <version.jboss.osgi.testing>2.0.0.CR1</version.jboss.osgi.testing>
         <version.jboss.osgi.vfs>2.0.0.Alpha3</version.jboss.osgi.vfs>

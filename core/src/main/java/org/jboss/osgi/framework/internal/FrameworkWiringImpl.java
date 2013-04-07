@@ -160,9 +160,11 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
                         bundleManager.removeBundle((UserBundleState) bundle, 0);
                     } else {
                         XBundleRevision current = bundle.getBundleRevision();
-                        for (XBundleRevision brev : bundle.getAllBundleRevisions()) {
+                        BundleRevisions brevs = bundle.adapt(BundleRevisions.class);
+                        for (BundleRevision aux : brevs.getRevisions()) {
+                            XBundleRevision brev = (XBundleRevision) aux;
                             if (brev != current) {
-                                environment.uninstallResources(brev);
+                                bundleManager.removeBundleRevision(brev);
                             }
                         }
                     }
@@ -279,7 +281,9 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
         if (closure.contains(bundle) == false) {
             closure.add(bundle);
 
-            for (XBundleRevision brev : bundle.getAllBundleRevisions()) {
+            BundleRevisions brevs = bundle.adapt(BundleRevisions.class);
+            for (BundleRevision aux : brevs.getRevisions()) {
+                XBundleRevision brev = (XBundleRevision) aux;
                 Wiring wiring = brev.getWiringSupport().getWiring(false);
                 if (wiring != null) {
                     transitiveDependencyClosure(brev, wiring, closure);

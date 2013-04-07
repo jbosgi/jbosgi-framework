@@ -49,6 +49,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleStartLevelSupport;
@@ -65,7 +66,6 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
@@ -110,7 +110,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         this.frameworkState = frameworkState;
 
         // Link the bundle revision to this state
-        brev.addAttachment(Bundle.class, this);
+        brev.addAttachment(InternalConstants.BUNDLE_KEY, this);
     }
 
     static AbstractBundleState<?> assertBundleState(Bundle bundle) {
@@ -197,7 +197,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     }
 
     void addBundleRevision(R rev) {
-        rev.addAttachment(Bundle.class, this);
+        rev.addAttachment(InternalConstants.BUNDLE_KEY, this);
         currentRevision = rev;
     }
 

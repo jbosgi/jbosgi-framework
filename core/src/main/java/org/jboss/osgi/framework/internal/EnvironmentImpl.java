@@ -31,6 +31,7 @@ import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.LockManager.Method;
+import org.jboss.osgi.framework.spi.LockableEnvironment;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -46,7 +47,7 @@ import org.osgi.resource.Wiring;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-public final class EnvironmentImpl extends AbstractEnvironment implements XEnvironment {
+public final class EnvironmentImpl extends AbstractEnvironment implements XEnvironment, LockableEnvironment {
 
     private final LockManager lockManager;
 
@@ -55,7 +56,20 @@ public final class EnvironmentImpl extends AbstractEnvironment implements XEnvir
     }
 
     @Override
+    public LockContext lockEnvironment(Method method, XResource... resources) {
+        FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+        return lockManager.lockItems(method, getLockableItems(wireLock, resources));
+    }
+
+    @Override
+    public void unlockEnvironment(LockContext context) {
+        lockManager.unlockItems(context);
+    }
+
+    @Override
     public void installResources(XResource... resources) {
+        if (resources == null)
+            throw MESSAGES.illegalArgumentNull("resources");
 
         // Check that all installed resources are instances of {@link XBundleRevision} and have an associated {@link Bundle}
         for (XResource res : resources) {
@@ -71,11 +85,11 @@ public final class EnvironmentImpl extends AbstractEnvironment implements XEnvir
 
         LockContext lockContext = null;
         try {
-            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-            lockContext = lockManager.lockItems(Method.INSTALL, getLockableItems(wireLock));
+            // The resources are not locked for install
+            lockContext = lockEnvironment(Method.INSTALL);
             super.installResources(resources);
         } finally {
-            lockManager.unlockItems(lockContext);
+            unlockEnvironment(lockContext);
         }
     }
 
@@ -83,12 +97,16 @@ public final class EnvironmentImpl extends AbstractEnvironment implements XEnvir
     public synchronized void uninstallResources(XResource... resources) {
         LockContext lockContext = null;
         try {
-            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-            lockContext = lockManager.lockItems(Method.UNINSTALL, getLockableItems(wireLock, resources));
+            lockContext = lockEnvironment(Method.UNINSTALL, resources);
             super.uninstallResources(resources);
         } finally {
-            lockManager.unlockItems(lockContext);
+            unlockEnvironment(lockContext);
         }
+    }
+
+    @Override
+    public synchronized void uninstallResourcesUnlocked(XResource... resources) {
+        super.uninstallResources(resources);
     }
 
     @Override

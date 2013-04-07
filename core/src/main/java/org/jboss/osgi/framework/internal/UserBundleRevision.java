@@ -37,6 +37,7 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.AbstractVFS;
@@ -73,10 +74,10 @@ abstract class UserBundleRevision extends BundleStateRevision {
             Module module = dep.getAttachment(Module.class);
             entriesProvider = new ModuleEntriesProvider(module);
             classPathContent = Collections.emptyList();
-            addAttachment(Module.class, module);
+            addAttachment(InternalConstants.MODULE_KEY, module);
         }
 
-        addAttachment(Deployment.class, dep);
+        addAttachment(IntegrationConstants.DEPLOYMENT_KEY, dep);
     }
 
     static UserBundleRevision assertBundleRevision(BundleRevision brev) {

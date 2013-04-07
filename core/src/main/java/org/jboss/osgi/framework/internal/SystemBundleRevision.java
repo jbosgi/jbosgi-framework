@@ -30,6 +30,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XResource;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
 
@@ -44,7 +45,7 @@ final class SystemBundleRevision extends BundleStateRevision {
 
     SystemBundleRevision(FrameworkState frameworkState, OSGiMetaData metadata, StorageState storageState) throws BundleException {
         super(frameworkState, metadata, storageState);
-        addAttachment(Long.class, new Long(0));
+        addAttachment(XResource.RESOURCE_IDENTIFIER_KEY, new Long(0));
     }
 
     @Override

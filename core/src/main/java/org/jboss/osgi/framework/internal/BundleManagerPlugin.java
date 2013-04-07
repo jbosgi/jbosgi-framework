@@ -507,10 +507,15 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             bundleId = new Long(storageState.getBundleId());
             bundleIndex.addAndGet(Math.max(0, bundleId - bundleIndex.get()));
         } else {
-            bundleId = bundleIndex.incrementAndGet();
+            bundleId = nextBundleId();
         }
 
         return new RevisionIdentifier(bundleId, env.nextResourceIdentifier(null, symbolicName));
+    }
+
+    @Override
+    public long nextBundleId() {
+        return bundleIndex.incrementAndGet();
     }
 
     @Override
@@ -568,6 +573,17 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             bundleState.uninstallInternal(options);
         } finally {
             bundleLifecycle.unlockBundle(bundle, lockContext);
+        }
+    }
+
+    @Override
+    public void removeBundleRevision(XBundleRevision brev) {
+        XEnvironment env = getFrameworkState().getEnvironment();
+        env.uninstallResources(brev);
+        if (brev instanceof UserBundleRevision) {
+            UserBundleRevision userRev = (UserBundleRevision) brev;
+            userRev.removeBundleRevisionService();
+            userRev.close();
         }
     }
 
@@ -633,12 +649,13 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             storagePlugin.deleteStorageState(userBundle.getStorageState());
         }
 
-        XEnvironment env = getFrameworkState().getEnvironment();
+        BundleLifecycle bundleLifecycle = getBundleLifecycle();
         for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
-            UserBundleRevision userRev = (UserBundleRevision) brev;
-            userRev.removeBundleRevisionService();
-            env.uninstallResources(brev);
-            userRev.close();
+            if ((options & InternalConstants.UNINSTALL_INTERNAL) == 0) {
+                bundleLifecycle.removeBundleRevision(brev);
+            } else {
+                removeBundleRevision(brev);
+            }
         }
 
         LOGGER.debugf("Removed bundle: %s", userBundle);

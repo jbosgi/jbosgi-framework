@@ -41,6 +41,7 @@ import org.jboss.logging.Logger.Level;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
@@ -53,7 +54,6 @@ import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
-import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XWiringSupport;
 import org.jboss.osgi.resolver.spi.AbstractBundleWiring;
 import org.jboss.osgi.resolver.spi.ResolverHookException;
@@ -64,7 +64,6 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
 import org.osgi.framework.hooks.bundle.CollisionHook;
@@ -212,7 +211,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
             if (!isFragment()) {
                 ModuleManager moduleManager = getFrameworkState().getModuleManager();
                 ModuleIdentifier moduleIdentifier = moduleManager.getModuleIdentifier(brev);
-                brev.addAttachment(ModuleIdentifier.class, moduleIdentifier);
+                brev.addAttachment(InternalConstants.MODULE_IDENTIFIER_KEY, moduleIdentifier);
             }
             revisionIndex.incrementAndGet();
             revisions.add(0, brev);
@@ -223,8 +222,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         return revisionIndex.get();
     }
 
-    @Override
-    public List<XBundleRevision> getAllBundleRevisions() {
+    List<XBundleRevision> getAllBundleRevisions() {
         synchronized (revisions) {
             List<XBundleRevision> result = new ArrayList<XBundleRevision>(revisions);
             return Collections.unmodifiableList(result);
@@ -387,15 +385,14 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
             throw MESSAGES.illegalStateRefreshUnresolvedBundle(this);
 
         // Remove the revisions from the environment
+        CoreServices coreServices = getFrameworkState().getCoreServices();
         ModuleManager moduleManager = getFrameworkState().getModuleManager();
+        BundleLifecycle bundleLifecycle = coreServices.getBundleLifecycle();
         UserBundleRevision currentRev = getBundleRevision();
         for (XBundleRevision brev : getAllBundleRevisions()) {
 
-            UserBundleRevision userRev = UserBundleRevision.assertBundleRevision(brev);
-            XEnvironment env = getFrameworkState().getEnvironment();
             if (currentRev != brev) {
-                env.uninstallResources(brev);
-                userRev.close();
+                bundleLifecycle.removeBundleRevision(brev);
             }
 
             if (brev instanceof HostBundleRevision) {
@@ -404,8 +401,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
                 HostBundleRevision hostRev = (HostBundleRevision) brev;
                 for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
                     if (fragRev != fragRev.getBundle().getBundleRevision()) {
-                        env.uninstallResources(fragRev);
-                        fragRev.close();
+                        bundleLifecycle.removeBundleRevision(fragRev);
                     }
                 }
 

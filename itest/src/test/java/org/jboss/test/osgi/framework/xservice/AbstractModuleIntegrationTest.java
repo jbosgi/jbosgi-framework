@@ -1,4 +1,5 @@
 package org.jboss.test.osgi.framework.xservice;
+
 /*
  * #%L
  * JBossOSGi Framework
@@ -25,7 +26,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
@@ -110,20 +110,22 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
     }
 
     protected XBundleRevision installResource(final Module module) throws BundleException {
-        // Build the {@link XBundleRevision}
         final BundleContext context = getSystemContext();
+        final XBundle sysbundle = (XBundle) context.getBundle();
+        final XEnvironment env = sysbundle.adapt(XEnvironment.class);
+        final int rescount = env.getResources(XEnvironment.ALL_IDENTITY_TYPES).size();
+
+        // Build the {@link XBundleRevision}
         XBundleRevisionBuilderFactory factory = new XBundleRevisionBuilderFactory() {
             @Override
             public XBundleRevision createResource() {
-                return new AbstractBundleRevisionAdaptor(context, module);
+                return new AbstractBundleRevisionAdaptor(context, rescount, module);
             }
         };
-        XResourceBuilder builder = XBundleRevisionBuilderFactory.create(factory);
-        XBundleRevision brev = (XBundleRevision) builder.loadFrom(module).getResource();
+        XResourceBuilder<XBundleRevision> builder = XBundleRevisionBuilderFactory.create(factory);
+        XBundleRevision brev = builder.loadFrom(module).getResource();
 
         // Add the {@link XBundleRevision} to the {@link XEnvironment}
-        XBundle sysbundle = (XBundle) context.getBundle();
-        XEnvironment env = sysbundle.adapt(XEnvironment.class);
         env.installResources(brev);
         return brev;
     }

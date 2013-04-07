@@ -80,10 +80,11 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     private final BundleContext context;
     private final XBundleRevision brev;
     private final Module module;
+    private final long bundleId;
     private BundleActivator bundleActivator;
     private long lastModified;
 
-    public AbstractBundleAdaptor(BundleContext context, Module module, XBundleRevision brev) {
+    public AbstractBundleAdaptor(BundleContext context, long bundleId, Module module, XBundleRevision brev) {
         if (context == null)
             throw MESSAGES.illegalArgumentNull("context");
         if (module == null)
@@ -92,6 +93,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
             throw MESSAGES.illegalArgumentNull("brev");
         XBundle sysbundle = (XBundle) context.getBundle();
         this.bundleManager = sysbundle.adapt(BundleManager.class);
+        this.bundleId = bundleId;
         this.context = context;
         this.module = module;
         this.brev = brev;
@@ -106,8 +108,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
 
     @Override
     public long getBundleId() {
-        Long bundleId = brev.getAttachment(Long.class);
-        return bundleId != null ? bundleId.longValue() : -1;
+        return bundleId;
     }
 
     @Override
@@ -254,7 +255,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
             bundleState.set(Bundle.STARTING);
 
             // Load the {@link BundleActivator}
-            OSGiMetaData metadata = brev.getAttachment(OSGiMetaData.class);
+            OSGiMetaData metadata = brev.getAttachment(IntegrationConstants.OSGI_METADATA_KEY);
             String activatorName = metadata != null ? metadata.getBundleActivator() : null;
             if (bundleActivator == null && activatorName != null) {
                 Object result = loadClass(activatorName).newInstance();
@@ -341,6 +342,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
             // Uninstall from the environment
             XEnvironment env = getPluginService(Services.ENVIRONMENT, XEnvironment.class);
             env.uninstallResources(getBundleRevision());
+
             // Remove from the module loader
             FrameworkModuleLoader provider = getPluginService(IntegrationServices.FRAMEWORK_MODULE_LOADER_PLUGIN, FrameworkModuleLoader.class);
             provider.removeModule(brev);
@@ -430,11 +432,6 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     @Override
     public XBundleRevision getBundleRevision() {
         return brev;
-    }
-
-    @Override
-    public List<XBundleRevision> getAllBundleRevisions() {
-        return Collections.singletonList(brev);
     }
 
     @Override

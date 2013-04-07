@@ -92,6 +92,11 @@ public interface BundleManager extends Service<BundleManager> {
     XBundle getBundleByLocation(String location);
 
     /**
+     * Get the next bundle id
+     */
+    long nextBundleId();
+
+    /**
      * Get the system bundle
      *
      * @return the system bundle or null if the framework has not reached the {@link IntegrationServices#SYSTEM_BUNDLE_INTERNAL}
@@ -151,6 +156,13 @@ public interface BundleManager extends Service<BundleManager> {
      * Uninstall the given bundle
      */
     void uninstallBundle(XBundle bundle, int options) throws BundleException;
+
+    /**
+     * Remove a bundle revision from the framework
+     *
+     * @param revision The bundle revision
+     */
+    void removeBundleRevision(XBundleRevision revision);
 
     /**
      * Get the service container

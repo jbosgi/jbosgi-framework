@@ -21,6 +21,7 @@
  */
 package org.jboss.osgi.framework;
 
+
 /**
  * A collection of propriatary constants.
  *
@@ -34,10 +35,10 @@ public interface Constants extends org.osgi.framework.Constants {
 
     /** The framework symbolic */
     String JBOSGI_FRAMEWORK_SYMBOLIC_NAME = "org.jboss.osgi.framework";
-    
+
     /** The framework location */
     String JBOSGI_FRAMEWORK_LOCATION = "org.jboss.osgi.framework";
-    
+
     /** The number of threads available for MSC services */
     String PROPERTY_FRAMEWORK_BOOTSTRAP_THREADS = "org.jboss.osgi.framework.bootstrap.maxThreads";
 

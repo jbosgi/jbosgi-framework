@@ -143,6 +143,11 @@ public class BundleLifecyclePlugin extends AbstractIntegrationService<BundleLife
         }
 
         @Override
+        public void removeBundleRevision(XBundleRevision brev) {
+            bundleManager.removeBundleRevision(brev);
+        }
+
+        @Override
         public LockContext lockBundle(Method method, XBundle bundle, LockableItem[] items) {
             return lockManager.lockItems(method, items);
         }

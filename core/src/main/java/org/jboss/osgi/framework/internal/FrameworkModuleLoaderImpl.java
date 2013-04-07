@@ -106,7 +106,7 @@ public final class FrameworkModuleLoaderImpl extends ModuleLoader implements Fra
     @Override
     public ModuleIdentifier getModuleIdentifier(XBundleRevision brev) {
         XBundle bundle = brev.getBundle();
-        StorageState storageState = brev.getAttachment(StorageState.class);
+        StorageState storageState = brev.getAttachment(InternalConstants.STORAGE_STATE_KEY);
         int revisionId = storageState.getRevisionId();
         String bundleId = "bid" + bundle.getBundleId() + "rev" + revisionId;
         String bsname = bundle.getSymbolicName();

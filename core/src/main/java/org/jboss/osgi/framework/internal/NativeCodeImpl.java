@@ -39,8 +39,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.framework.spi.NativeLibraryProvider;
 import org.jboss.osgi.metadata.NativeLibrary;
@@ -52,7 +54,6 @@ import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
@@ -137,7 +138,7 @@ public final class NativeCodeImpl implements NativeCode {
 
     @Override
     public void resolveNativeCode(XBundleRevision userRev) throws BundleException {
-        OSGiMetaData metaData = userRev.getAttachment(OSGiMetaData.class);
+        OSGiMetaData metaData = userRev.getAttachment(IntegrationConstants.OSGI_METADATA_KEY);
         List<ParameterizedAttribute> params = metaData.getBundleNativeCode();
         if (params == null)
             throw MESSAGES.cannotFindNativeCodeHeader(userRev);
@@ -149,7 +150,7 @@ public final class NativeCodeImpl implements NativeCode {
                 matchedParams.add(param);
         }
 
-        Deployment dep = userRev.getAttachment(Deployment.class);
+        Deployment dep = userRev.getAttachment(IntegrationConstants.DEPLOYMENT_KEY);
         NativeLibraryMetaData nativeLibraries = dep.getAttachment(NativeLibraryMetaData.class);
 
         // If no native clauses were selected in step 1, this algorithm is terminated

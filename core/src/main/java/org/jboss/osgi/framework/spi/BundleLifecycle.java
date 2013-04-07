@@ -54,6 +54,8 @@ public interface BundleLifecycle {
 
     void uninstall(XBundle bundle, int options) throws BundleException;
 
+    void removeBundleRevision(XBundleRevision brev);
+
     LockContext lockBundle(Method method, XBundle bundle, LockableItem[] items);
 
     void unlockBundle(XBundle bundle, LockContext context);

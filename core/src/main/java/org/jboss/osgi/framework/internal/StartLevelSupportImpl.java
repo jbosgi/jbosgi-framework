@@ -36,6 +36,7 @@ import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.StartLevelSupport;
 import org.jboss.osgi.framework.spi.StorageState;
+import org.jboss.osgi.resolver.XAttachmentKey;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -50,6 +51,8 @@ import org.osgi.framework.launch.Framework;
  * @author Thomas.Diesler@jboss.com
  */
 public final class StartLevelSupportImpl implements StartLevelSupport {
+
+    private static XAttachmentKey<BundleStartLevelState> BUNDLE_STARTLEVEL_KEY = XAttachmentKey.create(BundleStartLevelState.class);
 
     private final BundleManagerPlugin bundleManager;
     private final FrameworkEvents events;
@@ -319,10 +322,10 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
         if (bundle instanceof Framework)
             return new BundleStartLevelState(bundle);
 
-        BundleStartLevelState state = bundle.getAttachment(BundleStartLevelState.class);
+        BundleStartLevelState state = bundle.getAttachment(BUNDLE_STARTLEVEL_KEY);
         if (state == null) {
             state = new BundleStartLevelState(bundle);
-            bundle.addAttachment(BundleStartLevelState.class, state);
+            bundle.addAttachment(BUNDLE_STARTLEVEL_KEY, state);
         }
         return state;
     }

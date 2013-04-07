@@ -109,12 +109,12 @@ public final class ModuleManagerImpl implements ModuleManager {
         assert brev != null : "Null resource";
         assert !brev.isFragment() : "A fragment is not a module";
 
-        ModuleIdentifier identifier = brev.getAttachment(ModuleIdentifier.class);
+        ModuleIdentifier identifier = brev.getAttachment(InternalConstants.MODULE_IDENTIFIER_KEY);
         if (identifier != null)
             return identifier;
 
         XIdentityCapability icap = brev.getIdentityCapability();
-        Module module = brev.getAttachment(Module.class);
+        Module module = brev.getAttachment(InternalConstants.MODULE_KEY);
         if (module != null) {
             identifier = module.getIdentifier();
         } else if (SYSTEM_BUNDLE_SYMBOLICNAME.equals(icap.getSymbolicName())) {
@@ -170,7 +170,7 @@ public final class ModuleManagerImpl implements ModuleManager {
     private XBundleRevision getBundleRevision(Module module) {
         XBundleRevision result = null;
         for (XResource res : environment.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
-            Module resmod = res.getAttachment(Module.class);
+            Module resmod = res.getAttachment(InternalConstants.MODULE_KEY);
             if (module == resmod) {
                 result = (XBundleRevision) res;
                 break;
@@ -185,7 +185,7 @@ public final class ModuleManagerImpl implements ModuleManager {
         assert wires != null : "Null wires";
         assert !brev.isFragment() : "Fragments cannot be added: " + brev;
 
-        Module module = brev.getAttachment(Module.class);
+        Module module = brev.getAttachment(InternalConstants.MODULE_KEY);
         if (module != null) {
             ModuleIdentifier identifier = module.getIdentifier();
             FrameworkModuleLoader moduleLoaderPlugin = moduleLoader;

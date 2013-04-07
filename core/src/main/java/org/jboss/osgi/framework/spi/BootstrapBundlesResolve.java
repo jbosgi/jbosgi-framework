@@ -89,7 +89,7 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         // Collect the set of resolvable bundles
         for (ServiceName installedName : installedServices) {
             XBundleRevision brev = getServiceController(serviceRegistry, installedName).getValue();
-            Deployment dep = brev.getAttachment(Deployment.class);
+            Deployment dep = brev.getAttachment(IntegrationConstants.DEPLOYMENT_KEY);
             int bundleLevel = dep.getStartLevel() != null ? dep.getStartLevel() : 1;
             if (dep.isAutoStart() && !brev.isFragment() && bundleLevel <= targetLevel) {
                 resolvableBundles.add(brev.getBundle());

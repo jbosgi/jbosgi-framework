@@ -27,10 +27,8 @@ import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
-import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
@@ -53,7 +51,7 @@ final class SystemBundleState extends AbstractBundleState<SystemBundleRevision> 
         this.systemRevision = brev;
 
         // Assign the {@link ModuleIdentifier}
-        brev.addAttachment(ModuleIdentifier.class, FrameworkModuleProvider.FRAMEWORK_MODULE_IDENTIFIER);
+        brev.addAttachment(InternalConstants.MODULE_IDENTIFIER_KEY, FrameworkModuleProvider.FRAMEWORK_MODULE_IDENTIFIER);
 
         final Bundle bundle = this;
         bundleRevisions = new BundleRevisions() {
@@ -74,11 +72,6 @@ final class SystemBundleState extends AbstractBundleState<SystemBundleRevision> 
         bundle = AbstractBundleState.assertBundleState(bundle);
         assert bundle instanceof SystemBundleState : "Not an SystemBundleState: " + bundle;
         return (SystemBundleState) bundle;
-    }
-
-    @Override
-    public List<XBundleRevision> getAllBundleRevisions() {
-        return Collections.singletonList((XBundleRevision) systemRevision);
     }
 
     @Override

@@ -29,18 +29,17 @@ import org.jboss.modules.ModuleClassLoader;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.osgi.framework.FrameworkMessages;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.ResourceBuilderException;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.resolver.XBundleRevisionBuilder;
 import org.jboss.osgi.resolver.XBundleRevisionBuilderFactory;
-import org.jboss.osgi.resolver.XResourceBuilder;
-import org.jboss.osgi.resolver.XResourceBuilderFactory;
 import org.jboss.osgi.resolver.spi.AbstractBundleRevision;
 import org.jboss.osgi.vfs.VFSUtils;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 
 /**
@@ -78,14 +77,14 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
                     return brev;
                 }
             };
-            XResourceBuilder builder = XResourceBuilderFactory.create(factory);
+            XBundleRevisionBuilder builder = XBundleRevisionBuilderFactory.create(factory);
             builder.loadFrom(metadata).getResource();
         } catch (ResourceBuilderException ex) {
             throw new BundleException(ex.getMessage(), ex);
         }
 
-        addAttachment(StorageState.class, storageState);
-        addAttachment(OSGiMetaData.class, metadata);
+        addAttachment(InternalConstants.STORAGE_STATE_KEY, storageState);
+        addAttachment(IntegrationConstants.OSGI_METADATA_KEY, metadata);
     }
 
     FrameworkState getFrameworkState() {
@@ -134,12 +133,12 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
 
     @Override
     public XBundle getBundle() {
-        return (XBundle) getAttachment(Bundle.class);
+        return (XBundle) getAttachment(InternalConstants.BUNDLE_KEY);
     }
 
     @Override
     public ModuleIdentifier getModuleIdentifier() {
-        return getAttachment(ModuleIdentifier.class);
+        return getAttachment(InternalConstants.MODULE_IDENTIFIER_KEY);
     }
 
     @Override
