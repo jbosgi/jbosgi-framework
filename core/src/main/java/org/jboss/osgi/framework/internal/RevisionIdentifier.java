@@ -24,31 +24,23 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 
 /**
- * Bundle/Revision identifiers
+ * BundleRevision identifier
  *
  * @author thomas.diesler@jboss.com
  * @since 21-Mar-2013
  */
 final class RevisionIdentifier  {
 
-    private final Long bundleIndex;
-    private final Long revisionIndex;
+    private final Long resourceId;
 
-    RevisionIdentifier(Long bundleIndex, Long revisionIndex) {
-        if (bundleIndex == null)
-            throw MESSAGES.illegalArgumentNull("bundleIndex");
-        if (revisionIndex == null)
-            throw MESSAGES.illegalArgumentNull("revisionIndex");
-        this.bundleIndex = bundleIndex;
-        this.revisionIndex = revisionIndex;
+    RevisionIdentifier(Long revisionId) {
+        if (revisionId == null)
+            throw MESSAGES.illegalArgumentNull("revisionId");
+        this.resourceId = revisionId;
     }
 
-    Long getBundleIndex() {
-        return bundleIndex;
-    }
-
-    Long getRevisionIndex() {
-        return revisionIndex;
+    Long getRevisionId() {
+        return resourceId;
     }
 
     @Override
@@ -63,11 +55,11 @@ final class RevisionIdentifier  {
         if ((obj instanceof RevisionIdentifier) == false)
             return false;
         RevisionIdentifier other = (RevisionIdentifier) obj;
-        return bundleIndex.equals(other.bundleIndex) && revisionIndex.equals(other.revisionIndex);
+        return resourceId.equals(other.resourceId);
     }
 
     @Override
     public String toString() {
-        return "[bnd=" + bundleIndex + ",rev=" + revisionIndex + "]";
+        return "[rev=" + resourceId + "]";
     }
 }

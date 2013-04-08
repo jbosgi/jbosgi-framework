@@ -119,7 +119,7 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         XBundleRevisionBuilderFactory factory = new XBundleRevisionBuilderFactory() {
             @Override
             public XBundleRevision createResource() {
-                return new AbstractBundleRevisionAdaptor(context, rescount, module);
+                return new AbstractBundleRevisionAdaptor(context, module);
             }
         };
         XResourceBuilder<XBundleRevision> builder = XBundleRevisionBuilderFactory.create(factory);

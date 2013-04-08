@@ -100,7 +100,7 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
             ServiceName serviceName = startContext.getController().getName();
             bundleRevision = createBundleRevision(dep, metadata, storageState, serviceName, startContext.getChildTarget());
-            bundleRevision.addAttachment(XResource.RESOURCE_IDENTIFIER_KEY, revIdentifier.getRevisionIndex());
+            bundleRevision.addAttachment(XResource.RESOURCE_IDENTIFIER_KEY, revIdentifier.getRevisionId());
             validateBundleRevision(bundleRevision, metadata);
             processNativeCode(bundleRevision, metadata, dep);
             XBundle bundle = (XBundle) dep.getAttachment(Bundle.class);
@@ -182,7 +182,7 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
                 if (startlevel == null) {
                     startlevel = getFrameworkState().getStartLevelSupport().getInitialBundleStartLevel();
                 }
-                storageState = storagePlugin.createStorageState(revIdentifier.getBundleIndex(), location, startlevel, rootFile);
+                storageState = storagePlugin.createStorageState(revIdentifier.getRevisionId(), location, startlevel, rootFile);
                 dep.addAttachment(StorageState.class, storageState);
             } catch (IOException ex) {
                 throw MESSAGES.cannotSetupStorage(ex, rootFile);

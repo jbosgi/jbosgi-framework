@@ -50,13 +50,13 @@ public class AbstractBundleRevisionAdaptor extends AbstractBundleRevision implem
     private final Module module;
     private final XBundle bundle;
 
-    public AbstractBundleRevisionAdaptor(BundleContext context, long bundleId, Module module) {
+    public AbstractBundleRevisionAdaptor(BundleContext context, Module module) {
         if (context == null)
             throw MESSAGES.illegalArgumentNull("context");
         if (module == null)
             throw MESSAGES.illegalArgumentNull("module");
         this.module = module;
-        this.bundle = createBundle(context, bundleId, module, this);
+        this.bundle = createBundle(context, module, this);
         addAttachment(InternalConstants.MODULE_IDENTIFIER_KEY, module.getIdentifier());
         addAttachment(InternalConstants.MODULE_KEY, module);
         createWiring();
@@ -68,8 +68,8 @@ public class AbstractBundleRevisionAdaptor extends AbstractBundleRevision implem
         return wiring;
     }
 
-    protected XBundle createBundle(BundleContext context, long bundleId, Module module, XBundleRevision bundleRev) {
-        return new AbstractBundleAdaptor(context, bundleId, module, bundleRev);
+    protected XBundle createBundle(BundleContext context, Module module, XBundleRevision bundleRev) {
+        return new AbstractBundleAdaptor(context, module, bundleRev);
     }
 
     public Module getModule() {

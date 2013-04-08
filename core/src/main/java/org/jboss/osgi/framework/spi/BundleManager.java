@@ -92,11 +92,6 @@ public interface BundleManager extends Service<BundleManager> {
     XBundle getBundleByLocation(String location);
 
     /**
-     * Get the next bundle id
-     */
-    long nextBundleId();
-
-    /**
      * Get the system bundle
      *
      * @return the system bundle or null if the framework has not reached the {@link IntegrationServices#SYSTEM_BUNDLE_INTERNAL}

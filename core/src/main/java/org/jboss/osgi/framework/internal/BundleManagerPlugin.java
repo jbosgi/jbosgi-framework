@@ -44,8 +44,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
@@ -79,7 +77,6 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
-import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -152,7 +149,6 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     private final Map<String, Object> properties = new HashMap<String, Object>();
     private final AtomicInteger managerState = new AtomicInteger(Bundle.INSTALLED);
     private final AtomicBoolean managerStopped = new AtomicBoolean();
-    private final AtomicLong bundleIndex = new AtomicLong();
     private final ServiceContainer serviceContainer;
     private final UniquenessPolicy uniquenessPolicy;
     private Framework framework;
@@ -384,18 +380,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public XBundle getBundleById(long bundleId) {
-        if (bundleId == 0) {
-            return getFrameworkState().getSystemBundle();
-        }
         XEnvironment env = injectedEnvironment.getValue();
-        Collection<XResource> resources = env.getResources(XEnvironment.ALL_IDENTITY_TYPES);
-        for (Resource aux : resources) {
-            XBundle bundle = ((XBundleRevision) aux).getBundle();
-            if (bundle.getBundleId() == bundleId) {
-                return bundle;
-            }
-        }
-        return null;
+        XBundleRevision brev = (XBundleRevision) env.getResourceById(bundleId);
+        return brev != null ? brev.getBundle() : null;
     }
 
     @Override
@@ -467,7 +454,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             // Create the revision identifier
             RevisionIdentifier revIdentifier = dep.getAttachment(RevisionIdentifier.class);
             if (revIdentifier == null) {
-                revIdentifier = createRevisionIdentifier(symbolicName, dep.getAttachment(StorageState.class));
+                revIdentifier = createRevisionIdentifier(symbolicName, dep);
                 dep.addAttachment(RevisionIdentifier.class, revIdentifier);
             }
 
@@ -498,24 +485,16 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         return controller;
     }
 
-    RevisionIdentifier createRevisionIdentifier(String symbolicName, StorageState storageState) {
-        Long bundleId;
-        XEnvironment env = injectedEnvironment.getValue();
-
-        // The storage state exists when we re-create the bundle from persistent storage
-        if (storageState != null) {
-            bundleId = new Long(storageState.getBundleId());
-            bundleIndex.addAndGet(Math.max(0, bundleId - bundleIndex.get()));
+    private RevisionIdentifier createRevisionIdentifier(String symbolicName, Deployment dep) {
+        Long resourceId;
+        StorageState storageState = dep.getAttachment(StorageState.class);
+        if (!dep.isBundleUpdate() && storageState != null) {
+            resourceId = new Long(storageState.getBundleId());
         } else {
-            bundleId = nextBundleId();
+            XEnvironment env = injectedEnvironment.getValue();
+            resourceId = env.nextResourceIdentifier(null, symbolicName);
         }
-
-        return new RevisionIdentifier(bundleId, env.nextResourceIdentifier(null, symbolicName));
-    }
-
-    @Override
-    public long nextBundleId() {
-        return bundleIndex.incrementAndGet();
+        return new RevisionIdentifier(resourceId);
     }
 
     @Override
@@ -675,16 +654,10 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     public ServiceName getServiceName(Deployment dep) {
         ServiceName serviceName = dep.getAttachment(ServiceName.class);
         if (serviceName == null) {
-            int revindex = 0;
-            if (dep.isBundleUpdate()) {
-                UserBundleState userBundle = UserBundleState.assertBundleState(dep.getAttachment(Bundle.class));
-                revindex = userBundle.getRevisionIndex();
-            }
-            RevisionIdentifier revIdentifier = dep.getAttachment(RevisionIdentifier.class);
-            Long bundleId = revIdentifier.getBundleIndex();
+            RevisionIdentifier identifier = dep.getAttachment(RevisionIdentifier.class);
             String bsname = dep.getSymbolicName();
             String version = dep.getVersion();
-            String revid = "bid" + bundleId + "rev" + revindex;
+            String revid = "resid" + identifier.getRevisionId();
             serviceName = ServiceName.of(BUNDLE_BASE_NAME, "" + bsname, "" + version, revid);
             dep.addAttachment(ServiceName.class, serviceName);
         }

@@ -52,6 +52,7 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XIdentityCapability;
+import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.spi.AbstractElement;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
@@ -80,11 +81,10 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
     private final BundleContext context;
     private final XBundleRevision brev;
     private final Module module;
-    private final long bundleId;
     private BundleActivator bundleActivator;
     private long lastModified;
 
-    public AbstractBundleAdaptor(BundleContext context, long bundleId, Module module, XBundleRevision brev) {
+    public AbstractBundleAdaptor(BundleContext context, Module module, XBundleRevision brev) {
         if (context == null)
             throw MESSAGES.illegalArgumentNull("context");
         if (module == null)
@@ -93,7 +93,6 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
             throw MESSAGES.illegalArgumentNull("brev");
         XBundle sysbundle = (XBundle) context.getBundle();
         this.bundleManager = sysbundle.adapt(BundleManager.class);
-        this.bundleId = bundleId;
         this.context = context;
         this.module = module;
         this.brev = brev;
@@ -108,7 +107,8 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
 
     @Override
     public long getBundleId() {
-        return bundleId;
+        Long bundleId = brev.getAttachment(XResource.RESOURCE_IDENTIFIER_KEY);
+        return bundleId != null ? bundleId.longValue() : -1;
     }
 
     @Override

@@ -351,9 +351,6 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         BundleManagerPlugin bundleManager = getBundleManager();
         bundleManager.checkUniqunessPolicy(this, symbolicName, bundleVersion, CollisionHook.UPDATING);
 
-        RevisionIdentifier revIdentifier = bundleManager.createRevisionIdentifier(symbolicName, storageState);
-        dep.addAttachment(RevisionIdentifier.class, revIdentifier);
-
         // Attach a the update location
         if (updateLocation != null)
             dep.addAttachment(Constants.BUNDLE_UPDATELOCATION, updateLocation, String.class);
