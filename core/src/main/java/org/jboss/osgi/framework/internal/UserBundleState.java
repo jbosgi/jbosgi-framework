@@ -381,9 +381,11 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         if (isResolved() == false)
             throw MESSAGES.illegalStateRefreshUnresolvedBundle(this);
 
+        // Remove the {@link Module} and the associated ClassLoader
+        getBundleManager().unresolveBundle(this);
+
         // Remove the revisions from the environment
         CoreServices coreServices = getFrameworkState().getCoreServices();
-        ModuleManager moduleManager = getFrameworkState().getModuleManager();
         BundleLifecycle bundleLifecycle = coreServices.getBundleLifecycle();
         UserBundleRevision currentRev = getBundleRevision();
         for (XBundleRevision brev : getAllBundleRevisions()) {
@@ -392,19 +394,14 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
                 bundleLifecycle.removeBundleRevision(brev);
             }
 
+            // Cleanup stale fragment revisions
             if (brev instanceof HostBundleRevision) {
-
-                // Cleanup stale fragment revisions
                 HostBundleRevision hostRev = (HostBundleRevision) brev;
                 for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
                     if (fragRev != fragRev.getBundle().getBundleRevision()) {
                         bundleLifecycle.removeBundleRevision(fragRev);
                     }
                 }
-
-                // Remove the {@link Module} and the associated ClassLoader
-                ModuleIdentifier identifier = brev.getModuleIdentifier();
-                moduleManager.removeModule(brev, identifier);
             }
         }
 
@@ -428,6 +425,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         if (state == Bundle.UNINSTALLED)
             return;
 
+        BundleManagerPlugin bundleManager = getBundleManager();
         getBundleRevision().setHeadersOnUninstall(getHeaders(null));
 
         // #2 If the bundle's state is ACTIVE, STARTING or STOPPING, the bundle is stopped
@@ -437,7 +435,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
                     stopInternal(options);
                 } catch (Exception ex) {
                     // If Bundle.stop throws an exception, a Framework event of type FrameworkEvent.ERROR is fired
-                    getBundleManager().fireFrameworkError(this, "stopping bundle: " + this, ex);
+                    bundleManager.fireFrameworkError(this, "stopping bundle: " + this, ex);
                 }
             }
         }
@@ -445,7 +443,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         // Check if the bundle has still active wires
         boolean activeWires = hasActiveWiresWhileUninstalling();
         if (activeWires == false) {
-            getBundleManager().unresolveBundle(this);
+            bundleManager.unresolveBundle(this);
         }
 
         // Make the current {@link BundleWiring} uneffective and fire the UNRESOLVED event
@@ -458,11 +456,11 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
         // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
         if (activeWires == false) {
-            getBundleManager().removeBundle(this, options);
+            bundleManager.removeBundle(this, options);
         }
 
         // Remove other uninstalled bundles that now also are not in use any more
-        Set<XBundle> uninstalled = getBundleManager().getBundles(Bundle.UNINSTALLED);
+        Set<XBundle> uninstalled = bundleManager.getBundles(Bundle.UNINSTALLED);
         for (XBundle auxState : uninstalled) {
             if (auxState != this) {
                 boolean bundleInUse = false;
@@ -477,8 +475,8 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
                 }
                 if (bundleInUse == false) {
                     UserBundleState auxUser = UserBundleState.assertBundleState(auxState);
-                    getBundleManager().unresolveBundle(auxUser);
-                    getBundleManager().removeBundle(auxUser, options);
+                    bundleManager.unresolveBundle(auxUser);
+                    bundleManager.removeBundle(auxUser, options);
                 }
             }
         }
