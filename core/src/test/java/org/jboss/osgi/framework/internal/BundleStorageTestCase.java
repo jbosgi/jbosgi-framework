@@ -30,7 +30,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 
-import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiManifestBuilder;
 import org.jboss.osgi.vfs.AbstractVFS;
@@ -55,7 +55,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
     @Test
     public void testBundleStorageForInputStream() throws Exception {
 
-        BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
+        StorageManager storagePlugin = getFrameworkState().getStorageManager();
         assertNotNull("BundleStoragePlugin not null", storagePlugin);
 
         JavaArchive archive = getArchive();
@@ -81,7 +81,7 @@ public class BundleStorageTestCase extends AbstractFrameworkTest {
     @Test
     public void testBundleStorageForExternalFile() throws Exception {
 
-        BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
+        StorageManager storagePlugin = getFrameworkState().getStorageManager();
         assertNotNull("BundleStoragePlugin not null", storagePlugin);
 
         File file = new File(storagePlugin.getStorageDir(0) + "/testBundleExternalFile.jar");

@@ -21,21 +21,35 @@
  */
 package org.jboss.osgi.framework.spi;
 
-import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XAttachmentKey;
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+
+import org.jboss.osgi.vfs.VirtualFile;
 
 /**
- * A collection of propriatary constants.
+ * An integration point for bundle storage operations
  *
  * @author thomas.diesler@jboss.com
- * @since 08-Apr-2013
+ * @since 26-Nov-2012
  */
-public interface IntegrationConstants {
+public interface StorageManager {
 
-    /** The deployment attachment key */
-    XAttachmentKey<Deployment> DEPLOYMENT_KEY = XAttachmentKey.create(Deployment.class);
-    /** The metadata attachment key */
-    XAttachmentKey<OSGiMetaData> OSGI_METADATA_KEY = XAttachmentKey.create(OSGiMetaData.class);
+    void initialize(Map<String, Object> props, boolean firstInit) throws IOException;
+
+    StorageState createStorageState(long bundleId, String location, Integer initialStartlevel, VirtualFile rootFile) throws IOException;
+
+    void deleteStorageState(StorageState storageState);
+
+    Set<StorageState> getStorageStates();
+
+    StorageState getStorageState(String location);
+
+    File getStorageDir(long bundleId);
+
+    File getStorageArea();
+
+    File getDataFile(long bundleId, String filename);
 
 }

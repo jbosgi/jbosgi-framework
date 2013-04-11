@@ -143,8 +143,8 @@ public interface FrameworkMessages {
     @Message(id = 11226, value = "No stream handlers for protocol: %s")
     IllegalStateException illegalStateNoStreamHandlersForProtocol(String protocol);
 
-    @Message(id = 11227, value = "Attempt to refresh an unresolved bundle: %s")
-    IllegalStateException illegalStateRefreshUnresolvedBundle(Bundle bundle);
+    //@Message(id = 11227, value = "Attempt to refresh an unresolved bundle: %s")
+    //IllegalStateException illegalStateRefreshUnresolvedBundle(Bundle bundle);
 
     @Message(id = 11228, value = "Cannot obtain URL for: %s")
     IllegalStateException illegalStateCannotObtainURL(VirtualFile child);

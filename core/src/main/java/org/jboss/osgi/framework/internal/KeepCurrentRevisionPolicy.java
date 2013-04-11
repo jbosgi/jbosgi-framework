@@ -19,23 +19,27 @@
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.osgi.framework.spi;
+package org.jboss.osgi.framework.internal;
 
-import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XAttachmentKey;
+import org.jboss.osgi.framework.spi.BundleLifecycle.BundleRefreshPolicy;
+import org.jboss.osgi.resolver.XBundle;
 
 /**
- * A collection of propriatary constants.
+ * A refresh policy that keeps the current revision.
  *
  * @author thomas.diesler@jboss.com
- * @since 08-Apr-2013
+ * @since 09-Apr-2013
  */
-public interface IntegrationConstants {
+final class KeepCurrentRevisionPolicy implements BundleRefreshPolicy {
+    private UserBundleRevision currentRev;
 
-    /** The deployment attachment key */
-    XAttachmentKey<Deployment> DEPLOYMENT_KEY = XAttachmentKey.create(Deployment.class);
-    /** The metadata attachment key */
-    XAttachmentKey<OSGiMetaData> OSGI_METADATA_KEY = XAttachmentKey.create(OSGiMetaData.class);
+    @Override
+    public void initBundleRefresh(XBundle bundle) {
+        this.currentRev = (UserBundleRevision) bundle.getBundleRevision();
+    }
 
+    @Override
+    public void refreshCurrentRevision() {
+        currentRev.refreshRevision();
+    }
 }

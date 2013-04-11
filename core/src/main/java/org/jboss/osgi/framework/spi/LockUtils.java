@@ -21,35 +21,37 @@
  */
 package org.jboss.osgi.framework.spi;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Set;
+import org.jboss.osgi.framework.spi.LockManager.LockableItem;
+import org.jboss.osgi.resolver.XBundle;
 
-import org.jboss.osgi.vfs.VirtualFile;
 
 /**
- * An integration point for bundle storage operations
+ * Lock utils.
  *
  * @author thomas.diesler@jboss.com
- * @since 26-Nov-2012
+ * @since 11-Apr-2013
  */
-public interface BundleStorage {
+public final class LockUtils {
 
-    void initialize(Map<String, Object> props, boolean firstInit) throws IOException;
+    // Hide ctor
+    private LockUtils() {
+    }
 
-    StorageState createStorageState(long bundleId, String location, int startlevel, VirtualFile rootFile) throws IOException;
-
-    void deleteStorageState(StorageState storageState);
-
-    Set<StorageState> getStorageStates();
-
-    StorageState getStorageState(String location);
-
-    File getStorageDir(long bundleId);
-
-    File getStorageArea();
-
-    File getDataFile(long bundleId, String filename);
-
+    public static LockableItem[] getLockableItems(XBundle[] bundles, LockableItem[] others) {
+        int index = 0;
+        int bsize = bundles != null ? bundles.length : 0;
+        int osize = others != null ? others.length : 0;
+        LockableItem[] items = new LockableItem[bsize + osize];
+        if (bundles != null) {
+            for (XBundle bundle : bundles) {
+                items[index++] = (LockableItem) bundle;
+            }
+        }
+        if (others != null) {
+            for (LockableItem other : others) {
+                items[index++] = other;
+            }
+        }
+        return items;
+    }
 }

@@ -23,7 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.osgi.framework.spi.BundleLifecycle;
+import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.resolver.XAttachmentKey;
 import org.osgi.framework.Bundle;
@@ -43,6 +43,8 @@ public interface InternalConstants {
 
     /** The bundle attachment key */
     XAttachmentKey<Bundle> BUNDLE_KEY = XAttachmentKey.create(Bundle.class);
+    /** The lock method attachment key */
+    XAttachmentKey<Method> LOCK_METHOD_KEY = XAttachmentKey.create(Method.class);
     /** The module attachment key */
     XAttachmentKey<Module> MODULE_KEY = XAttachmentKey.create(Module.class);
     /** The module identifier attachment key */

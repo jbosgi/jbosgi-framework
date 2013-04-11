@@ -163,17 +163,13 @@ public class AutoInstallTestCase extends AbstractFrameworkLaunchTest {
         assertBundleState(Bundle.ACTIVE, bundleD.getState());
 
         bundleB.uninstall();
+        assertBundleState(Bundle.UNINSTALLED, bundleB.getState());
 
         // Verify that the framework is still active
         assertServiceState(State.UP, Services.FRAMEWORK_ACTIVE);
 
         framework.stop();
         framework.waitForStop(2000);
-
-        assertBundleState(Bundle.UNINSTALLED, bundleB.getState());
-        assertBundleState(Bundle.UNINSTALLED, bundleC.getState());
-        assertBundleState(Bundle.UNINSTALLED, bundleD.getState());
-
         framework.start();
 
         bundleB = getBundleManager().getBundles("bundleB", null).iterator().next();

@@ -72,8 +72,8 @@ public interface IntegrationServices {
 	ServiceName BUNDLE_LIFECYCLE_PLUGIN = JBOSGI_BASE_NAME.append("BundleLifecycle");
     /** The {@link BundleStartLevelPlugin} service name */
     ServiceName BUNDLE_START_LEVEL_PLUGIN = JBOSGI_BASE_NAME.append("BundleStartLevel");
-	/** The {@link BundleStorage} plugin service name */
-	ServiceName BUNDLE_STORAGE_PLUGIN = JBOSGI_BASE_NAME.append("BundleStorage");
+	/** The {@link StorageManager} plugin service name */
+	ServiceName STORAGE_MANAGER_PLUGIN = JBOSGI_BASE_NAME.append("StorageManager");
     /** The {@link DeploymentProvider} service name */
     ServiceName DEPLOYMENT_PROVIDER_PLUGIN = JBOSGI_BASE_NAME.append("DeploymentProvider");
     /** The {@link PackageAdmin} service name */
@@ -112,7 +112,7 @@ public interface IntegrationServices {
 	ServiceName PERSISTENT_BUNDLES_COMPLETE = BootstrapPhase.serviceName(PERSISTENT_BUNDLES, BootstrapPhase.COMPLETE);
 	/** The {@link ServiceManager} service name */
     ServiceName SERVICE_MANAGER_PLUGIN = JBOSGI_BASE_NAME.append("ServiceManager");
-    /** The service name for the {@link StartLevelSupport} service */
+    /** The service name for the {@link StartLevelManager} service */
     ServiceName START_LEVEL_PLUGIN = Services.JBOSGI_BASE_NAME.append("StartLevelSupport");
 	/** The service name for the {@link SystemPaths} */
 	ServiceName SYSTEM_PATHS_PLUGIN = JBOSGI_BASE_NAME.append("SystemPaths");

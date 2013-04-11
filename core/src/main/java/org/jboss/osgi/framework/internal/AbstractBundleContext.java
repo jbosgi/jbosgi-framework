@@ -36,7 +36,7 @@ import java.util.Dictionary;
 import java.util.List;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
-import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.ServiceManager;
@@ -203,25 +203,19 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
             DeploymentProvider deploymentPlugin = frameworkState.getDeploymentProvider();
             dep = deploymentPlugin.createDeployment(location, rootFile);
-            return installBundle(dep);
-
+            try {
+                BundleLifecycle bundleLifecycle = getFrameworkState().getCoreServices().getBundleLifecycle();
+                XBundleRevision brev = bundleLifecycle.createBundleRevision(this, dep).getValue();
+                return brev.getBundle();
+            } catch (BundleException ex) {
+                LOGGER.debugf(ex, "Cannot install bundle from deployment: %s", dep);
+                throw ex;
+            }
         } catch (RuntimeException rte) {
             VFSUtils.safeClose(rootFile);
             throw rte;
         } catch (BundleException ex) {
             VFSUtils.safeClose(rootFile);
-            throw ex;
-        }
-    }
-
-    private Bundle installBundle(Deployment dep) throws BundleException {
-        checkValidBundleContext();
-        try {
-            BundleLifecycle bundleLifecycle = getFrameworkState().getCoreServices().getBundleLifecycle();
-            XBundleRevision brev = bundleLifecycle.createBundleRevision(this, dep).getValue();
-            return brev.getBundle();
-        } catch (BundleException ex) {
-            LOGGER.debugf(ex, "Cannot install bundle from deployment: %s", dep);
             throw ex;
         }
     }
@@ -459,7 +453,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
     @Override
     public File getDataFile(String filename) {
         checkValidBundleContext();
-        BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
+        StorageManager storagePlugin = getFrameworkState().getStorageManager();
         return storagePlugin.getDataFile(bundleState.getBundleId(), filename);
     }
 

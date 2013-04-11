@@ -28,32 +28,32 @@ import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
-import org.jboss.osgi.framework.internal.StartLevelSupportImpl;
+import org.jboss.osgi.framework.internal.StartLevelManagerImpl;
 
 /**
- * An implementation of the {@link StartLevelSupport} service.
+ * An implementation of the {@link StartLevelManager} service.
  *
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @author Thomas.Diesler@jboss.com
  */
-public class StartLevelSupportPlugin extends ExecutorServicePlugin<StartLevelSupport> {
+public class StartLevelManagerPlugin extends ExecutorServicePlugin<StartLevelManager> {
 
     private final InjectedValue<FrameworkEvents> injectedFrameworkEvents = new InjectedValue<FrameworkEvents>();
 
-    public StartLevelSupportPlugin() {
+    public StartLevelManagerPlugin() {
         super(IntegrationServices.START_LEVEL_PLUGIN, "StartLevel Thread");
     }
 
     @Override
-    protected void addServiceDependencies(ServiceBuilder<StartLevelSupport> builder) {
+    protected void addServiceDependencies(ServiceBuilder<StartLevelManager> builder) {
         super.addServiceDependencies(builder);
         builder.addDependency(IntegrationServices.FRAMEWORK_EVENTS_PLUGIN, FrameworkEvents.class, injectedFrameworkEvents);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override
-    protected StartLevelSupport createServiceValue(StartContext startContext) throws StartException {
+    protected StartLevelManager createServiceValue(StartContext startContext) throws StartException {
         FrameworkEvents events = injectedFrameworkEvents.getValue();
-        return new StartLevelSupportImpl(getBundleManager(), events, getExecutorService(), new AtomicBoolean(false));
+        return new StartLevelManagerImpl(getBundleManager(), events, getExecutorService(), new AtomicBoolean(false));
     }
 }

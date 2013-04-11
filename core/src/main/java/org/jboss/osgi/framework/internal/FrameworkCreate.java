@@ -40,7 +40,7 @@ import org.jboss.osgi.framework.spi.FrameworkStartLevelSupport;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.framework.spi.ServiceManager;
-import org.jboss.osgi.framework.spi.StartLevelSupport;
+import org.jboss.osgi.framework.spi.StartLevelManager;
 import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.launch.Framework;
@@ -84,7 +84,7 @@ public final class FrameworkCreate extends AbstractFrameworkService {
         builder.addDependency(IntegrationServices.NATIVE_CODE_PLUGIN, NativeCode.class, frameworkState.injectedNativeCode);
         builder.addDependency(Services.RESOLVER, XResolver.class, frameworkState.injectedResolverPlugin);
         builder.addDependency(IntegrationServices.SERVICE_MANAGER_PLUGIN, ServiceManager.class, frameworkState.injectedServiceManager);
-        builder.addDependency(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class, frameworkState.injectedStartLevel);
+        builder.addDependency(IntegrationServices.START_LEVEL_PLUGIN, StartLevelManager.class, frameworkState.injectedStartLevel);
         builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, SystemBundleState.class, frameworkState.injectedSystemBundle);
         builder.setInitialMode(Mode.ON_DEMAND);
     }

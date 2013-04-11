@@ -61,7 +61,8 @@ import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
-import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.LockUtils;
+import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkBuilder;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
@@ -69,6 +70,7 @@ import org.jboss.osgi.framework.spi.FrameworkStartLevelSupport;
 import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.XLockableEnvironment;
 import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.ModuleManager;
@@ -77,6 +79,9 @@ import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.resolver.XResolveContext;
+import org.jboss.osgi.resolver.XResolver;
+import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -92,6 +97,7 @@ import org.osgi.framework.launch.Framework;
 import org.osgi.framework.startlevel.FrameworkStartLevel;
 import org.osgi.framework.wiring.FrameworkWiring;
 import org.osgi.resource.Resource;
+import org.osgi.service.resolver.ResolutionException;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 
 /**
@@ -497,70 +503,121 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         return new RevisionIdentifier(resourceId);
     }
 
+    void resolveBundleLifecycle(XBundle bundle) throws ResolutionException {
+        getBundleLifecycle().resolve(bundle);
+    }
+
+    @Override
+    public void resolveBundle(XBundle bundle) throws ResolutionException {
+        Set<XBundleRevision> mandatory = Collections.singleton(bundle.getBundleRevision());
+        XEnvironment environment = getFrameworkState().getEnvironment();
+        XResolver resolver = getFrameworkState().getResolver();
+        XResolveContext context = resolver.createResolveContext(environment, mandatory, null);
+        resolver.resolveAndApply(context);
+    }
+
+    void startBundleLifecycle(XBundle bundle, int options) throws BundleException {
+        BundleLifecycle bundleLifecycle = getBundleLifecycle();
+        bundleLifecycle.start(bundle, options);
+    }
+
     @Override
     public void startBundle(XBundle bundle, int options) throws BundleException {
-        BundleLifecycle bundleLifecycle = getBundleLifecycle();
-        LockableItem[] items = new LockableItem[] { (LockableItem) bundle };
+        LockManager lockManager = getFrameworkState().getLockManager();
         LockContext lockContext = null;
         try {
-            lockContext = bundleLifecycle.lockBundle(Method.START, bundle, items);
             AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
+            LockableItem[] items = LockUtils.getLockableItems(new XBundle[] { bundle }, null);
+            lockContext = lockManager.lockItems(Method.START, items);
             bundleState.startInternal(options);
+        } catch (BundleException ex) {
+            LOGGER.debugf(ex, "Cannot start bundle: %s", bundle);
+            throw ex;
         } finally {
-            bundleLifecycle.unlockBundle(bundle, lockContext);
+            lockManager.unlockItems(lockContext);
         }
+    }
+
+    void stopBundleLifecycle(XBundle bundle, int options) throws BundleException {
+        BundleLifecycle bundleLifecycle = getBundleLifecycle();
+        bundleLifecycle.stop(bundle, options);
     }
 
     @Override
     public void stopBundle(XBundle bundle, int options) throws BundleException {
-        BundleLifecycle bundleLifecycle = getBundleLifecycle();
-        LockableItem[] items = new LockableItem[] { (LockableItem) bundle };
+        LockManager lockManager = getFrameworkState().getLockManager();
         LockContext lockContext = null;
         try {
-            lockContext = bundleLifecycle.lockBundle(Method.STOP, bundle, items);
             AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
+            LockableItem[] items = LockUtils.getLockableItems(new XBundle[] { bundle }, null);
+            lockContext = lockManager.lockItems(Method.STOP, items);
             bundleState.stopInternal(options);
+        } catch (BundleException ex) {
+            LOGGER.debugf(ex, "Cannot stop bundle: %s", bundle);
+            throw ex;
         } finally {
-            bundleLifecycle.unlockBundle(bundle, lockContext);
+            lockManager.unlockItems(lockContext);
         }
+    }
+
+    void updateBundleLifecycle(XBundle bundle, InputStream input) throws BundleException {
+        BundleLifecycle bundleLifecycle = getBundleLifecycle();
+        bundleLifecycle.update(bundle, input);
     }
 
     @Override
     public void updateBundle(XBundle bundle, InputStream input) throws BundleException {
-        BundleLifecycle bundleLifecycle = getBundleLifecycle();
-        LockableItem[] items = new LockableItem[] { (LockableItem) bundle };
+        LockManager lockManager = getFrameworkState().getLockManager();
         LockContext lockContext = null;
         try {
-            lockContext = bundleLifecycle.lockBundle(Method.UPDATE, bundle, items);
             AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
+            LockableItem[] items = LockUtils.getLockableItems(new XBundle[] { bundle }, null);
+            lockContext = lockManager.lockItems(Method.UPDATE, items);
             bundleState.updateInternal(input);
+        } catch (BundleException ex) {
+            LOGGER.debugf(ex, "Cannot update bundle: %s", bundle);
+            throw ex;
         } finally {
-            bundleLifecycle.unlockBundle(bundle, lockContext);
+            lockManager.unlockItems(lockContext);
         }
+    }
+
+    void uninstallBundleLifecycle(XBundle bundle, int options) throws BundleException {
+        BundleLifecycle bundleLifecycle = getBundleLifecycle();
+        bundleLifecycle.uninstall(bundle, options);
     }
 
     @Override
     public void uninstallBundle(XBundle bundle, int options) throws BundleException {
-        BundleLifecycle bundleLifecycle = getBundleLifecycle();
         LockManager lockManager = getFrameworkState().getLockManager();
-        LockableItem wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-        LockableItem[] items = new LockableItem[] { (LockableItem) bundle, wireLock };
         LockContext lockContext = null;
         try {
-            lockContext = bundleLifecycle.lockBundle(Method.UNINSTALL, bundle, items);
             AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
+            LockableItem wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+            LockableItem[] items = LockUtils.getLockableItems(new XBundle[] { bundle }, new LockableItem[] { wireLock });
+            lockContext = lockManager.lockItems(Method.UNINSTALL, items);
             bundleState.uninstallInternal(options);
+        } catch (BundleException ex) {
+            LOGGER.debugf(ex, "Cannot uninstall bundle: %s", bundle);
+            throw ex;
         } finally {
-            bundleLifecycle.unlockBundle(bundle, lockContext);
+            lockManager.unlockItems(lockContext);
         }
     }
 
+    void removeRevisionLifecycle(XBundleRevision brev, int options) {
+        BundleLifecycle bundleLifecycle = getBundleLifecycle();
+        bundleLifecycle.removeRevision(brev, options);
+    }
+
     @Override
-    public void removeBundleRevision(XBundleRevision brev) {
-        XEnvironment env = getFrameworkState().getEnvironment();
-        env.uninstallResources(brev);
+    public void removeRevision(XBundleRevision brev, int options) {
+        XLockableEnvironment env = getFrameworkState().getEnvironment();
+        boolean aquireLock = (options & InternalConstants.UNINSTALL_INTERNAL) == 0;
+        env.uninstallResources(new XResource[] { brev }, aquireLock);
         if (brev instanceof UserBundleRevision) {
             UserBundleRevision userRev = (UserBundleRevision) brev;
+            userRev.getBundleState().removeRevision(userRev);
             userRev.removeBundleRevisionService();
             userRev.close();
         }
@@ -570,7 +627,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         return getFrameworkState().getCoreServices().getBundleLifecycle();
     }
 
-    void checkUniqunessPolicy(Bundle targetBundle, String symbolicName, Version version, int operationType) throws BundleException {
+    void checkUniqunessPolicy(Bundle targetBundle, String symbolicName, Version version, int policy) throws BundleException {
 
         if (uniquenessPolicy == UniquenessPolicy.multiple)
             return;
@@ -600,7 +657,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             }
             for (ServiceReference<CollisionHook> sref : srefs) {
                 CollisionHook hook = syscontext.getService(sref);
-                hook.filterCollisions(operationType, targetBundle, candidates);
+                hook.filterCollisions(policy, targetBundle, candidates);
             }
         }
         if (!candidates.isEmpty()) {
@@ -624,16 +681,15 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         LOGGER.tracef("Start removing bundle: %s", userBundle);
 
         if ((options & Bundle.STOP_TRANSIENT) == 0) {
-            BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
+            StorageManager storagePlugin = getFrameworkState().getStorageManager();
             storagePlugin.deleteStorageState(userBundle.getStorageState());
         }
 
-        BundleLifecycle bundleLifecycle = getBundleLifecycle();
         for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
             if ((options & InternalConstants.UNINSTALL_INTERNAL) == 0) {
-                bundleLifecycle.removeBundleRevision(brev);
+                removeRevisionLifecycle(brev, options);
             } else {
-                removeBundleRevision(brev);
+                removeRevision(brev, options);
             }
         }
 

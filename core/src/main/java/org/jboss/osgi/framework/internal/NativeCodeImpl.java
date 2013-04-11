@@ -41,7 +41,7 @@ import java.util.Map;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.spi.BundleManager;
-import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.framework.spi.NativeLibraryProvider;
@@ -377,7 +377,7 @@ public final class NativeCodeImpl implements NativeCode {
         }
 
         private File getUniqueLibraryFile(UserBundleState userBundle, String libpath) {
-            BundleStorage storagePlugin = userBundle.getFrameworkState().getBundleStorage();
+            StorageManager storagePlugin = userBundle.getFrameworkState().getStorageManager();
             return storagePlugin.getDataFile(userBundle.getBundleId(), libpath);
         }
     }

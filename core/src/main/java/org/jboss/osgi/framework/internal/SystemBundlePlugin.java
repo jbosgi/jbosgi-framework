@@ -40,13 +40,14 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
-import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.framework.spi.SystemPaths;
+import org.jboss.osgi.framework.spi.XLockableEnvironment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.metadata.spi.ElementParser;
@@ -73,8 +74,8 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<SystemBundleState> builder) {
-        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, frameworkState.injectedEnvironment);
-        builder.addDependency(IntegrationServices.BUNDLE_STORAGE_PLUGIN, BundleStorage.class, frameworkState.injectedBundleStorage);
+        builder.addDependency(Services.ENVIRONMENT, XLockableEnvironment.class, frameworkState.injectedEnvironment);
+        builder.addDependency(IntegrationServices.STORAGE_MANAGER_PLUGIN, StorageManager.class, frameworkState.injectedStorageManager);
         builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_PLUGIN, FrameworkModuleProvider.class, frameworkState.injectedModuleProvider);
         builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, frameworkState.injectedLockManager);
         builder.addDependency(IntegrationServices.MODULE_MANGER_PLUGIN, ModuleManager.class, frameworkState.injectedModuleManager);
@@ -97,7 +98,7 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
             bundleManager.injectedSystemBundle.inject(bundleState);
         } catch (BundleException ex) {
             if (storageState != null) {
-                BundleStorage storagePlugin = frameworkState.getBundleStorage();
+                StorageManager storagePlugin = frameworkState.getStorageManager();
                 storagePlugin.deleteStorageState(storageState);
             }
             throw new StartException(ex);
@@ -113,7 +114,7 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
 
     private StorageState createStorageState() {
         try {
-            BundleStorage storagePlugin = frameworkState.getBundleStorage();
+            StorageManager storagePlugin = frameworkState.getStorageManager();
             return storagePlugin.createStorageState(0, SYSTEM_BUNDLE_LOCATION, 0, null);
         } catch (IOException ex) {
             throw MESSAGES.illegalStateCannotCreateSystemBundleStorage(ex);

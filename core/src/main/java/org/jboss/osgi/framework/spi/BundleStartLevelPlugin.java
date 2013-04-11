@@ -36,7 +36,7 @@ import org.jboss.osgi.framework.internal.BundleStartLevelImpl;
  */
 public class BundleStartLevelPlugin extends AbstractIntegrationService<BundleStartLevelSupport>  {
 
-    private final InjectedValue<StartLevelSupport> injectedStartLevel = new InjectedValue<StartLevelSupport>();
+    private final InjectedValue<StartLevelManager> injectedStartLevel = new InjectedValue<StartLevelManager>();
 
     public BundleStartLevelPlugin() {
         super(IntegrationServices.BUNDLE_START_LEVEL_PLUGIN);
@@ -44,7 +44,7 @@ public class BundleStartLevelPlugin extends AbstractIntegrationService<BundleSta
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<BundleStartLevelSupport> builder) {
-        builder.addDependency(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class, injectedStartLevel);
+        builder.addDependency(IntegrationServices.START_LEVEL_PLUGIN, StartLevelManager.class, injectedStartLevel);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 

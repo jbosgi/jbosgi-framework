@@ -43,12 +43,14 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorException;
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
-import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.BundleLifecycle.BundleRefreshPolicy;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
-import org.jboss.osgi.framework.spi.ServiceState;
-import org.jboss.osgi.framework.spi.StartLevelSupport;
+import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.ModuleManager;
+import org.jboss.osgi.framework.spi.ServiceState;
+import org.jboss.osgi.framework.spi.StartLevelManager;
+import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.ActivationPolicyMetaData;
 import org.jboss.osgi.metadata.OSGiMetaData;
@@ -67,6 +69,7 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.Version;
 import org.osgi.framework.hooks.bundle.CollisionHook;
+import org.osgi.framework.startlevel.BundleStartLevel;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.BundleWiring;
@@ -142,7 +145,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
                     options |= START_ACTIVATION_POLICY;
                 }
                 LOGGER.debugf("Lazy activation of: %s", this);
-                getBundleManager().startBundle(this, options);
+                getBundleManager().startBundleLifecycle(this, options);
             }
         }
     }
@@ -229,11 +232,9 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         }
     }
 
-    void clearOldRevisions() {
+    void removeRevision(UserBundleRevision rev) {
         synchronized (revisions) {
-            UserBundleRevision rev = getBundleRevision();
-            revisions.clear();
-            revisions.add(rev);
+            revisions.remove(rev);
         }
     }
 
@@ -253,7 +254,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
     void updateInternal(InputStream input) throws BundleException {
 
         LOGGER.debugf("Updating bundle: %s", this);
-        BundleLifecycle bundleLifecycle = getFrameworkState().getCoreServices().getBundleLifecycle();
+        BundleManagerPlugin bundleManager = getBundleManager();
 
         boolean restart = false;
         if (isFragment() == false) {
@@ -261,7 +262,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
             if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING) {
                 // If this bundle's state is ACTIVE, STARTING or STOPPING, this bundle is stopped
                 // If Bundle.stop throws an exception, the exception is rethrown terminating the update.
-                bundleLifecycle.stop(this, Bundle.STOP_TRANSIENT);
+                bundleManager.stopBundleLifecycle(this, Bundle.STOP_TRANSIENT);
                 if (state != Bundle.STOPPING)
                     restart = true;
             }
@@ -281,12 +282,12 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
             currentRev.getWiringSupport().makeUneffective();
         } catch (BundleException ex) {
             if (restart)
-                bundleLifecycle.start(this, Bundle.START_TRANSIENT);
+                bundleManager.startBundleLifecycle(this, Bundle.START_TRANSIENT);
             throw ex;
         } catch (Exception ex) {
             BundleException be = MESSAGES.cannotUpdateBundle(ex, this);
             if (restart)
-                bundleLifecycle.start(this, Bundle.START_TRANSIENT);
+                bundleManager.startBundleLifecycle(this, Bundle.START_TRANSIENT);
             throw be;
         }
 
@@ -297,7 +298,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
             // If this bundle's state was originally ACTIVE or STARTING, the updated bundle is started
             // If Bundle.start throws an exception, a Framework event of type FrameworkEvent.ERROR is fired
             try {
-                bundleLifecycle.start(this, Bundle.START_TRANSIENT);
+                bundleManager.startBundleLifecycle(this, Bundle.START_TRANSIENT);
             } catch (BundleException e) {
                 eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, e);
             }
@@ -335,11 +336,10 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         if (rootFile == null && input != null)
             rootFile = AbstractVFS.toVirtualFile(input);
 
-        BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
-        StorageState storageState = createStorageState(storagePlugin, getLocation(), rootFile);
-        DeploymentProvider deploymentPlugin = getFrameworkState().getDeploymentProvider();
-        Deployment dep = deploymentPlugin.createDeployment(storageState);
-        OSGiMetaData metadata = deploymentPlugin.createOSGiMetaData(dep);
+        StorageState storageState = createUpdateStorageState(getLocation(), rootFile);
+        DeploymentProvider deploymentManager = getFrameworkState().getDeploymentProvider();
+        Deployment dep = deploymentManager.createDeployment(storageState);
+        OSGiMetaData metadata = deploymentManager.createOSGiMetaData(dep);
         dep.addAttachment(OSGiMetaData.class, metadata);
         dep.addAttachment(Bundle.class, this);
         dep.setBundleUpdate(true);
@@ -351,21 +351,18 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         BundleManagerPlugin bundleManager = getBundleManager();
         bundleManager.checkUniqunessPolicy(this, symbolicName, bundleVersion, CollisionHook.UPDATING);
 
-        // Attach a the update location
-        if (updateLocation != null)
-            dep.addAttachment(Constants.BUNDLE_UPDATELOCATION, updateLocation, String.class);
-
         BundleContext syscontext = getFrameworkState().getSystemBundle().getBundleContext();
         BundleLifecycle bundleLifecycle = getFrameworkState().getCoreServices().getBundleLifecycle();
         XBundleRevision brev = bundleLifecycle.createBundleRevision(syscontext, dep).getValue();
         return UserBundleRevision.assertBundleRevision(brev);
     }
 
-    private StorageState createStorageState(BundleStorage storagePlugin, String location, VirtualFile rootFile) throws BundleException {
+    private StorageState createUpdateStorageState(String location, VirtualFile rootFile) throws BundleException {
         StorageState storageState;
         try {
-            int startlevel = getFrameworkState().getStartLevelSupport().getInitialBundleStartLevel();
-            storageState = storagePlugin.createStorageState(getBundleId(), location, startlevel, rootFile);
+            int startLevel = adapt(BundleStartLevel.class).getStartLevel();
+            StorageManager storageManager = getFrameworkState().getStorageManager();
+            storageState = storageManager.createStorageState(getBundleId(), location, startLevel, rootFile);
         } catch (IOException ex) {
             throw MESSAGES.cannotSetupStorage(ex, rootFile);
         }
@@ -378,44 +375,53 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
      */
     void refresh() throws BundleException {
         assertNotUninstalled();
-        if (isResolved() == false)
-            throw MESSAGES.illegalStateRefreshUnresolvedBundle(this);
 
-        // Remove the {@link Module} and the associated ClassLoader
-        getBundleManager().unresolveBundle(this);
-
-        // Remove the revisions from the environment
+        // Get the {@link BundleRefreshPolicy}
         CoreServices coreServices = getFrameworkState().getCoreServices();
         BundleLifecycle bundleLifecycle = coreServices.getBundleLifecycle();
-        UserBundleRevision currentRev = getBundleRevision();
-        for (XBundleRevision brev : getAllBundleRevisions()) {
+        BundleRefreshPolicy refreshPolicy = bundleLifecycle.getBundleRefreshPolicy();
 
-            if (currentRev != brev) {
-                bundleLifecycle.removeBundleRevision(brev);
-            }
+        try {
+            addAttachment(InternalConstants.LOCK_METHOD_KEY, Method.REFRESH);
 
-            // Cleanup stale fragment revisions
-            if (brev instanceof HostBundleRevision) {
-                HostBundleRevision hostRev = (HostBundleRevision) brev;
-                for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
-                    if (fragRev != fragRev.getBundle().getBundleRevision()) {
-                        bundleLifecycle.removeBundleRevision(fragRev);
+            // Remove the {@link Module} and the associated ClassLoader
+            BundleManagerPlugin bundleManager = getBundleManager();
+            bundleManager.unresolveBundle(this);
+
+            // Initialize bundle refresh
+            UserBundleRevision currentRev = getBundleRevision();
+            refreshPolicy.initBundleRefresh(this);
+
+            // Remove the revisions from the environment
+            for (XBundleRevision brev : getAllBundleRevisions()) {
+
+                if (currentRev != brev) {
+                    bundleManager.removeRevisionLifecycle(brev, 0);
+                }
+
+                // Cleanup stale fragment revisions
+                if (brev instanceof HostBundleRevision) {
+                    HostBundleRevision hostRev = (HostBundleRevision) brev;
+                    for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
+                        if (fragRev != fragRev.getBundle().getBundleRevision()) {
+                            bundleManager.removeRevisionLifecycle(fragRev, 0);
+                        }
                     }
                 }
             }
+
+            awaitLazyActivation.set(false);
+            revisionIndex.set(1);
+
+            FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
+            eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
+
+            refreshPolicy.refreshCurrentRevision();
+
+            changeState(Bundle.INSTALLED);
+        } finally {
+            removeAttachment(InternalConstants.LOCK_METHOD_KEY);
         }
-
-        clearOldRevisions();
-        awaitLazyActivation.set(false);
-        revisionIndex.set(1);
-
-        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
-        eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
-
-        // Update the the current revision
-        currentRev.refreshRevision();
-
-        changeState(Bundle.INSTALLED);
     }
 
     @Override
@@ -524,7 +530,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
         // If the Framework's current start level is less than this bundle's start level
         if (startLevelValidForStart() == false) {
-            StartLevelSupport plugin = getFrameworkState().getStartLevelSupport();
+            StartLevelManager plugin = getFrameworkState().getStartLevelManager();
             int frameworkState = getBundleManager().getSystemBundle().getState();
             Level level = (plugin.isFrameworkStartLevelChanging() || frameworkState != Bundle.ACTIVE) ? Level.DEBUG : Level.INFO;
             LOGGER.log(level, MESSAGES.bundleStartLevelNotValid(getBundleStartLevel(), plugin.getFrameworkStartLevel(), this));
@@ -755,17 +761,17 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
     }
 
     private int getBundleStartLevel() {
-        StartLevelSupport startLevelPlugin = getFrameworkState().getStartLevelSupport();
+        StartLevelManager startLevelPlugin = getFrameworkState().getStartLevelManager();
         return startLevelPlugin.getBundleStartLevel(this);
     }
 
     void setPersistentlyStarted(boolean started) {
-        StartLevelSupport startLevelPlugin = getFrameworkState().getStartLevelSupport();
+        StartLevelManager startLevelPlugin = getFrameworkState().getStartLevelManager();
         startLevelPlugin.setBundlePersistentlyStarted(this, started);
     }
 
     private boolean startLevelValidForStart() {
-        StartLevelSupport startLevelPlugin = getFrameworkState().getStartLevelSupport();
+        StartLevelManager startLevelPlugin = getFrameworkState().getStartLevelManager();
         return startLevelPlugin.getBundleStartLevel(this) <= startLevelPlugin.getFrameworkStartLevel();
     }
 

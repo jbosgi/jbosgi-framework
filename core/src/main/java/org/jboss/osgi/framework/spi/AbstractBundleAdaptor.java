@@ -246,7 +246,7 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
                     throw MESSAGES.cannotStartBundleDueToStartLevel();
 
                 int frameworkState = bundleManager.getSystemBundle().getState();
-                StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
+                StartLevelManager plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelManager.class);
                 Level level = (plugin.isFrameworkStartLevelChanging() || frameworkState != Bundle.ACTIVE) ? Level.DEBUG : Level.INFO;
                 LOGGER.log(level, MESSAGES.bundleStartLevelNotValid(getStartLevel(), plugin.getFrameworkStartLevel(), this));
                 return;
@@ -436,35 +436,35 @@ public class AbstractBundleAdaptor extends AbstractElement implements XBundle, L
 
     @Override
     public int getStartLevel() {
-        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
+        StartLevelManager plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelManager.class);
         return plugin.getBundleStartLevel(this);
     }
 
     @Override
     public void setStartLevel(int level) {
-        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
+        StartLevelManager plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelManager.class);
         plugin.setBundleStartLevel(this, level);
     }
 
     @Override
     public boolean isPersistentlyStarted() {
-        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
+        StartLevelManager plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelManager.class);
         return plugin.isBundlePersistentlyStarted(this);
     }
 
     @Override
     public boolean isActivationPolicyUsed() {
-        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
+        StartLevelManager plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelManager.class);
         return plugin.isBundleActivationPolicyUsed(this);
     }
 
     private void setPersistentlyStarted(boolean started) {
-        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
+        StartLevelManager plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelManager.class);
         plugin.setBundlePersistentlyStarted(this, started);
     }
 
     private boolean startLevelValidForStart() {
-        StartLevelSupport plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class);
+        StartLevelManager plugin = getPluginService(IntegrationServices.START_LEVEL_PLUGIN, StartLevelManager.class);
         return plugin.getBundleStartLevel(this) <= plugin.getFrameworkStartLevel();
     }
 

@@ -29,7 +29,7 @@ import org.osgi.framework.FrameworkListener;
  *
  * @author Thomas.Diesler@jboss.com
  */
-public interface StartLevelSupport {
+public interface StartLevelManager {
 
     void enableImmediateExecution(boolean flag);
 

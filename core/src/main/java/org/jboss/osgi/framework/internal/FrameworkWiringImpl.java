@@ -40,11 +40,15 @@ import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
+import org.jboss.osgi.framework.spi.LockManager.LockableItem;
+import org.jboss.osgi.framework.spi.LockManager.Method;
+import org.jboss.osgi.framework.spi.LockUtils;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolveContext;
 import org.jboss.osgi.resolver.XResolver;
+import org.jboss.osgi.resolver.XResource;
 import org.jboss.osgi.resolver.XWiringSupport;
 import org.jboss.osgi.resolver.spi.AbstractBundleWire;
 import org.jboss.osgi.resolver.spi.ResolverHookException;
@@ -56,7 +60,6 @@ import org.osgi.framework.startlevel.BundleStartLevel;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.BundleWiring;
-import org.osgi.framework.wiring.FrameworkWiring;
 import org.osgi.resource.Wire;
 import org.osgi.resource.Wiring;
 import org.osgi.service.resolver.ResolutionException;
@@ -67,7 +70,7 @@ import org.osgi.service.resolver.ResolutionException;
  * @author Thomas.Diesler@jboss.com
  * @since 08-Nov-2012
  */
-public final class FrameworkWiringImpl implements FrameworkWiring {
+public final class FrameworkWiringImpl implements FrameworkWiringSupport {
 
     private final BundleManagerPlugin bundleManager;
     private final FrameworkEvents events;
@@ -76,7 +79,8 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
     private final LockManager lockManager;
     private final ExecutorService executorService;
 
-    public FrameworkWiringImpl(BundleManager bundleManager, FrameworkEvents events, XEnvironment environment, XResolver resolver, LockManager lockManager, ExecutorService executorService) {
+    public FrameworkWiringImpl(BundleManager bundleManager, FrameworkEvents events, XEnvironment environment, XResolver resolver, LockManager lockManager,
+            ExecutorService executorService) {
         this.bundleManager = (BundleManagerPlugin) bundleManager;
         this.events = events;
         this.environment = environment;
@@ -91,6 +95,88 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
     }
 
     @Override
+    public void refreshBundlesInternal(Collection<Bundle> dependencyClosure, FrameworkListener... listeners) {
+
+        List<XBundle> stopList = new ArrayList<XBundle>();
+        List<XBundle> dependencyList = new ArrayList<XBundle>();
+        List<XBundle> uninstallBundles = new ArrayList<XBundle>();
+
+        for (Bundle auxBundle : dependencyClosure) {
+            XBundle bundle = (XBundle) auxBundle;
+            int state = bundle.getState();
+            if (state == Bundle.UNINSTALLED) {
+                uninstallBundles.add(bundle);
+            } else if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
+                stopList.add(bundle);
+            }
+            dependencyList.add(bundle);
+        }
+
+        LockContext context = null;
+        try {
+            // Lock the dependency closure
+            LockableItem wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+            XBundle[] bundles = dependencyList.toArray(new XBundle[dependencyList.size()]);
+            LockableItem[] items = LockUtils.getLockableItems(bundles, new LockableItem[] { wireLock });
+            context = lockManager.lockItems(Method.REFRESH, items);
+
+            BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator();
+            Collections.sort(stopList, startLevelComparator);
+
+            for (ListIterator<XBundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();) {
+                XBundle hostBundle = it.previous();
+                try {
+                    hostBundle.stop(Bundle.STOP_TRANSIENT);
+                } catch (Exception th) {
+                    events.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
+                }
+            }
+
+            for (XBundle bundle : uninstallBundles) {
+                if (bundle instanceof UserBundleState) {
+                    bundleManager.removeBundle((UserBundleState) bundle, 0);
+                } else {
+                    XBundleRevision current = bundle.getBundleRevision();
+                    BundleRevisions brevs = bundle.adapt(BundleRevisions.class);
+                    for (BundleRevision aux : brevs.getRevisions()) {
+                        XBundleRevision brev = (XBundleRevision) aux;
+                        if (brev != current) {
+                            bundleManager.removeRevisionLifecycle(brev, 0);
+                        }
+                    }
+                }
+                dependencyList.remove(bundle);
+            }
+
+            for (XBundle bundle : dependencyList) {
+                if (bundle instanceof UserBundleState) {
+                    try {
+                        UserBundleState userBundle = (UserBundleState) bundle;
+                        userBundle.refresh();
+                    } catch (Exception th) {
+                        events.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, th);
+                    }
+                } else {
+                    // nothing to do for adapted modules
+                }
+            }
+
+            for (XBundle bundle : stopList) {
+                try {
+                    bundle.start(Bundle.START_TRANSIENT);
+                } catch (Exception th) {
+                    events.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, th);
+                }
+            }
+
+            XBundle systemBundle = bundleManager.getSystemBundle();
+            events.fireFrameworkEvent(systemBundle, FrameworkEvent.PACKAGES_REFRESHED, null, listeners);
+        } finally {
+            lockManager.unlockItems(context);
+        }
+    }
+
+    @Override
     public void refreshBundles(final Collection<Bundle> bundles, final FrameworkListener... listeners) {
 
         final Collection<Bundle> bundlesToRefresh = new ArrayList<Bundle>();
@@ -98,8 +184,7 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
 
         LockContext lockContext = null;
         try {
-            FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-            lockContext = lockManager.lockItems(LockManager.Method.REFRESH, wireLock);
+            lockContext = lockEnvironment(LockManager.Method.REFRESH);
 
             if (bundles == null) {
                 bundlesToRefresh.addAll(getRemovalPendingBundles());
@@ -110,94 +195,20 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
             // Compute all depending bundles that need to be stopped and unresolved.
             dependencyClosure.addAll(getDependencyClosure(bundlesToRefresh));
         } finally {
-            lockManager.unlockItems(lockContext);
+            unlockEnvironment(lockContext);
         }
 
         LOGGER.debugf("Refresh bundles %s", bundlesToRefresh);
         LOGGER.debugf("Dependency closure %s", dependencyClosure);
 
         Runnable runner = new Runnable() {
-
-            @Override
             public void run() {
-
-                Set<XBundle> stopBundles = new HashSet<XBundle>();
-                Set<XBundle> refreshBundles = new HashSet<XBundle>();
-                Set<XBundle> uninstallBundles = new HashSet<XBundle>();
-
-                for (Bundle auxBundle : bundlesToRefresh) {
-                    XBundle bundle = (XBundle) auxBundle;
-                    if (bundle.getState() == Bundle.UNINSTALLED)
-                        uninstallBundles.add(bundle);
-                    else if (bundle.isResolved() == true)
-                        refreshBundles.add(bundle);
-                }
-
-                for (Bundle bundle : dependencyClosure) {
-                    int state = bundle.getState();
-                    if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
-                        stopBundles.add((XBundle) bundle);
-                    }
-                }
-
-                List<Bundle> stopList = new ArrayList<Bundle>(stopBundles);
-                List<Bundle> refreshList = new ArrayList<Bundle>(dependencyClosure);
-
-                BundleStartLevelComparator startLevelComparator = new BundleStartLevelComparator();
-                Collections.sort(stopList, startLevelComparator);
-
-                for (ListIterator<Bundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();) {
-                    XBundle hostBundle = (XBundle) it.previous();
-                    try {
-                        hostBundle.stop(Bundle.STOP_TRANSIENT);
-                    } catch (Exception th) {
-                        events.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
-                    }
-                }
-
-                for (XBundle bundle : uninstallBundles) {
-                    if (bundle instanceof UserBundleState) {
-                        bundleManager.removeBundle((UserBundleState) bundle, 0);
-                    } else {
-                        XBundleRevision current = bundle.getBundleRevision();
-                        BundleRevisions brevs = bundle.adapt(BundleRevisions.class);
-                        for (BundleRevision aux : brevs.getRevisions()) {
-                            XBundleRevision brev = (XBundleRevision) aux;
-                            if (brev != current) {
-                                bundleManager.removeBundleRevision(brev);
-                            }
-                        }
-                    }
-                    refreshList.remove(bundle);
-                }
-
-                for (Bundle bundle : refreshList) {
-                    try {
-                        if (bundle instanceof UserBundleState) {
-                            ((UserBundleState) bundle).refresh();
-                        } else {
-                            // nothing to do for adapted modules
-                        }
-                    } catch (Exception th) {
-                        events.fireFrameworkEvent((XBundle) bundle, FrameworkEvent.ERROR, th);
-                    }
-                }
-
-                for (Bundle bundle : stopList) {
-                    try {
-                        bundle.start(Bundle.START_TRANSIENT);
-                    } catch (Exception th) {
-                        events.fireFrameworkEvent((XBundle) bundle, FrameworkEvent.ERROR, th);
-                    }
-                }
-
-                XBundle systemBundle = bundleManager.getSystemBundle();
-                events.fireFrameworkEvent(systemBundle, FrameworkEvent.PACKAGES_REFRESHED, null, listeners);
+                refreshBundlesInternal(dependencyClosure, listeners);
             }
         };
 
         if (!executorService.isShutdown()) {
-            //executorService.execute(runner);
+            // executorService.execute(runner);
             runner.run();
         }
     }
@@ -205,7 +216,7 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
     @Override
     public boolean resolveBundles(Collection<Bundle> bundles) {
 
-        // Only bundles that are in state INSTALLED  qualify as resolvable
+        // Only bundles that are in state INSTALLED qualify as resolvable
         if (bundles == null) {
             Set<XBundle> bundleset = bundleManager.getBundles(Bundle.INSTALLED);
             bundles = new ArrayList<Bundle>(bundleset);
@@ -240,9 +251,9 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
         return result;
     }
 
-    /* Returns the bundles that have non-current, in use bundle wirings.
-     *
-     * This is typically the bundles which have been updated or uninstalled since the last call to refreshBundles
+    /*
+     * Returns the bundles that have non-current, in use bundle wirings. This is typically the bundles which have been updated
+     * or uninstalled since the last call to refreshBundles
      */
     @Override
     public Collection<Bundle> getRemovalPendingBundles() {
@@ -278,7 +289,7 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
     }
 
     private void transitiveDependencyClosure(XBundle bundle, Set<Bundle> closure) {
-        if (closure.contains(bundle) == false) {
+        if (bundle.getBundleId() != 0 && closure.contains(bundle) == false) {
             closure.add(bundle);
 
             BundleRevisions brevs = bundle.adapt(BundleRevisions.class);
@@ -307,12 +318,35 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
         }
     }
 
+    private LockContext lockEnvironment(Method method, XResource... resources) {
+        FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+        return lockManager.lockItems(method, getLockableItems(wireLock, resources));
+    }
+
+    private LockableItem[] getLockableItems(LockableItem item, XResource... resources) {
+        List<LockableItem> items = new ArrayList<LockableItem>();
+        items.add(item);
+        if (resources != null) {
+            for (XResource res : resources) {
+                XBundleRevision brev = (XBundleRevision) res;
+                if (brev.getBundle() instanceof LockableItem) {
+                    items.add((LockableItem) brev.getBundle());
+                }
+            }
+        }
+        return items.toArray(new LockableItem[items.size()]);
+    }
+
+    private void unlockEnvironment(LockContext context) {
+        lockManager.unlockItems(context);
+    }
+
     private static class BundleStartLevelComparator implements Comparator<Bundle> {
         @Override
         public int compare(Bundle o1, Bundle o2) {
             int sl1 = o1.adapt(BundleStartLevel.class).getStartLevel();
             int sl2 = o2.adapt(BundleStartLevel.class).getStartLevel();
-            return sl1 - sl2 != 0 ? sl1 - sl2 : (int)(o1.getBundleId() - o2.getBundleId());
+            return sl1 - sl2 != 0 ? sl1 - sl2 : (int) (o1.getBundleId() - o2.getBundleId());
         }
     }
 }

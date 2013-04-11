@@ -54,10 +54,10 @@ public class NoFilter implements Filter {
     public boolean matchCase(Dictionary dictionary) {
         return true;
     }
-    
+
     @Override
     public boolean matches(Map<String, ?> map) {
-        // [TODO] R5 Filter.matches 
+        // [TODO] R5 Filter.matches
         throw new UnsupportedOperationException();
     }
 }

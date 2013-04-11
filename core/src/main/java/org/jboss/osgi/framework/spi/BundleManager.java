@@ -40,6 +40,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.VersionRange;
+import org.osgi.service.resolver.ResolutionException;
 
 /**
  * Integration point for {@link Bundle} management.
@@ -125,12 +126,17 @@ public interface BundleManager extends Service<BundleManager> {
      *
      * @param context The context that is used to install the revision
      * @param deployment The bundle deployment
-     * @param serviceTarget The service target for the INSTALL service
-     * @param listener An optional listener on the INSTALL service
+     * @param serviceTarget The service target for the service
+     * @param listener An optional listener on the service
      *
-     * @return The INSTALL service
+     * @return The bundle revision service
      */
     ServiceController<? extends XBundleRevision> createBundleRevision(BundleContext context, Deployment deployment, ServiceTarget serviceTarget, ServiceListener<XBundleRevision> listener) throws BundleException;
+
+    /**
+     * Resolve the given bundle
+     */
+    void resolveBundle(XBundle bundle) throws ResolutionException;
 
     /**
      * Start the given bundle
@@ -156,8 +162,9 @@ public interface BundleManager extends Service<BundleManager> {
      * Remove a bundle revision from the framework
      *
      * @param revision The bundle revision
+     * @param options TODO
      */
-    void removeBundleRevision(XBundleRevision revision);
+    void removeRevision(XBundleRevision revision, int options);
 
     /**
      * Get the service container

@@ -22,7 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import org.jboss.osgi.framework.spi.BundleStartLevelSupport;
-import org.jboss.osgi.framework.spi.StartLevelSupport;
+import org.jboss.osgi.framework.spi.StartLevelManager;
 import org.jboss.osgi.resolver.XBundle;
 
 /**
@@ -33,9 +33,9 @@ import org.jboss.osgi.resolver.XBundle;
  */
 public final class BundleStartLevelImpl  implements BundleStartLevelSupport {
 
-    private final StartLevelSupport startLevel;
+    private final StartLevelManager startLevel;
 
-    public BundleStartLevelImpl(StartLevelSupport startLevel) {
+    public BundleStartLevelImpl(StartLevelManager startLevel) {
         this.startLevel = startLevel;
     }
 

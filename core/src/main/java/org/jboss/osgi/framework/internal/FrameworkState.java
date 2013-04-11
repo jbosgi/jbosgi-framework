@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.spi.BundleStartLevelSupport;
-import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
@@ -33,9 +32,10 @@ import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.framework.spi.ServiceManager;
-import org.jboss.osgi.framework.spi.StartLevelSupport;
+import org.jboss.osgi.framework.spi.StartLevelManager;
+import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.SystemPaths;
-import org.jboss.osgi.resolver.XEnvironment;
+import org.jboss.osgi.framework.spi.XLockableEnvironment;
 import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.wiring.FrameworkWiring;
@@ -54,7 +54,7 @@ final class FrameworkState {
     private final BundleManagerPlugin bundleManager;
 
     final InjectedValue<BundleStartLevelSupport> injectedBundleStartLevel = new InjectedValue<BundleStartLevelSupport>();
-    final InjectedValue<BundleStorage> injectedBundleStorage = new InjectedValue<BundleStorage>();
+    final InjectedValue<StorageManager> injectedStorageManager = new InjectedValue<StorageManager>();
     final InjectedValue<DeploymentProvider> injectedDeploymentProvider = new InjectedValue<DeploymentProvider>();
     final InjectedValue<CoreServices> injectedCoreServices = new InjectedValue<CoreServices>();
     final InjectedValue<FrameworkEvents> injectedFrameworkEvents = new InjectedValue<FrameworkEvents>();
@@ -66,10 +66,10 @@ final class FrameworkState {
     final InjectedValue<ModuleManager> injectedModuleManager = new InjectedValue<ModuleManager>();
     final InjectedValue<NativeCode> injectedNativeCode = new InjectedValue<NativeCode>();
     final InjectedValue<ServiceManager> injectedServiceManager = new InjectedValue<ServiceManager>();
-    final InjectedValue<StartLevelSupport> injectedStartLevel = new InjectedValue<StartLevelSupport>();
+    final InjectedValue<StartLevelManager> injectedStartLevel = new InjectedValue<StartLevelManager>();
     final InjectedValue<SystemPaths> injectedSystemPaths = new InjectedValue<SystemPaths>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
-    final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
+    final InjectedValue<XLockableEnvironment> injectedEnvironment = new InjectedValue<XLockableEnvironment>();
     final InjectedValue<XResolver> injectedResolverPlugin = new InjectedValue<XResolver>();
 
     FrameworkState(BundleManagerPlugin bundleManager) {
@@ -84,8 +84,8 @@ final class FrameworkState {
         return injectedBundleStartLevel.getValue();
     }
 
-    BundleStorage getBundleStorage() {
-        return injectedBundleStorage.getValue();
+    StorageManager getStorageManager() {
+        return injectedStorageManager.getValue();
     }
 
     DeploymentProvider getDeploymentProvider() {
@@ -132,7 +132,7 @@ final class FrameworkState {
         return injectedServiceManager.getValue();
     }
 
-    StartLevelSupport getStartLevelSupport() {
+    StartLevelManager getStartLevelManager() {
         return injectedStartLevel.getValue();
     }
 
@@ -144,11 +144,11 @@ final class FrameworkState {
         return injectedSystemPaths.getValue();
     }
 
-    XEnvironment getEnvironment() {
+    XLockableEnvironment getEnvironment() {
         return injectedEnvironment.getValue();
     }
 
-    XResolver getResolverPlugin() {
+    XResolver getResolver() {
         return injectedResolverPlugin.getValue();
     }
 }

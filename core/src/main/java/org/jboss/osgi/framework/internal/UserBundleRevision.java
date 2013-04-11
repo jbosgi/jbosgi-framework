@@ -1,4 +1,3 @@
-package org.jboss.osgi.framework.internal;
 /*
  * #%L
  * JBossOSGi Framework
@@ -20,6 +19,7 @@ package org.jboss.osgi.framework.internal;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 
@@ -125,24 +125,16 @@ abstract class UserBundleRevision extends BundleStateRevision {
         return null;
     }
 
-    abstract void refreshRevision() throws BundleException;
+    abstract void refreshRevision();
 
     void removeBundleRevisionService() {
-        LOGGER.debugf("Remove service for: %s", this);
-        ServiceName serviceName = getServiceName();
         ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
-        ServiceController<?> controller = serviceContainer.getService(serviceName);
+        ServiceController<?> controller = serviceContainer.getService(getServiceName());
         if (controller == null) {
-            LOGGER.debugf("Cannot set mode %s on non-existing service: %s", Mode.REMOVE, serviceName);
+            LOGGER.debugf("Cannot set mode %s on non-existing service: %s", Mode.REMOVE, getServiceName());
         } else {
-            LOGGER.tracef("Set mode %s on service: %s", Mode.REMOVE, controller.getName());
-            try {
-                controller.setMode(Mode.REMOVE);
-            } catch (IllegalArgumentException rte) {
-                // [MSC-105] Cannot determine whether container is shutting down
-                if (rte.getMessage().equals("Container is shutting down") == false)
-                    throw rte;
-            }
+            LOGGER.debugf("Remove service for: %s", this);
+            controller.setMode(Mode.REMOVE);
         }
     }
 

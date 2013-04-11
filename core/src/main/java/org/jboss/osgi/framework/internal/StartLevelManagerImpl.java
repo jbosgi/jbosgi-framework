@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
-import org.jboss.osgi.framework.spi.StartLevelSupport;
+import org.jboss.osgi.framework.spi.StartLevelManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.resolver.XAttachmentKey;
 import org.jboss.osgi.resolver.XBundle;
@@ -45,12 +45,12 @@ import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.launch.Framework;
 
 /**
- * An implementation of the {@link StartLevelSupport} service.
+ * An implementation of the {@link StartLevelManager} service.
  *
  * @author <a href="david@redhat.com">David Bosschaert</a>
  * @author Thomas.Diesler@jboss.com
  */
-public final class StartLevelSupportImpl implements StartLevelSupport {
+public final class StartLevelManagerImpl implements StartLevelManager {
 
     private static XAttachmentKey<BundleStartLevelState> BUNDLE_STARTLEVEL_KEY = XAttachmentKey.create(BundleStartLevelState.class);
 
@@ -62,7 +62,7 @@ public final class StartLevelSupportImpl implements StartLevelSupport {
     private AtomicInteger startLevel = new AtomicInteger(0);
     private AtomicBoolean changingStartLevel = new AtomicBoolean();
 
-    public StartLevelSupportImpl(BundleManager bundleManager, FrameworkEvents frameworkEvents, ExecutorService executorService, AtomicBoolean immediateExecution) {
+    public StartLevelManagerImpl(BundleManager bundleManager, FrameworkEvents frameworkEvents, ExecutorService executorService, AtomicBoolean immediateExecution) {
         this.bundleManager = (BundleManagerPlugin) bundleManager;
         this.events = frameworkEvents;
         this.executorService = executorService;

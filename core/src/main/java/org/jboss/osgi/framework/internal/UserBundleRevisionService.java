@@ -38,11 +38,11 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.spi.BundleStorage;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.IntegrationServices;
-import org.jboss.osgi.framework.spi.LockableEnvironment;
+import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.NativeCode;
+import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
@@ -99,7 +99,7 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
             storageState = createStorageState(dep, revIdentifier);
             OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
             ServiceName serviceName = startContext.getController().getName();
-            bundleRevision = createBundleRevision(dep, metadata, storageState, serviceName, startContext.getChildTarget());
+            bundleRevision = createBundleRevision(dep, storageState, serviceName, startContext.getChildTarget());
             bundleRevision.addAttachment(XResource.RESOURCE_IDENTIFIER_KEY, revIdentifier.getRevisionId());
             validateBundleRevision(bundleRevision, metadata);
             processNativeCode(bundleRevision, metadata, dep);
@@ -122,7 +122,7 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
             }
         } catch (BundleException ex) {
             if (storageState != null) {
-                BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
+                StorageManager storagePlugin = getFrameworkState().getStorageManager();
                 storagePlugin.deleteStorageState(storageState);
             }
             throw new StartException(ex);
@@ -130,41 +130,54 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
     }
 
     @Override
-    public void stop(StopContext context) {
-
-        // The revision is already uninstalled. This would be
-        // the case when we come through Bundle.uninstall()
-        if (bundleRevision.getState() == State.UNINSTALLED)
-            return;
-
+    public void stop(StopContext stopContext) {
         XBundle bundle = bundleRevision.getBundle();
-        XBundleRevision currentRevision = bundle.getBundleRevision();
-        if (currentRevision == bundleRevision && bundle.getState() != Bundle.UNINSTALLED) {
+        if (uninstallRequired(bundle)) {
             try {
-                BundleManagerPlugin bundleManager = getBundleManager();
-                bundleManager.uninstallBundle(bundle, getUninstallOptions());
+                boolean serverShutdown = getServerShutdown();
+                int options = getUninstallOptions(serverShutdown);
+                getBundleManager().uninstallBundle(bundle, options);
             } catch (BundleException ex) {
-                throw new IllegalStateException(ex);
+                LOGGER.debugf(ex, "Cannot uninstall bundle: %s", bundle);
             }
-        } else {
-            LockableEnvironment env = (LockableEnvironment) getFrameworkState().getEnvironment();
-            env.uninstallResourcesUnlocked(bundleRevision);
-            bundleRevision.close();
+        } else if (bundleRevision.getState() != State.UNINSTALLED) {
+            int options = InternalConstants.UNINSTALL_INTERNAL;
+            getBundleManager().removeRevision(bundleRevision, options);
         }
     }
 
-    private int getUninstallOptions() {
-        BundleManagerPlugin bundleManager = getBundleManager();
-        ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        ServiceController<?> controller = serviceContainer.getRequiredService(Services.BUNDLE_MANAGER);
-        int managerState = bundleManager.getManagerState();
-        Substate substate = controller.getSubstate();
-        boolean stopping = managerState == Bundle.STOPPING || managerState == Bundle.RESOLVED || substate == Substate.STOP_REQUESTED;
-        return InternalConstants.UNINSTALL_INTERNAL + (stopping ? Bundle.STOP_TRANSIENT : 0);
+    private boolean uninstallRequired(XBundle bundle) {
+
+        // No uninstall if the bundle is already uninstalled
+        if (bundle.getState() == Bundle.UNINSTALLED || bundleRevision.getState() == State.UNINSTALLED)
+            return false;
+
+        // No uninstall if this is not the current revision
+        if (bundle.getBundleRevision() != bundleRevision)
+            return false;
+
+        // No uninstall if the revision service goes down because of a bundle refresh
+        Method method = bundle.getAttachment(InternalConstants.LOCK_METHOD_KEY);
+        if (method == Method.REFRESH)
+            return false;
+
+        return true;
     }
 
-    abstract R createBundleRevision(Deployment deployment, OSGiMetaData metadata, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget)
-            throws BundleException;
+    private int getUninstallOptions(boolean serverShutdown) {
+        return InternalConstants.UNINSTALL_INTERNAL + (serverShutdown ? Bundle.STOP_TRANSIENT : 0);
+    }
+
+    private boolean getServerShutdown() {
+        BundleManagerPlugin bundleManager = getBundleManager();
+        int managerState = bundleManager.getManagerState();
+        ServiceContainer serviceContainer = bundleManager.getServiceContainer();
+        Substate managerServiceState = serviceContainer.getRequiredService(Services.BUNDLE_MANAGER).getSubstate();
+        boolean stopping = managerState == Bundle.STOPPING || managerState == Bundle.RESOLVED || managerServiceState == Substate.STOP_REQUESTED;
+        return stopping;
+    }
+
+    abstract R createBundleRevision(Deployment deployment, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException;
 
     UserBundleState createBundleState(UserBundleRevision revision) {
         return new UserBundleState(getFrameworkState(), revision);
@@ -177,12 +190,9 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
             String location = dep.getLocation();
             VirtualFile rootFile = dep.getRoot();
             try {
-                BundleStorage storagePlugin = getFrameworkState().getBundleStorage();
                 Integer startlevel = dep.getStartLevel();
-                if (startlevel == null) {
-                    startlevel = getFrameworkState().getStartLevelSupport().getInitialBundleStartLevel();
-                }
-                storageState = storagePlugin.createStorageState(revIdentifier.getRevisionId(), location, startlevel, rootFile);
+                StorageManager storageManager = getFrameworkState().getStorageManager();
+                storageState = storageManager.createStorageState(revIdentifier.getRevisionId(), location, startlevel, rootFile);
                 dep.addAttachment(StorageState.class, storageState);
             } catch (IOException ex) {
                 throw MESSAGES.cannotSetupStorage(ex, rootFile);
@@ -191,9 +201,9 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
         return storageState;
     }
 
-    private void installBundleRevision(R bundleRev) throws BundleException {
+    private void installBundleRevision(R brev) throws BundleException {
         XEnvironment env = getFrameworkState().getEnvironment();
-        env.installResources(bundleRev);
+        env.installResources(new XResource[] { brev });
     }
 
     private void validateBundleRevision(R bundleRevision, OSGiMetaData metadata) throws BundleException {

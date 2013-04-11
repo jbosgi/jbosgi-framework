@@ -25,9 +25,6 @@ import java.io.InputStream;
 
 import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.spi.LockManager.LockableItem;
-import org.jboss.osgi.framework.spi.LockManager.Method;
-import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.BundleContext;
@@ -54,9 +51,14 @@ public interface BundleLifecycle {
 
     void uninstall(XBundle bundle, int options) throws BundleException;
 
-    void removeBundleRevision(XBundleRevision brev);
+    void removeRevision(XBundleRevision brev, int options);
 
-    LockContext lockBundle(Method method, XBundle bundle, LockableItem[] items);
+    BundleRefreshPolicy getBundleRefreshPolicy();
 
-    void unlockBundle(XBundle bundle, LockContext context);
+    interface BundleRefreshPolicy {
+
+        void initBundleRefresh(XBundle bundle) throws BundleException;
+
+        void refreshCurrentRevision() throws BundleException;
+    }
 }

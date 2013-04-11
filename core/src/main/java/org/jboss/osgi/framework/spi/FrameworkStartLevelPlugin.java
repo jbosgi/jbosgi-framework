@@ -38,7 +38,7 @@ import org.jboss.osgi.resolver.XBundle;
 public class FrameworkStartLevelPlugin extends AbstractIntegrationService<FrameworkStartLevelSupport> {
 
     private final InjectedValue<XBundle> injectedSystemBundle = new InjectedValue<XBundle>();
-    private final InjectedValue<StartLevelSupport> injectedStartLevel = new InjectedValue<StartLevelSupport>();
+    private final InjectedValue<StartLevelManager> injectedStartLevel = new InjectedValue<StartLevelManager>();
 
     public FrameworkStartLevelPlugin() {
         super(IntegrationServices.FRAMEWORK_START_LEVEL_PLUGIN);
@@ -46,7 +46,7 @@ public class FrameworkStartLevelPlugin extends AbstractIntegrationService<Framew
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<FrameworkStartLevelSupport> builder) {
-        builder.addDependency(IntegrationServices.START_LEVEL_PLUGIN, StartLevelSupport.class, injectedStartLevel);
+        builder.addDependency(IntegrationServices.START_LEVEL_PLUGIN, StartLevelManager.class, injectedStartLevel);
         builder.addDependency(IntegrationServices.SYSTEM_BUNDLE_INTERNAL, XBundle.class, injectedSystemBundle);
         builder.setInitialMode(Mode.ON_DEMAND);
     }

@@ -29,7 +29,7 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.framework.Services;
-import org.jboss.osgi.framework.internal.BundleStorageImpl;
+import org.jboss.osgi.framework.internal.StorageManagerImpl;
 
 /**
  * A simple implementation of a BundleStorage
@@ -37,18 +37,18 @@ import org.jboss.osgi.framework.internal.BundleStorageImpl;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public class BundleStoragePlugin extends AbstractIntegrationService<BundleStorage> {
+public class StorageManagerPlugin extends AbstractIntegrationService<StorageManager> {
 
     private final InjectedValue<BundleManager> injectedBundleManager = new InjectedValue<BundleManager>();
     private final boolean firstInit;
 
-    public BundleStoragePlugin(boolean firstInit) {
-        super(IntegrationServices.BUNDLE_STORAGE_PLUGIN);
+    public StorageManagerPlugin(boolean firstInit) {
+        super(IntegrationServices.STORAGE_MANAGER_PLUGIN);
         this.firstInit = firstInit;
     }
 
     @Override
-    protected void addServiceDependencies(ServiceBuilder<BundleStorage> builder) {
+    protected void addServiceDependencies(ServiceBuilder<StorageManager> builder) {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
@@ -57,7 +57,7 @@ public class BundleStoragePlugin extends AbstractIntegrationService<BundleStorag
     public void start(StartContext startContext) throws StartException {
         super.start(startContext);
         try {
-            BundleStorage bundleStorage = getValue();
+            StorageManager bundleStorage = getValue();
             BundleManager bundleManager = injectedBundleManager.getValue();
             bundleStorage.initialize(bundleManager.getProperties(), firstInit);
         } catch (IOException ex) {
@@ -66,8 +66,8 @@ public class BundleStoragePlugin extends AbstractIntegrationService<BundleStorag
     }
 
     @Override
-    protected BundleStorage createServiceValue(StartContext startContext) throws StartException {
+    protected StorageManager createServiceValue(StartContext startContext) throws StartException {
         BundleManager bundleManager = injectedBundleManager.getValue();
-        return new BundleStorageImpl(bundleManager);
+        return new StorageManagerImpl(bundleManager);
     }
 }

@@ -35,7 +35,8 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.jboss.osgi.framework.spi.BundleManager;
-import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.StartLevelManager;
+import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -47,14 +48,14 @@ import org.osgi.framework.Constants;
  * @author thomas.diesler@jboss.com
  * @since 18-Aug-2009
  */
-public final class BundleStorageImpl implements BundleStorage {
+public final class StorageManagerImpl implements StorageManager {
 
-    private final BundleManager bundleManager;
+    private final BundleManagerPlugin bundleManager;
     private final Map<String, StorageState> storageStates = new HashMap<String, StorageState>();
     private File storageArea;
 
-    public BundleStorageImpl(BundleManager bundleManager) {
-        this.bundleManager = bundleManager;
+    public StorageManagerImpl(BundleManager bundleManager) {
+        this.bundleManager = (BundleManagerPlugin) bundleManager;
     }
 
     @Override
@@ -69,6 +70,7 @@ public final class BundleStorageImpl implements BundleStorage {
 
         // Initialize storage states
         FilenameFilter filter = new FilenameFilter() {
+            @Override
             public boolean accept(File dir, String name) {
                 return name.startsWith(StorageState.BUNDLE_DIRECTORY_PREFIX);
             }
@@ -85,8 +87,16 @@ public final class BundleStorageImpl implements BundleStorage {
     }
 
     @Override
-    public StorageState createStorageState(long bundleId, String location, int startlevel, VirtualFile rootFile) throws IOException {
+    public StorageState createStorageState(long bundleId, String location, Integer initialStartlevel, VirtualFile rootFile) throws IOException {
         assert location != null : "Null location";
+
+        int startlevel;
+        if (initialStartlevel != null) {
+            startlevel = initialStartlevel.intValue();
+        } else {
+            StartLevelManager startLevelManager = bundleManager.getFrameworkState().getStartLevelManager();
+            startlevel = startLevelManager.getInitialBundleStartLevel();
+        }
 
         // Make the bundle's storage dir
         File bundleDir = getStorageDir(bundleId);

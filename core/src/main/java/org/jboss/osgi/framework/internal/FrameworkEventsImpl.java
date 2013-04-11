@@ -585,7 +585,8 @@ final class FrameworkEventsImpl implements FrameworkEvents {
                 ServiceListenerRegistration listenerReg = ((ListenerInfoImpl) info).getRegistration();
                 // Service events must only be delivered to event listeners which can validly cast the event
                 if (!listenerReg.isAllServiceListener()) {
-                    XBundle owner = (XBundle) info.getBundleContext().getBundle();
+                    BundleContext context = info.getBundleContext();
+                    XBundle owner = (XBundle) context.getBundle();
                     boolean assignableToOwner = true;
                     String[] clazzes = (String[]) serviceState.getProperty(Constants.OBJECTCLASS);
                     for (String clazz : clazzes) {

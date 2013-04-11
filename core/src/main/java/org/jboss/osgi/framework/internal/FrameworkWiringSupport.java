@@ -19,23 +19,21 @@
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
-package org.jboss.osgi.framework.spi;
+package org.jboss.osgi.framework.internal;
 
-import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XAttachmentKey;
+import java.util.Collection;
+
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkListener;
+import org.osgi.framework.wiring.FrameworkWiring;
 
 /**
- * A collection of propriatary constants.
+ * An extension to the framework wiring.
  *
  * @author thomas.diesler@jboss.com
- * @since 08-Apr-2013
+ * @since 11-Apr-2013
  */
-public interface IntegrationConstants {
+interface FrameworkWiringSupport extends FrameworkWiring {
 
-    /** The deployment attachment key */
-    XAttachmentKey<Deployment> DEPLOYMENT_KEY = XAttachmentKey.create(Deployment.class);
-    /** The metadata attachment key */
-    XAttachmentKey<OSGiMetaData> OSGI_METADATA_KEY = XAttachmentKey.create(OSGiMetaData.class);
-
+    void refreshBundlesInternal(Collection<Bundle> dependencyClosure, FrameworkListener... listeners);
 }

@@ -37,7 +37,7 @@ import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.BootstrapBundlesInstall;
-import org.jboss.osgi.framework.spi.BundleStorage;
+import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.StorageState;
@@ -51,7 +51,7 @@ import org.osgi.framework.BundleException;
  */
 final class PersistentBundlesInstallPlugin extends BootstrapBundlesInstall<Void> {
 
-    private final InjectedValue<BundleStorage> injectedStoragePlugin = new InjectedValue<BundleStorage>();
+    private final InjectedValue<StorageManager> injectedStoragePlugin = new InjectedValue<StorageManager>();
     private final InjectedValue<DeploymentProvider> injectedDeploymentFactory = new InjectedValue<DeploymentProvider>();
 
     PersistentBundlesInstallPlugin() {
@@ -61,7 +61,7 @@ final class PersistentBundlesInstallPlugin extends BootstrapBundlesInstall<Void>
     @Override
     protected void addServiceDependencies(ServiceBuilder<Void> builder) {
         super.addServiceDependencies(builder);
-        builder.addDependency(IntegrationServices.BUNDLE_STORAGE_PLUGIN, BundleStorage.class, injectedStoragePlugin);
+        builder.addDependency(IntegrationServices.STORAGE_MANAGER_PLUGIN, StorageManager.class, injectedStoragePlugin);
         builder.addDependency(IntegrationServices.DEPLOYMENT_PROVIDER_PLUGIN, DeploymentProvider.class, injectedDeploymentFactory);
         builder.addDependencies(IntegrationServices.BOOTSTRAP_BUNDLES_COMPLETE);
     }
@@ -72,7 +72,7 @@ final class PersistentBundlesInstallPlugin extends BootstrapBundlesInstall<Void>
         final DeploymentProvider deploymentPlugin = injectedDeploymentFactory.getValue();
         final ServiceTarget serviceTarget = context.getChildTarget();
 
-        final BundleStorage storageStatePlugin = injectedStoragePlugin.getValue();
+        final StorageManager storageStatePlugin = injectedStoragePlugin.getValue();
         final Set<StorageState> storageStates = new HashSet<StorageState>(storageStatePlugin.getStorageStates());
 
         // Reduce the set by the bundles that are already installed

@@ -50,7 +50,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.deployment.interceptor.LifecycleInterceptorService;
 import org.jboss.osgi.framework.Constants;
-import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.BundleStartLevelSupport;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
@@ -587,15 +586,9 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         startWithOptions(options);
     }
 
-    void startWithOptions(int options) throws BundleException {
+    private void startWithOptions(int options) throws BundleException {
         assertStartConditions(options);
-        try {
-            BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
-            bundleLifecycle.start(this, options);
-        } catch (BundleException ex) {
-            LOGGER.debugf(ex, "Cannot start bundle: %s", this);
-            throw ex;
-        }
+        getBundleManager().startBundleLifecycle(this, options);
     }
 
     void assertStartConditions(int options) throws BundleException {
@@ -617,17 +610,11 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     }
 
     void stopWithOptions(int options) throws BundleException {
-        assertStopConditions();
-        try {
-            BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
-            bundleLifecycle.stop(this, options);
-        } catch (BundleException ex) {
-            LOGGER.debugf(ex, "Cannot stop bundle: %s", this);
-            throw ex;
-        }
+        assertStopConditions(options);
+        getBundleManager().stopBundleLifecycle(this, options);
     }
 
-    void assertStopConditions() throws BundleException {
+    void assertStopConditions(int options) throws BundleException {
         if (isFragment())
             throw MESSAGES.cannotStopFragment();
         assertNotUninstalled();
@@ -647,28 +634,15 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     private void updateWithInputStream(InputStream input) throws BundleException {
         assertNotUninstalled();
-        try {
-            BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
-            bundleLifecycle.update(this, input);
-        } catch (BundleException ex) {
-            LOGGER.debugf(ex, "Cannot update bundle: %s", this);
-            throw ex;
-        }
+        getBundleManager().updateBundleLifecycle(this, input);
     }
 
     abstract void updateInternal(InputStream input) throws BundleException;
 
     @Override
     public void uninstall() throws BundleException {
-        // #1 If this bundle's state is UNINSTALLED then an IllegalStateException is thrown
         assertNotUninstalled();
-        try {
-            BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
-            bundleLifecycle.uninstall(this, 0);
-        } catch (BundleException ex) {
-            LOGGER.debugf(ex, "Cannot uninstall bundle: %s", this);
-            throw ex;
-        }
+        getBundleManager().uninstallBundleLifecycle(this, 0);
     }
 
     abstract void uninstallInternal(int options) throws BundleException;
@@ -685,8 +659,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
         boolean result = true;
         if (isResolved() == false) {
             try {
-                BundleLifecycle bundleLifecycle = getCoreServices().getBundleLifecycle();
-                bundleLifecycle.resolve(this);
+                getBundleManager().resolveBundleLifecycle(this);
                 if (LOGGER.isDebugEnabled()) {
                     BundleWiring wiring = getBundleRevision().getWiring();
                     LOGGER.tracef("Required resource wires for: %s", wiring.getResource());

@@ -28,10 +28,10 @@ import java.util.List;
 
 import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.LockManager;
+import org.jboss.osgi.framework.spi.XLockableEnvironment;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.LockManager.Method;
-import org.jboss.osgi.framework.spi.LockableEnvironment;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
@@ -47,7 +47,7 @@ import org.osgi.resource.Wiring;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-public final class EnvironmentImpl extends AbstractEnvironment implements XEnvironment, LockableEnvironment {
+public final class EnvironmentImpl extends AbstractEnvironment implements XLockableEnvironment {
 
     private final LockManager lockManager;
 
@@ -56,18 +56,16 @@ public final class EnvironmentImpl extends AbstractEnvironment implements XEnvir
     }
 
     @Override
-    public LockContext lockEnvironment(Method method, XResource... resources) {
-        FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-        return lockManager.lockItems(method, getLockableItems(wireLock, resources));
-    }
-
-    @Override
-    public void unlockEnvironment(LockContext context) {
-        lockManager.unlockItems(context);
+    public void installResources(XResource[] resources, boolean aquireLock) {
+        installResourcesInternal(resources, aquireLock);
     }
 
     @Override
     public void installResources(XResource... resources) {
+        installResourcesInternal(resources, true);
+    }
+
+    private synchronized void installResourcesInternal(XResource[] resources, boolean aquireLock) {
         if (resources == null)
             throw MESSAGES.illegalArgumentNull("resources");
 
@@ -86,27 +84,38 @@ public final class EnvironmentImpl extends AbstractEnvironment implements XEnvir
         LockContext lockContext = null;
         try {
             // The resources are not locked for install
-            lockContext = lockEnvironment(Method.INSTALL);
+            if (aquireLock) {
+                lockContext = lockResources(Method.INSTALL);
+            }
             super.installResources(resources);
         } finally {
-            unlockEnvironment(lockContext);
+            unlockResources(lockContext);
         }
     }
 
     @Override
-    public synchronized void uninstallResources(XResource... resources) {
+    public void uninstallResources(XResource[] resources, boolean aquireLock) {
+        uninstallResourcesInternal(resources, aquireLock);
+    }
+
+    @Override
+    public void uninstallResources(XResource... resources) {
+        uninstallResourcesInternal(resources, true);
+    }
+
+    private synchronized void uninstallResourcesInternal(XResource[] resources, boolean aquireLock) {
+        if (resources == null)
+            throw MESSAGES.illegalArgumentNull("resources");
+
         LockContext lockContext = null;
         try {
-            lockContext = lockEnvironment(Method.UNINSTALL, resources);
+            if (aquireLock) {
+                lockContext = lockResources(Method.UNINSTALL, resources);
+            }
             super.uninstallResources(resources);
         } finally {
-            unlockEnvironment(lockContext);
+            unlockResources(lockContext);
         }
-    }
-
-    @Override
-    public synchronized void uninstallResourcesUnlocked(XResource... resources) {
-        super.uninstallResources(resources);
     }
 
     @Override
@@ -114,6 +123,18 @@ public final class EnvironmentImpl extends AbstractEnvironment implements XEnvir
         XBundleRevision brev = (XBundleRevision) res;
         return new AbstractBundleWiring(brev, required, provided);
     }
+
+    @Override
+    public LockContext lockResources(Method method, XResource... resources) {
+        FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+        return lockManager.lockItems(method, getLockableItems(wireLock, resources));
+    }
+
+    @Override
+    public void unlockResources(LockContext context) {
+        lockManager.unlockItems(context);
+    }
+
 
     private LockableItem[] getLockableItems(LockableItem item, XResource... resources) {
         List<LockableItem> items = new ArrayList<LockableItem>();

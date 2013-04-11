@@ -22,7 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import org.jboss.osgi.framework.spi.FrameworkStartLevelSupport;
-import org.jboss.osgi.framework.spi.StartLevelSupport;
+import org.jboss.osgi.framework.spi.StartLevelManager;
 import org.jboss.osgi.resolver.XBundle;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkListener;
@@ -36,9 +36,9 @@ import org.osgi.framework.FrameworkListener;
 public final class FrameworkStartLevelImpl implements FrameworkStartLevelSupport {
 
     private final XBundle systemBundle;
-    private final StartLevelSupport startLevelSupport;
+    private final StartLevelManager startLevelSupport;
 
-    public FrameworkStartLevelImpl(XBundle systemBundle, StartLevelSupport startLevel) {
+    public FrameworkStartLevelImpl(XBundle systemBundle, StartLevelManager startLevel) {
         this.systemBundle = systemBundle;
         this.startLevelSupport = startLevel;
     }

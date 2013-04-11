@@ -27,16 +27,18 @@ import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
 
 /**
- * An extension to the enviroment that supports locking.
+ * An extension to the environment.
  *
  * @author thomas.diesler@jboss.com
- * @since 15-Feb-2012
+ * @since 11-Apr-2013
  */
-public interface LockableEnvironment extends XEnvironment {
+public interface XLockableEnvironment extends XEnvironment {
 
-    LockContext lockEnvironment(Method method, XResource... resources);
+    LockContext lockResources(Method method, XResource... resources);
 
-    void unlockEnvironment(LockContext context);
+    void unlockResources(LockContext context);
 
-    void uninstallResourcesUnlocked(XResource... resources);
+    void installResources(XResource[] resources, boolean aquireLock);
+
+    void uninstallResources(XResource[] resources, boolean aquireLock);
 }
