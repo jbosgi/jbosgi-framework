@@ -23,6 +23,10 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.internal.InternalConstants.REVISION_IDENTIFIER_KEY;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KEY;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.SERVICE_NAME_KEY;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.STORAGE_STATE_KEY;
 import static org.jboss.osgi.framework.spi.IntegrationServices.BUNDLE_BASE_NAME;
 
 import java.io.InputStream;
@@ -445,7 +449,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             if (bundle != null) {
                 LOGGER.debugf("Installing an already existing bundle: %s", dep);
                 ServiceName serviceName = getServiceName(bundle.getBundleRevision());
-                dep.addAttachment(ServiceName.class, serviceName);
+                dep.putAttachment(SERVICE_NAME_KEY, serviceName);
                 VFSUtils.safeClose(dep.getRoot());
                 return (ServiceController<XBundleRevision>) serviceContainer.getRequiredService(serviceName);
             }
@@ -458,14 +462,14 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         try {
 
             // Create the revision identifier
-            RevisionIdentifier revIdentifier = dep.getAttachment(RevisionIdentifier.class);
+            RevisionIdentifier revIdentifier = dep.getAttachment(REVISION_IDENTIFIER_KEY);
             if (revIdentifier == null) {
                 revIdentifier = createRevisionIdentifier(symbolicName, dep);
-                dep.addAttachment(RevisionIdentifier.class, revIdentifier);
+                dep.putAttachment(REVISION_IDENTIFIER_KEY, revIdentifier);
             }
 
             // Check that we have valid metadata
-            OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
+            OSGiMetaData metadata = dep.getAttachment(OSGI_METADATA_KEY);
             if (metadata == null) {
                 DeploymentProvider plugin = getFrameworkState().getDeploymentProvider();
                 metadata = plugin.createOSGiMetaData(dep);
@@ -487,13 +491,13 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             throw ex;
         }
 
-        dep.addAttachment(ServiceName.class, controller.getName());
+        dep.putAttachment(SERVICE_NAME_KEY, controller.getName());
         return controller;
     }
 
     private RevisionIdentifier createRevisionIdentifier(String symbolicName, Deployment dep) {
         Long resourceId;
-        StorageState storageState = dep.getAttachment(StorageState.class);
+        StorageState storageState = dep.getAttachment(STORAGE_STATE_KEY);
         if (!dep.isBundleUpdate() && storageState != null) {
             resourceId = new Long(storageState.getBundleId());
         } else {
@@ -708,14 +712,14 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public ServiceName getServiceName(Deployment dep) {
-        ServiceName serviceName = dep.getAttachment(ServiceName.class);
+        ServiceName serviceName = dep.getAttachment(SERVICE_NAME_KEY);
         if (serviceName == null) {
-            RevisionIdentifier identifier = dep.getAttachment(RevisionIdentifier.class);
+            RevisionIdentifier identifier = dep.getAttachment(REVISION_IDENTIFIER_KEY);
             String bsname = dep.getSymbolicName();
             String version = dep.getVersion();
             String revid = "resid" + identifier.getRevisionId();
             serviceName = ServiceName.of(BUNDLE_BASE_NAME, "" + bsname, "" + version, revid);
-            dep.addAttachment(ServiceName.class, serviceName);
+            dep.putAttachment(SERVICE_NAME_KEY, serviceName);
         }
         return serviceName;
     }

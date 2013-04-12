@@ -24,6 +24,7 @@ package org.jboss.osgi.framework.internal;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.osgi.framework.BundleContext;
@@ -43,7 +44,7 @@ final class FragmentBundleRevisionService extends UserBundleRevisionService<Frag
 
     @Override
     FragmentBundleRevision createBundleRevision(Deployment dep, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException {
-        OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
+        OSGiMetaData metadata = dep.getAttachment(IntegrationConstants.OSGI_METADATA_KEY);
         return new FragmentBundleRevision(getFrameworkState(), dep, metadata, storageState, serviceName, serviceTarget);
     }
 }

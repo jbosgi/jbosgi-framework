@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.internal.InternalConstants.NATIVE_LIBRARY_METADATA_KEY;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -133,7 +134,7 @@ public final class NativeCodeImpl implements NativeCode {
         // Native Code which needs to be processed. The actual processing of it happens in the
         // resolveNativeCode() method.
         NativeLibraryMetaData nativeLibraries = new NativeLibraryMetaData();
-        dep.addAttachment(NativeLibraryMetaData.class, nativeLibraries);
+        dep.putAttachment(NATIVE_LIBRARY_METADATA_KEY, nativeLibraries);
     }
 
     @Override
@@ -151,7 +152,7 @@ public final class NativeCodeImpl implements NativeCode {
         }
 
         Deployment dep = userRev.getAttachment(IntegrationConstants.DEPLOYMENT_KEY);
-        NativeLibraryMetaData nativeLibraries = dep.getAttachment(NativeLibraryMetaData.class);
+        NativeLibraryMetaData nativeLibraries = dep.getAttachment(NATIVE_LIBRARY_METADATA_KEY);
 
         // If no native clauses were selected in step 1, this algorithm is terminated
         // and a BundleException is thrown if the optional clause is not present
@@ -159,7 +160,7 @@ public final class NativeCodeImpl implements NativeCode {
             if (params.size() > 0 && "*".equals(params.get(params.size() - 1).getAttribute())) {
                 // This Bundle-NativeCode clause is optional but we're not selecting any native code clauses
                 // so remove the marker deployment attachment
-                dep.removeAttachment(NativeLibraryMetaData.class);
+                dep.removeAttachment(NATIVE_LIBRARY_METADATA_KEY);
 
                 return;
             }

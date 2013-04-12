@@ -23,6 +23,8 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.BUNDLE_ACTIVATOR_KEY;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KEY;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +48,7 @@ import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleLifecycle.BundleRefreshPolicy;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.ServiceState;
@@ -214,7 +217,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
             if (!isFragment()) {
                 ModuleManager moduleManager = getFrameworkState().getModuleManager();
                 ModuleIdentifier moduleIdentifier = moduleManager.getModuleIdentifier(brev);
-                brev.addAttachment(InternalConstants.MODULE_IDENTIFIER_KEY, moduleIdentifier);
+                brev.putAttachment(IntegrationConstants.MODULE_IDENTIFIER_KEY, moduleIdentifier);
             }
             revisionIndex.incrementAndGet();
             revisions.add(0, brev);
@@ -340,8 +343,8 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         DeploymentProvider deploymentManager = getFrameworkState().getDeploymentProvider();
         Deployment dep = deploymentManager.createDeployment(storageState);
         OSGiMetaData metadata = deploymentManager.createOSGiMetaData(dep);
-        dep.addAttachment(OSGiMetaData.class, metadata);
-        dep.addAttachment(Bundle.class, this);
+        dep.putAttachment(OSGI_METADATA_KEY, metadata);
+        dep.putAttachment(IntegrationConstants.BUNDLE_KEY, this);
         dep.setBundleUpdate(true);
         dep.setAutoStart(false);
 
@@ -382,7 +385,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         BundleRefreshPolicy refreshPolicy = bundleLifecycle.getBundleRefreshPolicy();
 
         try {
-            addAttachment(InternalConstants.LOCK_METHOD_KEY, Method.REFRESH);
+            putAttachment(InternalConstants.LOCK_METHOD_KEY, Method.REFRESH);
 
             // Remove the {@link Module} and the associated ClassLoader
             BundleManagerPlugin bundleManager = getBundleManager();
@@ -577,7 +580,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         String className = getOSGiMetaData().getBundleActivator();
         if (className != null) {
             try {
-                bundleActivator = getDeployment().getAttachment(BundleActivator.class);
+                bundleActivator = getDeployment().getAttachment(BUNDLE_ACTIVATOR_KEY);
                 if (bundleActivator == null) {
                     Object result = loadClass(className).newInstance();
                     if (result instanceof BundleActivator) {

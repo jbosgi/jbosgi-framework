@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.jboss.osgi.framework.Constants;
 import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Version;
@@ -51,7 +52,7 @@ final class SystemBundleState extends AbstractBundleState<SystemBundleRevision> 
         this.systemRevision = brev;
 
         // Assign the {@link ModuleIdentifier}
-        brev.addAttachment(InternalConstants.MODULE_IDENTIFIER_KEY, FrameworkModuleProvider.FRAMEWORK_MODULE_IDENTIFIER);
+        brev.putAttachment(IntegrationConstants.MODULE_IDENTIFIER_KEY, FrameworkModuleProvider.FRAMEWORK_MODULE_IDENTIFIER);
 
         final Bundle bundle = this;
         bundleRevisions = new BundleRevisions() {

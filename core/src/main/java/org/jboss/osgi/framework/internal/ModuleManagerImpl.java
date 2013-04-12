@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.InternalConstants.NATIVE_LIBRARY_METADATA_KEY;
 import static org.osgi.framework.Constants.SYSTEM_BUNDLE_SYMBOLICNAME;
 import static org.osgi.framework.Constants.VISIBILITY_REEXPORT;
 
@@ -53,6 +54,7 @@ import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoader.ModuleSpecBuilderContext;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkModuleProvider;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.NativeLibraryProvider;
 import org.jboss.osgi.framework.spi.SystemPaths;
@@ -109,7 +111,7 @@ public final class ModuleManagerImpl implements ModuleManager {
         assert brev != null : "Null resource";
         assert !brev.isFragment() : "A fragment is not a module";
 
-        ModuleIdentifier identifier = brev.getAttachment(InternalConstants.MODULE_IDENTIFIER_KEY);
+        ModuleIdentifier identifier = brev.getAttachment(IntegrationConstants.MODULE_IDENTIFIER_KEY);
         if (identifier != null)
             return identifier;
 
@@ -486,7 +488,7 @@ public final class ModuleManagerImpl implements ModuleManager {
     }
 
     private void addNativeResourceLoader(ModuleSpec.Builder specBuilder, HostBundleRevision hostrev, Deployment deployment) {
-        NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
+        NativeLibraryMetaData libMetaData = deployment.getAttachment(NATIVE_LIBRARY_METADATA_KEY);
         if (libMetaData != null) {
             NativeResourceLoader nativeLoader = new NativeResourceLoader();
             for (NativeLibrary library : libMetaData.getNativeLibraries()) {

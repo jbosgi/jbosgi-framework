@@ -71,13 +71,13 @@ abstract class UserBundleRevision extends BundleStateRevision {
             entriesProvider = getBundleClassPath(dep.getRoot(), metadata, storageState, bundleClassPath);
             classPathContent = Collections.unmodifiableList(bundleClassPath);
         } else {
-            Module module = dep.getAttachment(Module.class);
+            Module module = dep.getAttachment(InternalConstants.MODULE_KEY);
             entriesProvider = new ModuleEntriesProvider(module);
             classPathContent = Collections.emptyList();
-            addAttachment(InternalConstants.MODULE_KEY, module);
+            putAttachment(InternalConstants.MODULE_KEY, module);
         }
 
-        addAttachment(IntegrationConstants.DEPLOYMENT_KEY, dep);
+        putAttachment(IntegrationConstants.DEPLOYMENT_KEY, dep);
     }
 
     static UserBundleRevision assertBundleRevision(BundleRevision brev) {

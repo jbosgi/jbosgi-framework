@@ -47,6 +47,7 @@ import org.jboss.msc.service.ValueService;
 import org.jboss.msc.value.ImmediateValue;
 import org.jboss.osgi.framework.spi.FrameworkModuleLoader;
 import org.jboss.osgi.framework.spi.FutureServiceValue;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.resolver.XBundle;
@@ -106,7 +107,7 @@ public final class FrameworkModuleLoaderImpl extends ModuleLoader implements Fra
     @Override
     public ModuleIdentifier getModuleIdentifier(XBundleRevision brev) {
         XBundle bundle = brev.getBundle();
-        StorageState storageState = brev.getAttachment(InternalConstants.STORAGE_STATE_KEY);
+        StorageState storageState = brev.getAttachment(IntegrationConstants.STORAGE_STATE_KEY);
         int revisionId = storageState.getRevisionId();
         String bundleId = "bid" + bundle.getBundleId() + "rev" + revisionId;
         String bsname = bundle.getSymbolicName();

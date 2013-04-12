@@ -21,12 +21,11 @@
  */
 package org.jboss.osgi.framework.internal;
 
+
 import org.jboss.modules.Module;
-import org.jboss.modules.ModuleIdentifier;
 import org.jboss.osgi.framework.spi.LockManager.Method;
-import org.jboss.osgi.framework.spi.StorageState;
-import org.jboss.osgi.resolver.XAttachmentKey;
-import org.osgi.framework.Bundle;
+import org.jboss.osgi.metadata.NativeLibraryMetaData;
+import org.jboss.osgi.spi.AttachmentKey;
 
 /**
  * A collection of propriatary constants.
@@ -41,14 +40,12 @@ public interface InternalConstants {
      */
     int UNINSTALL_INTERNAL = 0x00000100;
 
-    /** The bundle attachment key */
-    XAttachmentKey<Bundle> BUNDLE_KEY = XAttachmentKey.create(Bundle.class);
     /** The lock method attachment key */
-    XAttachmentKey<Method> LOCK_METHOD_KEY = XAttachmentKey.create(Method.class);
+    AttachmentKey<Method> LOCK_METHOD_KEY = AttachmentKey.create(Method.class);
     /** The module attachment key */
-    XAttachmentKey<Module> MODULE_KEY = XAttachmentKey.create(Module.class);
-    /** The module identifier attachment key */
-    XAttachmentKey<ModuleIdentifier> MODULE_IDENTIFIER_KEY = XAttachmentKey.create(ModuleIdentifier.class);
-    /** The storage state attachment key */
-    XAttachmentKey<StorageState> STORAGE_STATE_KEY = XAttachmentKey.create(StorageState.class);
+    AttachmentKey<Module> MODULE_KEY = AttachmentKey.create(Module.class);
+    /** The NativeLibraryMetaData attachment key */
+    AttachmentKey<NativeLibraryMetaData> NATIVE_LIBRARY_METADATA_KEY = AttachmentKey.create(NativeLibraryMetaData.class);
+    /** The revision identifier attachment key */
+    AttachmentKey<RevisionIdentifier> REVISION_IDENTIFIER_KEY = AttachmentKey.create(RevisionIdentifier.class);
 }

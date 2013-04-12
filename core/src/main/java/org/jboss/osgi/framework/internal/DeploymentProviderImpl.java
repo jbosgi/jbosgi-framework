@@ -23,6 +23,8 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KEY;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.STORAGE_STATE_KEY;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -32,6 +34,7 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.deployer.DeploymentFactory;
 import org.jboss.osgi.framework.FrameworkMessages;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
@@ -57,7 +60,7 @@ public final class DeploymentProviderImpl implements DeploymentProvider {
         Deployment dep = createDeployment(location, rootFile);
         dep.setAutoStart(storageState.isPersistentlyStarted());
         dep.setStartLevel(storageState.getStartLevel());
-        dep.addAttachment(StorageState.class, storageState);
+        dep.putAttachment(STORAGE_STATE_KEY, storageState);
         return dep;
     }
 
@@ -69,8 +72,8 @@ public final class DeploymentProviderImpl implements DeploymentProvider {
             BundleInfo info = BundleInfo.createBundleInfo(rootFile, location);
             Deployment dep = DeploymentFactory.createDeployment(info);
             OSGiMetaData metadata = info.getOSGiMetadata();
-            dep.addAttachment(BundleInfo.class, info);
-            dep.addAttachment(OSGiMetaData.class, metadata);
+            dep.putAttachment(IntegrationConstants.BUNDLE_INFO_KEY, info);
+            dep.putAttachment(OSGI_METADATA_KEY, metadata);
             return dep;
         } catch (IllegalArgumentException nfe) {
             throw FrameworkMessages.MESSAGES.invalidNumberFormat(nfe, nfe.getMessage());
@@ -85,7 +88,7 @@ public final class DeploymentProviderImpl implements DeploymentProvider {
             String symbolicName = metadata.getBundleSymbolicName();
             Version version = metadata.getBundleVersion();
             Deployment dep = DeploymentFactory.createDeployment(rootFile, location, symbolicName, version);
-            dep.addAttachment(OSGiMetaData.class, metadata);
+            dep.putAttachment(OSGI_METADATA_KEY, metadata);
             return dep;
         }
 
@@ -100,7 +103,7 @@ public final class DeploymentProviderImpl implements DeploymentProvider {
         if (manifest != null && manifest.getMainAttributes().keySet().size() < 2) {
             Deployment dep = DeploymentFactory.createDeployment(rootFile, location, null, Version.emptyVersion);
             metadata = OSGiMetaDataBuilder.load(manifest);
-            dep.addAttachment(OSGiMetaData.class, metadata);
+            dep.putAttachment(OSGI_METADATA_KEY, metadata);
             return dep;
         }
 
@@ -112,12 +115,12 @@ public final class DeploymentProviderImpl implements DeploymentProvider {
     public OSGiMetaData createOSGiMetaData(Deployment deployment) throws BundleException {
 
         // #1 check if the Deployment already contains a OSGiMetaData
-        OSGiMetaData metadata = deployment.getAttachment(OSGiMetaData.class);
+        OSGiMetaData metadata = deployment.getAttachment(OSGI_METADATA_KEY);
         if (metadata != null)
             return metadata;
 
         // #2 check if the Deployment contains valid BundleInfo
-        BundleInfo info = deployment.getAttachment(BundleInfo.class);
+        BundleInfo info = deployment.getAttachment(IntegrationConstants.BUNDLE_INFO_KEY);
         if (info != null)
             metadata = info.getOSGiMetadata();
 
@@ -142,7 +145,7 @@ public final class DeploymentProviderImpl implements DeploymentProvider {
         if (metadata == null)
             throw MESSAGES.invalidDeployment(deployment);
 
-        deployment.addAttachment(OSGiMetaData.class, metadata);
+        deployment.putAttachment(OSGI_METADATA_KEY, metadata);
         return metadata;
     }
 

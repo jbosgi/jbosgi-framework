@@ -23,6 +23,9 @@ package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.internal.InternalConstants.REVISION_IDENTIFIER_KEY;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KEY;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.STORAGE_STATE_KEY;
 
 import java.io.IOException;
 
@@ -39,6 +42,7 @@ import org.jboss.msc.service.StopContext;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.NativeCode;
@@ -95,20 +99,20 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
         StorageState storageState = null;
         try {
             Deployment dep = deployment;
-            RevisionIdentifier revIdentifier = dep.getAttachment(RevisionIdentifier.class);
+            RevisionIdentifier revIdentifier = dep.getAttachment(REVISION_IDENTIFIER_KEY);
             storageState = createStorageState(dep, revIdentifier);
-            OSGiMetaData metadata = dep.getAttachment(OSGiMetaData.class);
+            OSGiMetaData metadata = dep.getAttachment(OSGI_METADATA_KEY);
             ServiceName serviceName = startContext.getController().getName();
             bundleRevision = createBundleRevision(dep, storageState, serviceName, startContext.getChildTarget());
-            bundleRevision.addAttachment(XResource.RESOURCE_IDENTIFIER_KEY, revIdentifier.getRevisionId());
+            bundleRevision.putAttachment(XResource.RESOURCE_IDENTIFIER_KEY, revIdentifier.getRevisionId());
             validateBundleRevision(bundleRevision, metadata);
             processNativeCode(bundleRevision, metadata, dep);
-            XBundle bundle = (XBundle) dep.getAttachment(Bundle.class);
+            XBundle bundle = (XBundle) dep.getAttachment(IntegrationConstants.BUNDLE_KEY);
             if (bundle == null) {
                 bundle = createBundleState(bundleRevision);
                 UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
                 userBundle.addBundleRevision(bundleRevision);
-                dep.addAttachment(Bundle.class, userBundle);
+                dep.putAttachment(IntegrationConstants.BUNDLE_KEY, userBundle);
                 userBundle.initLazyActivation();
                 installBundleRevision(bundleRevision);
                 userBundle.changeState(Bundle.INSTALLED, 0);
@@ -185,7 +189,7 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
 
     private StorageState createStorageState(Deployment dep, RevisionIdentifier revIdentifier) throws BundleException {
         // The storage state exists when we re-create the bundle from persistent storage
-        StorageState storageState = dep.getAttachment(StorageState.class);
+        StorageState storageState = dep.getAttachment(STORAGE_STATE_KEY);
         if (storageState == null) {
             String location = dep.getLocation();
             VirtualFile rootFile = dep.getRoot();
@@ -193,7 +197,7 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
                 Integer startlevel = dep.getStartLevel();
                 StorageManager storageManager = getFrameworkState().getStorageManager();
                 storageState = storageManager.createStorageState(revIdentifier.getRevisionId(), location, startlevel, rootFile);
-                dep.addAttachment(StorageState.class, storageState);
+                dep.putAttachment(STORAGE_STATE_KEY, storageState);
             } catch (IOException ex) {
                 throw MESSAGES.cannotSetupStorage(ex, rootFile);
             }

@@ -21,9 +21,16 @@
  */
 package org.jboss.osgi.framework.spi;
 
+import java.util.jar.Manifest;
+
+import org.jboss.modules.ModuleIdentifier;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
-import org.jboss.osgi.resolver.XAttachmentKey;
+import org.jboss.osgi.spi.BundleInfo;
+import org.jboss.osgi.spi.AttachmentKey;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleActivator;
 
 /**
  * A collection of propriatary constants.
@@ -33,9 +40,23 @@ import org.jboss.osgi.resolver.XAttachmentKey;
  */
 public interface IntegrationConstants {
 
+    /** The bundle attachment key */
+    AttachmentKey<Bundle> BUNDLE_KEY = AttachmentKey.create(Bundle.class);
+    /** The bundle activator attachment key */
+    AttachmentKey<BundleActivator> BUNDLE_ACTIVATOR_KEY = AttachmentKey.create(BundleActivator.class);
     /** The deployment attachment key */
-    XAttachmentKey<Deployment> DEPLOYMENT_KEY = XAttachmentKey.create(Deployment.class);
+    AttachmentKey<Deployment> DEPLOYMENT_KEY = AttachmentKey.create(Deployment.class);
     /** The metadata attachment key */
-    XAttachmentKey<OSGiMetaData> OSGI_METADATA_KEY = XAttachmentKey.create(OSGiMetaData.class);
+    AttachmentKey<OSGiMetaData> OSGI_METADATA_KEY = AttachmentKey.create(OSGiMetaData.class);
+    /** The Manifest attachment key */
+    AttachmentKey<Manifest> MANIFEST_KEY = AttachmentKey.create(Manifest.class);
+    /** The bundle attachment key */
+    AttachmentKey<BundleInfo> BUNDLE_INFO_KEY = AttachmentKey.create(BundleInfo.class);
+    /** The service name attachment key */
+    AttachmentKey<ServiceName> SERVICE_NAME_KEY = AttachmentKey.create(ServiceName.class);
+    /** The storage state attachment key */
+    AttachmentKey<StorageState> STORAGE_STATE_KEY = AttachmentKey.create(StorageState.class);
+    /** The module identifier attachment key */
+    AttachmentKey<ModuleIdentifier> MODULE_IDENTIFIER_KEY = AttachmentKey.create(ModuleIdentifier.class);
 
 }

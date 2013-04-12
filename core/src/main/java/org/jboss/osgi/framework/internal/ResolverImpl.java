@@ -22,6 +22,7 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.InternalConstants.NATIVE_LIBRARY_METADATA_KEY;
 import static org.jboss.osgi.resolver.ResolverMessages.MESSAGES;
 
 import java.util.ArrayList;
@@ -354,7 +355,7 @@ public final class ResolverImpl implements XResolver {
                 Deployment deployment = userRev.getDeployment();
 
                 // Resolve the native code libraries, if there are any
-                NativeLibraryMetaData libMetaData = deployment.getAttachment(NativeLibraryMetaData.class);
+                NativeLibraryMetaData libMetaData = deployment.getAttachment(NATIVE_LIBRARY_METADATA_KEY);
                 if (libMetaData != null) {
                     nativeCode.resolveNativeCode(userRev);
                 }

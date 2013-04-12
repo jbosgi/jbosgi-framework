@@ -83,8 +83,8 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
             throw new BundleException(ex.getMessage(), ex);
         }
 
-        addAttachment(InternalConstants.STORAGE_STATE_KEY, storageState);
-        addAttachment(IntegrationConstants.OSGI_METADATA_KEY, metadata);
+        putAttachment(IntegrationConstants.STORAGE_STATE_KEY, storageState);
+        putAttachment(IntegrationConstants.OSGI_METADATA_KEY, metadata);
     }
 
     FrameworkState getFrameworkState() {
@@ -133,12 +133,12 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
 
     @Override
     public XBundle getBundle() {
-        return (XBundle) getAttachment(InternalConstants.BUNDLE_KEY);
+        return (XBundle) getAttachment(IntegrationConstants.BUNDLE_KEY);
     }
 
     @Override
     public ModuleIdentifier getModuleIdentifier() {
-        return getAttachment(InternalConstants.MODULE_IDENTIFIER_KEY);
+        return getAttachment(IntegrationConstants.MODULE_IDENTIFIER_KEY);
     }
 
     @Override

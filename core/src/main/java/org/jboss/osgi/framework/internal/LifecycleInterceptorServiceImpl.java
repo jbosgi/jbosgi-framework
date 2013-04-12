@@ -27,8 +27,9 @@ import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.deployment.interceptor.AbstractInvocationContext;
 import org.jboss.osgi.deployment.interceptor.AbstractLifecycleInterceptorService;
 import org.jboss.osgi.deployment.interceptor.InvocationContext;
-import org.jboss.osgi.spi.AttachmentSupport;
+import org.jboss.osgi.spi.AttachmentsSupport;
 import org.jboss.osgi.spi.Attachments;
+import org.jboss.osgi.spi.AttachmentKey;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -40,6 +41,9 @@ import org.osgi.framework.BundleContext;
  * @since 19-Oct-2009
  */
 public final class LifecycleInterceptorServiceImpl extends AbstractLifecycleInterceptorService {
+
+    /** The {@link InvocationContext} attachment key */
+    private AttachmentKey<InvocationContext> INVOCATION_CONTEXT_KEY = AttachmentKey.create(InvocationContext.class);
 
 	private final BundleContext systemContext;
 
@@ -55,13 +59,13 @@ public final class LifecycleInterceptorServiceImpl extends AbstractLifecycleInte
         UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
         Deployment dep = userBundle.getDeployment();
 
-        InvocationContext inv = dep.getAttachment(InvocationContext.class);
+        InvocationContext inv = dep.getAttachment(INVOCATION_CONTEXT_KEY);
         if (inv == null) {
             // TODO: support multiple roots defined in Bundle-ClassPath
             VirtualFile rootFile = userBundle.getDeployment().getRoot();
-            Attachments att = new AttachmentSupport(){};
+            Attachments att = new AttachmentsSupport(){};
             inv = new AbstractInvocationContext(systemContext, userBundle, rootFile, att);
-            dep.addAttachment(InvocationContext.class, inv);
+            dep.putAttachment(INVOCATION_CONTEXT_KEY, inv);
         }
         return inv;
     }

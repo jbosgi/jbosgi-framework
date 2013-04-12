@@ -57,8 +57,8 @@ public class AbstractBundleRevisionAdaptor extends AbstractBundleRevision implem
             throw MESSAGES.illegalArgumentNull("module");
         this.module = module;
         this.bundle = createBundle(context, module, this);
-        addAttachment(InternalConstants.MODULE_IDENTIFIER_KEY, module.getIdentifier());
-        addAttachment(InternalConstants.MODULE_KEY, module);
+        putAttachment(IntegrationConstants.MODULE_IDENTIFIER_KEY, module.getIdentifier());
+        putAttachment(InternalConstants.MODULE_KEY, module);
         createWiring();
     }
 

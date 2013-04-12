@@ -45,7 +45,7 @@ final class SystemBundleRevision extends BundleStateRevision {
 
     SystemBundleRevision(FrameworkState frameworkState, OSGiMetaData metadata, StorageState storageState) throws BundleException {
         super(frameworkState, metadata, storageState);
-        addAttachment(XResource.RESOURCE_IDENTIFIER_KEY, new Long(0));
+        putAttachment(XResource.RESOURCE_IDENTIFIER_KEY, new Long(0));
     }
 
     @Override

@@ -22,6 +22,8 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.BUNDLE_KEY;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KEY;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +41,6 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.vfs.AbstractVFS;
 import org.jboss.osgi.vfs.VirtualFile;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
@@ -84,8 +85,8 @@ final class RecreateCurrentRevisionPolicy implements BundleRefreshPolicy {
         DeploymentProvider deploymentManager = bundleManager.getFrameworkState().getDeploymentProvider();
         Deployment dep = deploymentManager.createDeployment(bundle.getLocation(), rootFile);
         OSGiMetaData metadata = deploymentManager.createOSGiMetaData(dep);
-        dep.addAttachment(OSGiMetaData.class, metadata);
-        dep.addAttachment(Bundle.class, bundle);
+        dep.putAttachment(OSGI_METADATA_KEY, metadata);
+        dep.putAttachment(BUNDLE_KEY, bundle);
         dep.setAutoStart(false);
 
         // Create the {@link XBundleRevision} service from {@link Deployment}
