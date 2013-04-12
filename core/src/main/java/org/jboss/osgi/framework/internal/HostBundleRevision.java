@@ -36,7 +36,6 @@ import java.util.TreeSet;
 import java.util.Vector;
 
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.StorageState;
@@ -60,8 +59,8 @@ final class HostBundleRevision extends UserBundleRevision {
     private Set<FragmentBundleRevision> attachedFragments;
     private FallbackLoader fallbackLoader;
 
-    HostBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException {
-        super(frameworkState, dep, metadata, storageState, serviceName, serviceTarget);
+    HostBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState, ServiceTarget serviceTarget) throws BundleException {
+        super(frameworkState, dep, metadata, storageState, serviceTarget);
     }
 
     static HostBundleRevision assertHostRevision(BundleRevision brev) {

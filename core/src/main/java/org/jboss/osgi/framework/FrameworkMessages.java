@@ -143,8 +143,8 @@ public interface FrameworkMessages {
     @Message(id = 11226, value = "No stream handlers for protocol: %s")
     IllegalStateException illegalStateNoStreamHandlersForProtocol(String protocol);
 
-    //@Message(id = 11227, value = "Attempt to refresh an unresolved bundle: %s")
-    //IllegalStateException illegalStateRefreshUnresolvedBundle(Bundle bundle);
+    @Message(id = 11227, value = "Cannot refresh bundles")
+    IllegalStateException illegalStateCannotRefreshBundles(@Cause Throwable cause);
 
     @Message(id = 11228, value = "Cannot obtain URL for: %s")
     IllegalStateException illegalStateCannotObtainURL(VirtualFile child);
@@ -155,8 +155,8 @@ public interface FrameworkMessages {
     @Message(id = 11230, value = "Cannot obtain virtual file for: %s")
     BundleException cannotObtainVirtualFileForLocation(@Cause Throwable cause, String location);
 
-    @Message(id = 11231, value = "Cannot install bundle revision from: %s")
-    BundleException cannotInstallBundleRevisionFromDeployment(@Cause Throwable cause, Deployment dep);
+    @Message(id = 11231, value = "Cannot create bundle revision from: %s")
+    BundleException cannotCreateBundleRevisionFromDeployment(@Cause Throwable cause, Deployment dep);
 
     @Message(id = 11232, value = "Unsupported bundle manifest version %d in: %s")
     BundleException unsupportedBundleManifestVersion(int version, XBundleRevision brev);

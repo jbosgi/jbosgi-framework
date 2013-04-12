@@ -95,6 +95,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     private AbstractBundleContext<? extends AbstractBundleState<?>> bundleContext;
     private Exception lastResolverException;
+    private R initialRevision;
     private R currentRevision;
 
     AbstractBundleState(FrameworkState frameworkState, R brev, long bundleId) {
@@ -108,6 +109,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
         this.bundleId = bundleId;
         this.frameworkState = frameworkState;
+        this.initialRevision = brev;
 
         // Link the bundle revision to this state
         brev.putAttachment(IntegrationConstants.BUNDLE_KEY, this);
@@ -193,7 +195,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     @Override
     public R getBundleRevision() {
-        return currentRevision;
+        return currentRevision != null ? currentRevision : initialRevision;
     }
 
     void addBundleRevision(R rev) {
@@ -635,7 +637,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
 
     private void updateWithInputStream(InputStream input) throws BundleException {
         assertNotUninstalled();
-        getBundleManager().updateBundleLifecycle(this, input);
+        getBundleManager().updateBundle(this, input);
     }
 
     abstract void updateInternal(InputStream input) throws BundleException;
@@ -643,7 +645,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     @Override
     public void uninstall() throws BundleException {
         assertNotUninstalled();
-        getBundleManager().uninstallBundleLifecycle(this, 0);
+        getBundleManager().uninstallBundle(this, 0);
     }
 
     abstract void uninstallInternal(int options) throws BundleException;

@@ -22,19 +22,14 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
-import static org.jboss.osgi.framework.spi.IntegrationConstants.BUNDLE_KEY;
 import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KEY;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.TimeUnit;
-
-import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.BundleLifecycle.BundleRefreshPolicy;
 import org.jboss.osgi.framework.spi.BundleManager;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
-import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
@@ -78,7 +73,6 @@ final class RecreateCurrentRevisionPolicy implements BundleRefreshPolicy {
     }
 
     @Override
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     public void refreshCurrentRevision() throws BundleException {
 
         // Create the revision {@link Deployment}
@@ -86,23 +80,11 @@ final class RecreateCurrentRevisionPolicy implements BundleRefreshPolicy {
         Deployment dep = deploymentManager.createDeployment(bundle.getLocation(), rootFile);
         OSGiMetaData metadata = deploymentManager.createOSGiMetaData(dep);
         dep.putAttachment(OSGI_METADATA_KEY, metadata);
-        dep.putAttachment(BUNDLE_KEY, bundle);
+        dep.putAttachment(IntegrationConstants.BUNDLE_KEY, bundle);
         dep.setAutoStart(false);
 
         // Create the {@link XBundleRevision} service from {@link Deployment}
         BundleContext context = bundleManager.getSystemBundle().getBundleContext();
-        ServiceController<? extends XBundleRevision> controller = bundleManager.createBundleRevision(context, dep, null, null);
-
-        // Wait for the service to come up
-        FutureServiceValue<XBundleRevision> future = new FutureServiceValue(controller);
-        try {
-            future.get(30, TimeUnit.SECONDS);
-        } catch (Exception ex) {
-            Throwable cause = ex.getCause();
-            if (cause instanceof BundleException) {
-                throw (BundleException) cause;
-            }
-            throw MESSAGES.cannotInstallBundleRevisionFromDeployment(ex, dep);
-        }
+        bundleManager.createBundleRevision(context, dep, null);
     }
 }

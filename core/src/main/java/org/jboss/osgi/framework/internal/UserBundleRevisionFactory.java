@@ -29,21 +29,13 @@ import static org.jboss.osgi.framework.spi.IntegrationConstants.STORAGE_STATE_KE
 
 import java.io.IOException;
 
-import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceController.Substate;
-import org.jboss.msc.service.ServiceListener;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.StartContext;
-import org.jboss.msc.service.StartException;
-import org.jboss.msc.service.StopContext;
+import org.jboss.msc.service.ServiceController.Substate;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.IntegrationConstants;
-import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.framework.spi.StorageManager;
@@ -66,48 +58,42 @@ import org.osgi.framework.BundleException;
  * @author thomas.diesler@jboss.com
  * @since 21-Mar-2013
  */
-abstract class UserBundleRevisionService<R extends UserBundleRevision> extends AbstractBundleRevisionService<R> {
+abstract class UserBundleRevisionFactory<R extends UserBundleRevision> {
 
+    private final FrameworkState frameworkState;
+    private final ServiceTarget serviceTarget;
     private final Deployment deployment;
-    private final ServiceName serviceName;
     private final BundleContext targetContext;
     private R bundleRevision;
 
-    UserBundleRevisionService(FrameworkState frameworkState, BundleContext targetContext, Deployment deployment) {
-        super(frameworkState);
+    UserBundleRevisionFactory(FrameworkState frameworkState, BundleContext targetContext, Deployment deployment, ServiceTarget serviceTarget) {
+        this.frameworkState = frameworkState;
+        this.serviceTarget = serviceTarget;
         this.deployment = deployment;
         this.targetContext = targetContext;
-        this.serviceName = getBundleManager().getServiceName(deployment);
     }
 
-    ServiceController<R> install(ServiceTarget serviceTarget, ServiceListener<XBundleRevision> listener) {
-        ServiceBuilder<R> builder = serviceTarget.addService(serviceName, this);
-        addServiceDependencies(builder);
-        if (listener != null) {
-            builder.addListener(listener);
-        }
-        return builder.install();
+    FrameworkState getFrameworkState() {
+        return frameworkState;
     }
 
-    protected void addServiceDependencies(ServiceBuilder<R> builder) {
-        builder.addDependency(IntegrationServices.FRAMEWORK_CORE_SERVICES);
+    BundleManagerPlugin getBundleManager() {
+        return frameworkState.getBundleManager();
     }
 
-    @Override
-    public void start(StartContext startContext) throws StartException {
-        LOGGER.debugf("Creating %s %s", getClass().getSimpleName(), serviceName);
+    R create() throws BundleException {
+        LOGGER.debugf("Creating %s for: %s", getClass().getSimpleName(), deployment);
         StorageState storageState = null;
         try {
             Deployment dep = deployment;
             RevisionIdentifier revIdentifier = dep.getAttachment(REVISION_IDENTIFIER_KEY);
             storageState = createStorageState(dep, revIdentifier);
             OSGiMetaData metadata = dep.getAttachment(OSGI_METADATA_KEY);
-            ServiceName serviceName = startContext.getController().getName();
-            bundleRevision = createBundleRevision(dep, storageState, serviceName, startContext.getChildTarget());
+            bundleRevision = createBundleRevision(dep, storageState, serviceTarget);
             bundleRevision.putAttachment(XResource.RESOURCE_IDENTIFIER_KEY, revIdentifier.getRevisionId());
             validateBundleRevision(bundleRevision, metadata);
             processNativeCode(bundleRevision, metadata, dep);
-            XBundle bundle = (XBundle) dep.getAttachment(IntegrationConstants.BUNDLE_KEY);
+            XBundle bundle = dep.getAttachment(IntegrationConstants.BUNDLE_KEY);
             if (bundle == null) {
                 bundle = createBundleState(bundleRevision);
                 UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
@@ -117,24 +103,31 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
                 installBundleRevision(bundleRevision);
                 userBundle.changeState(Bundle.INSTALLED, 0);
                 LOGGER.infoBundleInstalled(bundle);
-                FrameworkEvents events = getFrameworkState().getFrameworkEvents();
+                FrameworkEvents events = frameworkState.getFrameworkEvents();
                 events.fireBundleEvent(targetContext, bundle, BundleEvent.INSTALLED);
             } else {
                 UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
                 userBundle.addBundleRevision(bundleRevision);
                 installBundleRevision(bundleRevision);
             }
-        } catch (BundleException ex) {
-            if (storageState != null) {
-                StorageManager storagePlugin = getFrameworkState().getStorageManager();
-                storagePlugin.deleteStorageState(storageState);
-            }
-            throw new StartException(ex);
+        } catch (Exception ex) {
+            throw handleCreateException(storageState, ex);
         }
+        return bundleRevision;
     }
 
-    @Override
-    public void stop(StopContext stopContext) {
+    private BundleException handleCreateException(StorageState storageState, Exception ex) {
+        if (storageState != null) {
+            StorageManager storagePlugin = frameworkState.getStorageManager();
+            storagePlugin.deleteStorageState(storageState);
+        }
+        if (ex instanceof BundleException) {
+            return (BundleException) ex;
+        }
+        return MESSAGES.cannotCreateBundleRevisionFromDeployment(ex, deployment);
+    }
+
+    void stop() {
         XBundle bundle = bundleRevision.getBundle();
         if (uninstallRequired(bundle)) {
             try {
@@ -181,10 +174,10 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
         return stopping;
     }
 
-    abstract R createBundleRevision(Deployment deployment, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException;
+    abstract R createBundleRevision(Deployment deployment, StorageState storageState, ServiceTarget serviceTarget) throws BundleException;
 
     UserBundleState createBundleState(UserBundleRevision revision) {
-        return new UserBundleState(getFrameworkState(), revision);
+        return new UserBundleState(frameworkState, revision);
     }
 
     private StorageState createStorageState(Deployment dep, RevisionIdentifier revIdentifier) throws BundleException {
@@ -195,7 +188,7 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
             VirtualFile rootFile = dep.getRoot();
             try {
                 Integer startlevel = dep.getStartLevel();
-                StorageManager storageManager = getFrameworkState().getStorageManager();
+                StorageManager storageManager = frameworkState.getStorageManager();
                 storageState = storageManager.createStorageState(revIdentifier.getRevisionId(), location, startlevel, rootFile);
                 dep.putAttachment(STORAGE_STATE_KEY, storageState);
             } catch (IOException ex) {
@@ -206,7 +199,7 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
     }
 
     private void installBundleRevision(R brev) throws BundleException {
-        XEnvironment env = getFrameworkState().getEnvironment();
+        XEnvironment env = frameworkState.getEnvironment();
         env.installResources(new XResource[] { brev });
     }
 
@@ -221,13 +214,8 @@ abstract class UserBundleRevisionService<R extends UserBundleRevision> extends A
     // Process the Bundle-NativeCode header if there is one
     private void processNativeCode(R bundleRevision, OSGiMetaData metadata, Deployment dep) {
         if (metadata.getBundleNativeCode() != null) {
-            NativeCode nativeCodePlugin = getFrameworkState().getNativeCode();
+            NativeCode nativeCodePlugin = frameworkState.getNativeCode();
             nativeCodePlugin.deployNativeCode(dep);
         }
-    }
-
-    @Override
-    R getBundleRevision() {
-        return bundleRevision;
     }
 }

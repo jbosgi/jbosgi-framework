@@ -356,7 +356,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
         BundleContext syscontext = getFrameworkState().getSystemBundle().getBundleContext();
         BundleLifecycle bundleLifecycle = getFrameworkState().getCoreServices().getBundleLifecycle();
-        XBundleRevision brev = bundleLifecycle.createBundleRevision(syscontext, dep).getValue();
+        XBundleRevision brev = bundleLifecycle.createBundleRevision(syscontext, dep);
         return UserBundleRevision.assertBundleRevision(brev);
     }
 

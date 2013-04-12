@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
@@ -204,8 +203,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
             DeploymentProvider deploymentPlugin = frameworkState.getDeploymentProvider();
             dep = deploymentPlugin.createDeployment(location, rootFile);
             try {
-                BundleLifecycle bundleLifecycle = getFrameworkState().getCoreServices().getBundleLifecycle();
-                XBundleRevision brev = bundleLifecycle.createBundleRevision(this, dep).getValue();
+                XBundleRevision brev = getBundleManager().createBundleRevisionLifecycle(this, dep);
                 return brev.getBundle();
             } catch (BundleException ex) {
                 LOGGER.debugf(ex, "Cannot install bundle from deployment: %s", dep);

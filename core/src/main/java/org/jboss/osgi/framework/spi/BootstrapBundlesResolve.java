@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
@@ -56,11 +55,11 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
     private final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     private final InjectedValue<XBundle> injectedSystemBundle = new InjectedValue<XBundle>();
     private final InjectedValue<XResolver> injectedResolver = new InjectedValue<XResolver>();
-    private final Set<ServiceName> installedServices;
+    private final Set<XBundleRevision> installedRevisions;
 
-    public BootstrapBundlesResolve(ServiceName baseName, Set<ServiceName> installedServices) {
+    public BootstrapBundlesResolve(ServiceName baseName, Set<XBundleRevision> installedRevisions) {
         super(baseName, IntegrationServices.BootstrapPhase.RESOLVE);
-        this.installedServices = installedServices;
+        this.installedRevisions = installedRevisions;
     }
 
     @Override
@@ -80,15 +79,13 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
     @Override
     public void start(final StartContext context) throws StartException {
 
-        ServiceContainer serviceRegistry = context.getController().getServiceContainer();
         int targetLevel = getBeginningStartLevel();
 
         // Track the resolved services
         final Set<XBundle> resolvableBundles = new HashSet<XBundle>();
 
         // Collect the set of resolvable bundles
-        for (ServiceName installedName : installedServices) {
-            XBundleRevision brev = getServiceController(serviceRegistry, installedName).getValue();
+        for (XBundleRevision brev : installedRevisions) {
             Deployment dep = brev.getAttachment(IntegrationConstants.DEPLOYMENT_KEY);
             int bundleLevel = dep.getStartLevel() != null ? dep.getStartLevel() : 1;
             if (dep.isAutoStart() && !brev.isFragment() && bundleLevel <= targetLevel) {
@@ -136,11 +133,6 @@ public class BootstrapBundlesResolve<T> extends BootstrapBundlesService<T> {
         }
 
         installActivateService(context.getChildTarget(), resolvableBundles);
-    }
-
-    @SuppressWarnings("unchecked")
-    private ServiceController<XBundleRevision> getServiceController(ServiceContainer serviceRegistry, ServiceName serviceName) {
-        return (ServiceController<XBundleRevision>) serviceRegistry.getRequiredService(serviceName);
     }
 
     private int getBeginningStartLevel() {

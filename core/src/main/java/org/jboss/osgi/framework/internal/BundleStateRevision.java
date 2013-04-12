@@ -133,7 +133,7 @@ abstract class BundleStateRevision extends AbstractBundleRevision {
 
     @Override
     public XBundle getBundle() {
-        return (XBundle) getAttachment(IntegrationConstants.BUNDLE_KEY);
+        return getAttachment(IntegrationConstants.BUNDLE_KEY);
     }
 
     @Override

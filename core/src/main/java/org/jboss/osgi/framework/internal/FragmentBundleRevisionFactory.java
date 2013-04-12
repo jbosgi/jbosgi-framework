@@ -21,7 +21,6 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.IntegrationConstants;
@@ -31,20 +30,20 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 
 /**
- * Represents the INSTALLED state of a host bundle.
+ * Represents the INSTALLED state of a fragment revision.
  *
  * @author thomas.diesler@jboss.com
- * @since 06-Apr-2011
+ * @since 12-Aug-2010
  */
-final class HostBundleRevisionService extends UserBundleRevisionService<HostBundleRevision> {
+final class FragmentBundleRevisionFactory extends UserBundleRevisionFactory<FragmentBundleRevision> {
 
-    HostBundleRevisionService(FrameworkState frameworkState, BundleContext targetContext, Deployment dep) throws BundleException {
-        super(frameworkState, targetContext, dep);
+    FragmentBundleRevisionFactory(FrameworkState frameworkState, BundleContext targetContext, Deployment dep, ServiceTarget serviceTarget) throws BundleException {
+        super(frameworkState, targetContext, dep, serviceTarget);
     }
 
     @Override
-    HostBundleRevision createBundleRevision(Deployment dep, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException {
+    FragmentBundleRevision createBundleRevision(Deployment dep, StorageState storageState, ServiceTarget serviceTarget) throws BundleException {
         OSGiMetaData metadata = dep.getAttachment(IntegrationConstants.OSGI_METADATA_KEY);
-        return new HostBundleRevision(getFrameworkState(), dep, metadata, storageState, serviceName, serviceTarget);
+        return new FragmentBundleRevision(getFrameworkState(), dep, metadata, storageState, serviceTarget);
     }
 }

@@ -25,10 +25,7 @@ import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 import static org.jboss.osgi.framework.internal.InternalConstants.REVISION_IDENTIFIER_KEY;
 import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KEY;
-import static org.jboss.osgi.framework.spi.IntegrationConstants.SERVICE_NAME_KEY;
 import static org.jboss.osgi.framework.spi.IntegrationConstants.STORAGE_STATE_KEY;
-import static org.jboss.osgi.framework.spi.IntegrationServices.BUNDLE_BASE_NAME;
-
 import java.io.InputStream;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -53,11 +50,11 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.Mode;
-import org.jboss.msc.service.ServiceListener;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
+import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Constants;
@@ -65,7 +62,6 @@ import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
-import org.jboss.osgi.framework.spi.LockUtils;
 import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkBuilder;
@@ -218,6 +214,17 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         LOGGER.debugf("Framework properties");
         for (Entry<String, Object> entry : properties.entrySet()) {
             LOGGER.debugf(" %s = %s", entry.getKey(), entry.getValue());
+        }
+    }
+
+    @Override
+    public void stop(StopContext context) {
+        XEnvironment env = injectedEnvironment.getValue();
+        for (XResource res : env.getResources(XEnvironment.ALL_IDENTITY_TYPES)) {
+            if (res instanceof UserBundleRevision) {
+                UserBundleRevision userRev = (UserBundleRevision) res;
+                userRev.close();
+            }
         }
     }
 
@@ -427,11 +434,14 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         return Collections.unmodifiableSet(resultSet);
     }
 
+    XBundleRevision createBundleRevisionLifecycle(BundleContext context, Deployment dep) throws BundleException {
+        return getBundleLifecycle().createBundleRevision(context, dep);
+    }
+
     @Override
-    @SuppressWarnings("unchecked")
-    public ServiceController<? extends XBundleRevision> createBundleRevision(BundleContext targetContext, Deployment dep, ServiceTarget serviceTarget, ServiceListener<XBundleRevision> listener) throws BundleException {
-        if (targetContext == null)
-            throw MESSAGES.illegalArgumentNull("targetContext");
+    public XBundleRevision createBundleRevision(BundleContext context, Deployment dep, ServiceTarget serviceTarget) throws BundleException {
+        if (context == null)
+            throw MESSAGES.illegalArgumentNull("context");
         if (dep == null)
             throw MESSAGES.illegalArgumentNull("deployment");
 
@@ -448,17 +458,15 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             XBundle bundle = getBundleByLocation(dep.getLocation());
             if (bundle != null) {
                 LOGGER.debugf("Installing an already existing bundle: %s", dep);
-                ServiceName serviceName = getServiceName(bundle.getBundleRevision());
-                dep.putAttachment(SERVICE_NAME_KEY, serviceName);
                 VFSUtils.safeClose(dep.getRoot());
-                return (ServiceController<XBundleRevision>) serviceContainer.getRequiredService(serviceName);
+                return bundle.getBundleRevision();
             }
 
             // Check for symbolic name, version uniqueness
-            checkUniqunessPolicy(targetContext.getBundle(), symbolicName, version, CollisionHook.INSTALLING);
+            checkUniqunessPolicy(context.getBundle(), symbolicName, version, CollisionHook.INSTALLING);
         }
 
-        ServiceController<? extends XBundleRevision> controller;
+        UserBundleRevision brev;
         try {
 
             // Create the revision identifier
@@ -477,11 +485,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
             // Create the bundle services
             if (metadata.getFragmentHost() == null) {
-                HostBundleRevisionService service = new HostBundleRevisionService(getFrameworkState(), targetContext, dep);
-                controller = service.install(serviceTarget, listener);
+                brev = new HostBundleRevisionFactory(getFrameworkState(), context, dep, serviceTarget).create();
             } else {
-                FragmentBundleRevisionService service = new FragmentBundleRevisionService(getFrameworkState(), targetContext, dep);
-                controller = service.install(serviceTarget, listener);
+                brev = new FragmentBundleRevisionFactory(getFrameworkState(), context, dep, serviceTarget).create();
             }
         } catch (RuntimeException rte) {
             VFSUtils.safeClose(dep.getRoot());
@@ -491,8 +497,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             throw ex;
         }
 
-        dep.putAttachment(SERVICE_NAME_KEY, controller.getName());
-        return controller;
+        return brev;
     }
 
     private RevisionIdentifier createRevisionIdentifier(String symbolicName, Deployment dep) {
@@ -513,11 +518,19 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public void resolveBundle(XBundle bundle) throws ResolutionException {
-        Set<XBundleRevision> mandatory = Collections.singleton(bundle.getBundleRevision());
-        XEnvironment environment = getFrameworkState().getEnvironment();
-        XResolver resolver = getFrameworkState().getResolver();
-        XResolveContext context = resolver.createResolveContext(environment, mandatory, null);
-        resolver.resolveAndApply(context);
+        LockManager lockManager = getFrameworkState().getLockManager();
+        LockContext lockContext = null;
+        try {
+            LockableItem wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
+            lockContext = lockManager.lockItems(Method.RESOLVE, (LockableItem) bundle, wireLock);
+            Set<XBundleRevision> mandatory = Collections.singleton(bundle.getBundleRevision());
+            XEnvironment environment = getFrameworkState().getEnvironment();
+            XResolver resolver = getFrameworkState().getResolver();
+            XResolveContext context = resolver.createResolveContext(environment, mandatory, null);
+            resolver.resolveAndApply(context);
+        } finally {
+            lockManager.unlockItems(lockContext);
+        }
     }
 
     void startBundleLifecycle(XBundle bundle, int options) throws BundleException {
@@ -527,12 +540,16 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public void startBundle(XBundle bundle, int options) throws BundleException {
+
+        // If this bundle's state is ACTIVE then this method returns immediately.
+        if (bundle.getState() == Bundle.ACTIVE)
+            return;
+
         LockManager lockManager = getFrameworkState().getLockManager();
         LockContext lockContext = null;
         try {
             AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
-            LockableItem[] items = LockUtils.getLockableItems(new XBundle[] { bundle }, null);
-            lockContext = lockManager.lockItems(Method.START, items);
+            lockContext = lockManager.lockItems(Method.START, (LockableItem)bundle);
             bundleState.startInternal(options);
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot start bundle: %s", bundle);
@@ -549,12 +566,16 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public void stopBundle(XBundle bundle, int options) throws BundleException {
+
+        // If this bundle's state is not STARTING or ACTIVE then this method returns immediately
+        //if (bundle.getState() != Bundle.STARTING && bundle.getState() != Bundle.ACTIVE)
+        //    return;
+
         LockManager lockManager = getFrameworkState().getLockManager();
         LockContext lockContext = null;
         try {
             AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
-            LockableItem[] items = LockUtils.getLockableItems(new XBundle[] { bundle }, null);
-            lockContext = lockManager.lockItems(Method.STOP, items);
+            lockContext = lockManager.lockItems(Method.STOP, (LockableItem)bundle);
             bundleState.stopInternal(options);
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot stop bundle: %s", bundle);
@@ -564,19 +585,13 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         }
     }
 
-    void updateBundleLifecycle(XBundle bundle, InputStream input) throws BundleException {
-        BundleLifecycle bundleLifecycle = getBundleLifecycle();
-        bundleLifecycle.update(bundle, input);
-    }
-
     @Override
     public void updateBundle(XBundle bundle, InputStream input) throws BundleException {
         LockManager lockManager = getFrameworkState().getLockManager();
         LockContext lockContext = null;
         try {
             AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
-            LockableItem[] items = LockUtils.getLockableItems(new XBundle[] { bundle }, null);
-            lockContext = lockManager.lockItems(Method.UPDATE, items);
+            lockContext = lockManager.lockItems(Method.UPDATE, (LockableItem)bundle);
             bundleState.updateInternal(input);
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot update bundle: %s", bundle);
@@ -586,23 +601,21 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         }
     }
 
-    void uninstallBundleLifecycle(XBundle bundle, int options) throws BundleException {
-        BundleLifecycle bundleLifecycle = getBundleLifecycle();
-        bundleLifecycle.uninstall(bundle, options);
-    }
-
     @Override
     public void uninstallBundle(XBundle bundle, int options) throws BundleException {
+
+        //if (bundle.getState() == Bundle.UNINSTALLED)
+        //    return;
+
         LockManager lockManager = getFrameworkState().getLockManager();
         LockContext lockContext = null;
         try {
             AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
             LockableItem wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-            LockableItem[] items = LockUtils.getLockableItems(new XBundle[] { bundle }, new LockableItem[] { wireLock });
-            lockContext = lockManager.lockItems(Method.UNINSTALL, items);
+            lockContext = lockManager.lockItems(Method.UNINSTALL, (LockableItem)bundle, wireLock);
             bundleState.uninstallInternal(options);
         } catch (BundleException ex) {
-            LOGGER.debugf(ex, "Cannot uninstall bundle: %s", bundle);
+            LOGGER.errorCannotUninstallBundle(ex, bundle);
             throw ex;
         } finally {
             lockManager.unlockItems(lockContext);
@@ -622,7 +635,6 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         if (brev instanceof UserBundleRevision) {
             UserBundleRevision userRev = (UserBundleRevision) brev;
             userRev.getBundleState().removeRevision(userRev);
-            userRev.removeBundleRevisionService();
             userRev.close();
         }
     }
@@ -698,30 +710,6 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         }
 
         LOGGER.debugf("Removed bundle: %s", userBundle);
-    }
-
-    @Override
-    public ServiceName getServiceName(XBundleRevision brev) {
-        ServiceName result = null;
-        if (brev instanceof UserBundleRevision) {
-            UserBundleRevision userRev = (UserBundleRevision) brev;
-            result = userRev.getServiceName();
-        }
-        return result;
-    }
-
-    @Override
-    public ServiceName getServiceName(Deployment dep) {
-        ServiceName serviceName = dep.getAttachment(SERVICE_NAME_KEY);
-        if (serviceName == null) {
-            RevisionIdentifier identifier = dep.getAttachment(REVISION_IDENTIFIER_KEY);
-            String bsname = dep.getSymbolicName();
-            String version = dep.getVersion();
-            String revid = "resid" + identifier.getRevisionId();
-            serviceName = ServiceName.of(BUNDLE_BASE_NAME, "" + bsname, "" + version, revid);
-            dep.putAttachment(SERVICE_NAME_KEY, serviceName);
-        }
-        return serviceName;
     }
 
     @Override

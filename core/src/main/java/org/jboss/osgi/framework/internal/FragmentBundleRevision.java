@@ -29,7 +29,6 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.FrameworkMessages;
@@ -51,8 +50,8 @@ final class FragmentBundleRevision extends UserBundleRevision {
 
     private Set<HostBundleRevision> attachedHosts;
 
-    FragmentBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException {
-        super(frameworkState, dep, metadata, storageState, serviceName, serviceTarget);
+    FragmentBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState, ServiceTarget serviceTarget) throws BundleException {
+        super(frameworkState, dep, metadata, storageState, serviceTarget);
     }
 
     static FragmentBundleRevision assertFragmentRevision(BundleRevision brev) {

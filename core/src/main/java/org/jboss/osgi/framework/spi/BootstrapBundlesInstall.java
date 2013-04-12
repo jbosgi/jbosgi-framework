@@ -22,8 +22,6 @@
 package org.jboss.osgi.framework.spi;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
-import static org.jboss.osgi.framework.spi.IntegrationServices.BUNDLE_BASE_NAME;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -59,6 +57,7 @@ public class BootstrapBundlesInstall<T> extends BootstrapBundlesService<T> {
     protected void addServiceDependencies(ServiceBuilder<T> builder) {
         builder.addDependency(Services.BUNDLE_MANAGER, BundleManager.class, injectedBundleManager);
         builder.addDependency(Services.FRAMEWORK_CREATE, BundleContext.class, injectedBundleContext);
+        builder.addDependency(IntegrationServices.FRAMEWORK_CORE_SERVICES);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
@@ -72,49 +71,22 @@ public class BootstrapBundlesInstall<T> extends BootstrapBundlesService<T> {
 
     protected void installBootstrapBundles(final ServiceTarget serviceTarget, final List<Deployment> deployments) {
 
-        // Track the Bundle INSTALLED services
-        ServiceTracker<XBundleRevision> installTracker = new ServiceTracker<XBundleRevision>(getServiceName().getCanonicalName()) {
-
-            Set<ServiceName> installedServices = new HashSet<ServiceName>();
-
-            @Override
-            protected boolean trackService(ServiceController<? extends XBundleRevision> controller) {
-                ServiceName serviceName = controller.getName();
-                return BUNDLE_BASE_NAME.isParentOf(serviceName);
-            }
-
-            @Override
-            protected boolean allServicesAdded(Set<ServiceName> trackedServices) {
-                return deployments.size() == trackedServices.size();
-            }
-
-            @Override
-            protected void serviceStarted(ServiceController<? extends XBundleRevision> controller) {
-                synchronized (installedServices) {
-                    installedServices.add(controller.getName());
-                }
-            }
-
-            @Override
-            protected void complete() {
-                installResolveService(serviceTarget, installedServices);
-            }
-        };
+        Set<XBundleRevision> installedRevisions = new HashSet<XBundleRevision>();
 
         // Install the auto install bundles
         for (Deployment dep : deployments) {
             try {
-                getBundleManager().createBundleRevision(getBundleContext(), dep, serviceTarget, installTracker);
+                XBundleRevision brev = getBundleManager().createBundleRevision(getBundleContext(), dep, serviceTarget);
+                installedRevisions.add(brev);
             } catch (BundleException ex) {
                 LOGGER.errorStateCannotInstallInitialBundle(ex, dep.getLocation());
             }
         }
 
-        // Check the tracker for completeness
-        installTracker.checkAndComplete();
+        installResolveService(serviceTarget, installedRevisions);
     }
 
-    protected ServiceController<T> installResolveService(ServiceTarget serviceTarget, Set<ServiceName> installedServices) {
-        return new BootstrapBundlesResolve<T>(getServiceName().getParent(), installedServices).install(serviceTarget, getServiceListener());
+    protected ServiceController<T> installResolveService(ServiceTarget serviceTarget, Set<XBundleRevision> installedRevisions) {
+        return new BootstrapBundlesResolve<T>(getServiceName().getParent(), installedRevisions).install(serviceTarget, getServiceListener());
     }
 }

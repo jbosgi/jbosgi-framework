@@ -222,4 +222,8 @@ public interface FrameworkLogger extends BasicLogger {
     @LogMessage(level = WARN)
     @Message(id = 11041, value = "Error while calling resolver hook method '%s': %s")
     void warnErrorWhileCallingResolverHookMethod(@Cause Throwable cause, String method, ResolverHook hook);
+
+    @LogMessage(level = ERROR)
+    @Message(id = 11042, value = "Cannot uninstall bundle: %s")
+    void errorCannotUninstallBundle(@Cause Throwable cause, Bundle bundle);
 }

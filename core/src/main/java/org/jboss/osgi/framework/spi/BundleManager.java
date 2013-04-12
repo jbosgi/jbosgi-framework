@@ -28,9 +28,6 @@ import java.util.concurrent.ExecutorService;
 
 import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceListener;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.Services;
@@ -101,22 +98,6 @@ public interface BundleManager extends Service<BundleManager> {
     XBundle getSystemBundle();
 
     /**
-     * Get the service name for the given bundle revision.
-     *
-     * @param bundleRevision The bundle revision
-     * @return The service name or null if the revision is not service based.
-     */
-    ServiceName getServiceName(XBundleRevision bundleRevision);
-
-    /**
-     * Get the service name for the given bundle deployment.
-     *
-     * @param deployment The bundle deployment
-     * @return The service name or null.
-     */
-    ServiceName getServiceName(Deployment deployment);
-
-    /**
      * True the framework has reached the {@link Services#FRAMEWORK_ACTIVE} state
      */
     boolean isFrameworkActive();
@@ -127,11 +108,10 @@ public interface BundleManager extends Service<BundleManager> {
      * @param context The context that is used to install the revision
      * @param deployment The bundle deployment
      * @param serviceTarget The service target for the service
-     * @param listener An optional listener on the service
      *
-     * @return The bundle revision service
+     * @return The bundle revision
      */
-    ServiceController<? extends XBundleRevision> createBundleRevision(BundleContext context, Deployment deployment, ServiceTarget serviceTarget, ServiceListener<XBundleRevision> listener) throws BundleException;
+    XBundleRevision createBundleRevision(BundleContext context, Deployment deployment, ServiceTarget serviceTarget) throws BundleException;
 
     /**
      * Resolve the given bundle

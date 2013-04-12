@@ -53,6 +53,7 @@ import org.jboss.osgi.resolver.XWiringSupport;
 import org.jboss.osgi.resolver.spi.AbstractBundleWire;
 import org.jboss.osgi.resolver.spi.ResolverHookException;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleException;
 import org.osgi.framework.FrameworkEvent;
 import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.namespace.HostNamespace;
@@ -60,6 +61,7 @@ import org.osgi.framework.startlevel.BundleStartLevel;
 import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleRevisions;
 import org.osgi.framework.wiring.BundleWiring;
+import org.osgi.framework.wiring.FrameworkWiring;
 import org.osgi.resource.Wire;
 import org.osgi.resource.Wiring;
 import org.osgi.service.resolver.ResolutionException;
@@ -70,7 +72,7 @@ import org.osgi.service.resolver.ResolutionException;
  * @author Thomas.Diesler@jboss.com
  * @since 08-Nov-2012
  */
-public final class FrameworkWiringImpl implements FrameworkWiringSupport {
+public final class FrameworkWiringImpl implements FrameworkWiring {
 
     private final BundleManagerPlugin bundleManager;
     private final FrameworkEvents events;
@@ -95,10 +97,48 @@ public final class FrameworkWiringImpl implements FrameworkWiringSupport {
     }
 
     @Override
-    public void refreshBundlesInternal(Collection<Bundle> dependencyClosure, FrameworkListener... listeners) {
+    public void refreshBundles(final Collection<Bundle> bundles, final FrameworkListener... listeners) {
+
+        final List<Bundle> bundlesToRefresh = new ArrayList<Bundle>();
+        final List<XBundle> dependencyClosure = new ArrayList<XBundle>();
+
+        LockContext lockContext = null;
+        try {
+            lockContext = lockEnvironment(LockManager.Method.REFRESH);
+
+            if (bundles == null) {
+                bundlesToRefresh.addAll(getRemovalPendingBundles());
+            } else {
+                bundlesToRefresh.addAll(bundles);
+            }
+
+            // Compute all depending bundles that need to be stopped and unresolved.
+            for (Bundle auxBundle : getDependencyClosure(bundlesToRefresh)) {
+                XBundle bundle = (XBundle) auxBundle;
+                dependencyClosure.add(bundle);
+            }
+        } finally {
+            unlockEnvironment(lockContext);
+        }
+
+        LOGGER.debugf("Refresh bundles %s", bundlesToRefresh);
+        LOGGER.debugf("Dependency closure %s", dependencyClosure);
+
+        Runnable runner = new Runnable() {
+            public void run() {
+                refreshBundlesInternal(dependencyClosure, listeners);
+            }
+        };
+
+        if (!executorService.isShutdown()) {
+            // executorService.execute(runner);
+            runner.run();
+        }
+    }
+
+    private void refreshBundlesInternal(List<XBundle> dependencyClosure, FrameworkListener... listeners) {
 
         List<XBundle> stopList = new ArrayList<XBundle>();
-        List<XBundle> dependencyList = new ArrayList<XBundle>();
         List<XBundle> uninstallBundles = new ArrayList<XBundle>();
 
         for (Bundle auxBundle : dependencyClosure) {
@@ -109,14 +149,13 @@ public final class FrameworkWiringImpl implements FrameworkWiringSupport {
             } else if (state == Bundle.ACTIVE || state == Bundle.STARTING) {
                 stopList.add(bundle);
             }
-            dependencyList.add(bundle);
         }
 
         LockContext context = null;
         try {
             // Lock the dependency closure
             LockableItem wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-            XBundle[] bundles = dependencyList.toArray(new XBundle[dependencyList.size()]);
+            XBundle[] bundles = dependencyClosure.toArray(new XBundle[dependencyClosure.size()]);
             LockableItem[] items = LockUtils.getLockableItems(bundles, new LockableItem[] { wireLock });
             context = lockManager.lockItems(Method.REFRESH, items);
 
@@ -134,7 +173,7 @@ public final class FrameworkWiringImpl implements FrameworkWiringSupport {
 
             for (XBundle bundle : uninstallBundles) {
                 if (bundle instanceof UserBundleState) {
-                    bundleManager.removeBundle((UserBundleState) bundle, 0);
+                    bundleManager.uninstallBundle(bundle, 0);
                 } else {
                     XBundleRevision current = bundle.getBundleRevision();
                     BundleRevisions brevs = bundle.adapt(BundleRevisions.class);
@@ -145,10 +184,10 @@ public final class FrameworkWiringImpl implements FrameworkWiringSupport {
                         }
                     }
                 }
-                dependencyList.remove(bundle);
+                dependencyClosure.remove(bundle);
             }
 
-            for (XBundle bundle : dependencyList) {
+            for (XBundle bundle : dependencyClosure) {
                 if (bundle instanceof UserBundleState) {
                     try {
                         UserBundleState userBundle = (UserBundleState) bundle;
@@ -171,45 +210,10 @@ public final class FrameworkWiringImpl implements FrameworkWiringSupport {
 
             XBundle systemBundle = bundleManager.getSystemBundle();
             events.fireFrameworkEvent(systemBundle, FrameworkEvent.PACKAGES_REFRESHED, null, listeners);
+        } catch (BundleException ex) {
+            throw MESSAGES.illegalStateCannotRefreshBundles(ex);
         } finally {
             lockManager.unlockItems(context);
-        }
-    }
-
-    @Override
-    public void refreshBundles(final Collection<Bundle> bundles, final FrameworkListener... listeners) {
-
-        final Collection<Bundle> bundlesToRefresh = new ArrayList<Bundle>();
-        final Collection<Bundle> dependencyClosure = new ArrayList<Bundle>();
-
-        LockContext lockContext = null;
-        try {
-            lockContext = lockEnvironment(LockManager.Method.REFRESH);
-
-            if (bundles == null) {
-                bundlesToRefresh.addAll(getRemovalPendingBundles());
-            } else {
-                bundlesToRefresh.addAll(bundles);
-            }
-
-            // Compute all depending bundles that need to be stopped and unresolved.
-            dependencyClosure.addAll(getDependencyClosure(bundlesToRefresh));
-        } finally {
-            unlockEnvironment(lockContext);
-        }
-
-        LOGGER.debugf("Refresh bundles %s", bundlesToRefresh);
-        LOGGER.debugf("Dependency closure %s", dependencyClosure);
-
-        Runnable runner = new Runnable() {
-            public void run() {
-                refreshBundlesInternal(dependencyClosure, listeners);
-            }
-        };
-
-        if (!executorService.isShutdown()) {
-            // executorService.execute(runner);
-            runner.run();
         }
     }
 

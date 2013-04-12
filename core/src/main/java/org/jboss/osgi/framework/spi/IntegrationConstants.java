@@ -24,12 +24,12 @@ package org.jboss.osgi.framework.spi;
 import java.util.jar.Manifest;
 
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.metadata.OSGiMetaData;
+import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.spi.BundleInfo;
 import org.jboss.osgi.spi.AttachmentKey;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 
 /**
@@ -41,7 +41,9 @@ import org.osgi.framework.BundleActivator;
 public interface IntegrationConstants {
 
     /** The bundle attachment key */
-    AttachmentKey<Bundle> BUNDLE_KEY = AttachmentKey.create(Bundle.class);
+    AttachmentKey<XBundle> BUNDLE_KEY = AttachmentKey.create(XBundle.class);
+    /** The bundle revision attachment key */
+    AttachmentKey<XBundleRevision> BUNDLE_REVISION_KEY = AttachmentKey.create(XBundleRevision.class);
     /** The bundle activator attachment key */
     AttachmentKey<BundleActivator> BUNDLE_ACTIVATOR_KEY = AttachmentKey.create(BundleActivator.class);
     /** The deployment attachment key */
@@ -52,8 +54,6 @@ public interface IntegrationConstants {
     AttachmentKey<Manifest> MANIFEST_KEY = AttachmentKey.create(Manifest.class);
     /** The bundle attachment key */
     AttachmentKey<BundleInfo> BUNDLE_INFO_KEY = AttachmentKey.create(BundleInfo.class);
-    /** The service name attachment key */
-    AttachmentKey<ServiceName> SERVICE_NAME_KEY = AttachmentKey.create(ServiceName.class);
     /** The storage state attachment key */
     AttachmentKey<StorageState> STORAGE_STATE_KEY = AttachmentKey.create(StorageState.class);
     /** The module identifier attachment key */

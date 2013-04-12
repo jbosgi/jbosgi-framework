@@ -21,16 +21,9 @@
  */
 package org.jboss.osgi.framework.internal;
 
-import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
-
-import java.io.InputStream;
-import java.util.concurrent.TimeUnit;
-
-import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
-import org.jboss.osgi.framework.spi.FutureServiceValue;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.osgi.framework.BundleContext;
@@ -56,20 +49,8 @@ public class BundleLifecycleImpl implements BundleLifecycle {
         }
 
         @Override
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        public ServiceController<? extends XBundleRevision> createBundleRevision(BundleContext context, Deployment dep) throws BundleException {
-            ServiceController<? extends XBundleRevision> controller = bundleManager.createBundleRevision(context, dep, null, null);
-            FutureServiceValue<XBundleRevision> future = new FutureServiceValue(controller);
-            try {
-                future.get(30, TimeUnit.SECONDS);
-                return controller;
-            } catch (Exception ex) {
-                Throwable cause = ex.getCause();
-                if (cause instanceof BundleException) {
-                    throw (BundleException) cause;
-                }
-                throw MESSAGES.cannotInstallBundleRevisionFromDeployment(ex, dep);
-            }
+        public XBundleRevision createBundleRevision(BundleContext context, Deployment dep) throws BundleException {
+            return bundleManager.createBundleRevision(context, dep, null);
         }
 
         @Override
@@ -85,16 +66,6 @@ public class BundleLifecycleImpl implements BundleLifecycle {
         @Override
         public void stop(XBundle bundle, int options) throws BundleException {
             bundleManager.stopBundle(bundle, options);
-        }
-
-        @Override
-        public void update(XBundle bundle, InputStream input) throws BundleException {
-            bundleManager.updateBundle(bundle, input);
-        }
-
-        @Override
-        public void uninstall(XBundle bundle, int options) throws BundleException {
-            bundleManager.uninstallBundle(bundle, options);
         }
 
         @Override

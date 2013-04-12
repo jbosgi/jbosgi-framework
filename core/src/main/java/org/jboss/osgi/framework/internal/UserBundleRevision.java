@@ -22,6 +22,9 @@
 package org.jboss.osgi.framework.internal;
 
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
+import static org.jboss.osgi.framework.internal.InternalConstants.MODULE_KEY;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.BUNDLE_REVISION_KEY;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.DEPLOYMENT_KEY;
 
 import java.io.IOException;
 import java.net.URL;
@@ -31,13 +34,8 @@ import java.util.Enumeration;
 import java.util.List;
 
 import org.jboss.modules.Module;
-import org.jboss.msc.service.ServiceContainer;
-import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.AbstractVFS;
@@ -56,14 +54,12 @@ abstract class UserBundleRevision extends BundleStateRevision {
 
     private final Deployment deployment;
     private final ServiceTarget serviceTarget;
-    private final ServiceName serviceName;
     private final List<RevisionContent> classPathContent;
     private final EntriesProvider entriesProvider;
 
-    UserBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState, ServiceName serviceName, ServiceTarget serviceTarget) throws BundleException {
+    UserBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState, ServiceTarget serviceTarget) throws BundleException {
         super(frameworkState, metadata, storageState);
         this.serviceTarget = serviceTarget;
-        this.serviceName = serviceName;
         this.deployment = dep;
 
         if (dep.getRoot() != null) {
@@ -71,13 +67,14 @@ abstract class UserBundleRevision extends BundleStateRevision {
             entriesProvider = getBundleClassPath(dep.getRoot(), metadata, storageState, bundleClassPath);
             classPathContent = Collections.unmodifiableList(bundleClassPath);
         } else {
-            Module module = dep.getAttachment(InternalConstants.MODULE_KEY);
+            Module module = dep.getAttachment(MODULE_KEY);
             entriesProvider = new ModuleEntriesProvider(module);
             classPathContent = Collections.emptyList();
-            putAttachment(InternalConstants.MODULE_KEY, module);
+            putAttachment(MODULE_KEY, module);
         }
 
-        putAttachment(IntegrationConstants.DEPLOYMENT_KEY, dep);
+        dep.putAttachment(BUNDLE_REVISION_KEY, this);
+        putAttachment(DEPLOYMENT_KEY, dep);
     }
 
     static UserBundleRevision assertBundleRevision(BundleRevision brev) {
@@ -91,10 +88,6 @@ abstract class UserBundleRevision extends BundleStateRevision {
 
     Deployment getDeployment() {
         return deployment;
-    }
-
-    ServiceName getServiceName() {
-        return serviceName;
     }
 
     ServiceTarget getServiceTarget() {
@@ -126,17 +119,6 @@ abstract class UserBundleRevision extends BundleStateRevision {
     }
 
     abstract void refreshRevision();
-
-    void removeBundleRevisionService() {
-        ServiceContainer serviceContainer = getBundleManager().getServiceContainer();
-        ServiceController<?> controller = serviceContainer.getService(getServiceName());
-        if (controller == null) {
-            LOGGER.debugf("Cannot set mode %s on non-existing service: %s", Mode.REMOVE, getServiceName());
-        } else {
-            LOGGER.debugf("Remove service for: %s", this);
-            controller.setMode(Mode.REMOVE);
-        }
-    }
 
     @Override
     void close() {

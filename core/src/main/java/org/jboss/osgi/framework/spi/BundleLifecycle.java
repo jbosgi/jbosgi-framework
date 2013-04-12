@@ -21,9 +21,6 @@
  */
 package org.jboss.osgi.framework.spi;
 
-import java.io.InputStream;
-
-import org.jboss.msc.service.ServiceController;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
@@ -39,17 +36,13 @@ import org.osgi.service.resolver.ResolutionException;
  */
 public interface BundleLifecycle {
 
-    ServiceController<? extends XBundleRevision> createBundleRevision(BundleContext context, Deployment dep) throws BundleException;
+    XBundleRevision createBundleRevision(BundleContext context, Deployment dep) throws BundleException;
 
     void resolve(XBundle bundle) throws ResolutionException;
 
     void start(XBundle bundle, int options) throws BundleException;
 
     void stop(XBundle bundle, int options) throws BundleException;
-
-    void update(XBundle bundle, InputStream input) throws BundleException;
-
-    void uninstall(XBundle bundle, int options) throws BundleException;
 
     void removeRevision(XBundleRevision brev, int options);
 
