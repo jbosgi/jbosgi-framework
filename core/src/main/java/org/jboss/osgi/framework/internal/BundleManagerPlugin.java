@@ -568,8 +568,8 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     public void stopBundle(XBundle bundle, int options) throws BundleException {
 
         // If this bundle's state is not STARTING or ACTIVE then this method returns immediately
-        //if (bundle.getState() != Bundle.STARTING && bundle.getState() != Bundle.ACTIVE)
-        //    return;
+        if (bundle.getState() != Bundle.STARTING && bundle.getState() != Bundle.ACTIVE)
+            return;
 
         LockManager lockManager = getFrameworkState().getLockManager();
         LockContext lockContext = null;
@@ -604,8 +604,8 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     @Override
     public void uninstallBundle(XBundle bundle, int options) throws BundleException {
 
-        //if (bundle.getState() == Bundle.UNINSTALLED)
-        //    return;
+        if (bundle.getState() == Bundle.UNINSTALLED)
+            return;
 
         LockManager lockManager = getFrameworkState().getLockManager();
         LockContext lockContext = null;

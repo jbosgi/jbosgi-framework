@@ -135,10 +135,16 @@ final class SystemBundleState extends AbstractBundleState<SystemBundleRevision> 
         // Does nothing because the system bundle is already started
     }
 
+
     @Override
-    void stopInternal(int options) throws BundleException {
+    void stopWithOptions(int options) throws BundleException {
         // Returns immediately and shuts down the Framework on another thread
         getBundleManager().shutdownManager(false);
+    }
+
+    @Override
+    void stopInternal(int options) throws BundleException {
+        // Does nothing because the system bundle is already started
     }
 
     @Override
