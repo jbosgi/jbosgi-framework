@@ -35,7 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public interface LockManager {
 
     enum Method {
-        INSTALL, START, STOP, RESOLVE, REFRESH, UPDATE, UNINSTALL, REMOVE
+        INSTALL, START, STOP, RESOLVE, REFRESH, UPDATE, UNINSTALL
     }
 
     /**

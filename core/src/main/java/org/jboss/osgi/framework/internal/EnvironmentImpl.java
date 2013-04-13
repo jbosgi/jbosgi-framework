@@ -28,7 +28,6 @@ import java.util.List;
 
 import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.LockManager;
-import org.jboss.osgi.framework.spi.XLockableEnvironment;
 import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.LockManager.Method;
@@ -47,7 +46,7 @@ import org.osgi.resource.Wiring;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-public final class EnvironmentImpl extends AbstractEnvironment implements XLockableEnvironment {
+public final class EnvironmentImpl extends AbstractEnvironment implements XEnvironment {
 
     private final LockManager lockManager;
 
@@ -56,16 +55,7 @@ public final class EnvironmentImpl extends AbstractEnvironment implements XLocka
     }
 
     @Override
-    public void installResources(XResource[] resources, boolean aquireLock) {
-        installResourcesInternal(resources, aquireLock);
-    }
-
-    @Override
     public void installResources(XResource... resources) {
-        installResourcesInternal(resources, true);
-    }
-
-    private synchronized void installResourcesInternal(XResource[] resources, boolean aquireLock) {
         if (resources == null)
             throw MESSAGES.illegalArgumentNull("resources");
 
@@ -83,10 +73,7 @@ public final class EnvironmentImpl extends AbstractEnvironment implements XLocka
 
         LockContext lockContext = null;
         try {
-            // The resources are not locked for install
-            if (aquireLock) {
-                lockContext = lockResources(Method.INSTALL);
-            }
+            lockContext = lockResources(Method.INSTALL, resources);
             super.installResources(resources);
         } finally {
             unlockResources(lockContext);
@@ -94,24 +81,13 @@ public final class EnvironmentImpl extends AbstractEnvironment implements XLocka
     }
 
     @Override
-    public void uninstallResources(XResource[] resources, boolean aquireLock) {
-        uninstallResourcesInternal(resources, aquireLock);
-    }
-
-    @Override
     public void uninstallResources(XResource... resources) {
-        uninstallResourcesInternal(resources, true);
-    }
-
-    private synchronized void uninstallResourcesInternal(XResource[] resources, boolean aquireLock) {
         if (resources == null)
             throw MESSAGES.illegalArgumentNull("resources");
 
         LockContext lockContext = null;
         try {
-            if (aquireLock) {
-                lockContext = lockResources(Method.UNINSTALL, resources);
-            }
+            lockContext = lockResources(Method.UNINSTALL, resources);
             super.uninstallResources(resources);
         } finally {
             unlockResources(lockContext);
@@ -124,14 +100,12 @@ public final class EnvironmentImpl extends AbstractEnvironment implements XLocka
         return new AbstractBundleWiring(brev, required, provided);
     }
 
-    @Override
-    public LockContext lockResources(Method method, XResource... resources) {
+    private LockContext lockResources(Method method, XResource... resources) {
         FrameworkWiringLock wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
         return lockManager.lockItems(method, getLockableItems(wireLock, resources));
     }
 
-    @Override
-    public void unlockResources(LockContext context) {
+    private void unlockResources(LockContext context) {
         lockManager.unlockItems(context);
     }
 

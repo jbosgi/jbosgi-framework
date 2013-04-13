@@ -47,7 +47,6 @@ import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.framework.spi.SystemPaths;
-import org.jboss.osgi.framework.spi.XLockableEnvironment;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.metadata.OSGiMetaDataBuilder;
 import org.jboss.osgi.metadata.spi.ElementParser;
@@ -74,7 +73,7 @@ final class SystemBundlePlugin extends AbstractIntegrationService<SystemBundleSt
 
     @Override
     protected void addServiceDependencies(ServiceBuilder<SystemBundleState> builder) {
-        builder.addDependency(Services.ENVIRONMENT, XLockableEnvironment.class, frameworkState.injectedEnvironment);
+        builder.addDependency(Services.ENVIRONMENT, XEnvironment.class, frameworkState.injectedEnvironment);
         builder.addDependency(IntegrationServices.STORAGE_MANAGER_PLUGIN, StorageManager.class, frameworkState.injectedStorageManager);
         builder.addDependency(IntegrationServices.FRAMEWORK_MODULE_PLUGIN, FrameworkModuleProvider.class, frameworkState.injectedModuleProvider);
         builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, frameworkState.injectedLockManager);

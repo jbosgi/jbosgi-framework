@@ -29,14 +29,10 @@ import static org.jboss.osgi.framework.spi.IntegrationConstants.STORAGE_STATE_KE
 
 import java.io.IOException;
 
-import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.msc.service.ServiceController.Substate;
 import org.jboss.osgi.deployment.deployer.Deployment;
-import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.IntegrationConstants;
-import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.StorageState;
@@ -45,7 +41,6 @@ import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
 import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResource;
-import org.jboss.osgi.resolver.XResource.State;
 import org.jboss.osgi.vfs.VirtualFile;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -125,53 +120,6 @@ abstract class UserBundleRevisionFactory<R extends UserBundleRevision> {
             return (BundleException) ex;
         }
         return MESSAGES.cannotCreateBundleRevisionFromDeployment(ex, deployment);
-    }
-
-    void stop() {
-        XBundle bundle = bundleRevision.getBundle();
-        if (uninstallRequired(bundle)) {
-            try {
-                boolean serverShutdown = getServerShutdown();
-                int options = getUninstallOptions(serverShutdown);
-                getBundleManager().uninstallBundle(bundle, options);
-            } catch (BundleException ex) {
-                LOGGER.debugf(ex, "Cannot uninstall bundle: %s", bundle);
-            }
-        } else if (bundleRevision.getState() != State.UNINSTALLED) {
-            int options = InternalConstants.UNINSTALL_INTERNAL;
-            getBundleManager().removeRevision(bundleRevision, options);
-        }
-    }
-
-    private boolean uninstallRequired(XBundle bundle) {
-
-        // No uninstall if the bundle is already uninstalled
-        if (bundle.getState() == Bundle.UNINSTALLED || bundleRevision.getState() == State.UNINSTALLED)
-            return false;
-
-        // No uninstall if this is not the current revision
-        if (bundle.getBundleRevision() != bundleRevision)
-            return false;
-
-        // No uninstall if the revision service goes down because of a bundle refresh
-        Method method = bundle.getAttachment(InternalConstants.LOCK_METHOD_KEY);
-        if (method == Method.REFRESH)
-            return false;
-
-        return true;
-    }
-
-    private int getUninstallOptions(boolean serverShutdown) {
-        return InternalConstants.UNINSTALL_INTERNAL + (serverShutdown ? Bundle.STOP_TRANSIENT : 0);
-    }
-
-    private boolean getServerShutdown() {
-        BundleManagerPlugin bundleManager = getBundleManager();
-        int managerState = bundleManager.getManagerState();
-        ServiceContainer serviceContainer = bundleManager.getServiceContainer();
-        Substate managerServiceState = serviceContainer.getRequiredService(Services.BUNDLE_MANAGER).getSubstate();
-        boolean stopping = managerState == Bundle.STOPPING || managerState == Bundle.RESOLVED || managerServiceState == Substate.STOP_REQUESTED;
-        return stopping;
     }
 
     abstract R createBundleRevision(Deployment deployment, StorageState storageState, ServiceTarget serviceTarget) throws BundleException;

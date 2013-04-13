@@ -645,7 +645,7 @@ abstract class AbstractBundleState<R extends BundleStateRevision> extends Abstra
     @Override
     public void uninstall() throws BundleException {
         assertNotUninstalled();
-        getBundleManager().uninstallBundle(this, 0);
+        getBundleManager().uninstallBundle(this, InternalConstants.UNINSTALL_INTERNAL);
     }
 
     abstract void uninstallInternal(int options) throws BundleException;

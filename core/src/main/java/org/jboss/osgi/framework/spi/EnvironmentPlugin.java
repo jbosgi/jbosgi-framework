@@ -35,7 +35,7 @@ import org.jboss.osgi.resolver.XEnvironment;
  * @author thomas.diesler@jboss.com
  * @since 15-Feb-2012
  */
-public class EnvironmentPlugin extends AbstractIntegrationService<XLockableEnvironment> {
+public class EnvironmentPlugin extends AbstractIntegrationService<XEnvironment> {
 
     private final InjectedValue<LockManager> injectedLockManager = new InjectedValue<LockManager>();
 
@@ -44,13 +44,13 @@ public class EnvironmentPlugin extends AbstractIntegrationService<XLockableEnvir
     }
 
     @Override
-    protected void addServiceDependencies(ServiceBuilder<XLockableEnvironment> builder) {
+    protected void addServiceDependencies(ServiceBuilder<XEnvironment> builder) {
         builder.addDependency(IntegrationServices.LOCK_MANAGER_PLUGIN, LockManager.class, injectedLockManager);
         builder.setInitialMode(Mode.ON_DEMAND);
     }
 
     @Override
-    protected XLockableEnvironment createServiceValue(StartContext startContext) {
+    protected XEnvironment createServiceValue(StartContext startContext) {
         return new EnvironmentImpl(injectedLockManager.getValue());
     }
 }

@@ -70,7 +70,6 @@ import org.jboss.osgi.framework.spi.FrameworkStartLevelSupport;
 import org.jboss.osgi.framework.spi.FrameworkWiringLock;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
-import org.jboss.osgi.framework.spi.XLockableEnvironment;
 import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.ModuleManager;
@@ -95,6 +94,8 @@ import org.osgi.framework.VersionRange;
 import org.osgi.framework.hooks.bundle.CollisionHook;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.startlevel.FrameworkStartLevel;
+import org.osgi.framework.wiring.BundleWire;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.framework.wiring.FrameworkWiring;
 import org.osgi.resource.Resource;
 import org.osgi.service.resolver.ResolutionException;
@@ -540,11 +541,6 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public void startBundle(XBundle bundle, int options) throws BundleException {
-
-        // If this bundle's state is ACTIVE then this method returns immediately.
-        if (bundle.getState() == Bundle.ACTIVE)
-            return;
-
         LockManager lockManager = getFrameworkState().getLockManager();
         LockContext lockContext = null;
         try {
@@ -566,11 +562,6 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public void stopBundle(XBundle bundle, int options) throws BundleException {
-
-        // If this bundle's state is not STARTING or ACTIVE then this method returns immediately
-        if (bundle.getState() != Bundle.STARTING && bundle.getState() != Bundle.ACTIVE)
-            return;
-
         LockManager lockManager = getFrameworkState().getLockManager();
         LockContext lockContext = null;
         try {
@@ -603,16 +594,12 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public void uninstallBundle(XBundle bundle, int options) throws BundleException {
-
-        if (bundle.getState() == Bundle.UNINSTALLED)
-            return;
-
         LockManager lockManager = getFrameworkState().getLockManager();
         LockContext lockContext = null;
         try {
             AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
-            LockableItem wireLock = lockManager.getItemForType(FrameworkWiringLock.class);
-            lockContext = lockManager.lockItems(Method.UNINSTALL, (LockableItem)bundle, wireLock);
+            LockableItem[] items = getLockableItemsForUninstall(lockManager, bundle);
+            lockContext = lockManager.lockItems(Method.UNINSTALL, items);
             bundleState.uninstallInternal(options);
         } catch (BundleException ex) {
             LOGGER.errorCannotUninstallBundle(ex, bundle);
@@ -622,6 +609,23 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         }
     }
 
+    void removeBundle(UserBundleState userBundle, int options) {
+        LOGGER.tracef("Start removing bundle: %s", userBundle);
+        if ((options & Bundle.STOP_TRANSIENT) == 0) {
+            StorageManager storagePlugin = getFrameworkState().getStorageManager();
+            storagePlugin.deleteStorageState(userBundle.getStorageState());
+        }
+
+        for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
+            if ((options & InternalConstants.UNINSTALL_INTERNAL) != 0) {
+                removeRevisionLifecycle(brev, options);
+            } else {
+                removeRevision(brev, options);
+            }
+        }
+        LOGGER.debugf("Removed bundle: %s", userBundle);
+    }
+
     void removeRevisionLifecycle(XBundleRevision brev, int options) {
         BundleLifecycle bundleLifecycle = getBundleLifecycle();
         bundleLifecycle.removeRevision(brev, options);
@@ -629,9 +633,8 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public void removeRevision(XBundleRevision brev, int options) {
-        XLockableEnvironment env = getFrameworkState().getEnvironment();
-        boolean aquireLock = (options & InternalConstants.UNINSTALL_INTERNAL) == 0;
-        env.uninstallResources(new XResource[] { brev }, aquireLock);
+        XEnvironment env = getFrameworkState().getEnvironment();
+        env.uninstallResources(brev);
         if (brev instanceof UserBundleRevision) {
             UserBundleRevision userRev = (UserBundleRevision) brev;
             userRev.getBundleState().removeRevision(userRev);
@@ -693,23 +696,32 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         }
     }
 
-    void removeBundle(UserBundleState userBundle, int options) {
-        LOGGER.tracef("Start removing bundle: %s", userBundle);
+    private LockableItem[] getLockableItemsForUninstall(LockManager lockManager, XBundle bundle) {
+        Set<LockableItem> lockableItems = new HashSet<LockableItem>();
+        lockableItems.add(lockManager.getItemForType(FrameworkWiringLock.class));
+        getTransitiveSetOfLockableItemsForUninstall(lockableItems, bundle);
+        return lockableItems.toArray(new LockableItem[lockableItems.size()]);
+    }
 
-        if ((options & Bundle.STOP_TRANSIENT) == 0) {
-            StorageManager storagePlugin = getFrameworkState().getStorageManager();
-            storagePlugin.deleteStorageState(userBundle.getStorageState());
-        }
-
-        for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
-            if ((options & InternalConstants.UNINSTALL_INTERNAL) == 0) {
-                removeRevisionLifecycle(brev, options);
-            } else {
-                removeRevision(brev, options);
+    private void getTransitiveSetOfLockableItemsForUninstall(Set<LockableItem> lockableItems, Bundle bundle) {
+        if (!lockableItems.contains(bundle) && bundle.getBundleId() > 0) {
+            lockableItems.add((LockableItem) bundle);
+            BundleWiring wiring = bundle.adapt(BundleWiring.class);
+            if (wiring != null) {
+                for (BundleWire wire : wiring.getRequiredWires(null)) {
+                    Bundle provider = wire.getProvider().getBundle();
+                    if (provider.getState() == Bundle.UNINSTALLED) {
+                        getTransitiveSetOfLockableItemsForUninstall(lockableItems, provider);
+                    }
+                }
+                for (BundleWire wire : wiring.getProvidedWires(null)) {
+                    Bundle requirer = wire.getRequirer().getBundle();
+                    if (requirer.getState() == Bundle.UNINSTALLED) {
+                        getTransitiveSetOfLockableItemsForUninstall(lockableItems, requirer);
+                    }
+                }
             }
         }
-
-        LOGGER.debugf("Removed bundle: %s", userBundle);
     }
 
     @Override

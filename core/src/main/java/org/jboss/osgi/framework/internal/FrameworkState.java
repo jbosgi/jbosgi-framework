@@ -35,7 +35,7 @@ import org.jboss.osgi.framework.spi.ServiceManager;
 import org.jboss.osgi.framework.spi.StartLevelManager;
 import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.SystemPaths;
-import org.jboss.osgi.framework.spi.XLockableEnvironment;
+import org.jboss.osgi.resolver.XEnvironment;
 import org.jboss.osgi.resolver.XResolver;
 import org.osgi.framework.launch.Framework;
 import org.osgi.framework.wiring.FrameworkWiring;
@@ -69,7 +69,7 @@ final class FrameworkState {
     final InjectedValue<StartLevelManager> injectedStartLevel = new InjectedValue<StartLevelManager>();
     final InjectedValue<SystemPaths> injectedSystemPaths = new InjectedValue<SystemPaths>();
     final InjectedValue<SystemBundleState> injectedSystemBundle = new InjectedValue<SystemBundleState>();
-    final InjectedValue<XLockableEnvironment> injectedEnvironment = new InjectedValue<XLockableEnvironment>();
+    final InjectedValue<XEnvironment> injectedEnvironment = new InjectedValue<XEnvironment>();
     final InjectedValue<XResolver> injectedResolverPlugin = new InjectedValue<XResolver>();
 
     FrameworkState(BundleManagerPlugin bundleManager) {
@@ -144,7 +144,7 @@ final class FrameworkState {
         return injectedSystemPaths.getValue();
     }
 
-    XLockableEnvironment getEnvironment() {
+    XEnvironment getEnvironment() {
         return injectedEnvironment.getValue();
     }
 
