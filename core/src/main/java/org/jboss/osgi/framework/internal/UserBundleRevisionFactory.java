@@ -24,6 +24,7 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 import static org.jboss.osgi.framework.internal.InternalConstants.REVISION_IDENTIFIER_KEY;
+import static org.jboss.osgi.framework.spi.IntegrationConstants.BUNDLE_KEY;
 import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KEY;
 import static org.jboss.osgi.framework.spi.IntegrationConstants.STORAGE_STATE_KEY;
 
@@ -32,10 +33,12 @@ import java.io.IOException;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
-import org.jboss.osgi.framework.spi.IntegrationConstants;
+import org.jboss.osgi.framework.spi.LockManager;
 import org.jboss.osgi.framework.spi.NativeCode;
 import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.StorageState;
+import org.jboss.osgi.framework.spi.LockManager.LockContext;
+import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
@@ -88,22 +91,20 @@ abstract class UserBundleRevisionFactory<R extends UserBundleRevision> {
             bundleRevision.putAttachment(XResource.RESOURCE_IDENTIFIER_KEY, revIdentifier.getRevisionId());
             validateBundleRevision(bundleRevision, metadata);
             processNativeCode(bundleRevision, metadata, dep);
-            XBundle bundle = dep.getAttachment(IntegrationConstants.BUNDLE_KEY);
+            XBundle bundle = dep.getAttachment(BUNDLE_KEY);
             if (bundle == null) {
                 bundle = createBundleState(bundleRevision);
+                dep.putAttachment(BUNDLE_KEY, bundle);
                 UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
-                userBundle.addBundleRevision(bundleRevision);
-                dep.putAttachment(IntegrationConstants.BUNDLE_KEY, userBundle);
+                installBundleRevision(userBundle, bundleRevision);
                 userBundle.initLazyActivation();
-                installBundleRevision(bundleRevision);
                 userBundle.changeState(Bundle.INSTALLED, 0);
                 LOGGER.infoBundleInstalled(bundle);
                 FrameworkEvents events = frameworkState.getFrameworkEvents();
                 events.fireBundleEvent(targetContext, bundle, BundleEvent.INSTALLED);
             } else {
                 UserBundleState userBundle = UserBundleState.assertBundleState(bundle);
-                userBundle.addBundleRevision(bundleRevision);
-                installBundleRevision(bundleRevision);
+                installBundleRevision(userBundle, bundleRevision);
             }
         } catch (Exception ex) {
             throw handleCreateException(storageState, ex);
@@ -146,9 +147,18 @@ abstract class UserBundleRevisionFactory<R extends UserBundleRevision> {
         return storageState;
     }
 
-    private void installBundleRevision(R brev) throws BundleException {
-        XEnvironment env = frameworkState.getEnvironment();
-        env.installResources(new XResource[] { brev });
+    private void installBundleRevision(UserBundleState userBundle, R brev) throws BundleException {
+        LockManager lockManager = getFrameworkState().getLockManager();
+        LockContext lockContext = null;
+        try {
+            brev.putAttachment(BUNDLE_KEY, userBundle);
+            lockContext = lockManager.lockItems(Method.INSTALL, userBundle);
+            XEnvironment env = frameworkState.getEnvironment();
+            env.installResources(new XResource[] { brev });
+            userBundle.addBundleRevision(bundleRevision);
+        } finally {
+            lockManager.unlockItems(lockContext);
+        }
     }
 
     private void validateBundleRevision(R bundleRevision, OSGiMetaData metadata) throws BundleException {

@@ -49,6 +49,7 @@ public final class LockManagerImpl implements LockManager {
 
     private final FrameworkWiringLock wiringLock = new FrameworkWiringLock();
     private final Map<Class<? extends LockableItem>, LockableItem> otherLocks = new HashMap<Class<? extends LockableItem>, LockableItem>();
+
     private static ThreadLocal<Stack<LockContext>> lockContextAssociation = new ThreadLocal<Stack<LockContext>>();
 
     @Override
@@ -74,7 +75,7 @@ public final class LockManagerImpl implements LockManager {
     }
 
     @Override
-    public LockContext getCurrentContext() {
+    public LockContext getCurrentLockContext() {
         Stack<LockContext> stack = lockContextAssociation.get();
         return stack != null ? stack.peek() : null;
     }

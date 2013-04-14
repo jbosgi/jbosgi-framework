@@ -49,7 +49,6 @@ import org.jboss.osgi.framework.spi.BundleLifecycle.BundleRefreshPolicy;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.IntegrationConstants;
-import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.ModuleManager;
 import org.jboss.osgi.framework.spi.ServiceState;
 import org.jboss.osgi.framework.spi.StartLevelManager;
@@ -265,7 +264,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
             if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING) {
                 // If this bundle's state is ACTIVE, STARTING or STOPPING, this bundle is stopped
                 // If Bundle.stop throws an exception, the exception is rethrown terminating the update.
-                bundleManager.stopBundleLifecycle(this, Bundle.STOP_TRANSIENT);
+                bundleManager.stopBundle(this, Bundle.STOP_TRANSIENT);
                 if (state != Bundle.STOPPING)
                     restart = true;
             }
@@ -283,14 +282,11 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
             // Make the {@link BundleWiring} for the old {@link BundleRevision} uneffective
             currentRev.getWiringSupport().makeUneffective();
-        } catch (BundleException ex) {
-            if (restart)
-                bundleManager.startBundleLifecycle(this, Bundle.START_TRANSIENT);
-            throw ex;
         } catch (Exception ex) {
-            BundleException be = MESSAGES.cannotUpdateBundle(ex, this);
+            boolean isbe = (ex instanceof BundleException);
+            BundleException be = isbe ? (BundleException) ex : MESSAGES.cannotUpdateBundle(ex, this);
             if (restart)
-                bundleManager.startBundleLifecycle(this, Bundle.START_TRANSIENT);
+                bundleManager.startBundle(this, Bundle.START_TRANSIENT);
             throw be;
         }
 
@@ -301,7 +297,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
             // If this bundle's state was originally ACTIVE or STARTING, the updated bundle is started
             // If Bundle.start throws an exception, a Framework event of type FrameworkEvent.ERROR is fired
             try {
-                bundleManager.startBundleLifecycle(this, Bundle.START_TRANSIENT);
+                bundleManager.startBundle(this, Bundle.START_TRANSIENT);
             } catch (BundleException e) {
                 eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, e);
             }
@@ -384,47 +380,41 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         BundleLifecycle bundleLifecycle = coreServices.getBundleLifecycle();
         BundleRefreshPolicy refreshPolicy = bundleLifecycle.getBundleRefreshPolicy();
 
-        try {
-            putAttachment(InternalConstants.LOCK_METHOD_KEY, Method.REFRESH);
+        // Remove the {@link Module} and the associated ClassLoader
+        BundleManagerPlugin bundleManager = getBundleManager();
+        bundleManager.unresolveBundle(this);
 
-            // Remove the {@link Module} and the associated ClassLoader
-            BundleManagerPlugin bundleManager = getBundleManager();
-            bundleManager.unresolveBundle(this);
+        // Initialize bundle refresh
+        UserBundleRevision currentRev = getBundleRevision();
+        refreshPolicy.initBundleRefresh(this);
 
-            // Initialize bundle refresh
-            UserBundleRevision currentRev = getBundleRevision();
-            refreshPolicy.initBundleRefresh(this);
+        // Remove the revisions from the environment
+        for (XBundleRevision brev : getAllBundleRevisions()) {
 
-            // Remove the revisions from the environment
-            for (XBundleRevision brev : getAllBundleRevisions()) {
+            if (currentRev != brev) {
+                bundleManager.removeRevisionLifecycle(brev, 0);
+            }
 
-                if (currentRev != brev) {
-                    bundleManager.removeRevisionLifecycle(brev, 0);
-                }
-
-                // Cleanup stale fragment revisions
-                if (brev instanceof HostBundleRevision) {
-                    HostBundleRevision hostRev = (HostBundleRevision) brev;
-                    for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
-                        if (fragRev != fragRev.getBundle().getBundleRevision()) {
-                            bundleManager.removeRevisionLifecycle(fragRev, 0);
-                        }
+            // Cleanup stale fragment revisions
+            if (brev instanceof HostBundleRevision) {
+                HostBundleRevision hostRev = (HostBundleRevision) brev;
+                for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
+                    if (fragRev != fragRev.getBundle().getBundleRevision()) {
+                        bundleManager.removeRevisionLifecycle(fragRev, 0);
                     }
                 }
             }
-
-            awaitLazyActivation.set(false);
-            revisionIndex.set(1);
-
-            FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
-            eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
-
-            refreshPolicy.refreshCurrentRevision();
-
-            changeState(Bundle.INSTALLED);
-        } finally {
-            removeAttachment(InternalConstants.LOCK_METHOD_KEY);
         }
+
+        awaitLazyActivation.set(false);
+        revisionIndex.set(1);
+
+        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
+        eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
+
+        refreshPolicy.refreshCurrentRevision();
+
+        changeState(Bundle.INSTALLED);
     }
 
     @Override

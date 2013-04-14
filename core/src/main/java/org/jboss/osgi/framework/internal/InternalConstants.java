@@ -23,7 +23,6 @@ package org.jboss.osgi.framework.internal;
 
 
 import org.jboss.modules.Module;
-import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.metadata.NativeLibraryMetaData;
 import org.jboss.osgi.spi.AttachmentKey;
 
@@ -40,8 +39,6 @@ public interface InternalConstants {
      */
     int UNINSTALL_INTERNAL = 0x00000100;
 
-    /** The lock method attachment key */
-    AttachmentKey<Method> LOCK_METHOD_KEY = AttachmentKey.create(Method.class);
     /** The module attachment key */
     AttachmentKey<Module> MODULE_KEY = AttachmentKey.create(Module.class);
     /** The NativeLibraryMetaData attachment key */

@@ -131,8 +131,8 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
         };
 
         if (!executorService.isShutdown()) {
-            // executorService.execute(runner);
-            runner.run();
+            executorService.execute(runner);
+            //runner.run();
         }
     }
 
@@ -163,11 +163,11 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
             Collections.sort(stopList, startLevelComparator);
 
             for (ListIterator<XBundle> it = stopList.listIterator(stopList.size()); it.hasPrevious();) {
-                XBundle hostBundle = it.previous();
+                XBundle bundle = it.previous();
                 try {
-                    hostBundle.stop(Bundle.STOP_TRANSIENT);
+                    bundleManager.stopBundleLifecycle(bundle, Bundle.STOP_TRANSIENT);
                 } catch (Exception th) {
-                    events.fireFrameworkEvent(hostBundle, FrameworkEvent.ERROR, th);
+                    events.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, th);
                 }
             }
 
@@ -202,7 +202,7 @@ public final class FrameworkWiringImpl implements FrameworkWiring {
 
             for (XBundle bundle : stopList) {
                 try {
-                    bundle.start(Bundle.START_TRANSIENT);
+                    bundleManager.startBundleLifecycle(bundle, Bundle.START_TRANSIENT);
                 } catch (Exception th) {
                     events.fireFrameworkEvent(bundle, FrameworkEvent.ERROR, th);
                 }

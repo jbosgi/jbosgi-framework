@@ -52,11 +52,15 @@ public interface LockManager {
 
     <T extends LockableItem> T getItemForType(Class<T> type);
 
-    LockContext getCurrentContext();
+    /** Get the lock context associated with the current thread. */
+    LockContext getCurrentLockContext();
 
+    /** Lock the number of given items */
     LockContext lockItems(Method method, LockableItem... items);
 
+    /** Lock the number of given items with timeout */
     LockContext lockItems(Method method, long timeout, TimeUnit unit, LockableItem... items);
 
+    /** Unlock the context */
     void unlockItems(LockContext context);
 }

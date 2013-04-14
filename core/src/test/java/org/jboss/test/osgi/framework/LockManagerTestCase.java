@@ -245,8 +245,8 @@ public class LockManagerTestCase {
         }
 
         @Override
-        public LockContext getCurrentContext() {
-            return delegate.getCurrentContext();
+        public LockContext getCurrentLockContext() {
+            return delegate.getCurrentLockContext();
         }
 
         @Override
