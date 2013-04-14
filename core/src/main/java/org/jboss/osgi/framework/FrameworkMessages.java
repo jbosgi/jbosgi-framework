@@ -86,8 +86,8 @@ public interface FrameworkMessages {
     @Message(id = 11207, value = "Cannot obtain paths from: %s")
     IllegalArgumentException illegalArgumentCannotObtainPaths(@Cause Throwable cause, VirtualFile virtualFile);
 
-    //@Message(id = 11208, value = "Cannot obtain bundle INSTALLED service: %s")
-    //IllegalStateException illegalStateCannotObtainBundleInstalledService(Deployment deployment);
+    @Message(id = 11208, value = "Cannot obtain bundle revision: %s")
+    IllegalStateException illegalStateCannotObtainBundleRevision(Deployment deployment);
 
     @Message(id = 11209, value = "Invalid bundle context for: %s")
     IllegalStateException illegalStateInvalidBundleContext(Bundle bundle);

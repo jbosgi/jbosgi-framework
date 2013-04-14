@@ -436,7 +436,10 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     XBundleRevision createBundleRevisionLifecycle(BundleContext context, Deployment dep) throws BundleException {
-        return getBundleLifecycle().createBundleRevision(context, dep);
+        XBundleRevision brev = getBundleLifecycle().createBundleRevision(context, dep);
+        if (brev == null)
+            throw MESSAGES.illegalStateCannotObtainBundleRevision(dep);
+        return brev;
     }
 
     @Override
@@ -459,8 +462,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             XBundle bundle = getBundleByLocation(dep.getLocation());
             if (bundle != null) {
                 LOGGER.debugf("Installing an already existing bundle: %s", dep);
+                XBundleRevision brev = bundle.getBundleRevision();
                 VFSUtils.safeClose(dep.getRoot());
-                return bundle.getBundleRevision();
+                return brev;
             }
 
             // Check for symbolic name, version uniqueness

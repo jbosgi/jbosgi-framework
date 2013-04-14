@@ -52,7 +52,6 @@ import org.osgi.framework.wiring.BundleRevision;
  */
 abstract class UserBundleRevision extends BundleStateRevision {
 
-    private final Deployment deployment;
     private final ServiceTarget serviceTarget;
     private final List<RevisionContent> classPathContent;
     private final EntriesProvider entriesProvider;
@@ -60,7 +59,6 @@ abstract class UserBundleRevision extends BundleStateRevision {
     UserBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState, ServiceTarget serviceTarget) throws BundleException {
         super(frameworkState, metadata, storageState);
         this.serviceTarget = serviceTarget;
-        this.deployment = dep;
 
         if (dep.getRoot() != null) {
             List<RevisionContent> bundleClassPath = new ArrayList<RevisionContent>();
@@ -87,7 +85,7 @@ abstract class UserBundleRevision extends BundleStateRevision {
     }
 
     Deployment getDeployment() {
-        return deployment;
+        return getAttachment(DEPLOYMENT_KEY);
     }
 
     ServiceTarget getServiceTarget() {
@@ -96,7 +94,7 @@ abstract class UserBundleRevision extends BundleStateRevision {
 
     @Override
     String getLocation() {
-        return deployment.getLocation();
+        return getDeployment().getLocation();
     }
 
     /**

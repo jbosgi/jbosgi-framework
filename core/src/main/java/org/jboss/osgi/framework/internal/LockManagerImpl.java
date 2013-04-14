@@ -80,12 +80,16 @@ public final class LockManagerImpl implements LockManager {
     }
 
     @Override
-    public synchronized LockContext lockItems(Method method, LockableItem... items) {
-        return lockItems(method, 30, TimeUnit.SECONDS, items);
+    public LockContext lockItems(Method method, LockableItem... items) {
+        return lockItemsInternal(method, 30, TimeUnit.SECONDS, items);
     }
 
     @Override
-    public synchronized LockContext lockItems(Method method, long timeout, TimeUnit unit, LockableItem... items) {
+    public LockContext lockItems(Method method, long timeout, TimeUnit unit, LockableItem... items) {
+        return lockItemsInternal(method, timeout, unit, items);
+    }
+
+    private synchronized LockContext lockItemsInternal(Method method, long timeout, TimeUnit unit, LockableItem... items) {
 
         LockContextImpl context = new LockContextImpl(method, items);
 

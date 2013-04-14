@@ -22,6 +22,9 @@ package org.jboss.test.osgi.framework;
  * #L%
  */
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -58,10 +61,13 @@ public class LockManagerTestCase {
     LockManager lockManager;
     ExecutorService executor;
 
+    List<String> messages;
+
     @Before
     public void setUp() throws Exception {
-        lockManager = new LockManagerImpl();
+        lockManager = new DelegatingLockManager();
         executor = Executors.newFixedThreadPool(notasks);
+        messages = new ArrayList<String>();
         for (int i = 0; i < noitems; i++) {
             items[i] = new TestItem("item" + i);
         }
@@ -76,6 +82,11 @@ public class LockManagerTestCase {
         executor.awaitTermination(10, TimeUnit.SECONDS);
     }
 
+    void addMessage(String msg) {
+        synchronized (messages) {
+            messages.add(msg);
+        }
+    }
     @Test
     public void testLockManagerConcurrency() throws Exception {
         for (final Task task : tasks) {
@@ -143,7 +154,121 @@ public class LockManagerTestCase {
         threadHolder[0].interrupt();
     }
 
-    static class Task {
+    @Test
+    public void testLockManagerReentrancy() throws Exception {
+
+        // Test that the LockManager can be reentered for disconnected sets
+        final CountDownLatch latchA = new CountDownLatch(1);
+        final CountDownLatch latchB1 = new CountDownLatch(1);
+        final CountDownLatch latchB2 = new CountDownLatch(1);
+        final CountDownLatch latchC = new CountDownLatch(1);
+
+        // Lock item0 and item1
+        Runnable taskA = new Runnable() {
+            @Override
+            public void run() {
+                LockContext context = null;
+                try {
+                    LockableItem[] lockable = new LockableItem[] { items[0], items[1] };
+                    addMessage("Locking: " + Arrays.asList(lockable));
+                    context = lockManager.lockItems(Method.START, lockable);
+                    latchA.countDown();
+                    latchC.await();
+                } catch (InterruptedException e) {
+                    // ignore
+                } finally {
+                    lockManager.unlockItems(context);
+                }
+            }
+        };
+        executor.execute(taskA);
+
+        // Wait for taskA to obtain the lock
+        latchA.await();
+
+        // Also lock item0, which should block
+        Runnable taskB = new Runnable() {
+            @Override
+            public void run() {
+                LockContext context = null;
+                try {
+                    LockableItem[] lockable = new LockableItem[] { items[0] };
+                    addMessage("Locking: " + Arrays.asList(lockable));
+                    context = lockManager.lockItems(Method.START, lockable);
+                    latchB1.countDown();
+                } finally {
+                    lockManager.unlockItems(context);
+                    latchB2.countDown();
+                }
+            }
+        };
+        executor.execute(taskB);
+
+        // Wait a little for taskB to start
+        Thread.sleep(100);
+
+        // Lock disconnected item2 and item3
+        // which releases the lock of taskA
+        Runnable taskC = new Runnable() {
+            @Override
+            public void run() {
+                LockContext context = null;
+                try {
+                    LockableItem[] lockable = new LockableItem[] { items[2], items[3] };
+                    addMessage("Locking: " + Arrays.asList(lockable));
+                    context = lockManager.lockItems(Method.START, lockable);
+                    latchC.countDown();
+                } finally {
+                    lockManager.unlockItems(context);
+                }
+            }
+        };
+        executor.execute(taskC);
+
+        latchB2.await();
+
+        //for (String msg : messages) {
+        //    System.out.println(msg);
+        //}
+
+        Assert.assertEquals(9, messages.size());
+        Assert.assertEquals("taskB locked last", "Locked: (START) [[item0]]", messages.get(7));
+        Assert.assertEquals("taskB unlocked last", "Unlocked: (START) [[item0]]", messages.get(8));
+    }
+
+    class DelegatingLockManager implements LockManager {
+        private LockManager delegate = new LockManagerImpl();
+
+        @Override
+        public <T extends LockableItem> T getItemForType(Class<T> type) {
+            return delegate.getItemForType(type);
+        }
+
+        @Override
+        public LockContext getCurrentContext() {
+            return delegate.getCurrentContext();
+        }
+
+        @Override
+        public LockContext lockItems(Method method, LockableItem... items) {
+            LockContext context = delegate.lockItems(method, items);
+            addMessage("Locked: " + context);
+            return context;
+        }
+
+        @Override
+        public LockContext lockItems(Method method, long timeout, TimeUnit unit, LockableItem... items) {
+            return delegate.lockItems(method, timeout, unit, items);
+        }
+
+        @Override
+        public void unlockItems(LockContext context) {
+            delegate.unlockItems(context);
+            addMessage("Unlocked: " + context);
+        }
+    }
+
+    class Task {
         final TestItem[] items;
         final Method method;
 
@@ -192,6 +317,7 @@ public class LockManagerTestCase {
             return itemLock;
         }
 
+        @Override
         public String toString() {
             return "[" + name + "]";
         }
