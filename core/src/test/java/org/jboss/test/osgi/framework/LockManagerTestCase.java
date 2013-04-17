@@ -1,5 +1,3 @@
-package org.jboss.test.osgi.framework;
-
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,6 +19,7 @@ package org.jboss.test.osgi.framework;
  * <http://www.gnu.org/licenses/lgpl-2.1.html>.
  * #L%
  */
+package org.jboss.test.osgi.framework;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -194,8 +193,8 @@ public class LockManagerTestCase {
                 try {
                     LockableItem[] lockable = new LockableItem[] { items[0] };
                     addMessage("Locking: " + Arrays.asList(lockable));
-                    context = lockManager.lockItems(Method.START, lockable);
                     latchB1.countDown();
+                    context = lockManager.lockItems(Method.START, lockable);
                 } finally {
                     lockManager.unlockItems(context);
                     latchB2.countDown();
@@ -205,7 +204,7 @@ public class LockManagerTestCase {
         executor.execute(taskB);
 
         // Wait a little for taskB to start
-        Thread.sleep(100);
+        latchB1.await();
 
         // Lock disconnected item2 and item3
         // which releases the lock of taskA
@@ -217,14 +216,16 @@ public class LockManagerTestCase {
                     LockableItem[] lockable = new LockableItem[] { items[2], items[3] };
                     addMessage("Locking: " + Arrays.asList(lockable));
                     context = lockManager.lockItems(Method.START, lockable);
-                    latchC.countDown();
                 } finally {
                     lockManager.unlockItems(context);
+                    latchC.countDown();
                 }
             }
         };
         executor.execute(taskC);
 
+        // Wait a little for taskB/C to stop
+        latchC.await();
         latchB2.await();
 
         //for (String msg : messages) {
