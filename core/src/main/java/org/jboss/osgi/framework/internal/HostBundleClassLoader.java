@@ -37,6 +37,13 @@ import org.jboss.osgi.framework.spi.BundleReferenceClassLoader;
  */
 final class HostBundleClassLoader extends BundleReferenceClassLoader<UserBundleState> {
 
+    static {
+        try {
+            ClassLoader.registerAsParallelCapable();
+        } catch (Throwable ignored) {
+        }
+    }
+    
     private final PathFilter lazyFilter;
 
     private HostBundleClassLoader(Configuration configuration, UserBundleState bundleState, PathFilter lazyFilter) {
