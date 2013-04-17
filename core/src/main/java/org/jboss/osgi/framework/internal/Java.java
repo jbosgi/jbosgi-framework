@@ -37,12 +37,13 @@ package org.jboss.osgi.framework.internal;
  * <li><tt>java.lang.StackTraceElement</tt> was introduced in JDK 1.4</li>
  * <li><tt>java.lang.Enum</tt> was introduced in JDK 1.5</li>
  * <li><tt>java.lang.management.LockInfo</tt> was introduced in JDK 1.6</li>
+ * <li><tt>java.nio.file</tt> was introduced in JDK 1.7</li>
  * </ol>
  * </p>
  *
- * @version <tt>$Revision: 2240 $</tt>
  * @author <a href="mailto:jason@planet57.com">Jason Dillon</a>
  * @author <a href="mailto:dimitris@jboss.org">Dimitris Andreadis</a>
+ * @author Thomas.Diesler@jboss.com
  */
 public final class Java {
 
@@ -50,26 +51,14 @@ public final class Java {
     private Java() {
     }
 
-    /** Java version 1.0 token */
     public static final int VERSION_1_0 = 0x01;
-
-    /** Java version 1.1 token */
     public static final int VERSION_1_1 = 0x02;
-
-    /** Java version 1.2 token */
     public static final int VERSION_1_2 = 0x03;
-
-    /** Java version 1.3 token */
     public static final int VERSION_1_3 = 0x04;
-
-    /** Java version 1.4 token */
     public static final int VERSION_1_4 = 0x05;
-
-    /** Java version 1.5 token */
     public static final int VERSION_1_5 = 0x06;
-
-    /** Java version 1.6 token */
     public static final int VERSION_1_6 = 0x07;
+    public static final int VERSION_1_7 = 0x08;
 
     /**
      * Private to avoid over optimization by the compiler.
@@ -107,6 +96,10 @@ public final class Java {
             // check for 1.6
             Class.forName("java.lang.management.LockInfo");
             version = VERSION_1_6;
+
+            // check for 1.7
+            Class.forName("java.nio.file.FileStore");
+            version = VERSION_1_7;
         } catch (ClassNotFoundException ignore) {
         }
         VERSION = version;
