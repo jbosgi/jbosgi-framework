@@ -200,16 +200,18 @@ public final class ServiceManagerImpl implements ServiceManager {
         assert filter != null : "Null filter";
 
         Set<ServiceState<?>> initialSet = new HashSet<ServiceState<?>>();
-        if (className != null) {
-            List<ServiceState<?>> list = serviceContainer.get(className);
-            if (list != null) {
-                initialSet.addAll(list);
+        synchronized (serviceContainer) {
+            if (className != null) {
+                List<ServiceState<?>> list = serviceContainer.get(className);
+                if (list != null) {
+                    initialSet.addAll(list);
+                }
+            } else {
+                for (List<ServiceState<?>> list : serviceContainer.values()) {
+                    initialSet.addAll(list);
+                }
             }
-        } else {
-            for (List<ServiceState<?>> list : serviceContainer.values()) {
-                initialSet.addAll(list);
-            }
-        }
+        }        
 
         if (initialSet.isEmpty())
             return Collections.emptyList();
