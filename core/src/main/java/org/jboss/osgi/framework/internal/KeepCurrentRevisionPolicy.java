@@ -23,6 +23,7 @@ package org.jboss.osgi.framework.internal;
 
 import org.jboss.osgi.framework.spi.BundleLifecycle.BundleRefreshPolicy;
 import org.jboss.osgi.resolver.XBundle;
+import org.jboss.osgi.resolver.XBundleRevision;
 
 /**
  * A refresh policy that keeps the current revision.
@@ -31,15 +32,18 @@ import org.jboss.osgi.resolver.XBundle;
  * @since 09-Apr-2013
  */
 final class KeepCurrentRevisionPolicy implements BundleRefreshPolicy {
-    private UserBundleRevision currentRev;
 
     @Override
-    public void initBundleRefresh(XBundle bundle) {
-        this.currentRev = (UserBundleRevision) bundle.getBundleRevision();
+    public void startBundleRefresh(XBundle bundle) {
     }
 
     @Override
-    public void refreshCurrentRevision() {
-        currentRev.refreshRevision();
+    public void refreshCurrentRevision(XBundleRevision brev) {
+        UserBundleRevision userRev = UserBundleRevision.assertBundleRevision(brev);
+        userRev.refreshRevision();
+    }
+
+    @Override
+    public void endBundleRefresh(XBundle bundle) {
     }
 }

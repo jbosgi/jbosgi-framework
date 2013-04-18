@@ -384,39 +384,42 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
         // Initialize bundle refresh
         UserBundleRevision currentRev = getBundleRevision();
-        refreshPolicy.initBundleRefresh(this);
+        refreshPolicy.startBundleRefresh(this);
+        try {
+            // Remove the revisions from the environment
+            for (XBundleRevision brev : getAllBundleRevisions()) {
 
-        // Remove the revisions from the environment
-        for (XBundleRevision brev : getAllBundleRevisions()) {
+                if (currentRev != brev) {
+                    bundleManager.removeRevisionLifecycle(brev, 0);
+                }
 
-            if (currentRev != brev) {
-                bundleManager.removeRevisionLifecycle(brev, 0);
-            }
-
-            // Cleanup stale fragment revisions
-            if (brev instanceof HostBundleRevision) {
-                HostBundleRevision hostRev = (HostBundleRevision) brev;
-                for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
-                    if (fragRev != fragRev.getBundle().getBundleRevision()) {
-                        bundleManager.removeRevisionLifecycle(fragRev, 0);
+                // Cleanup stale fragment revisions
+                if (brev instanceof HostBundleRevision) {
+                    HostBundleRevision hostRev = (HostBundleRevision) brev;
+                    for (FragmentBundleRevision fragRev : hostRev.getAttachedFragments()) {
+                        if (fragRev != fragRev.getBundle().getBundleRevision()) {
+                            bundleManager.removeRevisionLifecycle(fragRev, 0);
+                        }
                     }
                 }
             }
+
+            awaitLazyActivation.set(false);
+            revisionIndex.set(1);
+
+            FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
+            eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
+
+            refreshPolicy.refreshCurrentRevision(currentRev);
+
+            changeState(Bundle.INSTALLED);
+        } finally {
+            refreshPolicy.endBundleRefresh(this);
         }
-
-        awaitLazyActivation.set(false);
-        revisionIndex.set(1);
-
-        FrameworkEvents eventsPlugin = getFrameworkState().getFrameworkEvents();
-        eventsPlugin.fireBundleEvent(this, BundleEvent.UNRESOLVED);
-
-        refreshPolicy.refreshCurrentRevision();
-
-        changeState(Bundle.INSTALLED);
     }
 
     @Override
-    void uninstallInternal(int options) {
+    void uninstallInternal(int options) throws BundleException {
 
         int state = getState();
         if (state == Bundle.UNINSTALLED)

@@ -56,7 +56,7 @@ final class RecreateCurrentRevisionPolicy implements BundleRefreshPolicy {
     }
 
     @Override
-    public void initBundleRefresh(XBundle bundle) throws BundleException {
+    public void startBundleRefresh(XBundle bundle) throws BundleException {
         this.bundle = bundle;
 
         XBundleRevision brev = bundle.getBundleRevision();
@@ -73,7 +73,7 @@ final class RecreateCurrentRevisionPolicy implements BundleRefreshPolicy {
     }
 
     @Override
-    public void refreshCurrentRevision() throws BundleException {
+    public void refreshCurrentRevision(XBundleRevision brev) throws BundleException {
 
         // Create the revision {@link Deployment}
         DeploymentProvider deploymentManager = bundleManager.getFrameworkState().getDeploymentProvider();
@@ -86,5 +86,9 @@ final class RecreateCurrentRevisionPolicy implements BundleRefreshPolicy {
         // Create the {@link XBundleRevision} service from {@link Deployment}
         BundleContext context = bundleManager.getSystemBundle().getBundleContext();
         bundleManager.createBundleRevision(context, dep, null);
+    }
+
+    @Override
+    public void endBundleRefresh(XBundle bundle) {
     }
 }

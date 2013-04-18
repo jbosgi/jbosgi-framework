@@ -26,6 +26,7 @@ import static org.jboss.osgi.framework.FrameworkMessages.MESSAGES;
 import static org.jboss.osgi.framework.internal.InternalConstants.REVISION_IDENTIFIER_KEY;
 import static org.jboss.osgi.framework.spi.IntegrationConstants.OSGI_METADATA_KEY;
 import static org.jboss.osgi.framework.spi.IntegrationConstants.STORAGE_STATE_KEY;
+
 import java.io.InputStream;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -45,6 +46,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
@@ -62,17 +64,19 @@ import org.jboss.osgi.framework.Services;
 import org.jboss.osgi.framework.spi.AbstractIntegrationService;
 import org.jboss.osgi.framework.spi.BundleLifecycle;
 import org.jboss.osgi.framework.spi.BundleManager;
-import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.DeploymentProvider;
 import org.jboss.osgi.framework.spi.FrameworkBuilder;
 import org.jboss.osgi.framework.spi.FrameworkEvents;
 import org.jboss.osgi.framework.spi.FrameworkStartLevelSupport;
 import org.jboss.osgi.framework.spi.FrameworkWiringLock;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.LockManager;
-import org.jboss.osgi.framework.spi.LockManager.Method;
+import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
+import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.ModuleManager;
+import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
@@ -99,7 +103,6 @@ import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.framework.wiring.FrameworkWiring;
 import org.osgi.resource.Resource;
 import org.osgi.service.resolver.ResolutionException;
-import org.jboss.osgi.framework.spi.LockManager.LockContext;
 
 /**
  * The BundleManager is the central managing entity for OSGi bundles.
@@ -457,8 +460,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
         // If a bundle containing the same location identifier is already installed,
         // the Bundle object for that bundle is returned.
-        boolean isBundleUpdate = dep.isBundleUpdate();
-        if (isBundleUpdate == false) {
+        if (isUpdateOrRefresh(dep) == false) {
             XBundle bundle = getBundleByLocation(dep.getLocation());
             if (bundle != null) {
                 LOGGER.debugf("Installing an already existing bundle: %s", dep);
@@ -488,7 +490,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
                 metadata = plugin.createOSGiMetaData(dep);
             }
 
-            // Create the bundle services
+            // Create the bundle revision
             if (metadata.getFragmentHost() == null) {
                 brev = new HostBundleRevisionFactory(getFrameworkState(), context, dep, serviceTarget).create();
             } else {
@@ -503,6 +505,10 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         }
 
         return brev;
+    }
+
+    private boolean isUpdateOrRefresh(Deployment dep) {
+        return dep.isBundleUpdate() || dep.getAttachment(IntegrationConstants.BUNDLE_KEY) != null;
     }
 
     private RevisionIdentifier createRevisionIdentifier(String symbolicName, Deployment dep) {

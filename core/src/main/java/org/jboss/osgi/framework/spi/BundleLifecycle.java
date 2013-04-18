@@ -50,8 +50,10 @@ public interface BundleLifecycle {
 
     interface BundleRefreshPolicy {
 
-        void initBundleRefresh(XBundle bundle) throws BundleException;
+        void startBundleRefresh(XBundle bundle) throws BundleException;
 
-        void refreshCurrentRevision() throws BundleException;
+        void refreshCurrentRevision(XBundleRevision brev) throws BundleException;
+
+        void endBundleRefresh(XBundle bundle);
     }
 }

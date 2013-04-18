@@ -80,7 +80,7 @@ abstract class UserBundleRevisionFactory<R extends UserBundleRevision> {
     }
 
     R create() throws BundleException {
-        LOGGER.debugf("Creating %s for: %s", getClass().getSimpleName(), deployment);
+        LOGGER.debugf("%s for: %s", getClass().getSimpleName(), deployment);
         StorageState storageState = null;
         try {
             Deployment dep = deployment;
