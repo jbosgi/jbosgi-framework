@@ -255,7 +255,6 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
     @Override
     void updateInternal(InputStream input) throws BundleException {
 
-        LOGGER.debugf("Updating bundle: %s", this);
         BundleManagerPlugin bundleManager = getBundleManager();
 
         boolean restart = false;
@@ -303,7 +302,6 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
             }
         }
 
-        LOGGER.infoBundleUpdated(this);
         updateLastModified();
     }
 
@@ -482,8 +480,6 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
         // #4 A bundle event of type BundleEvent.UNINSTALLED is fired
         fireBundleEvent(BundleEvent.UNINSTALLED);
-
-        LOGGER.infoBundleUninstalled(this);
     }
 
     @Override
@@ -529,8 +525,6 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
             LOGGER.log(level, MESSAGES.bundleStartLevelNotValid(getBundleStartLevel(), plugin.getFrameworkStartLevel(), this));
             return;
         }
-
-        LOGGER.debugf("Starting bundle: %s", this);
 
         // #4 If this bundle's state is not RESOLVED, an attempt is made to resolve this bundle.
         // If the Framework cannot resolve this bundle, a BundleException is thrown.
@@ -618,8 +612,6 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         // #10 This bundle's state is set to ACTIVE.
         // #11 A bundle event of type BundleEvent.STARTED is fired
         changeState(Bundle.ACTIVE);
-
-        LOGGER.infoBundleStarted(this);
     }
 
     @Override
@@ -688,8 +680,6 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
         if (rethrow != null) {
             throw MESSAGES.cannotStopBundle(rethrow, this);
-        } else {
-            LOGGER.infoBundleStopped(this);
         }
     }
 
@@ -787,6 +777,8 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
     private boolean hasActiveWiresWhileUninstalling() {
         BundleWiring wiring = getBundleWiring();
-        return wiring != null ? ((AbstractBundleWiring) wiring).isInUseForUninstall() : false;
+        boolean result = (wiring != null ? ((AbstractBundleWiring) wiring).isInUseForUninstall() : false);
+        LOGGER.debugf("hasActiveWiresWhileUninstalling: %s", result);
+        return result;
     }
 }

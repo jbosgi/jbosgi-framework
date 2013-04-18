@@ -528,11 +528,13 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         try {
             LockableItem[] items = getLockableItems(lockManager, Method.RESOLVE, bundle);
             lockContext = lockManager.lockItems(Method.RESOLVE, items);
+            LOGGER.debugf("Resolving bundle: %s", bundle);
             Set<XBundleRevision> mandatory = Collections.singleton(bundle.getBundleRevision());
             XEnvironment environment = getFrameworkState().getEnvironment();
             XResolver resolver = getFrameworkState().getResolver();
             XResolveContext context = resolver.createResolveContext(environment, mandatory, null);
             resolver.resolveAndApply(context);
+            LOGGER.debugf("Resolved bundle: %s", bundle);
         } finally {
             lockManager.unlockItems(lockContext);
         }
@@ -550,7 +552,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         try {
             LockableItem[] items = getLockableItems(lockManager, Method.START, bundle);
             lockContext = lockManager.lockItems(Method.START, items);
+            LOGGER.debugf("Starting bundle: %s", bundle);
             AbstractBundleState.assertBundleState(bundle).startInternal(options);
+            LOGGER.infoBundleStarted(bundle);
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot start bundle: %s", bundle);
             throw ex;
@@ -571,7 +575,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         try {
             LockableItem[] items = getLockableItems(lockManager, Method.STOP, bundle);
             lockContext = lockManager.lockItems(Method.STOP, items);
+            LOGGER.debugf("Stopping bundle: %s", bundle);
             AbstractBundleState.assertBundleState(bundle).stopInternal(options);
+            LOGGER.infoBundleStopped(bundle);
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot stop bundle: %s", bundle);
             throw ex;
@@ -587,7 +593,9 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         try {
             LockableItem[] items = getLockableItems(lockManager, Method.UPDATE, bundle);
             lockContext = lockManager.lockItems(Method.UPDATE, items);
+            LOGGER.debugf("Updating bundle: %s", bundle);
             AbstractBundleState.assertBundleState(bundle).updateInternal(input);
+            LOGGER.infoBundleUpdated(bundle);
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot update bundle: %s", bundle);
             throw ex;
@@ -601,14 +609,15 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         LockManager lockManager = getFrameworkState().getLockManager();
         LockContext lockContext = null;
         try {
-            AbstractBundleState<?> bundleState = AbstractBundleState.assertBundleState(bundle);
             LockableItem[] items = getLockableItems(lockManager, Method.UNINSTALL, bundle);
             lockContext = lockManager.lockItems(Method.UNINSTALL, items);
             LockContext transitiveClosureLock = null;
             try {
                 items = getTransitiveLockForUninstall(lockManager, bundle);
                 transitiveClosureLock = lockManager.lockItems(Method.UNINSTALL, items);
-                bundleState.uninstallInternal(options);
+                LOGGER.debugf("Uninstalling bundle: %s", bundle);
+                AbstractBundleState.assertBundleState(bundle).uninstallInternal(options);
+                LOGGER.infoBundleUninstalled(bundle);
             } finally {
                 lockManager.unlockItems(transitiveClosureLock);
             }
@@ -621,7 +630,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     void removeBundle(UserBundleState userBundle, int options) {
-        LOGGER.tracef("Start removing bundle: %s", userBundle);
+        LOGGER.tracef("Removing bundle: %s", userBundle);
         if ((options & Bundle.STOP_TRANSIENT) == 0) {
             StorageManager storagePlugin = getFrameworkState().getStorageManager();
             storagePlugin.deleteStorageState(userBundle.getStorageState());
