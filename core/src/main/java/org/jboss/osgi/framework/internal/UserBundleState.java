@@ -451,9 +451,10 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
         // Check if the bundle has still active wires
         boolean activeWires = hasActiveWiresWhileUninstalling();
-        if (activeWires == false) {
+        if (activeWires == false)
             bundleManager.unresolveBundle(this);
-        }
+        else
+            LOGGER.debugf("Has active wires: %s", this);
 
         // Make the current {@link BundleWiring} uneffective and fire the UNRESOLVED event
         getBundleRevision().getWiringSupport().makeUneffective();
@@ -464,6 +465,12 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         changeState(Bundle.UNINSTALLED, 0);
 
         // #5 This bundle and any persistent storage area provided for this bundle by the Framework are removed
+        if ((options & Bundle.STOP_TRANSIENT) == 0) {
+            StorageManager storagePlugin = getFrameworkState().getStorageManager();
+            storagePlugin.deleteStorageState(getStorageState());
+        }
+
+        // Remove the bundle from the {@link Environment}
         if (activeWires == false) {
             bundleManager.removeBundle(this, options);
         }

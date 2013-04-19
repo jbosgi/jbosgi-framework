@@ -107,23 +107,73 @@ public class PersistentBundlesTestCase extends AbstractFrameworkLaunchTest {
         framework.start();
         assertBundleState(Bundle.ACTIVE, framework.getState());
 
+        Bundle bundleB = installBundle(getBundleB());
+        Assert.assertEquals("Bundle Id", 1, bundleB.getBundleId());
+        assertBundleState(Bundle.INSTALLED, bundleB.getState());
+
         File storageDir = getBundleStorageDir();
-        File systemStorageDir = new File(storageDir + "/bundle-0");
-        Assert.assertTrue("File exists: " + systemStorageDir, systemStorageDir.exists());
+        File storageDirB = new File(storageDir + "/bundle-1");
+        Assert.assertTrue("File exists: " + storageDirB, storageDirB.exists());
 
-        Bundle bundle = installBundle(getBundleB());
-        Assert.assertEquals("Bundle Id", 1, bundle.getBundleId());
-        assertBundleState(Bundle.INSTALLED, bundle.getState());
-
-        File bundleStorageDir = new File(storageDir + "/bundle-1");
-        Assert.assertTrue("File exists: " + bundleStorageDir, bundleStorageDir.exists());
-
-        bundle.uninstall();
-        Assert.assertFalse("File deleted: " + bundleStorageDir, bundleStorageDir.exists());
+        bundleB.uninstall();
+        Assert.assertFalse("File deleted: " + storageDirB, storageDirB.exists());
 
         framework.stop();
         framework.waitForStop(2000);
         assertBundleState(Bundle.RESOLVED, framework.getState());
+
+        // Restart the Framework
+        framework.start();
+        assertBundleState(Bundle.ACTIVE, framework.getState());
+        Bundle[] bundles = getBundleContext().getBundles();
+        Assert.assertEquals("Bundle Id", 1, bundles.length);
+        Assert.assertEquals("Bundle Id", 0, bundles[0].getBundleId());
+    }
+
+    @Test
+    public void testUninstalledDependentBundle() throws Exception {
+        Map<String, String> initprops = getFrameworkInitProperties(true);
+        Framework framework = newFramework(initprops);
+
+        framework.start();
+        assertBundleState(Bundle.ACTIVE, framework.getState());
+
+        Bundle bundleB = installBundle(getBundleB());
+        Assert.assertEquals("Bundle Id", 1, bundleB.getBundleId());
+        assertBundleState(Bundle.INSTALLED, bundleB.getState());
+
+        File storageDir = getBundleStorageDir();
+        File storageDirB = new File(storageDir + "/bundle-1");
+        Assert.assertTrue("File exists: " + storageDirB, storageDirB.exists());
+
+        Bundle bundleA = installBundle(getBundleA());
+        Assert.assertEquals("Bundle Id", 2, bundleA.getBundleId());
+        assertBundleState(Bundle.INSTALLED, bundleA.getState());
+
+        File storageDirA = new File(storageDir + "/bundle-2");
+        Assert.assertTrue("File exists: " + storageDirA, storageDirA.exists());
+
+        bundleA.start();
+        assertBundleState(Bundle.ACTIVE, bundleA.getState());
+
+        bundleB.uninstall();
+        Assert.assertTrue("File exists: " + storageDirA, storageDirA.exists());
+        Assert.assertFalse("File exists: " + storageDirB, storageDirB.exists());
+
+        framework.stop();
+        framework.waitForStop(2000);
+        assertBundleState(Bundle.RESOLVED, framework.getState());
+
+        // Restart the Framework
+        framework.start();
+        assertBundleState(Bundle.ACTIVE, framework.getState());
+
+        Bundle[] bundles = getBundleContext().getBundles();
+        Assert.assertEquals("Bundle Id", 2, bundles.length);
+
+        bundleA = bundles[0].getBundleId() > 0 ? bundles[0] : bundles[1];
+        Assert.assertEquals("Bundle Id", 2, bundleA.getBundleId());
+        assertBundleState(Bundle.INSTALLED, bundleA.getState());
     }
 
     @Test

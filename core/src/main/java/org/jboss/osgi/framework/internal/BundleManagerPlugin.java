@@ -76,7 +76,6 @@ import org.jboss.osgi.framework.spi.LockManager.LockContext;
 import org.jboss.osgi.framework.spi.LockManager.LockableItem;
 import org.jboss.osgi.framework.spi.LockManager.Method;
 import org.jboss.osgi.framework.spi.ModuleManager;
-import org.jboss.osgi.framework.spi.StorageManager;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.resolver.XBundle;
@@ -629,10 +628,6 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     void removeBundle(UserBundleState userBundle, int options) {
         LOGGER.debugf("Removing bundle: %s", userBundle);
-        if ((options & Bundle.STOP_TRANSIENT) == 0) {
-            StorageManager storagePlugin = getFrameworkState().getStorageManager();
-            storagePlugin.deleteStorageState(userBundle.getStorageState());
-        }
         for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
             if ((options & InternalConstants.UNINSTALL_INTERNAL) != 0) {
                 removeRevisionLifecycle(brev, options);
