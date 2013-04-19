@@ -87,10 +87,6 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
         return (AbstractBundleContext<?>) context;
     }
 
-    void destroy() {
-        destroyed = true;
-    }
-
     T getBundleState() {
         return bundleState;
     }
@@ -103,9 +99,22 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
         return frameworkState;
     }
 
+    void destroy() {
+        destroyed = true;
+    }
+
+    boolean isDestroyed() {
+        return destroyed;
+    }
+
+    void asertNotDestroyed() {
+        if (destroyed)
+            throw MESSAGES.illegalStateInvalidBundleContext(bundleState);
+    }
+
     @Override
     public String getProperty(String key) {
-        checkValidBundleContext();
+        asertNotDestroyed();
         getBundleManager().assertFrameworkCreated();
         Object value = getBundleManager().getProperty(key);
         return (value instanceof String ? (String) value : null);
@@ -113,13 +122,13 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     @Override
     public Bundle getBundle() {
-        checkValidBundleContext();
+        asertNotDestroyed();
         return bundleState;
     }
 
     @Override
     public Bundle getBundle(String location) {
-        checkValidBundleContext();
+        asertNotDestroyed();
         return getBundleManager().getBundleByLocation(location);
     }
 
@@ -149,7 +158,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
      * through the DeploymentUnitProcessor chain.
      */
     private Bundle installBundleInternal(String location, InputStream input) throws BundleException {
-        checkValidBundleContext();
+        asertNotDestroyed();
 
         // When an existing bundle is already installed at a given location, the find method is called to determine if the
         // context performing the install operation is able to find the bundle. If the context cannot find the existing bundle
@@ -221,7 +230,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     @Override
     public Bundle getBundle(long id) {
-        checkValidBundleContext();
+        asertNotDestroyed();
         Bundle result = getBundleManager().getBundleById(id);
 
         // Call the {@link FindHook}
@@ -233,7 +242,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     @Override
     public Bundle[] getBundles() {
-        checkValidBundleContext();
+        asertNotDestroyed();
         List<Bundle> result = new ArrayList<Bundle>();
         for (Bundle bundle : getBundleManager().getBundles())
             result.add(bundle);
@@ -269,7 +278,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     @Override
     public void addServiceListener(ServiceListener listener, String filter) throws InvalidSyntaxException {
-        checkValidBundleContext();
+        asertNotDestroyed();
         if (listener == null)
             throw MESSAGES.illegalArgumentNull("listener");
         getFrameworkEventsPlugin().addServiceListener(bundleState, listener, filter);
@@ -277,7 +286,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     @Override
     public void addServiceListener(ServiceListener listener) {
-        checkValidBundleContext();
+        asertNotDestroyed();
         if (listener == null)
             throw MESSAGES.illegalArgumentNull("listener");
         try {
@@ -289,7 +298,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     @Override
     public void removeServiceListener(ServiceListener listener) {
-        checkValidBundleContext();
+        asertNotDestroyed();
         if (listener == null)
             throw MESSAGES.illegalArgumentNull("listener");
         getFrameworkEventsPlugin().removeServiceListener(bundleState, listener);
@@ -297,7 +306,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     @Override
     public void addBundleListener(BundleListener listener) {
-        checkValidBundleContext();
+        asertNotDestroyed();
         if (listener == null)
             throw MESSAGES.illegalArgumentNull("listener");
         getFrameworkEventsPlugin().addBundleListener(bundleState, listener);
@@ -305,7 +314,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     @Override
     public void removeBundleListener(BundleListener listener) {
-        checkValidBundleContext();
+        asertNotDestroyed();
         if (listener == null)
             throw MESSAGES.illegalArgumentNull("listener");
         getFrameworkEventsPlugin().removeBundleListener(bundleState, listener);
@@ -313,7 +322,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     @Override
     public void addFrameworkListener(FrameworkListener listener) {
-        checkValidBundleContext();
+        asertNotDestroyed();
         if (listener == null)
             throw MESSAGES.illegalArgumentNull("listener");
         getFrameworkEventsPlugin().addFrameworkListener(bundleState, listener);
@@ -321,7 +330,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     @Override
     public void removeFrameworkListener(FrameworkListener listener) {
-        checkValidBundleContext();
+        asertNotDestroyed();
         if (listener == null)
             throw MESSAGES.illegalArgumentNull("listener");
         getFrameworkEventsPlugin().removeFrameworkListener(bundleState, listener);
@@ -330,7 +339,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
     @Override
     @SuppressWarnings("rawtypes")
     public ServiceRegistration<?> registerService(String clazz, Object service, Dictionary properties) {
-        checkValidBundleContext();
+        asertNotDestroyed();
         return registerService(new String[] { clazz }, service, properties);
     }
 
@@ -341,7 +350,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
             throw MESSAGES.illegalArgumentNull("classNames");
         if (service == null)
             throw MESSAGES.illegalArgumentNull("service");
-        checkValidBundleContext();
+        asertNotDestroyed();
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         ServiceState serviceState = serviceManager.registerService(bundleState, classNames, service, properties);
         return serviceState.getRegistration();
@@ -354,7 +363,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
             throw MESSAGES.illegalArgumentNull("class");
         if (service == null)
             throw MESSAGES.illegalArgumentNull("service");
-        checkValidBundleContext();
+        asertNotDestroyed();
         String[] classNames = new String[] { clazz.getName() };
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         ServiceState<S> serviceState = serviceManager.registerService(bundleState, classNames, service, properties);
@@ -366,7 +375,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
     public ServiceReference<?> getServiceReference(String className) {
         if (className == null)
             throw MESSAGES.illegalArgumentNull("className");
-        checkValidBundleContext();
+        asertNotDestroyed();
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         ServiceState<?> serviceState = serviceManager.getServiceReference(bundleState, className);
         return (serviceState != null ? new ServiceReferenceWrapper(serviceState) : null);
@@ -377,7 +386,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
     public <S> ServiceReference<S> getServiceReference(Class<S> clazz) {
         if (clazz == null)
             throw MESSAGES.illegalArgumentNull("className");
-        checkValidBundleContext();
+        asertNotDestroyed();
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         ServiceState<?> serviceState = serviceManager.getServiceReference(bundleState, clazz.getName());
         return (serviceState != null ? new ServiceReferenceWrapper(serviceState) : null);
@@ -385,7 +394,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     @Override
     public ServiceReference<?>[] getServiceReferences(String className, String filter) throws InvalidSyntaxException {
-        checkValidBundleContext();
+        asertNotDestroyed();
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         List<ServiceState<?>> srefs = serviceManager.getServiceReferences(bundleState, className, filter, true);
         if (srefs.isEmpty())
@@ -401,7 +410,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
     @Override
     @SuppressWarnings("unchecked")
     public <S> Collection<ServiceReference<S>> getServiceReferences(Class<S> clazz, String filter) throws InvalidSyntaxException {
-        checkValidBundleContext();
+        asertNotDestroyed();
         String className = clazz != null ? clazz.getName() : null;
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         List<ServiceState<?>> srefs = serviceManager.getServiceReferences(bundleState, className, filter, true);
@@ -415,7 +424,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
 
     @Override
     public ServiceReference<?>[] getAllServiceReferences(String className, String filter) throws InvalidSyntaxException {
-        checkValidBundleContext();
+        asertNotDestroyed();
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         List<ServiceState<?>> srefs = serviceManager.getServiceReferences(bundleState, className, filter, false);
         if (srefs.isEmpty())
@@ -433,7 +442,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
     public <S> S getService(ServiceReference<S> sref) {
         if (sref == null)
             throw MESSAGES.illegalArgumentNull("sref");
-        checkValidBundleContext();
+        asertNotDestroyed();
         ServiceState<?> serviceState = ServiceStateImpl.assertServiceState(sref);
         ServiceManager serviceManager = getFrameworkState().getServiceManagerPlugin();
         S service = (S) serviceManager.getService(bundleState, serviceState);
@@ -444,27 +453,22 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
     public boolean ungetService(ServiceReference<?> sref) {
         if (sref == null)
             throw MESSAGES.illegalArgumentNull("sref");
-        checkValidBundleContext();
+        asertNotDestroyed();
         ServiceState<?> serviceState = ServiceStateImpl.assertServiceState(sref);
         return getServiceManager().ungetService(bundleState, serviceState);
     }
 
     @Override
     public File getDataFile(String filename) {
-        checkValidBundleContext();
+        asertNotDestroyed();
         StorageManager storagePlugin = getFrameworkState().getStorageManager();
         return storagePlugin.getDataFile(bundleState.getBundleId(), filename);
     }
 
     @Override
     public Filter createFilter(String filter) throws InvalidSyntaxException {
-        checkValidBundleContext();
+        asertNotDestroyed();
         return FrameworkUtil.createFilter(filter);
-    }
-
-    void checkValidBundleContext() {
-        if (destroyed == true)
-            throw MESSAGES.illegalStateInvalidBundleContext(bundleState);
     }
 
     private ServiceManager getServiceManager() {

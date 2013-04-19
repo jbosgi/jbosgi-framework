@@ -583,11 +583,14 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         for (Map.Entry<BundleContext, Collection<ListenerInfo>> entry : listeners.entrySet()) {
             for (ListenerInfo info : entry.getValue()) {
                 ServiceListenerRegistration listenerReg = ((ListenerInfoImpl) info).getRegistration();
+                AbstractBundleContext<?> context = (AbstractBundleContext<?>) info.getBundleContext();
+                if (context.isDestroyed()) {
+                    continue;
+                }
                 // Service events must only be delivered to event listeners which can validly cast the event
                 if (!listenerReg.isAllServiceListener()) {
-                    BundleContext context = info.getBundleContext();
-                    XBundle owner = (XBundle) context.getBundle();
                     boolean assignableToOwner = true;
+                    XBundle owner = context.getBundleState();
                     String[] clazzes = (String[]) serviceState.getProperty(Constants.OBJECTCLASS);
                     for (String clazz : clazzes) {
                         if (serviceState.isAssignableTo(owner, clazz) == false) {
@@ -706,6 +709,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     static class ServiceListenerRegistration {
 
         private final XBundle bundle;
+        private final BundleContext bundleContext;
         private final ServiceListener listener;
         private final Filter filter;
         private final ListenerInfo info;
@@ -720,7 +724,8 @@ final class FrameworkEventsImpl implements FrameworkEvents {
             this.bundle = bundle;
             this.listener = listener;
             this.filter = filter;
-            this.info = new ListenerInfoImpl(this);
+            this.bundleContext = bundle.getBundleContext();
+            this.info = new ListenerInfoImpl(bundleContext, this);
             if (System.getSecurityManager() != null)
                 accessControlContext = AccessController.getContext();
         }
@@ -730,7 +735,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         }
 
         BundleContext getBundleContext() {
-            return bundle.getBundleContext();
+            return bundleContext;
         }
 
         ServiceListener getListener() {
@@ -769,11 +774,13 @@ final class FrameworkEventsImpl implements FrameworkEvents {
 
     static class BundleListenerRegistration {
         private final BundleListener listener;
+        private final BundleContext bundleContext;
         private final XBundle bundle;
 
         BundleListenerRegistration(XBundle bundle, BundleListener listener) {
             this.listener = listener;
             this.bundle = bundle;
+            this.bundleContext = bundle.getBundleContext();
         }
 
         BundleListener getListener() {
@@ -785,7 +792,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         }
 
         BundleContext getBundleContext() {
-            return bundle.getBundleContext();
+            return bundleContext;
         }
 
         @Override
@@ -813,15 +820,17 @@ final class FrameworkEventsImpl implements FrameworkEvents {
     static class ListenerInfoImpl implements ListenerInfo {
 
         private final ServiceListenerRegistration registration;
+        private final AbstractBundleContext<?> bundleContext;
         private boolean removed;
 
-        ListenerInfoImpl(final ServiceListenerRegistration registration) {
+        ListenerInfoImpl(BundleContext bundleContext, ServiceListenerRegistration registration) {
+            this.bundleContext = (AbstractBundleContext<?>) bundleContext;
             this.registration = registration;
         }
 
         @Override
         public BundleContext getBundleContext() {
-            return registration.getBundleContext();
+            return bundleContext;
         }
 
         @Override
@@ -858,7 +867,7 @@ final class FrameworkEventsImpl implements FrameworkEvents {
         @Override
         public String toString() {
             String className = registration.listener.getClass().getName();
-            return "ListenerInfo[" + getBundleContext() + "," + className + "," + removed + "]";
+            return "ListenerInfo[" + bundleContext.getBundleState() + "," + className + "," + removed + "]";
         }
     }
 
