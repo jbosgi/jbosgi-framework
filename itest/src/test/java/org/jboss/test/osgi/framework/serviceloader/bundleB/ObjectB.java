@@ -1,4 +1,4 @@
-package org.jboss.test.osgi.framework.jbosgi373;
+package org.jboss.test.osgi.framework.serviceloader.bundleB;
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,5 +21,5 @@ package org.jboss.test.osgi.framework.jbosgi373;
  * #L%
  */
 
-public interface OSGi373Service {
+public class ObjectB {
 }

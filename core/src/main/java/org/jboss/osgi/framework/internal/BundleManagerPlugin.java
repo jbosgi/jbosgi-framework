@@ -558,9 +558,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         try {
             LockableItem[] items = getLockableItems(lockManager, Method.START, bundle);
             lockContext = lockManager.lockItems(Method.START, items);
-            LOGGER.debugf("Starting bundle: %s", bundle);
             AbstractBundleState.assertBundleState(bundle).startInternal(options);
-            LOGGER.infoBundleStarted(bundle);
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot start bundle: %s", bundle);
             throw ex;
@@ -581,9 +579,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         try {
             LockableItem[] items = getLockableItems(lockManager, Method.STOP, bundle);
             lockContext = lockManager.lockItems(Method.STOP, items);
-            LOGGER.debugf("Stopping bundle: %s", bundle);
             AbstractBundleState.assertBundleState(bundle).stopInternal(options);
-            LOGGER.infoBundleStopped(bundle);
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot stop bundle: %s", bundle);
             throw ex;
@@ -599,9 +595,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         try {
             LockableItem[] items = getLockableItems(lockManager, Method.UPDATE, bundle);
             lockContext = lockManager.lockItems(Method.UPDATE, items);
-            LOGGER.debugf("Updating bundle: %s", bundle);
             AbstractBundleState.assertBundleState(bundle).updateInternal(input);
-            LOGGER.infoBundleUpdated(bundle);
         } catch (BundleException ex) {
             LOGGER.debugf(ex, "Cannot update bundle: %s", bundle);
             throw ex;
@@ -621,9 +615,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             try {
                 items = getTransitiveLockForUninstall(lockManager, bundle);
                 transitiveClosureLock = lockManager.lockItems(Method.UNINSTALL, items);
-                LOGGER.debugf("Uninstalling bundle: %s", bundle);
                 AbstractBundleState.assertBundleState(bundle).uninstallInternal(options);
-                LOGGER.infoBundleUninstalled(bundle);
             } finally {
                 lockManager.unlockItems(transitiveClosureLock);
             }
@@ -636,12 +628,11 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     void removeBundle(UserBundleState userBundle, int options) {
-        LOGGER.tracef("Removing bundle: %s", userBundle);
+        LOGGER.debugf("Removing bundle: %s", userBundle);
         if ((options & Bundle.STOP_TRANSIENT) == 0) {
             StorageManager storagePlugin = getFrameworkState().getStorageManager();
             storagePlugin.deleteStorageState(userBundle.getStorageState());
         }
-
         for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
             if ((options & InternalConstants.UNINSTALL_INTERNAL) != 0) {
                 removeRevisionLifecycle(brev, options);
@@ -659,6 +650,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
 
     @Override
     public void removeRevision(XBundleRevision brev, int options) {
+        LOGGER.debugf("Removing revision: %s", brev);
         XEnvironment env = getFrameworkState().getEnvironment();
         env.uninstallResources(brev);
         if (brev instanceof UserBundleRevision) {
@@ -666,6 +658,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
             userRev.getBundleState().removeRevision(userRev);
             userRev.close();
         }
+        LOGGER.debugf("Removed revision: %s", brev);
     }
 
     private LockableItem[] getLockableItems(LockManager lockManager, Method method, XBundle bundle) {
@@ -731,7 +724,7 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     void unresolveBundle(UserBundleState userBundle) {
-        LOGGER.tracef("Unresolving bundle: %s", userBundle);
+        LOGGER.debugf("Unresolving bundle: %s", userBundle);
         ModuleManager moduleManager = getFrameworkState().getModuleManager();
         for (XBundleRevision brev : userBundle.getAllBundleRevisions()) {
             UserBundleRevision userRev = (UserBundleRevision) brev;

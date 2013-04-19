@@ -1,4 +1,4 @@
-package org.jboss.test.osgi.framework.jbosgi373;
+package org.jboss.test.osgi.framework.serviceloader;
 /*
  * #%L
  * JBossOSGi Framework
@@ -38,8 +38,8 @@ import java.util.ServiceLoader;
 
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.shrinkwrap.api.Archive;
-import org.jboss.test.osgi.framework.jbosgi373.bundleA.OSGi373ServiceImpl;
-import org.jboss.test.osgi.framework.jbosgi373.bundleB.ObjectB;
+import org.jboss.test.osgi.framework.serviceloader.bundleA.FooServiceImpl;
+import org.jboss.test.osgi.framework.serviceloader.bundleB.ObjectB;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 
@@ -51,28 +51,28 @@ import org.osgi.framework.Bundle;
  * @author thomas.diesler@jboss.com
  * @since 31-Jul-2010
  */
-public class OSGi373TestCase extends OSGiFrameworkTest {
+public class ServiceLoaderTestCase extends OSGiFrameworkTest {
 
     @Test
     public void testServiceLocal() throws Exception {
-        // Bundle-SymbolicName: osgi373.bundleA
-        // Export-Package: org.jboss.test.osgi.framework.jbosgi373
-        Archive<?> archiveA = assembleArchive("bundleA", "/osgi373/bundleA", OSGi373Service.class, OSGi373ServiceImpl.class);
+        // Bundle-SymbolicName: serviceloader.bundleA
+        // Export-Package: org.jboss.test.osgi.framework.serviceloader
+        Archive<?> archiveA = assembleArchive("bundleA", "/serviceloader/bundleA", FooService.class, FooServiceImpl.class);
         Bundle bundleA = installBundle(archiveA);
         try {
             assertBundleState(Bundle.INSTALLED, bundleA.getState());
-            assertLoadClass(bundleA, OSGi373Service.class.getName());
-            assertLoadClass(bundleA, OSGi373ServiceImpl.class.getName());
+            assertLoadClass(bundleA, FooService.class.getName());
+            assertLoadClass(bundleA, FooServiceImpl.class.getName());
 
             try {
-                ServiceLoader<OSGi373Service> loader = ServiceLoader.load(OSGi373Service.class);
+                ServiceLoader<FooService> loader = ServiceLoader.load(FooService.class);
                 loader.iterator().next();
                 fail("NoSuchElementException expected");
             } catch (NoSuchElementException ex) {
                 // expected
             }
 
-            Class<?> serviceClass = bundleA.loadClass(OSGi373Service.class.getName());
+            Class<?> serviceClass = bundleA.loadClass(FooService.class.getName());
             ServiceLoader<?> loader = ServiceLoader.load(serviceClass, serviceClass.getClassLoader());
             Object service = loader.iterator().next();
             assertNotNull("Service not null", service);
@@ -83,22 +83,22 @@ public class OSGi373TestCase extends OSGiFrameworkTest {
 
     @Test
     public void testServiceDependent() throws Exception {
-        // Bundle-SymbolicName: osgi373.bundleA
-        // Export-Package: org.jboss.test.osgi.framework.jbosgi373
-        Archive<?> archiveA = assembleArchive("bundleA", "/osgi373/bundleA", OSGi373Service.class, OSGi373ServiceImpl.class);
+        // Bundle-SymbolicName: serviceloader.bundleA
+        // Export-Package: org.jboss.test.osgi.framework.serviceloader
+        Archive<?> archiveA = assembleArchive("bundleA", "/serviceloader/bundleA", FooService.class, FooServiceImpl.class);
         Bundle bundleA = installBundle(archiveA);
         try {
-            // Bundle-SymbolicName: osgi373.bundleB
-            // Import-Package: org.jboss.test.osgi.framework.jbosgi373
-            Archive<?> archiveB = assembleArchive("bundleB", "/osgi373/bundleB", ObjectB.class);
+            // Bundle-SymbolicName: serviceloader.bundleB
+            // Import-Package: org.jboss.test.osgi.framework.serviceloader
+            Archive<?> archiveB = assembleArchive("bundleB", "/serviceloader/bundleB", ObjectB.class);
             Bundle bundleB = installBundle(archiveB);
             try {
                 assertBundleState(Bundle.INSTALLED, bundleA.getState());
                 assertBundleState(Bundle.INSTALLED, bundleB.getState());
-                assertLoadClass(bundleB, OSGi373Service.class.getName());
-                assertLoadClassFail(bundleB, OSGi373ServiceImpl.class.getName());
+                assertLoadClass(bundleB, FooService.class.getName());
+                assertLoadClassFail(bundleB, FooServiceImpl.class.getName());
 
-                Class<?> serviceClass = bundleB.loadClass(OSGi373Service.class.getName());
+                Class<?> serviceClass = bundleB.loadClass(FooService.class.getName());
                 ServiceLoader<?> loader = ServiceLoader.load(serviceClass, serviceClass.getClassLoader());
                 Object service = loader.iterator().next();
                 assertNotNull("Service not null", service);
@@ -112,18 +112,18 @@ public class OSGi373TestCase extends OSGiFrameworkTest {
 
     @Test
     public void testServiceResources() throws Exception {
-        Archive<?> archiveA = assembleArchive("bundleA", "/osgi373/bundleA", OSGi373Service.class, OSGi373ServiceImpl.class);
+        Archive<?> archiveA = assembleArchive("bundleA", "/serviceloader/bundleA", FooService.class, FooServiceImpl.class);
         Bundle bundleA = installBundle(archiveA);
         try {
-            Archive<?> archiveB = assembleArchive("bundleB", "/osgi373/bundleB", ObjectB.class);
+            Archive<?> archiveB = assembleArchive("bundleB", "/serviceloader/bundleB", ObjectB.class);
             Bundle bundleB = installBundle(archiveB);
             try {
                 assertBundleState(Bundle.INSTALLED, bundleA.getState());
                 assertBundleState(Bundle.INSTALLED, bundleB.getState());
 
-                String serviceId = "META-INF/services/" + OSGi373Service.class.getName();
+                String serviceId = "META-INF/services/" + FooService.class.getName();
 
-                ClassLoader loaderA = bundleA.loadClass(OSGi373ServiceImpl.class.getName()).getClassLoader();
+                ClassLoader loaderA = bundleA.loadClass(FooServiceImpl.class.getName()).getClassLoader();
                 assertResourceURL(loaderA.getResource(serviceId));
                 assertResourceURL(bundleA.getResource(serviceId));
                 assertTrue("Enumeration has elements", loaderA.getResources(serviceId).hasMoreElements());
@@ -148,7 +148,7 @@ public class OSGi373TestCase extends OSGiFrameworkTest {
         try {
             assertNotNull("InputStream not null", instream);
             String line = new BufferedReader(new InputStreamReader(instream)).readLine();
-            assertEquals(OSGi373ServiceImpl.class.getName(), line);
+            assertEquals(FooServiceImpl.class.getName(), line);
         } finally {
             instream.close();
         }

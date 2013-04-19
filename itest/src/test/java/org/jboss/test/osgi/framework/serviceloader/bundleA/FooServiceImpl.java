@@ -1,4 +1,4 @@
-package org.jboss.test.osgi.framework.jbosgi373.bundleA;
+package org.jboss.test.osgi.framework.serviceloader.bundleA;
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,7 +21,7 @@ package org.jboss.test.osgi.framework.jbosgi373.bundleA;
  * #L%
  */
 
-import org.jboss.test.osgi.framework.jbosgi373.OSGi373Service;
+import org.jboss.test.osgi.framework.serviceloader.FooService;
 
-public class OSGi373ServiceImpl implements OSGi373Service {
+public class FooServiceImpl implements FooService {
 }

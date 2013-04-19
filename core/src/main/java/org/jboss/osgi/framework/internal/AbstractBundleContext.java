@@ -154,17 +154,18 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
         // When an existing bundle is already installed at a given location, the find method is called to determine if the
         // context performing the install operation is able to find the bundle. If the context cannot find the existing bundle
         // then the install operation must fail with a BundleException.REJECTED_BY_HOOK exception
-        Bundle bundle = getBundle(location);
+        Bundle bundle = getBundleManager().getBundleByLocation(location);
         if (bundle != null) {
+            LOGGER.debugf("Installing an already existing bundle: %s", location);
             Collection<Bundle> hookBundles = new RemoveOnlyCollection<Bundle>(bundle);
             callFindHooks(hookBundles);
             if (hookBundles.isEmpty()) {
                 String message = MESSAGES.cannotFindLocationBundleInContext(location, this);
                 throw new BundleException(message, BundleException.REJECTED_BY_HOOK);
             }
+            return bundle;
         }
 
-        Deployment dep;
         VirtualFile rootFile = null;
         FrameworkState frameworkState = getFrameworkState();
         try {
@@ -201,7 +202,7 @@ abstract class AbstractBundleContext<T extends AbstractBundleState<?>> implement
                 throw MESSAGES.cannotObtainVirtualFileForLocation(null, location);
 
             DeploymentProvider deploymentPlugin = frameworkState.getDeploymentProvider();
-            dep = deploymentPlugin.createDeployment(location, rootFile);
+            Deployment dep = deploymentPlugin.createDeployment(location, rootFile);
             try {
                 XBundleRevision brev = getBundleManager().createBundleRevisionLifecycle(this, dep);
                 return brev.getBundle();

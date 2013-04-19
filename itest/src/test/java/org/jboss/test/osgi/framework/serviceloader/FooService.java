@@ -1,4 +1,4 @@
-package org.jboss.test.osgi.framework.jbosgi476;
+package org.jboss.test.osgi.framework.serviceloader;
 /*
  * #%L
  * JBossOSGi Framework
@@ -21,15 +21,5 @@ package org.jboss.test.osgi.framework.jbosgi476;
  * #L%
  */
 
-import org.osgi.framework.BundleActivator;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleException;
-
-public class OSGi476Activator implements BundleActivator {
-
-    public void start(BundleContext context) throws BundleException {
-    }
-
-    public void stop(BundleContext context) {
-    }
+public interface FooService {
 }

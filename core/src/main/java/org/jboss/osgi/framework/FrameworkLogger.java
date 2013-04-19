@@ -226,4 +226,8 @@ public interface FrameworkLogger extends BasicLogger {
     @LogMessage(level = ERROR)
     @Message(id = 11042, value = "Cannot uninstall bundle: %s")
     void errorCannotUninstallBundle(@Cause Throwable cause, Bundle bundle);
+
+    @LogMessage(level = INFO)
+    @Message(id = 11043, value = "Bundle refreshed: %s")
+    void infoBundleRefreshed(Bundle bundle);
 }

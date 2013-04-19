@@ -255,15 +255,16 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
     @Override
     void updateInternal(InputStream input) throws BundleException {
 
-        BundleManagerPlugin bundleManager = getBundleManager();
+        LOGGER.debugf("Updating bundle: %s", this);
 
         boolean restart = false;
+
         if (isFragment() == false) {
             int state = getState();
             if (state == Bundle.ACTIVE || state == Bundle.STARTING || state == Bundle.STOPPING) {
                 // If this bundle's state is ACTIVE, STARTING or STOPPING, this bundle is stopped
                 // If Bundle.stop throws an exception, the exception is rethrown terminating the update.
-                bundleManager.stopBundle(this, Bundle.STOP_TRANSIENT);
+                getBundleManager().stopBundle(this, Bundle.STOP_TRANSIENT);
                 if (state != Bundle.STOPPING)
                     restart = true;
             }
@@ -285,7 +286,7 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
             boolean isbe = (ex instanceof BundleException);
             BundleException be = isbe ? (BundleException) ex : MESSAGES.cannotUpdateBundle(ex, this);
             if (restart)
-                bundleManager.startBundle(this, Bundle.START_TRANSIENT);
+                getBundleManager().startBundle(this, Bundle.START_TRANSIENT);
             throw be;
         }
 
@@ -296,13 +297,15 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
             // If this bundle's state was originally ACTIVE or STARTING, the updated bundle is started
             // If Bundle.start throws an exception, a Framework event of type FrameworkEvent.ERROR is fired
             try {
-                bundleManager.startBundle(this, Bundle.START_TRANSIENT);
+                getBundleManager().startBundle(this, Bundle.START_TRANSIENT);
             } catch (BundleException e) {
                 eventsPlugin.fireFrameworkEvent(this, FrameworkEvent.ERROR, e);
             }
         }
 
         updateLastModified();
+
+        LOGGER.infoBundleUpdated(this);
     }
 
     /**
@@ -373,6 +376,8 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
     void refresh() throws BundleException {
         assertNotUninstalled();
 
+        LOGGER.debugf("Refreshing bundle: %s", this);
+
         // Get the {@link BundleRefreshPolicy}
         CoreServices coreServices = getFrameworkState().getCoreServices();
         BundleLifecycle bundleLifecycle = coreServices.getBundleLifecycle();
@@ -416,6 +421,8 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         } finally {
             refreshPolicy.endBundleRefresh(this);
         }
+
+        LOGGER.infoBundleRefreshed(this);
     }
 
     @Override
@@ -424,6 +431,8 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         int state = getState();
         if (state == Bundle.UNINSTALLED)
             return;
+
+        LOGGER.debugf("Uninstalling bundle: %s", this);
 
         BundleManagerPlugin bundleManager = getBundleManager();
         getBundleRevision().setHeadersOnUninstall(getHeaders(null));
@@ -483,6 +492,8 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
         // #4 A bundle event of type BundleEvent.UNINSTALLED is fired
         fireBundleEvent(BundleEvent.UNINSTALLED);
+
+        LOGGER.infoBundleUninstalled(this);
     }
 
     @Override
@@ -516,6 +527,8 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         // #2 If this bundle's state is ACTIVE then this method returns immediately.
         if (getState() == ACTIVE)
             return;
+
+        LOGGER.debugf("Starting bundle: %s", this);
 
         // #3 Set this bundle's autostart setting
         persistAutoStartSettings(options);
@@ -615,6 +628,8 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         // #10 This bundle's state is set to ACTIVE.
         // #11 A bundle event of type BundleEvent.STARTED is fired
         changeState(Bundle.ACTIVE);
+
+        LOGGER.infoBundleStarted(this);
     }
 
     @Override
@@ -630,6 +645,8 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
     }
 
     private void stopInternalNow(int options) throws BundleException {
+
+        LOGGER.debugf("Stopping bundle: %s", this);
 
         int priorState = getState();
 
@@ -684,6 +701,8 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         if (rethrow != null) {
             throw MESSAGES.cannotStopBundle(rethrow, this);
         }
+
+        LOGGER.infoBundleStopped(this);
     }
 
     Set<UserBundleState> getDependentBundles() {
@@ -780,8 +799,6 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
     private boolean hasActiveWiresWhileUninstalling() {
         BundleWiring wiring = getBundleWiring();
-        boolean result = (wiring != null ? ((AbstractBundleWiring) wiring).isInUseForUninstall() : false);
-        LOGGER.debugf("hasActiveWiresWhileUninstalling: %s", result);
-        return result;
+        return (wiring != null ? ((AbstractBundleWiring) wiring).isInUseForUninstall() : false);
     }
 }

@@ -24,6 +24,7 @@ package org.jboss.test.osgi.framework.bundle.activation;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.InputStream;
@@ -92,6 +93,36 @@ public class BundleActivationTestCase extends OSGiFrameworkTest {
         } finally {
             providerBundle.uninstall();
         }
+    }
+
+    @Test
+    public void testLazyActivationLock() throws Exception {
+
+        final JavaArchive archiveA = ShrinkWrap.create(JavaArchive.class, "jbosgi476-bundle");
+        archiveA.setManifest(new Asset() {
+            @Override
+            public InputStream openStream() {
+                OSGiManifestBuilder builder = OSGiManifestBuilder.newInstance();
+                builder.addBundleManifestVersion(2);
+                builder.addBundleSymbolicName(archiveA.getName());
+                builder.addBundleActivationPolicy(Constants.ACTIVATION_LAZY);
+                builder.addImportPackages(BundleActivator.class);
+                return builder.openStream();
+            }
+        });
+
+        Bundle bundleA = installBundle(archiveA);
+        assertBundleState(Bundle.INSTALLED, bundleA.getState());
+
+        long before = System.currentTimeMillis();
+
+        bundleA.start(Bundle.START_TRANSIENT);
+        assertBundleState(Bundle.ACTIVE, bundleA.getState());
+
+        long after = System.currentTimeMillis();
+        assertTrue("Start not running into activation lock, should complete in < 2sec", (after - before) < 2000);
+
+        bundleA.uninstall();
     }
 
     @Test
