@@ -60,7 +60,8 @@ final class RecreateCurrentRevisionPolicy implements BundleRefreshPolicy {
         this.bundle = bundle;
 
         XBundleRevision brev = bundle.getBundleRevision();
-        Deployment dep = brev.getAttachment(IntegrationConstants.DEPLOYMENT_KEY);
+        UserBundleRevision userRev = UserBundleRevision.assertBundleRevision(brev);
+        Deployment dep = userRev.getDeployment();
 
         try {
             InputStream inputStream = dep.getRoot().getStreamURL().openStream();

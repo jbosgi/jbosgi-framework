@@ -51,7 +51,7 @@ final class FragmentBundleRevision extends UserBundleRevision {
     private Set<HostBundleRevision> attachedHosts;
 
     FragmentBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState, ServiceTarget serviceTarget) throws BundleException {
-        super(frameworkState, dep, metadata, storageState, serviceTarget);
+        super(frameworkState, metadata, storageState, dep, serviceTarget);
     }
 
     static FragmentBundleRevision assertFragmentRevision(BundleRevision brev) {

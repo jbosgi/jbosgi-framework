@@ -65,10 +65,14 @@ abstract class UserBundleRevisionFactory<R extends UserBundleRevision> {
     private R bundleRevision;
 
     UserBundleRevisionFactory(FrameworkState frameworkState, BundleContext targetContext, Deployment deployment, ServiceTarget serviceTarget) {
+        assert frameworkState != null : "Null frameworkState";
+        assert targetContext != null : "Null targetContext";
+        assert deployment != null : "Null deployment";
+        assert serviceTarget != null : "Null serviceTarget";
         this.frameworkState = frameworkState;
+        this.targetContext = targetContext;
         this.serviceTarget = serviceTarget;
         this.deployment = deployment;
-        this.targetContext = targetContext;
     }
 
     FrameworkState getFrameworkState() {

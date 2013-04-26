@@ -110,6 +110,18 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
         return getBundleRevision().getLocation();
     }
 
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T adapt(Class<T> type) {
+        T result = super.adapt(type);
+        if (result == null) {
+            if (type.isAssignableFrom(Deployment.class)) {
+                result = (T) getDeployment();
+            }
+        }
+        return result;
+    }
+
     Deployment getDeployment() {
         return getBundleRevision().getDeployment();
     }
@@ -159,18 +171,6 @@ class UserBundleState extends AbstractBundleState<UserBundleRevision> {
 
     boolean isAlreadyStarting() {
         return alreadyStarting.get();
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T adapt(Class<T> type) {
-        T result = super.adapt(type);
-        if (result == null) {
-            if (type.isAssignableFrom(Deployment.class)) {
-                result = (T) getDeployment();
-            }
-        }
-        return result;
     }
 
     @Override

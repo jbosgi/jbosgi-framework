@@ -24,8 +24,6 @@ package org.jboss.osgi.framework.internal;
 import static org.jboss.osgi.framework.FrameworkLogger.LOGGER;
 import static org.jboss.osgi.framework.internal.InternalConstants.MODULE_KEY;
 import static org.jboss.osgi.framework.spi.IntegrationConstants.BUNDLE_REVISION_KEY;
-import static org.jboss.osgi.framework.spi.IntegrationConstants.DEPLOYMENT_KEY;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -36,6 +34,7 @@ import java.util.List;
 import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.osgi.deployment.deployer.Deployment;
+import org.jboss.osgi.framework.spi.IntegrationConstants;
 import org.jboss.osgi.framework.spi.StorageState;
 import org.jboss.osgi.metadata.OSGiMetaData;
 import org.jboss.osgi.vfs.AbstractVFS;
@@ -52,27 +51,31 @@ import org.osgi.framework.wiring.BundleRevision;
  */
 abstract class UserBundleRevision extends BundleStateRevision {
 
+    private final Deployment deployment;
     private final ServiceTarget serviceTarget;
     private final List<RevisionContent> classPathContent;
     private final EntriesProvider entriesProvider;
 
-    UserBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState, ServiceTarget serviceTarget) throws BundleException {
+    UserBundleRevision(FrameworkState frameworkState, OSGiMetaData metadata, StorageState storageState, Deployment deployment, ServiceTarget serviceTarget) throws BundleException {
         super(frameworkState, metadata, storageState);
+        assert deployment != null : "Null deployment";
+        assert serviceTarget != null : "Null serviceTarget";
+        this.deployment = deployment;
         this.serviceTarget = serviceTarget;
 
-        if (dep.getRoot() != null) {
+        if (deployment.getRoot() != null) {
             List<RevisionContent> bundleClassPath = new ArrayList<RevisionContent>();
-            entriesProvider = getBundleClassPath(dep.getRoot(), metadata, storageState, bundleClassPath);
+            entriesProvider = getBundleClassPath(deployment.getRoot(), metadata, storageState, bundleClassPath);
             classPathContent = Collections.unmodifiableList(bundleClassPath);
         } else {
-            Module module = dep.getAttachment(MODULE_KEY);
+            Module module = deployment.getAttachment(MODULE_KEY);
             entriesProvider = new ModuleEntriesProvider(module);
             classPathContent = Collections.emptyList();
             putAttachment(MODULE_KEY, module);
         }
 
-        dep.putAttachment(BUNDLE_REVISION_KEY, this);
-        putAttachment(DEPLOYMENT_KEY, dep);
+        deployment.putAttachment(BUNDLE_REVISION_KEY, this);
+        putAttachment(IntegrationConstants.DEPLOYMENT_KEY, deployment);
     }
 
     static UserBundleRevision assertBundleRevision(BundleRevision brev) {
@@ -85,7 +88,7 @@ abstract class UserBundleRevision extends BundleStateRevision {
     }
 
     Deployment getDeployment() {
-        return getAttachment(DEPLOYMENT_KEY);
+        return deployment;
     }
 
     ServiceTarget getServiceTarget() {

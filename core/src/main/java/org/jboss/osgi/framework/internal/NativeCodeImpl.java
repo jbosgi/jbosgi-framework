@@ -138,7 +138,8 @@ public final class NativeCodeImpl implements NativeCode {
     }
 
     @Override
-    public void resolveNativeCode(XBundleRevision userRev) throws BundleException {
+    public void resolveNativeCode(XBundleRevision brev) throws BundleException {
+        UserBundleRevision userRev = UserBundleRevision.assertBundleRevision(brev);
         OSGiMetaData metaData = userRev.getAttachment(IntegrationConstants.OSGI_METADATA_KEY);
         List<ParameterizedAttribute> params = metaData.getBundleNativeCode();
         if (params == null)
@@ -151,7 +152,7 @@ public final class NativeCodeImpl implements NativeCode {
                 matchedParams.add(param);
         }
 
-        Deployment dep = userRev.getAttachment(IntegrationConstants.DEPLOYMENT_KEY);
+        Deployment dep = userRev.getDeployment();
         NativeLibraryMetaData nativeLibraries = dep.getAttachment(NATIVE_LIBRARY_METADATA_KEY);
 
         // If no native clauses were selected in step 1, this algorithm is terminated

@@ -60,7 +60,7 @@ final class HostBundleRevision extends UserBundleRevision {
     private FallbackLoader fallbackLoader;
 
     HostBundleRevision(FrameworkState frameworkState, Deployment dep, OSGiMetaData metadata, StorageState storageState, ServiceTarget serviceTarget) throws BundleException {
-        super(frameworkState, dep, metadata, storageState, serviceTarget);
+        super(frameworkState, metadata, storageState, dep, serviceTarget);
     }
 
     static HostBundleRevision assertHostRevision(BundleRevision brev) {

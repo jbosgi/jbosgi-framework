@@ -445,26 +445,26 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
     }
 
     @Override
-    public XBundleRevision createBundleRevision(BundleContext context, Deployment dep, ServiceTarget serviceTarget) throws BundleException {
+    public XBundleRevision createBundleRevision(BundleContext context, Deployment deployment, ServiceTarget serviceTarget) throws BundleException {
         if (context == null)
             throw MESSAGES.illegalArgumentNull("context");
-        if (dep == null)
+        if (deployment == null)
             throw MESSAGES.illegalArgumentNull("deployment");
 
         if (serviceTarget == null)
             serviceTarget = getServiceTarget();
 
-        String symbolicName = dep.getSymbolicName();
-        Version version = Version.parseVersion(dep.getVersion());
+        String symbolicName = deployment.getSymbolicName();
+        Version version = Version.parseVersion(deployment.getVersion());
 
         // If a bundle containing the same location identifier is already installed,
         // the Bundle object for that bundle is returned.
-        if (isUpdateOrRefresh(dep) == false) {
-            XBundle bundle = getBundleByLocation(dep.getLocation());
+        if (isUpdateOrRefresh(deployment) == false) {
+            XBundle bundle = getBundleByLocation(deployment.getLocation());
             if (bundle != null) {
-                LOGGER.debugf("Installing an already existing bundle: %s", dep);
+                LOGGER.debugf("Installing an already existing bundle: %s", deployment);
                 XBundleRevision brev = bundle.getBundleRevision();
-                VFSUtils.safeClose(dep.getRoot());
+                VFSUtils.safeClose(deployment.getRoot());
                 return brev;
             }
 
@@ -476,30 +476,30 @@ final class BundleManagerPlugin extends AbstractIntegrationService<BundleManager
         try {
 
             // Create the revision identifier
-            RevisionIdentifier revIdentifier = dep.getAttachment(REVISION_IDENTIFIER_KEY);
+            RevisionIdentifier revIdentifier = deployment.getAttachment(REVISION_IDENTIFIER_KEY);
             if (revIdentifier == null) {
-                revIdentifier = createRevisionIdentifier(symbolicName, dep);
-                dep.putAttachment(REVISION_IDENTIFIER_KEY, revIdentifier);
+                revIdentifier = createRevisionIdentifier(symbolicName, deployment);
+                deployment.putAttachment(REVISION_IDENTIFIER_KEY, revIdentifier);
             }
 
             // Check that we have valid metadata
-            OSGiMetaData metadata = dep.getAttachment(OSGI_METADATA_KEY);
+            OSGiMetaData metadata = deployment.getAttachment(OSGI_METADATA_KEY);
             if (metadata == null) {
                 DeploymentProvider plugin = getFrameworkState().getDeploymentProvider();
-                metadata = plugin.createOSGiMetaData(dep);
+                metadata = plugin.createOSGiMetaData(deployment);
             }
 
             // Create the bundle revision
             if (metadata.getFragmentHost() == null) {
-                brev = new HostBundleRevisionFactory(getFrameworkState(), context, dep, serviceTarget).create();
+                brev = new HostBundleRevisionFactory(getFrameworkState(), context, deployment, serviceTarget).create();
             } else {
-                brev = new FragmentBundleRevisionFactory(getFrameworkState(), context, dep, serviceTarget).create();
+                brev = new FragmentBundleRevisionFactory(getFrameworkState(), context, deployment, serviceTarget).create();
             }
         } catch (RuntimeException rte) {
-            VFSUtils.safeClose(dep.getRoot());
+            VFSUtils.safeClose(deployment.getRoot());
             throw rte;
         } catch (BundleException ex) {
-            VFSUtils.safeClose(dep.getRoot());
+            VFSUtils.safeClose(deployment.getRoot());
             throw ex;
         }
 
