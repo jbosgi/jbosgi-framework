@@ -40,9 +40,9 @@ import org.jboss.osgi.framework.spi.IntegrationServices;
 import org.jboss.osgi.framework.spi.VirtualFileResourceLoader;
 import org.jboss.osgi.resolver.XBundle;
 import org.jboss.osgi.resolver.XBundleRevision;
+import org.jboss.osgi.resolver.XBundleRevisionBuilder;
 import org.jboss.osgi.resolver.XBundleRevisionBuilderFactory;
 import org.jboss.osgi.resolver.XEnvironment;
-import org.jboss.osgi.resolver.XResourceBuilder;
 import org.jboss.osgi.testing.OSGiFrameworkTest;
 import org.jboss.osgi.vfs.VFSUtils;
 import org.jboss.osgi.vfs.VirtualFile;
@@ -113,7 +113,6 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
         final BundleContext context = getSystemContext();
         final XBundle sysbundle = (XBundle) context.getBundle();
         final XEnvironment env = sysbundle.adapt(XEnvironment.class);
-        final int rescount = env.getResources(XEnvironment.ALL_IDENTITY_TYPES).size();
 
         // Build the {@link XBundleRevision}
         XBundleRevisionBuilderFactory factory = new XBundleRevisionBuilderFactory() {
@@ -122,7 +121,7 @@ public abstract class AbstractModuleIntegrationTest extends OSGiFrameworkTest {
                 return new AbstractBundleRevisionAdaptor(context, module);
             }
         };
-        XResourceBuilder<XBundleRevision> builder = XBundleRevisionBuilderFactory.create(factory);
+        XBundleRevisionBuilder builder = XBundleRevisionBuilderFactory.create(factory);
         XBundleRevision brev = builder.loadFrom(module).getResource();
 
         // Add the {@link XBundleRevision} to the {@link XEnvironment}
